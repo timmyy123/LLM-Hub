@@ -53,6 +53,128 @@ class LLMBackend: ObservableObject {
         return normalized.contains("gpt-oss") || normalized.contains("gpt_oss")
     }
 
+    private static func isMuseGlimmerModelName(_ modelName: String?) -> Bool {
+        guard let normalized = modelName?.lowercased() else { return false }
+        return normalized.contains("muse glimmer") || normalized.contains("muse-glimmer")
+    }
+
+    private static func buildMuseGlimmerPrompt(prompt: String, systemPrompt: String?, thinkingEnabled: Bool, includeRawPrefix: Bool = true) -> String {
+        let cleanPrompt = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
+        let systemContent = systemPrompt?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let effectiveSystem = systemContent.isEmpty ? "You are a helpful AI assistant." : systemContent
+
+        let dateFormatter = DateFormatter()
+        dateFormatter.calendar = Calendar(identifier: .gregorian)
+        dateFormatter.locale = Locale(identifier: "en_US_POSIX")
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+
+        var parts = includeRawPrefix ? ["__RAW_PROMPT__"] : []
+        let validRecipients = thinkingEnabled ? "\"self\", \"user\"" : "\"user\""
+        parts.append(contentsOf: [
+            "<|begin_of_text|>",
+            "<|start|>system<|message|>\(effectiveSystem)\nKnowledge cutoff: 2026-01-04.\nCurrent date: \(dateFormatter.string(from: Date())).\n\nReasoning strength: high.\n\n# Valid recipients: \(validRecipients).<|eot|>",
+            "<|start|>user<|message|>\(cleanPrompt)<|eot|>"
+        ])
+        parts.append(thinkingEnabled
+            ? "<|start|>assistant"
+            : "<|start|>assistant to=user<|message|>")
+        return parts.joined()
+    }
+
+    /// Muse Glimmer may emit an ATEM recipient header before its text and may
+    /// produce a private `self` reasoning turn before the answer for `user`.
+    /// Convert those protocol fields to the same thinking sentinels used by the UI.
+    private static func normalizeMuseGlimmerOutput(_ raw: String, thinkingEnabled: Bool) -> String {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        let selfHeaders = [
+            "<|start|>assistant to=self<|message|>",
+            "to=self<|message|>",
+            "<|start|>assistant to=self",
+            "assistant to=self",
+            "to=self",
+        ]
+        let userHeaders = [
+            "<|start|>assistant to=user<|message|>",
+            "to=user<|message|>",
+            "<|start|>assistant to=user",
+            "assistant to=user",
+            "to=user",
+        ]
+
+        let protocolHeaders = selfHeaders + userHeaders
+        if !trimmed.isEmpty,
+           protocolHeaders.contains(where: { $0.hasPrefix(trimmed) && $0 != trimmed }) {
+            return ""
+        }
+
+        func cleanMuseAnswer(_ text: String) -> String {
+            var answer = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            for header in userHeaders where answer.hasPrefix(header) {
+                answer = String(answer.dropFirst(header.count))
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                break
+            }
+            for token in ["<|eot|>", "<|end_of_text|>"] where answer.hasSuffix(token) {
+                answer = String(answer.dropLast(token.count))
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                break
+            }
+            return answer
+        }
+
+        func cleanMuseThinking(_ text: String) -> String {
+            var thinking = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            for marker in ["Final output.", "Final output:", "Final answer.", "Final answer:", "Proceed.", "Proceed:"] where thinking.hasSuffix(marker) {
+                thinking = String(thinking.dropLast(marker.count))
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                break
+            }
+            return thinking
+        }
+
+        if let selfHeader = selfHeaders.first(where: { trimmed.hasPrefix($0) }) {
+            guard thinkingEnabled else { return raw }
+            let reasoningAndAnswer = String(trimmed.dropFirst(selfHeader.count))
+            if let reasoningEnd = reasoningAndAnswer.range(of: "<|eom|>") {
+                let reasoning = cleanMuseThinking(String(reasoningAndAnswer[..<reasoningEnd.lowerBound]))
+                let answer = cleanMuseAnswer(String(reasoningAndAnswer[reasoningEnd.upperBound...]))
+                return thinkingSentinelOpen + reasoning + thinkingSentinelClose + answer
+            }
+            for header in userHeaders {
+                if let answerRange = reasoningAndAnswer.range(of: header) {
+                    let reasoning = cleanMuseThinking(String(reasoningAndAnswer[..<answerRange.lowerBound]))
+                    let answer = cleanMuseAnswer(String(reasoningAndAnswer[answerRange.lowerBound...]))
+                    return thinkingSentinelOpen + reasoning + thinkingSentinelClose + answer
+                }
+            }
+            if let finalRange = reasoningAndAnswer.range(
+                of: #"(?i)final (?:output|answer)[\.:]\s*"#,
+                options: .regularExpression
+            ) {
+                let reasoning = cleanMuseThinking(String(reasoningAndAnswer[..<finalRange.lowerBound]))
+                let answer = cleanMuseAnswer(String(reasoningAndAnswer[finalRange.upperBound...]))
+                return thinkingSentinelOpen + reasoning + thinkingSentinelClose + answer
+            }
+            return thinkingSentinelOpen + reasoningAndAnswer
+        }
+
+        for header in userHeaders where trimmed.hasPrefix(header) {
+            return cleanMuseAnswer(String(trimmed.dropFirst(header.count)))
+        }
+        for header in userHeaders {
+            if let answerRange = trimmed.range(of: header) {
+                guard thinkingEnabled else { return raw }
+                let prefix = cleanMuseThinking(String(trimmed[..<answerRange.lowerBound]))
+                let answer = cleanMuseAnswer(String(trimmed[answerRange.lowerBound...]))
+                if prefix.isEmpty {
+                    return answer
+                }
+                return thinkingSentinelOpen + prefix + thinkingSentinelClose + answer
+            }
+        }
+        return raw
+    }
+
     private static func buildHarmonyPrompt(prompt: String, systemPrompt: String?, thinkingEnabled: Bool) -> String {
         let cleanPrompt = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
         let effectiveSystemPrompt = systemPrompt?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
@@ -1251,16 +1373,20 @@ class LLMBackend: ObservableObject {
         let loadedModelName = currentlyLoadedModel ?? loadedModel?.name ?? "<nil>"
         let modelSupportsThinking = loadedModel?.supportsThinking == true
         let isHarmonyModel = Self.isHarmonyModelName(loadedModelName)
+        let isMuseGlimmerModel = Self.isMuseGlimmerModelName(loadedModelName)
+        let useMuseGlimmerThinking = modelSupportsThinking && enableThinking
         let rawPrompt: String
         if isHarmonyModel && !prompt.hasPrefix("__RAW_PROMPT__") {
             rawPrompt = Self.buildHarmonyPrompt(prompt: prompt, systemPrompt: systemPrompt, thinkingEnabled: enableThinking)
+        } else if isMuseGlimmerModel && !prompt.hasPrefix("__RAW_PROMPT__") {
+            rawPrompt = Self.buildMuseGlimmerPrompt(prompt: prompt, systemPrompt: systemPrompt, thinkingEnabled: useMuseGlimmerThinking)
         } else {
             rawPrompt = prompt
         }
         let effectiveSystemPrompt: String?
         if prompt.hasPrefix("__RAW_PROMPT__") {
             effectiveSystemPrompt = nil
-        } else if isHarmonyModel {
+        } else if isHarmonyModel || isMuseGlimmerModel {
             effectiveSystemPrompt = nil
         } else {
             effectiveSystemPrompt = systemPrompt
@@ -1293,6 +1419,17 @@ class LLMBackend: ObservableObject {
                 }
             } else if isHarmonyModel && strippedPrompt.contains("<|start|>") && !strippedPrompt.contains("<|begin_of_text|>") {
                 usePrompt = "<|begin_of_text|>" + strippedPrompt
+            } else if isMuseGlimmerModel {
+                if strippedPrompt.contains("<|start|>") && strippedPrompt.contains("<|begin_of_text|>") {
+                    usePrompt = strippedPrompt
+                } else {
+                    usePrompt = Self.buildMuseGlimmerPrompt(
+                        prompt: strippedPrompt,
+                        systemPrompt: effectiveSystemPrompt,
+                        thinkingEnabled: useMuseGlimmerThinking,
+                        includeRawPrefix: false
+                    )
+                }
             } else {
                 usePrompt = strippedPrompt
             }
@@ -1302,7 +1439,7 @@ class LLMBackend: ObservableObject {
         options.maxTokens = Int32(effectiveMaxTokens)
         options.temperature = Float(temperature)
         options.topP = Float(topP)
-        options.stopSequences = stopSequences
+        options.stopSequences = stopSequences.isEmpty && isMuseGlimmerModel ? ["<|eot|>"] : stopSequences
         options.streamingEnabled = true
         options.systemPrompt = effectiveSystemPrompt ?? ""
         if !isLfmModel {
@@ -1336,7 +1473,8 @@ class LLMBackend: ObservableObject {
                 try Task.checkCancellation()
                 if !event.token.isEmpty {
                     currentOutput += event.token
-                    let displayOutput = isGemma4 ? Self.cleanGemma4Output(currentOutput) : currentOutput
+                    let baseOutput = isGemma4 ? Self.cleanGemma4Output(currentOutput) : currentOutput
+                    let displayOutput = isMuseGlimmerModel ? Self.normalizeMuseGlimmerOutput(baseOutput, thinkingEnabled: enableThinking) : baseOutput
                     onUpdate(displayOutput, 0, 0)
                 }
                 if event.isFinal {
@@ -1346,8 +1484,16 @@ class LLMBackend: ObservableObject {
             }
 
             let result = finalResult ?? RAVLMResult()
-            let finalText = result.text.isEmpty ? currentOutput : result.text
-            let finalOutput = isGemma4 ? Self.cleanGemma4Output(finalText) : finalText
+            // For Muse, the token stream retains the ATEM recipient markers used
+            // to separate `to=self` reasoning from the `to=user` answer. The VLM
+            // SDK's synthesized final `result.text` may strip only part of those
+            // markers; replacing the stream with it makes the completed message
+            // collapse back into one raw reasoning+answer block.
+            let finalText = isMuseGlimmerModel && !currentOutput.isEmpty
+                ? currentOutput
+                : (result.text.isEmpty ? currentOutput : result.text)
+            let baseFinalOutput = isGemma4 ? Self.cleanGemma4Output(finalText) : finalText
+            let finalOutput = isMuseGlimmerModel ? Self.normalizeMuseGlimmerOutput(baseFinalOutput, thinkingEnabled: enableThinking) : baseFinalOutput
             onUpdate(finalOutput, Int(result.completionTokens), Double(result.tokensPerSecond))
             return
         }
@@ -1536,7 +1682,8 @@ class LLMBackend: ObservableObject {
                     displayOutput = Self.thinkingSentinelOpen + displayOutput
                 }
             }
-            let normalizedOutput = isHarmonyModel ? Self.normalizeHarmonyOutput(displayOutput) : (displayOutput, false)
+            let museNormalizedOutput = isMuseGlimmerModel ? Self.normalizeMuseGlimmerOutput(displayOutput, thinkingEnabled: enableThinking) : displayOutput
+            let normalizedOutput = isHarmonyModel ? Self.normalizeHarmonyOutput(museNormalizedOutput) : (museNormalizedOutput, false)
 
             if chunkCount == 1 {
                 print("🧠 [ThinkingDebug][stream] firstChunk preview=\(String(event.token.prefix(120)))")
@@ -1581,7 +1728,8 @@ class LLMBackend: ObservableObject {
         if isGemma4 {
             currentOutput = Self.cleanGemma4Output(currentOutput)
         }
-        let normalizedFinalOutput = isHarmonyModel ? Self.normalizeHarmonyOutput(currentOutput) : (currentOutput, false)
+        let museNormalizedFinalOutput = isMuseGlimmerModel ? Self.normalizeMuseGlimmerOutput(currentOutput, thinkingEnabled: enableThinking) : currentOutput
+        let normalizedFinalOutput = isHarmonyModel ? Self.normalizeHarmonyOutput(museNormalizedFinalOutput) : (museNormalizedFinalOutput, false)
         let sdkThinking = result.hasThinkingContent ? result.thinkingContent.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines) : ""
         let sdkHasThinking = !sdkThinking.isEmpty || !result.thinkingContent.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         let streamHasThinkingMarkers = normalizedFinalOutput.0.contains(Self.thinkingSentinelOpen)

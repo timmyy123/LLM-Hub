@@ -33,9 +33,7 @@ public struct AgentScreen: View {
         ModelData.allModels().filter { model in
             if model.isDependencyOnly { return false }
             if model.name.hasPrefix("Translate Gemma") { return false }
-            // Exclude non-LLM model types from agent availability check
-            if model.category == .embedding || model.category == .asr { return false }
-            if model.category == .imageGeneration || model.category == .videoGeneration || model.category == .imageUpscale { return false }
+            if !model.isLanguageModel { return false }
             if model.name.lowercased().contains("mmproj") || model.name.lowercased().contains("vision projector") || model.name.lowercased().contains("projector") { return false }
 
             if case .downloaded = ModelManager.shared.modelStatuses[model.id] { return true }
@@ -189,8 +187,7 @@ public struct AgentScreen: View {
 
     private func isAgentModel(_ model: AIModel) -> Bool {
         !model.isDependencyOnly &&
-        model.category != .embedding &&
-        model.category != .asr &&
+        model.isLanguageModel &&
         !model.name.lowercased().contains("vision projector") &&
         !model.name.lowercased().contains("mmproj") &&
         !model.name.lowercased().contains("projector")
@@ -200,7 +197,9 @@ public struct AgentScreen: View {
         isLoadingModel = true
         errorMessage = nil
         defer { isLoadingModel = false }
-        guard let model = ModelData.allModels().first(where: { $0.name == agentModelName }) else {
+        guard let model = ModelData.allModels().first(where: {
+            $0.name == agentModelName && isAgentModel($0)
+        }) else {
             errorMessage = "Model not found"
             return
         }

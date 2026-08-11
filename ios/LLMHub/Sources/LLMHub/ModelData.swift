@@ -75,6 +75,11 @@ public struct ModelRequirements: Codable, Sendable {
     public let recommendedRamGB: Int
 }
 
+public enum ChatTemplateFamily: String, Codable, Sendable {
+    case automatic
+    case museGlimmer
+}
+
 public struct AIModel: Identifiable, Codable, Sendable {
     public let id: String
     public let name: String
@@ -93,6 +98,7 @@ public struct AIModel: Identifiable, Codable, Sendable {
     public let modelFormat: ModelFormat
     public let additionalFiles: [String]
     public let promptTemplate: String?
+    public let chatTemplateFamily: ChatTemplateFamily
 
     public init(
         id: String? = nil,
@@ -111,7 +117,8 @@ public struct AIModel: Identifiable, Codable, Sendable {
         contextWindowSize: Int = 2048,
         modelFormat: ModelFormat = .gguf,
         additionalFiles: [String] = [],
-        promptTemplate: String? = nil
+        promptTemplate: String? = nil,
+        chatTemplateFamily: ChatTemplateFamily = .automatic
     ) {
         self.id = id ?? name.lowercased().replacingOccurrences(of: " ", with: "_")
         self.name = name
@@ -130,6 +137,7 @@ public struct AIModel: Identifiable, Codable, Sendable {
         self.modelFormat = modelFormat
         self.additionalFiles = additionalFiles
         self.promptTemplate = promptTemplate
+        self.chatTemplateFamily = chatTemplateFamily
     }
 
     public init(from decoder: Decoder) throws {
@@ -151,6 +159,7 @@ public struct AIModel: Identifiable, Codable, Sendable {
         modelFormat = try container.decodeIfPresent(ModelFormat.self, forKey: .modelFormat) ?? .gguf
         additionalFiles = try container.decodeIfPresent([String].self, forKey: .additionalFiles) ?? []
         promptTemplate = try container.decodeIfPresent(String.self, forKey: .promptTemplate)
+        chatTemplateFamily = try container.decodeIfPresent(ChatTemplateFamily.self, forKey: .chatTemplateFamily) ?? .automatic
     }
 
     public var sizeLabel: String {
@@ -215,6 +224,13 @@ public struct AIModel: Identifiable, Codable, Sendable {
 
     public var isDrawThingsImageUpscale: Bool {
         modelFormat == .drawthings && category == .imageUpscale
+    }
+
+    /// Models that may be loaded by chat, Agent, and other LLM-backed features.
+    /// Dedicated media, ASR, embedding, and music models must stay in their own
+    /// feature pickers even when their files share a runtime or model format.
+    public var isLanguageModel: Bool {
+        category == .text || category == .multimodal
     }
 
     public var imageGenerationResolution: Int? {
@@ -450,7 +466,8 @@ public static let models: [AIModel] = [
         requirements: ModelRequirements(minRamGB: 18, recommendedRamGB: 24),
         contextWindowSize: 131072,
         modelFormat: .gguf,
-        additionalFiles: []
+        additionalFiles: [],
+        chatTemplateFamily: .museGlimmer
     ),
     AIModel(
         name: "Muse Glimmer 30B (UD-IQ2_XS)",
@@ -466,7 +483,8 @@ public static let models: [AIModel] = [
         requirements: ModelRequirements(minRamGB: 18, recommendedRamGB: 24),
         contextWindowSize: 131072,
         modelFormat: .gguf,
-        additionalFiles: []
+        additionalFiles: [],
+        chatTemplateFamily: .museGlimmer
     ),
     AIModel(
         name: "Muse Glimmer 30B (UD-IQ2_M)",
@@ -482,7 +500,8 @@ public static let models: [AIModel] = [
         requirements: ModelRequirements(minRamGB: 20, recommendedRamGB: 24),
         contextWindowSize: 131072,
         modelFormat: .gguf,
-        additionalFiles: []
+        additionalFiles: [],
+        chatTemplateFamily: .museGlimmer
     ),
     AIModel(
         name: "Muse Glimmer 30B (UD-Q2_K_XL)",
@@ -498,7 +517,8 @@ public static let models: [AIModel] = [
         requirements: ModelRequirements(minRamGB: 20, recommendedRamGB: 24),
         contextWindowSize: 131072,
         modelFormat: .gguf,
-        additionalFiles: []
+        additionalFiles: [],
+        chatTemplateFamily: .museGlimmer
     ),
     AIModel(
         name: "Muse Glimmer 30B (UD-IQ3_XXS)",
@@ -514,7 +534,8 @@ public static let models: [AIModel] = [
         requirements: ModelRequirements(minRamGB: 20, recommendedRamGB: 24),
         contextWindowSize: 131072,
         modelFormat: .gguf,
-        additionalFiles: []
+        additionalFiles: [],
+        chatTemplateFamily: .museGlimmer
     ),
     AIModel(
         name: "Muse Glimmer 30B (UD-Q3_K_XL)",
@@ -530,7 +551,8 @@ public static let models: [AIModel] = [
         requirements: ModelRequirements(minRamGB: 20, recommendedRamGB: 24),
         contextWindowSize: 131072,
         modelFormat: .gguf,
-        additionalFiles: []
+        additionalFiles: [],
+        chatTemplateFamily: .museGlimmer
     ),
     AIModel(
         name: "Muse Glimmer 30B (UD-IQ3_M)",
@@ -546,7 +568,8 @@ public static let models: [AIModel] = [
         requirements: ModelRequirements(minRamGB: 20, recommendedRamGB: 24),
         contextWindowSize: 131072,
         modelFormat: .gguf,
-        additionalFiles: []
+        additionalFiles: [],
+        chatTemplateFamily: .museGlimmer
     ),
     AIModel(
         name: "Muse Glimmer 30B (UD-Q4_K_XL)",
@@ -562,7 +585,8 @@ public static let models: [AIModel] = [
         requirements: ModelRequirements(minRamGB: 24, recommendedRamGB: 32),
         contextWindowSize: 131072,
         modelFormat: .gguf,
-        additionalFiles: []
+        additionalFiles: [],
+        chatTemplateFamily: .museGlimmer
     ),
     AIModel(
         name: "Muse Glimmer 30B (Vision Projector, BF16)",

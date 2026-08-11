@@ -275,7 +275,7 @@ struct ChatSettingsSheet: View {
         var models = ModelData.allModels().filter { model in
             if model.isDependencyOnly { return false }
             if model.name.hasPrefix("Translate Gemma") { return false }
-            if model.category == .embedding || model.category == .imageGeneration || model.category == .videoGeneration || model.category == .imageUpscale || model.category == .asr { return false }
+            if !model.isLanguageModel { return false }
 
             guard ModelData.isModelFullyAvailableLocally(model) else { return false }
             return true
@@ -316,6 +316,10 @@ struct ChatSettingsSheet: View {
 
     private func syncDraftFromViewModel() {
         cachedModels = downloadedModels
+        if vm.selectedModelName != settings.localized("no_model_selected"),
+           !cachedModels.contains(where: { $0.name == vm.selectedModelName }) {
+            vm.selectedModelName = cachedModels.first?.name ?? settings.localized("no_model_selected")
+        }
         draftContextWindow = min(max(1, vm.contextWindow), modelMaxContextWindow)
         draftTopK = min(max(1, vm.topK), 256)
         draftTopP = min(max(0, vm.topP), 1)
@@ -535,5 +539,3 @@ struct ToggleTile: View {
         }
     }
 }
-
-

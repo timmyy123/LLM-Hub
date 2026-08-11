@@ -458,7 +458,9 @@ private func chatAppleFoundationModelIfAvailable() -> AIModel? {
 
 @MainActor
 private func chatModel(named modelName: String) -> AIModel? {
-    if let model = ModelData.allModels().first(where: { $0.name == modelName }) {
+    if let model = ModelData.allModels().first(where: {
+        $0.name == modelName && $0.isLanguageModel && !$0.isDependencyOnly
+    }) {
         return model
     }
     if let appleModel = chatAppleFoundationModelIfAvailable(), appleModel.name == modelName {
@@ -870,7 +872,9 @@ class ChatViewModel: ObservableObject {
         settingsByModelId = Self.loadPerModelSettings(from: userDefaults)
 
         if let savedModelName = userDefaults.string(forKey: PersistenceKeys.selectedModelName),
-           !savedModelName.isEmpty {
+           !savedModelName.isEmpty,
+           let savedModel = chatModel(named: savedModelName),
+           !savedModel.name.hasPrefix("Translate Gemma") {
             selectedModelName = savedModelName
         }
 
@@ -1060,8 +1064,9 @@ class ChatViewModel: ObservableObject {
         if defaults.object(forKey: PersistenceKeys.enableAudio) != nil {
             settings.enableAudio = defaults.bool(forKey: PersistenceKeys.enableAudio)
         }
-        // Thinking is always enabled for thinking-capable models — no toggle.
-        settings.enableThinking = true
+        if defaults.object(forKey: PersistenceKeys.enableThinking) != nil {
+            settings.enableThinking = defaults.bool(forKey: PersistenceKeys.enableThinking)
+        }
         if defaults.object(forKey: PersistenceKeys.enableAgentTools) != nil {
             settings.enableAgentTools = defaults.bool(forKey: PersistenceKeys.enableAgentTools)
         }
@@ -1833,6 +1838,7 @@ class ChatViewModel: ObservableObject {
         let isLlama   = modelName.contains("llama") || modelName.contains("mistral")
         let isLlama3  = isLlama && (modelName.contains("llama-3") || modelName.contains("llama 3") || modelName.contains("llama-3."))
         let isHarmony = modelName.contains("gpt-oss") || modelName.contains("gpt_oss")
+        let isMuseGlimmer = chatModel(named: selectedModelName)?.chatTemplateFamily == .museGlimmer
         let isGranite = modelName.contains("granite")
         let isChatML  = modelName.contains("lfm") || modelName.contains("liquid")
 
@@ -1844,6 +1850,10 @@ class ChatViewModel: ObservableObject {
             return ["[INST]"]
         } else if isHarmony {
             return ["<|start|>user"]
+        } else if isMuseGlimmer {
+            // <|eom|> separates Muse's private reasoning from its user-facing
+            // answer, so only stop at the actual end-of-turn marker.
+            return ["<|eot|>"]
         } else if isGranite {
             return ["<|start_of_role|>user", "<|start_of_role|>system"]
         } else if isChatML {
@@ -1969,6 +1979,7 @@ class ChatViewModel: ObservableObject {
         let isLlama      = modelName.contains("llama") || modelName.contains("mistral")
         let isLlama3     = isLlama && (modelName.contains("llama-3") || modelName.contains("llama 3") || modelName.contains("llama-3."))
         let isHarmonyModel = modelName.contains("gpt-oss") || modelName.contains("gpt_oss")
+        let isMuseGlimmer = currentModel?.chatTemplateFamily == .museGlimmer
         let isGranite    = modelName.contains("granite")
         let isChatML     = modelName.contains("lfm") || modelName.contains("liquid")
 
@@ -2079,6 +2090,55 @@ class ChatViewModel: ObservableObject {
             }
             parts.append(contentsOf: harmonyParts)
             return parts.joined()
+        }
+
+        // Muse Glimmer uses Meta's Onyx/ATEM template. It is not ChatML and it
+        // does not understand the plain `User:` / `Assistant:` fallback. Keep
+        // this byte-for-byte compatible with the upstream tokenizer template's
+        // text-only conversation path.
+        if isMuseGlimmer {
+            let systemContent = ragPrefix?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            let effectiveSystem = systemContent.isEmpty ? "You are a helpful AI assistant." : systemContent
+            let dateFormatter = DateFormatter()
+            dateFormatter.calendar = Calendar(identifier: .gregorian)
+            dateFormatter.locale = Locale(identifier: "en_US_POSIX")
+            dateFormatter.dateFormat = "yyyy-MM-dd"
+            let currentDate = dateFormatter.string(from: Date())
+            let validRecipients = enableThinking ? "\"self\", \"user\"" : "\"user\""
+            var museParts = [
+                "<|begin_of_text|>",
+                "<|start|>system<|message|>\(effectiveSystem)\nKnowledge cutoff: 2026-01-04.\nCurrent date: \(currentDate).\n\nReasoning strength: high.\n\n# Valid recipients: \(validRecipients).<|eot|>"
+            ]
+
+            for msg in history {
+                let rawContent = msg.content.trimmingCharacters(in: .whitespacesAndNewlines)
+                let content: String
+                if msg.isFromUser {
+                    content = rawContent
+                } else {
+                    let answer = getDisplayContentWithoutThinking(rawContent)
+                    content = answer.isEmpty ? rawContent : answer
+                }
+                guard !content.isEmpty else { continue }
+
+                if msg.isFromUser {
+                    museParts.append("<|start|>user<|message|>\(content)<|eot|>")
+                } else {
+                    museParts.append("<|start|>assistant to=user<|message|>\(content)<|eot|>")
+                }
+            }
+
+            museParts.append("<|start|>user<|message|>\(currentUserPrompt)<|eot|>")
+            museParts.append(enableThinking
+                ? "<|start|>assistant"
+                : "<|start|>assistant to=user<|message|>")
+            parts.append(contentsOf: museParts)
+
+            let finalPrompt = parts.joined()
+            #if DEBUG
+            print("📝 [PromptBuild] Muse Glimmer Onyx template, promptChars=\(finalPrompt.count)")
+            #endif
+            return finalPrompt
         }
 
         // Optionally inject RAG context or System Message as an opening turn.
@@ -3872,7 +3932,7 @@ struct ChatScreen: View {
         var models = ModelData.allModels().filter { model in
             if model.isDependencyOnly { return false }
             if model.name.hasPrefix("Translate Gemma") { return false }
-            if model.category == .embedding || model.category == .imageGeneration || model.category == .videoGeneration || model.category == .imageUpscale { return false }
+            if !model.isLanguageModel { return false }
 
             guard ModelData.isModelFullyAvailableLocally(model) else { return false }
             return true

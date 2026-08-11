@@ -597,27 +597,6 @@ public actor ModelDownloader {
         let totalSize = model.sizeBytes
         var downloadedBytesPerFile: [String: Int64] = [:]
         var expectedBytesPerFile: [String: Int64] = [:]
-        let realtimeWindowSeconds: TimeInterval = 3.0
-        var throughputSamples: [(time: Date, bytes: Int64)] = []
-
-        func recordTransfer(_ bytes: Int64) {
-            guard bytes > 0 else { return }
-            let now = Date()
-            throughputSamples.append((time: now, bytes: bytes))
-            let cutoff = now.addingTimeInterval(-realtimeWindowSeconds)
-            throughputSamples.removeAll { $0.time < cutoff }
-        }
-
-        func realtimeSpeed() -> Double {
-            guard !throughputSamples.isEmpty else { return 0 }
-            let now = Date()
-            let cutoff = now.addingTimeInterval(-realtimeWindowSeconds)
-            throughputSamples.removeAll { $0.time < cutoff }
-            guard let firstTime = throughputSamples.first?.time else { return 0 }
-            let bytes = throughputSamples.reduce(Int64(0)) { $0 + $1.bytes }
-            let span = max(0.1, now.timeIntervalSince(firstTime))
-            return Double(bytes) / span
-        }
         
         // Ensure clean destination
         if !FileManager.default.fileExists(atPath: destinationDir.path) {
@@ -646,8 +625,7 @@ public actor ModelDownloader {
                     if let expectedSize, expectedSize == fileSize {
                         downloadedBytesPerFile[fileName] = fileSize
                         let currentTotal = downloadedBytesPerFile.values.reduce(0, +)
-                        let speed = realtimeSpeed()
-                        onProgress(DownloadUpdate(bytesDownloaded: currentTotal, totalBytes: totalSize, speedBytesPerSecond: speed))
+                        onProgress(DownloadUpdate(bytesDownloaded: currentTotal, totalBytes: totalSize, speedBytesPerSecond: 0))
                         continue
                     }
                 }
@@ -660,7 +638,7 @@ public actor ModelDownloader {
 
             while !finishedFile {
                 do {
-                    var existingBytes = localFileSize(at: destinationFileURL)
+                    let existingBytes = localFileSize(at: destinationFileURL)
                     var request = URLRequest(url: fileURL, cachePolicy: .reloadIgnoringLocalCacheData)
                     if let token = hfToken, !token.isEmpty {
                         request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
@@ -669,15 +647,32 @@ public actor ModelDownloader {
                         request.addValue("bytes=\(existingBytes)-", forHTTPHeaderField: "Range")
                     }
 
-                    let (bytes, response) = try await urlSession.bytes(for: request)
-                    guard let httpResponse = response as? HTTPURLResponse else {
-                        throw NSError(domain: "ModelDownloader", code: -1, userInfo: [NSLocalizedDescriptionKey: "No Response"])
-                    }
+                    let completedBytes = downloadedBytesPerFile
+                        .filter { $0.key != fileName }
+                        .values
+                        .reduce(0, +)
+                    let downloader = ChunkedFileDownloader(
+                        destinationURL: destinationFileURL,
+                        requestedOffset: existingBytes,
+                        progressHandler: { fileBytes, speed in
+                            onProgress(
+                                DownloadUpdate(
+                                    bytesDownloaded: completedBytes + fileBytes,
+                                    totalBytes: totalSize,
+                                    speedBytesPerSecond: speed
+                                )
+                            )
+                        }
+                    )
+                    let result = try await downloader.start(
+                        request: request,
+                        configuration: urlSession.configuration
+                    )
 
                     // Critical 404/403 Handling
-                    if !(200...299).contains(httpResponse.statusCode) {
-                        if httpResponse.statusCode == 416 {
-                            let rangeHeaderTotal = totalSizeFromContentRange(httpResponse.value(forHTTPHeaderField: "Content-Range"))
+                    if !(200...299).contains(result.statusCode) {
+                        if result.statusCode == 416 {
+                            let rangeHeaderTotal = totalSizeFromContentRange(result.contentRange)
                             let refreshedExpected: Int64?
                             if let expectedSize {
                                 refreshedExpected = expectedSize
@@ -689,8 +684,7 @@ public actor ModelDownloader {
                             if let refreshedExpected, existingBytes >= refreshedExpected {
                                 downloadedBytesPerFile[fileName] = refreshedExpected
                                 let currentTotal = downloadedBytesPerFile.values.reduce(0, +)
-                                let speed = realtimeSpeed()
-                                onProgress(DownloadUpdate(bytesDownloaded: currentTotal, totalBytes: totalSize, speedBytesPerSecond: speed))
+                                onProgress(DownloadUpdate(bytesDownloaded: currentTotal, totalBytes: totalSize, speedBytesPerSecond: 0))
                                 finishedFile = true
                                 break
                             }
@@ -705,67 +699,18 @@ public actor ModelDownloader {
                         }
 
                         // Ignore missing optional files.
-                        if httpResponse.statusCode == 404 && optionalModelFiles.contains(fileName) {
+                        if result.statusCode == 404 && optionalModelFiles.contains(fileName) {
                             finishedFile = true
                             break
                         }
 
-                        let reason = HTTPURLResponse.localizedString(forStatusCode: httpResponse.statusCode)
-                        throw NSError(domain: "ModelDownloader", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: "HTTP \(httpResponse.statusCode): \(reason)"])
+                        let reason = HTTPURLResponse.localizedString(forStatusCode: result.statusCode)
+                        throw NSError(domain: "ModelDownloader", code: result.statusCode, userInfo: [NSLocalizedDescriptionKey: "HTTP \(result.statusCode): \(reason)"])
                     }
 
-                    // Efficient Buffered Write with resume support.
-                    // 206 means server accepted Range and we should append.
-                    // 200 means full content, so restart file from zero.
-                    if !FileManager.default.fileExists(atPath: destinationFileURL.path) {
-                        FileManager.default.createFile(atPath: destinationFileURL.path, contents: nil)
-                    }
-                    if existingBytes > 0 && httpResponse.statusCode == 200 {
-                        try? FileManager.default.removeItem(at: destinationFileURL)
-                        FileManager.default.createFile(atPath: destinationFileURL.path, contents: nil)
-                        existingBytes = 0
-                    }
-                    let fileHandle = try FileHandle(forWritingTo: destinationFileURL)
-                    defer { try? fileHandle.close() }
-                    if existingBytes > 0 {
-                        try fileHandle.seekToEnd()
-                    } else {
-                        try fileHandle.truncate(atOffset: 0)
-                    }
-
-                    var byteCountPerFile: Int64 = existingBytes
-                    var buffer = Data()
-                    let chunkSize = 64 * 1024 // 64KB buffer
-
-                    for try await byte in bytes {
-                        buffer.append(byte)
-                        byteCountPerFile += 1
-
-                        if buffer.count >= chunkSize {
-                            let flushedBytes = Int64(buffer.count)
-                            try fileHandle.write(contentsOf: buffer)
-                            buffer.removeAll(keepingCapacity: true)
-                            recordTransfer(flushedBytes)
-
-                            // Periodic Progress Update
-                            downloadedBytesPerFile[fileName] = byteCountPerFile
-                            let currentTotal = downloadedBytesPerFile.values.reduce(0, +)
-                            let speed = realtimeSpeed()
-                            onProgress(DownloadUpdate(bytesDownloaded: currentTotal, totalBytes: totalSize, speedBytesPerSecond: speed))
-                        }
-                    }
-
-                    if !buffer.isEmpty {
-                        let flushedBytes = Int64(buffer.count)
-                        try fileHandle.write(contentsOf: buffer)
-                        buffer.removeAll()
-                        recordTransfer(flushedBytes)
-                    }
-
-                    downloadedBytesPerFile[fileName] = byteCountPerFile
+                    downloadedBytesPerFile[fileName] = result.fileBytes
                     let currentTotal = downloadedBytesPerFile.values.reduce(0, +)
-                    let speed = realtimeSpeed()
-                    onProgress(DownloadUpdate(bytesDownloaded: currentTotal, totalBytes: totalSize, speedBytesPerSecond: speed))
+                    onProgress(DownloadUpdate(bytesDownloaded: currentTotal, totalBytes: totalSize, speedBytesPerSecond: 0))
                     finishedFile = true
                 } catch let error as URLError where error.code.isTransientDownloadFailure && attempt < maxRetries {
                     attempt += 1

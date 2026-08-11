@@ -126,8 +126,11 @@ public class AgentViewModel: ObservableObject {
             // Lazy load model if not loaded yet
             if !LLMBackend.shared.isLoaded {
                 let savedName = UserDefaults.standard.string(forKey: "agent_model_name") ?? ""
-                if let modelToLoad = ModelData.allModels().first(where: { $0.name == savedName && ModelData.isModelFullyAvailableLocally($0) })
-                    ?? ModelData.allModels().first(where: { ModelData.isModelFullyAvailableLocally($0) && !$0.isDependencyOnly && $0.category != .embedding && $0.category != .asr }) {
+                if let modelToLoad = ModelData.allModels().first(where: {
+                    $0.name == savedName && $0.isLanguageModel && !$0.isDependencyOnly && ModelData.isModelFullyAvailableLocally($0)
+                }) ?? ModelData.allModels().first(where: {
+                    ModelData.isModelFullyAvailableLocally($0) && !$0.isDependencyOnly && $0.isLanguageModel
+                }) {
                     do {
                         let savedMaxTokens = UserDefaults.standard.double(forKey: "agent_max_tokens")
                         let maxTok = savedMaxTokens > 0 ? savedMaxTokens : 4096

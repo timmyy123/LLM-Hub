@@ -218,7 +218,7 @@ private func usesGemma4TurnTemplate(_ model: AIModel) -> Bool {
 }
 
 private func isNonTranslatorFeatureModel(_ model: AIModel) -> Bool {
-    !model.name.hasPrefix("Translate Gemma") && model.category != .asr
+    model.isLanguageModel && !model.name.hasPrefix("Translate Gemma")
 }
 
 private func isMusicGenerationFeatureModel(_ model: AIModel) -> Bool {
@@ -471,6 +471,7 @@ struct FeatureModelSettingsSheet: View {
     let modelFilter: ((AIModel) -> Bool)?
     let onLoad: () async -> Void
     let onUnload: () -> Void
+    var showsThinkingToggle: Bool = true
     var extraModelConfigsContent: AnyView? = nil
 
     @Environment(\.dismiss) private var dismiss
@@ -582,7 +583,7 @@ struct FeatureModelSettingsSheet: View {
                                 }
                             }
 
-                            if selectedModelSupportsThinking {
+                            if showsThinkingToggle && selectedModelSupportsThinking {
                                 Toggle(settings.localized("enable_thinking"), isOn: $enableThinking)
                                     .tint(ApolloPalette.accentStrong)
                                     .foregroundColor(.white)
@@ -2279,7 +2280,8 @@ private struct IOS17VibeVoiceScreen: View {
                 writingMode: nil,
                 modelFilter: isNonTranslatorFeatureModel,
                 onLoad: { await ensureModelLoaded(force: false) },
-                onUnload: { llm.unloadModel() }
+                onUnload: { llm.unloadModel() },
+                showsThinkingToggle: false
             )
             .environmentObject(settings)
         }
@@ -2287,9 +2289,9 @@ private struct IOS17VibeVoiceScreen: View {
             Task {
                 try? RunAnywhere.initialize(environment: .development)
                 let available = downloadableFeatureModels().filter(isNonTranslatorFeatureModel)
-                // Only set a default if no model was previously selected.
-                // @AppStorage preserves the last used model across launches.
-                if selectedModelName.isEmpty {
+                // Preserve a valid last-used LLM, but clear any stale selection
+                // left by older builds that exposed dedicated media models here.
+                if selectedModelName.isEmpty || !available.contains(where: { $0.name == selectedModelName }) {
                     selectedModelName = available.first?.name ?? ""
                 }
             }
@@ -2652,6 +2654,7 @@ private struct IOS17VibeVoiceScreen: View {
         let isLlama      = modelName.contains("llama") || modelName.contains("mistral")
         let isLlama3     = isLlama && (modelName.contains("llama-3") || modelName.contains("llama 3") || modelName.contains("llama-3."))
         let isHarmonyModel = modelName.contains("gpt-oss") || modelName.contains("gpt_oss")
+        let isMuseGlimmer = selectedFeatureModel(named: selectedModelName)?.chatTemplateFamily == .museGlimmer
         // Granite 4.x: IBM's <|start_of_role|>role<|end_of_role|>content<|end_of_text|> template
         let isGranite    = modelName.contains("granite")
         // LFM (Liquid AI) and similar ChatML-style models
@@ -2740,6 +2743,73 @@ private struct IOS17VibeVoiceScreen: View {
                                 await self.startListeningCycle()
                             }
                         }
+                    }
+                }
+            }
+            return
+        }
+
+        if isMuseGlimmer {
+            let dateFormatter = DateFormatter()
+            dateFormatter.calendar = Calendar(identifier: .gregorian)
+            dateFormatter.locale = Locale(identifier: "en_US_POSIX")
+            dateFormatter.dateFormat = "yyyy-MM-dd"
+
+            var museParts: [String] = []
+            museParts.append("<|begin_of_text|>")
+            museParts.append("<|start|>system<|message|>\(systemPrompt)\nKnowledge cutoff: 2026-01-04.\nCurrent date: \(dateFormatter.string(from: Date())).\n\nReasoning strength: high.\n\n# Valid recipients: \"user\".<|eot|>")
+
+            for msg in truncatedHistory {
+                let content = msg.content.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !content.isEmpty else { continue }
+                if msg.role == "user" {
+                    museParts.append("<|start|>user<|message|>\(content)<|eot|>")
+                } else {
+                    museParts.append("<|start|>assistant to=user<|message|>\(content)<|eot|>")
+                }
+            }
+
+            museParts.append("<|start|>user<|message|>\(text)<|eot|>")
+            museParts.append("<|start|>assistant to=user<|message|>")
+            parts.append(contentsOf: museParts)
+            let multiTurnPrompt = parts.joined()
+
+            generationTask = Task {
+                do {
+                    let savedThinking = self.llm.enableThinking
+                    self.llm.enableThinking = false
+                    defer { self.llm.enableThinking = savedThinking }
+                    try await llm.generate(
+                        prompt: multiTurnPrompt,
+                        maxTokensOverride: Int(maxTokens)
+                    ) { content, _, _ in
+                        Task { @MainActor in
+                            let sanitized = sanitizeModelOutputText(content)
+                            let answerSoFar = getDisplayContentWithoutThinking(sanitized)
+                            self.latestReply = answerSoFar.isEmpty ? sanitized : answerSoFar
+
+                            let delta = String(self.latestReply.dropFirst(self.ttsReadCursor))
+                            if !delta.isEmpty {
+                                self.ttsReadCursor = self.latestReply.count
+                                self.ttsManager.addStreamingToken(delta, fallbackLanguage: self.settings.selectedLanguage, key: self.ttsKey)
+                            }
+                        }
+                    }
+                } catch {
+                    NSLog("[LLMHub][VibeVoice] LLM error: \(error.localizedDescription)")
+                }
+                await MainActor.run {
+                    self.generationTask = nil
+                    guard self.isChatActive else { return }
+
+                    let finalReply = self.latestReply.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !finalReply.isEmpty {
+                        self.conversationHistory.append((role: "assistant", content: finalReply))
+                        self.ttsManager.flushStreamingBuffer(fallbackLanguage: self.settings.selectedLanguage, key: self.ttsKey)
+                        self.ttsReadCursor = 0
+                        self.voiceState = self.ttsManager.isSpeaking(key: self.ttsKey) ? .speaking : .idle
+                    } else {
+                        self.voiceState = .idle
                     }
                 }
             }
@@ -3270,8 +3340,7 @@ struct WritingAidScreen: View {
         }
     }
 
-    private func writingPrompt() -> String {
-        let content = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
+    private func writingSystemPrompt() -> String {
         switch WritingAidMode(rawValue: selectedModeRaw) ?? .friendly {
         case .friendly:
             return """
@@ -3282,9 +3351,6 @@ struct WritingAidScreen: View {
             Provide only the rewritten text without any explanations, warnings, or commentary.
 
             IMPORTANT: Respond in the same language as the input text.
-
-            Text to rewrite:
-            \(content)
             """
         case .professional:
             return """
@@ -3295,9 +3361,6 @@ struct WritingAidScreen: View {
             Provide only the rewritten text without any explanations, warnings, or commentary.
 
             IMPORTANT: Respond in the same language as the input text.
-
-            Text to rewrite:
-            \(content)
             """
         case .concise:
             return """
@@ -3308,9 +3371,6 @@ struct WritingAidScreen: View {
             Provide only the rewritten text without any explanations, warnings, or commentary.
 
             IMPORTANT: Respond in the same language as the input text.
-
-            Text to rewrite:
-            \(content)
             """
         }
     }
@@ -3362,7 +3422,11 @@ struct WritingAidScreen: View {
             isProcessing = true
             outputText = ""
             do {
-                try await llm.generate(prompt: writingPrompt()) { text, _, _ in
+                let content = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
+                try await llm.generate(
+                    prompt: content,
+                    systemPrompt: writingSystemPrompt()
+                ) { text, _, _ in
                     Task { @MainActor in
                         outputText = sanitizeModelOutputText(text)
                     }
@@ -4548,13 +4612,10 @@ struct ScamDetectorScreen: View {
         }
     }
 
-    private func buildAnalysisPrompt(content: String, hasImage: Bool) -> String {
+    private func buildAnalysisRequest(content: String, hasImage: Bool) -> (systemPrompt: String, prompt: String) {
         if hasImage && !content.isEmpty {
-            return """
+            let systemPrompt = """
             You are a scam detection expert. Analyze BOTH the provided image AND the text content below for potential scams, fraud, phishing attempts, or suspicious activity.
-
-            **Text content to analyze:**
-            \(content)
 
             **Instructions:**
             - Carefully examine the image for any suspicious elements, fake logos, misleading graphics, or scam indicators
@@ -4573,10 +4634,15 @@ struct ScamDetectorScreen: View {
 
             Be thorough and specific in your analysis. If you detect a scam, clearly state it. If it appears legitimate, explain why.
             """
+            let prompt = """
+            **Text content to analyze:**
+            \(content)
+            """
+            return (systemPrompt, prompt)
         }
 
         if hasImage {
-            return """
+            let systemPrompt = """
             You are a scam detection expert. Analyze the provided image for potential scams, fraud, phishing attempts, or suspicious activity.
 
             **Instructions:**
@@ -4593,15 +4659,13 @@ struct ScamDetectorScreen: View {
 
             Be thorough and specific in your analysis. If you detect a scam, clearly state it. If it appears legitimate, explain why.
             """
+            return (systemPrompt, "Analyze the provided image for potential scams, fraud, phishing attempts, or suspicious activity.")
         }
 
-        return """
+        let systemPrompt = """
         You are a scam detection expert. Analyze the following content for potential scams, fraud, phishing attempts, or suspicious activity.
 
         IMPORTANT: Respond in the same language as the input content. Match the language of the content in the image.
-
-        Content to analyze:
-        \(content)
 
         Please provide a comprehensive analysis covering:
         1. **Risk Level**: Low, Medium, High, or Critical
@@ -4612,6 +4676,11 @@ struct ScamDetectorScreen: View {
 
         Be thorough and specific in your analysis. If you detect a scam, clearly state it. If it appears legitimate, explain why.
         """
+        let prompt = """
+        Content to analyze:
+        \(content)
+        """
+        return (systemPrompt, prompt)
     }
 
     private func detectFirstURL(in text: String) -> String? {
@@ -4728,9 +4797,13 @@ struct ScamDetectorScreen: View {
 
             do {
                 let hasImage = selectedImageURL != nil && enableVision
-                let prompt = buildAnalysisPrompt(content: contentToAnalyze, hasImage: hasImage)
+                let analysisRequest = buildAnalysisRequest(content: contentToAnalyze, hasImage: hasImage)
                 let effectiveImageURL = enableVision ? selectedImageURL : nil
-                try await llm.generate(prompt: prompt, imageURL: effectiveImageURL) { text, _, _ in
+                try await llm.generate(
+                    prompt: analysisRequest.prompt,
+                    imageURL: effectiveImageURL,
+                    systemPrompt: analysisRequest.systemPrompt
+                ) { text, _, _ in
                     Task { @MainActor in
                         outputText = sanitizeModelOutputText(text)
                     }
@@ -5001,8 +5074,16 @@ struct VibeCoderScreen: View {
         return false
     }
 
+    private var isSelectedModelMuseGlimmer: Bool {
+        selectedFeatureModel(named: selectedModelName)?.chatTemplateFamily == .museGlimmer
+    }
+
+    private var effectiveEnableThinking: Bool {
+        enableThinking && !isSelectedModelMuseGlimmer
+    }
+
     private var preferThinkingWhileStreaming: Bool {
-        enableThinking
+        effectiveEnableThinking
             && (selectedFeatureModel(named: selectedModelName)?.supportsThinking == true)
             && supportsUnmarkedStreamingThinkingHeuristic(forModelNamed: selectedModelName)
     }
@@ -5522,7 +5603,8 @@ struct VibeCoderScreen: View {
                 writingMode: nil,
                 modelFilter: isNonTranslatorFeatureModel,
                 onLoad: { await ensureModelLoaded(force: false) },
-                onUnload: { llm.unloadModel() }
+                onUnload: { llm.unloadModel() },
+                showsThinkingToggle: !isSelectedModelMuseGlimmer
             )
             .environmentObject(settings)
         }
@@ -5912,7 +5994,7 @@ struct VibeCoderScreen: View {
         llm.contextWindow = effectiveContext
         llm.enableVision = false
         llm.enableAudio = false
-        llm.enableThinking = enableThinking
+        llm.enableThinking = effectiveEnableThinking
 
         do {
             if shouldReload {
@@ -5972,7 +6054,7 @@ struct VibeCoderScreen: View {
 
                 // Sync VibeCode's thinking toggle to the backend before building prompt & generating
                 let savedThinking = llm.enableThinking
-                llm.enableThinking = enableThinking
+                llm.enableThinking = effectiveEnableThinking
                 defer { llm.enableThinking = savedThinking }
 
                 // Wrap with full conversation history so the model remembers prior turns.
@@ -6039,6 +6121,7 @@ struct VibeCoderScreen: View {
         let isLlama      = modelName.contains("llama") || modelName.contains("mistral")
         let isLlama3     = isLlama && (modelName.contains("llama-3") || modelName.contains("llama 3") || modelName.contains("llama-3."))
         let isHarmonyModel = modelName.contains("gpt-oss") || modelName.contains("gpt_oss")
+        let isMuseGlimmer = selectedFeatureModel(named: selectedModelName)?.chatTemplateFamily == .museGlimmer
         // Granite 4.x: IBM's <|start_of_role|>role<|end_of_role|>content<|end_of_text|> template
         let isGranite    = modelName.contains("granite")
         // LFM (Liquid AI) and similar ChatML-style models
@@ -6105,6 +6188,41 @@ struct VibeCoderScreen: View {
                 harmonyParts.append("<|start|>assistant<|channel|>analysis<|message|><|end|><|start|>assistant<|channel|>final<|message|>")
             }
             parts.append(contentsOf: harmonyParts)
+            return parts.joined()
+        }
+
+        if isMuseGlimmer {
+            let dateFormatter = DateFormatter()
+            dateFormatter.calendar = Calendar(identifier: .gregorian)
+            dateFormatter.locale = Locale(identifier: "en_US_POSIX")
+            dateFormatter.dateFormat = "yyyy-MM-dd"
+
+            parts.append("<|begin_of_text|>")
+            let validRecipients = llm.enableThinking ? "\"self\", \"user\"" : "\"user\""
+            parts.append("<|start|>system<|message|>\(systemPrompt)\nKnowledge cutoff: 2026-01-04.\nCurrent date: \(dateFormatter.string(from: Date())).\n\nReasoning strength: high.\n\n# Valid recipients: \(validRecipients).<|eot|>")
+
+            for msg in truncatedHistory {
+                let rawText = msg.text.trimmingCharacters(in: .whitespacesAndNewlines)
+                let content: String
+                if msg.role == "user" {
+                    content = rawText
+                } else {
+                    let answer = getDisplayContentWithoutThinking(rawText)
+                    content = answer.isEmpty ? rawText : answer
+                }
+                guard !content.isEmpty else { continue }
+
+                if msg.role == "user" {
+                    parts.append("<|start|>user<|message|>\(content)<|eot|>")
+                } else {
+                    parts.append("<|start|>assistant to=user<|message|>\(content)<|eot|>")
+                }
+            }
+
+            parts.append("<|start|>user<|message|>\(currentFilePrompt)<|eot|>")
+            parts.append(llm.enableThinking
+                ? "<|start|>assistant"
+                : "<|start|>assistant to=user<|message|>")
             return parts.joined()
         }
         
