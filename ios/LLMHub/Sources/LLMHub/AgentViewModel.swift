@@ -284,7 +284,7 @@ public class AgentViewModel: ObservableObject {
 
         var executedTool = false
         do {
-            try await LLMBackend.shared.generate(prompt: systemPrompt) { [weak self] text, _, _ in
+            try await LLMBackend.shared.generate(prompt: systemPrompt, enableAgentToolsOverride: false) { [weak self] text, _, _ in
                 Task { @MainActor [weak self] in
                     guard let self = self, !executedTool else { return }
                     if let toolMatch = self.parseToolCall(from: text) {
@@ -293,7 +293,7 @@ public class AgentViewModel: ObservableObject {
                         await self.handleParsedToolCall(toolMatch, originalPrompt: prompt)
                     } else {
                         let cleanText = text
-                            .replacingOccurrences(of: "\\[?\\s*(?:TOOL|calc|calculator|math):?[^\\]]*\\]?", with: "", options: .regularExpression)
+                            .replacingOccurrences(of: "\\[\\s*(?:TOOL|calc|calculator|math)\\s*:[^\\]]*(?:\\]|$)", with: "", options: [.regularExpression, .caseInsensitive])
                         let formattedContent = cleanText.contains("\u{200B}") ? cleanText : cleanText.trimmingCharacters(in: .whitespacesAndNewlines)
                         self.updateTextMessage(id: aiMsgId, newContent: formattedContent)
                     }
@@ -315,18 +315,56 @@ public class AgentViewModel: ObservableObject {
     }
 
     private func parseToolCall(from text: String) -> ParsedTool? {
-        let pattern = "\\[?\\s*(?:TOOL:)?\\s*([a-zA-Z0-9._]+)\\s*\\(([^)]*)\\)\\s*\\]?"
+        let pattern = "\\[\\s*TOOL:\\s*([a-zA-Z0-9._]+)\\s*\\("
         guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) else {
             return nil
         }
         let nsText = text as NSString
-        let matches = regex.matches(in: text, options: [], range: NSRange(location: 0, length: nsText.length))
-        guard let match = matches.first else {
+        guard let match = regex.firstMatch(in: text, options: [], range: NSRange(location: 0, length: nsText.length)) else {
             return nil
         }
 
         var rawName = nsText.substring(with: match.range(at: 1)).lowercased().replacingOccurrences(of: ".", with: "_")
-        let rawArgs = nsText.substring(with: match.range(at: 2)).trimmingCharacters(in: CharacterSet(charactersIn: "\"'))] "))
+        let argsStart = NSMaxRange(match.range)
+        var parenthesisDepth = 1
+        var inString = false
+        var quote: unichar = 0
+        var escaped = false
+        var cursor = argsStart
+
+        while cursor < nsText.length {
+            let character = nsText.character(at: cursor)
+            if inString {
+                if escaped {
+                    escaped = false
+                } else if character == 92 {
+                    escaped = true
+                } else if character == quote {
+                    inString = false
+                }
+            } else if character == 34 || character == 39 {
+                inString = true
+                quote = character
+            } else if character == 40 {
+                parenthesisDepth += 1
+            } else if character == 41 {
+                parenthesisDepth -= 1
+                if parenthesisDepth == 0 { break }
+            }
+            cursor += 1
+        }
+
+        guard parenthesisDepth == 0 else { return nil }
+        var closingBracket = cursor + 1
+        while closingBracket < nsText.length,
+              let scalar = UnicodeScalar(nsText.character(at: closingBracket)),
+              CharacterSet.whitespacesAndNewlines.contains(scalar) {
+            closingBracket += 1
+        }
+        guard closingBracket < nsText.length, nsText.character(at: closingBracket) == 93 else { return nil }
+
+        let rawArgs = nsText.substring(with: NSRange(location: argsStart, length: cursor - argsStart))
+            .trimmingCharacters(in: .whitespacesAndNewlines)
 
         if rawName == "c" || rawName == "calc" || rawName == "math" || rawName == "calculate" {
             rawName = "calculate_math"
@@ -371,7 +409,11 @@ public class AgentViewModel: ObservableObject {
 
     private func handleParsedToolCall(_ tool: ParsedTool, originalPrompt: String) async {
         let toolId = UUID().uuidString
-        if let mcpTool = mcpTools.first(where: { $0.exposedName.caseInsensitiveCompare(tool.name) == .orderedSame }) {
+        let canonicalRequestedName = canonicalToolName(tool.name)
+        if let mcpTool = mcpTools.first(where: {
+            $0.exposedName.caseInsensitiveCompare(tool.name) == .orderedSame ||
+                canonicalToolName($0.exposedName) == canonicalRequestedName
+        }) {
             let arguments = parseMCPArguments(tool.args)
             pendingMCPCalls[toolId] = (mcpTool, arguments)
             let data = try? JSONSerialization.data(withJSONObject: arguments, options: [.sortedKeys])
@@ -469,6 +511,10 @@ public class AgentViewModel: ObservableObject {
         default:
             updateToolCall(id: toolId, status: .failed, result: "Unknown tool")
         }
+    }
+
+    private func canonicalToolName(_ name: String) -> String {
+        String(name.lowercased().filter { $0.isLetter || $0.isNumber })
     }
 
     private func parseMCPArguments(_ raw: String) -> [String: Any] {

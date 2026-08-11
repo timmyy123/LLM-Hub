@@ -1205,6 +1205,7 @@ class LLMBackend: ObservableObject {
         systemPrompt: String? = nil,
         maxTokensOverride: Int? = nil,
         stopSequences: [String] = [],
+        enableAgentToolsOverride: Bool? = nil,
         onUpdate: @escaping (String, Int, Double) -> Void
     ) async throws {
         // ── LiteRT-LM path ──────────────────────────────────────────────────
@@ -1225,7 +1226,7 @@ class LLMBackend: ObservableObject {
                 topP: topP,
                 maxTokens: effectiveMaxTokens,
                 useThinking: model.supportsThinking && enableThinking,
-                enableAgentTools: enableAgentTools && model.name.contains("Gemma 4") && !model.name.contains("Translate") && model.modelFormat == .litertlm,
+                enableAgentTools: (enableAgentToolsOverride ?? enableAgentTools) && model.name.contains("Gemma 4") && !model.name.contains("Translate") && model.modelFormat == .litertlm,
                 onUpdate: onUpdate
             )
             return

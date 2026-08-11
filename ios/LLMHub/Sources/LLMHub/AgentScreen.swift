@@ -648,19 +648,43 @@ private struct MCPConfigurationSection: View {
                     }
                 }
 
-                HStack(spacing: 8) {
-                    Button(settings.localized("agent_mcp_connect")) {
+                VStack(spacing: 10) {
+                    Button {
                         viewModel.connectMCP(MCPSettings(enabled: true, url: url, token: token))
+                    } label: {
+                        HStack {
+                            Spacer()
+                            Text(settings.localized("agent_mcp_connect"))
+                            Spacer()
+                        }
+                        .padding(.vertical, 12)
+                        .contentShape(Rectangle())
                     }
-                    .buttonStyle(.borderedProminent)
+                    .liquidGlassPrimaryButton(cornerRadius: 12)
                     .tint(ApolloPalette.accentStrong)
                     .disabled(url.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
 
-                    Button(settings.localized("agent_mcp_disconnect"), role: .destructive) {
+                    Button(role: .destructive) {
                         viewModel.disconnectMCP()
                         enabled = false
+                    } label: {
+                        HStack {
+                            Spacer()
+                            Text(settings.localized("agent_mcp_disconnect"))
+                            Spacer()
+                        }
+                        .padding(.vertical, 12)
+                        .contentShape(Rectangle())
                     }
-                    .buttonStyle(.bordered)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(ApolloPalette.destructive.opacity(0.10))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(ApolloPalette.destructive.opacity(0.9), lineWidth: 1)
+                    )
+                    .foregroundStyle(ApolloPalette.destructive.opacity(0.98))
                 }
             }
         }

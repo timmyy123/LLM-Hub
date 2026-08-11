@@ -198,9 +198,29 @@ class McpClient(private val context: Context) {
 
     private fun validateUrl(raw: String) {
         val url = raw.trim().toHttpUrlOrNull() ?: throw McpException("Invalid MCP server URL")
-        if (url.scheme != "https" && url.host !in setOf("localhost", "127.0.0.1", "10.0.2.2")) {
+        if (url.scheme != "https" && !isPrivateNetworkHost(url.host)) {
             throw McpException("MCP servers must use HTTPS")
         }
+    }
+
+    private fun isPrivateNetworkHost(host: String): Boolean {
+        val normalized = host.lowercase()
+        if (normalized in setOf("localhost", "::1", "10.0.2.2") || normalized.endsWith(".local")) {
+            return true
+        }
+        if (normalized.startsWith("fe80:") || normalized.startsWith("fc") || normalized.startsWith("fd")) {
+            return true
+        }
+
+        val octets = normalized.split('.').map { it.toIntOrNull() }
+        if (octets.size != 4 || octets.any { it == null || it !in 0..255 }) return false
+        val first = octets[0]!!
+        val second = octets[1]!!
+        return first == 10 ||
+            first == 127 ||
+            (first == 169 && second == 254) ||
+            (first == 172 && second in 16..31) ||
+            (first == 192 && second == 168)
     }
 
     private fun parseTools(result: JSONObject): List<McpTool> {
