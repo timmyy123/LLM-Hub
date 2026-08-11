@@ -981,4 +981,8 @@
     <string name="agent_mcp_denied">Kullanıcı tarafından reddedildi</string>
     <string name="agent_mcp_status">Durum</string>
     <string name="agent_termux_tool_title">Termux kabuk komutu</string>
+    <string name="agent_mcp_termux_permission_required">Android Ayarları > Uygulamalar > LLM Hub > İzinler > Ek izinler bölümünde LLM Hub için “Termux ortamında komut çalıştırma” iznini verin.</string>
+    <string name="agent_mcp_termux_not_installed">Termux 0.109 veya daha yenisi gereklidir.</string>
+    <string name="agent_mcp_termux_timed_out">Termux zaman aşımından önce sonuç döndürmedi.</string>
+    <string name="agent_mcp_termux_run_command_unavailable">Google Play Termux sürümü harici komutları desteklemiyor. stdio için F-Droid/GitHub Termux sürümünü kullanın veya Uzak HTTP’yi seçin.</string>
 </resources>

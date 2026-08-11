@@ -983,4 +983,8 @@
     <string name="agent_mcp_denied">رفضه المستخدم</string>
     <string name="agent_mcp_status">الحالة</string>
     <string name="agent_termux_tool_title">أمر صدفة Termux</string>
+    <string name="agent_mcp_termux_permission_required">اسمح لـ LLM Hub بخيار «تشغيل الأوامر في بيئة Termux» من إعدادات Android > التطبيقات > LLM Hub > الأذونات > أذونات إضافية.</string>
+    <string name="agent_mcp_termux_not_installed">يلزم Termux 0.109 أو إصدار أحدث.</string>
+    <string name="agent_mcp_termux_timed_out">لم يُرجع Termux نتيجة قبل انتهاء المهلة.</string>
+    <string name="agent_mcp_termux_run_command_unavailable">لا يدعم إصدار Termux من Google Play الأوامر الخارجية. استخدم إصدار Termux من F-Droid/GitHub لاتصال stdio أو اختر HTTP البعيد.</string>
 </resources>

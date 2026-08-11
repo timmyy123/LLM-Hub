@@ -1,7 +1,6 @@
 package com.llmhub.llmhub.agent
 
 import android.content.Context
-import android.content.Intent
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import kotlinx.coroutines.Dispatchers
@@ -163,7 +162,7 @@ class McpClient(private val context: Context) {
      * one operation, then closes stdin. This keeps stdio support compatible with
      * Android's app sandbox without requiring LLM Hub to execute server binaries.
      */
-    private fun termuxRpc(command: String, method: String, params: JSONObject): JSONObject {
+    private suspend fun termuxRpc(command: String, method: String, params: JSONObject): JSONObject {
         val initId = ids.getAndIncrement()
         val requestId = ids.getAndIncrement()
         val messages = listOf(
@@ -175,8 +174,19 @@ class McpClient(private val context: Context) {
             JSONObject().put("jsonrpc", "2.0").put("id", requestId).put("method", method).put("params", params)
         ).joinToString("\n", postfix = "\n")
         val encoded = android.util.Base64.encodeToString(messages.toByteArray(), android.util.Base64.NO_WRAP)
-        val shell = "printf '%s' '$encoded' | base64 -d | timeout 45s $command"
-        val output = runTermux(shell, 50_000)
+        // RUN_COMMAND does not initialize Termux's full interactive environment.
+        // In particular, npm launchers commonly use `#!/usr/bin/env node`, which
+        // needs libtermux-exec to rewrite Linux shebang paths to Termux paths.
+        val prefix = "/data/data/com.termux/files/usr"
+        val home = "/data/data/com.termux/files/home"
+        val shell = "export PREFIX='$prefix' HOME='$home' PATH='$prefix/bin:/system/bin' " +
+            "LD_PRELOAD='$prefix/lib/libtermux-exec.so'; " +
+            "printf '%s' '$encoded' | base64 -d | timeout 45s $command"
+        val output = try {
+            TermuxCommandBridge.run(context, shell, 50_000)
+        } catch (_: kotlinx.coroutines.TimeoutCancellationException) {
+            throw McpException("termux_command_timed_out")
+        }
         val response = output.lineSequence().mapNotNull { line ->
             val start = line.indexOf('{')
             if (start < 0) null else runCatching { JSONObject(line.substring(start)) }.getOrNull()
@@ -184,33 +194,6 @@ class McpClient(private val context: Context) {
             ?: throw McpException("MCP server returned no response: ${output.takeLast(500)}")
         response.optJSONObject("error")?.let { throw McpException(it.optString("message", "MCP request failed")) }
         return response.optJSONObject("result") ?: throw McpException("Invalid MCP response")
-    }
-
-    private fun runTermux(command: String, timeoutMs: Long): String {
-        val resultDir = context.getExternalFilesDir("termux_mcp") ?: context.filesDir
-        val resultFile = java.io.File(resultDir, "mcp_${System.currentTimeMillis()}.txt")
-        val intent = Intent().apply {
-            setClassName("com.termux", "com.termux.app.RunCommandService")
-            action = "com.termux.RUN_COMMAND"
-            putExtra("com.termux.RUN_COMMAND_PATH", "/data/data/com.termux/files/usr/bin/bash")
-            putExtra("com.termux.RUN_COMMAND_ARGUMENTS", arrayOf("-c", command))
-            putExtra("com.termux.RUN_COMMAND_WORKDIR", "/data/data/com.termux/files/home")
-            putExtra("com.termux.RUN_COMMAND_BACKGROUND", true)
-            putExtra("com.termux.RUN_COMMAND_RESULT_DIRECTORY", resultDir.absolutePath)
-            putExtra("com.termux.RUN_COMMAND_RESULT_FILE_BASENAME", resultFile.name)
-            putExtra("com.termux.RUN_COMMAND_RESULT_SINGLE_FILE", true)
-        }
-        context.startService(intent)
-        val started = System.currentTimeMillis()
-        while (System.currentTimeMillis() - started < timeoutMs) {
-            if (resultFile.exists() && resultFile.length() > 0) {
-                val text = resultFile.readText().take(1_000_000)
-                resultFile.delete()
-                return text
-            }
-            Thread.sleep(100)
-        }
-        throw McpException("MCP Termux command timed out")
     }
 
     private fun validateUrl(raw: String) {

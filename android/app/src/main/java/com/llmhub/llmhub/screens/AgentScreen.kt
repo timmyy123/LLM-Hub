@@ -40,6 +40,8 @@ import com.llmhub.llmhub.agent.AgentMessage
 import com.llmhub.llmhub.agent.AgentViewModel
 import com.llmhub.llmhub.agent.VoiceMode
 import com.llmhub.llmhub.agent.McpSettings
+import com.llmhub.llmhub.agent.TERMUX_RUN_COMMAND_PERMISSION
+import com.llmhub.llmhub.agent.isTermuxRunCommandAvailable
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import com.llmhub.llmhub.components.FeatureModelSettingsSheet
 import com.llmhub.llmhub.components.MessageInput
@@ -495,6 +497,7 @@ fun AgentScreen(
 
 @Composable
 private fun McpConfigContent(viewModel: AgentViewModel) {
+    val context = LocalContext.current
     val saved by viewModel.mcpSettings.collectAsState()
     val tools by viewModel.mcpTools.collectAsState()
     val status by viewModel.mcpStatus.collectAsState()
@@ -503,6 +506,18 @@ private fun McpConfigContent(viewModel: AgentViewModel) {
     var url by remember(saved.url) { mutableStateOf(saved.url) }
     var token by remember(saved.token) { mutableStateOf(saved.token) }
     var command by remember(saved.command) { mutableStateOf(saved.command) }
+    var pendingTermuxSettings by remember { mutableStateOf<McpSettings?>(null) }
+    val termuxPermissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        val settings = pendingTermuxSettings
+        pendingTermuxSettings = null
+        if (granted && settings != null) {
+            viewModel.connectMcp(settings)
+        } else {
+            viewModel.reportMcpError("termux_permission_required")
+        }
+    }
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -549,6 +564,10 @@ private fun McpConfigContent(viewModel: AgentViewModel) {
                 val text = when (status) {
                     "connecting" -> stringResource(R.string.agent_mcp_connecting)
                     "connected" -> stringResource(R.string.agent_mcp_connected_tools, tools.size)
+                    "termux_permission_required" -> stringResource(R.string.agent_mcp_termux_permission_required)
+                    "termux_run_command_unavailable" -> stringResource(R.string.agent_mcp_termux_run_command_unavailable)
+                    "termux_not_installed" -> stringResource(R.string.agent_mcp_termux_not_installed)
+                    "termux_command_timed_out" -> stringResource(R.string.agent_mcp_termux_timed_out)
                     else -> stringResource(R.string.agent_mcp_error, status)
                 }
                 Text(text, color = if (status == "connected") Color(0xFF10B981) else MaterialTheme.colorScheme.error)
@@ -558,7 +577,21 @@ private fun McpConfigContent(viewModel: AgentViewModel) {
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                 Button(
-                    onClick = { viewModel.connectMcp(McpSettings(true, transport, url, token, command)) },
+                    onClick = {
+                        val settings = McpSettings(true, transport, url, token, command)
+                        if (transport == "termux" && !isTermuxRunCommandAvailable(context)) {
+                            viewModel.reportMcpError("termux_run_command_unavailable")
+                        } else if (transport == "termux" && androidx.core.content.ContextCompat.checkSelfPermission(
+                                context,
+                                TERMUX_RUN_COMMAND_PERMISSION
+                            ) != android.content.pm.PackageManager.PERMISSION_GRANTED
+                        ) {
+                            pendingTermuxSettings = settings
+                            termuxPermissionLauncher.launch(TERMUX_RUN_COMMAND_PERMISSION)
+                        } else {
+                            viewModel.connectMcp(settings)
+                        }
+                    },
                     enabled = if (transport == "termux") command.isNotBlank() else url.isNotBlank(),
                     modifier = Modifier.weight(1f)
                 ) { Text(stringResource(R.string.agent_mcp_connect)) }

@@ -983,4 +983,8 @@
     <string name="agent_mcp_denied">توسط کاربر رد شد</string>
     <string name="agent_mcp_status">وضعیت</string>
     <string name="agent_termux_tool_title">فرمان پوسته ترموکس</string>
+    <string name="agent_mcp_termux_permission_required">در تنظیمات Android > برنامه‌ها > LLM Hub > مجوزها > مجوزهای اضافی، گزینه «اجرای فرمان‌ها در محیط Termux» را برای LLM Hub مجاز کنید.</string>
+    <string name="agent_mcp_termux_not_installed">Termux نسخه 0.109 یا جدیدتر لازم است.</string>
+    <string name="agent_mcp_termux_timed_out">Termux پیش از پایان مهلت هیچ نتیجه‌ای برنگرداند.</string>
+    <string name="agent_mcp_termux_run_command_unavailable">نسخه Google Play ترموکس از فرمان‌های خارجی پشتیبانی نمی‌کند. برای stdio از نسخه F-Droid/GitHub ترموکس استفاده کنید یا HTTP راه دور را انتخاب کنید.</string>
 </resources>

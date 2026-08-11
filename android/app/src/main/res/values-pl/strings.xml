@@ -987,4 +987,8 @@
     <string name="agent_mcp_denied">Odrzucone przez użytkownika</string>
     <string name="agent_mcp_status">Stan</string>
     <string name="agent_termux_tool_title">Polecenie powłoki Termux</string>
+    <string name="agent_mcp_termux_permission_required">Zezwól LLM Hub na „Uruchamianie poleceń w środowisku Termux” w Ustawienia Androida > Aplikacje > LLM Hub > Uprawnienia > Dodatkowe uprawnienia.</string>
+    <string name="agent_mcp_termux_not_installed">Wymagany jest Termux 0.109 lub nowszy.</string>
+    <string name="agent_mcp_termux_timed_out">Termux nie zwrócił wyniku przed upływem limitu czasu.</string>
+    <string name="agent_mcp_termux_run_command_unavailable">Ta wersja Termux z Google Play nie obsługuje poleceń zewnętrznych. Dla stdio użyj wersji Termux z F-Droid/GitHub albo wybierz Zdalny HTTP.</string>
 </resources>

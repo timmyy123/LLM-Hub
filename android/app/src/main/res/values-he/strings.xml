@@ -982,4 +982,8 @@
     <string name="agent_mcp_denied">נדחה על ידי המשתמש</string>
     <string name="agent_mcp_status">מצב</string>
     <string name="agent_termux_tool_title">פקודת מעטפת Termux</string>
+    <string name="agent_mcp_termux_permission_required">יש לאפשר ל‑LLM Hub את „הפעלת פקודות בסביבת Termux” דרך הגדרות Android > אפליקציות > LLM Hub > הרשאות > הרשאות נוספות.</string>
+    <string name="agent_mcp_termux_not_installed">נדרשת Termux בגרסה 0.109 ומעלה.</string>
+    <string name="agent_mcp_termux_timed_out">Termux לא החזירה תוצאה לפני תום הזמן.</string>
+    <string name="agent_mcp_termux_run_command_unavailable">גרסת Termux מ‑Google Play אינה תומכת בפקודות חיצוניות. עבור stdio יש להשתמש בגרסת Termux מ‑F-Droid/GitHub או לבחור HTTP מרוחק.</string>
 </resources>

@@ -951,4 +951,8 @@ Du forsøger at sende et billede, men den nuværende model er **kun-tekst**:
     <string name="agent_mcp_denied">Afvist af brugeren</string>
     <string name="agent_mcp_status">Status</string>
     <string name="agent_termux_tool_title">Termux-shellkommando</string>
+    <string name="agent_mcp_termux_permission_required">Tillad "Kør kommandoer i Termux-miljøet" for LLM Hub under Android-indstillinger > Apps > LLM Hub > Tilladelser > Yderligere tilladelser.</string>
+    <string name="agent_mcp_termux_not_installed">Termux 0.109 eller nyere er påkrævet.</string>
+    <string name="agent_mcp_termux_timed_out">Termux returnerede intet resultat før timeout.</string>
+    <string name="agent_mcp_termux_run_command_unavailable">Denne Google Play-version af Termux understøtter ikke eksterne kommandoer. Brug F-Droid/GitHub-versionen af Termux til stdio, eller vælg Ekstern HTTP.</string>
 </resources>

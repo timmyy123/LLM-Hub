@@ -890,4 +890,8 @@
     <string name="agent_mcp_denied">ผู้ใช้ปฏิเสธ</string>
     <string name="agent_mcp_status">สถานะ</string>
     <string name="agent_termux_tool_title">คำสั่งเชลล์ Termux</string>
+    <string name="agent_mcp_termux_permission_required">อนุญาต “เรียกใช้คำสั่งในสภาพแวดล้อม Termux” ให้ LLM Hub ที่การตั้งค่า Android > แอป > LLM Hub > สิทธิ์ > สิทธิ์เพิ่มเติม</string>
+    <string name="agent_mcp_termux_not_installed">ต้องใช้ Termux 0.109 หรือใหม่กว่า</string>
+    <string name="agent_mcp_termux_timed_out">Termux ไม่ส่งผลลัพธ์กลับมาก่อนหมดเวลา</string>
+    <string name="agent_mcp_termux_run_command_unavailable">Termux เวอร์ชัน Google Play ไม่รองรับคำสั่งจากภายนอก โปรดใช้ Termux เวอร์ชัน F-Droid/GitHub สำหรับ stdio หรือเลือก HTTP ระยะไกล</string>
 </resources>

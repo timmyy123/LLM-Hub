@@ -890,4 +890,8 @@
     <string name="agent_mcp_denied">Geweigerd door gebruiker</string>
     <string name="agent_mcp_status">Status</string>
     <string name="agent_termux_tool_title">Termux-shellopdracht</string>
+    <string name="agent_mcp_termux_permission_required">Sta ‘Opdrachten uitvoeren in de Termux-omgeving’ toe voor LLM Hub via Android-instellingen > Apps > LLM Hub > Rechten > Aanvullende rechten.</string>
+    <string name="agent_mcp_termux_not_installed">Termux 0.109 of nieuwer is vereist.</string>
+    <string name="agent_mcp_termux_timed_out">Termux heeft vóór de time-out geen resultaat teruggestuurd.</string>
+    <string name="agent_mcp_termux_run_command_unavailable">Deze Google Play-versie van Termux ondersteunt geen externe opdrachten. Gebruik voor stdio de F-Droid/GitHub-versie van Termux of selecteer Externe HTTP.</string>
 </resources>

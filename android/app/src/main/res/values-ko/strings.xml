@@ -983,4 +983,8 @@
     <string name="agent_mcp_denied">사용자가 거부함</string>
     <string name="agent_mcp_status">상태</string>
     <string name="agent_termux_tool_title">Termux 셸 명령</string>
+    <string name="agent_mcp_termux_permission_required">Android 설정 > 앱 > LLM Hub > 권한 > 추가 권한에서 LLM Hub에 ‘Termux 환경에서 명령 실행’을 허용하세요.</string>
+    <string name="agent_mcp_termux_not_installed">Termux 0.109 이상이 필요합니다.</string>
+    <string name="agent_mcp_termux_timed_out">시간 초과 전에 Termux가 결과를 반환하지 않았습니다.</string>
+    <string name="agent_mcp_termux_run_command_unavailable">Google Play용 Termux 빌드는 외부 명령을 지원하지 않습니다. stdio에는 F-Droid/GitHub용 Termux를 사용하거나 원격 HTTP를 선택하세요.</string>
 </resources>

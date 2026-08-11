@@ -890,4 +890,8 @@
     <string name="agent_mcp_denied">Người dùng đã từ chối</string>
     <string name="agent_mcp_status">Trạng thái</string>
     <string name="agent_termux_tool_title">Lệnh shell Termux</string>
+    <string name="agent_mcp_termux_permission_required">Cho phép LLM Hub “Chạy lệnh trong môi trường Termux” tại Cài đặt Android > Ứng dụng > LLM Hub > Quyền > Quyền bổ sung.</string>
+    <string name="agent_mcp_termux_not_installed">Cần Termux 0.109 trở lên.</string>
+    <string name="agent_mcp_termux_timed_out">Termux không trả về kết quả trước khi hết thời gian chờ.</string>
+    <string name="agent_mcp_termux_run_command_unavailable">Bản Termux trên Google Play không hỗ trợ lệnh bên ngoài. Hãy dùng bản Termux từ F-Droid/GitHub cho stdio hoặc chọn HTTP từ xa.</string>
 </resources>

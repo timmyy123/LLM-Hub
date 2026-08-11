@@ -1009,4 +1009,8 @@
     <string name="agent_mcp_denied">उपयोगकर्ता ने अस्वीकार किया</string>
     <string name="agent_mcp_status">स्थिति</string>
     <string name="agent_termux_tool_title">Termux शेल कमांड</string>
+    <string name="agent_mcp_termux_permission_required">Android सेटिंग > ऐप्स > LLM Hub > अनुमतियां > अतिरिक्त अनुमतियां में LLM Hub के लिए “Termux परिवेश में कमांड चलाएं” की अनुमति दें।</string>
+    <string name="agent_mcp_termux_not_installed">Termux 0.109 या नया संस्करण आवश्यक है।</string>
+    <string name="agent_mcp_termux_timed_out">समय-सीमा से पहले Termux ने कोई परिणाम नहीं लौटाया।</string>
+    <string name="agent_mcp_termux_run_command_unavailable">Google Play वाला Termux बिल्ड बाहरी कमांड का समर्थन नहीं करता। stdio के लिए F-Droid/GitHub वाला Termux इस्तेमाल करें या रिमोट HTTP चुनें।</string>
 </resources>

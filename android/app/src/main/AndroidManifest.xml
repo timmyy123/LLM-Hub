@@ -15,6 +15,8 @@
     <uses-permission android:name="com.android.alarm.permission.SET_ALARM" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <!-- Required for Agent/MCP commands executed inside the separately installed Termux app. -->
+    <uses-permission android:name="com.termux.permission.RUN_COMMAND" />
 
 
     <!-- add twinstef 26/12/2025 -->
@@ -98,6 +100,11 @@
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="dataSync" />
+
+        <service
+            android:name=".agent.TermuxResultService"
+            android:enabled="true"
+            android:exported="false" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

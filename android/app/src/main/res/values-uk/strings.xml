@@ -983,4 +983,8 @@
     <string name="agent_mcp_denied">Відхилено користувачем</string>
     <string name="agent_mcp_status">Стан</string>
     <string name="agent_termux_tool_title">Команда оболонки Termux</string>
+    <string name="agent_mcp_termux_permission_required">Дозвольте «Виконувати команди в середовищі Termux» для LLM Hub: Налаштування Android > Програми > LLM Hub > Дозволи > Додаткові дозволи.</string>
+    <string name="agent_mcp_termux_not_installed">Потрібен Termux 0.109 або новіший.</string>
+    <string name="agent_mcp_termux_timed_out">Termux не повернув результат до завершення часу очікування.</string>
+    <string name="agent_mcp_termux_run_command_unavailable">Ця версія Termux із Google Play не підтримує зовнішні команди. Для stdio використовуйте версію Termux із F-Droid/GitHub або виберіть віддалений HTTP.</string>
 </resources>

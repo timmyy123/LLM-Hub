@@ -155,6 +155,11 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
         _mcpSettings.value = updated
     }
 
+    fun reportMcpError(code: String) {
+        _mcpTools.value = emptyList()
+        _mcpStatus.value = code
+    }
+
     fun disconnectMcp() {
         val disabled = _mcpSettings.value.copy(enabled = false)
         mcpClient.saveSettings(disabled)
@@ -186,6 +191,18 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
         _isGemmaAudioEnabled.value = enabled
         _voiceMode.value = if (enabled) VoiceMode.GEMMA_AUDIO else VoiceMode.SYSTEM_STT
         agentPrefs.edit().putBoolean("is_gemma_audio_enabled", enabled).commit()
+
+        // Agent never uses vision. Reload an already active model only when its
+        // audio modality no longer matches the Agent audio toggle.
+        val loadedModel = inferenceService.getCurrentlyLoadedModel()
+        if (loadedModel != null &&
+            (inferenceService.isVisionCurrentlyDisabled().not() ||
+                inferenceService.isAudioCurrentlyDisabled() == enabled)
+        ) {
+            viewModelScope.launch {
+                loadModelSuspend(loadedModel)
+            }
+        }
     }
 
     fun toggleTermux(enabled: Boolean) {
@@ -197,7 +214,13 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
     suspend fun loadModelSuspend(model: LLMModel, preferredBackend: LlmInference.Backend? = null, deviceId: String? = null) {
         _loadingModelName.value = model.name
         try {
-            inferenceService.loadModel(model, preferredBackend = preferredBackend, deviceId = deviceId)
+            inferenceService.loadModel(
+                model = model,
+                preferredBackend = preferredBackend,
+                disableVision = true,
+                disableAudio = !_isGemmaAudioEnabled.value,
+                deviceId = deviceId
+            )
             _activeModelName.value = inferenceService.getCurrentlyLoadedModel()?.name
         } finally {
             _loadingModelName.value = null
@@ -487,7 +510,7 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
                         handleParsedToolCall(toolMatch, prompt)
                     } else {
                         val cleanText = responseText
-                            .replace(Regex("""\[?\s*(?:TOOL|calc|calculator|math):?[^\]]*\]?""", RegexOption.IGNORE_CASE), "")
+                            .replace(Regex("""\[\s*(?:TOOL|calc|calculator|math)\s*:[^\]]*(?:\]|$)""", RegexOption.IGNORE_CASE), "")
                             .replace(Regex("""(?:SHOW_MAP|SEND_SMS|ADD_CALENDAR_EVENT|CREATE_CALENDAR_EVENT|CHECK_WEATHER|GET_CURRENT_WEATHER|SET_ALARM|TOGGLE_FLASHLIGHT|CALCULATE_HASH|SEND_EMAIL|RUN_TERMUX_COMMAND|EXECUTE_TERMUX_COMMAND|CALCULATE_MATH|CALCULATE)\([^)]*\)""", RegexOption.IGNORE_CASE), "")
                             .trim()
                         updateAgentTextMessage(aiMsgId, cleanText)

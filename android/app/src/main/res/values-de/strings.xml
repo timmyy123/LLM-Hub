@@ -949,4 +949,8 @@
     <string name="agent_mcp_denied">Vom Benutzer abgelehnt</string>
     <string name="agent_mcp_status">Status</string>
     <string name="agent_termux_tool_title">Termux-Shell-Befehl</string>
+    <string name="agent_mcp_termux_permission_required">Erlaube „Befehle in der Termux-Umgebung ausführen“ für LLM Hub unter Android-Einstellungen > Apps > LLM Hub > Berechtigungen > Zusätzliche Berechtigungen.</string>
+    <string name="agent_mcp_termux_not_installed">Termux 0.109 oder neuer ist erforderlich.</string>
+    <string name="agent_mcp_termux_timed_out">Termux hat vor dem Zeitlimit kein Ergebnis zurückgegeben.</string>
+    <string name="agent_mcp_termux_run_command_unavailable">Diese Google-Play-Version von Termux unterstützt keine externen Befehle. Verwende für stdio die F-Droid-/GitHub-Version von Termux oder wähle Externes HTTP.</string>
 </resources>

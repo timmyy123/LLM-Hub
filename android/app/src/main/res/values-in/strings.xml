@@ -985,4 +985,8 @@
     <string name="agent_mcp_denied">Ditolak oleh pengguna</string>
     <string name="agent_mcp_status">Status</string>
     <string name="agent_termux_tool_title">Perintah shell Termux</string>
+    <string name="agent_mcp_termux_permission_required">Izinkan “Jalankan perintah di lingkungan Termux” untuk LLM Hub di Setelan Android > Aplikasi > LLM Hub > Izin > Izin tambahan.</string>
+    <string name="agent_mcp_termux_not_installed">Diperlukan Termux 0.109 atau yang lebih baru.</string>
+    <string name="agent_mcp_termux_timed_out">Termux tidak mengembalikan hasil sebelum waktu habis.</string>
+    <string name="agent_mcp_termux_run_command_unavailable">Termux versi Google Play ini tidak mendukung perintah eksternal. Gunakan Termux versi F-Droid/GitHub untuk stdio, atau pilih HTTP Jarak Jauh.</string>
 </resources>

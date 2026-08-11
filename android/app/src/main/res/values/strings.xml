@@ -998,4 +998,8 @@
     <string name="agent_mcp_denied">Denied by user</string>
     <string name="agent_mcp_status">Status</string>
     <string name="agent_termux_tool_title">Termux shell command</string>
+    <string name="agent_mcp_termux_permission_required">Allow “Run commands in Termux environment” for LLM Hub in Android Settings > Apps > LLM Hub > Permissions > Additional permissions.</string>
+    <string name="agent_mcp_termux_not_installed">Termux 0.109 or newer is required.</string>
+    <string name="agent_mcp_termux_timed_out">Termux returned no result before the timeout.</string>
+    <string name="agent_mcp_termux_run_command_unavailable">This Google Play Termux build does not support external commands. Use the F-Droid/GitHub Termux build for stdio, or select Remote HTTP.</string>
 </resources>
