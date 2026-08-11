@@ -230,6 +230,11 @@ fun PremiumScreen(
                                 text = stringResource(R.string.premium_feature_agent)
                             )
                             PremiumFeatureRow(
+                                icon = Icons.Default.MusicNote,
+                                tint = Color(0xFFFF9A9E),
+                                text = "${stringResource(R.string.feature_music_generator)} – ${stringResource(R.string.feature_music_generator_desc)}"
+                            )
+                            PremiumFeatureRow(
                                 icon = Icons.Default.AutoAwesome,
                                 tint = Color(0xFF00BCD4),
                                 text = stringResource(R.string.premium_feature_future),

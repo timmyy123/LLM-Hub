@@ -175,7 +175,7 @@ struct HomeScreen: View {
                             
                             LazyVGrid(columns: toolsColumns, spacing: spacing) {
                                 ForEach(toolsFeatures + utilityFeatures, id: \.route) { feature in
-                                    let lockedRoutes: Set<String> = ["agent", "vibe_voice", "vibe_coder", "image_generator", "video_generator"]
+                                    let lockedRoutes: Set<String> = ["agent", "vibe_voice", "vibe_coder", "image_generator", "video_generator", "music_generator"]
                                     let isLocked = !purchases.isPremium && lockedRoutes.contains(feature.route)
                                     Button {
                                         if isLocked {

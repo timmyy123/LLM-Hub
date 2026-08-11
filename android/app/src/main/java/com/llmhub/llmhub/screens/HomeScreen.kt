@@ -49,7 +49,14 @@ data class FeatureCard(
 
 
 /** Routes that require a Premium subscription. */
-private val PREMIUM_ROUTES = setOf("image_generator", "vibe_coder", "agent", "creator_generation", "vibevoice")
+private val PREMIUM_ROUTES = setOf(
+    "image_generator",
+    "vibe_coder",
+    "agent",
+    "creator_generation",
+    "vibevoice",
+    "music_generator"
+)
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -771,5 +778,4 @@ fun rememberGithubIcon(): ImageVector {
         }.build()
     }
 }
-
 
