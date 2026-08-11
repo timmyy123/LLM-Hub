@@ -369,7 +369,11 @@ class TtsService(private val context: Context, private val isTranslationFeature:
     private fun startAudioTrackPlayback() {
         val sampleRate = 24000
         val minBuf = AudioTrack.getMinBufferSize(sampleRate, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT)
-        val bufSize = maxOf(minBuf, sampleRate * 2 * 4) // at least 4 seconds (samples * bytes/sample * seconds)
+        // AudioTrack's default start threshold is its buffer capacity. A four-second
+        // buffer therefore never starts for short Kokoro output (for example, a
+        // single word producing 0.8 seconds of PCM). Keep a small streaming buffer;
+        // the playback worker continuously feeds longer output after preloading it.
+        val bufSize = maxOf(minBuf, sampleRate * 2 / 5) // at least 200 ms of mono PCM16
         val track = AudioTrack.Builder()
             .setAudioAttributes(
                 AudioAttributes.Builder()
@@ -387,7 +391,6 @@ class TtsService(private val context: Context, private val isTranslationFeature:
             .setBufferSizeInBytes(bufSize)
             .setTransferMode(AudioTrack.MODE_STREAM)
             .build()
-        track.play()
         audioTrack = track
         totalSamplesWritten = 0L
 
@@ -402,13 +405,40 @@ class TtsService(private val context: Context, private val isTranslationFeature:
                 for (s in pcm) bb.putShort(s)
                 val bytes = bb.array()
                 var offset = 0
+
+                // AudioTrack was previously started when it was created, while Kokoro still
+                // needed a second or more to synthesize its first buffer. That guaranteed an
+                // underrun before any PCM arrived and some devices never advanced the playback
+                // head afterwards. Preload the first buffer, then start playback.
+                if (track.playState != AudioTrack.PLAYSTATE_PLAYING) {
+                    val preloaded = track.write(
+                        bytes,
+                        0,
+                        bytes.size,
+                        AudioTrack.WRITE_NON_BLOCKING
+                    )
+                    if (preloaded > 0) {
+                        offset = preloaded
+                        totalSamplesWritten += preloaded / 2L
+                    } else {
+                        Log.e(TAG, "Unable to preload Kokoro PCM: AudioTrack.write returned $preloaded")
+                    }
+
+                    if (offset > 0 && isActive) {
+                        track.play()
+                    }
+                }
+
                 while (offset < bytes.size && isActive) {
                     val written = track.write(bytes, offset, bytes.size - offset)
                     if (written <= 0) break
                     offset += written
+                    totalSamplesWritten += written / 2L
                 }
-                
-                totalSamplesWritten += pcm.size
+
+                if (offset < bytes.size) {
+                    Log.e(TAG, "Incomplete Kokoro PCM write: wrote $offset of ${bytes.size} bytes")
+                }
 
                 val rem = activeJobsCount.decrementAndGet().coerceAtLeast(0)
                 if (rem == 0) {
@@ -416,13 +446,28 @@ class TtsService(private val context: Context, private val isTranslationFeature:
                     delayJob = launch {
                         val trackInstance = audioTrack
                         if (trackInstance != null) {
+                            val targetSamples = totalSamplesWritten
+                            val initialPlayed = try {
+                                trackInstance.playbackHeadPosition.toLong() and 0xffffffffL
+                            } catch (_: Exception) {
+                                targetSamples
+                            }
+                            val samplesRemaining = (targetSamples - initialPlayed).coerceAtLeast(0L)
+                            // Playback-head reporting can stall after an audio-route change or a
+                            // device-side AudioTrack failure. Never leave the UI in Reading forever.
+                            val deadlineMs = android.os.SystemClock.elapsedRealtime() +
+                                (samplesRemaining * 1000L / sampleRate) + 2_000L
                             while (isActive && trackInstance.playState == AudioTrack.PLAYSTATE_PLAYING) {
                                 val played = try {
-                                    trackInstance.playbackHeadPosition.toLong()
-                                } catch (e: Exception) {
-                                    totalSamplesWritten
+                                    trackInstance.playbackHeadPosition.toLong() and 0xffffffffL
+                                } catch (_: Exception) {
+                                    targetSamples
                                 }
-                                if (played >= totalSamplesWritten) {
+                                if (played >= targetSamples) {
+                                    break
+                                }
+                                if (android.os.SystemClock.elapsedRealtime() >= deadlineMs) {
+                                    Log.w(TAG, "Timed out waiting for Kokoro playback completion: played=$played, target=$targetSamples")
                                     break
                                 }
                                 kotlinx.coroutines.delay(20)
