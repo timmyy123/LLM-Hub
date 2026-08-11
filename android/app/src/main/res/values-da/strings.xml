@@ -926,4 +926,29 @@ Du forsøger at sende et billede, men den nuværende model er **kun-tekst**:
     <string name="music_saved_toast">Lydklip gemt i lokalt bibliotek!</string>
     <string name="music_generator_download_model">Download Model First</string>
     <string name="music_generator_download_model_desc">Download en musikgenereringsmodel fra skærmen Modeller for at begynde at generere musik.</string>
+
+    <!-- MCP Agent -->
+    <string name="agent_mcp_settings">MCP-indstillinger</string>
+    <string name="agent_mcp_title">MCP-værktøjer</string>
+    <string name="agent_mcp_description">Forbind MCP-servere, og lad Agent bruge deres værktøjer.</string>
+    <string name="agent_mcp_transport">Transport</string>
+    <string name="agent_mcp_termux_stdio">Termux-stdio</string>
+    <string name="agent_mcp_remote_http">Ekstern HTTP</string>
+    <string name="agent_mcp_command">MCP-serverkommando</string>
+    <string name="agent_mcp_termux_help">Kører MCP-serveren via Termux-stdio. Installer først de nødvendige pakker.</string>
+    <string name="agent_mcp_server_url">Server-URL</string>
+    <string name="agent_mcp_bearer_token">Bearer-token (valgfrit)</string>
+    <string name="agent_mcp_approval_notice">Hvert MCP-værktøjskald kræver din godkendelse, før det køres.</string>
+    <string name="agent_mcp_connecting">Opretter forbindelse…</string>
+    <string name="agent_mcp_connected_tools">%1$d værktøjer forbundet</string>
+    <string name="agent_mcp_error">MCP-fejl: %1$s</string>
+    <string name="agent_mcp_connect">Forbind</string>
+    <string name="agent_mcp_disconnect">Afbryd</string>
+    <string name="agent_mcp_tool_request">MCP-værktøj: %1$s</string>
+    <string name="agent_mcp_allow">Tillad</string>
+    <string name="agent_mcp_deny">Afvis</string>
+    <string name="agent_mcp_approval_required">Godkendelse påkrævet</string>
+    <string name="agent_mcp_denied">Afvist af brugeren</string>
+    <string name="agent_mcp_status">Status</string>
+    <string name="agent_termux_tool_title">Termux-shellkommando</string>
 </resources>

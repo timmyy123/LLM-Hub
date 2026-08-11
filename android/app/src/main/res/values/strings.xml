@@ -973,8 +973,29 @@
     <string name="download_models_title">Download Models</string>
     <string name="music_generator_download_model">Download Model First</string>
     <string name="music_generator_download_model_desc">Download a Music Generation model from the Models screen to start generating music.</string>
+
+    <!-- MCP Agent -->
+    <string name="agent_mcp_settings">MCP settings</string>
+    <string name="agent_mcp_title">MCP Tools</string>
+    <string name="agent_mcp_description">Connect MCP servers and let Agent use their tools.</string>
+    <string name="agent_mcp_transport">Transport</string>
+    <string name="agent_mcp_termux_stdio">Termux stdio</string>
+    <string name="agent_mcp_remote_http">Remote HTTP</string>
+    <string name="agent_mcp_command">MCP server command</string>
+    <string name="agent_mcp_termux_help">Runs the MCP server through Termux stdio. Install its required packages first.</string>
+    <string name="agent_mcp_server_url">Server URL</string>
+    <string name="agent_mcp_bearer_token">Bearer token (optional)</string>
+    <string name="agent_mcp_approval_notice">Every MCP tool call requires your approval before it runs.</string>
+    <string name="agent_mcp_connecting">Connecting…</string>
+    <string name="agent_mcp_connected_tools">%1$d tools connected</string>
+    <string name="agent_mcp_error">MCP error: %1$s</string>
+    <string name="agent_mcp_connect">Connect</string>
+    <string name="agent_mcp_disconnect">Disconnect</string>
+    <string name="agent_mcp_tool_request">MCP tool: %1$s</string>
+    <string name="agent_mcp_allow">Allow</string>
+    <string name="agent_mcp_deny">Deny</string>
+    <string name="agent_mcp_approval_required">Approval required</string>
+    <string name="agent_mcp_denied">Denied by user</string>
+    <string name="agent_mcp_status">Status</string>
+    <string name="agent_termux_tool_title">Termux shell command</string>
 </resources>
-
-
-
-

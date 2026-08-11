@@ -952,4 +952,29 @@
     <string name="music_saved_toast">File audio salvato nella libreria locale!</string>
     <string name="music_generator_download_model">Scarica Prima il Modello</string>
     <string name="music_generator_download_model_desc">Scarica un modello di generazione musicale dalla schermata Modelli per iniziare.</string>
+
+    <!-- MCP Agent -->
+    <string name="agent_mcp_settings">Impostazioni MCP</string>
+    <string name="agent_mcp_title">Strumenti MCP</string>
+    <string name="agent_mcp_description">Connetti server MCP e consenti all’Agente di usarne gli strumenti.</string>
+    <string name="agent_mcp_transport">Trasporto</string>
+    <string name="agent_mcp_termux_stdio">stdio Termux</string>
+    <string name="agent_mcp_remote_http">HTTP remoto</string>
+    <string name="agent_mcp_command">Comando server MCP</string>
+    <string name="agent_mcp_termux_help">Esegue il server MCP tramite stdio di Termux. Installa prima i pacchetti richiesti.</string>
+    <string name="agent_mcp_server_url">URL del server</string>
+    <string name="agent_mcp_bearer_token">Token Bearer (facoltativo)</string>
+    <string name="agent_mcp_approval_notice">Ogni chiamata a uno strumento MCP richiede la tua approvazione prima dell’esecuzione.</string>
+    <string name="agent_mcp_connecting">Connessione…</string>
+    <string name="agent_mcp_connected_tools">%1$d strumenti connessi</string>
+    <string name="agent_mcp_error">Errore MCP: %1$s</string>
+    <string name="agent_mcp_connect">Connetti</string>
+    <string name="agent_mcp_disconnect">Disconnetti</string>
+    <string name="agent_mcp_tool_request">Strumento MCP: %1$s</string>
+    <string name="agent_mcp_allow">Consenti</string>
+    <string name="agent_mcp_deny">Nega</string>
+    <string name="agent_mcp_approval_required">Approvazione richiesta</string>
+    <string name="agent_mcp_denied">Negato dall’utente</string>
+    <string name="agent_mcp_status">Stato</string>
+    <string name="agent_termux_tool_title">Comando shell Termux</string>
 </resources>

@@ -878,3 +878,29 @@
 
 "music_generator_download_model" = "Önce Model İndirin";
 "music_generator_download_model_desc" = "Müzik oluşturmaya başlamak için Modeller ekranından bir müzik oluşturma modeli indirin.";
+
+
+/* MCP Agent */
+"agent_mcp_settings" = "MCP ayarları";
+"agent_mcp_title" = "MCP Araçları";
+"agent_mcp_description" = "MCP sunucularına bağlanın ve Aracının araçlarını kullanmasına izin verin.";
+"agent_mcp_transport" = "Aktarım";
+"agent_mcp_termux_stdio" = "Termux stdio";
+"agent_mcp_remote_http" = "Uzak HTTP";
+"agent_mcp_command" = "MCP sunucu komutu";
+"agent_mcp_termux_help" = "MCP sunucusunu Termux stdio üzerinden çalıştırır. Önce gerekli paketleri kurun.";
+"agent_mcp_server_url" = "Sunucu URL’si";
+"agent_mcp_bearer_token" = "Bearer belirteci (isteğe bağlı)";
+"agent_mcp_approval_notice" = "Her MCP araç çağrısı çalışmadan önce onayınızı gerektirir.";
+"agent_mcp_connecting" = "Bağlanıyor…";
+"agent_mcp_connected_tools" = "%d araç bağlandı";
+"agent_mcp_error" = "MCP hatası: %@";
+"agent_mcp_connect" = "Bağlan";
+"agent_mcp_disconnect" = "Bağlantıyı kes";
+"agent_mcp_tool_request" = "MCP aracı: %@";
+"agent_mcp_allow" = "İzin ver";
+"agent_mcp_deny" = "Reddet";
+"agent_mcp_approval_required" = "Onay gerekli";
+"agent_mcp_denied" = "Kullanıcı tarafından reddedildi";
+"agent_mcp_status" = "Durum";
+"agent_termux_tool_title" = "Termux kabuk komutu";

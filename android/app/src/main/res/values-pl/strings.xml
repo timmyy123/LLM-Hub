@@ -962,4 +962,29 @@
     <string name="music_saved_toast">Plik audio zapisany w lokalnej bibliotece!</string>
     <string name="music_generator_download_model">Najpierw Pobierz Model</string>
     <string name="music_generator_download_model_desc">Pobierz model generatora muzyki z ekranu Modele, aby rozpocząć generowanie muzyki.</string>
+
+    <!-- MCP Agent -->
+    <string name="agent_mcp_settings">Ustawienia MCP</string>
+    <string name="agent_mcp_title">Narzędzia MCP</string>
+    <string name="agent_mcp_description">Połącz serwery MCP i pozwól Agentowi korzystać z ich narzędzi.</string>
+    <string name="agent_mcp_transport">Transport</string>
+    <string name="agent_mcp_termux_stdio">stdio Termux</string>
+    <string name="agent_mcp_remote_http">Zdalne HTTP</string>
+    <string name="agent_mcp_command">Polecenie serwera MCP</string>
+    <string name="agent_mcp_termux_help">Uruchamia serwer MCP przez stdio Termux. Najpierw zainstaluj wymagane pakiety.</string>
+    <string name="agent_mcp_server_url">URL serwera</string>
+    <string name="agent_mcp_bearer_token">Token Bearer (opcjonalny)</string>
+    <string name="agent_mcp_approval_notice">Każde wywołanie narzędzia MCP wymaga zatwierdzenia przed uruchomieniem.</string>
+    <string name="agent_mcp_connecting">Łączenie…</string>
+    <string name="agent_mcp_connected_tools">Połączono narzędzia: %1$d</string>
+    <string name="agent_mcp_error">Błąd MCP: %1$s</string>
+    <string name="agent_mcp_connect">Połącz</string>
+    <string name="agent_mcp_disconnect">Rozłącz</string>
+    <string name="agent_mcp_tool_request">Narzędzie MCP: %1$s</string>
+    <string name="agent_mcp_allow">Zezwól</string>
+    <string name="agent_mcp_deny">Odmów</string>
+    <string name="agent_mcp_approval_required">Wymagane zatwierdzenie</string>
+    <string name="agent_mcp_denied">Odrzucone przez użytkownika</string>
+    <string name="agent_mcp_status">Stan</string>
+    <string name="agent_termux_tool_title">Polecenie powłoki Termux</string>
 </resources>

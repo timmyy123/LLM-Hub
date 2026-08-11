@@ -878,3 +878,29 @@
 
 "music_generator_download_model" = "قم بتنزيل النموذج أولاً";
 "music_generator_download_model_desc" = "قم بتنزيل نموذج إنشاء الموسيقى من شاشة النماذج لبدء إنشاء الموسيقى.";
+
+
+/* MCP Agent */
+"agent_mcp_settings" = "إعدادات MCP";
+"agent_mcp_title" = "أدوات MCP";
+"agent_mcp_description" = "اتصل بخوادم MCP واسمح للوكيل باستخدام أدواتها.";
+"agent_mcp_transport" = "النقل";
+"agent_mcp_termux_stdio" = "stdio عبر Termux";
+"agent_mcp_remote_http" = "HTTP بعيد";
+"agent_mcp_command" = "أمر خادم MCP";
+"agent_mcp_termux_help" = "يشغّل خادم MCP عبر stdio في Termux. ثبّت الحزم المطلوبة أولاً.";
+"agent_mcp_server_url" = "عنوان URL للخادم";
+"agent_mcp_bearer_token" = "رمز Bearer (اختياري)";
+"agent_mcp_approval_notice" = "تتطلب كل عملية استدعاء لأداة MCP موافقتك قبل تشغيلها.";
+"agent_mcp_connecting" = "جارٍ الاتصال…";
+"agent_mcp_connected_tools" = "تم توصيل %d من الأدوات";
+"agent_mcp_error" = "خطأ MCP: %@";
+"agent_mcp_connect" = "اتصال";
+"agent_mcp_disconnect" = "قطع الاتصال";
+"agent_mcp_tool_request" = "أداة MCP: %@";
+"agent_mcp_allow" = "سماح";
+"agent_mcp_deny" = "رفض";
+"agent_mcp_approval_required" = "الموافقة مطلوبة";
+"agent_mcp_denied" = "رفضه المستخدم";
+"agent_mcp_status" = "الحالة";
+"agent_termux_tool_title" = "أمر صدفة Termux";

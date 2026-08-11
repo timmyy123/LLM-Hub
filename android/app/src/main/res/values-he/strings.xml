@@ -957,4 +957,29 @@
     <string name="music_saved_toast">קובץ השמע נשמר בספרייה!</string>
     <string name="music_generator_download_model">הורד מודל תחילה</string>
     <string name="music_generator_download_model_desc">הורד מודל מחולל מוזיקה ממסך המודלים כדי להתחיל ליצור מוזיקה.</string>
+
+    <!-- MCP Agent -->
+    <string name="agent_mcp_settings">הגדרות MCP</string>
+    <string name="agent_mcp_title">כלי MCP</string>
+    <string name="agent_mcp_description">התחברו לשרתי MCP ואפשרו לסוכן להשתמש בכלים שלהם.</string>
+    <string name="agent_mcp_transport">תעבורה</string>
+    <string name="agent_mcp_termux_stdio">stdio של Termux</string>
+    <string name="agent_mcp_remote_http">HTTP מרוחק</string>
+    <string name="agent_mcp_command">פקודת שרת MCP</string>
+    <string name="agent_mcp_termux_help">מפעיל את שרת MCP דרך stdio של Termux. יש להתקין תחילה את החבילות הנדרשות.</string>
+    <string name="agent_mcp_server_url">כתובת השרת</string>
+    <string name="agent_mcp_bearer_token">אסימון Bearer (אופציונלי)</string>
+    <string name="agent_mcp_approval_notice">כל הפעלת כלי MCP דורשת את אישורך לפני ההרצה.</string>
+    <string name="agent_mcp_connecting">מתחבר…</string>
+    <string name="agent_mcp_connected_tools">%1$d כלים מחוברים</string>
+    <string name="agent_mcp_error">שגיאת MCP: %1$s</string>
+    <string name="agent_mcp_connect">התחברות</string>
+    <string name="agent_mcp_disconnect">ניתוק</string>
+    <string name="agent_mcp_tool_request">כלי MCP: %1$s</string>
+    <string name="agent_mcp_allow">אישור</string>
+    <string name="agent_mcp_deny">דחייה</string>
+    <string name="agent_mcp_approval_required">נדרש אישור</string>
+    <string name="agent_mcp_denied">נדחה על ידי המשתמש</string>
+    <string name="agent_mcp_status">מצב</string>
+    <string name="agent_termux_tool_title">פקודת מעטפת Termux</string>
 </resources>

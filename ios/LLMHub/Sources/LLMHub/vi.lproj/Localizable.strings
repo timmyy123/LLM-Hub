@@ -886,3 +886,29 @@
 
 "music_generator_download_model" = "Tải xuống mẫu đầu tiên";
 "music_generator_download_model_desc" = "Tải xuống mô hình tạo nhạc từ màn hình Mô hình để bắtดัน tạo nhạc.";
+
+
+/* MCP Agent */
+"agent_mcp_settings" = "Cài đặt MCP";
+"agent_mcp_title" = "Công cụ MCP";
+"agent_mcp_description" = "Kết nối máy chủ MCP và cho phép Tác nhân sử dụng công cụ của chúng.";
+"agent_mcp_transport" = "Phương thức truyền";
+"agent_mcp_termux_stdio" = "Termux stdio";
+"agent_mcp_remote_http" = "HTTP từ xa";
+"agent_mcp_command" = "Lệnh máy chủ MCP";
+"agent_mcp_termux_help" = "Chạy máy chủ MCP qua Termux stdio. Hãy cài đặt các gói cần thiết trước.";
+"agent_mcp_server_url" = "URL máy chủ";
+"agent_mcp_bearer_token" = "Mã Bearer (tùy chọn)";
+"agent_mcp_approval_notice" = "Mỗi lần gọi công cụ MCP đều cần bạn phê duyệt trước khi chạy.";
+"agent_mcp_connecting" = "Đang kết nối…";
+"agent_mcp_connected_tools" = "Đã kết nối %d công cụ";
+"agent_mcp_error" = "Lỗi MCP: %@";
+"agent_mcp_connect" = "Kết nối";
+"agent_mcp_disconnect" = "Ngắt kết nối";
+"agent_mcp_tool_request" = "Công cụ MCP: %@";
+"agent_mcp_allow" = "Cho phép";
+"agent_mcp_deny" = "Từ chối";
+"agent_mcp_approval_required" = "Cần phê duyệt";
+"agent_mcp_denied" = "Người dùng đã từ chối";
+"agent_mcp_status" = "Trạng thái";
+"agent_termux_tool_title" = "Lệnh shell Termux";

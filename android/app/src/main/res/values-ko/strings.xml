@@ -958,4 +958,29 @@
     <string name="music_saved_toast">로컬 라이브러리에 저장되었습니다!</string>
     <string name="music_generator_download_model">먼저 모델 다운로드</string>
     <string name="music_generator_download_model_desc">모델 화면에서 음악 생성 모델을 다운로드하여 음악 생성을 시작하세요.</string>
+
+    <!-- MCP Agent -->
+    <string name="agent_mcp_settings">MCP 설정</string>
+    <string name="agent_mcp_title">MCP 도구</string>
+    <string name="agent_mcp_description">MCP 서버를 연결하고 에이전트가 해당 도구를 사용하도록 허용합니다.</string>
+    <string name="agent_mcp_transport">전송</string>
+    <string name="agent_mcp_termux_stdio">Termux stdio</string>
+    <string name="agent_mcp_remote_http">원격 HTTP</string>
+    <string name="agent_mcp_command">MCP 서버 명령</string>
+    <string name="agent_mcp_termux_help">Termux stdio를 통해 MCP 서버를 실행합니다. 필요한 패키지를 먼저 설치하세요.</string>
+    <string name="agent_mcp_server_url">서버 URL</string>
+    <string name="agent_mcp_bearer_token">Bearer 토큰(선택 사항)</string>
+    <string name="agent_mcp_approval_notice">모든 MCP 도구 호출은 실행 전에 승인이 필요합니다.</string>
+    <string name="agent_mcp_connecting">연결 중…</string>
+    <string name="agent_mcp_connected_tools">%1$d개 도구 연결됨</string>
+    <string name="agent_mcp_error">MCP 오류: %1$s</string>
+    <string name="agent_mcp_connect">연결</string>
+    <string name="agent_mcp_disconnect">연결 해제</string>
+    <string name="agent_mcp_tool_request">MCP 도구: %1$s</string>
+    <string name="agent_mcp_allow">허용</string>
+    <string name="agent_mcp_deny">거부</string>
+    <string name="agent_mcp_approval_required">승인 필요</string>
+    <string name="agent_mcp_denied">사용자가 거부함</string>
+    <string name="agent_mcp_status">상태</string>
+    <string name="agent_termux_tool_title">Termux 셸 명령</string>
 </resources>

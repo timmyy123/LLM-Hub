@@ -886,3 +886,29 @@
 
 "music_generator_download_model" = "Download eerst het model";
 "music_generator_download_model_desc" = "Download een muziekgeneratiemodel vanuit het scherm Modellen om muziek te generieren.";
+
+
+/* MCP Agent */
+"agent_mcp_settings" = "MCP-instellingen";
+"agent_mcp_title" = "MCP-tools";
+"agent_mcp_description" = "Verbind MCP-servers en laat Agent hun tools gebruiken.";
+"agent_mcp_transport" = "Transport";
+"agent_mcp_termux_stdio" = "Termux-stdio";
+"agent_mcp_remote_http" = "Externe HTTP";
+"agent_mcp_command" = "MCP-serveropdracht";
+"agent_mcp_termux_help" = "Voert de MCP-server uit via Termux-stdio. Installeer eerst de vereiste pakketten.";
+"agent_mcp_server_url" = "Server-URL";
+"agent_mcp_bearer_token" = "Bearer-token (optioneel)";
+"agent_mcp_approval_notice" = "Elke MCP-tooloproep vereist je goedkeuring voordat deze wordt uitgevoerd.";
+"agent_mcp_connecting" = "Verbinden…";
+"agent_mcp_connected_tools" = "%d tools verbonden";
+"agent_mcp_error" = "MCP-fout: %@";
+"agent_mcp_connect" = "Verbinden";
+"agent_mcp_disconnect" = "Verbinding verbreken";
+"agent_mcp_tool_request" = "MCP-tool: %@";
+"agent_mcp_allow" = "Toestaan";
+"agent_mcp_deny" = "Weigeren";
+"agent_mcp_approval_required" = "Goedkeuring vereist";
+"agent_mcp_denied" = "Geweigerd door gebruiker";
+"agent_mcp_status" = "Status";
+"agent_termux_tool_title" = "Termux-shellopdracht";

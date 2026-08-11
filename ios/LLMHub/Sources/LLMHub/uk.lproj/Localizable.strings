@@ -878,3 +878,29 @@
 
 "music_generator_download_model" = "Спочатку Завантажте Модель";
 "music_generator_download_model_desc" = "Завантажте модель генератора музики з екрана Моделей, щоб почати створення музики.";
+
+
+/* MCP Agent */
+"agent_mcp_settings" = "Налаштування MCP";
+"agent_mcp_title" = "Інструменти MCP";
+"agent_mcp_description" = "Підключайте сервери MCP і дозволяйте Агенту використовувати їхні інструменти.";
+"agent_mcp_transport" = "Транспорт";
+"agent_mcp_termux_stdio" = "stdio Termux";
+"agent_mcp_remote_http" = "Віддалений HTTP";
+"agent_mcp_command" = "Команда сервера MCP";
+"agent_mcp_termux_help" = "Запускає сервер MCP через stdio Termux. Спочатку встановіть потрібні пакети.";
+"agent_mcp_server_url" = "URL сервера";
+"agent_mcp_bearer_token" = "Токен Bearer (необов’язково)";
+"agent_mcp_approval_notice" = "Кожен виклик інструмента MCP потребує вашого схвалення перед запуском.";
+"agent_mcp_connecting" = "Підключення…";
+"agent_mcp_connected_tools" = "Підключено інструментів: %d";
+"agent_mcp_error" = "Помилка MCP: %@";
+"agent_mcp_connect" = "Підключити";
+"agent_mcp_disconnect" = "Відключити";
+"agent_mcp_tool_request" = "Інструмент MCP: %@";
+"agent_mcp_allow" = "Дозволити";
+"agent_mcp_deny" = "Відхилити";
+"agent_mcp_approval_required" = "Потрібне схвалення";
+"agent_mcp_denied" = "Відхилено користувачем";
+"agent_mcp_status" = "Стан";
+"agent_termux_tool_title" = "Команда оболонки Termux";

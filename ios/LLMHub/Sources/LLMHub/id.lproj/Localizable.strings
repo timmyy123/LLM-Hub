@@ -878,3 +878,29 @@
 
 "music_generator_download_model" = "Unduh Model Terlebih Dahulu";
 "music_generator_download_model_desc" = "Unduh model Generator Musik dari layar Model untuk mulai menghasilkan musik.";
+
+
+/* MCP Agent */
+"agent_mcp_settings" = "Pengaturan MCP";
+"agent_mcp_title" = "Alat MCP";
+"agent_mcp_description" = "Hubungkan server MCP dan izinkan Agen menggunakan alatnya.";
+"agent_mcp_transport" = "Transport";
+"agent_mcp_termux_stdio" = "stdio Termux";
+"agent_mcp_remote_http" = "HTTP jarak jauh";
+"agent_mcp_command" = "Perintah server MCP";
+"agent_mcp_termux_help" = "Menjalankan server MCP melalui stdio Termux. Instal paket yang diperlukan terlebih dahulu.";
+"agent_mcp_server_url" = "URL server";
+"agent_mcp_bearer_token" = "Token Bearer (opsional)";
+"agent_mcp_approval_notice" = "Setiap panggilan alat MCP memerlukan persetujuan Anda sebelum dijalankan.";
+"agent_mcp_connecting" = "Menghubungkan…";
+"agent_mcp_connected_tools" = "%d alat terhubung";
+"agent_mcp_error" = "Kesalahan MCP: %@";
+"agent_mcp_connect" = "Hubungkan";
+"agent_mcp_disconnect" = "Putuskan";
+"agent_mcp_tool_request" = "Alat MCP: %@";
+"agent_mcp_allow" = "Izinkan";
+"agent_mcp_deny" = "Tolak";
+"agent_mcp_approval_required" = "Persetujuan diperlukan";
+"agent_mcp_denied" = "Ditolak oleh pengguna";
+"agent_mcp_status" = "Status";
+"agent_termux_tool_title" = "Perintah shell Termux";

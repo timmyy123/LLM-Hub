@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		5B3D51C9690D4FC0AD7649BF /* AgentScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 639A98878F3E415495148409 /* AgentScreen.swift */; };
 		519D6CF4E16444179C7C5903 /* AgentViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A161C7E902C4A77ABC84BC4 /* AgentViewModel.swift */; };
+		4D4350000000000000000001 /* MCPClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D4350000000000000000002 /* MCPClient.swift */; };
 		4805DAC855214DF2936F0FD5 /* AgentTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0C36C1D16AF4675BEDB54C5 /* AgentTools.swift */; };
 		1AE5E42ED85BEFE5C3ED1D2A /* LocalizationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75BBFF4AA65F0EF6FF1DB93D /* LocalizationManager.swift */; };
 		1D92A835955F48E1AA4AEEEF /* EmbeddingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59683F4EC0364144B429B48B /* EmbeddingService.swift */; };
@@ -79,6 +80,7 @@
 /* Begin PBXFileReference section */
 		639A98878F3E415495148409 /* AgentScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentScreen.swift; sourceTree = "<group>"; };
 		9A161C7E902C4A77ABC84BC4 /* AgentViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentViewModel.swift; sourceTree = "<group>"; };
+		4D4350000000000000000002 /* MCPClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MCPClient.swift; sourceTree = "<group>"; };
 		D0C36C1D16AF4675BEDB54C5 /* AgentTools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentTools.swift; sourceTree = "<group>"; };
 		05BF91E2CF47146ED081A0A8 /* ModelDownloader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelDownloader.swift; sourceTree = "<group>"; };
 		0805DB9589154E465145E2DB /* ChatModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatModels.swift; sourceTree = "<group>"; };
@@ -202,6 +204,7 @@
 				A6D5DEA8384F9DDFC69C359C /* HomeScreen.swift */,
 				639A98878F3E415495148409 /* AgentScreen.swift */,
 				9A161C7E902C4A77ABC84BC4 /* AgentViewModel.swift */,
+				4D4350000000000000000002 /* MCPClient.swift */,
 				D0C36C1D16AF4675BEDB54C5 /* AgentTools.swift */,
 				368DEEF34DE54ABD87FE0EF3 /* Assets.xcassets */,
 				F841EEA264BDE0E6E2A1BC18 /* Icon.png */,
@@ -380,6 +383,7 @@
 				2A3672DC476297C35298841D /* HomeScreen.swift in Sources */,
 				5B3D51C9690D4FC0AD7649BF /* AgentScreen.swift in Sources */,
 				519D6CF4E16444179C7C5903 /* AgentViewModel.swift in Sources */,
+				4D4350000000000000000001 /* MCPClient.swift in Sources */,
 				4805DAC855214DF2936F0FD5 /* AgentTools.swift in Sources */,
 				53F6C1EA0149E74AC5BB3E22 /* LLMBackend.swift in Sources */,
 				F1A2B3C4D5E6F708192A3B50 /* LiteRTLMBackend.swift in Sources */,

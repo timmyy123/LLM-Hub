@@ -944,4 +944,29 @@
     <string name="music_saved_toast">Fichier audio enregistré dans la bibliothèque locale !</string>
     <string name="music_generator_download_model">Télécharger le Modèle d\'Abord</string>
     <string name="music_generator_download_model_desc">Téléchargez un modèle de génération de musique depuis l\'écran Modèles pour commencer.</string>
+
+    <!-- MCP Agent -->
+    <string name="agent_mcp_settings">Réglages MCP</string>
+    <string name="agent_mcp_title">Outils MCP</string>
+    <string name="agent_mcp_description">Connectez des serveurs MCP et autorisez l’Agent à utiliser leurs outils.</string>
+    <string name="agent_mcp_transport">Transport</string>
+    <string name="agent_mcp_termux_stdio">stdio Termux</string>
+    <string name="agent_mcp_remote_http">HTTP distant</string>
+    <string name="agent_mcp_command">Commande du serveur MCP</string>
+    <string name="agent_mcp_termux_help">Exécute le serveur MCP via stdio dans Termux. Installez d’abord les paquets requis.</string>
+    <string name="agent_mcp_server_url">URL du serveur</string>
+    <string name="agent_mcp_bearer_token">Jeton Bearer (facultatif)</string>
+    <string name="agent_mcp_approval_notice">Chaque appel d’outil MCP nécessite votre autorisation avant son exécution.</string>
+    <string name="agent_mcp_connecting">Connexion…</string>
+    <string name="agent_mcp_connected_tools">%1$d outils connectés</string>
+    <string name="agent_mcp_error">Erreur MCP : %1$s</string>
+    <string name="agent_mcp_connect">Connecter</string>
+    <string name="agent_mcp_disconnect">Déconnecter</string>
+    <string name="agent_mcp_tool_request">Outil MCP : %1$s</string>
+    <string name="agent_mcp_allow">Autoriser</string>
+    <string name="agent_mcp_deny">Refuser</string>
+    <string name="agent_mcp_approval_required">Autorisation requise</string>
+    <string name="agent_mcp_denied">Refusé par l’utilisateur</string>
+    <string name="agent_mcp_status">État</string>
+    <string name="agent_termux_tool_title">Commande shell Termux</string>
 </resources>

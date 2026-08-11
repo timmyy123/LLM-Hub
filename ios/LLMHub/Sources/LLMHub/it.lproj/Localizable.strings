@@ -868,3 +868,29 @@
 
 "music_generator_download_model" = "Scarica Prima il Modello";
 "music_generator_download_model_desc" = "Scarica un modello di generazione musicale dalla schermata Modelli per iniziare.";
+
+
+/* MCP Agent */
+"agent_mcp_settings" = "Impostazioni MCP";
+"agent_mcp_title" = "Strumenti MCP";
+"agent_mcp_description" = "Connetti server MCP e consenti all’Agente di usarne gli strumenti.";
+"agent_mcp_transport" = "Trasporto";
+"agent_mcp_termux_stdio" = "stdio Termux";
+"agent_mcp_remote_http" = "HTTP remoto";
+"agent_mcp_command" = "Comando server MCP";
+"agent_mcp_termux_help" = "Esegue il server MCP tramite stdio di Termux. Installa prima i pacchetti richiesti.";
+"agent_mcp_server_url" = "URL del server";
+"agent_mcp_bearer_token" = "Token Bearer (facoltativo)";
+"agent_mcp_approval_notice" = "Ogni chiamata a uno strumento MCP richiede la tua approvazione prima dell’esecuzione.";
+"agent_mcp_connecting" = "Connessione…";
+"agent_mcp_connected_tools" = "%d strumenti connessi";
+"agent_mcp_error" = "Errore MCP: %@";
+"agent_mcp_connect" = "Connetti";
+"agent_mcp_disconnect" = "Disconnetti";
+"agent_mcp_tool_request" = "Strumento MCP: %@";
+"agent_mcp_allow" = "Consenti";
+"agent_mcp_deny" = "Nega";
+"agent_mcp_approval_required" = "Approvazione richiesta";
+"agent_mcp_denied" = "Negato dall’utente";
+"agent_mcp_status" = "Stato";
+"agent_termux_tool_title" = "Comando shell Termux";

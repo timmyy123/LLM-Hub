@@ -865,4 +865,29 @@
     <string name="music_saved_toast">Đã lưu đoạn âm thanh vào thư viện!</string>
     <string name="music_generator_download_model">Tải xuống mẫu đầu tiên</string>
     <string name="music_generator_download_model_desc">Tải xuống mô hình tạo nhạc từ màn hình Mô hình để bắt đầu tạo nhạc.</string>
+
+    <!-- MCP Agent -->
+    <string name="agent_mcp_settings">Cài đặt MCP</string>
+    <string name="agent_mcp_title">Công cụ MCP</string>
+    <string name="agent_mcp_description">Kết nối máy chủ MCP và cho phép Tác nhân sử dụng công cụ của chúng.</string>
+    <string name="agent_mcp_transport">Phương thức truyền</string>
+    <string name="agent_mcp_termux_stdio">Termux stdio</string>
+    <string name="agent_mcp_remote_http">HTTP từ xa</string>
+    <string name="agent_mcp_command">Lệnh máy chủ MCP</string>
+    <string name="agent_mcp_termux_help">Chạy máy chủ MCP qua Termux stdio. Hãy cài đặt các gói cần thiết trước.</string>
+    <string name="agent_mcp_server_url">URL máy chủ</string>
+    <string name="agent_mcp_bearer_token">Mã Bearer (tùy chọn)</string>
+    <string name="agent_mcp_approval_notice">Mỗi lần gọi công cụ MCP đều cần bạn phê duyệt trước khi chạy.</string>
+    <string name="agent_mcp_connecting">Đang kết nối…</string>
+    <string name="agent_mcp_connected_tools">Đã kết nối %1$d công cụ</string>
+    <string name="agent_mcp_error">Lỗi MCP: %1$s</string>
+    <string name="agent_mcp_connect">Kết nối</string>
+    <string name="agent_mcp_disconnect">Ngắt kết nối</string>
+    <string name="agent_mcp_tool_request">Công cụ MCP: %1$s</string>
+    <string name="agent_mcp_allow">Cho phép</string>
+    <string name="agent_mcp_deny">Từ chối</string>
+    <string name="agent_mcp_approval_required">Cần phê duyệt</string>
+    <string name="agent_mcp_denied">Người dùng đã từ chối</string>
+    <string name="agent_mcp_status">Trạng thái</string>
+    <string name="agent_termux_tool_title">Lệnh shell Termux</string>
 </resources>

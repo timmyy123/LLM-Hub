@@ -22,6 +22,7 @@ public enum AgentMessageItem: Identifiable {
     }
 
     public enum ToolStatus {
+        case pendingApproval
         case running
         case success
         case failed
@@ -45,8 +46,50 @@ public class AgentViewModel: ObservableObject {
     @Published public var selectedAsrModelName: String? = nil
     @Published public var inputText: String = ""
     @Published public var isWebSearchEnabled: Bool = false
+    @Published var mcpSettings: MCPSettings = MCPClient.shared.loadSettings()
+    @Published var mcpTools: [MCPTool] = []
+    @Published var mcpStatus: String = ""
+    private var pendingMCPCalls: [String: (MCPTool, [String: Any])] = [:]
 
-    public init() {}
+    public init() {
+        if mcpSettings.enabled && !mcpSettings.url.isEmpty { connectMCP(mcpSettings) }
+    }
+
+    func connectMCP(_ settings: MCPSettings) {
+        MCPClient.shared.saveSettings(settings)
+        mcpSettings = settings
+        mcpStatus = "connecting"
+        Task {
+            do {
+                mcpTools = try await MCPClient.shared.connectAndDiscover(settings: settings)
+                mcpStatus = "connected"
+            } catch {
+                mcpTools = []
+                mcpStatus = error.localizedDescription
+            }
+        }
+    }
+
+    func setMCPEnabled(_ enabled: Bool) {
+        if !enabled {
+            disconnectMCP()
+            return
+        }
+        var updated = mcpSettings
+        updated.enabled = true
+        MCPClient.shared.saveSettings(updated)
+        mcpSettings = updated
+    }
+
+    func disconnectMCP() {
+        var disabled = mcpSettings
+        disabled.enabled = false
+        MCPClient.shared.saveSettings(disabled)
+        mcpSettings = disabled
+        mcpTools = []
+        mcpStatus = ""
+        MCPClient.shared.disconnect()
+    }
 
     func setupWelcomeMessage(settings: AppSettings, isDownloaded: Bool) {
         if isDownloaded {
@@ -191,6 +234,12 @@ public class AgentViewModel: ObservableObject {
         }
 
         // Semantic LLM Generation & Function Calling System Prompt
+        let mcpToolDefinitions = mcpTools.map(\.promptLine).joined(separator: "\n")
+        let mcpPrompt = mcpToolDefinitions.isEmpty ? "" : """
+
+        Remote MCP Tools (arguments MUST be one valid JSON object):
+        \(mcpToolDefinitions)
+        """
         let systemPrompt = """
         You are an AI Agent equipped with device tools. Today's date is \(todayStr).
         Available Tools:
@@ -203,6 +252,7 @@ public class AgentViewModel: ObservableObject {
         - toggle_flashlight(enabled: "true" or "false"): Turn flashlight ON or OFF.
         - calculate_hash(text: "text string", algorithm: "SHA-256 or MD5 or SHA-512"): Calculate cryptographic hash of input text.
         - calculate_math(expression: "math expression string"): Calculate mathematical expression (e.g. "1+1", "15 * 8", "100 / 4").
+        \(mcpPrompt)
 
         Instructions:
         - ALWAYS call a tool when the user asks to perform an action supported by the tools.
@@ -212,6 +262,7 @@ public class AgentViewModel: ObservableObject {
         - For any request to evaluate or solve a math expression or calculation (e.g. "1+1", "What's 15*8"), YOU MUST call calculate_math(expression: "expression string").
         - Output tool calls in this format ONLY:
         [TOOL: tool_name(arguments)]
+        - For MCP tools, pass exactly one JSON object, for example: [TOOL: mcp_search({"query":"example"})]
 
         User Request: \(prompt)
         """
@@ -320,6 +371,14 @@ public class AgentViewModel: ObservableObject {
 
     private func handleParsedToolCall(_ tool: ParsedTool, originalPrompt: String) async {
         let toolId = UUID().uuidString
+        if let mcpTool = mcpTools.first(where: { $0.exposedName.caseInsensitiveCompare(tool.name) == .orderedSame }) {
+            let arguments = parseMCPArguments(tool.args)
+            pendingMCPCalls[toolId] = (mcpTool, arguments)
+            let data = try? JSONSerialization.data(withJSONObject: arguments, options: [.sortedKeys])
+            let displayArgs = data.flatMap { String(data: $0, encoding: .utf8) } ?? tool.args
+            messages.append(.toolCall(id: toolId, name: mcpTool.exposedName, args: displayArgs, status: .pendingApproval, result: nil))
+            return
+        }
         let isAlarmIntent = originalPrompt.lowercased().contains("alarm") || tool.args.lowercased().contains("alarm")
         var effectiveToolName = (isAlarmIntent && (tool.name.contains("calendar") || tool.name.contains("event"))) ? "set_alarm" : tool.name.lowercased()
 
@@ -412,6 +471,45 @@ public class AgentViewModel: ObservableObject {
         }
     }
 
+    private func parseMCPArguments(_ raw: String) -> [String: Any] {
+        let clean = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let data = clean.data(using: .utf8), let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+            return object
+        }
+        var result: [String: Any] = [:]
+        let pattern = "([A-Za-z0-9_.-]+)\\s*[:=]\\s*(?:\\\"([^\\\"]*)\\\"|'([^']*)'|([^,}]+))"
+        if let regex = try? NSRegularExpression(pattern: pattern) {
+            let ns = clean as NSString
+            for match in regex.matches(in: clean, range: NSRange(location: 0, length: ns.length)) {
+                let key = ns.substring(with: match.range(at: 1))
+                let ranges = [2, 3, 4].map { match.range(at: $0) }
+                if let range = ranges.first(where: { $0.location != NSNotFound }) {
+                    result[key] = ns.substring(with: range).trimmingCharacters(in: .whitespacesAndNewlines)
+                }
+            }
+        }
+        return result
+    }
+
+    func approveMCPTool(id: String) {
+        guard let pending = pendingMCPCalls.removeValue(forKey: id) else { return }
+        updateToolCall(id: id, status: .running, result: nil)
+        Task {
+            do {
+                let result = try await MCPClient.shared.callTool(name: pending.0.name, arguments: pending.1, settings: mcpSettings)
+                updateToolCall(id: id, status: .success, result: result)
+                messages.append(.text(id: UUID().uuidString, sender: .agent, content: result, timestamp: Date()))
+            } catch {
+                updateToolCall(id: id, status: .failed, result: error.localizedDescription)
+            }
+        }
+    }
+
+    func denyMCPTool(id: String) {
+        pendingMCPCalls.removeValue(forKey: id)
+        updateToolCall(id: id, status: .failed, result: NSLocalizedString("agent_mcp_denied", comment: ""))
+    }
+
     private func extractArgValue(from args: String, key: String) -> String? {
         let pattern = "\(key)\\s*(?:=\\s*|:\\s*|\\()\\s*\"([^\"]+)\"|\(key)\\s*(?:=\\s*|:\\s*|\\()\\s*'([^']+)'|\(key)\\s*(?:=\\s*|:\\s*)\\s*([^,\\s)]+)"
         if let range = args.range(of: pattern, options: [.regularExpression, .caseInsensitive]) {
@@ -491,7 +589,7 @@ public class AgentViewModel: ObservableObject {
         }
     }
 
-    private func updateToolCall(id: String, status: AgentMessageItem.ToolStatus, result: String) {
+    private func updateToolCall(id: String, status: AgentMessageItem.ToolStatus, result: String?) {
         if let idx = messages.firstIndex(where: { $0.id == id }) {
             if case .toolCall(_, let name, let args, _, _) = messages[idx] {
                 messages[idx] = .toolCall(id: id, name: name, args: args, status: status, result: result)

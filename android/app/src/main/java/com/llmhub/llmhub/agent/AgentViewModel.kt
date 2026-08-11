@@ -24,6 +24,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
+import org.json.JSONObject
 
 sealed class AgentMessage(val id: String) {
     enum class Sender { USER, AGENT, SYSTEM }
@@ -100,6 +101,15 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
     )
     val isTermuxEnabled: StateFlow<Boolean> = _isTermuxEnabled.asStateFlow()
 
+    private val mcpClient = McpClient(application.applicationContext)
+    private val _mcpSettings = MutableStateFlow(mcpClient.loadSettings())
+    val mcpSettings: StateFlow<McpSettings> = _mcpSettings.asStateFlow()
+    private val _mcpTools = MutableStateFlow<List<McpTool>>(emptyList())
+    val mcpTools: StateFlow<List<McpTool>> = _mcpTools.asStateFlow()
+    private val _mcpStatus = MutableStateFlow("")
+    val mcpStatus: StateFlow<String> = _mcpStatus.asStateFlow()
+    private val pendingMcpCalls = mutableMapOf<String, Pair<McpTool, JSONObject>>()
+
     val toolSet = AgentToolSet(application.applicationContext)
     private val inferenceService: InferenceService = UnifiedInferenceService(application.applicationContext)
 
@@ -115,6 +125,43 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
         toolSet.isTermuxEnabled = termuxSaved
         _isTermuxEnabled.value = termuxSaved
         _activeModelName.value = inferenceService.getCurrentlyLoadedModel()?.name
+        if (_mcpSettings.value.enabled &&
+            ((_mcpSettings.value.transport == "termux" && _mcpSettings.value.command.isNotBlank()) || _mcpSettings.value.url.isNotBlank())
+        ) connectMcp(_mcpSettings.value)
+    }
+
+    fun connectMcp(settings: McpSettings) {
+        mcpClient.saveSettings(settings)
+        _mcpSettings.value = settings
+        _mcpStatus.value = "connecting"
+        viewModelScope.launch {
+            try {
+                _mcpTools.value = mcpClient.connectAndDiscover(settings)
+                _mcpStatus.value = "connected"
+            } catch (e: Exception) {
+                _mcpTools.value = emptyList()
+                _mcpStatus.value = e.localizedMessage ?: "connection_failed"
+            }
+        }
+    }
+
+    fun setMcpEnabled(enabled: Boolean) {
+        if (!enabled) {
+            disconnectMcp()
+            return
+        }
+        val updated = _mcpSettings.value.copy(enabled = true)
+        mcpClient.saveSettings(updated)
+        _mcpSettings.value = updated
+    }
+
+    fun disconnectMcp() {
+        val disabled = _mcpSettings.value.copy(enabled = false)
+        mcpClient.saveSettings(disabled)
+        mcpClient.disconnect()
+        _mcpSettings.value = disabled
+        _mcpTools.value = emptyList()
+        _mcpStatus.value = ""
     }
 
     fun initializeWelcomeMessage(context: Context, hasDownloadedModels: Boolean) {
@@ -365,6 +412,9 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
             val termuxToolDef = if (_isTermuxEnabled.value) {
                 "\n- run_termux_command(command: \"shell command\"): Run terminal or shell commands in Termux (e.g. \"ls\", \"pkg install git\", \"uname -a\", \"python script.py\")."
             } else "\n- run_termux_command(command: \"shell command\"): Run terminal or shell commands in Termux (e.g. \"ls\", \"pkg install git\")."
+            val mcpToolDefs = _mcpTools.value.joinToString("\n") { it.promptLine() }.let {
+                if (it.isBlank()) "" else "\nRemote MCP Tools (arguments MUST be one valid JSON object):\n$it"
+            }
 
             val systemPrompt = """
                 You are an AI Agent equipped with device tools. Today's date is $todayStr.
@@ -377,7 +427,7 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
                 - set_alarm(time: "time e.g. 7:00 AM", label: "alarm label"): Set an alarm on device.
                 - toggle_flashlight(enabled: "true" or "false"): Turn flashlight ON or OFF.
                 - calculate_hash(text: "text string", algorithm: "SHA-256 or MD5 or SHA-512"): Calculate cryptographic hash of input text.
-                - calculate_math(expression: "math expression string"): Calculate mathematical expression (e.g. "1+1", "15 * 8", "100 / 4").$termuxToolDef
+                - calculate_math(expression: "math expression string"): Calculate mathematical expression (e.g. "1+1", "15 * 8", "100 / 4").$termuxToolDef$mcpToolDefs
 
                 Instructions:
                 - ALWAYS call a tool when the user asks to perform an action supported by the tools.
@@ -393,6 +443,7 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
                   * When fixing a failed command, generate a real, specific CLI command string for Termux execution.
                 - Output tool calls in this format ONLY:
                 [TOOL: tool_name(arguments)]
+                - For MCP tools, pass exactly one JSON object, for example: [TOOL: mcp_search({"query":"example"})]
 
                 User Request: $prompt
             """.trimIndent()
@@ -487,6 +538,21 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
 
     private suspend fun handleParsedToolCall(tool: ParsedTool, originalPrompt: String) {
         val toolId = UUID.randomUUID().toString()
+        val mcpTool = _mcpTools.value.firstOrNull { it.exposedName.equals(tool.name, ignoreCase = true) }
+        if (mcpTool != null) {
+            val arguments = parseMcpArguments(tool.args)
+            pendingMcpCalls[toolId] = mcpTool to arguments
+            addMessage(
+                AgentMessage.ToolCall(
+                    callId = toolId,
+                    toolName = mcpTool.exposedName,
+                    args = arguments.toString(),
+                    status = AgentMessage.ToolCall.Status.PENDING_APPROVAL
+                )
+            )
+            return
+        }
+
         addMessage(AgentMessage.ToolCall(callId = toolId, toolName = tool.name, args = tool.args, status = AgentMessage.ToolCall.Status.RUNNING))
 
         // Reroute calendar tool calls to set_alarm if prompt or title specifies alarm
@@ -650,6 +716,41 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
         }
+    }
+
+    private fun parseMcpArguments(raw: String): JSONObject {
+        val clean = raw.trim().removePrefix("arguments:").trim()
+        return runCatching { JSONObject(clean) }.getOrElse {
+            val result = JSONObject()
+            Regex("""([A-Za-z0-9_.-]+)\s*[:=]\s*(?:\"([^\"]*)\"|'([^']*)'|([^,}]+))""")
+                .findAll(clean).forEach { match ->
+                    val value = match.groupValues[2].ifEmpty { match.groupValues[3] }.ifEmpty { match.groupValues[4] }.trim()
+                    result.put(match.groupValues[1], value)
+                }
+            result
+        }
+    }
+
+    fun approveMcpTool(callId: String) {
+        val pending = pendingMcpCalls.remove(callId) ?: return
+        _isGenerating.value = true
+        viewModelScope.launch {
+            updateToolCall(callId, AgentMessage.ToolCall.Status.RUNNING, "")
+            try {
+                val result = mcpClient.callTool(pending.first.name, pending.second)
+                updateToolCall(callId, AgentMessage.ToolCall.Status.SUCCESS, result)
+                addMessage(AgentMessage.Text(sender = AgentMessage.Sender.AGENT, text = result))
+            } catch (e: Exception) {
+                updateToolCall(callId, AgentMessage.ToolCall.Status.FAILED, e.localizedMessage ?: "MCP tool failed")
+            } finally {
+                _isGenerating.value = false
+            }
+        }
+    }
+
+    fun cancelMcpTool(callId: String) {
+        pendingMcpCalls.remove(callId)
+        updateToolCall(callId, AgentMessage.ToolCall.Status.CANCELLED, getApplication<Application>().getString(R.string.agent_mcp_denied))
     }
 
     private fun extractArgValue(args: String, key: String): String? {

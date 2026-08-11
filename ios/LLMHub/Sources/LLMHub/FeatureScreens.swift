@@ -471,6 +471,7 @@ struct FeatureModelSettingsSheet: View {
     let modelFilter: ((AIModel) -> Bool)?
     let onLoad: () async -> Void
     let onUnload: () -> Void
+    var extraModelConfigsContent: AnyView? = nil
 
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var llm = LLMBackend.shared
@@ -613,6 +614,10 @@ struct FeatureModelSettingsSheet: View {
                                     .pickerStyle(.menu)
                                     .tint(ApolloPalette.accentStrong)
                                 }
+                            }
+
+                            if let extraModelConfigsContent {
+                                extraModelConfigsContent
                             }
                         }
                         .padding()

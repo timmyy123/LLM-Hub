@@ -958,4 +958,29 @@
     <string name="music_saved_toast">Аудіокліп збережено у локальну бібліотеку!</string>
     <string name="music_generator_download_model">Спочатку Завантажте Модель</string>
     <string name="music_generator_download_model_desc">Завантажте модель генератора музики з екрана Моделей, щоб почати створення музики.</string>
+
+    <!-- MCP Agent -->
+    <string name="agent_mcp_settings">Налаштування MCP</string>
+    <string name="agent_mcp_title">Інструменти MCP</string>
+    <string name="agent_mcp_description">Підключайте сервери MCP і дозволяйте Агенту використовувати їхні інструменти.</string>
+    <string name="agent_mcp_transport">Транспорт</string>
+    <string name="agent_mcp_termux_stdio">stdio Termux</string>
+    <string name="agent_mcp_remote_http">Віддалений HTTP</string>
+    <string name="agent_mcp_command">Команда сервера MCP</string>
+    <string name="agent_mcp_termux_help">Запускає сервер MCP через stdio Termux. Спочатку встановіть потрібні пакети.</string>
+    <string name="agent_mcp_server_url">URL сервера</string>
+    <string name="agent_mcp_bearer_token">Токен Bearer (необов’язково)</string>
+    <string name="agent_mcp_approval_notice">Кожен виклик інструмента MCP потребує вашого схвалення перед запуском.</string>
+    <string name="agent_mcp_connecting">Підключення…</string>
+    <string name="agent_mcp_connected_tools">Підключено інструментів: %1$d</string>
+    <string name="agent_mcp_error">Помилка MCP: %1$s</string>
+    <string name="agent_mcp_connect">Підключити</string>
+    <string name="agent_mcp_disconnect">Відключити</string>
+    <string name="agent_mcp_tool_request">Інструмент MCP: %1$s</string>
+    <string name="agent_mcp_allow">Дозволити</string>
+    <string name="agent_mcp_deny">Відхилити</string>
+    <string name="agent_mcp_approval_required">Потрібне схвалення</string>
+    <string name="agent_mcp_denied">Відхилено користувачем</string>
+    <string name="agent_mcp_status">Стан</string>
+    <string name="agent_termux_tool_title">Команда оболонки Termux</string>
 </resources>

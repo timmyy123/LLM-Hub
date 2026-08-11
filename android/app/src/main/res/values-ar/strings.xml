@@ -958,4 +958,29 @@
     <string name="music_saved_toast">تم حفظ المقطع الصوتي في المكتبة!</string>
     <string name="music_generator_download_model">قم بتنزيل النموذج أولاً</string>
     <string name="music_generator_download_model_desc">قم بتنزيل نموذج إنشاء الموسيقى من شاشة النماذج لبدء إنشاء الموسيقى.</string>
+
+    <!-- MCP Agent -->
+    <string name="agent_mcp_settings">إعدادات MCP</string>
+    <string name="agent_mcp_title">أدوات MCP</string>
+    <string name="agent_mcp_description">اتصل بخوادم MCP واسمح للوكيل باستخدام أدواتها.</string>
+    <string name="agent_mcp_transport">النقل</string>
+    <string name="agent_mcp_termux_stdio">stdio عبر Termux</string>
+    <string name="agent_mcp_remote_http">HTTP بعيد</string>
+    <string name="agent_mcp_command">أمر خادم MCP</string>
+    <string name="agent_mcp_termux_help">يشغّل خادم MCP عبر stdio في Termux. ثبّت الحزم المطلوبة أولاً.</string>
+    <string name="agent_mcp_server_url">عنوان URL للخادم</string>
+    <string name="agent_mcp_bearer_token">رمز Bearer (اختياري)</string>
+    <string name="agent_mcp_approval_notice">تتطلب كل عملية استدعاء لأداة MCP موافقتك قبل تشغيلها.</string>
+    <string name="agent_mcp_connecting">جارٍ الاتصال…</string>
+    <string name="agent_mcp_connected_tools">تم توصيل %1$d من الأدوات</string>
+    <string name="agent_mcp_error">خطأ MCP: %1$s</string>
+    <string name="agent_mcp_connect">اتصال</string>
+    <string name="agent_mcp_disconnect">قطع الاتصال</string>
+    <string name="agent_mcp_tool_request">أداة MCP: %1$s</string>
+    <string name="agent_mcp_allow">سماح</string>
+    <string name="agent_mcp_deny">رفض</string>
+    <string name="agent_mcp_approval_required">الموافقة مطلوبة</string>
+    <string name="agent_mcp_denied">رفضه المستخدم</string>
+    <string name="agent_mcp_status">الحالة</string>
+    <string name="agent_termux_tool_title">أمر صدفة Termux</string>
 </resources>

@@ -891,3 +891,29 @@
 
 "music_generator_download_model" = "पहले मॉडल डाउनलोड करें";
 "music_generator_download_model_desc" = "संगीत बनाना शुरू करने के लिए मॉडल स्क्रीन से म्यूजिक जनरेटर मॉडल डाउनलोड करें।";
+
+
+/* MCP Agent */
+"agent_mcp_settings" = "MCP सेटिंग";
+"agent_mcp_title" = "MCP टूल";
+"agent_mcp_description" = "MCP सर्वर कनेक्ट करें और एजेंट को उनके टूल इस्तेमाल करने दें।";
+"agent_mcp_transport" = "ट्रांसपोर्ट";
+"agent_mcp_termux_stdio" = "Termux stdio";
+"agent_mcp_remote_http" = "रिमोट HTTP";
+"agent_mcp_command" = "MCP सर्वर कमांड";
+"agent_mcp_termux_help" = "Termux stdio के जरिए MCP सर्वर चलाता है। पहले जरूरी पैकेज इंस्टॉल करें।";
+"agent_mcp_server_url" = "सर्वर URL";
+"agent_mcp_bearer_token" = "Bearer टोकन (वैकल्पिक)";
+"agent_mcp_approval_notice" = "हर MCP टूल कॉल चलने से पहले आपकी मंजूरी मांगती है।";
+"agent_mcp_connecting" = "कनेक्ट हो रहा है…";
+"agent_mcp_connected_tools" = "%d टूल कनेक्ट हैं";
+"agent_mcp_error" = "MCP त्रुटि: %@";
+"agent_mcp_connect" = "कनेक्ट करें";
+"agent_mcp_disconnect" = "डिस्कनेक्ट करें";
+"agent_mcp_tool_request" = "MCP टूल: %@";
+"agent_mcp_allow" = "अनुमति दें";
+"agent_mcp_deny" = "अस्वीकार करें";
+"agent_mcp_approval_required" = "मंजूरी जरूरी";
+"agent_mcp_denied" = "उपयोगकर्ता ने अस्वीकार किया";
+"agent_mcp_status" = "स्थिति";
+"agent_termux_tool_title" = "Termux शेल कमांड";

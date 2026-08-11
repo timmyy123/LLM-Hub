@@ -956,4 +956,29 @@
     <string name="music_saved_toast">Ses klibi yerel kitaplığa kaydedildi!</string>
     <string name="music_generator_download_model">Önce Model İndirin</string>
     <string name="music_generator_download_model_desc">Müzik oluşturmaya başlamak için Modeller ekranından bir müzik oluşturma modeli indirin.</string>
+
+    <!-- MCP Agent -->
+    <string name="agent_mcp_settings">MCP ayarları</string>
+    <string name="agent_mcp_title">MCP Araçları</string>
+    <string name="agent_mcp_description">MCP sunucularına bağlanın ve Aracının araçlarını kullanmasına izin verin.</string>
+    <string name="agent_mcp_transport">Aktarım</string>
+    <string name="agent_mcp_termux_stdio">Termux stdio</string>
+    <string name="agent_mcp_remote_http">Uzak HTTP</string>
+    <string name="agent_mcp_command">MCP sunucu komutu</string>
+    <string name="agent_mcp_termux_help">MCP sunucusunu Termux stdio üzerinden çalıştırır. Önce gerekli paketleri kurun.</string>
+    <string name="agent_mcp_server_url">Sunucu URL’si</string>
+    <string name="agent_mcp_bearer_token">Bearer belirteci (isteğe bağlı)</string>
+    <string name="agent_mcp_approval_notice">Her MCP araç çağrısı çalışmadan önce onayınızı gerektirir.</string>
+    <string name="agent_mcp_connecting">Bağlanıyor…</string>
+    <string name="agent_mcp_connected_tools">%1$d araç bağlandı</string>
+    <string name="agent_mcp_error">MCP hatası: %1$s</string>
+    <string name="agent_mcp_connect">Bağlan</string>
+    <string name="agent_mcp_disconnect">Bağlantıyı kes</string>
+    <string name="agent_mcp_tool_request">MCP aracı: %1$s</string>
+    <string name="agent_mcp_allow">İzin ver</string>
+    <string name="agent_mcp_deny">Reddet</string>
+    <string name="agent_mcp_approval_required">Onay gerekli</string>
+    <string name="agent_mcp_denied">Kullanıcı tarafından reddedildi</string>
+    <string name="agent_mcp_status">Durum</string>
+    <string name="agent_termux_tool_title">Termux kabuk komutu</string>
 </resources>

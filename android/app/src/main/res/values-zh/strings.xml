@@ -966,4 +966,29 @@
     <string name="music_saved_toast">音频已保存至本地媒体库！</string>
     <string name="music_generator_download_model">請先下載模型</string>
     <string name="music_generator_download_model_desc">從模型列表下載音樂生成模型，開始創作音樂。</string>
+
+    <!-- MCP Agent -->
+    <string name="agent_mcp_settings">MCP 設定</string>
+    <string name="agent_mcp_title">MCP 工具</string>
+    <string name="agent_mcp_description">連接 MCP 伺服器並允許代理程式使用其工具。</string>
+    <string name="agent_mcp_transport">傳輸方式</string>
+    <string name="agent_mcp_termux_stdio">Termux stdio</string>
+    <string name="agent_mcp_remote_http">遠端 HTTP</string>
+    <string name="agent_mcp_command">MCP 伺服器命令</string>
+    <string name="agent_mcp_termux_help">透過 Termux stdio 執行 MCP 伺服器。請先安裝必要的套件。</string>
+    <string name="agent_mcp_server_url">伺服器 URL</string>
+    <string name="agent_mcp_bearer_token">Bearer 權杖（選填）</string>
+    <string name="agent_mcp_approval_notice">每次 MCP 工具呼叫都必須在執行前取得您的核准。</string>
+    <string name="agent_mcp_connecting">連接中…</string>
+    <string name="agent_mcp_connected_tools">已連接 %1$d 個工具</string>
+    <string name="agent_mcp_error">MCP 錯誤：%1$s</string>
+    <string name="agent_mcp_connect">連接</string>
+    <string name="agent_mcp_disconnect">中斷連接</string>
+    <string name="agent_mcp_tool_request">MCP 工具：%1$s</string>
+    <string name="agent_mcp_allow">允許</string>
+    <string name="agent_mcp_deny">拒絕</string>
+    <string name="agent_mcp_approval_required">需要核准</string>
+    <string name="agent_mcp_denied">使用者已拒絕</string>
+    <string name="agent_mcp_status">狀態</string>
+    <string name="agent_termux_tool_title">Termux Shell 命令</string>
 </resources>

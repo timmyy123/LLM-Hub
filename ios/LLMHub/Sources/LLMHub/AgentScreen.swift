@@ -64,218 +64,10 @@ public struct AgentScreen: View {
         GeometryReader { geo in
             ZStack(alignment: .bottom) {
                 ScrollViewReader { proxy in
-                    ZStack(alignment: .bottom) {
-                        ScrollView {
-                            VStack(spacing: 12) {
-                                if vm.messages.isEmpty {
-                                    emptyState
-                                } else {
-                                    ForEach(vm.messages) { msg in
-                                        agentMessageBubble(for: msg)
-                                    }
-
-                                    let isStreamingAIResponse: Bool = {
-                                        guard let last = vm.messages.last else { return false }
-                                        if case .text(_, .agent, let content, _) = last {
-                                            return !content.isEmpty
-                                        }
-                                        return false
-                                    }()
-
-                                    if vm.isGenerating && !isStreamingAIResponse {
-                                        HStack(spacing: 10) {
-                                            ProgressView()
-                                                .tint(Color(hex: "A78BFA"))
-                                            Text(settings.localized("agent_processing_tool"))
-                                                .font(.subheadline)
-                                                .foregroundColor(.white.opacity(0.85))
-                                            Spacer()
-                                        }
-                                        .padding(.horizontal, 14)
-                                        .padding(.vertical, 10)
-                                        .background(Color.white.opacity(0.08))
-                                        .cornerRadius(14)
-                                        .padding(.horizontal, 16)
-                                    }
-                                }
-
-                                Color.clear
-                                    .frame(height: 1)
-                                    .id("bottom_sentinel")
-                            }
-                            .padding(.vertical, 12)
-                            .padding(.bottom, 12)
-                        }
-                        .safeAreaPadding(.bottom, 150)
-                        .scrollDismissesKeyboard(.interactively)
-                        .onTapGesture {
-                            isComposerFocused = false
-                        }
-                        .onChange(of: vm.messages.count) { _, _ in
-                            withAnimation { proxy.scrollTo("bottom_sentinel", anchor: .bottom) }
-                        }
-                        .onChange(of: lastMessageContent) { _, _ in
-                            proxy.scrollTo("bottom_sentinel", anchor: .bottom)
-                        }
-                        .onChange(of: vm.isGenerating) { _, _ in
-                            withAnimation { proxy.scrollTo("bottom_sentinel", anchor: .bottom) }
-                        }
-                        .onChange(of: isComposerFocused) { _, focused in
-                            if focused {
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                                    withAnimation { proxy.scrollTo("bottom_sentinel", anchor: .bottom) }
-                                }
-                            }
-                        }
-                    }
+                    messageList(proxy: proxy)
                 }
 
-                // ── Floating composer panel 1:1 matching AI Chat Screen ─────────────────
-                VStack(spacing: 8) {
-                    if let _ = copiedMessageId {
-                        Text(settings.localized("message_copied"))
-                            .font(.caption)
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(.ultraThinMaterial)
-                            .clipShape(Capsule())
-                            .transition(.scale.combined(with: .opacity))
-                    }
-
-                    VStack(spacing: 0) {
-                        // Text field
-                        ZStack(alignment: .leading) {
-                            if micTranscriber.isPreparing {
-                                Text(settings.localized("preparing_mic"))
-                                    .foregroundColor(.white.opacity(0.45))
-                                    .font(.body)
-                                    .padding(.horizontal, 16)
-                                    .padding(.top, 14)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                            }
-                            TextField(settings.localized("type_a_message"), text: $vm.inputText, axis: .vertical)
-                                .lineLimit(1...6)
-                                .padding(.horizontal, 16)
-                                .padding(.top, 14)
-                                .padding(.bottom, 8)
-                                .focused($isComposerFocused)
-                                .foregroundColor(.white)
-                                .onSubmit {
-                                    sendCurrentPrompt()
-                                }
-                        }
-
-                        // Action row
-                        HStack(spacing: 6) {
-                            // 🌐 Web Search toggle pill
-                            Button {
-                                vm.isWebSearchEnabled.toggle()
-                            } label: {
-                                HStack(spacing: 4) {
-                                    Image(systemName: "globe")
-                                        .font(.system(size: 12, weight: .semibold))
-                                    Text(settings.localized("web_search"))
-                                        .font(.system(size: 12, weight: .semibold))
-                                }
-                                .foregroundColor(vm.isWebSearchEnabled ? .black : .white.opacity(0.75))
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 6)
-                                .background(vm.isWebSearchEnabled ? Color.white : Color.white.opacity(0.09))
-                                .clipShape(Capsule())
-                                .overlay(
-                                    Capsule().stroke(
-                                        vm.isWebSearchEnabled ? Color.clear : Color.white.opacity(0.15),
-                                        lineWidth: 1
-                                    )
-                                )
-                            }
-                            .disabled(vm.isGenerating)
-                            .animation(.easeInOut(duration: 0.15), value: vm.isWebSearchEnabled)
-
-                            Spacer()
-
-                            // Context usage ring
-                            ZStack {
-                                Circle()
-                                    .inset(by: 0.75)
-                                    .stroke(Color.white.opacity(0.18), lineWidth: 1.5)
-                                Circle()
-                                    .inset(by: 1.0)
-                                    .trim(from: 0, to: 0.05)
-                                    .stroke(
-                                        ApolloPalette.accentStrong,
-                                        style: StrokeStyle(lineWidth: 2.0, lineCap: .round)
-                                    )
-                                    .rotationEffect(.degrees(-90))
-                                Text("0%")
-                                    .font(.system(size: 8, weight: .bold, design: .rounded))
-                            }
-                            .frame(width: 32, height: 32)
-                            .padding(.trailing, 4)
-
-                            // Mic button (copied directly from AI Chat)
-                            Button {
-                                if micTranscriber.isRecording {
-                                    Task { _ = await micTranscriber.stopLive() }
-                                } else {
-                                    Task { await micTranscriber.startLive() }
-                                }
-                            } label: {
-                                ZStack {
-                                    Circle()
-                                        .fill(.ultraThinMaterial)
-                                        .frame(width: 32, height: 32)
-                                        .overlay(
-                                            Circle().stroke(Color.white.opacity(0.18), lineWidth: 1)
-                                        )
-                                    if micTranscriber.isRecording {
-                                        Circle()
-                                            .fill(Color.red.opacity(0.25))
-                                            .frame(width: 32, height: 32)
-                                    }
-                                    Image(systemName: micTranscriber.isPreparing ? "ellipsis" : micTranscriber.isRecording ? "stop.fill" : "mic.fill")
-                                        .font(.system(size: 14, weight: .semibold))
-                                        .foregroundColor(micTranscriber.isRecording ? .red : .white)
-                                }
-                            }
-                            .disabled(vm.isGenerating)
-
-                            // Send / Stop button
-                            Button {
-                                isComposerFocused = false
-                                if micTranscriber.isRecording {
-                                    Task { _ = await micTranscriber.stopLive() }
-                                }
-                                if vm.isGenerating {
-                                    // Stop generation
-                                } else {
-                                    sendCurrentPrompt()
-                                }
-                            } label: {
-                                Image(systemName: vm.isGenerating ? "stop.fill" : "arrow.up")
-                                    .font(.system(size: 14, weight: .bold))
-                                    .foregroundColor(vm.isGenerating ? .white : .black)
-                                    .frame(width: 32, height: 32)
-                                    .background(vm.isGenerating ? Color.red.opacity(0.8) : Color.white)
-                                    .clipShape(Circle())
-                            }
-                            .disabled(!vm.isGenerating && vm.inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                        }
-                        .padding(.horizontal, 10)
-                        .padding(.bottom, 10)
-                    }
-                    .background(.ultraThinMaterial)
-                    .clipShape(RoundedRectangle(cornerRadius: 24))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 24)
-                            .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                    )
-                }
-                .padding(.horizontal, 16)
-                .padding(.bottom, 12)
-                .padding(.top, 4)
-                .animation(.easeOut(duration: 0.2), value: isComposerFocused)
+                composerPanel
             }
         }
         .apolloScreenBackground()
@@ -301,52 +93,7 @@ public struct AgentScreen: View {
             }
         }
         .sheet(isPresented: $showSettings) {
-            FeatureModelSettingsSheet(
-                selectedModelName: $agentModelName,
-                maxTokens: $agentMaxTokens,
-                enableThinking: $agentEnableThinking,
-                enableVision: $agentEnableVision,
-                enableAudio: nil,
-                isLoading: $isLoadingModel,
-                errorMessage: $errorMessage,
-                supportsVisionToggle: false,
-                visionToggleTitleKey: "enable_vision",
-                audioToggleTitleKey: nil,
-                visionAvailableCheck: nil,
-                writingMode: nil,
-                modelFilter: { model in
-                    !model.isDependencyOnly &&
-                    model.category != .embedding &&
-                    model.category != .asr &&
-                    !model.name.lowercased().contains("vision projector") &&
-                    !model.name.lowercased().contains("mmproj") &&
-                    !model.name.lowercased().contains("projector")
-                },
-                onLoad: {
-                    isLoadingModel = true
-                    errorMessage = nil
-                    if let model = ModelData.allModels().first(where: { $0.name == agentModelName }) {
-                        do {
-                            let modelContextCap = model.contextWindowSize > 0 ? model.contextWindowSize : 4096
-                            let effectiveContext = min(max(1, Int(agentMaxTokens)), modelContextCap)
-                            LLMBackend.shared.enableThinking = agentEnableThinking
-                            LLMBackend.shared.maxTokens = min(Int(agentMaxTokens), effectiveContext)
-                            LLMBackend.shared.contextWindow = effectiveContext
-                            try await LLMBackend.shared.loadModel(model)
-                            showSettings = false
-                        } catch {
-                            errorMessage = error.localizedDescription
-                        }
-                    } else {
-                        errorMessage = "Model not found"
-                    }
-                    isLoadingModel = false
-                },
-                onUnload: {
-                    LLMBackend.shared.unloadModel()
-                }
-            )
-            .environmentObject(settings)
+            agentSettingsSheet
         }
         .onAppear {
             vm.setupWelcomeMessage(settings: settings, isDownloaded: isAnyModelDownloaded)
@@ -359,6 +106,202 @@ public struct AgentScreen: View {
                 vm.inputText = newText
             }
         }
+    }
+
+    private func messageList(proxy: ScrollViewProxy) -> some View {
+        ScrollView {
+            VStack(spacing: 12) {
+                if vm.messages.isEmpty {
+                    emptyState
+                } else {
+                    ForEach(vm.messages) { msg in
+                        agentMessageBubble(for: msg)
+                    }
+
+                    if vm.isGenerating && !hasStreamingAIResponse {
+                        HStack(spacing: 10) {
+                            ProgressView().tint(Color(hex: "A78BFA"))
+                            Text(settings.localized("agent_processing_tool"))
+                                .font(.subheadline)
+                                .foregroundColor(.white.opacity(0.85))
+                            Spacer()
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
+                        .background(Color.white.opacity(0.08))
+                        .cornerRadius(14)
+                        .padding(.horizontal, 16)
+                    }
+                }
+
+                Color.clear.frame(height: 1).id("bottom_sentinel")
+            }
+            .padding(.vertical, 12)
+            .padding(.bottom, 12)
+        }
+        .safeAreaPadding(.bottom, 150)
+        .scrollDismissesKeyboard(.interactively)
+        .onTapGesture { isComposerFocused = false }
+        .onChange(of: vm.messages.count) { _, _ in
+            withAnimation { proxy.scrollTo("bottom_sentinel", anchor: .bottom) }
+        }
+        .onChange(of: lastMessageContent) { _, _ in
+            proxy.scrollTo("bottom_sentinel", anchor: .bottom)
+        }
+        .onChange(of: vm.isGenerating) { _, _ in
+            withAnimation { proxy.scrollTo("bottom_sentinel", anchor: .bottom) }
+        }
+        .onChange(of: isComposerFocused) { _, focused in
+            guard focused else { return }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                withAnimation { proxy.scrollTo("bottom_sentinel", anchor: .bottom) }
+            }
+        }
+    }
+
+    private var hasStreamingAIResponse: Bool {
+        guard let last = vm.messages.last else { return false }
+        if case .text(_, .agent, let content, _) = last { return !content.isEmpty }
+        return false
+    }
+
+    private var agentSettingsSheet: some View {
+        FeatureModelSettingsSheet(
+            selectedModelName: $agentModelName,
+            maxTokens: $agentMaxTokens,
+            enableThinking: $agentEnableThinking,
+            enableVision: $agentEnableVision,
+            enableAudio: nil,
+            isLoading: $isLoadingModel,
+            errorMessage: $errorMessage,
+            supportsVisionToggle: false,
+            visionToggleTitleKey: "enable_vision",
+            audioToggleTitleKey: nil,
+            visionAvailableCheck: nil,
+            writingMode: nil,
+            modelFilter: isAgentModel,
+            onLoad: loadAgentModel,
+            onUnload: { LLMBackend.shared.unloadModel() },
+            extraModelConfigsContent: AnyView(MCPConfigurationSection(viewModel: vm))
+        )
+        .environmentObject(settings)
+    }
+
+    private func isAgentModel(_ model: AIModel) -> Bool {
+        !model.isDependencyOnly &&
+        model.category != .embedding &&
+        model.category != .asr &&
+        !model.name.lowercased().contains("vision projector") &&
+        !model.name.lowercased().contains("mmproj") &&
+        !model.name.lowercased().contains("projector")
+    }
+
+    private func loadAgentModel() async {
+        isLoadingModel = true
+        errorMessage = nil
+        defer { isLoadingModel = false }
+        guard let model = ModelData.allModels().first(where: { $0.name == agentModelName }) else {
+            errorMessage = "Model not found"
+            return
+        }
+        do {
+            let modelContextCap = model.contextWindowSize > 0 ? model.contextWindowSize : 4096
+            let effectiveContext = min(max(1, Int(agentMaxTokens)), modelContextCap)
+            LLMBackend.shared.enableThinking = agentEnableThinking
+            LLMBackend.shared.maxTokens = min(Int(agentMaxTokens), effectiveContext)
+            LLMBackend.shared.contextWindow = effectiveContext
+            try await LLMBackend.shared.loadModel(model)
+            showSettings = false
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private var composerPanel: some View {
+        VStack(spacing: 8) {
+            if copiedMessageId != nil {
+                Text(settings.localized("message_copied"))
+                    .font(.caption)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(.ultraThinMaterial)
+                    .clipShape(Capsule())
+                    .transition(.scale.combined(with: .opacity))
+            }
+
+            VStack(spacing: 0) {
+                ZStack(alignment: .leading) {
+                    if micTranscriber.isPreparing {
+                        Text(settings.localized("preparing_mic"))
+                            .foregroundColor(.white.opacity(0.45))
+                            .font(.body)
+                            .padding(.horizontal, 16)
+                            .padding(.top, 14)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    TextField(settings.localized("type_a_message"), text: $vm.inputText, axis: .vertical)
+                        .lineLimit(1...6)
+                        .padding(.horizontal, 16)
+                        .padding(.top, 14)
+                        .padding(.bottom, 8)
+                        .focused($isComposerFocused)
+                        .foregroundColor(.white)
+                        .onSubmit { sendCurrentPrompt() }
+                }
+
+                HStack(spacing: 6) {
+                    Button { vm.isWebSearchEnabled.toggle() } label: {
+                        AgentWebSearchToggleLabel(
+                            text: settings.localized("web_search"),
+                            isEnabled: vm.isWebSearchEnabled
+                        )
+                    }
+                    .disabled(vm.isGenerating)
+                    .animation(.easeInOut(duration: 0.15), value: vm.isWebSearchEnabled)
+
+                    Spacer()
+                    AgentContextUsageRing()
+
+                    Button {
+                        if micTranscriber.isRecording {
+                            Task { _ = await micTranscriber.stopLive() }
+                        } else {
+                            Task { await micTranscriber.startLive() }
+                        }
+                    } label: {
+                        AgentMicButtonLabel(
+                            isPreparing: micTranscriber.isPreparing,
+                            isRecording: micTranscriber.isRecording
+                        )
+                    }
+                    .disabled(vm.isGenerating)
+
+                    Button {
+                        isComposerFocused = false
+                        if micTranscriber.isRecording {
+                            Task { _ = await micTranscriber.stopLive() }
+                        }
+                        if !vm.isGenerating { sendCurrentPrompt() }
+                    } label: {
+                        AgentSendButtonLabel(isGenerating: vm.isGenerating)
+                    }
+                    .disabled(!vm.isGenerating && vm.inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
+                .padding(.horizontal, 10)
+                .padding(.bottom, 10)
+            }
+            .background(.ultraThinMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: 24))
+            .overlay(
+                RoundedRectangle(cornerRadius: 24)
+                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
+            )
+        }
+        .padding(.horizontal, 16)
+        .padding(.bottom, 12)
+        .padding(.top, 4)
+        .animation(.easeOut(duration: 0.2), value: isComposerFocused)
     }
 
     private func sendCurrentPrompt() {
@@ -449,8 +392,15 @@ public struct AgentScreen: View {
                 .padding(.horizontal, 16)
             }
 
-        case .toolCall(_, let name, let args, let status, let result):
-            AgentToolCallCell(name: name, args: args, status: status, result: result)
+        case .toolCall(let id, let name, let args, let status, let result):
+            AgentToolCallCell(
+                name: name,
+                args: args,
+                status: status,
+                result: result,
+                onApprove: name.hasPrefix("mcp_") ? { vm.approveMCPTool(id: id) } : nil,
+                onDeny: name.hasPrefix("mcp_") ? { vm.denyMCPTool(id: id) } : nil
+            )
                 .padding(.horizontal, 16)
 
         case .map(_, let label, let latitude, let longitude):
@@ -465,34 +415,49 @@ public struct AgentScreen: View {
 // MARK: - Tool Call Cell
 
 struct AgentToolCallCell: View {
+    @EnvironmentObject var settings: AppSettings
     let name: String
     let args: String
     let status: AgentMessageItem.ToolStatus
     let result: String?
+    let onApprove: (() -> Void)?
+    let onDeny: (() -> Void)?
 
     var body: some View {
-        HStack {
-            Image(systemName: statusIcon)
-                .foregroundColor(statusColor)
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Image(systemName: statusIcon)
+                    .foregroundColor(statusColor)
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text("\(name)(\(args))")
-                    .font(.caption)
-                    .bold()
-                    .foregroundColor(.white)
-                if let res = result {
-                    Text(res)
-                        .font(.caption2)
-                        .foregroundColor(.white.opacity(0.7))
-                        .lineLimit(2)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("\(name)(\(args))")
+                        .font(.caption)
+                        .bold()
+                        .foregroundColor(.white)
+                    if let res = result {
+                        Text(res)
+                            .font(.caption2)
+                            .foregroundColor(.white.opacity(0.7))
+                            .lineLimit(2)
+                    }
                 }
+
+                Spacer()
+
+                Text(statusText)
+                    .font(.system(size: 10))
+                    .foregroundColor(.white.opacity(0.6))
             }
-
-            Spacer()
-
-            Text(statusText)
-                .font(.system(size: 10))
-                .foregroundColor(.white.opacity(0.6))
+            if status == .pendingApproval {
+                HStack(spacing: 8) {
+                    Button(settings.localized("agent_mcp_allow")) { onApprove?() }
+                        .buttonStyle(.borderedProminent)
+                        .tint(Color(hex: "10B981"))
+                    Button(settings.localized("agent_mcp_deny"), role: .cancel) { onDeny?() }
+                        .buttonStyle(.bordered)
+                }
+                .font(.caption.bold())
+            }
         }
         .padding(12)
         .background(Color.white.opacity(0.1))
@@ -505,6 +470,7 @@ struct AgentToolCallCell: View {
 
     private var statusIcon: String {
         switch status {
+        case .pendingApproval: return "hand.raised.fill"
         case .running: return "gearshape.fill"
         case .success: return "checkmark.circle.fill"
         case .failed: return "xmark.circle.fill"
@@ -513,6 +479,7 @@ struct AgentToolCallCell: View {
 
     private var statusColor: Color {
         switch status {
+        case .pendingApproval: return Color(hex: "F59E0B")
         case .running: return Color(hex: "FBBF24")
         case .success: return Color(hex: "34D399")
         case .failed: return Color(hex: "F87171")
@@ -521,9 +488,181 @@ struct AgentToolCallCell: View {
 
     private var statusText: String {
         switch status {
+        case .pendingApproval: return settings.localized("agent_mcp_approval_required")
         case .running: return NSLocalizedString("agent_tool_running", comment: "")
         case .success: return NSLocalizedString("agent_tool_success", comment: "")
         case .failed: return NSLocalizedString("agent_tool_failed", comment: "")
+        }
+    }
+}
+
+private struct AgentWebSearchToggleLabel: View {
+    let text: String
+    let isEnabled: Bool
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: "globe")
+                .font(.system(size: 12, weight: .semibold))
+            Text(text)
+                .font(.system(size: 12, weight: .semibold))
+        }
+        .foregroundColor(isEnabled ? .black : .white.opacity(0.75))
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(isEnabled ? Color.white : Color.white.opacity(0.09))
+        .clipShape(Capsule())
+        .overlay(
+            Capsule().stroke(
+                isEnabled ? Color.clear : Color.white.opacity(0.15),
+                lineWidth: 1
+            )
+        )
+    }
+}
+
+private struct AgentContextUsageRing: View {
+    var body: some View {
+        ZStack {
+            Circle()
+                .inset(by: 0.75)
+                .stroke(Color.white.opacity(0.18), lineWidth: 1.5)
+            Circle()
+                .inset(by: 1.0)
+                .trim(from: 0, to: 0.05)
+                .stroke(
+                    ApolloPalette.accentStrong,
+                    style: StrokeStyle(lineWidth: 2.0, lineCap: .round)
+                )
+                .rotationEffect(.degrees(-90))
+            Text("0%")
+                .font(.system(size: 8, weight: .bold, design: .rounded))
+        }
+        .frame(width: 32, height: 32)
+        .padding(.trailing, 4)
+    }
+}
+
+private struct AgentMicButtonLabel: View {
+    let isPreparing: Bool
+    let isRecording: Bool
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(.ultraThinMaterial)
+                .frame(width: 32, height: 32)
+                .overlay(Circle().stroke(Color.white.opacity(0.18), lineWidth: 1))
+            if isRecording {
+                Circle()
+                    .fill(Color.red.opacity(0.25))
+                    .frame(width: 32, height: 32)
+            }
+            Image(systemName: isPreparing ? "ellipsis" : isRecording ? "stop.fill" : "mic.fill")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(isRecording ? .red : .white)
+        }
+    }
+}
+
+private struct AgentSendButtonLabel: View {
+    let isGenerating: Bool
+
+    var body: some View {
+        Image(systemName: isGenerating ? "stop.fill" : "arrow.up")
+            .font(.system(size: 14, weight: .bold))
+            .foregroundColor(isGenerating ? .white : .black)
+            .frame(width: 32, height: 32)
+            .background(isGenerating ? Color.red.opacity(0.8) : Color.white)
+            .clipShape(Circle())
+    }
+}
+
+private struct MCPConfigurationSection: View {
+    @EnvironmentObject var settings: AppSettings
+    @ObservedObject var viewModel: AgentViewModel
+    @State private var enabled: Bool
+    @State private var url: String
+    @State private var token: String
+
+    init(viewModel: AgentViewModel) {
+        self.viewModel = viewModel
+        _enabled = State(initialValue: viewModel.mcpSettings.enabled)
+        _url = State(initialValue: viewModel.mcpSettings.url)
+        _token = State(initialValue: viewModel.mcpSettings.token)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Toggle(isOn: Binding(
+                get: { enabled },
+                set: { value in
+                    enabled = value
+                    viewModel.setMCPEnabled(value)
+                }
+            )) { Text(settings.localized("agent_mcp_title")) }
+            .tint(ApolloPalette.accentStrong)
+            .foregroundStyle(.white)
+
+            if enabled {
+                Text(settings.localized("agent_mcp_description"))
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.65))
+                TextField(settings.localized("agent_mcp_server_url"), text: $url)
+                    .textInputAutocapitalization(.never)
+                    .keyboardType(.URL)
+                    .padding(10)
+                    .background(Color.white.opacity(0.08))
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+
+                SecureField(settings.localized("agent_mcp_bearer_token"), text: $token)
+                    .textInputAutocapitalization(.never)
+                    .padding(10)
+                    .background(Color.white.opacity(0.08))
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+
+                Text(settings.localized("agent_mcp_approval_notice"))
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.65))
+
+                if !viewModel.mcpStatus.isEmpty {
+                    if viewModel.mcpStatus == "connecting" {
+                        HStack { ProgressView(); Text(settings.localized("agent_mcp_connecting")) }
+                    } else if viewModel.mcpStatus == "connected" {
+                        Text(String(format: settings.localized("agent_mcp_connected_tools"), viewModel.mcpTools.count))
+                            .foregroundStyle(.green)
+                    } else {
+                        Text(String(format: settings.localized("agent_mcp_error"), viewModel.mcpStatus))
+                            .foregroundStyle(.red)
+                    }
+                }
+
+                if !viewModel.mcpTools.isEmpty {
+                    ForEach(viewModel.mcpTools) { tool in
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("• \(tool.name)").font(.caption.weight(.semibold))
+                            if !tool.description.isEmpty {
+                                Text(tool.description).font(.caption2).foregroundStyle(.white.opacity(0.6))
+                            }
+                        }
+                    }
+                }
+
+                HStack(spacing: 8) {
+                    Button(settings.localized("agent_mcp_connect")) {
+                        viewModel.connectMCP(MCPSettings(enabled: true, url: url, token: token))
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(ApolloPalette.accentStrong)
+                    .disabled(url.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+
+                    Button(settings.localized("agent_mcp_disconnect"), role: .destructive) {
+                        viewModel.disconnectMCP()
+                        enabled = false
+                    }
+                    .buttonStyle(.bordered)
+                }
+            }
         }
     }
 }

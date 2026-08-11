@@ -878,3 +878,29 @@
 
 "music_generator_download_model" = "最初にモデルをダウンロード";
 "music_generator_download_model_desc" = "モデル画面から音楽生成モデルをダウンロードして、音楽の生成を開始してください。";
+
+
+/* MCP Agent */
+"agent_mcp_settings" = "MCP設定";
+"agent_mcp_title" = "MCPツール";
+"agent_mcp_description" = "MCPサーバーに接続し、エージェントがそのツールを使用できるようにします。";
+"agent_mcp_transport" = "トランスポート";
+"agent_mcp_termux_stdio" = "Termux stdio";
+"agent_mcp_remote_http" = "リモートHTTP";
+"agent_mcp_command" = "MCPサーバーコマンド";
+"agent_mcp_termux_help" = "Termux stdio経由でMCPサーバーを実行します。必要なパッケージを先にインストールしてください。";
+"agent_mcp_server_url" = "サーバーURL";
+"agent_mcp_bearer_token" = "Bearerトークン（任意）";
+"agent_mcp_approval_notice" = "すべてのMCPツール呼び出しは、実行前に承認が必要です。";
+"agent_mcp_connecting" = "接続中…";
+"agent_mcp_connected_tools" = "%d個のツールに接続済み";
+"agent_mcp_error" = "MCPエラー: %@";
+"agent_mcp_connect" = "接続";
+"agent_mcp_disconnect" = "切断";
+"agent_mcp_tool_request" = "MCPツール: %@";
+"agent_mcp_allow" = "許可";
+"agent_mcp_deny" = "拒否";
+"agent_mcp_approval_required" = "承認が必要";
+"agent_mcp_denied" = "ユーザーが拒否しました";
+"agent_mcp_status" = "状態";
+"agent_termux_tool_title" = "Termuxシェルコマンド";

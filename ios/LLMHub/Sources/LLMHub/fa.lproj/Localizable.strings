@@ -878,3 +878,29 @@
 
 "music_generator_download_model" = "ابتدا مدل را دانلود کنید";
 "music_generator_download_model_desc" = "یک مدل تولید موسیقی را از صفحه مدل‌ها دانلود کنید تا شروع به تولید موسیقی کنید.";
+
+
+/* MCP Agent */
+"agent_mcp_settings" = "تنظیمات MCP";
+"agent_mcp_title" = "ابزارهای MCP";
+"agent_mcp_description" = "به سرورهای MCP متصل شوید و به عامل اجازه دهید از ابزارهای آن‌ها استفاده کند.";
+"agent_mcp_transport" = "انتقال";
+"agent_mcp_termux_stdio" = "stdio ترموکس";
+"agent_mcp_remote_http" = "HTTP راه‌دور";
+"agent_mcp_command" = "فرمان سرور MCP";
+"agent_mcp_termux_help" = "سرور MCP را از طریق stdio ترموکس اجرا می‌کند. ابتدا بسته‌های لازم را نصب کنید.";
+"agent_mcp_server_url" = "نشانی سرور";
+"agent_mcp_bearer_token" = "توکن Bearer (اختیاری)";
+"agent_mcp_approval_notice" = "هر فراخوانی ابزار MCP پیش از اجرا به تأیید شما نیاز دارد.";
+"agent_mcp_connecting" = "در حال اتصال…";
+"agent_mcp_connected_tools" = "%d ابزار متصل شد";
+"agent_mcp_error" = "خطای MCP: %@";
+"agent_mcp_connect" = "اتصال";
+"agent_mcp_disconnect" = "قطع اتصال";
+"agent_mcp_tool_request" = "ابزار MCP: %@";
+"agent_mcp_allow" = "اجازه";
+"agent_mcp_deny" = "رد";
+"agent_mcp_approval_required" = "تأیید لازم است";
+"agent_mcp_denied" = "توسط کاربر رد شد";
+"agent_mcp_status" = "وضعیت";
+"agent_termux_tool_title" = "فرمان پوسته ترموکس";

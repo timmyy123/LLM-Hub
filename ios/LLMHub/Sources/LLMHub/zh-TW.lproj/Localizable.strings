@@ -886,3 +886,29 @@
 
 "music_generator_download_model" = "請先下載模型";
 "music_generator_download_model_desc" = "從模型列表下載音樂生成模型，開始創作音樂。";
+
+
+/* MCP Agent */
+"agent_mcp_settings" = "MCP 設定";
+"agent_mcp_title" = "MCP 工具";
+"agent_mcp_description" = "連接 MCP 伺服器並允許代理程式使用其工具。";
+"agent_mcp_transport" = "傳輸方式";
+"agent_mcp_termux_stdio" = "Termux stdio";
+"agent_mcp_remote_http" = "遠端 HTTP";
+"agent_mcp_command" = "MCP 伺服器命令";
+"agent_mcp_termux_help" = "透過 Termux stdio 執行 MCP 伺服器。請先安裝必要的套件。";
+"agent_mcp_server_url" = "伺服器 URL";
+"agent_mcp_bearer_token" = "Bearer 權杖（選填）";
+"agent_mcp_approval_notice" = "每次 MCP 工具呼叫都必須在執行前取得您的核准。";
+"agent_mcp_connecting" = "連接中…";
+"agent_mcp_connected_tools" = "已連接 %d 個工具";
+"agent_mcp_error" = "MCP 錯誤：%@";
+"agent_mcp_connect" = "連接";
+"agent_mcp_disconnect" = "中斷連接";
+"agent_mcp_tool_request" = "MCP 工具：%@";
+"agent_mcp_allow" = "允許";
+"agent_mcp_deny" = "拒絕";
+"agent_mcp_approval_required" = "需要核准";
+"agent_mcp_denied" = "使用者已拒絕";
+"agent_mcp_status" = "狀態";
+"agent_termux_tool_title" = "Termux Shell 命令";

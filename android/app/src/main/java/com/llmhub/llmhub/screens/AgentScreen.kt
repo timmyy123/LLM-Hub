@@ -39,6 +39,7 @@ import com.llmhub.llmhub.R
 import com.llmhub.llmhub.agent.AgentMessage
 import com.llmhub.llmhub.agent.AgentViewModel
 import com.llmhub.llmhub.agent.VoiceMode
+import com.llmhub.llmhub.agent.McpSettings
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import com.llmhub.llmhub.components.FeatureModelSettingsSheet
 import com.llmhub.llmhub.components.MessageInput
@@ -238,8 +239,14 @@ fun AgentScreen(
                                 is AgentMessage.Text -> AgentTextMessageBubble(msg)
                                 is AgentMessage.ToolCall -> AgentToolCallBubble(
                                     msg = msg,
-                                    onExecuteCommand = { callId, cmd -> viewModel.approveAndExecuteTermuxCommand(callId, cmd) },
-                                    onCancelCommand = { callId -> viewModel.cancelTermuxCommand(callId) }
+                                    onExecuteCommand = { callId, cmd ->
+                                        if (msg.toolName.startsWith("mcp_")) viewModel.approveMcpTool(callId)
+                                        else viewModel.approveAndExecuteTermuxCommand(callId, cmd)
+                                    },
+                                    onCancelCommand = { callId ->
+                                        if (msg.toolName.startsWith("mcp_")) viewModel.cancelMcpTool(callId)
+                                        else viewModel.cancelTermuxCommand(callId)
+                                    }
                                 )
                                 is AgentMessage.MapLocation -> AgentMapCardBubble(msg, context)
                                 is AgentMessage.Audio -> com.llmhub.llmhub.components.AudioMessageCard(
@@ -476,8 +483,86 @@ fun AgentScreen(
                                 }
                             }
                         }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+                        McpConfigContent(viewModel)
                     }
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun McpConfigContent(viewModel: AgentViewModel) {
+    val saved by viewModel.mcpSettings.collectAsState()
+    val tools by viewModel.mcpTools.collectAsState()
+    val status by viewModel.mcpStatus.collectAsState()
+    var enabled by remember(saved.enabled) { mutableStateOf(saved.enabled) }
+    var transport by remember(saved.transport) { mutableStateOf(saved.transport) }
+    var url by remember(saved.url) { mutableStateOf(saved.url) }
+    var token by remember(saved.token) { mutableStateOf(saved.token) }
+    var command by remember(saved.command) { mutableStateOf(saved.command) }
+
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text(stringResource(R.string.agent_mcp_title), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+            Switch(
+                checked = enabled,
+                onCheckedChange = {
+                    enabled = it
+                    viewModel.setMcpEnabled(it)
+                }
+            )
+        }
+
+        if (enabled) {
+            Text(stringResource(R.string.agent_mcp_description), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(R.string.agent_mcp_transport), style = MaterialTheme.typography.labelLarge)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(selected = transport == "termux", onClick = { transport = "termux" }, label = { Text(stringResource(R.string.agent_mcp_termux_stdio)) })
+                FilterChip(selected = transport == "http", onClick = { transport = "http" }, label = { Text(stringResource(R.string.agent_mcp_remote_http)) })
+            }
+            if (transport == "termux") {
+                OutlinedTextField(
+                    value = command,
+                    onValueChange = { command = it },
+                    label = { Text(stringResource(R.string.agent_mcp_command)) },
+                    placeholder = { Text("npx -y @modelcontextprotocol/server-everything") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 2
+                )
+                Text(stringResource(R.string.agent_mcp_termux_help), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            } else {
+                OutlinedTextField(value = url, onValueChange = { url = it }, label = { Text(stringResource(R.string.agent_mcp_server_url)) }, placeholder = { Text("https://example.com/mcp") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                OutlinedTextField(
+                    value = token,
+                    onValueChange = { token = it },
+                    label = { Text(stringResource(R.string.agent_mcp_bearer_token)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation()
+                )
+            }
+            Text(stringResource(R.string.agent_mcp_approval_notice), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (status.isNotBlank()) {
+                val text = when (status) {
+                    "connecting" -> stringResource(R.string.agent_mcp_connecting)
+                    "connected" -> stringResource(R.string.agent_mcp_connected_tools, tools.size)
+                    else -> stringResource(R.string.agent_mcp_error, status)
+                }
+                Text(text, color = if (status == "connected") Color(0xFF10B981) else MaterialTheme.colorScheme.error)
+            }
+            if (tools.isNotEmpty()) {
+                tools.forEach { tool -> Text("• ${tool.name}", style = MaterialTheme.typography.bodySmall) }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                Button(
+                    onClick = { viewModel.connectMcp(McpSettings(true, transport, url, token, command)) },
+                    enabled = if (transport == "termux") command.isNotBlank() else url.isNotBlank(),
+                    modifier = Modifier.weight(1f)
+                ) { Text(stringResource(R.string.agent_mcp_connect)) }
+                OutlinedButton(onClick = viewModel::disconnectMcp, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.agent_mcp_disconnect)) }
             }
         }
     }
@@ -536,6 +621,7 @@ fun AgentToolCallBubble(
     onCancelCommand: ((String) -> Unit)? = null
 ) {
     if (msg.toolName.contains("termux", ignoreCase = true) || msg.status == AgentMessage.ToolCall.Status.PENDING_APPROVAL) {
+        val isMcp = msg.toolName.startsWith("mcp_", ignoreCase = true)
         val clipboardManager = LocalClipboardManager.current
         val context = LocalContext.current
         var editedCommand by remember(msg.callId, msg.args) { mutableStateOf(msg.args) }
@@ -568,13 +654,13 @@ fun AgentToolCallBubble(
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Terminal,
+                            imageVector = if (isMcp) Icons.Default.Extension else Icons.Default.Terminal,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(20.dp)
                         )
                         Text(
-                            text = "Termux Shell Command",
+                            text = if (isMcp) stringResource(R.string.agent_mcp_tool_request, msg.toolName.removePrefix("mcp_")) else stringResource(R.string.agent_termux_tool_title),
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
@@ -623,7 +709,7 @@ fun AgentToolCallBubble(
                         modifier = Modifier.padding(10.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        if (msg.status == AgentMessage.ToolCall.Status.PENDING_APPROVAL) {
+                        if (msg.status == AgentMessage.ToolCall.Status.PENDING_APPROVAL && !isMcp) {
                             androidx.compose.foundation.text.BasicTextField(
                                 value = editedCommand,
                                 onValueChange = { editedCommand = it },
@@ -647,7 +733,7 @@ fun AgentToolCallBubble(
 
                         IconButton(
                             onClick = {
-                                val textToCopy = if (msg.status == AgentMessage.ToolCall.Status.PENDING_APPROVAL) editedCommand else msg.args
+                                val textToCopy = if (msg.status == AgentMessage.ToolCall.Status.PENDING_APPROVAL && !isMcp) editedCommand else msg.args
                                 clipboardManager.setText(AnnotatedString(textToCopy))
                                 Toast.makeText(context, context.getString(R.string.agent_termux_cmd_copied), Toast.LENGTH_SHORT).show()
                             },
@@ -702,7 +788,7 @@ fun AgentToolCallBubble(
                         ) {
                             Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text(stringResource(R.string.agent_termux_run_cmd), fontWeight = FontWeight.Bold)
+                            Text(stringResource(if (isMcp) R.string.agent_mcp_allow else R.string.agent_termux_run_cmd), fontWeight = FontWeight.Bold)
                         }
                         OutlinedButton(
                             onClick = { onCancelCommand?.invoke(msg.callId) },
@@ -711,7 +797,7 @@ fun AgentToolCallBubble(
                         ) {
                             Icon(Icons.Default.Close, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text(stringResource(R.string.agent_termux_cancel_cmd))
+                            Text(stringResource(if (isMcp) R.string.agent_mcp_deny else R.string.agent_termux_cancel_cmd))
                         }
                     }
                 }

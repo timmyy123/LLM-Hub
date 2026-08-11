@@ -958,4 +958,29 @@
     <string name="music_saved_toast">فایل صوتی در کتابخانه ذخیره شد!</string>
     <string name="music_generator_download_model">ابتدا مدل را دانلود کنید</string>
     <string name="music_generator_download_model_desc">یک مدل تولید موسیقی را از صفحه مدل‌ها دانلود کنید تا شروع به تولید موسیقی کنید.</string>
+
+    <!-- MCP Agent -->
+    <string name="agent_mcp_settings">تنظیمات MCP</string>
+    <string name="agent_mcp_title">ابزارهای MCP</string>
+    <string name="agent_mcp_description">به سرورهای MCP متصل شوید و به عامل اجازه دهید از ابزارهای آن‌ها استفاده کند.</string>
+    <string name="agent_mcp_transport">انتقال</string>
+    <string name="agent_mcp_termux_stdio">stdio ترموکس</string>
+    <string name="agent_mcp_remote_http">HTTP راه‌دور</string>
+    <string name="agent_mcp_command">فرمان سرور MCP</string>
+    <string name="agent_mcp_termux_help">سرور MCP را از طریق stdio ترموکس اجرا می‌کند. ابتدا بسته‌های لازم را نصب کنید.</string>
+    <string name="agent_mcp_server_url">نشانی سرور</string>
+    <string name="agent_mcp_bearer_token">توکن Bearer (اختیاری)</string>
+    <string name="agent_mcp_approval_notice">هر فراخوانی ابزار MCP پیش از اجرا به تأیید شما نیاز دارد.</string>
+    <string name="agent_mcp_connecting">در حال اتصال…</string>
+    <string name="agent_mcp_connected_tools">%1$d ابزار متصل شد</string>
+    <string name="agent_mcp_error">خطای MCP: %1$s</string>
+    <string name="agent_mcp_connect">اتصال</string>
+    <string name="agent_mcp_disconnect">قطع اتصال</string>
+    <string name="agent_mcp_tool_request">ابزار MCP: %1$s</string>
+    <string name="agent_mcp_allow">اجازه</string>
+    <string name="agent_mcp_deny">رد</string>
+    <string name="agent_mcp_approval_required">تأیید لازم است</string>
+    <string name="agent_mcp_denied">توسط کاربر رد شد</string>
+    <string name="agent_mcp_status">وضعیت</string>
+    <string name="agent_termux_tool_title">فرمان پوسته ترموکس</string>
 </resources>

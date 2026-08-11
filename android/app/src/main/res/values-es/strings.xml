@@ -961,4 +961,29 @@
     <string name="music_saved_toast">¡Clip de audio guardado en la biblioteca local!</string>
     <string name="music_generator_download_model">Descargar Modelo Primero</string>
     <string name="music_generator_download_model_desc">Descarga un modelo de generación de música desde la pantalla de Modelos para empezar a generar música.</string>
+
+    <!-- MCP Agent -->
+    <string name="agent_mcp_settings">Ajustes de MCP</string>
+    <string name="agent_mcp_title">Herramientas MCP</string>
+    <string name="agent_mcp_description">Conecta servidores MCP y permite que el Agente use sus herramientas.</string>
+    <string name="agent_mcp_transport">Transporte</string>
+    <string name="agent_mcp_termux_stdio">stdio de Termux</string>
+    <string name="agent_mcp_remote_http">HTTP remoto</string>
+    <string name="agent_mcp_command">Comando del servidor MCP</string>
+    <string name="agent_mcp_termux_help">Ejecuta el servidor MCP mediante stdio de Termux. Instala primero los paquetes necesarios.</string>
+    <string name="agent_mcp_server_url">URL del servidor</string>
+    <string name="agent_mcp_bearer_token">Token Bearer (opcional)</string>
+    <string name="agent_mcp_approval_notice">Cada llamada a una herramienta MCP requiere tu aprobación antes de ejecutarse.</string>
+    <string name="agent_mcp_connecting">Conectando…</string>
+    <string name="agent_mcp_connected_tools">%1$d herramientas conectadas</string>
+    <string name="agent_mcp_error">Error de MCP: %1$s</string>
+    <string name="agent_mcp_connect">Conectar</string>
+    <string name="agent_mcp_disconnect">Desconectar</string>
+    <string name="agent_mcp_tool_request">Herramienta MCP: %1$s</string>
+    <string name="agent_mcp_allow">Permitir</string>
+    <string name="agent_mcp_deny">Denegar</string>
+    <string name="agent_mcp_approval_required">Se requiere aprobación</string>
+    <string name="agent_mcp_denied">Denegado por el usuario</string>
+    <string name="agent_mcp_status">Estado</string>
+    <string name="agent_termux_tool_title">Comando de shell de Termux</string>
 </resources>

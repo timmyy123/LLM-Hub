@@ -911,4 +911,29 @@
     <string name="music_saved_toast">Arquivo de áudio salvo na biblioteca local!</string>
     <string name="music_generator_download_model">Baixe o Modelo Primeiro</string>
     <string name="music_generator_download_model_desc">Baixe um modelo de geração de música na tela de Modelos para começar a gerar música.</string>
+
+    <!-- MCP Agent -->
+    <string name="agent_mcp_settings">Definições de MCP</string>
+    <string name="agent_mcp_title">Ferramentas MCP</string>
+    <string name="agent_mcp_description">Ligue servidores MCP e permita que o Agente use as suas ferramentas.</string>
+    <string name="agent_mcp_transport">Transporte</string>
+    <string name="agent_mcp_termux_stdio">stdio do Termux</string>
+    <string name="agent_mcp_remote_http">HTTP remoto</string>
+    <string name="agent_mcp_command">Comando do servidor MCP</string>
+    <string name="agent_mcp_termux_help">Executa o servidor MCP através do stdio do Termux. Instale primeiro os pacotes necessários.</string>
+    <string name="agent_mcp_server_url">URL do servidor</string>
+    <string name="agent_mcp_bearer_token">Token Bearer (opcional)</string>
+    <string name="agent_mcp_approval_notice">Cada chamada de ferramenta MCP requer a sua aprovação antes da execução.</string>
+    <string name="agent_mcp_connecting">A ligar…</string>
+    <string name="agent_mcp_connected_tools">%1$d ferramentas ligadas</string>
+    <string name="agent_mcp_error">Erro de MCP: %1$s</string>
+    <string name="agent_mcp_connect">Ligar</string>
+    <string name="agent_mcp_disconnect">Desligar</string>
+    <string name="agent_mcp_tool_request">Ferramenta MCP: %1$s</string>
+    <string name="agent_mcp_allow">Permitir</string>
+    <string name="agent_mcp_deny">Negar</string>
+    <string name="agent_mcp_approval_required">Aprovação necessária</string>
+    <string name="agent_mcp_denied">Negado pelo utilizador</string>
+    <string name="agent_mcp_status">Estado</string>
+    <string name="agent_termux_tool_title">Comando shell do Termux</string>
 </resources>
