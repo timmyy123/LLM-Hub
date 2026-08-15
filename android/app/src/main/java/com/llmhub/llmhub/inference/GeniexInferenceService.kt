@@ -314,9 +314,7 @@ class GeniexInferenceService @Inject constructor(
 
                 val modelConfig = ModelConfig(
                     nCtx = nCtx,
-                    max_tokens = nCtx,
-                    nGpuLayers = gpuLayers,
-                    enable_thinking = if (isThinkingModelForConfig) (overrideEnableThinking ?: true) else false
+                    nGpuLayers = gpuLayers
                 )
                 Log.i(
                     TAG,
@@ -332,7 +330,6 @@ class GeniexInferenceService @Inject constructor(
                 if (model.supportsVision && !disableVision && mmprojPath != null) {
                     Log.i(TAG, "Loading as VLM with mmproj: $mmprojPath")
                     val vlmCreateInput = VlmCreateInput(
-                        model_name = "",
                         model_path = modelFile.absolutePath,
                         mmproj_path = mmprojPath,
                         config = modelConfig,
@@ -367,7 +364,6 @@ class GeniexInferenceService @Inject constructor(
                     }
                 } else {
                     val createInput = LlmCreateInput(
-                        model_name = "",
                         model_path = modelFile.absolutePath,
                         tokenizer_path = null,
                         config = modelConfig,
