@@ -2657,6 +2657,7 @@ private struct IOS17VibeVoiceScreen: View {
         let isMuseGlimmer = selectedFeatureModel(named: selectedModelName)?.chatTemplateFamily == .museGlimmer
         // Granite 4.x: IBM's <|start_of_role|>role<|end_of_role|>content<|end_of_text|> template
         let isGranite    = modelName.contains("granite")
+        let isPhi4       = modelName.contains("phi-4") || modelName.contains("phi 4") || modelName.contains("phi4")
         // LFM (Liquid AI) and similar ChatML-style models
         let isChatML     = modelName.contains("lfm") || modelName.contains("liquid")
 
@@ -2818,7 +2819,9 @@ private struct IOS17VibeVoiceScreen: View {
 
         // When using RAW_PROMPT, the SDK's systemPrompt argument is ignored,
         // so we must inject it manually into our sequence.
-        if isGemma4 {
+        if isPhi4 {
+            parts.append("<|system|>\n\(systemPrompt)<|end|>")
+        } else if isGemma4 {
             parts.append("<|turn>system\n\(systemPrompt)<turn|>")
         } else if isGemma {
             parts.append("<start_of_turn>system\n\(systemPrompt)<end_of_turn>")
@@ -2838,7 +2841,10 @@ private struct IOS17VibeVoiceScreen: View {
             let content = msg.content.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !content.isEmpty else { continue }
 
-            if isGemma4 {
+            if isPhi4 {
+                let role = (msg.role == "user") ? "user" : "assistant"
+                parts.append("<|\(role)|>\n\(content)<|end|>")
+            } else if isGemma4 {
                 let role = (msg.role == "user") ? "user" : "model"
                 parts.append("<|turn>\(role)\n\(content)<turn|>")
             } else if isGemma {
@@ -2866,7 +2872,10 @@ private struct IOS17VibeVoiceScreen: View {
         }
 
         // Final Open Turn (Assistant)
-        if isGemma4 {
+        if isPhi4 {
+            parts.append("<|user|>\n\(text)<|end|>")
+            parts.append("<|assistant|>\n")
+        } else if isGemma4 {
             parts.append("<|turn>user\n\(text)<turn|>")
             parts.append("<|turn>model\n")
         } else if isGemma {
@@ -6124,6 +6133,7 @@ struct VibeCoderScreen: View {
         let isMuseGlimmer = selectedFeatureModel(named: selectedModelName)?.chatTemplateFamily == .museGlimmer
         // Granite 4.x: IBM's <|start_of_role|>role<|end_of_role|>content<|end_of_text|> template
         let isGranite    = modelName.contains("granite")
+        let isPhi4       = modelName.contains("phi-4") || modelName.contains("phi 4") || modelName.contains("phi4")
         // LFM (Liquid AI) and similar ChatML-style models
         let isChatML     = modelName.contains("lfm") || modelName.contains("liquid")
 
@@ -6226,7 +6236,9 @@ struct VibeCoderScreen: View {
             return parts.joined()
         }
         
-        if isGemma4 {
+        if isPhi4 {
+            parts.append("<|system|>\n\(systemPrompt)<|end|>")
+        } else if isGemma4 {
             parts.append("<|turn>system\n\(systemPrompt)<turn|>")
         } else if isGemma {
             parts.append("<start_of_turn>system\n\(systemPrompt)<end_of_turn>")
@@ -6255,7 +6267,10 @@ struct VibeCoderScreen: View {
             }
             guard !content.isEmpty else { continue }
 
-            if isGemma4 {
+            if isPhi4 {
+                let role = (msg.role == "user") ? "user" : "assistant"
+                parts.append("<|\(role)|>\n\(content)<|end|>")
+            } else if isGemma4 {
                 let role = (msg.role == "user") ? "user" : "model"
                 parts.append("<|turn>\(role)\n\(content)<turn|>")
             } else if isGemma {
@@ -6283,7 +6298,10 @@ struct VibeCoderScreen: View {
         }
 
         // 4. Final Open Turn
-        if isGemma4 {
+        if isPhi4 {
+            parts.append("<|user|>\n\(currentFilePrompt)<|end|>")
+            parts.append("<|assistant|>\n")
+        } else if isGemma4 {
             parts.append("<|turn>user\n\(currentFilePrompt)<turn|>")
             parts.append("<|turn>model\n")
         } else if isGemma {

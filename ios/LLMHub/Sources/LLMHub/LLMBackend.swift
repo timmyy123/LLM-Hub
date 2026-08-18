@@ -1393,6 +1393,7 @@ class LLMBackend: ObservableObject {
         }
 
         let isLfmModel = loadedModelName.contains("LFM2.5-8B-A1B") || loadedModelName.contains("LFM-2.5 2.6B") || loadedModelName.contains("LFM-2.5 1.2B Thinking")
+        let isPhi4MiniModel = loadedModelName.lowercased().contains("phi-4") || loadedModelName.lowercased().contains("phi 4") || loadedModelName.lowercased().contains("phi4")
         var usePrompt: String
         do {
             let strippedPrompt: String
@@ -1414,6 +1415,17 @@ class LLMBackend: ObservableObject {
                     }
                 } else if !strippedPrompt.contains("<think>") {
                     usePrompt = strippedPrompt + "\n<think>\n"
+                } else {
+                    usePrompt = strippedPrompt
+                }
+            } else if isPhi4MiniModel {
+                if !strippedPrompt.contains("<|user|>") && !strippedPrompt.contains("<|system|>") && !strippedPrompt.contains("[INST]") {
+                    let sys = (effectiveSystemPrompt ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !sys.isEmpty {
+                        usePrompt = "<|system|>\n\(sys)<|end|>\n<|user|>\n\(strippedPrompt)<|end|>\n<|assistant|>\n"
+                    } else {
+                        usePrompt = "<|user|>\n\(strippedPrompt)<|end|>\n<|assistant|>\n"
+                    }
                 } else {
                     usePrompt = strippedPrompt
                 }
@@ -1439,7 +1451,7 @@ class LLMBackend: ObservableObject {
         options.maxTokens = Int32(effectiveMaxTokens)
         options.temperature = Float(temperature)
         options.topP = Float(topP)
-        options.stopSequences = stopSequences.isEmpty && isMuseGlimmerModel ? ["<|eot|>"] : stopSequences
+        options.stopSequences = stopSequences.isEmpty && isPhi4MiniModel ? ["<|end|>", "<|user|>", "<|system|>"] : stopSequences.isEmpty && isMuseGlimmerModel ? ["<|eot|>"] : stopSequences
         options.streamingEnabled = true
         options.systemPrompt = effectiveSystemPrompt ?? ""
         if !isLfmModel {

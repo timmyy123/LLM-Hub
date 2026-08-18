@@ -1840,6 +1840,7 @@ class ChatViewModel: ObservableObject {
         let isHarmony = modelName.contains("gpt-oss") || modelName.contains("gpt_oss")
         let isMuseGlimmer = chatModel(named: selectedModelName)?.chatTemplateFamily == .museGlimmer
         let isGranite = modelName.contains("granite")
+        let isPhi4    = modelName.contains("phi-4") || modelName.contains("phi 4") || modelName.contains("phi4")
         let isChatML  = modelName.contains("lfm") || modelName.contains("liquid")
 
         if isGemma {
@@ -1856,6 +1857,8 @@ class ChatViewModel: ObservableObject {
             return ["<|eot|>"]
         } else if isGranite {
             return ["<|start_of_role|>user", "<|start_of_role|>system"]
+        } else if isPhi4 {
+            return ["<|end|>", "<|user|>", "<|system|>"]
         } else if isChatML {
             return ["<|im_start|>user", "<|im_start|>system"]
         } else {
@@ -1981,6 +1984,7 @@ class ChatViewModel: ObservableObject {
         let isHarmonyModel = modelName.contains("gpt-oss") || modelName.contains("gpt_oss")
         let isMuseGlimmer = currentModel?.chatTemplateFamily == .museGlimmer
         let isGranite    = modelName.contains("granite")
+        let isPhi4       = modelName.contains("phi-4") || modelName.contains("phi 4") || modelName.contains("phi4")
         let isChatML     = modelName.contains("lfm") || modelName.contains("liquid")
 
         // 1. Identify history (exclude placeholder turns).
@@ -2143,7 +2147,9 @@ class ChatViewModel: ObservableObject {
 
         // Optionally inject RAG context or System Message as an opening turn.
         if let rag = ragPrefix, !rag.isEmpty {
-            if isGemma4 {
+            if isPhi4 {
+                parts.append("<|system|>\n\(rag)<|end|>")
+            } else if isGemma4 {
                 parts.append("<|turn>system\n\(rag)<turn|>")
             } else if isGemma {
                 parts.append("<start_of_turn>user\n\(rag)<end_of_turn>\n<start_of_turn>model\nUnderstood.<end_of_turn>")
@@ -2174,7 +2180,10 @@ class ChatViewModel: ObservableObject {
             }
             guard !content.isEmpty else { continue }
 
-            if isGemma4 {
+            if isPhi4 {
+                let role = msg.isFromUser ? "user" : "assistant"
+                parts.append("<|\(role)|>\n\(content)<|end|>")
+            } else if isGemma4 {
                 let gemmaRole = msg.isFromUser ? "user" : "model"
                 parts.append("<|turn>\(gemmaRole)\n\(content)<turn|>")
             } else if isGemma {
@@ -2202,7 +2211,10 @@ class ChatViewModel: ObservableObject {
         }
 
         // 4. Append the active new user prompt
-        if isGemma4 {
+        if isPhi4 {
+            parts.append("<|user|>\n\(currentUserPrompt)<|end|>")
+            parts.append("<|assistant|>\n")
+        } else if isGemma4 {
             parts.append("<|turn>user\n\(currentUserPrompt)<turn|>")
             parts.append("<|turn>model\n")
         } else if isGemma {

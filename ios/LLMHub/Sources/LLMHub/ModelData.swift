@@ -3059,36 +3059,6 @@ public static let models: [AIModel] = [
     
     // MARK: - Phi-4 Mini Models (Microsoft via unsloth GGUF)
     AIModel(
-        name: "Phi-4 Mini (Q2_K)",
-        description: "Microsoft Phi-4 Mini (3.8B) instruct model with Q2_K quantization. Smallest size. 4k context. (1.68GB)",
-        url: "https://huggingface.co/unsloth/Phi-4-mini-instruct-GGUF/resolve/main/Phi-4-mini-instruct-Q2_K.gguf?download=true",
-        category: .text,
-        sizeBytes: 1682635744,
-        source: "Microsoft via unsloth",
-        supportsVision: false,
-        supportsAudio: false,
-        supportsGpu: true,
-        requirements: ModelRequirements(minRamGB: 3, recommendedRamGB: 4),
-        contextWindowSize: 4096,
-        modelFormat: .gguf,
-        additionalFiles: []
-    ),
-    AIModel(
-        name: "Phi-4 Mini (Q2_K_L)",
-        description: "Microsoft Phi-4 Mini (3.8B) instruct model with Q2_K_L quantization. Large 2-bit. 4k context. (1.68GB)",
-        url: "https://huggingface.co/unsloth/Phi-4-mini-instruct-GGUF/resolve/main/Phi-4-mini-instruct-Q2_K_L.gguf?download=true",
-        category: .text,
-        sizeBytes: 1682635744,
-        source: "Microsoft via unsloth",
-        supportsVision: false,
-        supportsAudio: false,
-        supportsGpu: true,
-        requirements: ModelRequirements(minRamGB: 3, recommendedRamGB: 4),
-        contextWindowSize: 4096,
-        modelFormat: .gguf,
-        additionalFiles: []
-    ),
-    AIModel(
         name: "Phi-4 Mini (Q3_K_M)",
         description: "Microsoft Phi-4 Mini (3.8B) instruct model with Q3_K_M quantization. Balanced 3-bit. 4k context. (2.12GB)",
         url: "https://huggingface.co/unsloth/Phi-4-mini-instruct-GGUF/resolve/main/Phi-4-mini-instruct-Q3_K_M.gguf?download=true",
