@@ -66,7 +66,7 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
     private val _loadError = MutableStateFlow<String?>(null)
     val loadError: StateFlow<String?> = _loadError.asStateFlow()
     
-    private val _enableThinking = MutableStateFlow(true)
+    private val _enableThinking = MutableStateFlow(false)
     val enableThinking: StateFlow<Boolean> = _enableThinking.asStateFlow()
     
     // Modality toggles
@@ -333,6 +333,8 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
                 disableAudioOverride = disableAudio,
                 backendOverride = _selectedBackend.value,
                 deviceIdOverride = _selectedNpuDeviceId.value,
+                enableThinkingOverride = _enableThinking.value,
+                disableAgentTools = true,
                 onConfigApplied = { cfg ->
                     lastAppliedModelName = model.name
                     lastAppliedConfig = cfg
@@ -422,6 +424,10 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
                 }
                 
                 val chatId = "translator-${UUID.randomUUID()}"
+
+                // Apply thinking state from toggle (defaults to false, only togglable for thinking/gpt-oss models)
+                inferenceService.setGenerationParameters(null, null, null, null, enableThinking = _enableThinking.value)
+                (inferenceService as? com.llmhub.llmhub.inference.UnifiedInferenceService)?.setAgentToolsEnabled(false)
 
                 val responseFlow = inferenceService.generateResponseStreamWithSession(
                     prompt = prompt,

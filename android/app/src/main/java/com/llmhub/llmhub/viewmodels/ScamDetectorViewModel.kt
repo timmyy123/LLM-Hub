@@ -274,6 +274,8 @@ class ScamDetectorViewModel(application: Application) : AndroidViewModel(applica
                 disableAudioOverride = true,
                 backendOverride = _selectedBackend.value,
                 deviceIdOverride = _selectedNpuDeviceId.value,
+                enableThinkingOverride = _enableThinking.value,
+                disableAgentTools = true,
                 onConfigApplied = { cfg ->
                     lastAppliedModelName = model.name
                     lastAppliedConfig = cfg
@@ -398,6 +400,11 @@ class ScamDetectorViewModel(application: Application) : AndroidViewModel(applica
                 
                 // Reset GGUF KV cache so same prompt submitted again doesn't produce 0 tokens
                 inferenceService.resetChatSession(chatId)
+                
+                // Force agent tools OFF — scam detector has no tool toggle
+                (inferenceService as? com.llmhub.llmhub.inference.UnifiedInferenceService)?.setAgentToolsEnabled(false)
+                // Apply thinking state from toggle (or false if toggle not shown)
+                inferenceService.setGenerationParameters(null, null, null, null, enableThinking = _enableThinking.value)
                 
                 // Generate analysis using inference service
                 val responseFlow = inferenceService.generateResponseStreamWithSession(
