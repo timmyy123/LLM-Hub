@@ -2527,6 +2527,138 @@ object ModelData {
             modelFormat = "gguf"
         ),
 
+        // LFM-2.5 VL 3B Models (Vision-Language GGUF)
+        LLMModel(
+            name = "LFM-2.5 VL 3B (Q4_0)",
+            description = "LiquidAI's 3B vision-language model. Q4_0 quantization. Supports vision + text. Requires mmproj for vision.",
+            url = "https://huggingface.co/LiquidAI/LFM2.5-VL-3B-GGUF/resolve/3e0e828198e2abb75a957ad823f5d691c13f0f28/LFM2.5-VL-3B-Q4_0.gguf?download=true",
+            category = "multimodal",
+            sizeBytes = 1593894112L,
+            source = "LiquidAI",
+            supportsVision = true,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 4),
+            contextWindowSize = 128000,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "LFM-2.5 VL 3B (Q4_K_M)",
+            description = "LiquidAI's 3B vision-language model. Q4_K_M quantization, recommended. Supports vision + text. Requires mmproj for vision.",
+            url = "https://huggingface.co/LiquidAI/LFM2.5-VL-3B-GGUF/resolve/3e0e828198e2abb75a957ad823f5d691c13f0f28/LFM2.5-VL-3B-Q4_K_M.gguf?download=true",
+            category = "multimodal",
+            sizeBytes = 1674454240L,
+            source = "LiquidAI",
+            supportsVision = true,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 4),
+            contextWindowSize = 128000,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "LFM-2.5 VL 3B (Q5_K_M)",
+            description = "LiquidAI's 3B vision-language model. Q5_K_M quantization. Supports vision + text. Requires mmproj for vision.",
+            url = "https://huggingface.co/LiquidAI/LFM2.5-VL-3B-GGUF/resolve/3e0e828198e2abb75a957ad823f5d691c13f0f28/LFM2.5-VL-3B-Q5_K_M.gguf?download=true",
+            category = "multimodal",
+            sizeBytes = 1939743968L,
+            source = "LiquidAI",
+            supportsVision = true,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 5),
+            contextWindowSize = 128000,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "LFM-2.5 VL 3B (Q6_K)",
+            description = "LiquidAI's 3B vision-language model. Q6_K quantization. Supports vision + text. Requires mmproj for vision.",
+            url = "https://huggingface.co/LiquidAI/LFM2.5-VL-3B-GGUF/resolve/3e0e828198e2abb75a957ad823f5d691c13f0f28/LFM2.5-VL-3B-Q6_K.gguf?download=true",
+            category = "multimodal",
+            sizeBytes = 2221614304L,
+            source = "LiquidAI",
+            supportsVision = true,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 6),
+            contextWindowSize = 128000,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "LFM-2.5 VL 3B (Q8_0)",
+            description = "LiquidAI's 3B vision-language model. Q8_0 quantization. Supports vision + text. Requires mmproj for vision.",
+            url = "https://huggingface.co/LiquidAI/LFM2.5-VL-3B-GGUF/resolve/3e0e828198e2abb75a957ad823f5d691c13f0f28/LFM2.5-VL-3B-Q8_0.gguf?download=true",
+            category = "multimodal",
+            sizeBytes = 2874778848L,
+            source = "LiquidAI",
+            supportsVision = true,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 6),
+            contextWindowSize = 128000,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "LFM-2.5 VL 3B (BF16)",
+            description = "LiquidAI's 3B vision-language model. BF16 precision. Supports vision + text. Requires mmproj for vision.",
+            url = "https://huggingface.co/LiquidAI/LFM2.5-VL-3B-GGUF/resolve/3e0e828198e2abb75a957ad823f5d691c13f0f28/LFM2.5-VL-3B-BF16.gguf?download=true",
+            category = "multimodal",
+            sizeBytes = 5403157728L,
+            source = "LiquidAI",
+            supportsVision = true,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 7, recommendedRamGB = 9),
+            contextWindowSize = 128000,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "LFM-2.5 VL 3B (F16)",
+            description = "LiquidAI's 3B vision-language model. F16 precision. Supports vision + text. Requires mmproj for vision.",
+            url = "https://huggingface.co/LiquidAI/LFM2.5-VL-3B-GGUF/resolve/3e0e828198e2abb75a957ad823f5d691c13f0f28/LFM2.5-VL-3B-F16.gguf?download=true",
+            category = "multimodal",
+            sizeBytes = 5403157728L,
+            source = "LiquidAI",
+            supportsVision = true,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 7, recommendedRamGB = 9),
+            contextWindowSize = 128000,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "LFM-2.5 VL 3B (Vision Projector, BF16)",
+            description = "Vision Projector for LFM-2.5 VL 3B models. BF16 variant required for image input. Download this to enable vision.",
+            url = "https://huggingface.co/LiquidAI/LFM2.5-VL-3B-GGUF/resolve/3e0e828198e2abb75a957ad823f5d691c13f0f28/mmproj-LFM2.5-VL-3B-BF16.gguf?download=true",
+            category = "multimodal",
+            sizeBytes = 855762560L,
+            source = "LiquidAI",
+            supportsVision = true,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 1, recommendedRamGB = 2),
+            contextWindowSize = 0,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "LFM-2.5 VL 3B (Vision Projector, F16)",
+            description = "Vision Projector for LFM-2.5 VL 3B models. F16 variant required for image input. Download this to enable vision.",
+            url = "https://huggingface.co/LiquidAI/LFM2.5-VL-3B-GGUF/resolve/3e0e828198e2abb75a957ad823f5d691c13f0f28/mmproj-LFM2.5-VL-3B-F16.gguf?download=true",
+            category = "multimodal",
+            sizeBytes = 853993088L,
+            source = "LiquidAI",
+            supportsVision = true,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 1, recommendedRamGB = 2),
+            contextWindowSize = 0,
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "LFM-2.5 VL 3B (Vision Projector, Q8_0)",
+            description = "Vision Projector for LFM-2.5 VL 3B models. Q8_0 quantized variant for smaller size. Download this to enable vision.",
+            url = "https://huggingface.co/LiquidAI/LFM2.5-VL-3B-GGUF/resolve/3e0e828198e2abb75a957ad823f5d691c13f0f28/mmproj-LFM2.5-VL-3B-Q8_0.gguf?download=true",
+            category = "multimodal",
+            sizeBytes = 583109120L,
+            source = "LiquidAI",
+            supportsVision = true,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 1, recommendedRamGB = 2),
+            contextWindowSize = 0,
+            modelFormat = "gguf"
+        ),
+
         // LFM-2.5 VL 1.6B Models (Vision-Language ONNX)
         // LLMModel(
         //     name = "LFM-2.5 VL 1.6B (ONNX Q4)",
