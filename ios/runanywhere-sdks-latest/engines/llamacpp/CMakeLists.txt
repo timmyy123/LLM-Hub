@@ -230,7 +230,10 @@ rac_add_engine_plugin(llamacpp
     # `llama-common` (see _deps/llamacpp-src/common/CMakeLists.txt) — the old
     # bare `common` symbol is no longer exported, so linking macOS jobs
     # bailed with `ld: library 'common' not found`.
-    LINK_LIBRARIES      llama llama-common
+    # mtmd-helper.cpp gained a direct dependency on vendor::hash in b10585.
+    # Keep it explicit because rac_backend_llamacpp compiles mtmd sources
+    # directly instead of linking upstream's mtmd target.
+    LINK_LIBRARIES      llama llama-common vendor::hash
     INCLUDE_DIRECTORIES ${RAC_COMMONS_ROOT_DIR}/include
                         ${RAC_COMMONS_ROOT_DIR}/include/rac/backends
                         ${CMAKE_CURRENT_SOURCE_DIR}/..  # engines/ — for engines/common/*.h

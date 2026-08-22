@@ -487,14 +487,14 @@ bool LlamaCppTextGeneration::load_model(const std::string& model_path,
                  "Calling common_fit_params (margin=%zuMiB, n_ctx_min=%u, n_devices=%zu)",
                  margin_mib, n_ctx_min, n_devices);
 
-    // llama.cpp b9180 exposes the fit helper as `common_fit_params` (returning
+    // llama.cpp exposes the fit helper as `common_fit_params` (returning
     // `enum common_params_fit_status`) under the `common/` umbrella, not the
     // hypothetical `llama_params_fit*` names. Status constants are likewise
     // prefixed `COMMON_PARAMS_FIT_STATUS_*` (see common/fit.h in the tree
     // FetchContent pulls).
     fit_status = common_fit_params(resolved_path.c_str(), &model_params, &ctx_params,
                                    tensor_split.data(), tensor_buft_overrides.data(),
-                                   margins.data(), n_ctx_min, GGML_LOG_LEVEL_INFO);
+                                   margins.data(), n_ctx_min, nullptr, GGML_LOG_LEVEL_INFO);
 
     switch (fit_status) {
         case COMMON_PARAMS_FIT_STATUS_SUCCESS:
