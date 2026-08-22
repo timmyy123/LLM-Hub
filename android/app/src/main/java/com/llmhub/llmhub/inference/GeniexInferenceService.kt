@@ -22,6 +22,7 @@ import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.delay
@@ -63,6 +64,66 @@ private enum class MuseGlimmerState {
     IN_FINAL         // streaming final user answer directly
 }
 
+/**
+ * Converts ChatViewModel's role-labelled prompt into the text for a single VLM user message.
+ *
+ * The VLM SDK adds its own assistant generation header, so the trailing empty `assistant:` cue
+ * must be removed. Everything else is meaningful model input and must remain intact—especially
+ * RAG/global-memory text appended after the latest user line.
+ */
+internal data class VlmPromptTurn(val role: String, val text: String)
+
+internal fun prepareVlmUserText(prompt: String): String {
+    val trimmed = prompt.trim()
+    val withoutAssistantCue = if (trimmed.endsWith("assistant:")) {
+        trimmed.removeSuffix("assistant:").trimEnd()
+    } else {
+        trimmed
+    }
+
+    // Avoid exposing a redundant role label for the common single-turn prompt. This is safe even
+    // when RAG follows the user text because the contextual suffix remains part of the same input.
+    val userRoleCount = Regex("(?m)^[ \\t]*user:[ \\t]*").findAll(withoutAssistantCue).count()
+    val hasSystemRole = Regex("(?m)^[ \\t]*system:[ \\t]*").containsMatchIn(withoutAssistantCue)
+    val hasCompletedAssistantTurn = Regex("(?m)^[ \\t]*assistant:[ \\t]*\\S").containsMatchIn(withoutAssistantCue)
+    return if (
+        userRoleCount == 1 &&
+        !hasSystemRole &&
+        !hasCompletedAssistantTurn &&
+        withoutAssistantCue.trimStart().startsWith("user:")
+    ) {
+        withoutAssistantCue.trimStart().removePrefix("user:").trimStart()
+    } else {
+        withoutAssistantCue
+    }
+}
+
+/** Parse ChatViewModel's transcript into the role-separated messages expected by GenieX. */
+internal fun parseVlmPromptTurns(prompt: String): List<VlmPromptTurn> {
+    val cleaned = prompt.trim().let {
+        if (it.endsWith("assistant:")) it.removeSuffix("assistant:").trimEnd() else it
+    }
+    if (cleaned.isBlank()) return emptyList()
+
+    val roleMarker = Regex("(?m)^(system|user|assistant):[ \\t]*", RegexOption.IGNORE_CASE)
+    val matches = roleMarker.findAll(cleaned).toList()
+    if (matches.isEmpty()) return listOf(VlmPromptTurn("user", cleaned))
+
+    val turns = mutableListOf<VlmPromptTurn>()
+    val prefix = cleaned.substring(0, matches.first().range.first).trim()
+    if (prefix.isNotEmpty()) turns += VlmPromptTurn("system", prefix)
+
+    matches.forEachIndexed { index, match ->
+        val contentStart = match.range.last + 1
+        val contentEnd = matches.getOrNull(index + 1)?.range?.first ?: cleaned.length
+        val content = cleaned.substring(contentStart, contentEnd).trim()
+        if (content.isNotEmpty()) {
+            turns += VlmPromptTurn(match.groupValues[1].lowercase(), content)
+        }
+    }
+    return turns
+}
+
 @Singleton
 class GeniexInferenceService @Inject constructor(
     private val context: Context
@@ -81,9 +142,6 @@ class GeniexInferenceService @Inject constructor(
     private var lastDecodeSpeedTokPerSec: Double? = null
     private var currentVisionDisabled: Boolean = false
     private var currentAudioDisabled: Boolean = false
-    // True once at least one token has been generated since the last model load/reset.
-    // resetChatSession only needs to destroy+reload when this is true (stale recurrent state).
-    private var hasGeneratedTokensSinceLoad: Boolean = false
 
     private var overrideMaxTokens: Int? = null
     private var overrideContextWindow: Int? = null
@@ -241,7 +299,6 @@ class GeniexInferenceService @Inject constructor(
             return true
         }
 
-        hasGeneratedTokensSinceLoad = false
         unloadModel()
 
         val modelFile: File
@@ -675,6 +732,7 @@ class GeniexInferenceService @Inject constructor(
         chatId: String = "",
         imagePrepMs: Long = 0L
     ): Flow<String> = callbackFlow {
+        val generationCompletedNormally = AtomicBoolean(false)
         val requestId = UUID.randomUUID().toString().take(8)
         val requestStart = System.currentTimeMillis()
         Log.i(
@@ -776,25 +834,32 @@ class GeniexInferenceService @Inject constructor(
                     // === VLM path: use VlmChatMessage + VlmContent for images ===
                     val vlm = vlmWrapper!!
 
-                    // Extract the actual user text from the prompt
-                    val userText = extractUserText(effectivePrompt, imagePaths.isNotEmpty())
-                    Log.d(TAG, "VLM: User text: $userText")
-
-                    // Build VLM content list: images first, then text
-                    val contents = mutableListOf<VlmContent>()
-                    for (path in imagePaths) {
-                        if (File(path).exists()) {
-                            contents.add(VlmContent("image", path))
-                            Log.d(TAG, "VLM: Added image content: $path")
-                        } else {
-                            Log.w(TAG, "VLM: Image file not found, skipping: $path")
+                    // Give the SDK actual system/user/assistant turns. Wrapping the entire
+                    // transcript in one user message made role labels ordinary text and diverged
+                    // from the text-only GGUF path's chat-template handling.
+                    val promptTurns = parseVlmPromptTurns(effectivePrompt).toMutableList()
+                    if (promptTurns.isEmpty()) promptTurns += VlmPromptTurn("user", effectivePrompt.trim())
+                    val lastUserIndex = promptTurns.indexOfLast { it.role == "user" }
+                    val vlmMessages = promptTurns.mapIndexed { index, turn ->
+                        var text = turn.text
+                        if (index == lastUserIndex && imagePaths.isNotEmpty() && isPlaceholderText(text)) {
+                            text = "Describe what you see in this image in detail."
                         }
-                    }
-                    contents.add(VlmContent("text", userText))
-
-                    val vlmMessages = arrayOf(
-                        VlmChatMessage(role = "user", contents = contents)
-                    )
+                        val contents = mutableListOf<VlmContent>()
+                        if (index == lastUserIndex) {
+                            for (path in imagePaths) {
+                                if (File(path).exists()) {
+                                    contents.add(VlmContent("image", path))
+                                    Log.d(TAG, "VLM: Added image content: $path")
+                                } else {
+                                    Log.w(TAG, "VLM: Image file not found, skipping: $path")
+                                }
+                            }
+                        }
+                        contents.add(VlmContent("text", text))
+                        VlmChatMessage(role = turn.role, contents = contents)
+                    }.toTypedArray()
+                    Log.d(TAG, "VLM: Prepared ${vlmMessages.size} role-separated messages; latest user text: ${promptTurns.getOrNull(lastUserIndex)?.text}")
 
                     // Build base generation config
                     val vlmSampler = SamplerConfig(
@@ -812,10 +877,11 @@ class GeniexInferenceService @Inject constructor(
                     val templateResult = vlm.applyChatTemplate(vlmMessages, null, isThinkingModel && thinkingEnabled)
                     val tAfterTemplate = System.currentTimeMillis()
                     var formattedPrompt = if (templateResult.isSuccess) {
-                        templateResult.getOrNull()?.formattedText?.takeIf { it.isNotEmpty() } ?: userText
+                        templateResult.getOrNull()?.formattedText?.takeIf { it.isNotEmpty() }
+                            ?: prepareVlmUserText(effectivePrompt)
                     } else {
                         Log.w(TAG, "VLM: applyChatTemplate failed, using raw text")
-                        userText
+                        prepareVlmUserText(effectivePrompt)
                     }
                     if (isMuseGlimmerModel) {
                         if (!thinkingEnabled) {
@@ -854,6 +920,7 @@ class GeniexInferenceService @Inject constructor(
                                             )
                                         }
                                     } else if (streamResult is com.geniex.sdk.bean.LlmStreamResult.Completed) {
+                                        generationCompletedNormally.set(true)
                                         val end = System.currentTimeMillis()
                                         val decodeMs = if (firstTokenAt > 0L) end - firstTokenAt else 0L
                                         val totalMs = end - requestStart
@@ -918,7 +985,6 @@ class GeniexInferenceService @Inject constructor(
                                 if (isActive) {
                                     if (streamResult is com.geniex.sdk.bean.LlmStreamResult.Token) {
                                         tokenCount++
-                                        hasGeneratedTokensSinceLoad = true
                                         if (firstTokenAt == 0L) {
                                             firstTokenAt = System.currentTimeMillis()
                                             Log.i(
@@ -927,6 +993,7 @@ class GeniexInferenceService @Inject constructor(
                                             )
                                         }
                                     } else if (streamResult is com.geniex.sdk.bean.LlmStreamResult.Completed) {
+                                        generationCompletedNormally.set(true)
                                         val end = System.currentTimeMillis()
                                         val decodeMs = if (firstTokenAt > 0L) end - firstTokenAt else 0L
                                         val totalMs = end - requestStart
@@ -979,11 +1046,16 @@ class GeniexInferenceService @Inject constructor(
         }
 
         awaitClose {
-            CoroutineScope(Dispatchers.IO).launch {
-                try {
-                    if (isVlmLoaded) vlmWrapper?.stopStream()
-                    else llmWrapper?.stopStream()
-                } catch (_: Exception) {}
+            // `close()` is also called for a normal SDK Completed event. Calling stopStream after
+            // that can poison the reusable VLM wrapper and make the next request return blank,
+            // which then triggers ChatViewModel's expensive destroy/reload recovery.
+            if (!generationCompletedNormally.get()) {
+                CoroutineScope(Dispatchers.IO).launch {
+                    try {
+                        if (isVlmLoaded) vlmWrapper?.stopStream()
+                        else llmWrapper?.stopStream()
+                    } catch (_: Exception) {}
+                }
             }
             job.cancel()
         }
@@ -1455,30 +1527,11 @@ class GeniexInferenceService @Inject constructor(
     }
 
     /**
-     * Extract the actual user text from a formatted prompt.
-     * Strips prompt scaffolding ("user: ", "assistant:") and replaces
-     * placeholder / filename-only text with a proper VLM description request.
+     * Prepare prompt text for a VLM message while preserving contextual additions, then replace
+     * placeholder / filename-only text with a proper image-description request when needed.
      */
     private fun extractUserText(prompt: String, hasImages: Boolean = true): String {
-        val cleanPrompt = if (prompt.trimEnd().endsWith("assistant:")) {
-            prompt.substringBeforeLast("assistant:").trimEnd()
-        } else prompt
-
-        // Try to find the last "user: " segment
-        var result = cleanPrompt.trim()
-        if (cleanPrompt.contains("user: ")) {
-            val segments = cleanPrompt.split("\n\n").filter { it.isNotBlank() }
-            // Find the last user segment that has real content (not just a filename)
-            val meaningfulUserSegment = segments.findLast { seg ->
-                val text = seg.trimStart().removePrefix("user: ").trim()
-                seg.trimStart().startsWith("user: ") && !isPlaceholderText(text)
-            }
-            val lastUserSegment = meaningfulUserSegment
-                ?: segments.findLast { it.trimStart().startsWith("user: ") }
-            if (lastUserSegment != null) {
-                result = lastUserSegment.removePrefix("user: ").trim()
-            }
-        }
+        var result = prepareVlmUserText(prompt)
 
         // Replace placeholder / filename text with a real image prompt when images are attached
         if (hasImages && isPlaceholderText(result)) {
@@ -1857,30 +1910,23 @@ class GeniexInferenceService @Inject constructor(
 
     override suspend fun resetChatSession(chatId: String) {
         try {
-            val modelToReload = currentModel
-            val backendToUse = currentPreferredBackend
-
-            val deviceToUse = currentDeviceId
-
             if (isVlmLoaded && vlmWrapper != null) {
-                // VLM always needs a full reload to reset vision encoder state
-                Log.d(TAG, "VLM: Destroying wrapper to clear vision state for new chat")
+                Log.d(TAG, "VLM: Resetting conversation state in-place for chat $chatId")
                 vlmWrapper?.stopStream()
-                vlmWrapper?.destroy()
-                vlmWrapper = null
-                if (modelToReload != null) {
-                    Log.d(TAG, "VLM: Reloading model ${modelToReload.name} for fresh state (visionDisabled=$currentVisionDisabled)")
-                    loadModelInternal(modelToReload, backendToUse, currentVisionDisabled, deviceToUse)
+                val resetCode = vlmWrapper?.reset()
+                if (resetCode == 0) {
+                    Log.d(TAG, "VLM: Conversation state reset without reloading model")
+                } else {
+                    Log.w(TAG, "VLM: SDK reset returned code $resetCode; keeping loaded model intact")
                 }
             } else if (llmWrapper != null) {
+                Log.d(TAG, "LLM: Resetting conversation state in-place for chat $chatId")
                 llmWrapper?.stopStream()
-                if (hasGeneratedTokensSinceLoad && modelToReload != null) {
-                    Log.d(TAG, "LLM: Destroying wrapper to clear KV cache for chat $chatId")
-                    llmWrapper?.destroy()
-                    llmWrapper = null
-                    hasGeneratedTokensSinceLoad = false
-                    Log.d(TAG, "LLM: Reloading model ${modelToReload.name} for fresh state")
-                    loadModelInternal(modelToReload, backendToUse, currentVisionDisabled, deviceToUse)
+                val resetCode = llmWrapper?.reset()
+                if (resetCode == 0) {
+                    Log.d(TAG, "LLM: Conversation state reset without reloading model")
+                } else {
+                    Log.w(TAG, "LLM: SDK reset returned code $resetCode; keeping loaded model intact")
                 }
             }
         } catch (e: Exception) {

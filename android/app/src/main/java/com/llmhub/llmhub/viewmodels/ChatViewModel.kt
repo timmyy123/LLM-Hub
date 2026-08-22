@@ -601,12 +601,12 @@ class ChatViewModel(
                 currentChatId = newChatId
                 _currentChat.value = repository.getChatById(newChatId)
                 
-                // Only reset session if there's an existing session that might have stale context
+                // Reset conversation context for the new chat without unloading the model.
                 try {
                     val currentModel = inferenceService.getCurrentlyLoadedModel()
                     if (currentModel != null) {
                         inferenceService.resetChatSession(newChatId)
-                        Log.d("ChatViewModel", "Proactively reset session for new chat $newChatId")
+                        Log.d("ChatViewModel", "Reset context for new chat $newChatId")
                     } else {
                         Log.d("ChatViewModel", "Skipping session reset for new chat - no model loaded yet")
                     }
@@ -1749,7 +1749,8 @@ class ChatViewModel(
                                 if (finalContent.isBlank()) {
                                     // Check if this is a GGUF model - if so, auto-reset session and retry
                                     val isGgufModel = currentModel?.modelFormat?.equals("gguf", ignoreCase = true) == true
-                                    if (isGgufModel && !isRetryAfterContextReset) {
+                                    val isActiveVlm = currentModelSupportsVision()
+                                    if (isGgufModel && !isActiveVlm && !isRetryAfterContextReset) {
                                         Log.w("ChatViewModel", "No response from GGUF model - context window likely full. Auto-resetting session and retrying...")
                                         triggeredRetry = true
                                         isRetryAfterContextReset = true
@@ -1822,7 +1823,8 @@ class ChatViewModel(
                             if (finalContent.isBlank()) {
                                 // Check if this is a GGUF model - if so, auto-reset session and retry
                                 val isGgufModel = currentModel?.modelFormat?.equals("gguf", ignoreCase = true) == true
-                                if (isGgufModel && !isRetryAfterContextReset) {
+                                val isActiveVlm = currentModelSupportsVision()
+                                if (isGgufModel && !isActiveVlm && !isRetryAfterContextReset) {
                                     Log.w("ChatViewModel", "No response from GGUF model (error path) - context window likely full. Auto-resetting session and retrying...")
                                     triggeredRetry = true
                                     isRetryAfterContextReset = true
@@ -3091,26 +3093,19 @@ class ChatViewModel(
             _isLoading.value = false
             isGenerating = false
             
-            // For any existing chat session, attempt a background cleanup
-            // This is fire-and-forget - don't let it block the UI
+            // Clear conversation state in the already-loaded model before creating the new chat.
             if (oldChatId != null) {
-                // Launch session cleanup in background with no UI dependency
                 launch(Dispatchers.IO) {
                     try {
-                        // Brief wait to let any ongoing operations wind down
                         kotlinx.coroutines.delay(500)
-                        
-                        // Attempt session reset with a reasonable timeout
-                        // If it fails, that's okay - session will be recreated as needed
-                        withTimeoutOrNull(2000) { // Shorter timeout to avoid hanging
+                        withTimeoutOrNull(2000) {
                             inferenceService.resetChatSession(oldChatId)
                             Log.d("ChatViewModel", "Successfully reset session for chat $oldChatId during clear all")
                         } ?: run {
-                            Log.d("ChatViewModel", "Session reset timed out for chat $oldChatId - will recreate as needed")
+                            Log.d("ChatViewModel", "Session reset timed out for chat $oldChatId")
                         }
                     } catch (e: Exception) {
-                        Log.d("ChatViewModel", "Session reset failed for chat $oldChatId: ${e.message} - will recreate as needed")
-                        // This is expected for some models/states - just log and continue
+                        Log.d("ChatViewModel", "Session reset failed for chat $oldChatId: ${e.message}")
                     }
                 }
             }
@@ -3185,11 +3180,11 @@ class ChatViewModel(
         
         Log.d("ChatViewModel", "Set new chat ID: $newChatId, chat exists: ${_currentChat.value != null}")
         
-        // Clear any transient streaming state and proactively reset the session so no old context leaks
+        // Clear transient UI state and reset conversation context while preserving model weights.
         _streamingContents.value = emptyMap()
         try {
             inferenceService.resetChatSession(newChatId)
-            Log.d("ChatViewModel", "Proactively reset session for lazily created new chat $newChatId")
+            Log.d("ChatViewModel", "Reset context for lazily created new chat $newChatId")
         } catch (e: Exception) {
             Log.w("ChatViewModel", "Unable to reset session for lazily created new chat: ${e.message}")
         }
