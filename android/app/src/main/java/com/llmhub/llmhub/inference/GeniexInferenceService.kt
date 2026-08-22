@@ -448,7 +448,8 @@ class GeniexInferenceService @Inject constructor(
     }
 
     /**
-     * Find the mmproj file for vision models, preferring variant-matched files.
+     * Find the mmproj file for vision models, matching the model and
+     * preferring variant-matched files.
      */
     private fun findMmprojFile(modelDir: File, modelFile: File): File? {
         val allMmproj = modelDir.listFiles { _, name ->
@@ -457,42 +458,54 @@ class GeniexInferenceService @Inject constructor(
 
         if (allMmproj.isEmpty()) return null
 
-        val modelName = modelFile.nameWithoutExtension
-        val modelLower = modelName.lowercase()
+        if (allMmproj.size == 1) {
+            return allMmproj.first()
+        }
 
-        // 1) Prefer exact variant projector match first (BF16/F16/Q*)
-        val variantRegex = Regex("""(?:q\d(?:_[a-z0-9]+)?|bf16|f16)""", RegexOption.IGNORE_CASE)
-        val modelVariantRaw = variantRegex.find(modelLower)?.value?.lowercase()
+        val modelName = modelFile.nameWithoutExtension.lowercase()
+
+        fun cleanName(name: String): String {
+            return name.lowercase()
+                .replace("mmproj", "")
+                .replace(Regex("""[-_](?:q\d(?:_[a-z0-9]+)?|bf16|f16|f32|ud-[a-z0-9_]+|instruct|it|preview)"""), "")
+                .replace(Regex("""[^a-z0-9]"""), "")
+        }
+
+        val modelCore = cleanName(modelName)
+
+        val candidates = allMmproj.filter { candidate ->
+            val candCore = cleanName(candidate.nameWithoutExtension)
+            candCore.isNotEmpty() && modelCore.isNotEmpty() &&
+                (modelCore.contains(candCore) || candCore.contains(modelCore))
+        }.ifEmpty { allMmproj.toList() }
+
+        // 1) Match quantization variant (BF16 / F16 / Q8_0 / etc.)
+        val variantRegex = Regex("""(?:q\d(?:_[a-z0-9]+)?|bf16|f16|f32)""", RegexOption.IGNORE_CASE)
+        val modelVariantRaw = variantRegex.find(modelName)?.value?.lowercase()
         val modelVariant = when {
             modelVariantRaw == "f16" || modelVariantRaw == "bf16" -> "bf16"
             else -> modelVariantRaw
         }
         if (modelVariant != null) {
-            val exactVariant = allMmproj.firstOrNull { candidate ->
-                val candidateVariantRaw = variantRegex.find(candidate.nameWithoutExtension.lowercase())
-                    ?.value
-                    ?.lowercase()
-                val candidateVariant = when {
-                    candidateVariantRaw == "f16" || candidateVariantRaw == "bf16" -> "bf16"
-                    else -> candidateVariantRaw
+            val exactVariant = candidates.firstOrNull { candidate ->
+                val candVariantRaw = variantRegex.find(candidate.nameWithoutExtension.lowercase())?.value?.lowercase()
+                val candVariant = when {
+                    candVariantRaw == "f16" || candVariantRaw == "bf16" -> "bf16"
+                    else -> candVariantRaw
                 }
-                candidateVariant == modelVariant
+                candVariant == modelVariant
             }
             if (exactVariant != null) return exactVariant
         }
 
-        // 2) Try to match the model base name/family
-        val modelBaseName = modelFile.nameWithoutExtension
-            .replace(Regex("[-_]Q[0-9].*"), "") // Strip quant suffix
-
-        val matched = allMmproj.firstOrNull { candidate ->
-            val candidateBase = candidate.nameWithoutExtension
-                .replace(Regex("[-_]BF16.*|[-_]mmproj.*", RegexOption.IGNORE_CASE), "")
-            candidateBase.equals(modelBaseName, ignoreCase = true)
+        // 2) Prefer BF16/F16 projector as fallback
+        val bf16Candidate = candidates.firstOrNull {
+            it.name.contains("bf16", ignoreCase = true) || it.name.contains("f16", ignoreCase = true)
         }
+        if (bf16Candidate != null) return bf16Candidate
 
-        // 3) Fallback to first available projector if we couldn't resolve a better match
-        return matched ?: allMmproj.firstOrNull()
+        // 3) Return first candidate
+        return candidates.firstOrNull()
     }
 
     /**
