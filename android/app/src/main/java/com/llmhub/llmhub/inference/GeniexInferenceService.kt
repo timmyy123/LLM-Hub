@@ -338,7 +338,7 @@ class GeniexInferenceService @Inject constructor(
 
                 // Find mmproj path for VLM models (only when vision is enabled)
                 val mmprojPath = if (model.supportsVision && !disableVision) {
-                    findMmprojFile(modelDir, modelFile)?.absolutePath
+                    findMmprojFile(modelDir, modelFile, model)?.absolutePath
                 } else null
 
                 // Use VlmWrapper for vision-capable models, LlmWrapper for text-only
@@ -448,13 +448,66 @@ class GeniexInferenceService @Inject constructor(
     }
 
     /**
-     * Find the mmproj file for vision models, matching the model and
-     * preferring variant-matched files.
+     * Find the mmproj file for vision models, supporting model-specific directories,
+     * additionalFiles (for HuggingFace imports), and generic name/variant matching.
      */
-    private fun findMmprojFile(modelDir: File, modelFile: File): File? {
-        val allMmproj = modelDir.listFiles { _, name ->
-            name.contains("mmproj", ignoreCase = true) && name.endsWith(".gguf")
-        } ?: return null
+    private fun findMmprojFile(modelDir: File, modelFile: File, model: LLMModel? = null): File? {
+        val modelsDir = File(context.filesDir, "models")
+
+        // 1) First check model.additionalFiles if specified (e.g. HuggingFace search imports)
+        if (model != null && model.additionalFiles.isNotEmpty()) {
+            for (urlOrPath in model.additionalFiles) {
+                val fileName = urlOrPath.substringAfterLast("/").substringBefore("?").substringBefore("#")
+                val inModelDir = File(modelDir, fileName)
+                if (inModelDir.exists() && inModelDir.isFile) return inModelDir
+                val inModelsDir = File(modelsDir, fileName)
+                if (inModelsDir.exists() && inModelsDir.isFile) return inModelsDir
+                val rawInModelDir = File(modelDir, urlOrPath)
+                if (rawInModelDir.exists() && rawInModelDir.isFile) return rawInModelDir
+                val rawInModelsDir = File(modelsDir, urlOrPath)
+                if (rawInModelsDir.exists() && rawInModelsDir.isFile) return rawInModelsDir
+            }
+        }
+
+        // 2) If model is in a dedicated folder (modelDir != modelsDir), look for any mmproj / projector in modelDir
+        if (modelDir.exists() && modelDir.absolutePath != modelsDir.absolutePath) {
+            val dirProjectors = modelDir.listFiles { _, name ->
+                name.endsWith(".gguf", ignoreCase = true) &&
+                    (name.contains("mmproj", ignoreCase = true) || name.contains("projector", ignoreCase = true))
+            }
+            if (!dirProjectors.isNullOrEmpty()) {
+                if (dirProjectors.size == 1) return dirProjectors.first()
+                val variantRegex = Regex("""(?:q\d(?:_[a-z0-9]+)?|bf16|f16|f32)""", RegexOption.IGNORE_CASE)
+                val modelVariantRaw = variantRegex.find(modelFile.nameWithoutExtension.lowercase())?.value?.lowercase()
+                val modelVariant = when {
+                    modelVariantRaw == "f16" || modelVariantRaw == "bf16" -> "bf16"
+                    else -> modelVariantRaw
+                }
+                if (modelVariant != null) {
+                    val exact = dirProjectors.firstOrNull { candidate ->
+                        val candVariantRaw = variantRegex.find(candidate.nameWithoutExtension.lowercase())?.value?.lowercase()
+                        val candVariant = when {
+                            candVariantRaw == "f16" || candVariantRaw == "bf16" -> "bf16"
+                            else -> candVariantRaw
+                        }
+                        candVariant == modelVariant
+                    }
+                    if (exact != null) return exact
+                }
+                val bf16 = dirProjectors.firstOrNull { it.name.contains("bf16", ignoreCase = true) || it.name.contains("f16", ignoreCase = true) }
+                if (bf16 != null) return bf16
+                return dirProjectors.first()
+            }
+        }
+
+        // 3) Scan modelDir and modelsDir for all mmproj/projector files
+        val searchDirs = if (modelDir.absolutePath != modelsDir.absolutePath) listOf(modelDir, modelsDir) else listOf(modelsDir)
+        val allMmproj = searchDirs.flatMap { dir ->
+            dir.listFiles { _, name ->
+                name.endsWith(".gguf", ignoreCase = true) &&
+                    (name.contains("mmproj", ignoreCase = true) || name.contains("projector", ignoreCase = true))
+            }?.toList() ?: emptyList()
+        }.distinctBy { it.absolutePath }
 
         if (allMmproj.isEmpty()) return null
 
@@ -467,6 +520,8 @@ class GeniexInferenceService @Inject constructor(
         fun cleanName(name: String): String {
             return name.lowercase()
                 .replace("mmproj", "")
+                .replace("projector", "")
+                .replace("vision", "")
                 .replace(Regex("""[-_](?:q\d(?:_[a-z0-9]+)?|bf16|f16|f32|ud-[a-z0-9_]+|instruct|it|preview)"""), "")
                 .replace(Regex("""[^a-z0-9]"""), "")
         }
@@ -477,9 +532,9 @@ class GeniexInferenceService @Inject constructor(
             val candCore = cleanName(candidate.nameWithoutExtension)
             candCore.isNotEmpty() && modelCore.isNotEmpty() &&
                 (modelCore.contains(candCore) || candCore.contains(modelCore))
-        }.ifEmpty { allMmproj.toList() }
+        }.ifEmpty { allMmproj }
 
-        // 1) Match quantization variant (BF16 / F16 / Q8_0 / etc.)
+        // Match quantization variant
         val variantRegex = Regex("""(?:q\d(?:_[a-z0-9]+)?|bf16|f16|f32)""", RegexOption.IGNORE_CASE)
         val modelVariantRaw = variantRegex.find(modelName)?.value?.lowercase()
         val modelVariant = when {
@@ -498,13 +553,12 @@ class GeniexInferenceService @Inject constructor(
             if (exactVariant != null) return exactVariant
         }
 
-        // 2) Prefer BF16/F16 projector as fallback
+        // Prefer BF16/F16 projector as fallback
         val bf16Candidate = candidates.firstOrNull {
             it.name.contains("bf16", ignoreCase = true) || it.name.contains("f16", ignoreCase = true)
         }
         if (bf16Candidate != null) return bf16Candidate
 
-        // 3) Return first candidate
         return candidates.firstOrNull()
     }
 

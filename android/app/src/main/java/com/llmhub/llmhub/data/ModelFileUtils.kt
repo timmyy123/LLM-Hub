@@ -91,26 +91,55 @@ fun LLMModel.hasDownloadedVisionProjector(context: Context): Boolean {
     val modelDirName = name.replace(" ", "_").replace(Regex("[^a-zA-Z0-9_.-]"), "")
     val modelDir = File(modelsDir, modelDirName)
 
-    // 1) If this is an imported model and the importer recorded additionalFiles, check them first.
+    // 1) If this is an imported model and additionalFiles are defined (e.g. HuggingFace search import)
     if (additionalFiles.isNotEmpty()) {
-        additionalFiles.forEach { fname ->
-            if (File(modelDir, fname).exists() || File(modelsDir, fname).exists()) return true
+        for (urlOrPath in additionalFiles) {
+            val fileName = urlOrPath.substringAfterLast('/').substringBefore('?').substringBefore('#')
+            if (File(modelDir, fileName).exists() || File(modelsDir, fileName).exists() ||
+                File(modelDir, urlOrPath).exists() || File(modelsDir, urlOrPath).exists()) {
+                return true
+            }
         }
     }
 
-    // 2) Fallback: look for known projector entries in ModelData (for bundled/downloaded models)
+    // 2) Check if any mmproj / projector exists in the model-specific directory
+    if (modelDir.exists() && modelDir.isDirectory) {
+        val projInDir = modelDir.listFiles { _, name ->
+            name.endsWith(".gguf", ignoreCase = true) &&
+                (name.contains("mmproj", ignoreCase = true) || name.contains("projector", ignoreCase = true))
+        }
+        if (!projInDir.isNullOrEmpty()) return true
+    }
+
+    // 3) Fallback: look for known projector entries in ModelData (for bundled/catalog models)
     val compatibleProjectors = ModelData.models.filter { candidate ->
         candidate.modelFormat.equals("gguf", ignoreCase = true) &&
             candidate.name.contains("Projector", ignoreCase = true) &&
             normalizeVisionPairBaseName(candidate.name) == normalizeVisionPairBaseName(name)
     }
 
-    if (compatibleProjectors.isEmpty()) return false
-
-    return compatibleProjectors.any { projector ->
-        val projectorFileName = projector.localFileName()
-        File(modelDir, projectorFileName).exists() || File(modelsDir, projectorFileName).exists()
+    if (compatibleProjectors.isNotEmpty()) {
+        val found = compatibleProjectors.any { projector ->
+            val projectorFileName = projector.localFileName()
+            File(modelDir, projectorFileName).exists() || File(modelsDir, projectorFileName).exists()
+        }
+        if (found) return true
     }
+
+    // 4) Check root models directory for any matching projector file
+    val rootProj = modelsDir.listFiles { _, name ->
+        name.endsWith(".gguf", ignoreCase = true) &&
+            (name.contains("mmproj", ignoreCase = true) || name.contains("projector", ignoreCase = true))
+    }
+    if (!rootProj.isNullOrEmpty()) {
+        val modelCore = name.lowercase().replace(" ", "").replace(Regex("[^a-z0-9]"), "")
+        return rootProj.any { f ->
+            val fCore = f.nameWithoutExtension.lowercase().replace("mmproj", "").replace("projector", "").replace("vision", "").replace(Regex("[^a-z0-9]"), "")
+            fCore.isNotEmpty() && (modelCore.contains(fCore) || fCore.contains(modelCore))
+        }
+    }
+
+    return false
 }
 
 private fun normalizeVisionPairBaseName(modelName: String): String {
