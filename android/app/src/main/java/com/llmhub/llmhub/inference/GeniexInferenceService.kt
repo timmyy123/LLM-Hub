@@ -16,6 +16,9 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
 import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
 import java.util.UUID
@@ -50,6 +53,14 @@ private enum class HarmonyState {
     IN_ANALYSIS,     // streaming thinking content; watching for <|end|>
     IN_TRANSITION,   // silently consuming <|start|>assistant<|channel|>final<|message|>
     IN_FINAL         // streaming final answer directly
+}
+
+/** State machine states for parsing Meta Muse Glimmer ATEM format output. */
+private enum class MuseGlimmerState {
+    BEFORE_HEADER,   // buffering until to=self<|message|> or to=user<|message|>
+    IN_REASONING,    // streaming thinking; watching for <|eom|> or to=user<|message|>
+    IN_TRANSITION,   // silently consuming to=user header / <|start|>assistant to=user<|message|>
+    IN_FINAL         // streaming final user answer directly
 }
 
 @Singleton
@@ -89,6 +100,10 @@ class GeniexInferenceService @Inject constructor(
     // Harmony format state machine (GPT-OSS models: <|channel|>analysis<|message|>...<|end|>...final)
     private val harmonyBuffer = StringBuilder()
     private var harmonyState = HarmonyState.BEFORE_HEADER
+
+    // Muse Glimmer format state machine (Meta Muse Glimmer models: to=self<|message|>...<|eom|>...to=user<|message|>)
+    private val museBuffer = StringBuilder()
+    private var museGlimmerState = MuseGlimmerState.BEFORE_HEADER
 
     // Whether the GenieX native SDK and its JNI bindings successfully initialized on this device.
     private var geniexAvailable: Boolean = false
@@ -663,22 +678,30 @@ class GeniexInferenceService @Inject constructor(
         val topKVal = overrideTopK ?: 40
         val topPVal = overrideTopP ?: 0.9f
 
-        val isThinkingModel = model.name.contains("Thinking", ignoreCase = true) ||
+        val isThinkingModel = (model.name.contains("Thinking", ignoreCase = true) ||
                               model.name.contains("Reasoning", ignoreCase = true) ||
                               model.name.contains("LFM2.5-8B-A1B", ignoreCase = true) ||
-                              model.name.contains("LFM-2.5 2.6B", ignoreCase = true)
+                              model.name.contains("LFM-2.5 2.6B", ignoreCase = true)) &&
+                              !model.name.contains("muse", ignoreCase = true)
         val isHarmonyModel = model.name.contains("gpt-oss", ignoreCase = true) ||
                              model.name.contains("gpt_oss", ignoreCase = true)
+        val isMuseGlimmerModel = model.name.contains("muse glimmer", ignoreCase = true) ||
+                                 model.name.contains("muse-glimmer", ignoreCase = true)
 
         // Thinking toggle:
         // - LFM-Thinking: /no_think is injected by formatPrompt into the formatted string.
         // - GPT-OSS Harmony: an empty analysis prefill is injected after formatting in the
         //   LLM generation path so template processing cannot strip it.
+        // - Muse Glimmer: # Valid recipients and assistant to=user prefill control thinking.
         val thinkingEnabled = overrideEnableThinking ?: true
 
         // Reset per-generation Harmony state
         harmonyBuffer.clear()
         harmonyState = if (!thinkingEnabled && isHarmonyModel) HarmonyState.IN_FINAL else HarmonyState.BEFORE_HEADER
+
+        // Reset per-generation Muse Glimmer state
+        museBuffer.clear()
+        museGlimmerState = if (!thinkingEnabled && isMuseGlimmerModel) MuseGlimmerState.IN_FINAL else MuseGlimmerState.BEFORE_HEADER
 
         val job = launch(Dispatchers.IO) {
             try {
@@ -719,13 +742,24 @@ class GeniexInferenceService @Inject constructor(
                     // APPLY: time the template + inject + generate steps so we can measure bottlenecks
                     val tStart = System.currentTimeMillis()
 
-                    val templateResult = vlm.applyChatTemplate(vlmMessages, null, isThinkingModel)
+                    val templateResult = vlm.applyChatTemplate(vlmMessages, null, isThinkingModel && thinkingEnabled)
                     val tAfterTemplate = System.currentTimeMillis()
-                    val formattedPrompt = if (templateResult.isSuccess) {
+                    var formattedPrompt = if (templateResult.isSuccess) {
                         templateResult.getOrNull()?.formattedText?.takeIf { it.isNotEmpty() } ?: userText
                     } else {
                         Log.w(TAG, "VLM: applyChatTemplate failed, using raw text")
                         userText
+                    }
+                    if (isMuseGlimmerModel) {
+                        if (!thinkingEnabled) {
+                            formattedPrompt = formattedPrompt.replace("# Valid recipients: \"self\", \"user\".", "# Valid recipients: \"user\".")
+                                .replace("# Valid recipients: 'self', 'user'.", "# Valid recipients: \"user\".")
+                            if (formattedPrompt.endsWith("<|start|>assistant")) {
+                                formattedPrompt = formattedPrompt.removeSuffix("<|start|>assistant") + "<|start|>assistant to=user<|message|>"
+                            } else if (!formattedPrompt.contains("<|start|>assistant to=user<|message|>")) {
+                                formattedPrompt = formattedPrompt.trimEnd() + "<|start|>assistant to=user<|message|>"
+                            }
+                        }
                     }
                     Log.d(TAG, "GEN[$requestId] VLM template=${tAfterTemplate - tStart}ms prompt_len=${formattedPrompt.length}")
 
@@ -761,7 +795,7 @@ class GeniexInferenceService @Inject constructor(
                                         }
                                         Log.i(TAG, "GEN[$requestId] VLM completed total=${totalMs}ms decode=${decodeMs}ms tokens=$tokenCount")
                                     }
-                                    handleStreamResult(streamResult, isThinkingModel, isHarmonyModel)
+                                    handleStreamResult(streamResult, isThinkingModel, isHarmonyModel, isMuseGlimmerModel, thinkingEnabled)
                                 }
                             }
                     } catch (t: Throwable) {
@@ -788,6 +822,14 @@ class GeniexInferenceService @Inject constructor(
                     if (!thinkingEnabled && isHarmonyModel) {
                         formattedPrompt = formattedPrompt.trimEnd() +
                             "<|channel|>analysis<|message|><|end|><|start|>assistant<|channel|>final<|message|>"
+                    }
+                    if (!thinkingEnabled && isMuseGlimmerModel) {
+                        if (!formattedPrompt.endsWith("<|start|>assistant to=user<|message|>")) {
+                            formattedPrompt = formattedPrompt.trimEnd()
+                            if (formattedPrompt.endsWith("<|start|>assistant")) {
+                                formattedPrompt = formattedPrompt.removeSuffix("<|start|>assistant") + "<|start|>assistant to=user<|message|>"
+                            }
+                        }
                     }
 
                     val sampler = SamplerConfig(
@@ -833,7 +875,7 @@ class GeniexInferenceService @Inject constructor(
                                         }
                                         Log.i(TAG, "GEN[$requestId] LLM completed total=${totalMs}ms decode=${decodeMs}ms tokens=$tokenCount")
                                     }
-                                    handleStreamResult(streamResult, isThinkingModel, isHarmonyModel)
+                                    handleStreamResult(streamResult, isThinkingModel, isHarmonyModel, isMuseGlimmerModel, thinkingEnabled)
                                 }
                             }
                     } catch (t: Throwable) {
@@ -889,12 +931,15 @@ class GeniexInferenceService @Inject constructor(
     private fun kotlinx.coroutines.channels.ProducerScope<String>.handleStreamResult(
         streamResult: LlmStreamResult,
         isThinkingModel: Boolean,
-        isHarmonyModel: Boolean = false
+        isHarmonyModel: Boolean = false,
+        isMuseGlimmerModel: Boolean = false,
+        thinkingEnabled: Boolean = true
     ) {
         when (streamResult) {
             is LlmStreamResult.Token -> {
                 val text = streamResult.text
                 when {
+                    isMuseGlimmerModel -> emitTokenForMuseGlimmer(text, thinkingEnabled) { trySend(it) }
                     isHarmonyModel -> emitTokenForHarmony(text) { trySend(it) }
                     isThinkingModel -> {
                         var t = text
@@ -914,6 +959,29 @@ class GeniexInferenceService @Inject constructor(
             }
             is LlmStreamResult.Completed -> {
                 sentInitialThinkingSentinel = false
+                if (isMuseGlimmerModel) {
+                    if (museGlimmerState == MuseGlimmerState.IN_REASONING) {
+                        var remaining = museBuffer.toString().replace("<|eot|>", "").replace("<|end_of_text|>", "")
+                        val userIdx = findMuseUserHeaderIndex(remaining)
+                        if (userIdx >= 0) {
+                            remaining = remaining.substring(0, userIdx)
+                        }
+                        if (remaining.isNotEmpty()) trySend(remaining)
+                        trySend(SENTINEL_ENDTHINK)
+                    } else if (museGlimmerState == MuseGlimmerState.IN_FINAL || museGlimmerState == MuseGlimmerState.IN_TRANSITION) {
+                        var remaining = museBuffer.toString().replace("<|eot|>", "").replace("<|end_of_text|>", "")
+                        val cleaned = stripLeadingMuseUserHeader(remaining)
+                        if (cleaned != null) {
+                            remaining = cleaned
+                        }
+                        if (remaining.startsWith("<|message|>")) {
+                            remaining = remaining.removePrefix("<|message|>").trimStart('\n', '\r', ' ')
+                        }
+                        if (remaining.isNotEmpty()) trySend(remaining)
+                    }
+                    museBuffer.setLength(0)
+                    museGlimmerState = MuseGlimmerState.BEFORE_HEADER
+                }
                 close()
             }
             is LlmStreamResult.Error -> {
@@ -1027,6 +1095,296 @@ class GeniexInferenceService @Inject constructor(
                 }
             }
         }
+    }
+
+    /**
+     * State-machine parser for Meta Muse Glimmer ATEM format output.
+     *
+     * Format when thinking enabled:
+     *   to=self<|message|>REASONING_CONTENT<|eom|><|start|>assistant to=user<|message|>FINAL_ANSWER<|eot|>
+     *   (or to=self<|message|>...to=user<|message|>FINAL_ANSWER<|eot|>)
+     *
+     * Format when thinking disabled:
+     *   FINAL_ANSWER<|eot|> (prompt ends with prefill <|start|>assistant to=user<|message|>)
+     */
+    private fun emitTokenForMuseGlimmer(tokenText: String, thinkingEnabled: Boolean, send: (String) -> Unit) {
+        museBuffer.append(tokenText)
+
+        when (museGlimmerState) {
+            MuseGlimmerState.BEFORE_HEADER -> {
+                val buf = museBuffer.toString()
+                if (!thinkingEnabled) {
+                    val cleaned = stripLeadingMuseUserHeader(buf)
+                    if (cleaned != null) {
+                        museBuffer.setLength(0)
+                        museBuffer.append(cleaned)
+                        museGlimmerState = MuseGlimmerState.IN_FINAL
+                        if (museBuffer.isNotEmpty()) emitTokenForMuseGlimmer("", thinkingEnabled, send)
+                    } else if (isPotentialMuseHeaderPrefix(buf)) {
+                        return
+                    } else {
+                        museGlimmerState = MuseGlimmerState.IN_FINAL
+                        if (museBuffer.isNotEmpty()) emitTokenForMuseGlimmer("", thinkingEnabled, send)
+                    }
+                    return
+                }
+
+                // Thinking is enabled:
+                val cleanedSelf = stripLeadingMuseSelfHeader(buf)
+                if (cleanedSelf != null) {
+                    museBuffer.setLength(0)
+                    museBuffer.append(cleanedSelf)
+                    museGlimmerState = MuseGlimmerState.IN_REASONING
+                    send(SENTINEL_THINK)
+                    if (museBuffer.isNotEmpty()) emitTokenForMuseGlimmer("", thinkingEnabled, send)
+                    return
+                }
+
+                val cleanedUser = stripLeadingMuseUserHeader(buf)
+                if (cleanedUser != null) {
+                    museBuffer.setLength(0)
+                    museBuffer.append(cleanedUser)
+                    museGlimmerState = MuseGlimmerState.IN_FINAL
+                    if (museBuffer.isNotEmpty()) emitTokenForMuseGlimmer("", thinkingEnabled, send)
+                    return
+                }
+
+                if (isPotentialMuseHeaderPrefix(buf)) {
+                    return
+                }
+
+                if (buf.length >= 40) {
+                    museGlimmerState = MuseGlimmerState.IN_REASONING
+                    send(SENTINEL_THINK)
+                    val safeLen = (museBuffer.length - 20).coerceAtLeast(0)
+                    if (safeLen > 0) {
+                        send(museBuffer.substring(0, safeLen))
+                        museBuffer.delete(0, safeLen)
+                    }
+                }
+            }
+
+            MuseGlimmerState.IN_REASONING -> {
+                val buf = museBuffer.toString()
+                val eomMarker = "<|eom|>"
+                val eomIdx = buf.indexOf(eomMarker)
+                if (eomIdx >= 0) {
+                    val reasoningChunk = buf.substring(0, eomIdx)
+                    if (reasoningChunk.isNotEmpty()) send(reasoningChunk)
+                    send(SENTINEL_ENDTHINK)
+
+                    val remainder = buf.substring(eomIdx + eomMarker.length)
+                    museBuffer.setLength(0)
+                    museBuffer.append(remainder)
+                    museGlimmerState = MuseGlimmerState.IN_TRANSITION
+                    if (museBuffer.isNotEmpty()) emitTokenForMuseGlimmer("", thinkingEnabled, send)
+                    return
+                }
+
+                val userHeaderIdx = findMuseUserHeaderIndex(buf)
+                if (userHeaderIdx >= 0) {
+                    val reasoningChunk = buf.substring(0, userHeaderIdx)
+                    if (reasoningChunk.isNotEmpty()) send(reasoningChunk)
+                    send(SENTINEL_ENDTHINK)
+
+                    val remainder = buf.substring(userHeaderIdx)
+                    museBuffer.setLength(0)
+                    museBuffer.append(remainder)
+                    museGlimmerState = MuseGlimmerState.IN_TRANSITION
+                    if (museBuffer.isNotEmpty()) emitTokenForMuseGlimmer("", thinkingEnabled, send)
+                    return
+                }
+
+                val eotIdx = buf.indexOf("<|eot|>")
+                if (eotIdx >= 0) {
+                    val reasoningChunk = buf.substring(0, eotIdx)
+                    if (reasoningChunk.isNotEmpty()) send(reasoningChunk)
+                    send(SENTINEL_ENDTHINK)
+                    museBuffer.setLength(0)
+                    museGlimmerState = MuseGlimmerState.IN_FINAL
+                    return
+                }
+
+                val maxMarkerLen = 45
+                val safeLen = (buf.length - maxMarkerLen).coerceAtLeast(0)
+                if (safeLen > 0) {
+                    send(buf.substring(0, safeLen))
+                    museBuffer.delete(0, safeLen)
+                }
+            }
+
+            MuseGlimmerState.IN_TRANSITION -> {
+                val buf = museBuffer.toString()
+                val cleaned = stripLeadingMuseUserHeader(buf)
+                if (cleaned != null) {
+                    museBuffer.setLength(0)
+                    museBuffer.append(cleaned)
+                    museGlimmerState = MuseGlimmerState.IN_FINAL
+                    if (museBuffer.isNotEmpty()) emitTokenForMuseGlimmer("", thinkingEnabled, send)
+                    return
+                }
+
+                val msgIdx = buf.indexOf("<|message|>")
+                if (msgIdx >= 0) {
+                    val remainder = buf.substring(msgIdx + "<|message|>".length).trimStart('\n', '\r', ' ')
+                    museBuffer.setLength(0)
+                    museBuffer.append(remainder)
+                    museGlimmerState = MuseGlimmerState.IN_FINAL
+                    if (museBuffer.isNotEmpty()) emitTokenForMuseGlimmer("", thinkingEnabled, send)
+                    return
+                }
+
+                if (isPotentialMuseUserHeaderPrefix(buf)) {
+                    return
+                }
+
+                val remainder = buf.trimStart('\n', '\r', ' ')
+                museBuffer.setLength(0)
+                museBuffer.append(remainder)
+                museGlimmerState = MuseGlimmerState.IN_FINAL
+                if (museBuffer.isNotEmpty()) emitTokenForMuseGlimmer("", thinkingEnabled, send)
+            }
+
+            MuseGlimmerState.IN_FINAL -> {
+                val buf = museBuffer.toString()
+                val cleanedBuf = stripLeadingMuseUserHeader(buf)
+                if (cleanedBuf != null) {
+                    museBuffer.setLength(0)
+                    museBuffer.append(cleanedBuf)
+                    if (museBuffer.isNotEmpty()) emitTokenForMuseGlimmer("", thinkingEnabled, send)
+                    return
+                }
+                if (buf.startsWith("<|message|>")) {
+                    val afterMsg = buf.removePrefix("<|message|>").trimStart('\n', '\r', ' ')
+                    museBuffer.setLength(0)
+                    museBuffer.append(afterMsg)
+                    if (museBuffer.isNotEmpty()) emitTokenForMuseGlimmer("", thinkingEnabled, send)
+                    return
+                }
+
+                val eotIdx = buf.indexOf("<|eot|>")
+                val endOfTextIdx = buf.indexOf("<|end_of_text|>")
+                val stopIdx = when {
+                    eotIdx >= 0 && endOfTextIdx >= 0 -> minOf(eotIdx, endOfTextIdx)
+                    eotIdx >= 0 -> eotIdx
+                    endOfTextIdx >= 0 -> endOfTextIdx
+                    else -> -1
+                }
+
+                if (stopIdx >= 0) {
+                    val finalChunk = buf.substring(0, stopIdx)
+                    if (finalChunk.isNotEmpty()) send(finalChunk)
+                    museBuffer.setLength(0)
+                    return
+                }
+
+                val safeLen = (buf.length - 15).coerceAtLeast(0)
+                if (safeLen > 0) {
+                    send(buf.substring(0, safeLen))
+                    museBuffer.delete(0, safeLen)
+                }
+            }
+        }
+    }
+
+    private fun stripLeadingMuseUserHeader(text: String): String? {
+        val trimmed = text.trimStart('\n', '\r', ' ')
+        if (trimmed.startsWith("<|message|>")) {
+            return trimmed.substring("<|message|>".length).trimStart('\n', '\r', ' ')
+        }
+        val fullHeaders = listOf(
+            "<|start|>assistant to=user<|message|>",
+            "<|start|>assistant to=user\n<|message|>",
+            "<|start|>assistant\nto=user<|message|>",
+            "<|start|>assistant\nto=user\n<|message|>",
+            "assistant to=user<|message|>",
+            "assistant to=user\n<|message|>",
+            "to=user<|message|>",
+            "to=user\n<|message|>"
+        )
+        for (h in fullHeaders) {
+            if (trimmed.startsWith(h)) {
+                return trimmed.substring(h.length).trimStart('\n', '\r', ' ')
+            }
+        }
+        val toUserIdx = trimmed.indexOf("to=user")
+        if (toUserIdx in 0..25) {
+            val msgIdx = trimmed.indexOf("<|message|>", toUserIdx)
+            if (msgIdx >= 0 && msgIdx - toUserIdx < 30) {
+                return trimmed.substring(msgIdx + "<|message|>".length).trimStart('\n', '\r', ' ')
+            }
+        }
+        return null
+    }
+
+    private fun stripLeadingMuseSelfHeader(text: String): String? {
+        val trimmed = text.trimStart('\n', '\r', ' ')
+        val fullHeaders = listOf(
+            "<|start|>assistant to=self<|message|>",
+            "<|start|>assistant to=self\n<|message|>",
+            "<|start|>assistant\nto=self<|message|>",
+            "<|start|>assistant\nto=self\n<|message|>",
+            "assistant to=self<|message|>",
+            "assistant to=self\n<|message|>",
+            "to=self<|message|>",
+            "to=self\n<|message|>"
+        )
+        for (h in fullHeaders) {
+            if (trimmed.startsWith(h)) {
+                return trimmed.substring(h.length).trimStart('\n', '\r', ' ')
+            }
+        }
+        val toSelfIdx = trimmed.indexOf("to=self")
+        if (toSelfIdx in 0..25) {
+            val msgIdx = trimmed.indexOf("<|message|>", toSelfIdx)
+            if (msgIdx >= 0 && msgIdx - toSelfIdx < 30) {
+                return trimmed.substring(msgIdx + "<|message|>".length).trimStart('\n', '\r', ' ')
+            }
+        }
+        return null
+    }
+
+    private fun isPotentialMuseUserHeaderPrefix(text: String): Boolean {
+        val trimmed = text.trimStart('\n', '\r', ' ')
+        if (trimmed.isEmpty()) return true
+        val candidatePrefixes = listOf(
+            "<|start|>assistant to=user<|message|>",
+            "assistant to=user<|message|>",
+            "to=user<|message|>",
+            "<|message|>"
+        )
+        return candidatePrefixes.any { it.startsWith(trimmed) }
+    }
+
+    private fun isPotentialMuseHeaderPrefix(text: String): Boolean {
+        val trimmed = text.trimStart('\n', '\r', ' ')
+        if (trimmed.isEmpty()) return true
+        val candidatePrefixes = listOf(
+            "<|start|>assistant to=self<|message|>",
+            "<|start|>assistant to=user<|message|>",
+            "assistant to=self<|message|>",
+            "assistant to=user<|message|>",
+            "to=self<|message|>",
+            "to=user<|message|>",
+            "<|message|>"
+        )
+        return candidatePrefixes.any { it.startsWith(trimmed) }
+    }
+
+    private fun findMuseUserHeaderIndex(text: String): Int {
+        val fullHeaders = listOf(
+            "<|start|>assistant to=user<|message|>",
+            "assistant to=user<|message|>",
+            "to=user<|message|>",
+            "<|start|>assistant to=user",
+            "assistant to=user",
+            "to=user"
+        )
+        for (h in fullHeaders) {
+            val idx = text.indexOf(h)
+            if (idx >= 0) return idx
+        }
+        return -1
     }
 
     /**
@@ -1259,6 +1617,12 @@ class GeniexInferenceService @Inject constructor(
             }
         }
 
+        val isMuseGlimmer = model.name.contains("muse glimmer", ignoreCase = true) ||
+                            model.name.contains("muse-glimmer", ignoreCase = true)
+        if (isMuseGlimmer) {
+            return buildMuseGlimmerPrompt(messages, cleanPrompt, thinkingEnabled)
+        }
+
         if (messages.isNotEmpty()) {
             try {
                 val result = llmWrap.applyChatTemplate(messages.toTypedArray(), null, false)
@@ -1373,6 +1737,56 @@ class GeniexInferenceService @Inject constructor(
             }
             result
         }
+    }
+
+    private fun buildMuseGlimmerPrompt(
+        messages: List<ChatMessage>,
+        cleanPrompt: String,
+        thinkingEnabled: Boolean
+    ): String {
+        var systemContent = ""
+        val historyTurns = mutableListOf<Pair<String, String>>()
+
+        for (msg in messages) {
+            val role = try { msg::class.java.getDeclaredField("role").apply { isAccessible = true }.get(msg) as String } catch (e: Exception) { "user" }
+            val content = try { msg::class.java.getDeclaredField("content").apply { isAccessible = true }.get(msg) as String } catch (e: Exception) { "" }
+            if (role == "system") {
+                systemContent = if (systemContent.isEmpty()) content else "$systemContent\n\n$content"
+            } else {
+                historyTurns.add(role to content)
+            }
+        }
+
+        val effectiveSystem = if (systemContent.isNotBlank()) systemContent.trim() else "You are a helpful AI assistant."
+        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+        val currentDate = sdf.format(Date())
+        val validRecipients = if (thinkingEnabled) "\"self\", \"user\"" else "\"user\""
+
+        val sb = StringBuilder()
+        sb.append("<|begin_of_text|>")
+        sb.append("<|start|>system<|message|>$effectiveSystem\nKnowledge cutoff: 2026-01-04.\nCurrent date: $currentDate.\n\nReasoning strength: high.\n\n# Valid recipients: $validRecipients.<|eot|>")
+
+        if (historyTurns.isEmpty()) {
+            val userText = cleanPrompt.trim()
+            sb.append("<|start|>user<|message|>$userText<|eot|>")
+        } else {
+            for ((role, content) in historyTurns) {
+                val trimmed = content.trim()
+                if (trimmed.isEmpty()) continue
+                if (role == "user") {
+                    sb.append("<|start|>user<|message|>$trimmed<|eot|>")
+                } else {
+                    sb.append("<|start|>assistant to=user<|message|>$trimmed<|eot|>")
+                }
+            }
+        }
+
+        if (thinkingEnabled) {
+            sb.append("<|start|>assistant")
+        } else {
+            sb.append("<|start|>assistant to=user<|message|>")
+        }
+        return sb.toString()
     }
 
     override suspend fun resetChatSession(chatId: String) {

@@ -829,13 +829,15 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
             else -> _selectedMaxTokens.value
         }
 
+        val isMuseGlimmer = model?.name?.contains("Muse Glimmer", ignoreCase = true) == true || model?.name?.contains("muse-glimmer", ignoreCase = true) == true
+        val useThinking = if (model?.name?.contains("Gemma-4", ignoreCase = true) == true || isMuseGlimmer) false else _enableThinking.value
         inferenceService.setGenerationParameters(
             maxTokens = effectiveMaxTokens,
             topK = topK,
             topP = topP,
             temperature = temperature,
             nGpuLayers = _selectedNGpuLayers.value,
-            enableThinking = if (model?.name?.contains("Gemma-4", ignoreCase = true) == true) false else _enableThinking.value,
+            enableThinking = useThinking,
             contextWindow = effectiveMaxTokens
         )
     }

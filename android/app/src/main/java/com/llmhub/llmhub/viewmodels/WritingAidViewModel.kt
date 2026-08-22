@@ -219,7 +219,7 @@ class WritingAidViewModel(application: Application) : AndroidViewModel(applicati
             topP = null,
             temperature = null,
             nGpuLayers = _selectedNGpuLayers.value,
-            enableThinking = if (model.name.contains("Gemma-4", ignoreCase = true)) false else _enableThinking.value,
+            enableThinking = if (model.name.contains("Gemma-4", ignoreCase = true) || model.name.contains("Muse Glimmer", ignoreCase = true) || model.name.contains("muse-glimmer", ignoreCase = true)) false else _enableThinking.value,
             contextWindow = effectiveCtx
         )
     }

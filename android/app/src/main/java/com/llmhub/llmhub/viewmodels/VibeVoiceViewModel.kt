@@ -280,10 +280,11 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
                 val voiceModel = _selectedVoiceModel.value
                 val isUsingAsr = voiceModel != null
                 val disableAudio = isUsingAsr
-                
                 (inferenceService as? UnifiedInferenceService)?.setAgentToolsEnabled(false)
                 val vibeVoiceCtx = minOf(model.contextWindowSize, 4096)
-                inferenceService.setGenerationParameters(null, null, null, null, enableThinking = if (model.name.contains("Gemma-4", ignoreCase = true)) false else null, contextWindow = vibeVoiceCtx)
+                val isMuseGlimmer = model.name.contains("Muse Glimmer", ignoreCase = true) || model.name.contains("muse-glimmer", ignoreCase = true)
+                val useThinking = if (model.name.contains("Gemma-4", ignoreCase = true) || isMuseGlimmer) false else null
+                inferenceService.setGenerationParameters(null, null, null, null, enableThinking = useThinking, contextWindow = vibeVoiceCtx)
                 inferenceService.loadModel(
                     model = model,
                     preferredBackend = _selectedBackend.value,

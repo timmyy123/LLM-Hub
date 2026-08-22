@@ -1870,11 +1870,10 @@ object ModelData {
             modelFormat = "gguf"
         ),
 
-        /*
         // Muse Glimmer 30B Models (Meta via Unsloth GGUF)
-        // Disabled on Android until the bundled GenieX AAR supports the
-        // muse-glimmer architecture. KQuant/DFlash sidecars are intentionally
-        // excluded because GenieX does not expose DFlash for multimodal GGUFs.
+        // Enabled on Android via GenieX AAR (supports muse-glimmer architecture).
+        // KQuant/DFlash sidecars are intentionally excluded because GenieX does not
+        // expose DFlash for multimodal GGUFs.
         LLMModel(
             name = "Muse Glimmer 30B (UD-IQ2_XXS)",
             description = "Meta's 30B vision-language agent model. UD-IQ2_XXS quantization. 131k context. Requires a separate Muse Glimmer Vision Projector for image input. 10.75 GB download.",
@@ -2021,7 +2020,6 @@ object ModelData {
             contextWindowSize = 0,
             modelFormat = "gguf"
         ),
-        */
 
         // Phi-4 Mini updated to user-provided litertlm link
         LLMModel(

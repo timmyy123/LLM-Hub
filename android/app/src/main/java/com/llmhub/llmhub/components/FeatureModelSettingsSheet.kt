@@ -151,6 +151,9 @@ fun FeatureModelSettingsSheet(
             if (name.contains("gemma-4") || name.contains("gemma 4") || name.contains("gemma_4")) {
                 return@derivedStateOf model.modelFormat == "litertlm"
             }
+            if (name.contains("muse glimmer") || name.contains("muse-glimmer")) {
+                return@derivedStateOf false
+            }
             name.contains("thinking") || name.contains("reasoning") ||
                 name.contains("gpt-oss") || name.contains("gpt_oss") ||
                 model.supportsThinking
