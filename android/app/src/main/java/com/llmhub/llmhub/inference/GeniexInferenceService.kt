@@ -1605,7 +1605,7 @@ class GeniexInferenceService @Inject constructor(
             if (sep != null) {
                 val idx = cleanPrompt.indexOf(sep)
                 val instructions = cleanPrompt.substring(0, idx).trimEnd()
-                val userContent = (sep.trim() + " " + cleanPrompt.substring(idx + sep.length)).trim()
+                val userContent = cleanPrompt.substring(idx + sep.length).trim()
                 if (instructions.isNotEmpty() && userContent.isNotEmpty()) {
                     messages.add(ChatMessage("system", instructions))
                     messages.add(ChatMessage("user", userContent))
@@ -1763,7 +1763,6 @@ class GeniexInferenceService @Inject constructor(
         val validRecipients = if (thinkingEnabled) "\"self\", \"user\"" else "\"user\""
 
         val sb = StringBuilder()
-        sb.append("<|begin_of_text|>")
         sb.append("<|start|>system<|message|>$effectiveSystem\nKnowledge cutoff: 2026-01-04.\nCurrent date: $currentDate.\n\nReasoning strength: high.\n\n# Valid recipients: $validRecipients.<|eot|>")
 
         if (historyTurns.isEmpty()) {
