@@ -10,6 +10,8 @@
 #include <vector>
 
 #include "llama.h"
+#include "mtmd-helper.h"
+#include "mtmd.h"
 
 namespace {
 
@@ -18,6 +20,7 @@ constexpr const char * TAG = "LlamaCppFallback";
 llama_model * g_model = nullptr;
 llama_context * g_context = nullptr;
 llama_sampler * g_sampler = nullptr;
+mtmd_context * g_mtmd = nullptr;
 std::atomic_bool g_stop{false};
 int32_t g_generated = 0;
 int32_t g_max_tokens = 0;
@@ -74,6 +77,10 @@ void free_sampler() {
 
 void unload_model() {
     free_sampler();
+    if (g_mtmd != nullptr) {
+        mtmd_free(g_mtmd);
+        g_mtmd = nullptr;
+    }
     if (g_context != nullptr) {
         llama_free(g_context);
         g_context = nullptr;
@@ -163,7 +170,8 @@ Java_com_llmhub_llmhub_inference_LlamaCppNative_nativeInit(JNIEnv *, jobject) {
 
 extern "C" JNIEXPORT jint JNICALL
 Java_com_llmhub_llmhub_inference_LlamaCppNative_nativeLoadModel(
-    JNIEnv * env, jobject, jstring model_path, jint context_size, jint thread_count) {
+    JNIEnv * env, jobject, jstring model_path, jstring mmproj_path,
+    jint context_size, jint thread_count) {
     unload_model();
     const std::string path = from_jstring(env, model_path);
 
@@ -183,7 +191,38 @@ Java_com_llmhub_llmhub_inference_LlamaCppNative_nativeLoadModel(
         unload_model();
         return 2;
     }
+
+    const std::string projector_path = from_jstring(env, mmproj_path);
+    if (!projector_path.empty()) {
+        mtmd_helper_log_set(log_callback, nullptr);
+        mtmd_context_params mtmd_params = mtmd_context_params_default();
+        mtmd_params.use_gpu = false;
+        mtmd_params.n_threads = thread_count;
+        mtmd_params.print_timings = true;
+        g_mtmd = mtmd_init_from_file(projector_path.c_str(), g_model, mtmd_params);
+        if (g_mtmd == nullptr || !mtmd_support_vision(g_mtmd)) {
+            __android_log_print(
+                ANDROID_LOG_ERROR, TAG, "Failed to load vision projector: %s", projector_path.c_str());
+            if (g_mtmd != nullptr) {
+                mtmd_free(g_mtmd);
+                g_mtmd = nullptr;
+            }
+        } else {
+            __android_log_print(
+                ANDROID_LOG_INFO, TAG, "Loaded vision projector: %s", projector_path.c_str());
+        }
+    }
     return 0;
+}
+
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_llmhub_llmhub_inference_LlamaCppNative_nativeSupportsVision(JNIEnv *, jobject) {
+    return g_mtmd != nullptr && mtmd_support_vision(g_mtmd) ? JNI_TRUE : JNI_FALSE;
+}
+
+extern "C" JNIEXPORT jstring JNICALL
+Java_com_llmhub_llmhub_inference_LlamaCppNative_nativeMediaMarker(JNIEnv * env, jobject) {
+    return env->NewStringUTF(mtmd_default_marker());
 }
 
 extern "C" JNIEXPORT jstring JNICALL
@@ -200,7 +239,7 @@ Java_com_llmhub_llmhub_inference_LlamaCppNative_nativeFormatChat(
 
 extern "C" JNIEXPORT jint JNICALL
 Java_com_llmhub_llmhub_inference_LlamaCppNative_nativeStartCompletion(
-    JNIEnv * env, jobject, jstring formatted_prompt,
+    JNIEnv * env, jobject, jstring formatted_prompt, jobjectArray image_path_array,
     jint max_tokens, jfloat temperature, jint top_k, jfloat top_p) {
     if (g_model == nullptr || g_context == nullptr) return 1;
 
@@ -221,6 +260,96 @@ Java_com_llmhub_llmhub_inference_LlamaCppNative_nativeStartCompletion(
 
     const std::string prompt = from_jstring(env, formatted_prompt);
     if (prompt.empty()) return 2;
+
+    const jsize image_count = image_path_array == nullptr ? 0 : env->GetArrayLength(image_path_array);
+    if (image_count > 0) {
+        if (g_mtmd == nullptr || !mtmd_support_vision(g_mtmd)) return 6;
+
+        std::vector<mtmd_helper_bitmap_wrapper> bitmap_wrappers;
+        std::vector<const mtmd_bitmap *> bitmaps;
+        bitmap_wrappers.reserve(static_cast<size_t>(image_count));
+        bitmaps.reserve(static_cast<size_t>(image_count));
+        for (jsize i = 0; i < image_count; ++i) {
+            auto path_value = static_cast<jstring>(env->GetObjectArrayElement(image_path_array, i));
+            const std::string path = from_jstring(env, path_value);
+            env->DeleteLocalRef(path_value);
+            mtmd_helper_bitmap_wrapper wrapper =
+                mtmd_helper_bitmap_init_from_file(g_mtmd, path.c_str(), false);
+            if (wrapper.bitmap == nullptr) {
+                for (auto & loaded : bitmap_wrappers) {
+                    mtmd_bitmap_free(loaded.bitmap);
+                    if (loaded.video_ctx != nullptr) mtmd_helper_video_free(loaded.video_ctx);
+                }
+                return 7;
+            }
+            bitmaps.push_back(wrapper.bitmap);
+            bitmap_wrappers.push_back(wrapper);
+        }
+
+        mtmd_input_chunks * chunks = mtmd_input_chunks_init();
+        mtmd_input_text input_text{
+            prompt.data(),
+            prompt.size(),
+            true,
+            true,
+        };
+        const int32_t tokenize_result = mtmd_tokenize(
+            g_mtmd, chunks, &input_text, bitmaps.data(), bitmaps.size());
+        for (auto & loaded : bitmap_wrappers) {
+            mtmd_bitmap_free(loaded.bitmap);
+            if (loaded.video_ctx != nullptr) mtmd_helper_video_free(loaded.video_ctx);
+        }
+        if (tokenize_result != 0) {
+            mtmd_input_chunks_free(chunks);
+            __android_log_print(
+                ANDROID_LOG_ERROR, TAG, "Vision prompt tokenization failed with code %d", tokenize_result);
+            return 8;
+        }
+
+        const int32_t context_size = static_cast<int32_t>(llama_n_ctx(g_context));
+        const size_t prompt_tokens = mtmd_helper_get_n_tokens(chunks);
+        if (prompt_tokens >= static_cast<size_t>(context_size)) {
+            mtmd_input_chunks_free(chunks);
+            __android_log_print(
+                ANDROID_LOG_ERROR,
+                TAG,
+                "Vision prompt needs %zu tokens but context is %d",
+                prompt_tokens,
+                context_size);
+            return 9;
+        }
+
+        g_max_tokens = std::max(
+            1,
+            std::min(requested_max_tokens, context_size - static_cast<int32_t>(prompt_tokens)));
+        llama_pos new_n_past = 0;
+        const int32_t eval_result = mtmd_helper_eval_chunks(
+            g_mtmd,
+            g_context,
+            chunks,
+            0,
+            0,
+            static_cast<int32_t>(llama_n_batch(g_context)),
+            true,
+            &new_n_past);
+        mtmd_input_chunks_free(chunks);
+        if (eval_result != 0) {
+            __android_log_print(
+                ANDROID_LOG_ERROR, TAG, "Vision prompt evaluation failed with code %d", eval_result);
+            return 10;
+        }
+        __android_log_print(
+            ANDROID_LOG_DEBUG,
+            TAG,
+            "Starting vision completion with %zu prompt tokens, %d images, and room for %d/%d output tokens",
+            prompt_tokens,
+            image_count,
+            g_max_tokens,
+            requested_max_tokens);
+        g_decode_start_us = now_us();
+        return 0;
+    }
+
     const llama_vocab * vocab = llama_model_get_vocab(g_model);
     int32_t token_count = llama_tokenize(
         vocab, prompt.data(), static_cast<int32_t>(prompt.size()), nullptr, 0, true, true);

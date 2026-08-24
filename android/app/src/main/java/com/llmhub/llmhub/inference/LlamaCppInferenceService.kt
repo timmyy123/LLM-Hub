@@ -30,10 +30,18 @@ internal object LlamaCppNative {
     }
 
     external fun nativeInit(): Int
-    external fun nativeLoadModel(modelPath: String, contextSize: Int, threadCount: Int): Int
+    external fun nativeLoadModel(
+        modelPath: String,
+        mmprojPath: String?,
+        contextSize: Int,
+        threadCount: Int,
+    ): Int
+    external fun nativeSupportsVision(): Boolean
+    external fun nativeMediaMarker(): String
     external fun nativeFormatChat(roles: Array<String>, contents: Array<String>): String?
     external fun nativeStartCompletion(
         formattedPrompt: String,
+        imagePaths: Array<String>,
         maxTokens: Int,
         temperature: Float,
         topK: Int,
@@ -47,7 +55,7 @@ internal object LlamaCppNative {
 }
 
 /**
- * Text-only CPU safety net for GGUF models.
+ * CPU safety net for text and vision GGUF models.
  *
  * GenieX remains the primary engine. UnifiedInferenceService selects this implementation only
  * when GenieX cannot initialize or cannot load the selected model. llama.cpp and ggml are linked
@@ -62,6 +70,7 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
         private const val TAG = "LlamaCppFallback"
         private const val DEFAULT_MAX_TOKENS = 1024
         private const val MAX_FALLBACK_CONTEXT = 8192
+        private const val MAX_IMAGE_DIMENSION = 300
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -119,11 +128,26 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
             contextSize = (overrideContextWindow ?: model.contextWindowSize)
                 .coerceIn(512, MAX_FALLBACK_CONTEXT)
             val threads = (Runtime.getRuntime().availableProcessors() - 2).coerceIn(2, 8)
+            val modelDir = modelFile.parentFile ?: File(context.filesDir, "models")
+            val mmprojFile = if (model.supportsVision && !disableVision) {
+                findMmprojFile(modelDir, modelFile, model)
+            } else {
+                null
+            }
+            if (model.supportsVision && !disableVision && mmprojFile == null) {
+                Log.w(TAG, "Vision projector not found for '${model.name}'; loading text-only")
+            }
             Log.i(
                 TAG,
-                "Loading '${model.name}' with llama.cpp CPU fallback: context=$contextSize threads=$threads",
+                "Loading '${model.name}' with llama.cpp CPU fallback: context=$contextSize " +
+                    "threads=$threads mmproj=${mmprojFile?.name ?: "none"}",
             )
-            val result = LlamaCppNative.nativeLoadModel(modelFile.absolutePath, contextSize, threads)
+            val result = LlamaCppNative.nativeLoadModel(
+                modelFile.absolutePath,
+                mmprojFile?.absolutePath,
+                contextSize,
+                threads,
+            )
             if (result != 0) {
                 Log.e(TAG, "llama.cpp model load failed with code $result")
                 currentModel = null
@@ -132,8 +156,7 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
 
             currentModel = model
             chatSessions.clear()
-            // The fallback intentionally does not compile mtmd; VLM images stay on GenieX.
-            visionDisabled = true
+            visionDisabled = disableVision || !model.supportsVision || !LlamaCppNative.nativeSupportsVision()
             audioDisabled = true
             lastDecodeSpeed = null
             Log.i(TAG, "Loaded '${model.name}' using llama.cpp CPU fallback")
@@ -174,14 +197,55 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
         webSearchEnabled: Boolean,
         imagePaths: List<String>,
     ): Flow<String> {
-        if (images.isNotEmpty() || imagePaths.isNotEmpty() || audioData != null) {
+        if (audioData != null) {
             return flow {
                 throw UnsupportedOperationException(
-                    "The llama.cpp CPU fallback currently supports text-only GGUF inference",
+                    "The llama.cpp CPU fallback does not currently support audio input",
                 )
             }
         }
-        return generateInternal(prompt, model, webSearchEnabled, chatId)
+        if ((images.isNotEmpty() || imagePaths.isNotEmpty()) &&
+            (!model.supportsVision || visionDisabled)
+        ) {
+            return flow {
+                throw UnsupportedOperationException(
+                    "Vision is unavailable because this model's multimodal projector is not loaded",
+                )
+            }
+        }
+        return flow {
+            val generatedFiles = mutableListOf<File>()
+            try {
+                val allImagePaths = imagePaths.toMutableList()
+                images.forEachIndexed { index, bitmap ->
+                    val scaled = if (
+                        bitmap.width > MAX_IMAGE_DIMENSION || bitmap.height > MAX_IMAGE_DIMENSION
+                    ) {
+                        val scale = MAX_IMAGE_DIMENSION.toFloat() / maxOf(bitmap.width, bitmap.height)
+                        Bitmap.createScaledBitmap(
+                            bitmap,
+                            (bitmap.width * scale).toInt().coerceAtLeast(1),
+                            (bitmap.height * scale).toInt().coerceAtLeast(1),
+                            true,
+                        )
+                    } else {
+                        bitmap
+                    }
+                    val file = File(
+                        context.cacheDir,
+                        "llamacpp_vlm_${System.currentTimeMillis()}_$index.jpg",
+                    )
+                    file.outputStream().use { scaled.compress(Bitmap.CompressFormat.JPEG, 70, it) }
+                    if (scaled !== bitmap) scaled.recycle()
+                    generatedFiles += file
+                    allImagePaths += file.absolutePath
+                }
+                generateInternal(prompt, model, webSearchEnabled, chatId, allImagePaths)
+                    .collect { emit(it) }
+            } finally {
+                generatedFiles.forEach { it.delete() }
+            }
+        }.flowOn(dispatcher)
     }
 
     private fun generateInternal(
@@ -189,6 +253,7 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
         model: LLMModel,
         webSearchEnabled: Boolean,
         chatId: String,
+        imagePaths: List<String> = emptyList(),
     ): Flow<String> = flow {
         check(currentModel?.name == model.name) { "Model not loaded in llama.cpp CPU fallback" }
 
@@ -236,8 +301,13 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
         }
 
         val sessionPrompt = mergePromptIntoChatSession(chatId, effectivePrompt)
+        val promptWithMedia = if (imagePaths.isNotEmpty()) {
+            injectMediaMarkersIntoLatestUser(sessionPrompt, imagePaths.size)
+        } else {
+            sessionPrompt
+        }
         val thinkingEnabled = overrideEnableThinking ?: true
-        val formattedPrompt = formatPromptLikeGeniex(sessionPrompt, model, thinkingEnabled)
+        val formattedPrompt = formatPromptLikeGeniex(promptWithMedia, model, thinkingEnabled)
         resetTextOutputBehavior(model, thinkingEnabled)
 
         // Pass the configuration-sheet value through unchanged. Native llama.cpp tokenizes the
@@ -253,6 +323,7 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
         )
         val startResult = LlamaCppNative.nativeStartCompletion(
             formattedPrompt,
+            imagePaths.toTypedArray(),
             maxTokens,
             temperature,
             topK,
@@ -300,8 +371,7 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
     override fun getCurrentlyLoadedModel(): LLMModel? = currentModel
     override fun getCurrentlyLoadedBackend(): LlmInference.Backend? =
         if (currentModel != null) LlmInference.Backend.CPU else null
-    override fun getMemoryWarningForImages(images: List<Bitmap>): String? =
-        if (images.isNotEmpty()) "CPU fallback does not currently support image input" else null
+    override fun getMemoryWarningForImages(images: List<Bitmap>): String? = null
     override fun wasSessionRecentlyReset(chatId: String): Boolean = false
     override fun setGenerationParameters(
         maxTokens: Int?,
@@ -372,6 +442,20 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
             }
             append("assistant:")
         }
+    }
+
+    /** Put mtmd media markers inside the newest user turn before applying the model chat template. */
+    private fun injectMediaMarkersIntoLatestUser(prompt: String, imageCount: Int): String {
+        if (imageCount <= 0) return prompt
+        val userMarker = "user: "
+        val lastUser = prompt.lastIndexOf(userMarker)
+        check(lastUser >= 0) { "Cannot attach an image because the prompt has no user turn" }
+        val insertAt = lastUser + userMarker.length
+        val mediaMarkers = buildString {
+            repeat(imageCount) { append(LlamaCppNative.nativeMediaMarker()) }
+            append('\n')
+        }
+        return prompt.substring(0, insertAt) + mediaMarkers + prompt.substring(insertAt)
     }
 
     private fun rememberAssistantResponse(chatId: String, response: String) {
@@ -934,6 +1018,71 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
         if (thinkingEnabled) sb.append("<|start|>assistant")
         else sb.append("<|start|>assistant to=user<|message|>")
         return sb.toString()
+    }
+
+    /** Match the same local mmproj/projector discovery rules used by the GenieX backend. */
+    private fun findMmprojFile(modelDir: File, modelFile: File, model: LLMModel): File? {
+        val modelsDir = File(context.filesDir, "models")
+
+        model.additionalFiles.forEach { urlOrPath ->
+            val fileName = urlOrPath.substringAfterLast("/").substringBefore("?").substringBefore("#")
+            listOf(
+                File(modelDir, fileName),
+                File(modelsDir, fileName),
+                File(modelDir, urlOrPath),
+                File(modelsDir, urlOrPath),
+            ).firstOrNull { it.isFile }?.let { return it }
+        }
+
+        val searchDirs = buildList {
+            if (modelDir.isDirectory) add(modelDir)
+            if (modelDir.absolutePath != modelsDir.absolutePath && modelsDir.isDirectory) add(modelsDir)
+        }
+        val allProjectors = searchDirs.flatMap { directory ->
+            directory.listFiles { file ->
+                file.isFile && file.extension.equals("gguf", true) &&
+                    (file.name.contains("mmproj", true) || file.name.contains("projector", true))
+            }?.toList().orEmpty()
+        }.distinctBy { it.absolutePath }
+        if (allProjectors.isEmpty()) return null
+        if (allProjectors.size == 1) return allProjectors.first()
+
+        val variantRegex = Regex(
+            """(?:q\d(?:_[a-z0-9]+)?|bf16|f16|f32)""",
+            RegexOption.IGNORE_CASE,
+        )
+        fun normalizedVariant(name: String): String? {
+            return when (val value = variantRegex.find(name)?.value?.lowercase()) {
+                "f16", "bf16" -> "bf16"
+                else -> value
+            }
+        }
+        fun cleanName(name: String): String = name.lowercase()
+            .replace("mmproj", "")
+            .replace("projector", "")
+            .replace("vision", "")
+            .replace(
+                Regex("""[-_](?:q\d(?:_[a-z0-9]+)?|bf16|f16|f32|ud-[a-z0-9_]+|instruct|it|preview)"""),
+                "",
+            )
+            .replace(Regex("""[^a-z0-9]"""), "")
+
+        val modelCore = cleanName(modelFile.nameWithoutExtension)
+        val namedCandidates = allProjectors.filter { candidate ->
+            val candidateCore = cleanName(candidate.nameWithoutExtension)
+            candidateCore.isNotEmpty() && modelCore.isNotEmpty() &&
+                (modelCore.contains(candidateCore) || candidateCore.contains(modelCore))
+        }.ifEmpty { allProjectors }
+
+        val modelVariant = normalizedVariant(modelFile.nameWithoutExtension)
+        if (modelVariant != null) {
+            namedCandidates.firstOrNull {
+                normalizedVariant(it.nameWithoutExtension) == modelVariant
+            }?.let { return it }
+        }
+        return namedCandidates.firstOrNull {
+            it.name.contains("bf16", true) || it.name.contains("f16", true)
+        } ?: namedCandidates.first()
     }
 
     private fun resolveModelFile(model: LLMModel): File {

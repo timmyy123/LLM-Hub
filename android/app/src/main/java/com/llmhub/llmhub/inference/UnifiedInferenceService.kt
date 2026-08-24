@@ -58,11 +58,22 @@ class UnifiedInferenceService(private val context: Context) : InferenceService {
         if (currentService == targetService) {
             val loaded = currentService.getCurrentlyLoadedModel()
             val currentBackend = currentService.getCurrentlyLoadedBackend()
-            if (loaded?.name == model.name && 
-                (finalBackend == null || finalBackend == currentBackend) &&
-                finalDisableVision == isVisionDisabled &&
+            val usingLlamaCppFallback = currentService === llamaCppService
+            val backendMatches = usingLlamaCppFallback ||
+                finalBackend == null || finalBackend == currentBackend
+            val visionMatches = finalDisableVision == isVisionDisabled
+            val audioMatches = usingLlamaCppFallback ||
                 finalDisableAudio == isAudioDisabled
+            if (loaded?.name == model.name &&
+                backendMatches &&
+                visionMatches &&
+                audioMatches
             ) {
+                Log.d(
+                    "UnifiedInferenceService",
+                    "Reusing already-loaded '${model.name}' with " +
+                        if (usingLlamaCppFallback) "llama.cpp CPU fallback" else "current backend",
+                )
                 currentModel = model
                 updateAgentTools(model)
                 return true
@@ -144,7 +155,7 @@ class UnifiedInferenceService(private val context: Context) : InferenceService {
         return if (llamaCppService.loadModel(
                 model,
                 LlmInference.Backend.CPU,
-                disableVision = true,
+                disableVision = disableVision,
                 disableAudio = true,
                 deviceId = null,
             )

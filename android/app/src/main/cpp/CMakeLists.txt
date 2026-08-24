@@ -17,6 +17,8 @@ set(LLAMA_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(LLAMA_BUILD_TOOLS OFF CACHE BOOL "" FORCE)
 set(LLAMA_BUILD_SERVER OFF CACHE BOOL "" FORCE)
 set(LLAMA_BUILD_APP OFF CACHE BOOL "" FORCE)
+set(LLAMA_BUILD_MTMD ON CACHE BOOL "" FORCE)
+set(MTMD_VIDEO OFF CACHE BOOL "" FORCE)
 set(LLAMA_CURL OFF CACHE BOOL "" FORCE)
 set(GGML_NATIVE OFF CACHE BOOL "" FORCE)
 set(GGML_CPU_ARM_ARCH "armv8-a" CACHE STRING "" FORCE)
@@ -42,5 +44,6 @@ target_link_options(llmhub_llama_cpu PRIVATE
 target_include_directories(llmhub_llama_cpu PRIVATE
     "${LLAMA_CPP_DIR}/include"
     "${LLAMA_CPP_DIR}/ggml/include"
+    "${LLAMA_CPP_DIR}/tools/mtmd"
 )
-target_link_libraries(llmhub_llama_cpu PRIVATE llama android log)
+target_link_libraries(llmhub_llama_cpu PRIVATE llama mtmd android log)
