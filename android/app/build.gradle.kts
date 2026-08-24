@@ -20,6 +20,7 @@ plugins {
 android {
     namespace = "com.llmhub.llmhub"
     compileSdk = 37
+    ndkVersion = "29.0.13113456"
 
     defaultConfig {
         applicationId = "com.llmhub.llmhub"
@@ -43,6 +44,14 @@ android {
             // This helps with alignment but ultimate fix requires library maintainers
             // to rebuild native libraries with 16KB alignment
             debugSymbolLevel = "FULL"
+        }
+        externalNativeBuild {
+            cmake {
+                arguments += listOf(
+                    "-DCMAKE_BUILD_TYPE=Release",
+                    "-DANDROID_STL=c++_static"
+                )
+            }
         }
     }
     
@@ -71,6 +80,12 @@ android {
                 debugSymbolLevel = "NONE"
             }
             signingConfig = signingConfigs.getByName("debug")
+        }
+    }
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
+            version = "3.31.6"
         }
     }
     compileOptions {
