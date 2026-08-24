@@ -956,4 +956,10 @@ Du forsøger at sende et billede, men den nuværende model er **kun-tekst**:
     <string name="agent_mcp_termux_not_installed">Termux 0.109 eller nyere er påkrævet.</string>
     <string name="agent_mcp_termux_timed_out">Termux returnerede intet resultat før timeout.</string>
     <string name="agent_mcp_termux_run_command_unavailable">Denne Google Play-version af Termux understøtter ikke eksterne kommandoer. Brug F-Droid/GitHub-versionen af Termux til stdio, eller vælg Ekstern HTTP.</string>
+    <string name="gguf_engine">GGUF-motor</string>
+    <string name="gguf_engine_geniex_default">GenieX (standard)</string>
+    <string name="gguf_engine_llama_cpp">llama.cpp</string>
+    <string name="gguf_engine_crash_title">GGUF-motoren stoppede</string>
+    <string name="gguf_engine_crash_message">GenieX stoppede under indlæsning af en GGUF-model. Prøv at skifte GGUF-motor i Indstillinger.</string>
+    <string name="gguf_engine_open_settings">Åbn Indstillinger</string>
 </resources>

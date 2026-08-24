@@ -990,4 +990,10 @@
     <string name="agent_mcp_termux_not_installed">Diperlukan Termux 0.109 atau yang lebih baru.</string>
     <string name="agent_mcp_termux_timed_out">Termux tidak mengembalikan hasil sebelum waktu habis.</string>
     <string name="agent_mcp_termux_run_command_unavailable">Termux versi Google Play ini tidak mendukung perintah eksternal. Gunakan Termux versi F-Droid/GitHub untuk stdio, atau pilih HTTP Jarak Jauh.</string>
+    <string name="gguf_engine">Mesin GGUF</string>
+    <string name="gguf_engine_geniex_default">GenieX (default)</string>
+    <string name="gguf_engine_llama_cpp">llama.cpp</string>
+    <string name="gguf_engine_crash_title">Mesin GGUF berhenti</string>
+    <string name="gguf_engine_crash_message">GenieX berhenti saat memuat model GGUF. Coba ubah mesin GGUF di Setelan.</string>
+    <string name="gguf_engine_open_settings">Buka Setelan</string>
 </resources>

@@ -991,4 +991,10 @@
     <string name="agent_mcp_termux_not_installed">Se requiere Termux 0.109 o una versión posterior.</string>
     <string name="agent_mcp_termux_timed_out">Termux no devolvió ningún resultado antes de agotarse el tiempo.</string>
     <string name="agent_mcp_termux_run_command_unavailable">Esta versión de Termux de Google Play no admite comandos externos. Usa la versión de Termux de F-Droid/GitHub para stdio o selecciona HTTP remoto.</string>
+    <string name="gguf_engine">Motor GGUF</string>
+    <string name="gguf_engine_geniex_default">GenieX (predeterminado)</string>
+    <string name="gguf_engine_llama_cpp">llama.cpp</string>
+    <string name="gguf_engine_crash_title">El motor GGUF se detuvo</string>
+    <string name="gguf_engine_crash_message">GenieX se detuvo al cargar un modelo GGUF. Prueba a cambiar el motor GGUF en Ajustes.</string>
+    <string name="gguf_engine_open_settings">Abrir Ajustes</string>
 </resources>

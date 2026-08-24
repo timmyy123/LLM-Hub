@@ -895,4 +895,10 @@
     <string name="agent_mcp_termux_not_installed">ต้องใช้ Termux 0.109 หรือใหม่กว่า</string>
     <string name="agent_mcp_termux_timed_out">Termux ไม่ส่งผลลัพธ์กลับมาก่อนหมดเวลา</string>
     <string name="agent_mcp_termux_run_command_unavailable">Termux เวอร์ชัน Google Play ไม่รองรับคำสั่งจากภายนอก โปรดใช้ Termux เวอร์ชัน F-Droid/GitHub สำหรับ stdio หรือเลือก HTTP ระยะไกล</string>
+    <string name="gguf_engine">เอนจิน GGUF</string>
+    <string name="gguf_engine_geniex_default">GenieX (ค่าเริ่มต้น)</string>
+    <string name="gguf_engine_llama_cpp">llama.cpp</string>
+    <string name="gguf_engine_crash_title">เอนจิน GGUF หยุดทำงาน</string>
+    <string name="gguf_engine_crash_message">GenieX หยุดทำงานขณะโหลดโมเดล GGUF ลองเปลี่ยนเอนจิน GGUF ในการตั้งค่า</string>
+    <string name="gguf_engine_open_settings">เปิดการตั้งค่า</string>
 </resources>

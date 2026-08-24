@@ -988,4 +988,10 @@
     <string name="agent_mcp_termux_not_installed">נדרשת Termux בגרסה 0.109 ומעלה.</string>
     <string name="agent_mcp_termux_timed_out">Termux לא החזירה תוצאה לפני תום הזמן.</string>
     <string name="agent_mcp_termux_run_command_unavailable">גרסת Termux מ‑Google Play אינה תומכת בפקודות חיצוניות. עבור stdio יש להשתמש בגרסת Termux מ‑F-Droid/GitHub או לבחור HTTP מרוחק.</string>
+    <string name="gguf_engine">מנוע GGUF</string>
+    <string name="gguf_engine_geniex_default">GenieX (ברירת מחדל)</string>
+    <string name="gguf_engine_llama_cpp">llama.cpp</string>
+    <string name="gguf_engine_crash_title">מנוע GGUF נעצר</string>
+    <string name="gguf_engine_crash_message">GenieX נעצר בעת טעינת מודל GGUF. כדאי לשנות את מנוע GGUF בהגדרות.</string>
+    <string name="gguf_engine_open_settings">פתיחת ההגדרות</string>
 </resources>

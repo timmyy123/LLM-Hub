@@ -1003,4 +1003,10 @@
     <string name="agent_mcp_termux_not_installed">Termux 0.109 or newer is required.</string>
     <string name="agent_mcp_termux_timed_out">Termux returned no result before the timeout.</string>
     <string name="agent_mcp_termux_run_command_unavailable">This Google Play Termux build does not support external commands. Use the F-Droid/GitHub Termux build for stdio, or select Remote HTTP.</string>
+    <string name="gguf_engine">GGUF engine</string>
+    <string name="gguf_engine_geniex_default">GenieX (default)</string>
+    <string name="gguf_engine_llama_cpp">llama.cpp</string>
+    <string name="gguf_engine_crash_title">GGUF engine stopped</string>
+    <string name="gguf_engine_crash_message">GenieX stopped while loading a GGUF model. Try changing the GGUF engine in Settings.</string>
+    <string name="gguf_engine_open_settings">Open Settings</string>
 </resources>

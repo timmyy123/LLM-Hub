@@ -895,4 +895,10 @@
     <string name="agent_mcp_termux_not_installed">Termux 0.109 of nieuwer is vereist.</string>
     <string name="agent_mcp_termux_timed_out">Termux heeft vóór de time-out geen resultaat teruggestuurd.</string>
     <string name="agent_mcp_termux_run_command_unavailable">Deze Google Play-versie van Termux ondersteunt geen externe opdrachten. Gebruik voor stdio de F-Droid/GitHub-versie van Termux of selecteer Externe HTTP.</string>
+    <string name="gguf_engine">GGUF-engine</string>
+    <string name="gguf_engine_geniex_default">GenieX (standaard)</string>
+    <string name="gguf_engine_llama_cpp">llama.cpp</string>
+    <string name="gguf_engine_crash_title">GGUF-engine is gestopt</string>
+    <string name="gguf_engine_crash_message">GenieX is gestopt tijdens het laden van een GGUF-model. Probeer de GGUF-engine te wijzigen in Instellingen.</string>
+    <string name="gguf_engine_open_settings">Instellingen openen</string>
 </resources>

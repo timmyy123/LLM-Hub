@@ -895,4 +895,10 @@
     <string name="agent_mcp_termux_not_installed">Cần Termux 0.109 trở lên.</string>
     <string name="agent_mcp_termux_timed_out">Termux không trả về kết quả trước khi hết thời gian chờ.</string>
     <string name="agent_mcp_termux_run_command_unavailable">Bản Termux trên Google Play không hỗ trợ lệnh bên ngoài. Hãy dùng bản Termux từ F-Droid/GitHub cho stdio hoặc chọn HTTP từ xa.</string>
+    <string name="gguf_engine">Công cụ GGUF</string>
+    <string name="gguf_engine_geniex_default">GenieX (mặc định)</string>
+    <string name="gguf_engine_llama_cpp">llama.cpp</string>
+    <string name="gguf_engine_crash_title">Công cụ GGUF đã dừng</string>
+    <string name="gguf_engine_crash_message">GenieX đã dừng khi tải mô hình GGUF. Hãy thử đổi công cụ GGUF trong phần Cài đặt.</string>
+    <string name="gguf_engine_open_settings">Mở Cài đặt</string>
 </resources>

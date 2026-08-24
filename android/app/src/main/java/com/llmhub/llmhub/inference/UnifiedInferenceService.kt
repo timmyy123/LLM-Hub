@@ -14,6 +14,10 @@ import kotlinx.coroutines.flow.Flow
  */
 class UnifiedInferenceService(private val context: Context) : InferenceService {
 
+    companion object {
+        private const val TAG = "UnifiedInferenceService"
+    }
+
     private val mediaPipeService by lazy { MediaPipeInferenceService(context) }
     private val liteRtLmService by lazy { LiteRtLmInferenceService(context) }
     private val onnxService by lazy { OnnxInferenceService(context) }
@@ -49,7 +53,7 @@ class UnifiedInferenceService(private val context: Context) : InferenceService {
         val isGemma4 = model.name.contains("Gemma-4", ignoreCase = true)
         val targetService = when (model.modelFormat) {
             "onnx" -> onnxService
-            "gguf" -> if (currentService === llamaCppService) llamaCppService else geniexService
+            "gguf" -> if (GgufEnginePolicy.shouldUseLlamaCpp(context)) llamaCppService else geniexService
             "litertlm" -> if (isGemma4 || model.source == "Custom") liteRtLmService else mediaPipeService
             else -> mediaPipeService
         }
@@ -132,24 +136,36 @@ class UnifiedInferenceService(private val context: Context) : InferenceService {
         disableAudio: Boolean,
         deviceId: String?,
     ): InferenceService? {
-        if (geniexService.isAvailable()) {
+        if (GgufEnginePolicy.shouldUseLlamaCpp(context)) {
+            Log.i(
+                TAG,
+                "Routing '${model.name}' directly to llama.cpp: SoC=${GgufEnginePolicy.deviceSoc()} " +
+                    "preference=${GgufEnginePolicy.selectedEngine(context)}",
+            )
+        } else if (geniexService.isAvailable()) {
+            // commit() must reach disk before entering vendor JNI. A native SIGABRT kills the
+            // process without running Kotlin catch/finally; the marker is used only to show a
+            // warning after restart. Normal returns and catchable failures clear it.
+            GgufEnginePolicy.markGeniexLoadStarted(context)
             try {
                 if (geniexService.loadModel(model, backend, disableVision, disableAudio, deviceId)) {
-                    Log.i("UnifiedInferenceService", "Loaded '${model.name}' with GenieX")
+                    Log.i(TAG, "Loaded '${model.name}' with GenieX")
                     return geniexService
                 }
-                Log.w("UnifiedInferenceService", "GenieX returned failure; trying llama.cpp CPU fallback")
+                Log.w(TAG, "GenieX returned failure; trying llama.cpp CPU fallback")
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (fatal: VirtualMachineError) {
                 throw fatal
             } catch (error: Throwable) {
                 // Includes native linkage failures such as a missing vendor OpenCL library.
-                Log.w("UnifiedInferenceService", "GenieX failed; trying llama.cpp CPU fallback", error)
+                Log.w(TAG, "GenieX failed; trying llama.cpp CPU fallback", error)
+            } finally {
+                GgufEnginePolicy.markGeniexLoadFinished(context)
             }
             runCatching { geniexService.unloadModel() }
         } else {
-            Log.w("UnifiedInferenceService", "GenieX is unavailable; trying llama.cpp CPU fallback")
+            Log.w(TAG, "GenieX is unavailable; trying llama.cpp CPU fallback")
         }
 
         return if (llamaCppService.loadModel(
@@ -160,10 +176,10 @@ class UnifiedInferenceService(private val context: Context) : InferenceService {
                 deviceId = null,
             )
         ) {
-            Log.i("UnifiedInferenceService", "Loaded '${model.name}' with llama.cpp b10603 CPU fallback")
+            Log.i(TAG, "Loaded '${model.name}' with llama.cpp b10603 CPU fallback")
             llamaCppService
         } else {
-            Log.e("UnifiedInferenceService", "Both GenieX and llama.cpp failed for '${model.name}'")
+            Log.e(TAG, "Both GenieX and llama.cpp failed for '${model.name}'")
             null
         }
     }

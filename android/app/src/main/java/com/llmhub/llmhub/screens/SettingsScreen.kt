@@ -51,6 +51,8 @@ import com.llmhub.llmhub.data.ModelData
 import com.llmhub.llmhub.data.ModelDownloader
 import com.llmhub.llmhub.data.ThemeMode
 import com.llmhub.llmhub.data.localFileName
+import com.llmhub.llmhub.inference.GgufEngine
+import com.llmhub.llmhub.inference.GgufEnginePolicy
 import com.llmhub.llmhub.viewmodels.ThemeViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -69,6 +71,7 @@ fun SettingsScreen(
     val context = LocalContext.current
     var showThemeDialog by remember { mutableStateOf(false) }
     var showLanguageDialog by remember { mutableStateOf(false) }
+    var ggufEngine by remember { mutableStateOf(GgufEnginePolicy.selectedEngine(context)) }
     val currentThemeMode by themeViewModel.themeMode.collectAsState()
     val embeddingEnabled by themeViewModel.embeddingEnabled.collectAsState()
     val memoryEnabled by themeViewModel.memoryEnabled.collectAsState()
@@ -112,6 +115,51 @@ fun SettingsScreen(
                         subtitle = stringResource(R.string.browse_download_models),
                         onClick = onNavigateToModels
                     )
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                ggufEngine = if (ggufEngine == GgufEngine.LLAMA_CPP) {
+                                    GgufEngine.DEFAULT_GENIEX
+                                } else {
+                                    GgufEngine.LLAMA_CPP
+                                }
+                                GgufEnginePolicy.setSelectedEngine(context, ggufEngine)
+                            }
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            Icons.Default.Memory,
+                            contentDescription = null,
+                            modifier = Modifier.size(24.dp),
+                            tint = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = stringResource(R.string.gguf_engine),
+                                style = MaterialTheme.typography.bodyLarge,
+                            )
+                            Text(
+                                text = if (ggufEngine == GgufEngine.LLAMA_CPP) {
+                                    stringResource(R.string.gguf_engine_llama_cpp)
+                                } else {
+                                    stringResource(R.string.gguf_engine_geniex_default)
+                                },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Switch(
+                            checked = ggufEngine == GgufEngine.LLAMA_CPP,
+                            onCheckedChange = { useLlamaCpp ->
+                                ggufEngine = if (useLlamaCpp) GgufEngine.LLAMA_CPP else GgufEngine.DEFAULT_GENIEX
+                                GgufEnginePolicy.setSelectedEngine(context, ggufEngine)
+                            },
+                        )
+                    }
 
                     // Embedding Model Selection
                     EmbeddingModelSelector(themeViewModel = themeViewModel)

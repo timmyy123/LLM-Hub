@@ -996,4 +996,10 @@
     <string name="agent_mcp_termux_not_installed">需要 Termux 0.109 或更高版本。</string>
     <string name="agent_mcp_termux_timed_out">Termux 在超时前未返回结果。</string>
     <string name="agent_mcp_termux_run_command_unavailable">Google Play 版 Termux 不支持外部命令。若要使用 stdio，请安装 F-Droid/GitHub 版 Termux，或选择远程 HTTP。</string>
+    <string name="gguf_engine">GGUF 引擎</string>
+    <string name="gguf_engine_geniex_default">GenieX（默认）</string>
+    <string name="gguf_engine_llama_cpp">llama.cpp</string>
+    <string name="gguf_engine_crash_title">GGUF 引擎已停止</string>
+    <string name="gguf_engine_crash_message">GenieX 在加载 GGUF 模型时停止。请尝试在设置中更改 GGUF 引擎。</string>
+    <string name="gguf_engine_open_settings">打开设置</string>
 </resources>

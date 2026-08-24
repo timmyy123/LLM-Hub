@@ -988,4 +988,10 @@
     <string name="agent_mcp_termux_not_installed">يلزم Termux 0.109 أو إصدار أحدث.</string>
     <string name="agent_mcp_termux_timed_out">لم يُرجع Termux نتيجة قبل انتهاء المهلة.</string>
     <string name="agent_mcp_termux_run_command_unavailable">لا يدعم إصدار Termux من Google Play الأوامر الخارجية. استخدم إصدار Termux من F-Droid/GitHub لاتصال stdio أو اختر HTTP البعيد.</string>
+    <string name="gguf_engine">محرك GGUF</string>
+    <string name="gguf_engine_geniex_default">GenieX (افتراضي)</string>
+    <string name="gguf_engine_llama_cpp">llama.cpp</string>
+    <string name="gguf_engine_crash_title">توقف محرك GGUF</string>
+    <string name="gguf_engine_crash_message">توقف GenieX أثناء تحميل نموذج GGUF. جرّب تغيير محرك GGUF في الإعدادات.</string>
+    <string name="gguf_engine_open_settings">فتح الإعدادات</string>
 </resources>
