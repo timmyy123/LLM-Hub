@@ -612,7 +612,10 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
             ) 
         }
 
-        android.util.Log.d("ModelDownloadViewModel", "[downloadModel] Using HF token: ${_hfToken.value?.take(8)}... for model: ${model.name}")
+        val activeToken = getEffectiveToken(context)
+        _hfToken.value = activeToken
+        modelDownloader = ModelDownloader(ktorClient, context, activeToken)
+        android.util.Log.d("ModelDownloadViewModel", "[downloadModel] Using active HF token: ${activeToken?.take(8)}... for model: ${model.name}")
 
         val job = viewModelScope.launch {
             var latestStatus: com.llmhub.llmhub.data.DownloadStatus? = null

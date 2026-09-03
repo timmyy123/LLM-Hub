@@ -176,6 +176,14 @@ class ModelDownloader(
         }
     }
 
+    private fun getActiveToken(): String? {
+        val custom = com.llmhub.llmhub.viewmodels.ModelDownloadViewModel.getCustomToken(context)
+        if (custom.isNotEmpty()) {
+            return custom
+        }
+        return hfToken ?: com.llmhub.llmhub.viewmodels.ModelDownloadViewModel.getEffectiveToken(context)
+    }
+
     /**
      * Opens an HttpURLConnection with proper redirect handling that preserves Authorization headers.
      * HuggingFace redirects downloads, but Java's default behavior drops auth headers on redirect.
@@ -208,8 +216,9 @@ class ModelDownloader(
                 val isHuggingFaceDomain = host == "huggingface.co" || host.endsWith(".huggingface.co") ||
                                           host == "hf.co" || host.endsWith(".hf.co")
 
-                if (useToken && isHuggingFaceDomain && !hfToken.isNullOrBlank()) {
-                    setRequestProperty("Authorization", "Bearer $hfToken")
+                val activeToken = getActiveToken()
+                if (useToken && isHuggingFaceDomain && !activeToken.isNullOrBlank()) {
+                    setRequestProperty("Authorization", "Bearer $activeToken")
                 }
                 if (rangeStart != null && rangeStart > 0) {
                     setRequestProperty("Range", "bytes=$rangeStart-")
@@ -246,10 +255,11 @@ class ModelDownloader(
                     // Error
                     connection.disconnect()
 
-                    // If request failed with 401/403 without token, retry with token if available
+                    // If request failed with 401/403 without token, retry with active token if available
                     // in case the repository is gated and requires authentication/license.
-                    if (!useToken && !hfToken.isNullOrBlank() && (responseCode == 401 || responseCode == 403)) {
-                        Log.i(TAG, "HTTP $responseCode without token. Repository appears gated — retrying with Hugging Face token...")
+                    val activeToken = getActiveToken()
+                    if (!useToken && !activeToken.isNullOrBlank() && (responseCode == 401 || responseCode == 403)) {
+                        Log.i(TAG, "HTTP $responseCode without token. Repository appears gated — retrying with token...")
                         try {
                             return openConnectionWithAuthRedirects(initialUrl, rangeStart, useToken = true)
                         } catch (retryEx: Exception) {
