@@ -128,6 +128,22 @@ final class AppSettings: ObservableObject {
     @Published var memoryEnabled: Bool {
         didSet { UserDefaults.standard.set(memoryEnabled, forKey: "memory_enabled") }
     }
+    @Published var customHfToken: String {
+        didSet { UserDefaults.standard.set(customHfToken, forKey: "custom_hf_token") }
+    }
+
+    /// Effective Hugging Face token: user's custom token if provided, else the default bundle token.
+    /// Default token is NEVER exposed to the user in settings UI.
+    var effectiveHfToken: String? {
+        let trimmed = customHfToken.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmed.isEmpty { return trimmed }
+        let defaultToken = (Bundle.main.object(forInfoDictionaryKey: "HF_TOKEN") as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+        return defaultToken?.isEmpty == false ? defaultToken : nil
+    }
+
+    var hasCustomHfToken: Bool {
+        !customHfToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
 
     private init() {
         let langRaw = UserDefaults.standard.string(forKey: "app_language") ?? "system"
@@ -139,6 +155,7 @@ final class AppSettings: ObservableObject {
         autoReadoutEnabled = UserDefaults.standard.bool(forKey: "auto_readout_enabled")
         selectedEmbeddingModelId = UserDefaults.standard.string(forKey: "selected_embedding_model_id")
         memoryEnabled = UserDefaults.standard.bool(forKey: "memory_enabled")
+        customHfToken = UserDefaults.standard.string(forKey: "custom_hf_token") ?? ""
     }
 
     private var activeLocalizationCode: String {

@@ -906,3 +906,14 @@
 "agent_mcp_denied" = "Ditolak oleh pengguna";
 "agent_mcp_status" = "Status";
 "agent_termux_tool_title" = "Perintah shell Termux";
+
+
+/* Hugging Face Token */
+"hf_token_title" = "Token Hugging Face";
+"hf_token_subtitle" = "Token akses pribadi untuk mengunduh model";
+"hf_token_dialog_title" = "Token Akses Hugging Face";
+"hf_token_explanation" = "Jika token default gagal, mencapai batas penggunaan, atau saat mengunduh model berlisensi yang disetujui, masukkan token baca pribadi Anda dari huggingface.co/settings/tokens.";
+"hf_token_placeholder" = "Masukkan token pribadi (hf_...)";
+"hf_token_using_default" = "Menggunakan token default";
+"hf_token_custom_active" = "Token khusus aktif";
+"hf_token_clear" = "Atur ulang ke default";

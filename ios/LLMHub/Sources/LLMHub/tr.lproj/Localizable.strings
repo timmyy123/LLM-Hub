@@ -906,3 +906,14 @@
 "agent_mcp_denied" = "Kullanıcı tarafından reddedildi";
 "agent_mcp_status" = "Durum";
 "agent_termux_tool_title" = "Termux kabuk komutu";
+
+
+/* Hugging Face Token */
+"hf_token_title" = "Hugging Face Belirteci";
+"hf_token_subtitle" = "Model indirmeleri için kişisel erişim belirteci";
+"hf_token_dialog_title" = "Hugging Face Erişim Belirteci";
+"hf_token_explanation" = "Varsayılan belirteç başarısız olursa, hız sınırına ulaşırsa veya lisans onaylı korumalı modelleri indirirken huggingface.co/settings/tokens adresinden alacağınız kişisel okuma belirtecinizi girin.";
+"hf_token_placeholder" = "Kişisel belirteç girin (hf_...)";
+"hf_token_using_default" = "Varsayılan belirteç kullanılıyor";
+"hf_token_custom_active" = "Özel belirteç etkin";
+"hf_token_clear" = "Varsayılana sıfırla";

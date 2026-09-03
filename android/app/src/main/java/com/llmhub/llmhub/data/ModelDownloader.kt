@@ -89,21 +89,46 @@ class ModelDownloader(
                 Log.d(TAG, "HEAD request response code: $responseCode")
                 connection.disconnect()
 
+                val isPubliclyAccessible = if (!hfToken.isNullOrBlank() && (responseCode == 401 || responseCode == 403)) {
+                    try {
+                        val pubConn = (URL(fileUrl).openConnection() as HttpURLConnection).apply {
+                            requestMethod = "HEAD"
+                            connectTimeout = 5000
+                            readTimeout = 5000
+                            instanceFollowRedirects = false
+                            setRequestProperty("User-Agent", "Mozilla/5.0")
+                        }
+                        val pubCode = pubConn.responseCode
+                        pubConn.disconnect()
+                        pubCode in 200..299 || pubCode == 206 || pubCode in 301..308
+                    } catch (_: Exception) {
+                        false
+                    }
+                } else false
+
                 return when (responseCode) {
                     in 200..299, 206 -> {
                         "✓ Token HAS ACCESS to the model file"
                     }
                     401 -> {
-                        "✗ Token is INVALID or REVOKED (HTTP 401).\n" +
-                        "Check: local.properties has correct HF_TOKEN\n" +
-                        "Visit: https://huggingface.co/settings/tokens to verify"
+                        if (isPubliclyAccessible) {
+                            "✓ Model is PUBLIC (accessible without token), but your saved token is INVALID (HTTP 401). The app will download it unauthenticated."
+                        } else {
+                            "✗ Token is INVALID or REVOKED (HTTP 401).\n" +
+                            "Check: local.properties has correct HF_TOKEN\n" +
+                            "Visit: https://huggingface.co/settings/tokens to verify"
+                        }
                     }
                     403 -> {
-                        "✗ Access DENIED (HTTP 403).\n" +
-                        "This model may be GATED and require:\n" +
-                        "  1. Accepting the license on HuggingFace\n" +
-                        "  2. Using a token with sufficient permissions\n" +
-                        "Visit: https://huggingface.co/$repoId"
+                        if (isPubliclyAccessible) {
+                            "✓ Model is PUBLIC (accessible without token), but your saved token is FORBIDDEN (HTTP 403). The app will download it unauthenticated."
+                        } else {
+                            "✗ Access DENIED (HTTP 403).\n" +
+                            "This model may be GATED and require:\n" +
+                            "  1. Accepting the license on HuggingFace\n" +
+                            "  2. Using a token with sufficient permissions\n" +
+                            "Visit: https://huggingface.co/$repoId"
+                        }
                     }
                     404 -> {
                         "✗ File not found (HTTP 404).\nCheck: File path/name in model config"
@@ -155,8 +180,14 @@ class ModelDownloader(
      * Opens an HttpURLConnection with proper redirect handling that preserves Authorization headers.
      * HuggingFace redirects downloads, but Java's default behavior drops auth headers on redirect.
      * This manually follows redirects while re-applying the Authorization header each time.
+     * Always attempts unauthenticated download first. If authentication is required (HTTP 401/403,
+     * indicating a gated repository or license requirement), it retries using the Hugging Face token.
      */
-    private fun openConnectionWithAuthRedirects(initialUrl: String, rangeStart: Long? = null): HttpURLConnection {
+    private fun openConnectionWithAuthRedirects(
+        initialUrl: String,
+        rangeStart: Long? = null,
+        useToken: Boolean = false
+    ): HttpURLConnection {
         var currentUrl = initialUrl
         var redirectCount = 0
         val maxRedirects = 10
@@ -177,7 +208,7 @@ class ModelDownloader(
                 val isHuggingFaceDomain = host == "huggingface.co" || host.endsWith(".huggingface.co") ||
                                           host == "hf.co" || host.endsWith(".hf.co")
 
-                if (isHuggingFaceDomain && !hfToken.isNullOrBlank()) {
+                if (useToken && isHuggingFaceDomain && !hfToken.isNullOrBlank()) {
                     setRequestProperty("Authorization", "Bearer $hfToken")
                 }
                 if (rangeStart != null && rangeStart > 0) {
@@ -186,7 +217,7 @@ class ModelDownloader(
             }
 
             val responseCode = connection.responseCode
-            Log.d(TAG, "Connection attempt $redirectCount: HTTP $responseCode from $currentUrl")
+            Log.d(TAG, "Connection attempt $redirectCount (useToken=$useToken): HTTP $responseCode from $currentUrl")
 
             when {
                 responseCode in 200..299 || responseCode == 206 -> {
@@ -214,6 +245,18 @@ class ModelDownloader(
                 else -> {
                     // Error
                     connection.disconnect()
+
+                    // If request failed with 401/403 without token, retry with token if available
+                    // in case the repository is gated and requires authentication/license.
+                    if (!useToken && !hfToken.isNullOrBlank() && (responseCode == 401 || responseCode == 403)) {
+                        Log.i(TAG, "HTTP $responseCode without token. Repository appears gated — retrying with Hugging Face token...")
+                        try {
+                            return openConnectionWithAuthRedirects(initialUrl, rangeStart, useToken = true)
+                        } catch (retryEx: Exception) {
+                            Log.w(TAG, "Authenticated retry with token failed: ${retryEx.message}")
+                            // Fall through to report original/diagnostic error
+                        }
+                    }
 
                     // For 403 errors, try to provide diagnostic information
                     val errorMsg = if (responseCode == 403) {

@@ -1009,4 +1009,13 @@
     <string name="gguf_engine_crash_title">GGUF engine stopped</string>
     <string name="gguf_engine_crash_message">GenieX stopped while loading a GGUF model. Try changing the GGUF engine in Settings.</string>
     <string name="gguf_engine_open_settings">Open Settings</string>
+    <!-- Hugging Face Token -->
+    <string name="hf_token_title">Hugging Face Token</string>
+    <string name="hf_token_subtitle">Personal access token for model downloads</string>
+    <string name="hf_token_dialog_title">Hugging Face Access Token</string>
+    <string name="hf_token_explanation">If the app\'s default token fails, hits rate limits, or when downloading gated models that require an accepted license, enter your personal read token from huggingface.co/settings/tokens.</string>
+    <string name="hf_token_placeholder">Enter personal token (hf_...)</string>
+    <string name="hf_token_using_default">Using default token</string>
+    <string name="hf_token_custom_active">Custom token active</string>
+    <string name="hf_token_clear">Reset to default</string>
 </resources>

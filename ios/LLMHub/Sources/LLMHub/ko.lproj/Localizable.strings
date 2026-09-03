@@ -906,3 +906,14 @@
 "agent_mcp_denied" = "사용자가 거부함";
 "agent_mcp_status" = "상태";
 "agent_termux_tool_title" = "Termux 셸 명령";
+
+
+/* Hugging Face Token */
+"hf_token_title" = "Hugging Face 토큰";
+"hf_token_subtitle" = "모델 다운로드를 위한 개인 액세스 토큰";
+"hf_token_dialog_title" = "Hugging Face 액세스 토큰";
+"hf_token_explanation" = "기본 토큰이 실패하거나 요청 한도에 도달한 경우, 또는 라이선스 승인이 필요한 모델을 다운로드하려면 huggingface.co/settings/tokens에서 발급받은 개인 읽기 토큰을 입력하세요.";
+"hf_token_placeholder" = "개인 토큰 입력 (hf_...)";
+"hf_token_using_default" = "기본 토큰 사용 중";
+"hf_token_custom_active" = "사용자 지정 토큰 활성";
+"hf_token_clear" = "기본값으로 재설정";

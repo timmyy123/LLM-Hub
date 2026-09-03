@@ -1002,4 +1002,13 @@
     <string name="gguf_engine_crash_title">GGUF 引擎已停止</string>
     <string name="gguf_engine_crash_message">GenieX 在加载 GGUF 模型时停止。请尝试在设置中更改 GGUF 引擎。</string>
     <string name="gguf_engine_open_settings">打开设置</string>
+    <!-- Hugging Face Token -->
+    <string name="hf_token_title">Hugging Face 權杖</string>
+    <string name="hf_token_subtitle">下載模型的個人存取權杖</string>
+    <string name="hf_token_dialog_title">Hugging Face 存取權杖</string>
+    <string name="hf_token_explanation">若預設權杖失效、達到請求頻率上限，或下載需同意授權協議的模型，請輸入您在 huggingface.co/settings/tokens 取得的個人讀取權杖。</string>
+    <string name="hf_token_placeholder">輸入個人權杖 (hf_...)</string>
+    <string name="hf_token_using_default">使用預設權杖</string>
+    <string name="hf_token_custom_active">自訂權杖已啟用</string>
+    <string name="hf_token_clear">重設為預設值</string>
 </resources>

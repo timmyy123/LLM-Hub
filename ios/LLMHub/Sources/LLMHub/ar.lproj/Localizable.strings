@@ -906,3 +906,14 @@
 "agent_mcp_denied" = "رفضه المستخدم";
 "agent_mcp_status" = "الحالة";
 "agent_termux_tool_title" = "أمر صدفة Termux";
+
+
+/* Hugging Face Token */
+"hf_token_title" = "رمز Hugging Face";
+"hf_token_subtitle" = "رمز وصول شخصي لتنزيل النماذج";
+"hf_token_dialog_title" = "رمز وصول Hugging Face";
+"hf_token_explanation" = "إذا تعذر استخدام الرمز الافتراضي أو تجاوز حد الاستخدام، أو لتنزيل النماذج التي تتطلب موافقة على الترخيص، أدخل رمز القراءة الشخصي الخاص بك من huggingface.co/settings/tokens.";
+"hf_token_placeholder" = "أدخل الرمز الشخصي (hf_...)";
+"hf_token_using_default" = "استخدام الرمز الافتراضي";
+"hf_token_custom_active" = "الرمز المخصص مفعّل";
+"hf_token_clear" = "إعادة الضبط للافتراضي";

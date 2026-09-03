@@ -919,3 +919,14 @@
 "agent_mcp_denied" = "Denied by user";
 "agent_mcp_status" = "Status";
 "agent_termux_tool_title" = "Termux shell command";
+
+
+/* Hugging Face Token */
+"hf_token_title" = "Hugging Face Token";
+"hf_token_subtitle" = "Personal access token for model downloads";
+"hf_token_dialog_title" = "Hugging Face Access Token";
+"hf_token_explanation" = "If the app's default token fails, hits rate limits, or when downloading gated models that require an accepted license, enter your personal read token from huggingface.co/settings/tokens.";
+"hf_token_placeholder" = "Enter personal token (hf_...)";
+"hf_token_using_default" = "Using default token";
+"hf_token_custom_active" = "Custom token active";
+"hf_token_clear" = "Reset to default";

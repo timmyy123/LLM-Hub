@@ -960,4 +960,13 @@
     <string name="gguf_engine_crash_title">GGUF-Engine wurde beendet</string>
     <string name="gguf_engine_crash_message">GenieX wurde beim Laden eines GGUF-Modells beendet. Versuche, die GGUF-Engine in den Einstellungen zu ändern.</string>
     <string name="gguf_engine_open_settings">Einstellungen öffnen</string>
+    <!-- Hugging Face Token -->
+    <string name="hf_token_title">Hugging Face-Token</string>
+    <string name="hf_token_subtitle">Persönliches Zugriffs-Token für Modell-Downloads</string>
+    <string name="hf_token_dialog_title">Hugging Face-Zugriffstoken</string>
+    <string name="hf_token_explanation">Falls das Standard-Token fehlschlägt, Ratenbegrenzungen erreicht oder Sie geschützte Modelle mit akzeptierter Lizenz herunterladen möchten, geben Sie Ihr persönliches Lese-Token von huggingface.co/settings/tokens ein.</string>
+    <string name="hf_token_placeholder">Persönliches Token eingeben (hf_...)</string>
+    <string name="hf_token_using_default">Standard-Token aktiv</string>
+    <string name="hf_token_custom_active">Benutzerdefiniertes Token aktiv</string>
+    <string name="hf_token_clear">Auf Standard zurücksetzen</string>
 </resources>

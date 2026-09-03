@@ -994,4 +994,13 @@
     <string name="gguf_engine_crash_title">موتور GGUF متوقف شد</string>
     <string name="gguf_engine_crash_message">GenieX هنگام بارگذاری مدل GGUF متوقف شد. موتور GGUF را در تنظیمات تغییر دهید.</string>
     <string name="gguf_engine_open_settings">باز کردن تنظیمات</string>
+    <!-- Hugging Face Token -->
+    <string name="hf_token_title">توکن Hugging Face</string>
+    <string name="hf_token_subtitle">توکن دسترسی شخصی برای دانلود مدل‌ها</string>
+    <string name="hf_token_dialog_title">توکن دسترسی Hugging Face</string>
+    <string name="hf_token_explanation">اگر توکن پیش‌فرض کار نکرد، به محدودیت نرخ رسید یا هنگام دانلود مدل‌های دارای مجوز تایید شده، توکن خواندن شخصی خود را از huggingface.co/settings/tokens وارد کنید.</string>
+    <string name="hf_token_placeholder">وارد کردن توکن شخصی (hf_...)</string>
+    <string name="hf_token_using_default">در حال استفاده از توکن پیش‌فرض</string>
+    <string name="hf_token_custom_active">توکن سفارشی فعال است</string>
+    <string name="hf_token_clear">بازنشانی به پیش‌فرض</string>
 </resources>

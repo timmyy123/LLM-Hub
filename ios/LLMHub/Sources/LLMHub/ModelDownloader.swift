@@ -304,48 +304,72 @@ public actor ModelDownloader {
     }
 
     private func remoteFileSize(fileURL: URL, hfToken: String?) async -> Int64? {
-        func authorizedRequest(method: String) -> URLRequest {
+        func authorizedRequest(method: String, token: String?) -> URLRequest {
             var request = URLRequest(url: fileURL, cachePolicy: .reloadIgnoringLocalCacheData)
             request.httpMethod = method
-            if let token = hfToken, !token.isEmpty {
+            if let token, !token.isEmpty {
                 request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
             }
             return request
         }
 
-        // First try HEAD for content length.
-        do {
-            let request = authorizedRequest(method: "HEAD")
-            let (_, response) = try await urlSession.data(for: request)
-            if let httpResponse = response as? HTTPURLResponse,
-               (200...299).contains(httpResponse.statusCode),
-               let contentLength = httpResponse.value(forHTTPHeaderField: "Content-Length"),
-               let size = Int64(contentLength),
-               size > 0 {
-                return size
+        func tryFetchSize(token: String?) async -> (size: Int64?, authFailed: Bool) {
+            // First try HEAD for content length.
+            do {
+                let request = authorizedRequest(method: "HEAD", token: token)
+                let (_, response) = try await urlSession.data(for: request)
+                if let httpResponse = response as? HTTPURLResponse {
+                    if (200...299).contains(httpResponse.statusCode),
+                       let contentLength = httpResponse.value(forHTTPHeaderField: "Content-Length"),
+                       let size = Int64(contentLength),
+                       size > 0 {
+                        return (size, false)
+                    }
+                    if httpResponse.statusCode == 401 || httpResponse.statusCode == 403 {
+                        return (nil, true)
+                    }
+                }
+            } catch {
+                // Fall through to range probe.
             }
-        } catch {
-            // Fall through to range probe.
+
+            // Some endpoints block HEAD; probe with GET Range to parse total size from Content-Range.
+            do {
+                var request = authorizedRequest(method: "GET", token: token)
+                request.addValue("bytes=0-0", forHTTPHeaderField: "Range")
+                let (_, response) = try await urlSession.data(for: request)
+                if let httpResponse = response as? HTTPURLResponse {
+                    if (200...299).contains(httpResponse.statusCode) || httpResponse.statusCode == 206 {
+                        if let total = totalSizeFromContentRange(httpResponse.value(forHTTPHeaderField: "Content-Range")), total > 0 {
+                            return (total, false)
+                        }
+                        if let contentLength = httpResponse.value(forHTTPHeaderField: "Content-Length"),
+                           let size = Int64(contentLength),
+                           size > 0 {
+                            return (size, false)
+                        }
+                    }
+                    if httpResponse.statusCode == 401 || httpResponse.statusCode == 403 {
+                        return (nil, true)
+                    }
+                }
+            } catch {
+                // Give up and treat as unknown size.
+            }
+            return (nil, false)
         }
 
-        // Some endpoints block HEAD; probe with GET Range to parse total size from Content-Range.
-        do {
-            var request = authorizedRequest(method: "GET")
-            request.addValue("bytes=0-0", forHTTPHeaderField: "Range")
-            let (_, response) = try await urlSession.data(for: request)
-            if let httpResponse = response as? HTTPURLResponse {
-                if let total = totalSizeFromContentRange(httpResponse.value(forHTTPHeaderField: "Content-Range")), total > 0 {
-                    return total
-                }
-                if let contentLength = httpResponse.value(forHTTPHeaderField: "Content-Length"),
-                   let size = Int64(contentLength),
-                   size > 0,
-                   httpResponse.statusCode == 200 {
-                    return size
-                }
+        // Always attempt unauthenticated request first so public models don't use token quota
+        let first = await tryFetchSize(token: nil)
+        if let size = first.size {
+            return size
+        }
+        // If auth failed (401/403) and a token is available, retry with token for gated models
+        if first.authFailed, let hfToken = hfToken, !hfToken.isEmpty {
+            let retry = await tryFetchSize(token: hfToken)
+            if let size = retry.size {
+                return size
             }
-        } catch {
-            // Give up and treat as unknown size.
         }
         return nil
     }
@@ -608,10 +632,11 @@ public actor ModelDownloader {
         
         let downloadItems = Array(zip(model.requiredFileNames, model.allDownloadURLs))
 
+        var currentHfToken: String? = nil // Always attempt unauthenticated download first
         for (fileName, fileURL) in downloadItems {
             
             let destinationFileURL = destinationDir.appendingPathComponent(fileName)
-            let expectedSize = await remoteFileSize(fileURL: fileURL, hfToken: hfToken)
+            var expectedSize = await remoteFileSize(fileURL: fileURL, hfToken: hfToken)
             if let expectedSize {
                 expectedBytesPerFile[fileName] = expectedSize
             }
@@ -640,7 +665,7 @@ public actor ModelDownloader {
                 do {
                     let existingBytes = localFileSize(at: destinationFileURL)
                     var request = URLRequest(url: fileURL, cachePolicy: .reloadIgnoringLocalCacheData)
-                    if let token = hfToken, !token.isEmpty {
+                    if let token = currentHfToken, !token.isEmpty {
                         request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
                     }
                     if existingBytes > 0 {
@@ -671,6 +696,18 @@ public actor ModelDownloader {
 
                     // Critical 404/403 Handling
                     if !(200...299).contains(result.statusCode) {
+                        // If auth failed (401 or 403) on unauthenticated attempt, retry with token for gated models
+                        if (result.statusCode == 401 || result.statusCode == 403) && currentHfToken == nil, let hfToken = hfToken, !hfToken.isEmpty {
+                            currentHfToken = hfToken
+                            if expectedSize == nil {
+                                expectedSize = await remoteFileSize(fileURL: fileURL, hfToken: currentHfToken)
+                                if let expectedSize {
+                                    expectedBytesPerFile[fileName] = expectedSize
+                                }
+                            }
+                            continue
+                        }
+
                         if result.statusCode == 416 {
                             let rangeHeaderTotal = totalSizeFromContentRange(result.contentRange)
                             let refreshedExpected: Int64?
@@ -679,7 +716,7 @@ public actor ModelDownloader {
                             } else if let rangeHeaderTotal {
                                 refreshedExpected = rangeHeaderTotal
                             } else {
-                                refreshedExpected = await remoteFileSize(fileURL: fileURL, hfToken: hfToken)
+                                refreshedExpected = await remoteFileSize(fileURL: fileURL, hfToken: currentHfToken)
                             }
                             if let refreshedExpected, existingBytes >= refreshedExpected {
                                 downloadedBytesPerFile[fileName] = refreshedExpected
@@ -835,12 +872,12 @@ public actor ModelDownloader {
         var attempt = 0
         var downloadComplete = false
         var downloadedBytes: Int64 = 0
-
+        var currentHfToken: String? = nil // Try unauthenticated first
         while !downloadComplete {
             do {
                 var existingBytes = localFileSize(at: tempZipURL)
                 var request = URLRequest(url: zipURL, cachePolicy: .reloadIgnoringLocalCacheData)
-                if let token = hfToken, !token.isEmpty {
+                if let token = currentHfToken, !token.isEmpty {
                     request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
                 }
                 if existingBytes > 0 {
@@ -853,6 +890,10 @@ public actor ModelDownloader {
                 }
 
                 if !(200...299).contains(httpResponse.statusCode) {
+                    if (httpResponse.statusCode == 401 || httpResponse.statusCode == 403) && currentHfToken == nil, let hfToken = hfToken, !hfToken.isEmpty {
+                        currentHfToken = hfToken
+                        continue
+                    }
                     if httpResponse.statusCode == 416 {
                         // Already complete
                         existingBytes = localFileSize(at: tempZipURL)

@@ -914,3 +914,14 @@
 "agent_mcp_denied" = "使用者已拒絕";
 "agent_mcp_status" = "狀態";
 "agent_termux_tool_title" = "Termux Shell 命令";
+
+
+/* Hugging Face Token */
+"hf_token_title" = "Hugging Face 權杖";
+"hf_token_subtitle" = "下載模型的個人存取權杖";
+"hf_token_dialog_title" = "Hugging Face 存取權杖";
+"hf_token_explanation" = "若預設權杖失效、達到請求頻率上限，或下載需同意授權協議的模型，請輸入您在 huggingface.co/settings/tokens 取得的個人讀取權杖。";
+"hf_token_placeholder" = "輸入個人權杖 (hf_...)";
+"hf_token_using_default" = "使用預設權杖";
+"hf_token_custom_active" = "自訂權杖已啟用";
+"hf_token_clear" = "重設為預設值";

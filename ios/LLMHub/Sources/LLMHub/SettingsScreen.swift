@@ -22,7 +22,7 @@ struct SettingsScreen: View {
     @State private var showAbout = false
     @State private var showTerms = false
     @State private var showTTSAlert = false
-
+    @State private var showHfTokenDialog = false
 
     var body: some View {
         ZStack {
@@ -38,6 +38,19 @@ struct SettingsScreen: View {
                         subtitleKey: "browse_download_models"
                     ) {
                         onNavigateToModels()
+                    }
+                    .listRowInsets(EdgeInsets(top: 6, leading: 14, bottom: 6, trailing: 14))
+                    .listRowBackground(Color.clear)
+
+                    SettingsRow(
+                        icon: "key.fill",
+                        iconColor: ApolloPalette.accentStrong,
+                        titleKey: "hf_token_title",
+                        subtitleString: settings.hasCustomHfToken
+                            ? settings.localized("hf_token_custom_active")
+                            : settings.localized("hf_token_using_default")
+                    ) {
+                        showHfTokenDialog = true
                     }
                     .listRowInsets(EdgeInsets(top: 6, leading: 14, bottom: 6, trailing: 14))
                     .listRowBackground(Color.clear)
@@ -223,6 +236,10 @@ struct SettingsScreen: View {
         }
         .sheet(isPresented: $showTerms) {
             TermsOfServiceScreen()
+                .environmentObject(settings)
+        }
+        .sheet(isPresented: $showHfTokenDialog) {
+            HuggingFaceTokenSheet(onDismiss: { showHfTokenDialog = false })
                 .environmentObject(settings)
         }
         .onChange(of: settings.selectedEmbeddingModelId) { _, newId in
@@ -1099,5 +1116,128 @@ struct TermsOfServiceScreen: View {
                 }
             }
         }
+    }
+}
+
+// MARK: - Hugging Face Token Sheet
+
+private struct HuggingFaceTokenSheet: View {
+    @EnvironmentObject var settings: AppSettings
+    let onDismiss: () -> Void
+    @State private var tokenText: String = ""
+    @State private var isSecured: Bool = true
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                ApolloLiquidBackground()
+
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 18) {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(settings.localized("hf_token_dialog_title"))
+                                .font(.headline)
+                                .foregroundColor(.white)
+
+                            Text(settings.localized("hf_token_explanation"))
+                                .font(.subheadline)
+                                .foregroundColor(.white.opacity(0.8))
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                if isSecured {
+                                    SecureField(settings.localized("hf_token_placeholder"), text: $tokenText)
+                                } else {
+                                    TextField(settings.localized("hf_token_placeholder"), text: $tokenText)
+                                }
+                                Button {
+                                    isSecured.toggle()
+                                } label: {
+                                    Image(systemName: isSecured ? "eye.slash" : "eye")
+                                        .foregroundColor(.white.opacity(0.6))
+                                }
+                            }
+                            .textFieldStyle(.plain)
+                            .padding(12)
+                            .background(Color.white.opacity(0.08))
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                            .foregroundColor(.white)
+                            .autocorrectionDisabled()
+                            .textInputAutocapitalization(.never)
+
+                            if settings.hasCustomHfToken {
+                                HStack(spacing: 5) {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .foregroundColor(ApolloPalette.accentStrong)
+                                        .font(.caption)
+                                    Text(settings.localized("hf_token_custom_active"))
+                                        .font(.caption)
+                                        .foregroundColor(ApolloPalette.accentStrong)
+                                }
+                            } else {
+                                HStack(spacing: 5) {
+                                    Image(systemName: "info.circle")
+                                        .foregroundColor(.white.opacity(0.6))
+                                        .font(.caption)
+                                    Text(settings.localized("hf_token_using_default"))
+                                        .font(.caption)
+                                        .foregroundColor(.white.opacity(0.6))
+                                }
+                            }
+                        }
+
+                        HStack(spacing: 12) {
+                            if settings.hasCustomHfToken {
+                                Button(role: .destructive) {
+                                    settings.customHfToken = ""
+                                    tokenText = ""
+                                    onDismiss()
+                                } label: {
+                                    Text(settings.localized("hf_token_clear"))
+                                        .font(.subheadline.bold())
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 12)
+                                        .background(Color.red.opacity(0.2))
+                                        .foregroundColor(.red)
+                                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                                }
+                            }
+
+                            Button {
+                                settings.customHfToken = tokenText.trimmingCharacters(in: .whitespacesAndNewlines)
+                                onDismiss()
+                            } label: {
+                                Text(settings.localized("save"))
+                                    .font(.subheadline.bold())
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 12)
+                                    .background(ApolloPalette.accentStrong)
+                                    .foregroundColor(.white)
+                                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                            }
+                        }
+
+                        Spacer()
+                    }
+                    .padding(20)
+                }
+            }
+            .navigationTitle(settings.localized("hf_token_title"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(settings.localized("close")) {
+                        onDismiss()
+                    }
+                    .foregroundColor(.white)
+                }
+            }
+            .onAppear {
+                tokenText = settings.customHfToken
+            }
+        }
+        .presentationDetents([.medium])
     }
 }

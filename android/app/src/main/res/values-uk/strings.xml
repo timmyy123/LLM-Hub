@@ -994,4 +994,13 @@
     <string name="gguf_engine_crash_title">Рушій GGUF зупинено</string>
     <string name="gguf_engine_crash_message">GenieX зупинився під час завантаження моделі GGUF. Спробуйте змінити рушій GGUF у налаштуваннях.</string>
     <string name="gguf_engine_open_settings">Відкрити налаштування</string>
+    <!-- Hugging Face Token -->
+    <string name="hf_token_title">Токен Hugging Face</string>
+    <string name="hf_token_subtitle">Особистий токен доступу для завантаження моделей</string>
+    <string name="hf_token_dialog_title">Токен доступу Hugging Face</string>
+    <string name="hf_token_explanation">Якщо стандартний токен не працює, вичерпав ліміти або для завантаження ліцензованих моделей введіть свій особистий токен читання з huggingface.co/settings/tokens.</string>
+    <string name="hf_token_placeholder">Введіть особистий токен (hf_...)</string>
+    <string name="hf_token_using_default">Використовується стандартний токен</string>
+    <string name="hf_token_custom_active">Користувацький токен активний</string>
+    <string name="hf_token_clear">Скинути до стандартного</string>
 </resources>

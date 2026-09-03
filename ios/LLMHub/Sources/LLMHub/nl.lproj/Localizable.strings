@@ -914,3 +914,14 @@
 "agent_mcp_denied" = "Geweigerd door gebruiker";
 "agent_mcp_status" = "Status";
 "agent_termux_tool_title" = "Termux-shellopdracht";
+
+
+/* Hugging Face Token */
+"hf_token_title" = "Hugging Face-token";
+"hf_token_subtitle" = "Persoonlijk toegangstoken voor modeldownloads";
+"hf_token_dialog_title" = "Hugging Face-toegangstoken";
+"hf_token_explanation" = "Als het standaardtoken mislukt, de limiet bereikt of voor modellen met een geaccepteerde licentie, voer dan uw persoonlijke leestoken in via huggingface.co/settings/tokens.";
+"hf_token_placeholder" = "Persoonlijk token invoeren (hf_...)";
+"hf_token_using_default" = "Standaardtoken in gebruik";
+"hf_token_custom_active" = "Aangepast token actief";
+"hf_token_clear" = "Herstellen naar standaard";

@@ -914,3 +914,14 @@
 "agent_mcp_denied" = "Người dùng đã từ chối";
 "agent_mcp_status" = "Trạng thái";
 "agent_termux_tool_title" = "Lệnh shell Termux";
+
+
+/* Hugging Face Token */
+"hf_token_title" = "Mã Hugging Face";
+"hf_token_subtitle" = "Mã truy cập cá nhân để tải xuống mô hình";
+"hf_token_dialog_title" = "Mã truy cập Hugging Face";
+"hf_token_explanation" = "Nếu mã mặc định bị lỗi, đạt giới hạn tốc độ hoặc khi tải mô hình cần chấp nhận giấy phép, hãy nhập mã đọc cá nhân từ huggingface.co/settings/tokens.";
+"hf_token_placeholder" = "Nhập mã cá nhân (hf_...)";
+"hf_token_using_default" = "Đang dùng mã mặc định";
+"hf_token_custom_active" = "Mã tùy chỉnh đang hoạt động";
+"hf_token_clear" = "Đặt lại về mặc định";

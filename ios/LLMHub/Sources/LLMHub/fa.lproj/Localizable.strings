@@ -906,3 +906,14 @@
 "agent_mcp_denied" = "توسط کاربر رد شد";
 "agent_mcp_status" = "وضعیت";
 "agent_termux_tool_title" = "فرمان پوسته ترموکس";
+
+
+/* Hugging Face Token */
+"hf_token_title" = "توکن Hugging Face";
+"hf_token_subtitle" = "توکن دسترسی شخصی برای دانلود مدل‌ها";
+"hf_token_dialog_title" = "توکن دسترسی Hugging Face";
+"hf_token_explanation" = "اگر توکن پیش‌فرض کار نکرد، به محدودیت نرخ رسید یا هنگام دانلود مدل‌های دارای مجوز تایید شده، توکن خواندن شخصی خود را از huggingface.co/settings/tokens وارد کنید.";
+"hf_token_placeholder" = "وارد کردن توکن شخصی (hf_...)";
+"hf_token_using_default" = "در حال استفاده از توکن پیش‌فرض";
+"hf_token_custom_active" = "توکن سفارشی فعال است";
+"hf_token_clear" = "بازنشانی به پیش‌فرض";

@@ -59,15 +59,56 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
 
     private val downloadJobs = mutableMapOf<String, kotlinx.coroutines.Job>()
 
+    companion object {
+        private const val PREFS_NAME = "model_prefs"
+        private const val KEY_CUSTOM_HF_TOKEN = "custom_hf_token"
+
+        /**
+         * Returns ONLY the user-provided custom token (never the default secret token).
+         * If the user has not configured their own token, returns empty string.
+         */
+        fun getCustomToken(context: Context): String {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            val custom = prefs.getString(KEY_CUSTOM_HF_TOKEN, null)?.trim()
+            if (!custom.isNullOrEmpty() && custom != BuildConfig.HF_TOKEN) {
+                return custom
+            }
+            return ""
+        }
+
+        /**
+         * Returns the effective token: custom user token if configured, else BuildConfig.HF_TOKEN fallback.
+         */
+        fun getEffectiveToken(context: Context): String? {
+            val custom = getCustomToken(context)
+            if (custom.isNotEmpty()) return custom
+            return BuildConfig.HF_TOKEN.takeIf { it.isNotEmpty() }
+        }
+
+        /**
+         * Saves or clears the user-provided custom token.
+         */
+        fun setCustomToken(context: Context, token: String?) {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            val clean = token?.trim()?.takeIf { it.isNotEmpty() && it != BuildConfig.HF_TOKEN }
+            if (clean == null) {
+                prefs.edit().remove(KEY_CUSTOM_HF_TOKEN).remove("hf_token").apply()
+            } else {
+                prefs.edit().putString(KEY_CUSTOM_HF_TOKEN, clean).apply()
+            }
+        }
+    }
+
     init {
-        // Load HF token from preferences, with your provided token as default
-        val prefs = context.getSharedPreferences("model_prefs", Context.MODE_PRIVATE)
-        val savedToken = prefs.getString("hf_token", BuildConfig.HF_TOKEN)
-        android.util.Log.d("ModelDownloadViewModel", "[init] Loaded HF token: ${savedToken?.take(8)}... from prefs, BuildConfig.HF_TOKEN: ${BuildConfig.HF_TOKEN?.take(8)}...")
-        _hfToken.value = savedToken
+        // Load custom HF token if user provided one, otherwise use BuildConfig.HF_TOKEN fallback.
+        // Default token is NEVER stored into custom token preferences or exposed to the user.
+        val effectiveToken = getEffectiveToken(context)
+        val hasCustom = getCustomToken(context).isNotEmpty()
+        android.util.Log.d("ModelDownloadViewModel", "[init] Loaded effective HF token: ${effectiveToken?.take(8)}... (hasCustom=$hasCustom)")
+        _hfToken.value = effectiveToken
         
         // Initialize ModelDownloader with token
-        modelDownloader = ModelDownloader(ktorClient, context, savedToken)
+        modelDownloader = ModelDownloader(ktorClient, context, effectiveToken)
         
         loadModels()
         loadImportedModels()
@@ -79,24 +120,30 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
     }
 
     fun setHuggingFaceToken(token: String?) {
-        // Save token to preferences
-        val prefs = context.getSharedPreferences("model_prefs", Context.MODE_PRIVATE)
-        prefs.edit().putString("hf_token", token).apply()
-        android.util.Log.d("ModelDownloadViewModel", "[setHuggingFaceToken] Token set: ${token?.take(8)}...")
-        _hfToken.value = token
+        setCustomToken(context, token)
+        val effectiveToken = getEffectiveToken(context)
+        android.util.Log.d("ModelDownloadViewModel", "[setHuggingFaceToken] Custom token updated, effective: ${effectiveToken?.take(8)}...")
+        _hfToken.value = effectiveToken
         
         // Recreate ModelDownloader with new token
-        modelDownloader = ModelDownloader(ktorClient, context, token)
+        modelDownloader = ModelDownloader(ktorClient, context, effectiveToken)
     }
 
     /** Searches Hugging Face repositories and exposes only files the app can import directly. */
     suspend fun searchHuggingFaceFiles(query: String, format: String, page: Int = 0): List<HuggingFaceModelFile> = withContext(Dispatchers.IO) {
-        fun request(url: String): String {
+        fun request(url: String, useToken: Boolean = false): String {
             val connection = (URL(url).openConnection() as HttpURLConnection).apply {
                 connectTimeout = 15_000
                 readTimeout = 20_000
                 setRequestProperty("Accept", "application/json")
-                _hfToken.value?.takeIf { it.isNotBlank() }?.let { setRequestProperty("Authorization", "Bearer $it") }
+                if (useToken) {
+                    _hfToken.value?.takeIf { it.isNotBlank() }?.let { setRequestProperty("Authorization", "Bearer $it") }
+                }
+            }
+            val code = connection.responseCode
+            if ((code == 401 || code == 403) && !useToken && !_hfToken.value.isNullOrBlank()) {
+                connection.disconnect()
+                return request(url, useToken = true)
             }
             return connection.inputStream.bufferedReader().use { it.readText() }.also { connection.disconnect() }
         }
@@ -461,22 +508,33 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
         baseModels.filter { it.sizeBytes == 0L }.forEach { unknownModel ->
             viewModelScope.launch(Dispatchers.IO) {
                 try {
-                    val url = java.net.URL(unknownModel.url)
-                    val conn = url.openConnection() as java.net.HttpURLConnection
-                    conn.requestMethod = "HEAD"
-                    conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
-                    
-                    // Add HF token if available for HEAD requests
-                    _hfToken.value?.let { token ->
-                        if (token.isNotBlank()) {
-                            conn.setRequestProperty("Authorization", "Bearer $token")
+                    fun fetchHead(useToken: Boolean): Long {
+                        val url = java.net.URL(unknownModel.url)
+                        val conn = url.openConnection() as java.net.HttpURLConnection
+                        conn.requestMethod = "HEAD"
+                        conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
+                        
+                        // Add HF token if available for HEAD requests
+                        if (useToken) {
+                            _hfToken.value?.let { token ->
+                                if (token.isNotBlank()) {
+                                    conn.setRequestProperty("Authorization", "Bearer $token")
+                                }
+                            }
                         }
+                        
+                        conn.connectTimeout = 10_000
+                        conn.readTimeout = 10_000
+                        val code = conn.responseCode
+                        if ((code == 401 || code == 403) && !useToken && !_hfToken.value.isNullOrBlank()) {
+                            conn.disconnect()
+                            return fetchHead(useToken = true)
+                        }
+                        val size = conn.contentLengthLong
+                        conn.disconnect()
+                        return size
                     }
-                    
-                    conn.connectTimeout = 10_000
-                    conn.readTimeout = 10_000
-                    val size = conn.contentLengthLong
-                    conn.disconnect()
+                    val size = fetchHead(useToken = false)
                     if (size > 0) {
                         updateModel(unknownModel.name) { existing ->
                             // If there is already a partial file, recompute progress

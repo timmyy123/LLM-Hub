@@ -906,3 +906,14 @@
 "agent_mcp_denied" = "Odrzucone przez użytkownika";
 "agent_mcp_status" = "Stan";
 "agent_termux_tool_title" = "Polecenie powłoki Termux";
+
+
+/* Hugging Face Token */
+"hf_token_title" = "Token Hugging Face";
+"hf_token_subtitle" = "Osobisty token dostępu do pobierania modeli";
+"hf_token_dialog_title" = "Token dostępu Hugging Face";
+"hf_token_explanation" = "Jeśli domyślny token zawiedzie, osiągnie limity lub do pobierania modeli wymagających zaakceptowanej licencji, wprowadź osobisty token odczytu z huggingface.co/settings/tokens.";
+"hf_token_placeholder" = "Wpisz osobisty token (hf_...)";
+"hf_token_using_default" = "Używany token domyślny";
+"hf_token_custom_active" = "Aktywny token własny";
+"hf_token_clear" = "Przywróć domyślny";

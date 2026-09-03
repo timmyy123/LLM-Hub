@@ -54,6 +54,9 @@ import com.llmhub.llmhub.data.localFileName
 import com.llmhub.llmhub.inference.GgufEngine
 import com.llmhub.llmhub.inference.GgufEnginePolicy
 import com.llmhub.llmhub.viewmodels.ThemeViewModel
+import com.llmhub.llmhub.viewmodels.ModelDownloadViewModel
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -71,6 +74,8 @@ fun SettingsScreen(
     val context = LocalContext.current
     var showThemeDialog by remember { mutableStateOf(false) }
     var showLanguageDialog by remember { mutableStateOf(false) }
+    var showHfTokenDialog by remember { mutableStateOf(false) }
+    var customHfToken by remember { mutableStateOf(ModelDownloadViewModel.getCustomToken(context)) }
     var ggufEngine by remember { mutableStateOf(GgufEnginePolicy.selectedEngine(context)) }
     val currentThemeMode by themeViewModel.themeMode.collectAsState()
     val embeddingEnabled by themeViewModel.embeddingEnabled.collectAsState()
@@ -114,6 +119,17 @@ fun SettingsScreen(
                         title = stringResource(R.string.download_models),
                         subtitle = stringResource(R.string.browse_download_models),
                         onClick = onNavigateToModels
+                    )
+
+                    SettingsItem(
+                        icon = Icons.Default.VpnKey,
+                        title = stringResource(R.string.hf_token_title),
+                        subtitle = if (customHfToken.isNotBlank()) {
+                            stringResource(R.string.hf_token_custom_active)
+                        } else {
+                            stringResource(R.string.hf_token_using_default)
+                        },
+                        onClick = { showHfTokenDialog = true }
                     )
 
                     Row(
@@ -864,6 +880,97 @@ fun SettingsScreen(
                 }
             }
         }
+    }
+
+    // Hugging Face Token Dialog
+    if (showHfTokenDialog) {
+        var inputToken by remember { mutableStateOf(customHfToken) }
+        var passwordVisible by remember { mutableStateOf(false) }
+
+        AlertDialog(
+            onDismissRequest = { showHfTokenDialog = false },
+            title = { Text(stringResource(R.string.hf_token_dialog_title)) },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        text = stringResource(R.string.hf_token_explanation),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    OutlinedTextField(
+                        value = inputToken,
+                        onValueChange = { inputToken = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text(stringResource(R.string.hf_token_title)) },
+                        placeholder = { Text(stringResource(R.string.hf_token_placeholder)) },
+                        singleLine = true,
+                        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        trailingIcon = {
+                            val image = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff
+                            IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                                Icon(image, contentDescription = null)
+                            }
+                        }
+                    )
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        val isCustom = customHfToken.isNotBlank()
+                        Icon(
+                            imageVector = if (isCustom) Icons.Default.CheckCircle else Icons.Default.Info,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            tint = if (isCustom) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = if (isCustom) stringResource(R.string.hf_token_custom_active) else stringResource(R.string.hf_token_using_default),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (isCustom) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val clean = inputToken.trim()
+                        ModelDownloadViewModel.setCustomToken(context, clean)
+                        customHfToken = ModelDownloadViewModel.getCustomToken(context)
+                        showHfTokenDialog = false
+                    }
+                ) {
+                    Text(stringResource(R.string.save))
+                }
+            },
+            dismissButton = {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (customHfToken.isNotBlank()) {
+                        TextButton(
+                            onClick = {
+                                ModelDownloadViewModel.setCustomToken(context, null)
+                                customHfToken = ""
+                                inputToken = ""
+                                showHfTokenDialog = false
+                            },
+                            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                        ) {
+                            Text(stringResource(R.string.hf_token_clear))
+                        }
+                    }
+                    TextButton(onClick = { showHfTokenDialog = false }) {
+                        Text(stringResource(R.string.cancel))
+                    }
+                }
+            }
+        )
     }
 
     // Theme Selection Dialog
@@ -1807,8 +1914,7 @@ private fun TtsVoiceSelector(themeViewModel: ThemeViewModel) {
                                         if (downloadingVoiceKey != null) return@Button
                                         downloadingVoiceKey = voiceKey
                                         coroutineScope.launch {
-                                            val prefs = context.getSharedPreferences("model_prefs", android.content.Context.MODE_PRIVATE)
-                                            val hfToken = prefs.getString("hf_token", BuildConfig.HF_TOKEN)
+                                            val hfToken = ModelDownloadViewModel.getEffectiveToken(context)
                                             val client = HttpClient(Android)
                                             try {
                                                 ModelDownloader(client, context, hfToken)

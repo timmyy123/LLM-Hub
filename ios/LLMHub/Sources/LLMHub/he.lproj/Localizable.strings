@@ -906,3 +906,14 @@
 "agent_mcp_denied" = "נדחה על ידי המשתמש";
 "agent_mcp_status" = "מצב";
 "agent_termux_tool_title" = "פקודת מעטפת Termux";
+
+
+/* Hugging Face Token */
+"hf_token_title" = "אסימון Hugging Face";
+"hf_token_subtitle" = "אסימון גישה אישי להורדת מודלים";
+"hf_token_dialog_title" = "אסימון גישה של Hugging Face";
+"hf_token_explanation" = "אם אסימון ברירת המחדל נכשל, מגיע למגבלת קצב או להורדת מודלים הדורשים רישיון מאושר, הזן את אסימון הקריאה האישי שלך מ-huggingface.co/settings/tokens.";
+"hf_token_placeholder" = "הזן אסימון אישי (hf_...)";
+"hf_token_using_default" = "בשימוש אסימון ברירת מחדל";
+"hf_token_custom_active" = "אסימון מותאם אישית פעיל";
+"hf_token_clear" = "איפוס לברירת מחדל";

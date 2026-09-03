@@ -991,4 +991,13 @@
     <string name="gguf_engine_crash_title">GGUF エンジンが停止しました</string>
     <string name="gguf_engine_crash_message">GGUF モデルの読み込み中に GenieX が停止しました。設定で GGUF エンジンを変更してみてください。</string>
     <string name="gguf_engine_open_settings">設定を開く</string>
+    <!-- Hugging Face Token -->
+    <string name="hf_token_title">Hugging Face トークン</string>
+    <string name="hf_token_subtitle">モデルダウンロード用の個人用アクセストークン</string>
+    <string name="hf_token_dialog_title">Hugging Face アクセストークン</string>
+    <string name="hf_token_explanation">デフォルトのトークンで失敗した場合や利用制限に達した際、またライセンス同意が必要な保護されたモデルをダウンロードするには、huggingface.co/settings/tokens で取得した個人用リードトークンを入力してください。</string>
+    <string name="hf_token_placeholder">個人用トークンを入力 (hf_...)</string>
+    <string name="hf_token_using_default">デフォルトトークンを使用中</string>
+    <string name="hf_token_custom_active">カスタムトークン有効</string>
+    <string name="hf_token_clear">デフォルトに戻す</string>
 </resources>

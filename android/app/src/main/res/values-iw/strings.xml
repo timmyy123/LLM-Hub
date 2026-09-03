@@ -994,4 +994,13 @@
     <string name="gguf_engine_crash_title">מנוע GGUF נעצר</string>
     <string name="gguf_engine_crash_message">GenieX נעצר בעת טעינת מודל GGUF. כדאי לשנות את מנוע GGUF בהגדרות.</string>
     <string name="gguf_engine_open_settings">פתיחת ההגדרות</string>
+    <!-- Hugging Face Token -->
+    <string name="hf_token_title">אסימון Hugging Face</string>
+    <string name="hf_token_subtitle">אסימון גישה אישי להורדת מודלים</string>
+    <string name="hf_token_dialog_title">אסימון גישה של Hugging Face</string>
+    <string name="hf_token_explanation">אם אסימון ברירת המחדל נכשל, מגיע למגבלת קצב או להורדת מודלים הדורשים רישיון מאושר, הזן את אסימון הקריאה האישי שלך מ-huggingface.co/settings/tokens.</string>
+    <string name="hf_token_placeholder">הזן אסימון אישי (hf_...)</string>
+    <string name="hf_token_using_default">בשימוש אסימון ברירת מחדל</string>
+    <string name="hf_token_custom_active">אסימון מותאם אישית פעיל</string>
+    <string name="hf_token_clear">איפוס לברירת מחדל</string>
 </resources>

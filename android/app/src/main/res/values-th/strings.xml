@@ -901,4 +901,13 @@
     <string name="gguf_engine_crash_title">เอนจิน GGUF หยุดทำงาน</string>
     <string name="gguf_engine_crash_message">GenieX หยุดทำงานขณะโหลดโมเดล GGUF ลองเปลี่ยนเอนจิน GGUF ในการตั้งค่า</string>
     <string name="gguf_engine_open_settings">เปิดการตั้งค่า</string>
+    <!-- Hugging Face Token -->
+    <string name="hf_token_title">โทเค็น Hugging Face</string>
+    <string name="hf_token_subtitle">โทเค็นการเข้าถึงส่วนตัวสำหรับการดาวน์โหลดโมเดล</string>
+    <string name="hf_token_dialog_title">โทเค็นการเข้าถึง Hugging Face</string>
+    <string name="hf_token_explanation">หากโทเค็นเริ่มต้นล้มเหลว ถึงขีดจำกัดการใช้งาน หรือเมื่อดาวน์โหลดโมเดลที่ต้องยอมรับสิทธิ์การใช้งาน ให้ป้อนโทเค็นการอ่านส่วนตัวจาก huggingface.co/settings/tokens</string>
+    <string name="hf_token_placeholder">ป้อนโทเค็นส่วนตัว (hf_...)</string>
+    <string name="hf_token_using_default">กำลังใช้โทเค็นเริ่มต้น</string>
+    <string name="hf_token_custom_active">โทเค็นที่กำหนดเองใช้งานอยู่</string>
+    <string name="hf_token_clear">รีเซ็ตเป็นค่าเริ่มต้น</string>
 </resources>

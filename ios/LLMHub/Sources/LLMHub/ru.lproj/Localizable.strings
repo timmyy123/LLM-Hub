@@ -878,3 +878,14 @@
 "agent_mcp_denied" = "Отклонено пользователем";
 "agent_mcp_status" = "Статус";
 "agent_termux_tool_title" = "Команда оболочки Termux";
+
+
+/* Hugging Face Token */
+"hf_token_title" = "Токен Hugging Face";
+"hf_token_subtitle" = "Личный токен доступа для загрузки моделей";
+"hf_token_dialog_title" = "Токен доступа Hugging Face";
+"hf_token_explanation" = "Если стандартный токен не работает, исчерпал лимит запросов или для загрузки лицензированных моделей введите свой личный токен чтения с huggingface.co/settings/tokens.";
+"hf_token_placeholder" = "Введите личный токен (hf_...)";
+"hf_token_using_default" = "Используется стандартный токен";
+"hf_token_custom_active" = "Пользовательский токен активен";
+"hf_token_clear" = "Сбросить на стандартный";

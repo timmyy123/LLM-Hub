@@ -962,4 +962,13 @@ Du forsøger at sende et billede, men den nuværende model er **kun-tekst**:
     <string name="gguf_engine_crash_title">GGUF-motoren stoppede</string>
     <string name="gguf_engine_crash_message">GenieX stoppede under indlæsning af en GGUF-model. Prøv at skifte GGUF-motor i Indstillinger.</string>
     <string name="gguf_engine_open_settings">Åbn Indstillinger</string>
+    <!-- Hugging Face Token -->
+    <string name="hf_token_title">Hugging Face-token</string>
+    <string name="hf_token_subtitle">Personligt adgangstoken til download af modeller</string>
+    <string name="hf_token_dialog_title">Hugging Face-adgangstoken</string>
+    <string name="hf_token_explanation">Hvis standardtokenet mislykkes, rammer grænser eller ved download af modeller med godkendt licens, skal du indtaste dit personlige læsetoken fra huggingface.co/settings/tokens.</string>
+    <string name="hf_token_placeholder">Indtast personligt token (hf_...)</string>
+    <string name="hf_token_using_default">Bruger standardtoken</string>
+    <string name="hf_token_custom_active">Brugerdefineret token aktivt</string>
+    <string name="hf_token_clear">Nulstil til standard</string>
 </resources>

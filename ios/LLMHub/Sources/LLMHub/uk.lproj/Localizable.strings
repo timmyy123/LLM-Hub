@@ -906,3 +906,14 @@
 "agent_mcp_denied" = "Відхилено користувачем";
 "agent_mcp_status" = "Стан";
 "agent_termux_tool_title" = "Команда оболонки Termux";
+
+
+/* Hugging Face Token */
+"hf_token_title" = "Токен Hugging Face";
+"hf_token_subtitle" = "Особистий токен доступу для завантаження моделей";
+"hf_token_dialog_title" = "Токен доступу Hugging Face";
+"hf_token_explanation" = "Якщо стандартний токен не працює, вичерпав ліміти або для завантаження ліцензованих моделей введіть свій особистий токен читання з huggingface.co/settings/tokens.";
+"hf_token_placeholder" = "Введіть особистий токен (hf_...)";
+"hf_token_using_default" = "Використовується стандартний токен";
+"hf_token_custom_active" = "Користувацький токен активний";
+"hf_token_clear" = "Скинути до стандартного";

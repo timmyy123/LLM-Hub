@@ -994,4 +994,13 @@
     <string name="gguf_engine_crash_title">توقف محرك GGUF</string>
     <string name="gguf_engine_crash_message">توقف GenieX أثناء تحميل نموذج GGUF. جرّب تغيير محرك GGUF في الإعدادات.</string>
     <string name="gguf_engine_open_settings">فتح الإعدادات</string>
+    <!-- Hugging Face Token -->
+    <string name="hf_token_title">رمز Hugging Face</string>
+    <string name="hf_token_subtitle">رمز وصول شخصي لتنزيل النماذج</string>
+    <string name="hf_token_dialog_title">رمز وصول Hugging Face</string>
+    <string name="hf_token_explanation">إذا تعذر استخدام الرمز الافتراضي أو تجاوز حد الاستخدام، أو لتنزيل النماذج التي تتطلب موافقة على الترخيص، أدخل رمز القراءة الشخصي الخاص بك من huggingface.co/settings/tokens.</string>
+    <string name="hf_token_placeholder">أدخل الرمز الشخصي (hf_...)</string>
+    <string name="hf_token_using_default">استخدام الرمز الافتراضي</string>
+    <string name="hf_token_custom_active">الرمز المخصص مفعّل</string>
+    <string name="hf_token_clear">إعادة الضبط للافتراضي</string>
 </resources>

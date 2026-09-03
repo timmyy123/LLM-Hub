@@ -980,4 +980,13 @@
     <string name="gguf_engine_crash_title">Le moteur GGUF s’est arrêté</string>
     <string name="gguf_engine_crash_message">GenieX s’est arrêté pendant le chargement d’un modèle GGUF. Essayez de changer le moteur GGUF dans les paramètres.</string>
     <string name="gguf_engine_open_settings">Ouvrir les paramètres</string>
+    <!-- Hugging Face Token -->
+    <string name="hf_token_title">Jeton Hugging Face</string>
+    <string name="hf_token_subtitle">Jeton d\'accès personnel pour le téléchargement de modèles</string>
+    <string name="hf_token_dialog_title">Jeton d\'accès Hugging Face</string>
+    <string name="hf_token_explanation">Si le jeton par défaut échoue, atteint des limites de débit ou pour télécharger des modèles sous licence acceptée, saisissez votre jeton de lecture personnel depuis huggingface.co/settings/tokens.</string>
+    <string name="hf_token_placeholder">Saisir un jeton personnel (hf_...)</string>
+    <string name="hf_token_using_default">Jeton par défaut utilisé</string>
+    <string name="hf_token_custom_active">Jeton personnalisé actif</string>
+    <string name="hf_token_clear">Rétablir par défaut</string>
 </resources>

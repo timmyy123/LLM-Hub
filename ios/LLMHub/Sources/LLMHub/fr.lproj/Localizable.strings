@@ -893,3 +893,14 @@
 "agent_mcp_denied" = "Refusé par l’utilisateur";
 "agent_mcp_status" = "État";
 "agent_termux_tool_title" = "Commande shell Termux";
+
+
+/* Hugging Face Token */
+"hf_token_title" = "Jeton Hugging Face";
+"hf_token_subtitle" = "Jeton d'accès personnel pour le téléchargement de modèles";
+"hf_token_dialog_title" = "Jeton d'accès Hugging Face";
+"hf_token_explanation" = "Si le jeton par défaut échoue, atteint des limites de débit ou pour télécharger des modèles sous licence acceptée, saisissez votre jeton de lecture personnel depuis huggingface.co/settings/tokens.";
+"hf_token_placeholder" = "Saisir un jeton personnel (hf_...)";
+"hf_token_using_default" = "Jeton par défaut utilisé";
+"hf_token_custom_active" = "Jeton personnalisé actif";
+"hf_token_clear" = "Rétablir par défaut";

@@ -556,9 +556,7 @@ class ModelDownloadViewModel: ObservableObject {
     }
 
     private var huggingFaceToken: String? {
-        let token = (Bundle.main.object(forInfoDictionaryKey: "HF_TOKEN") as? String)?
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        return token?.isEmpty == false ? token : nil
+        AppSettings.shared.effectiveHfToken
     }
 
     func pauseDownload(_ id: String) {
@@ -1551,21 +1549,29 @@ struct ImportExternalModelSheet: View {
     }
 
     private var huggingFaceToken: String? {
-        let token = (Bundle.main.object(forInfoDictionaryKey: "HF_TOKEN") as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
-        return token?.isEmpty == false ? token : nil
+        settings.effectiveHfToken
     }
 
     private func downloadHuggingFaceFile(_ file: HuggingFaceImportFile, to destination: URL) async throws {
-        var request = URLRequest(url: file.downloadURL)
-        if let huggingFaceToken { request.setValue("Bearer \(huggingFaceToken)", forHTTPHeaderField: "Authorization") }
-        let (temporaryURL, response) = try await URLSession.shared.download(for: request)
-        if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
-            if http.statusCode == 401 || http.statusCode == 403 {
-                throw NSError(domain: "HuggingFace", code: http.statusCode, userInfo: [NSLocalizedDescriptionKey: "Access denied (HTTP \(http.statusCode)). This model may be gated — set a Hugging Face token in Settings."])
+        var currentToken: String? = nil // Try without token first
+        while true {
+            var request = URLRequest(url: file.downloadURL)
+            if let currentToken { request.setValue("Bearer \(currentToken)", forHTTPHeaderField: "Authorization") }
+            let (temporaryURL, response) = try await URLSession.shared.download(for: request)
+            if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
+                if (http.statusCode == 401 || http.statusCode == 403) && currentToken == nil, let huggingFaceToken {
+                    // Gated repo: retry with token
+                    currentToken = huggingFaceToken
+                    continue
+                }
+                if http.statusCode == 401 || http.statusCode == 403 {
+                    throw NSError(domain: "HuggingFace", code: http.statusCode, userInfo: [NSLocalizedDescriptionKey: "Access denied (HTTP \(http.statusCode)). This model may be gated — set a Hugging Face token in Settings."])
+                }
+                throw NSError(domain: "HuggingFace", code: http.statusCode, userInfo: [NSLocalizedDescriptionKey: "Download failed (HTTP \(http.statusCode))"])
             }
-            throw NSError(domain: "HuggingFace", code: http.statusCode, userInfo: [NSLocalizedDescriptionKey: "Download failed (HTTP \(http.statusCode))"])
+            try FileManager.default.moveItem(at: temporaryURL, to: destination)
+            break
         }
-        try FileManager.default.moveItem(at: temporaryURL, to: destination)
     }
 }
 
@@ -1657,15 +1663,23 @@ private enum HuggingFaceImportClient {
     static func search(query: String, format: ModelFormat, token: String?) async throws -> [HuggingFaceImportFile] {
         let libraryFilter = format == .litertlm ? "litert-lm" : format.rawValue
         var request = URLRequest(url: URL(string: "https://huggingface.co/api/models?search=\(query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query)&filter=\(libraryFilter)&limit=20")!)
-        if let token { request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
-        let (data, response) = try await URLSession.shared.data(for: request)
+        var (data, response) = try await URLSession.shared.data(for: request)
+        if let http = response as? HTTPURLResponse, (http.statusCode == 401 || http.statusCode == 403), let token {
+            // Gated/protected query: retry with token
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            (data, response) = try await URLSession.shared.data(for: request)
+        }
         guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else { throw URLError(.badServerResponse) }
         let repos = try JSONDecoder().decode([Repo].self, from: data)
         var results: [HuggingFaceImportFile] = []
         for repo in repos {
             var treeRequest = URLRequest(url: URL(string: "https://huggingface.co/api/models/\(repo.id)/tree/main?recursive=true&expand=true")!)
-            if let token { treeRequest.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
-            guard let (treeData, treeResponse) = try? await URLSession.shared.data(for: treeRequest), let treeHTTP = treeResponse as? HTTPURLResponse, (200...299).contains(treeHTTP.statusCode), let entries = try? JSONDecoder().decode([TreeEntry].self, from: treeData) else { continue }
+            var treeResult = try? await URLSession.shared.data(for: treeRequest)
+            if let (_, treeResp) = treeResult, let treeHTTP = treeResp as? HTTPURLResponse, (treeHTTP.statusCode == 401 || treeHTTP.statusCode == 403), let token {
+                treeRequest.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+                treeResult = try? await URLSession.shared.data(for: treeRequest)
+            }
+            guard let (treeData, treeResponse) = treeResult, let treeHTTP = treeResponse as? HTTPURLResponse, (200...299).contains(treeHTTP.statusCode), let entries = try? JSONDecoder().decode([TreeEntry].self, from: treeData) else { continue }
             results += entries.filter { $0.type == "file" && $0.path.lowercased().hasSuffix(".\(format.rawValue)") }.map { HuggingFaceImportFile(repo: repo.id, path: $0.path, size: $0.size ?? 0) }
         }
         return results.sorted { $0.size < $1.size }

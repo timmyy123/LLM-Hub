@@ -919,3 +919,14 @@
 "agent_mcp_denied" = "उपयोगकर्ता ने अस्वीकार किया";
 "agent_mcp_status" = "स्थिति";
 "agent_termux_tool_title" = "Termux शेल कमांड";
+
+
+/* Hugging Face Token */
+"hf_token_title" = "Hugging Face टोकन";
+"hf_token_subtitle" = "मॉडल डाउनलोड के लिए व्यक्तिगत एक्सेस टोकन";
+"hf_token_dialog_title" = "Hugging Face एक्सेस टोकन";
+"hf_token_explanation" = "यदि डिफ़ॉल्ट टोकन विफल होता है, सीमा समाप्त होती है, या लाइसेंस-स्वीकृत मॉडल डाउनलोड करने के लिए, huggingface.co/settings/tokens से अपना व्यक्तिगत रीड टोकन दर्ज करें।";
+"hf_token_placeholder" = "व्यक्तिगत टोकन दर्ज करें (hf_...)";
+"hf_token_using_default" = "डिफ़ॉल्ट टोकन का उपयोग हो रहा है";
+"hf_token_custom_active" = "कस्टम टोकन सक्रिय है";
+"hf_token_clear" = "डिफ़ॉल्ट पर रीसेट करें";

@@ -1020,4 +1020,13 @@
     <string name="gguf_engine_crash_title">GGUF इंजन रुक गया</string>
     <string name="gguf_engine_crash_message">GGUF मॉडल लोड करते समय GenieX रुक गया। सेटिंग्स में GGUF इंजन बदलकर देखें।</string>
     <string name="gguf_engine_open_settings">सेटिंग्स खोलें</string>
+    <!-- Hugging Face Token -->
+    <string name="hf_token_title">Hugging Face टोकन</string>
+    <string name="hf_token_subtitle">मॉडल डाउनलोड के लिए व्यक्तिगत एक्सेस टोकन</string>
+    <string name="hf_token_dialog_title">Hugging Face एक्सेस टोकन</string>
+    <string name="hf_token_explanation">यदि डिफ़ॉल्ट टोकन विफल होता है, सीमा समाप्त होती है, या लाइसेंस-स्वीकृत मॉडल डाउनलोड करने के लिए, huggingface.co/settings/tokens से अपना व्यक्तिगत रीड टोकन दर्ज करें।</string>
+    <string name="hf_token_placeholder">व्यक्तिगत टोकन दर्ज करें (hf_...)</string>
+    <string name="hf_token_using_default">डिफ़ॉल्ट टोकन का उपयोग हो रहा है</string>
+    <string name="hf_token_custom_active">कस्टम टोकन सक्रिय है</string>
+    <string name="hf_token_clear">डिफ़ॉल्ट पर रीसेट करें</string>
 </resources>

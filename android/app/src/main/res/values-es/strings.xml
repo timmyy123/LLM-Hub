@@ -997,4 +997,13 @@
     <string name="gguf_engine_crash_title">El motor GGUF se detuvo</string>
     <string name="gguf_engine_crash_message">GenieX se detuvo al cargar un modelo GGUF. Prueba a cambiar el motor GGUF en Ajustes.</string>
     <string name="gguf_engine_open_settings">Abrir Ajustes</string>
+    <!-- Hugging Face Token -->
+    <string name="hf_token_title">Token de Hugging Face</string>
+    <string name="hf_token_subtitle">Token de acceso personal para descargar modelos</string>
+    <string name="hf_token_dialog_title">Token de acceso de Hugging Face</string>
+    <string name="hf_token_explanation">Si el token predeterminado falla, alcanza límites de velocidad o al descargar modelos restringidos con licencia aceptada, ingresa tu token de lectura personal de huggingface.co/settings/tokens.</string>
+    <string name="hf_token_placeholder">Ingresa token personal (hf_...)</string>
+    <string name="hf_token_using_default">Usando token predeterminado</string>
+    <string name="hf_token_custom_active">Token personalizado activo</string>
+    <string name="hf_token_clear">Restablecer a predeterminado</string>
 </resources>

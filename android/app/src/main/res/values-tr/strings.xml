@@ -992,4 +992,13 @@
     <string name="gguf_engine_crash_title">GGUF motoru durdu</string>
     <string name="gguf_engine_crash_message">GenieX bir GGUF modeli yüklerken durdu. Ayarlar bölümünden GGUF motorunu değiştirmeyi deneyin.</string>
     <string name="gguf_engine_open_settings">Ayarları Aç</string>
+    <!-- Hugging Face Token -->
+    <string name="hf_token_title">Hugging Face Belirteci</string>
+    <string name="hf_token_subtitle">Model indirmeleri için kişisel erişim belirteci</string>
+    <string name="hf_token_dialog_title">Hugging Face Erişim Belirteci</string>
+    <string name="hf_token_explanation">Varsayılan belirteç başarısız olursa, hız sınırına ulaşırsa veya lisans onaylı korumalı modelleri indirirken huggingface.co/settings/tokens adresinden alacağınız kişisel okuma belirtecinizi girin.</string>
+    <string name="hf_token_placeholder">Kişisel belirteç girin (hf_...)</string>
+    <string name="hf_token_using_default">Varsayılan belirteç kullanılıyor</string>
+    <string name="hf_token_custom_active">Özel belirteç etkin</string>
+    <string name="hf_token_clear">Varsayılana sıfırla</string>
 </resources>

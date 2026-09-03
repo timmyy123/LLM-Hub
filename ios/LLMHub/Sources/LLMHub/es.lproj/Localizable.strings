@@ -876,3 +876,14 @@
 "agent_mcp_denied" = "Denegado por el usuario";
 "agent_mcp_status" = "Estado";
 "agent_termux_tool_title" = "Comando de shell de Termux";
+
+
+/* Hugging Face Token */
+"hf_token_title" = "Token de Hugging Face";
+"hf_token_subtitle" = "Token de acceso personal para descargar modelos";
+"hf_token_dialog_title" = "Token de acceso de Hugging Face";
+"hf_token_explanation" = "Si el token predeterminado falla, alcanza límites de velocidad o al descargar modelos restringidos con licencia aceptada, ingresa tu token de lectura personal de huggingface.co/settings/tokens.";
+"hf_token_placeholder" = "Ingresa token personal (hf_...)";
+"hf_token_using_default" = "Usando token predeterminado";
+"hf_token_custom_active" = "Token personalizado activo";
+"hf_token_clear" = "Restablecer a predeterminado";

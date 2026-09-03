@@ -966,4 +966,13 @@
     <string name="gguf_engine_crash_title">Движок GGUF остановлен</string>
     <string name="gguf_engine_crash_message">GenieX остановился при загрузке модели GGUF. Попробуйте изменить движок GGUF в настройках.</string>
     <string name="gguf_engine_open_settings">Открыть настройки</string>
+    <!-- Hugging Face Token -->
+    <string name="hf_token_title">Токен Hugging Face</string>
+    <string name="hf_token_subtitle">Личный токен доступа для загрузки моделей</string>
+    <string name="hf_token_dialog_title">Токен доступа Hugging Face</string>
+    <string name="hf_token_explanation">Если стандартный токен не работает, исчерпал лимит запросов или для загрузки лицензированных моделей введите свой личный токен чтения с huggingface.co/settings/tokens.</string>
+    <string name="hf_token_placeholder">Введите личный токен (hf_...)</string>
+    <string name="hf_token_using_default">Используется стандартный токен</string>
+    <string name="hf_token_custom_active">Пользовательский токен активен</string>
+    <string name="hf_token_clear">Сбросить на стандартный</string>
 </resources>
