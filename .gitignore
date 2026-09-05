@@ -13,6 +13,7 @@ out/
 **/.tmp/
 release-builds/
 **/release-builds/
+/android/app/release/
 
 # Logs & Temporary files
 *.log

@@ -61,10 +61,10 @@
       </SelectionState>
       <SelectionState runConfigName="androidTest">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2026-08-24T06:25:35.962503Z">
+        <DropdownSelection timestamp="2026-09-05T12:20:42.136005Z">
           <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="Default" identifier="serial=localhost:36229;connection=280d123d" />
+              <DeviceId pluginId="Default" identifier="serial=localhost:48551;connection=1a70c185" />
             </handle>
           </Target>
         </DropdownSelection>
@@ -72,7 +72,12 @@
           <targets>
             <Target type="DEFAULT_BOOT">
               <handle>
-                <DeviceId pluginId="PhysicalDevice" identifier="serial=R52X70162PV" />
+                <DeviceId pluginId="Default" identifier="serial=localhost:48551;connection=21361954" />
+              </handle>
+            </Target>
+            <Target type="DEFAULT_BOOT">
+              <handle>
+                <DeviceId pluginId="PhysicalDevice" identifier="serial=R52W708ZNKB" />
               </handle>
             </Target>
           </targets>

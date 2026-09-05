@@ -13,12 +13,11 @@ object GgufEnginePolicy {
     private const val PREFS_NAME = "gguf_engine_preferences"
     private const val CRASH_PREFS_NAME = "geniex_native_crash_guard"
     private const val ENGINE_KEY = "selected_engine"
-    private val LLAMA_CPP_SOCS = setOf("SM8450")
-
     fun selectedEngine(context: Context): GgufEngine {
         val stored = preferences(context).getString(ENGINE_KEY, null)
-        return runCatching { GgufEngine.valueOf(stored.orEmpty()) }
-            .getOrDefault(GgufEngine.DEFAULT_GENIEX)
+        val explicitSelection = runCatching { GgufEngine.valueOf(stored.orEmpty()) }.getOrNull()
+        if (explicitSelection != null) return explicitSelection
+        return GgufEngine.DEFAULT_GENIEX
     }
 
     fun setSelectedEngine(context: Context, engine: GgufEngine) {
@@ -26,7 +25,7 @@ object GgufEnginePolicy {
     }
 
     fun shouldUseLlamaCpp(context: Context): Boolean {
-        return deviceSoc() in LLAMA_CPP_SOCS || selectedEngine(context) == GgufEngine.LLAMA_CPP
+        return selectedEngine(context) == GgufEngine.LLAMA_CPP
     }
 
     fun deviceSoc(): String {

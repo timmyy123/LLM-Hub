@@ -176,7 +176,7 @@ class UnifiedInferenceService(private val context: Context) : InferenceService {
                 deviceId = null,
             )
         ) {
-            Log.i(TAG, "Loaded '${model.name}' with llama.cpp b10603 CPU fallback")
+            Log.i(TAG, "Loaded '${model.name}' with llama.cpp b10816 CPU fallback")
             llamaCppService
         } else {
             Log.e(TAG, "Both GenieX and llama.cpp failed for '${model.name}'")

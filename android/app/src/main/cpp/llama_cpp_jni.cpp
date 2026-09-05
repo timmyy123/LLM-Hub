@@ -274,7 +274,7 @@ Java_com_llmhub_llmhub_inference_LlamaCppNative_nativeStartCompletion(
             const std::string path = from_jstring(env, path_value);
             env->DeleteLocalRef(path_value);
             mtmd_helper_bitmap_wrapper wrapper =
-                mtmd_helper_bitmap_init_from_file(g_mtmd, path.c_str(), false);
+                mtmd_helper_bitmap_init_from_file(g_mtmd, path.c_str(), false, mtmd_helper_init_opt_default());
             if (wrapper.bitmap == nullptr) {
                 for (auto & loaded : bitmap_wrappers) {
                     mtmd_bitmap_free(loaded.bitmap);

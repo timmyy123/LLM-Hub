@@ -72,7 +72,7 @@
     <string name="ai_thinking">AI tænker...</string>
     <string name="thinking_label">Tænker</string>
     <string name="thinking_tokens">Tænker (%1$dtokens)</string>
-    <string name="version_number">Version 4.3.0</string>
+    <string name="version_number">Version 4.3.1</string>
     <string name="app_version">Appversion</string>
     <string name="terms_of_service">Servicevilkår</string>
     <string name="tos_last_updated">Sidst opdateret: 22. juni 2026</string>

@@ -26,7 +26,7 @@ android {
         applicationId = "com.llmhub.llmhub"
         minSdk = 27
         targetSdk = 37
-        versionCode = 149
+        versionCode = 150
         versionName = "4.3.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -68,8 +68,8 @@ android {
 
     buildTypes {
         release {
-            // Disable R8 minification to prevent stripping ONNX/GenieX JNI classes
-            isMinifyEnabled = false
+            // Enable R8 code shrinking and obfuscation to meet Google Play's 25% threshold
+            isMinifyEnabled = true
             isShrinkResources = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -392,7 +392,7 @@ dependencies {
     implementation("com.github.medavox:IPA-Transcribers:v0.2")
 
     // GenieX SDK for GGUF model support (LLM/VLM inference on CPU/GPU/NPU)
-    implementation(files("libs/geniex-android-aar-v0.5.0.aar"))
+    implementation(files("libs/geniex-android-aar-v0.6.1.aar"))
 
     // WhisperKit for fast on-device ASR (TFLite + QNN NPU acceleration)
     implementation("com.argmaxinc:whisperkit:0.3.3")
@@ -435,7 +435,7 @@ val geniexAarConfig by configurations.creating {
     isCanBeConsumed = false
     isCanBeResolved = true
 }
-dependencies { geniexAarConfig(files("libs/geniex-android-aar-v0.5.0.aar")) }
+dependencies { geniexAarConfig(files("libs/geniex-android-aar-v0.6.1.aar")) }
 
 val npuPackAssetsDir = rootProject.file("geniex_npu_pack/src/main/assets/npu")
 
