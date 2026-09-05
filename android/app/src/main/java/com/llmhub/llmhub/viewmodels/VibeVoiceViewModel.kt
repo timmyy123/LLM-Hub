@@ -283,7 +283,8 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
                 (inferenceService as? UnifiedInferenceService)?.setAgentToolsEnabled(false)
                 val vibeVoiceCtx = minOf(model.contextWindowSize, 4096)
                 val isMuseGlimmer = model.name.contains("Muse Glimmer", ignoreCase = true) || model.name.contains("muse-glimmer", ignoreCase = true)
-                val useThinking = if (model.name.contains("Gemma-4", ignoreCase = true) || isMuseGlimmer) false else null
+                val isGranite42 = model.name.contains("granite-4.2", ignoreCase = true) || model.name.contains("granite 4.2", ignoreCase = true)
+                val useThinking = if (model.name.contains("Gemma-4", ignoreCase = true) || isMuseGlimmer || isGranite42) false else null
                 inferenceService.setGenerationParameters(null, null, null, null, enableThinking = useThinking, contextWindow = vibeVoiceCtx)
                 inferenceService.loadModel(
                     model = model,

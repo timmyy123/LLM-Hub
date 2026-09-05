@@ -191,7 +191,9 @@ public class AgentViewModel: ObservableObject {
             messages.append(.text(id: aiMsgId, sender: .agent, content: "", timestamp: Date()))
 
             if LLMBackend.shared.isLoaded {
-                let enableThinking = UserDefaults.standard.object(forKey: "agent_enable_thinking") as? Bool ?? true
+                let isGranite42 = LLMBackend.shared.currentlyLoadedModel?.lowercased().contains("granite-4.2") == true
+                    || LLMBackend.shared.currentlyLoadedModel?.lowercased().contains("granite 4.2") == true
+                let enableThinking = (UserDefaults.standard.object(forKey: "agent_enable_thinking") as? Bool ?? true) && !isGranite42
                 LLMBackend.shared.enableThinking = enableThinking
                 let savedMaxTokens = UserDefaults.standard.double(forKey: "agent_max_tokens")
                 let maxTok = savedMaxTokens > 0 ? savedMaxTokens : 4096
@@ -272,7 +274,9 @@ public class AgentViewModel: ObservableObject {
         User Request: \(prompt)
         """
 
-        let enableThinking = UserDefaults.standard.object(forKey: "agent_enable_thinking") as? Bool ?? true
+        let isGranite42 = LLMBackend.shared.currentlyLoadedModel?.lowercased().contains("granite-4.2") == true
+            || LLMBackend.shared.currentlyLoadedModel?.lowercased().contains("granite 4.2") == true
+        let enableThinking = (UserDefaults.standard.object(forKey: "agent_enable_thinking") as? Bool ?? true) && !isGranite42
         LLMBackend.shared.enableThinking = enableThinking
         let savedMaxTokens = UserDefaults.standard.double(forKey: "agent_max_tokens")
         let maxTok = savedMaxTokens > 0 ? savedMaxTokens : 4096

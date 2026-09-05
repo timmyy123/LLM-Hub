@@ -206,7 +206,8 @@ public struct AgentScreen: View {
         do {
             let modelContextCap = model.contextWindowSize > 0 ? model.contextWindowSize : 4096
             let effectiveContext = min(max(1, Int(agentMaxTokens)), modelContextCap)
-            LLMBackend.shared.enableThinking = agentEnableThinking
+            let isGranite42 = agentModelName.lowercased().contains("granite-4.2") || agentModelName.lowercased().contains("granite 4.2")
+            LLMBackend.shared.enableThinking = isGranite42 ? false : agentEnableThinking
             LLMBackend.shared.maxTokens = min(Int(agentMaxTokens), effectiveContext)
             LLMBackend.shared.contextWindow = effectiveContext
             try await LLMBackend.shared.loadModel(model)
@@ -376,7 +377,8 @@ public struct AgentScreen: View {
                         let isCurrentMsgGenerating = vm.isGenerating && msg.id == vm.messages.last?.id
                         let selectedModel = ModelData.allModels().first(where: { $0.name == agentModelName })
                         let isLfm = agentModelName.lowercased().contains("lfm")
-                        let modelSupportsThinking = isLfm || (selectedModel?.supportsThinking ?? false)
+                        let isGranite42 = agentModelName.lowercased().contains("granite-4.2") || agentModelName.lowercased().contains("granite 4.2")
+                        let modelSupportsThinking = !isGranite42 && (isLfm || (selectedModel?.supportsThinking ?? false))
                         let preferThinking = modelSupportsThinking && agentEnableThinking
                         ThinkingAwareResultContent(
                             content: content,

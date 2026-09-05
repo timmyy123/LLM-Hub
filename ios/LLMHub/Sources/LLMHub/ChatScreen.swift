@@ -1839,7 +1839,8 @@ class ChatViewModel: ObservableObject {
         let isLlama3  = isLlama && (modelName.contains("llama-3") || modelName.contains("llama 3") || modelName.contains("llama-3."))
         let isHarmony = modelName.contains("gpt-oss") || modelName.contains("gpt_oss")
         let isMuseGlimmer = chatModel(named: selectedModelName)?.chatTemplateFamily == .museGlimmer
-        let isGranite = modelName.contains("granite")
+        let isGranite42 = modelName.contains("granite-4.2") || modelName.contains("granite 4.2")
+        let isGranite = modelName.contains("granite") && !isGranite42
         let isPhi4    = modelName.contains("phi-4") || modelName.contains("phi 4") || modelName.contains("phi4")
         let isChatML  = modelName.contains("lfm") || modelName.contains("liquid")
 
@@ -1855,6 +1856,8 @@ class ChatViewModel: ObservableObject {
             // <|eom|> separates Muse's private reasoning from its user-facing
             // answer, so only stop at the actual end-of-turn marker.
             return ["<|eot|>"]
+        } else if isGranite42 {
+            return ["<|im_end|>", "<|im_start|>user", "<|im_start|>system"]
         } else if isGranite {
             return ["<|start_of_role|>user", "<|start_of_role|>system"]
         } else if isPhi4 {
@@ -1983,7 +1986,8 @@ class ChatViewModel: ObservableObject {
         let isLlama3     = isLlama && (modelName.contains("llama-3") || modelName.contains("llama 3") || modelName.contains("llama-3."))
         let isHarmonyModel = modelName.contains("gpt-oss") || modelName.contains("gpt_oss")
         let isMuseGlimmer = currentModel?.chatTemplateFamily == .museGlimmer
-        let isGranite    = modelName.contains("granite")
+        let isGranite42  = modelName.contains("granite-4.2") || modelName.contains("granite 4.2")
+        let isGranite    = modelName.contains("granite") && !isGranite42
         let isPhi4       = modelName.contains("phi-4") || modelName.contains("phi 4") || modelName.contains("phi4")
         let isChatML     = modelName.contains("lfm") || modelName.contains("liquid")
 
@@ -2157,6 +2161,8 @@ class ChatViewModel: ObservableObject {
                 parts.append("<|start_header_id|>system<|end_header_id|>\n\n\(rag)<|eot_id|>")
             } else if isLlama {
                 parts.append("[INST] \(rag) [/INST]\nUnderstood.")
+            } else if isGranite42 {
+                parts.append("<|im_start|>system\n\(rag)<|im_end|>")
             } else if isGranite {
                 parts.append("<|start_of_role|>system<|end_of_role|>\(rag)<|end_of_text|>")
             } else if isChatML {
@@ -2198,6 +2204,10 @@ class ChatViewModel: ObservableObject {
                 } else {
                     parts.append(content)
                 }
+            } else if isGranite42 {
+                let role = msg.isFromUser ? "user" : "assistant"
+                let prefix = msg.isFromUser ? "" : "<think></think>"
+                parts.append("<|im_start|>\(role)\n\(prefix)\(content)<|im_end|>")
             } else if isGranite {
                 let role = msg.isFromUser ? "user" : "assistant"
                 parts.append("<|start_of_role|>\(role)<|end_of_role|>\(content)<|end_of_text|>")
@@ -2225,6 +2235,13 @@ class ChatViewModel: ObservableObject {
             parts.append("<|start_header_id|>assistant<|end_header_id|>\n\n")
         } else if isLlama {
             parts.append("[INST] \(currentUserPrompt) [/INST]")
+        } else if isGranite42 {
+            parts.append("<|im_start|>user\n\(currentUserPrompt)<|im_end|>")
+            if modelSupportsThinking && enableThinking {
+                parts.append("<|im_start|>assistant\n<think>\n")
+            } else {
+                parts.append("<|im_start|>assistant\n<think></think>")
+            }
         } else if isGranite {
             parts.append("<|start_of_role|>user<|end_of_role|>\(currentUserPrompt)<|end_of_text|>")
             parts.append("<|start_of_role|>assistant<|end_of_role|>")

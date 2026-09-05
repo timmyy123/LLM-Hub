@@ -491,6 +491,7 @@ struct FeatureModelSettingsSheet: View {
         guard let model = selectedModel else { return false }
         let name = model.name.lowercased()
         if name.contains("lfm") { return false }
+        if name.contains("granite-4.2") || name.contains("granite 4.2") { return false }
         if name.contains("gemma-4") || name.contains("gemma 4") || name.contains("gemma_4") {
             return model.modelFormat == .litertlm
         }
@@ -2657,8 +2658,8 @@ private struct IOS17VibeVoiceScreen: View {
         let isLlama3     = isLlama && (modelName.contains("llama-3") || modelName.contains("llama 3") || modelName.contains("llama-3."))
         let isHarmonyModel = modelName.contains("gpt-oss") || modelName.contains("gpt_oss")
         let isMuseGlimmer = selectedFeatureModel(named: selectedModelName)?.chatTemplateFamily == .museGlimmer
-        // Granite 4.x: IBM's <|start_of_role|>role<|end_of_role|>content<|end_of_text|> template
-        let isGranite    = modelName.contains("granite")
+        let isGranite42  = modelName.contains("granite-4.2") || modelName.contains("granite 4.2")
+        let isGranite    = modelName.contains("granite") && !isGranite42
         let isPhi4       = modelName.contains("phi-4") || modelName.contains("phi 4") || modelName.contains("phi4")
         // LFM (Liquid AI) and similar ChatML-style models
         let isChatML     = modelName.contains("lfm") || modelName.contains("liquid")
@@ -2831,6 +2832,8 @@ private struct IOS17VibeVoiceScreen: View {
             parts.append("<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\n\(systemPrompt)<|eot_id|>")
         } else if isLlama {
             parts.append("<<SYS>>\n\(systemPrompt)\n<</SYS>>")
+        } else if isGranite42 {
+            parts.append("<|im_start|>system\n\(systemPrompt)<|im_end|>")
         } else if isGranite {
             parts.append("<|start_of_role|>system<|end_of_role|>\(systemPrompt)<|end_of_text|>")
         } else if isChatML {
@@ -2861,6 +2864,10 @@ private struct IOS17VibeVoiceScreen: View {
                 } else {
                     parts.append(content)
                 }
+            } else if isGranite42 {
+                let role = (msg.role == "user") ? "user" : "assistant"
+                let prefix = (role == "assistant") ? "<think></think>" : ""
+                parts.append("<|im_start|>\(role)\n\(prefix)\(content)<|im_end|>")
             } else if isGranite {
                 let role = (msg.role == "user") ? "user" : "assistant"
                 parts.append("<|start_of_role|>\(role)<|end_of_role|>\(content)<|end_of_text|>")
@@ -2886,6 +2893,9 @@ private struct IOS17VibeVoiceScreen: View {
         } else if isLlama3 {
             parts.append("<|start_header_id|>user<|end_header_id|>\n\n\(text)<|eot_id|>")
             parts.append("<|start_header_id|>assistant<|end_header_id|>\n\n")
+        } else if isGranite42 {
+            parts.append("<|im_start|>user\n\(text)<|im_end|>")
+            parts.append("<|im_start|>assistant\n<think></think>")
         } else if isGranite {
             parts.append("<|start_of_role|>user<|end_of_role|>\(text)<|end_of_text|>")
             parts.append("<|start_of_role|>assistant<|end_of_role|>")
@@ -3404,7 +3414,8 @@ struct WritingAidScreen: View {
         llm.contextWindow = effectiveContext
         llm.enableVision = false
         llm.enableAudio = false
-        llm.enableThinking = enableThinking
+        let isGranite42 = selectedModelName.lowercased().contains("granite-4.2") || selectedModelName.lowercased().contains("granite 4.2")
+        llm.enableThinking = isGranite42 ? false : enableThinking
 
         do {
             if shouldReload {
@@ -4751,7 +4762,8 @@ struct ScamDetectorScreen: View {
         llm.contextWindow = effectiveContext
         llm.enableVision = enableVision
         llm.enableAudio = false
-        llm.enableThinking = enableThinking
+        let isGranite42 = selectedModelName.lowercased().contains("granite-4.2") || selectedModelName.lowercased().contains("granite 4.2")
+        llm.enableThinking = isGranite42 ? false : enableThinking
 
         do {
             if shouldReload {
@@ -5089,8 +5101,13 @@ struct VibeCoderScreen: View {
         selectedFeatureModel(named: selectedModelName)?.chatTemplateFamily == .museGlimmer
     }
 
+    private var isSelectedModelGranite42: Bool {
+        let name = selectedModelName.lowercased()
+        return name.contains("granite-4.2") || name.contains("granite 4.2")
+    }
+
     private var effectiveEnableThinking: Bool {
-        enableThinking && !isSelectedModelMuseGlimmer
+        enableThinking && !isSelectedModelMuseGlimmer && !isSelectedModelGranite42
     }
 
     private var preferThinkingWhileStreaming: Bool {
@@ -6133,8 +6150,8 @@ struct VibeCoderScreen: View {
         let isLlama3     = isLlama && (modelName.contains("llama-3") || modelName.contains("llama 3") || modelName.contains("llama-3."))
         let isHarmonyModel = modelName.contains("gpt-oss") || modelName.contains("gpt_oss")
         let isMuseGlimmer = selectedFeatureModel(named: selectedModelName)?.chatTemplateFamily == .museGlimmer
-        // Granite 4.x: IBM's <|start_of_role|>role<|end_of_role|>content<|end_of_text|> template
-        let isGranite    = modelName.contains("granite")
+        let isGranite42  = modelName.contains("granite-4.2") || modelName.contains("granite 4.2")
+        let isGranite    = modelName.contains("granite") && !isGranite42
         let isPhi4       = modelName.contains("phi-4") || modelName.contains("phi 4") || modelName.contains("phi4")
         // LFM (Liquid AI) and similar ChatML-style models
         let isChatML     = modelName.contains("lfm") || modelName.contains("liquid")
@@ -6248,6 +6265,8 @@ struct VibeCoderScreen: View {
             parts.append("<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\n\(systemPrompt)<|eot_id|>")
         } else if isLlama {
             parts.append("<<SYS>>\n\(systemPrompt)\n<</SYS>>")
+        } else if isGranite42 {
+            parts.append("<|im_start|>system\n\(systemPrompt)<|im_end|>")
         } else if isGranite {
             parts.append("<|start_of_role|>system<|end_of_role|>\(systemPrompt)<|end_of_text|>")
         } else if isChatML {
@@ -6287,6 +6306,10 @@ struct VibeCoderScreen: View {
                 } else {
                     parts.append(content)
                 }
+            } else if isGranite42 {
+                let role = (msg.role == "user") ? "user" : "assistant"
+                let prefix = (role == "assistant") ? "<think></think>" : ""
+                parts.append("<|im_start|>\(role)\n\(prefix)\(content)<|im_end|>")
             } else if isGranite {
                 let role = (msg.role == "user") ? "user" : "assistant"
                 parts.append("<|start_of_role|>\(role)<|end_of_role|>\(content)<|end_of_text|>")
@@ -6314,6 +6337,9 @@ struct VibeCoderScreen: View {
             parts.append("<|start_header_id|>assistant<|end_header_id|>\n\n")
         } else if isLlama {
             parts.append("[INST] \(currentFilePrompt) [/INST]")
+        } else if isGranite42 {
+            parts.append("<|im_start|>user\n\(currentFilePrompt)<|im_end|>")
+            parts.append("<|im_start|>assistant\n<think></think>")
         } else if isGranite {
             parts.append("<|start_of_role|>user<|end_of_role|>\(currentFilePrompt)<|end_of_text|>")
             parts.append("<|start_of_role|>assistant<|end_of_role|>")

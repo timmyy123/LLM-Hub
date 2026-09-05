@@ -1737,6 +1737,12 @@ class GeniexInferenceService @Inject constructor(
             }
         }
 
+        val isGranite42 = model.name.contains("granite-4.2", ignoreCase = true) ||
+                          model.name.contains("granite 4.2", ignoreCase = true)
+        if (isGranite42) {
+            return buildGranite42Prompt(messages, cleanPrompt, thinkingEnabled)
+        }
+
         val isMuseGlimmer = model.name.contains("muse glimmer", ignoreCase = true) ||
                             model.name.contains("muse-glimmer", ignoreCase = true)
         if (isMuseGlimmer) {
@@ -1857,6 +1863,60 @@ class GeniexInferenceService @Inject constructor(
             }
             result
         }
+    }
+
+    private fun buildGranite42Prompt(
+        messages: List<ChatMessage>,
+        cleanPrompt: String,
+        thinkingEnabled: Boolean,
+    ): String {
+        var systemContent = ""
+        val historyTurns = mutableListOf<Pair<String, String>>()
+        for (msg in messages) {
+            val role = try { msg::class.java.getDeclaredField("role").apply { isAccessible = true }.get(msg) as String } catch (e: Exception) { "user" }
+            val content = try { msg::class.java.getDeclaredField("content").apply { isAccessible = true }.get(msg) as String } catch (e: Exception) { "" }
+            if (role == "system") {
+                systemContent = if (systemContent.isEmpty()) content else "$systemContent\n\n$content"
+            } else {
+                historyTurns.add(role to content)
+            }
+        }
+
+        val sb = StringBuilder()
+        if (systemContent.isNotBlank()) {
+            sb.append("<|im_start|>system\n${systemContent.trim()}<|im_end|>\n")
+        }
+
+        if (historyTurns.isEmpty()) {
+            val userText = cleanPrompt.trim()
+            if (userText.isNotEmpty()) {
+                sb.append("<|im_start|>user\n$userText<|im_end|>\n")
+            }
+        } else {
+            for ((role, content) in historyTurns) {
+                val trimmed = content.trim()
+                if (trimmed.isEmpty()) continue
+                if (role == "user") {
+                    sb.append("<|im_start|>user\n$trimmed<|im_end|>\n")
+                } else {
+                    val formattedAssistant = if (trimmed.contains("<think>") && trimmed.contains("</think>")) {
+                        "<think></think>" + trimmed.substringAfterLast("</think>").trim()
+                    } else if (!trimmed.startsWith("<think>")) {
+                        "<think></think>$trimmed"
+                    } else {
+                        trimmed
+                    }
+                    sb.append("<|im_start|>assistant\n$formattedAssistant<|im_end|>\n")
+                }
+            }
+        }
+
+        if (thinkingEnabled) {
+            sb.append("<|im_start|>assistant\n<think>\n")
+        } else {
+            sb.append("<|im_start|>assistant\n<think></think>")
+        }
+        return sb.toString()
     }
 
     private fun buildMuseGlimmerPrompt(

@@ -154,6 +154,9 @@ fun FeatureModelSettingsSheet(
             if (name.contains("muse glimmer") || name.contains("muse-glimmer")) {
                 return@derivedStateOf false
             }
+            if (name.contains("granite-4.2") || name.contains("granite 4.2")) {
+                return@derivedStateOf false
+            }
             name.contains("thinking") || name.contains("reasoning") ||
                 name.contains("gpt-oss") || name.contains("gpt_oss") ||
                 model.supportsThinking

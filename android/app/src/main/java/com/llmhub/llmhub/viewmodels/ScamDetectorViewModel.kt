@@ -404,7 +404,8 @@ class ScamDetectorViewModel(application: Application) : AndroidViewModel(applica
                 // Force agent tools OFF — scam detector has no tool toggle
                 (inferenceService as? com.llmhub.llmhub.inference.UnifiedInferenceService)?.setAgentToolsEnabled(false)
                 // Apply thinking state from toggle (or false if toggle not shown)
-                val useThinking = if (model.name.contains("Muse Glimmer", ignoreCase = true) || model.name.contains("muse-glimmer", ignoreCase = true)) false else _enableThinking.value
+                val isGranite42 = model.name.contains("granite-4.2", ignoreCase = true) || model.name.contains("granite 4.2", ignoreCase = true)
+                val useThinking = if (model.name.contains("Muse Glimmer", ignoreCase = true) || model.name.contains("muse-glimmer", ignoreCase = true) || isGranite42) false else _enableThinking.value
                 inferenceService.setGenerationParameters(null, null, null, null, enableThinking = useThinking)
                 
                 // Generate analysis using inference service

@@ -484,10 +484,12 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
         thinkingEnabled: Boolean,
     ): List<String> {
         val output = mutableListOf<String>()
-        val thinking = (model.name.contains("Thinking", true) ||
+        val isGranite42 = isGranite42Model(model)
+        val thinking = (((model.name.contains("Thinking", true) ||
             model.name.contains("Reasoning", true) ||
             model.name.contains("LFM2.5-8B-A1B", true) ||
-            model.name.contains("LFM-2.5 2.6B", true)) && !model.name.contains("muse", true)
+            model.name.contains("LFM-2.5 2.6B", true)) && !model.name.contains("muse", true)) ||
+            (isGranite42 && thinkingEnabled))
         when {
             isMuseModel(model) -> emitMuse(text, thinkingEnabled, output::add)
             isHarmonyModel(model) -> emitHarmony(text, output::add)
@@ -502,9 +504,16 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
                     token = token.replace("<think>", sentinelThink)
                 }
                 if (token.contains("</think>")) token = token.replace("</think>", sentinelEndThink)
+                if (token.contains("<|im_end|>")) token = token.replace("<|im_end|>", "")
                 output += token
             }
-            else -> output += text
+            else -> {
+                var token = text
+                if (isGranite42 && token.contains("<|im_end|>")) {
+                    token = token.replace("<|im_end|>", "")
+                }
+                output += token
+            }
         }
         return output
     }
@@ -786,6 +795,9 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
     private fun isMuseModel(model: LLMModel): Boolean =
         model.name.contains("muse glimmer", true) || model.name.contains("muse-glimmer", true)
 
+    private fun isGranite42Model(model: LLMModel): Boolean =
+        model.name.contains("granite-4.2", true) || model.name.contains("granite 4.2", true)
+
     /**
      * GenieX's text prompt pipeline, using llama.cpp only for the model-owned chat template.
      * Conversation parsing, feature/RAG preservation, thinking controls and manual fallbacks are
@@ -807,6 +819,10 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
             model.name.contains("muse-glimmer", ignoreCase = true)
         if (isMuseGlimmer) {
             return buildMuseGlimmerPrompt(messages, cleanPrompt, thinkingEnabled)
+        }
+
+        if (isGranite42Model(model)) {
+            return buildGranite42Prompt(messages, cleanPrompt, thinkingEnabled)
         }
 
         val formatted = LlamaCppNative.nativeFormatChat(
@@ -986,6 +1002,50 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
             return formatted.substring(0, insert) + "/no_think " + formatted.substring(insert)
         }
         return "/no_think $formatted"
+    }
+
+    private fun buildGranite42Prompt(
+        messages: List<VlmPromptTurn>,
+        cleanPrompt: String,
+        thinkingEnabled: Boolean,
+    ): String {
+        val systemContent = messages.filter { it.role == "system" }
+            .joinToString("\n\n") { it.text }.trim()
+        val history = messages.filter { it.role != "system" }
+        val sb = StringBuilder()
+        if (systemContent.isNotEmpty()) {
+            sb.append("<|im_start|>system\n$systemContent<|im_end|>\n")
+        }
+        if (history.isEmpty()) {
+            val userContent = cleanPrompt.trim()
+            if (userContent.isNotEmpty()) {
+                sb.append("<|im_start|>user\n$userContent<|im_end|>\n")
+            }
+        } else {
+            history.forEach { message ->
+                val content = message.text.trim()
+                if (content.isNotEmpty()) {
+                    if (message.role == "user") {
+                        sb.append("<|im_start|>user\n$content<|im_end|>\n")
+                    } else {
+                        val formattedAssistant = if (content.contains("<think>") && content.contains("</think>")) {
+                            "<think></think>" + content.substringAfterLast("</think>").trim()
+                        } else if (!content.startsWith("<think>")) {
+                            "<think></think>$content"
+                        } else {
+                            content
+                        }
+                        sb.append("<|im_start|>assistant\n$formattedAssistant<|im_end|>\n")
+                    }
+                }
+            }
+        }
+        if (thinkingEnabled) {
+            sb.append("<|im_start|>assistant\n<think>\n")
+        } else {
+            sb.append("<|im_start|>assistant\n<think></think>")
+        }
+        return sb.toString()
     }
 
     private fun buildMuseGlimmerPrompt(

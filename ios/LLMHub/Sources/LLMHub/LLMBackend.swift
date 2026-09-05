@@ -81,6 +81,27 @@ class LLMBackend: ObservableObject {
         return parts.joined()
     }
 
+    private static func isGranite42ModelName(_ name: String) -> Bool {
+        let lower = name.lowercased()
+        return lower.contains("granite-4.2") || lower.contains("granite 4.2")
+    }
+
+    private static func buildGranite42Prompt(prompt: String, systemPrompt: String?, thinkingEnabled: Bool, includeRawPrefix: Bool = true) -> String {
+        let cleanPrompt = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
+        let systemContent = systemPrompt?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        var parts = includeRawPrefix ? ["__RAW_PROMPT__"] : []
+        if !systemContent.isEmpty {
+            parts.append("<|im_start|>system\n\(systemContent)<|im_end|>\n")
+        }
+        parts.append("<|im_start|>user\n\(cleanPrompt)<|im_end|>\n")
+        if thinkingEnabled {
+            parts.append("<|im_start|>assistant\n<think>\n")
+        } else {
+            parts.append("<|im_start|>assistant\n<think></think>")
+        }
+        return parts.joined()
+    }
+
     /// Muse Glimmer may emit an ATEM recipient header before its text and may
     /// produce a private `self` reasoning turn before the answer for `user`.
     /// Convert those protocol fields to the same thinking sentinels used by the UI.
@@ -1374,19 +1395,22 @@ class LLMBackend: ObservableObject {
         let modelSupportsThinking = loadedModel?.supportsThinking == true
         let isHarmonyModel = Self.isHarmonyModelName(loadedModelName)
         let isMuseGlimmerModel = Self.isMuseGlimmerModelName(loadedModelName)
+        let isGranite42Model = Self.isGranite42ModelName(loadedModelName)
         let useMuseGlimmerThinking = modelSupportsThinking && enableThinking
         let rawPrompt: String
         if isHarmonyModel && !prompt.hasPrefix("__RAW_PROMPT__") {
             rawPrompt = Self.buildHarmonyPrompt(prompt: prompt, systemPrompt: systemPrompt, thinkingEnabled: enableThinking)
         } else if isMuseGlimmerModel && !prompt.hasPrefix("__RAW_PROMPT__") {
             rawPrompt = Self.buildMuseGlimmerPrompt(prompt: prompt, systemPrompt: systemPrompt, thinkingEnabled: useMuseGlimmerThinking)
+        } else if isGranite42Model && !prompt.hasPrefix("__RAW_PROMPT__") {
+            rawPrompt = Self.buildGranite42Prompt(prompt: prompt, systemPrompt: systemPrompt, thinkingEnabled: enableThinking)
         } else {
             rawPrompt = prompt
         }
         let effectiveSystemPrompt: String?
         if prompt.hasPrefix("__RAW_PROMPT__") {
             effectiveSystemPrompt = nil
-        } else if isHarmonyModel || isMuseGlimmerModel {
+        } else if isHarmonyModel || isMuseGlimmerModel || isGranite42Model {
             effectiveSystemPrompt = nil
         } else {
             effectiveSystemPrompt = systemPrompt
@@ -1442,6 +1466,18 @@ class LLMBackend: ObservableObject {
                         includeRawPrefix: false
                     )
                 }
+            } else if isGranite42Model {
+                if !strippedPrompt.contains("<|im_start|>") {
+                    let sys = (effectiveSystemPrompt ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+                    let thinkTag = enableThinking ? "<think>\n" : "<think></think>"
+                    if !sys.isEmpty {
+                        usePrompt = "<|im_start|>system\n\(sys)\n<|im_end|>\n<|im_start|>user\n\(strippedPrompt)\n<|im_end|>\n<|im_start|>assistant\n\(thinkTag)"
+                    } else {
+                        usePrompt = "<|im_start|>user\n\(strippedPrompt)\n<|im_end|>\n<|im_start|>assistant\n\(thinkTag)"
+                    }
+                } else {
+                    usePrompt = strippedPrompt
+                }
             } else {
                 usePrompt = strippedPrompt
             }
@@ -1451,7 +1487,7 @@ class LLMBackend: ObservableObject {
         options.maxTokens = Int32(effectiveMaxTokens)
         options.temperature = Float(temperature)
         options.topP = Float(topP)
-        options.stopSequences = stopSequences.isEmpty && isPhi4MiniModel ? ["<|end|>", "<|user|>", "<|system|>"] : stopSequences.isEmpty && isMuseGlimmerModel ? ["<|eot|>"] : stopSequences
+        options.stopSequences = stopSequences.isEmpty && isPhi4MiniModel ? ["<|end|>", "<|user|>", "<|system|>"] : stopSequences.isEmpty && isMuseGlimmerModel ? ["<|eot|>"] : stopSequences.isEmpty && isGranite42Model ? ["<|im_end|>", "<|im_start|>user", "<|im_start|>system"] : stopSequences
         options.streamingEnabled = true
         options.systemPrompt = effectiveSystemPrompt ?? ""
         if !isLfmModel {
