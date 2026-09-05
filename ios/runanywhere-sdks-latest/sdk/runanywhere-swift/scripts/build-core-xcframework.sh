@@ -774,6 +774,10 @@ if [ "${RAC_BACKEND_ONNX}" = "OFF" ]; then
 fi
 if [ "${RAC_BACKEND_MLX}" = "OFF" ]; then
     cmake_extra+=("-DRAC_BACKEND_MLX=OFF")
+else
+    # CMake caches this option. Explicitly turn it back on after a previous
+    # llama-only build used RAC_BACKEND_MLX=OFF.
+    cmake_extra+=("-DRAC_BACKEND_MLX=ON")
 fi
 
 echo "▶ Configure ios-device"

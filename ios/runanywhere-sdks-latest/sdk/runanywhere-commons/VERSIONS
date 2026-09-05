@@ -208,9 +208,9 @@ SHERPA_ONNX_COMMIT_WEB=142807252687d81b40d6315f23470a1512a00de3
 # =============================================================================
 # llama.cpp (LLM inference)
 # =============================================================================
-# Upstream release pin bumped to b10585 (2026-08-22).
-# b10585 is the selected release from ggml-org/llama.cpp.
-LLAMACPP_VERSION=b10585
+# Upstream release pin bumped to b10819 (2026-09-05).
+# b10819 is the selected release from ggml-org/llama.cpp.
+LLAMACPP_VERSION=b10819
 
 # =============================================================================
 # nlohmann/json

@@ -761,8 +761,8 @@ rac_result_t prepare_vlm_context(LlamaCppVLMBackend* backend, const rac_vlm_imag
     if (image && backend->mtmd_ctx) {
         if (image->format == RAC_VLM_IMAGE_FORMAT_FILE_PATH && image->file_path) {
             RAC_LOG_INFO(LOG_CAT, "[v3-prep] loading image from file path");
-            auto wrapper =
-                mtmd_helper_bitmap_init_from_file(backend->mtmd_ctx, image->file_path, false);
+            auto wrapper = mtmd_helper_bitmap_init_from_file(
+                backend->mtmd_ctx, image->file_path, false, mtmd_helper_init_opt_default());
             bitmap.reset(wrapper.bitmap);
             video.reset(wrapper.video_ctx);
         } else if (image->format == RAC_VLM_IMAGE_FORMAT_RGB_PIXELS && image->pixel_data) {
