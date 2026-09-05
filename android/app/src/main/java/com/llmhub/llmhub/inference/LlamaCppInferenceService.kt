@@ -84,8 +84,8 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
     private var visionDisabled = true
     private var audioDisabled = true
     private val chatSessions = mutableMapOf<String, MutableList<VlmPromptTurn>>()
-    private val sentinelThink = "​​THINK​​"
-    private val sentinelEndThink = "​​ENDTHINK​​"
+    private val sentinelThink = "\u200B\u200BTHINK\u200B\u200B"
+    private val sentinelEndThink = "\u200B\u200BENDTHINK\u200B\u200B"
     private val harmonyBuffer = StringBuilder()
     private var harmonyState = LlamaHarmonyState.BEFORE_HEADER
     private val museBuffer = StringBuilder()

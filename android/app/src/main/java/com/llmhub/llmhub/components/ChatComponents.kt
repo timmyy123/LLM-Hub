@@ -722,7 +722,8 @@ fun parseThinkingAndAnswer(content: String): Pair<String, String> {
             val answer = afterThink.substringAfter(SENTINEL_ENDTHINK).trim()
             return thinking to answer
         }
-        return afterThink.trim() to ""
+        val thinking = afterThink.trim()
+        return (if (thinking.isEmpty()) "…" else thinking) to ""
     }
     // 2) Sentinel closing tag only
     if (content.contains(SENTINEL_ENDTHINK)) {
@@ -739,7 +740,8 @@ fun parseThinkingAndAnswer(content: String): Pair<String, String> {
             return thinking to answer
         } else {
             // Streaming/incomplete: everything after <think> is thinking content, answer is empty
-            return afterThink.trim() to ""
+            val thinking = afterThink.trim()
+            return (if (thinking.isEmpty()) "…" else thinking) to ""
         }
     }
     // 4) Closing raw tag only (model emitted </think> without explicit <think>)

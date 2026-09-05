@@ -152,8 +152,8 @@ class GeniexInferenceService @Inject constructor(
     private var overrideEnableThinking: Boolean? = null  // null = follow model defaults
 
     // Thinking sentinel tokens (same values as OnnxInferenceService)
-    private val SENTINEL_THINK = "​​THINK​​"
-    private val SENTINEL_ENDTHINK = "​​ENDTHINK​​"
+    private val SENTINEL_THINK = "\u200B\u200BTHINK\u200B\u200B"
+    private val SENTINEL_ENDTHINK = "\u200B\u200BENDTHINK\u200B\u200B"
 
     // Harmony format state machine (GPT-OSS models: <|channel|>analysis<|message|>...<|end|>...final)
     private val harmonyBuffer = StringBuilder()
@@ -803,22 +803,28 @@ class GeniexInferenceService @Inject constructor(
         val topKVal = overrideTopK ?: 40
         val topPVal = overrideTopP ?: 0.9f
 
-        val isThinkingModel = (model.name.contains("Thinking", ignoreCase = true) ||
-                              model.name.contains("Reasoning", ignoreCase = true) ||
-                              model.name.contains("LFM2.5-8B-A1B", ignoreCase = true) ||
-                              model.name.contains("LFM-2.5 2.6B", ignoreCase = true)) &&
-                              !model.name.contains("muse", ignoreCase = true)
-        val isHarmonyModel = model.name.contains("gpt-oss", ignoreCase = true) ||
-                             model.name.contains("gpt_oss", ignoreCase = true)
-        val isMuseGlimmerModel = model.name.contains("muse glimmer", ignoreCase = true) ||
-                                 model.name.contains("muse-glimmer", ignoreCase = true)
-
         // Thinking toggle:
         // - LFM-Thinking: /no_think is injected by formatPrompt into the formatted string.
         // - GPT-OSS Harmony: an empty analysis prefill is injected after formatting in the
         //   LLM generation path so template processing cannot strip it.
         // - Muse Glimmer: # Valid recipients and assistant to=user prefill control thinking.
+        // - Granite 4.2: <think> is prefilled in prompt when thinkingEnabled is true.
         val thinkingEnabled = overrideEnableThinking ?: true
+
+        val isGranite42 = isGranite42Model(model)
+        val isThinkingModel = (((model.name.contains("Thinking", ignoreCase = true) ||
+                              model.name.contains("Reasoning", ignoreCase = true) ||
+                              model.name.contains("LFM2.5-8B-A1B", ignoreCase = true) ||
+                              model.name.contains("LFM-2.5 2.6B", ignoreCase = true)) &&
+                              !model.name.contains("muse", ignoreCase = true)) ||
+                              (isGranite42 && thinkingEnabled))
+        val isHarmonyModel = model.name.contains("gpt-oss", ignoreCase = true) ||
+                             model.name.contains("gpt_oss", ignoreCase = true)
+        val isMuseGlimmerModel = model.name.contains("muse glimmer", ignoreCase = true) ||
+                                 model.name.contains("muse-glimmer", ignoreCase = true)
+
+        // Reset per-generation thinking state
+        sentInitialThinkingSentinel = false
 
         // Reset per-generation Harmony state
         harmonyBuffer.clear()
@@ -1091,9 +1097,14 @@ class GeniexInferenceService @Inject constructor(
                             t = t.replace("<think>", SENTINEL_THINK)
                         }
                         if (t.contains("</think>")) t = t.replace("</think>", SENTINEL_ENDTHINK)
+                        if (t.contains("<|im_end|>")) t = t.replace("<|im_end|>", "")
                         trySend(t)
                     }
-                    else -> trySend(text)
+                    else -> {
+                        var t = text
+                        if (t.contains("<|im_end|>")) t = t.replace("<|im_end|>", "")
+                        trySend(t)
+                    }
                 }
             }
             is LlmStreamResult.Completed -> {
@@ -1737,9 +1748,7 @@ class GeniexInferenceService @Inject constructor(
             }
         }
 
-        val isGranite42 = model.name.contains("granite-4.2", ignoreCase = true) ||
-                          model.name.contains("granite 4.2", ignoreCase = true)
-        if (isGranite42) {
+        if (isGranite42Model(model)) {
             return buildGranite42Prompt(messages, cleanPrompt, thinkingEnabled)
         }
 
@@ -1864,6 +1873,10 @@ class GeniexInferenceService @Inject constructor(
             result
         }
     }
+
+    private fun isGranite42Model(model: LLMModel): Boolean =
+        model.name.contains("granite-4.2", ignoreCase = true) ||
+            model.name.contains("granite 4.2", ignoreCase = true)
 
     private fun buildGranite42Prompt(
         messages: List<ChatMessage>,
