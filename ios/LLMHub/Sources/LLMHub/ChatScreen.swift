@@ -1089,6 +1089,8 @@ class ChatViewModel: ObservableObject {
         guard !input.isEmpty else { return false }
         guard !isGenerating else { return false }
 
+        stopAutoReadout()
+
         let userMsg = ChatMessage(content: input, isFromUser: true, attachmentDocumentName: documentName)
         messages.append(userMsg)
         inputText = ""
@@ -1776,9 +1778,14 @@ class ChatViewModel: ObservableObject {
         guard AppSettings.shared.autoReadoutEnabled else { return }
 
         // Strip thinking tokens — only speak the answer portion
+        let modelSupportsThinking = chatModel(named: selectedModelName)?.supportsThinking == true
+        let isThinkingActive = modelSupportsThinking && enableThinking && supportsUnmarkedStreamingThinkingHeuristic(forModelNamed: selectedModelName)
         let displayContent: String
         if contentHasThinkingMarkers(fullContent) {
             displayContent = getDisplayContentWithoutThinking(fullContent)
+        } else if isThinkingActive {
+            // Opening <think> was in prompt; </think> not reached yet, so still in thinking phase
+            displayContent = ""
         } else {
             displayContent = fullContent
         }
@@ -1801,9 +1808,13 @@ class ChatViewModel: ObservableObject {
         guard AppSettings.shared.autoReadoutEnabled else { return }
 
         // Feed any final delta that may not have been processed yet
+        let modelSupportsThinking = chatModel(named: selectedModelName)?.supportsThinking == true
+        let isThinkingActive = modelSupportsThinking && enableThinking && supportsUnmarkedStreamingThinkingHeuristic(forModelNamed: selectedModelName)
         let displayContent: String
         if contentHasThinkingMarkers(fullContent) {
             displayContent = getDisplayContentWithoutThinking(fullContent)
+        } else if isThinkingActive {
+            displayContent = ""
         } else {
             displayContent = fullContent
         }
@@ -3914,12 +3925,22 @@ struct ChatScreen: View {
             },
             onRegenerateResponse: regenerateAction,
             onToggleTts: !msg.isFromUser && !msg.content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? {
-                let contentToSpeak = contentHasThinkingMarkers(msg.content) ? getDisplayContentWithoutThinking(msg.content) : msg.content
-                ttsManager.toggleSpeaking(
-                    contentToSpeak,
-                    fallbackLanguage: settings.selectedLanguage,
-                    key: msg.id.uuidString
-                )
+                let isThinkingActive = modelSupportsThinking && vm.enableThinking && useStreamingThinkingHeuristic
+                let contentToSpeak: String
+                if contentHasThinkingMarkers(msg.content) {
+                    contentToSpeak = getDisplayContentWithoutThinking(msg.content)
+                } else if msg.isGenerating && isThinkingActive {
+                    contentToSpeak = ""
+                } else {
+                    contentToSpeak = msg.content
+                }
+                if !contentToSpeak.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    ttsManager.toggleSpeaking(
+                        contentToSpeak,
+                        fallbackLanguage: settings.selectedLanguage,
+                        key: msg.id.uuidString
+                    )
+                }
             } : nil,
             isTtsSpeaking: ttsManager.isSpeaking(key: msg.id.uuidString)
         )
