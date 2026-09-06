@@ -917,3 +917,9 @@
 "hf_token_using_default" = "استخدام الرمز الافتراضي";
 "hf_token_custom_active" = "الرمز المخصص مفعّل";
 "hf_token_clear" = "إعادة الضبط للافتراضي";
+
+/* Edit Prompt Template */
+"edit" = "تعديل";
+"prompt_template" = "قالب التوجيه";
+"edit_prompt_template" = "تعديل قالب التوجيه";
+"prompt_template_none" = "بلا (افتراضي)";

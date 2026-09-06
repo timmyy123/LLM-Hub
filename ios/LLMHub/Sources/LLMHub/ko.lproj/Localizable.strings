@@ -917,3 +917,9 @@
 "hf_token_using_default" = "기본 토큰 사용 중";
 "hf_token_custom_active" = "사용자 지정 토큰 활성";
 "hf_token_clear" = "기본값으로 재설정";
+
+/* Edit Prompt Template */
+"edit" = "편집";
+"prompt_template" = "프롬프트 템플릿";
+"edit_prompt_template" = "프롬프트 템플릿 편집";
+"prompt_template_none" = "없음(기본값)";

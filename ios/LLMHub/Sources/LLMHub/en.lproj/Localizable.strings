@@ -930,3 +930,9 @@
 "hf_token_using_default" = "Using default token";
 "hf_token_custom_active" = "Custom token active";
 "hf_token_clear" = "Reset to default";
+
+/* Edit Prompt Template */
+"edit" = "Edit";
+"prompt_template" = "Prompt Template";
+"edit_prompt_template" = "Edit Prompt Template";
+"prompt_template_none" = "None (Default)";

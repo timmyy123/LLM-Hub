@@ -917,3 +917,9 @@
 "hf_token_using_default" = "בשימוש אסימון ברירת מחדל";
 "hf_token_custom_active" = "אסימון מותאם אישית פעיל";
 "hf_token_clear" = "איפוס לברירת מחדל";
+
+/* Edit Prompt Template */
+"edit" = "ערוך";
+"prompt_template" = "תבנית הנחיה";
+"edit_prompt_template" = "עריכת תבנית הנחיה";
+"prompt_template_none" = "ללא (ברירת מחדל)";

@@ -355,7 +355,9 @@ public struct ModelData {
             supportsAudio: model.supportsAudio, supportsThinking: model.supportsThinking,
             supportsGpu: model.supportsGpu, supportsMtp: model.supportsMtp, requirements: model.requirements,
             contextWindowSize: model.contextWindowSize, modelFormat: model.modelFormat,
-            additionalFiles: fixedAdditional
+            additionalFiles: fixedAdditional,
+            promptTemplate: model.promptTemplate,
+            chatTemplateFamily: model.chatTemplateFamily
         )
     }
 

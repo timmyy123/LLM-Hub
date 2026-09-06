@@ -904,3 +904,9 @@
 "hf_token_using_default" = "Jeton par défaut utilisé";
 "hf_token_custom_active" = "Jeton personnalisé actif";
 "hf_token_clear" = "Rétablir par défaut";
+
+/* Edit Prompt Template */
+"edit" = "Modifier";
+"prompt_template" = "Modèle de Prompt";
+"edit_prompt_template" = "Modifier le modèle de prompt";
+"prompt_template_none" = "Aucun (par défaut)";

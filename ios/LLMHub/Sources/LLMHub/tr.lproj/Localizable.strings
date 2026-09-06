@@ -917,3 +917,9 @@
 "hf_token_using_default" = "Varsayılan belirteç kullanılıyor";
 "hf_token_custom_active" = "Özel belirteç etkin";
 "hf_token_clear" = "Varsayılana sıfırla";
+
+/* Edit Prompt Template */
+"edit" = "Düzenle";
+"prompt_template" = "Prompt Şablonu";
+"edit_prompt_template" = "Prompt Şablonunu Düzenle";
+"prompt_template_none" = "Yok (Varsayılan)";

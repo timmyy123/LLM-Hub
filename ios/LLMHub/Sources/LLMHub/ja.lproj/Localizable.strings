@@ -917,3 +917,9 @@
 "hf_token_using_default" = "デフォルトトークンを使用中";
 "hf_token_custom_active" = "カスタムトークン有効";
 "hf_token_clear" = "デフォルトに戻す";
+
+/* Edit Prompt Template */
+"edit" = "編集";
+"prompt_template" = "プロンプトテンプレート";
+"edit_prompt_template" = "プロンプトテンプレートを編集";
+"prompt_template_none" = "なし（デフォルト）";

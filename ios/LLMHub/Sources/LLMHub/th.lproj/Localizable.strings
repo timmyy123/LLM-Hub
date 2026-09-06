@@ -925,3 +925,9 @@
 "hf_token_using_default" = "กำลังใช้โทเค็นเริ่มต้น";
 "hf_token_custom_active" = "โทเค็นที่กำหนดเองใช้งานอยู่";
 "hf_token_clear" = "รีเซ็ตเป็นค่าเริ่มต้น";
+
+/* Edit Prompt Template */
+"edit" = "แก้ไข";
+"prompt_template" = "เทมเพลตพรอมต์";
+"edit_prompt_template" = "แก้ไขเทมเพลตพรอมต์";
+"prompt_template_none" = "ไม่มี (ค่าเริ่มต้น)";

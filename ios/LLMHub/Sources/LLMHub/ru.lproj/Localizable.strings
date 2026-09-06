@@ -889,3 +889,9 @@
 "hf_token_using_default" = "Используется стандартный токен";
 "hf_token_custom_active" = "Пользовательский токен активен";
 "hf_token_clear" = "Сбросить на стандартный";
+
+/* Edit Prompt Template */
+"edit" = "Изменить";
+"prompt_template" = "Шаблон промпта";
+"edit_prompt_template" = "Редактировать шаблон промпта";
+"prompt_template_none" = "Нет (по умолчанию)";

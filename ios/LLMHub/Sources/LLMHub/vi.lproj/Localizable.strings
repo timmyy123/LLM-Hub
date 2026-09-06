@@ -925,3 +925,9 @@
 "hf_token_using_default" = "Đang dùng mã mặc định";
 "hf_token_custom_active" = "Mã tùy chỉnh đang hoạt động";
 "hf_token_clear" = "Đặt lại về mặc định";
+
+/* Edit Prompt Template */
+"edit" = "Chỉnh sửa";
+"prompt_template" = "Mẫu Prompt";
+"edit_prompt_template" = "Chỉnh sửa mẫu prompt";
+"prompt_template_none" = "Không có (Mặc định)";

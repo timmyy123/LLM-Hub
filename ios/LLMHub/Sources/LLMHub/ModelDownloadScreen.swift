@@ -205,7 +205,8 @@ class ModelDownloadViewModel: ObservableObject {
             supportsAudio: model.supportsAudio, supportsThinking: model.supportsThinking,
             supportsGpu: model.supportsGpu, supportsMtp: model.supportsMtp, requirements: model.requirements,
             contextWindowSize: model.contextWindowSize, modelFormat: model.modelFormat,
-            additionalFiles: migratedAdditional
+            additionalFiles: migratedAdditional, promptTemplate: model.promptTemplate,
+            chatTemplateFamily: model.chatTemplateFamily
         )
     }
 
@@ -245,6 +246,30 @@ class ModelDownloadViewModel: ObservableObject {
         return true
     }
 
+    /// Updates prompt template for an imported model (source == "Custom").
+    func updatePromptTemplate(for modelId: String, promptTemplate: String?) {
+        guard let idx = models.firstIndex(where: { $0.id == modelId }) else { return }
+        let model = models[idx]
+        guard model.source == "Custom" else { return }
+
+        let trimmed = promptTemplate?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let newTemplate = (trimmed?.isEmpty == false) ? trimmed : nil
+
+        let updated = AIModel(
+            id: model.id, name: model.name, description: model.description,
+            url: model.url, category: model.category, sizeBytes: model.sizeBytes,
+            source: model.source, supportsVision: model.supportsVision,
+            supportsAudio: model.supportsAudio, supportsThinking: model.supportsThinking,
+            supportsGpu: model.supportsGpu, supportsMtp: model.supportsMtp, requirements: model.requirements,
+            contextWindowSize: model.contextWindowSize, modelFormat: model.modelFormat,
+            additionalFiles: model.additionalFiles, promptTemplate: newTemplate,
+            chatTemplateFamily: model.chatTemplateFamily
+        )
+        models[idx] = updated
+        saveImportedModels()
+        objectWillChange.send()
+    }
+
     /// Imports a vision projector file for an already-added custom model.
     /// Copies the projector to the model's directory and updates additionalFiles.
     func importVisionProjector(for modelId: String, fileName: String, from sourceURL: URL) {
@@ -268,7 +293,8 @@ class ModelDownloadViewModel: ObservableObject {
             supportsAudio: model.supportsAudio, supportsThinking: model.supportsThinking,
             supportsGpu: model.supportsGpu, supportsMtp: model.supportsMtp, requirements: model.requirements,
             contextWindowSize: model.contextWindowSize, modelFormat: model.modelFormat,
-            additionalFiles: files, promptTemplate: model.promptTemplate
+            additionalFiles: files, promptTemplate: model.promptTemplate,
+            chatTemplateFamily: model.chatTemplateFamily
         )
         models[idx] = updated
         saveImportedModels()
@@ -303,7 +329,8 @@ class ModelDownloadViewModel: ObservableObject {
             supportsAudio: model.supportsAudio, supportsThinking: model.supportsThinking,
             supportsGpu: model.supportsGpu, supportsMtp: model.supportsMtp, requirements: model.requirements,
             contextWindowSize: model.contextWindowSize, modelFormat: model.modelFormat,
-            additionalFiles: fixedAdditional
+            additionalFiles: fixedAdditional, promptTemplate: model.promptTemplate,
+            chatTemplateFamily: model.chatTemplateFamily
         )
     }
 
@@ -656,6 +683,7 @@ struct ModelRowView: View {
     let onResume: () -> Void
     let onDelete: () -> Void
     let onExpand: () -> Void
+    var onEditPromptTemplate: (() -> Void)? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -747,6 +775,47 @@ struct ModelRowView: View {
                             .lineLimit(1)
                     }
                     .padding(.horizontal, 16)
+
+                    if model.source == "Custom" {
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack {
+                                Label(settings.localized("prompt_template"), systemImage: "text.quote")
+                                    .font(.caption.bold())
+                                    .foregroundColor(.white.opacity(0.85))
+                                Spacer()
+                                Button(action: { onEditPromptTemplate?() }) {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "pencil")
+                                        Text(settings.localized("edit"))
+                                    }
+                                    .font(.caption.bold())
+                                    .foregroundColor(ApolloPalette.accentStrong)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(ApolloPalette.accentStrong.opacity(0.12))
+                                    .clipShape(Capsule())
+                                }
+                                .buttonStyle(.plain)
+                            }
+
+                            if let template = model.promptTemplate, !template.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                                Text(template)
+                                    .font(.system(.caption2, design: .monospaced))
+                                    .foregroundColor(.white.opacity(0.7))
+                                    .lineLimit(3)
+                                    .padding(8)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .background(Color.white.opacity(0.06))
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                            } else {
+                                Text(settings.localized("prompt_template_none"))
+                                    .font(.caption2)
+                                    .foregroundColor(.white.opacity(0.45))
+                                    .italic()
+                            }
+                        }
+                        .padding(.horizontal, 16)
+                    }
 
                     Text(settings.localized("model_download_interrupted_warning"))
                         .font(.caption)
@@ -897,6 +966,7 @@ struct ModelDownloadScreen: View {
     @StateObject private var purchases = PurchaseManager.shared
     @State private var showImportSheet = false
     @State private var showPremiumForImport = false
+    @State private var editingTemplateModel: AIModel? = nil
     var onNavigateBack: () -> Void
     var onShowPremium: (() -> Void)? = nil
 
@@ -990,7 +1060,8 @@ struct ModelDownloadScreen: View {
                                                     onPause:    { vm.pauseDownload(model.id) },
                                                     onResume:   { vm.resumeDownload(model.id) },
                                                     onDelete:   { vm.deleteModel(model.id) },
-                                                    onExpand:   { vm.toggleExpand(model.id) }
+                                                    onExpand:   { vm.toggleExpand(model.id) },
+                                                    onEditPromptTemplate: { editingTemplateModel = model }
                                                 )
                                             }
                                         }
@@ -1040,6 +1111,10 @@ struct ModelDownloadScreen: View {
         }
         .sheet(isPresented: $showImportSheet) {
             ImportExternalModelSheet(vm: vm)
+                .environmentObject(settings)
+        }
+        .sheet(item: $editingTemplateModel) { model in
+            EditPromptTemplateSheet(model: model, vm: vm)
                 .environmentObject(settings)
         }
         .onAppear {
@@ -1100,6 +1175,116 @@ struct CategoryTab: View {
             )
         }
         .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Edit Prompt Template Sheet
+
+struct EditPromptTemplateSheet: View {
+    @EnvironmentObject var settings: AppSettings
+    @Environment(\.dismiss) private var dismiss
+    let model: AIModel
+    @ObservedObject var vm: ModelDownloadViewModel
+
+    @State private var promptTemplate: String = ""
+
+    init(model: AIModel, vm: ModelDownloadViewModel) {
+        self.model = model
+        self.vm = vm
+        _promptTemplate = State(initialValue: model.promptTemplate ?? "")
+    }
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                ApolloLiquidBackground()
+
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 16) {
+                        // Model info header
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack {
+                                Text(model.name)
+                                    .font(.headline)
+                                    .foregroundColor(.white)
+                                Spacer()
+                                Text(model.modelFormat.rawValue.uppercased())
+                                    .font(.caption2.bold())
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .background(ApolloPalette.accentStrong.opacity(0.2))
+                                    .foregroundColor(ApolloPalette.accentStrong)
+                                    .clipShape(Capsule())
+                            }
+                            Text(model.url)
+                                .font(.caption)
+                                .foregroundColor(.white.opacity(0.6))
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                        }
+                        .padding(14)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(.ultraThinMaterial)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.white.opacity(0.12), lineWidth: 1))
+
+                        // Prompt template editor
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Text(settings.localized("prompt_template"))
+                                    .font(.caption.bold())
+                                    .foregroundColor(.white.opacity(0.6))
+                                Spacer()
+                                if !promptTemplate.isEmpty {
+                                    Button(settings.localized("clear")) {
+                                        promptTemplate = ""
+                                    }
+                                    .font(.caption.bold())
+                                    .foregroundColor(ApolloPalette.destructive)
+                                }
+                            }
+
+                            HStack {
+                                TextField(settings.localized("prompt_template_placeholder"), text: $promptTemplate, axis: .vertical)
+                                    .lineLimit(5...15)
+                                    .foregroundColor(.white)
+                                    .font(.system(.subheadline, design: .monospaced))
+                            }
+                            .padding(12)
+                            .background(.ultraThinMaterial)
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.white.opacity(0.1), lineWidth: 1))
+
+                            Text(settings.localized("prompt_template_hint"))
+                                .font(.caption2)
+                                .foregroundColor(.white.opacity(0.45))
+                        }
+
+                        Spacer(minLength: 20)
+                    }
+                    .padding(20)
+                }
+            }
+            .navigationTitle(settings.localized("edit_prompt_template"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(.hidden, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(settings.localized("cancel")) {
+                        dismiss()
+                    }
+                    .foregroundColor(.white)
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(settings.localized("save")) {
+                        vm.updatePromptTemplate(for: model.id, promptTemplate: promptTemplate)
+                        dismiss()
+                    }
+                    .bold()
+                    .foregroundColor(.white)
+                }
+            }
+        }
     }
 }
 

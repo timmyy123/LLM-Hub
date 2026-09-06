@@ -925,3 +925,9 @@
 "hf_token_using_default" = "Bruger standardtoken";
 "hf_token_custom_active" = "Brugerdefineret token aktivt";
 "hf_token_clear" = "Nulstil til standard";
+
+/* Edit Prompt Template */
+"edit" = "Rediger";
+"prompt_template" = "Prompt-skabelon";
+"edit_prompt_template" = "Rediger prompt-skabelon";
+"prompt_template_none" = "Ingen (standard)";

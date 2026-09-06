@@ -917,3 +917,9 @@
 "hf_token_using_default" = "Menggunakan token default";
 "hf_token_custom_active" = "Token khusus aktif";
 "hf_token_clear" = "Atur ulang ke default";
+
+/* Edit Prompt Template */
+"edit" = "Edit";
+"prompt_template" = "Template Prompt";
+"edit_prompt_template" = "Edit Template Prompt";
+"prompt_template_none" = "Tidak ada (Default)";

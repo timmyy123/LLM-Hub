@@ -925,3 +925,9 @@
 "hf_token_using_default" = "使用預設權杖";
 "hf_token_custom_active" = "自訂權杖已啟用";
 "hf_token_clear" = "重設為預設值";
+
+/* Edit Prompt Template */
+"edit" = "編輯";
+"prompt_template" = "提示詞模板";
+"edit_prompt_template" = "編輯提示詞模板";
+"prompt_template_none" = "無（預設）";

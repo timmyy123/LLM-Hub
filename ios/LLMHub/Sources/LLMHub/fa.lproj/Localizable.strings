@@ -917,3 +917,9 @@
 "hf_token_using_default" = "در حال استفاده از توکن پیش‌فرض";
 "hf_token_custom_active" = "توکن سفارشی فعال است";
 "hf_token_clear" = "بازنشانی به پیش‌فرض";
+
+/* Edit Prompt Template */
+"edit" = "ویرایش";
+"prompt_template" = "الگوی پرامپت";
+"edit_prompt_template" = "ویرایش الگوی پرامپت";
+"prompt_template_none" = "هیچ‌کدام (پیش‌فرض)";

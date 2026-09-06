@@ -874,3 +874,9 @@
 "hf_token_using_default" = "A usar token predefinido";
 "hf_token_custom_active" = "Token personalizado ativo";
 "hf_token_clear" = "Repor predefinição";
+
+/* Edit Prompt Template */
+"edit" = "Editar";
+"prompt_template" = "Modelo de Prompt";
+"edit_prompt_template" = "Editar modelo de prompt";
+"prompt_template_none" = "Nenhum (padrão)";

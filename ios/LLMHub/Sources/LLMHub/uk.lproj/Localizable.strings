@@ -917,3 +917,9 @@
 "hf_token_using_default" = "Використовується стандартний токен";
 "hf_token_custom_active" = "Користувацький токен активний";
 "hf_token_clear" = "Скинути до стандартного";
+
+/* Edit Prompt Template */
+"edit" = "Редагувати";
+"prompt_template" = "Шаблон промпту";
+"edit_prompt_template" = "Редагувати шаблон промпту";
+"prompt_template_none" = "Немає (за замовчуванням)";
