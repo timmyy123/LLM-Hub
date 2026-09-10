@@ -6,6 +6,7 @@ import android.graphics.Bitmap
 import android.net.Uri
 import android.util.Log
 import com.google.ai.edge.litertlm.Backend
+import com.google.ai.edge.litertlm.Channel
 import com.google.ai.edge.litertlm.Content
 import com.google.ai.edge.litertlm.Contents
 import com.google.ai.edge.litertlm.Conversation
@@ -15,6 +16,7 @@ import com.google.ai.edge.litertlm.EngineConfig
 import com.google.ai.edge.litertlm.ExperimentalApi
 import com.google.ai.edge.litertlm.ExperimentalFlags
 import com.google.ai.edge.litertlm.SamplerConfig
+import com.google.ai.edge.litertlm.ThinkingConfig
 import com.google.ai.edge.litertlm.ToolProvider
 import com.google.ai.edge.litertlm.tool
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
@@ -118,8 +120,7 @@ class LiteRtLmInferenceService(private val applicationContext: Context) : Infere
     }
 
     override fun getEffectiveMaxTokens(model: LLMModel): Int {
-        val isGemma4_12B = model.name.contains("Gemma-4 12B", ignoreCase = true) || model.name.contains("Gemma 4 12B", ignoreCase = true)
-        val limit = if (isGemma4_12B) 4096 else model.contextWindowSize
+        val limit = model.contextWindowSize
         val contextWindow = overrideContextWindow?.coerceIn(1, limit)
             ?: limit
         return overrideMaxTokens?.coerceIn(1, contextWindow) ?: contextWindow
@@ -191,7 +192,7 @@ class LiteRtLmInferenceService(private val applicationContext: Context) : Infere
         disableAudio: Boolean = false
     ) {
         engineMutex.withLock {
-            if (currentModel?.name == model.name && engine != null) return@withLock
+            if (currentModel == model && engine != null) return@withLock
 
             engine?.let {
                 try { it.close() } catch (e: Exception) { Log.w(TAG, "Error closing engine: ${e.message}") }
@@ -202,19 +203,19 @@ class LiteRtLmInferenceService(private val applicationContext: Context) : Infere
             isVisionDisabled = disableVision
             isAudioDisabled = disableAudio
 
-            val isGemma4_12B = model.name.contains("Gemma-4 12B", ignoreCase = true) || model.name.contains("Gemma 4 12B", ignoreCase = true)
+            val isGemma4_12B = isGemma4_12B(model)
 
             val backend = if (isGemma4_12B) Backend.GPU() else mapBackend(preferredBackend, model.supportsGpu)
             currentBackendIsGpu = backend is Backend.GPU
 
-            // Enable Multi-Token Prediction (MTP) via speculative decoding when running on GPU, except for Gemma-4 12B
-            ExperimentalFlags.enableSpeculativeDecoding = model.supportsMtp && currentBackendIsGpu && !isGemma4_12B
+            // Enable Multi-Token Prediction (MTP) via speculative decoding when running on GPU
+            ExperimentalFlags.enableSpeculativeDecoding = model.supportsMtp && currentBackendIsGpu
 
             val engineConfig = EngineConfig(
                 modelPath = modelFile.absolutePath,
                 backend = backend,
-                visionBackend = if (model.supportsVision && !disableVision && !isGemma4_12B) backend else null,
-                audioBackend = if (model.supportsAudio && !disableAudio && !isGemma4_12B) Backend.CPU() else null,
+                visionBackend = if (model.supportsVision && !disableVision) backend else null,
+                audioBackend = if (model.supportsAudio && !disableAudio) Backend.CPU() else null,
                 maxNumTokens = if (isGemma4_12B) getEffectiveMaxTokens(model) else null,
                 cacheDir = applicationContext.cacheDir.path
             )
@@ -300,17 +301,32 @@ class LiteRtLmInferenceService(private val applicationContext: Context) : Infere
     }
 
     private fun isGemma4Model(): Boolean =
-        currentModel?.name?.contains("Gemma-4", ignoreCase = true) == true
+        currentModel?.modelFormat == "litertlm" &&
+        (currentModel?.name?.contains("Gemma-4", ignoreCase = true) == true ||
+         currentModel?.name?.contains("Gemma 4", ignoreCase = true) == true)
 
+    private fun isGemma4_12B(model: LLMModel? = currentModel): Boolean =
+        model?.modelFormat == "litertlm" &&
+        (model.name.contains("Gemma-4 12B", ignoreCase = true) ||
+         model.name.contains("Gemma 4 12B", ignoreCase = true))
+
+    @OptIn(ExperimentalApi::class)
     private fun buildConversationConfig(): ConversationConfig {
-        val sysInstruction = if (isGemma4Model() && overrideEnableThinking) Contents.of("<|think|>") else null
+        val is12B = isGemma4_12B()
+        val useThinking = isGemma4Model() && overrideEnableThinking
+        val useNativeThinking = useThinking && is12B
+        val usePromptInjectThinking = useThinking && !is12B
+
+        val sysInstruction = if (usePromptInjectThinking) Contents.of("<|think|>") else null
         return ConversationConfig(
             samplerConfig = SamplerConfig(
                 topK = overrideTopK ?: DEFAULT_TOP_K,
                 topP = (overrideTopP ?: DEFAULT_TOP_P).toDouble(),
                 temperature = (overrideTemperature ?: DEFAULT_TEMPERATURE).toDouble()
             ),
-            systemInstruction = sysInstruction
+            systemInstruction = sysInstruction,
+            channels = if (useNativeThinking) listOf(Channel("thought", "<|channel>thought", "<channel|>")) else emptyList(),
+            thinkingConfig = if (useNativeThinking) ThinkingConfig(enableThinking = true) else null
         )
     }
 
@@ -320,8 +336,13 @@ class LiteRtLmInferenceService(private val applicationContext: Context) : Infere
      */
     @OptIn(ExperimentalApi::class)
     private fun buildAgentConversationConfig(tools: ChatAgentSkillsTools): ConversationConfig {
+        val is12B = isGemma4_12B()
+        val useThinking = isGemma4Model() && overrideEnableThinking
+        val useNativeThinking = useThinking && is12B
+        val usePromptInjectThinking = useThinking && !is12B
+
         val toolProviders: List<ToolProvider> = listOf(tool(tools))
-        val sysText = if (isGemma4Model() && overrideEnableThinking) "<|think|>\n${ChatAgentSkillsTools.AGENT_SYSTEM_PROMPT}" else ChatAgentSkillsTools.AGENT_SYSTEM_PROMPT
+        val sysText = if (usePromptInjectThinking) "<|think|>\n${ChatAgentSkillsTools.AGENT_SYSTEM_PROMPT}" else ChatAgentSkillsTools.AGENT_SYSTEM_PROMPT
         val sysInstruction = Contents.of(sysText)
         return ConversationConfig(
             samplerConfig = SamplerConfig(
@@ -330,7 +351,9 @@ class LiteRtLmInferenceService(private val applicationContext: Context) : Infere
                 temperature = (overrideTemperature ?: DEFAULT_TEMPERATURE).toDouble()
             ),
             systemInstruction = sysInstruction,
-            tools = toolProviders
+            tools = toolProviders,
+            channels = if (useNativeThinking) listOf(Channel("thought", "<|channel>thought", "<channel|>")) else emptyList(),
+            thinkingConfig = if (useNativeThinking) ThinkingConfig(enableThinking = true) else null
         )
     }
 
@@ -542,6 +565,8 @@ class LiteRtLmInferenceService(private val applicationContext: Context) : Infere
         cleaned = cleaned
             .replace("<|start_header_id|>", "")
             .replace("<|end_header_id|>", "")
+            .replace("<channel|>", "")
+            .replace("<|channel|>", "")
         return Pair(cleaned, shouldStop)
     }
 

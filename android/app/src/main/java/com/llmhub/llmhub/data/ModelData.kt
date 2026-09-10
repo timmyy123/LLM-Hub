@@ -3536,42 +3536,48 @@ object ModelData {
         // Gemma-4 E2B and E4B Models (LiteRT LM - Multimodal: Text + Vision + Audio)
         LLMModel(
             name = "Gemma-4 E2B",
-            description = "Google Gemma-4 E2B multimodal model (text, vision, audio). Effective 2B parameters with 32k context. Embedding params are memory-mapped; only ~0.8GB decoder weights stay in RAM. GPU uses ~676MB, CPU uses ~1.7GB (Google benchmarks). Vision and audio loaded on-demand. Ready to download from HuggingFace (2.58GB)",
+            description = "Google Gemma-4 E2B multimodal model (text, vision, audio). Effective 2B parameters with 32k context and MTP acceleration. Embedding params are memory-mapped; only ~0.8GB decoder weights stay in RAM. GPU uses ~676MB, CPU uses ~1.7GB (Google benchmarks). Vision and audio loaded on-demand. Ready to download from HuggingFace (2.58GB)",
             url = "https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/a4a831c060880f3733135ad22f10e0e9f758f45d/gemma-4-E2B-it.litertlm?download=true",
             category = "multimodal",
             sizeBytes = 2588147712L, // 2,588,147,712 bytes (2.58 GB actual)
             source = "Google (LiteRT LM)",
             supportsVision = true,
             supportsAudio = true,
+            supportsThinking = true,
             supportsGpu = true,
+            supportsMtp = true,
             requirements = ModelRequirements(minRamGB = 2, recommendedRamGB = 3),
             contextWindowSize = 32768,
             modelFormat = "litertlm"
         ),
         LLMModel(
             name = "Gemma-4 E4B",
-            description = "Google Gemma-4 E4B multimodal model (text, vision, audio). Effective 4B parameters with 32k context. Embedding params are memory-mapped; ~2.24GB decoder weights stay in RAM. GPU uses ~710MB, CPU uses ~3.2GB (Google benchmarks). Vision and audio loaded on-demand. Ready to download from HuggingFace (3.65GB)",
+            description = "Google Gemma-4 E4B multimodal model (text, vision, audio). Effective 4B parameters with 32k context and MTP acceleration. Embedding params are memory-mapped; ~2.24GB decoder weights stay in RAM. GPU uses ~710MB, CPU uses ~3.2GB (Google benchmarks). Vision and audio loaded on-demand. Ready to download from HuggingFace (3.65GB)",
             url = "https://huggingface.co/litert-community/gemma-4-E4B-it-litert-lm/resolve/28299f30ee4d43294517a4ac93abd6163412f07f/gemma-4-E4B-it.litertlm?download=true",
             category = "multimodal",
             sizeBytes = 3659530240L, // 3,659,530,240 bytes (3.65 GB actual)
             source = "Google (LiteRT LM)",
             supportsVision = true,
             supportsAudio = true,
+            supportsThinking = true,
             supportsGpu = true,
+            supportsMtp = true,
             requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 5),
             contextWindowSize = 32768,
             modelFormat = "litertlm"
         ),
         LLMModel(
-            name = "Gemma-4 12B",
-            description = "Google Gemma-4 12B text model. 12B parameters with 32k context. GPU acceleration required. Ready to download from HuggingFace (6.54GB)",
-            url = "https://huggingface.co/litert-community/gemma-4-12B-it-litert-lm/resolve/44cf85a326f79b814fa86a60af414c042755b43a/gemma-4-12B-it.litertlm?download=true",
-            category = "text",
-            sizeBytes = 6547589312L, // 6,547,589,312 bytes (6.54 GB actual)
+            name = "Gemma-4 12B (LiteRT-LM)",
+            description = "Google Gemma-4 12B multimodal model (text, vision, audio). Effective 12B parameters with 32k context and MTP acceleration. GPU acceleration required. Ready to download from HuggingFace (6.88GB)",
+            url = "https://huggingface.co/litert-community/gemma-4-12B-it-litert-lm/resolve/7a0b1ce0ea821bcd01c5f72af84155e02191152f/gemma-4-12B-it.litertlm?download=true",
+            category = "multimodal",
+            sizeBytes = 6883278368L, // 6,883,278,368 bytes (6.88 GB actual)
             source = "Google (LiteRT LM)",
-            supportsVision = false,
-            supportsAudio = false,
+            supportsVision = true,
+            supportsAudio = true,
+            supportsThinking = true,
             supportsGpu = true,
+            supportsMtp = true,
             requirements = ModelRequirements(minRamGB = 12, recommendedRamGB = 16),
             contextWindowSize = 32768,
             modelFormat = "litertlm"

@@ -379,9 +379,13 @@ fun AgentScreen(
                         val isTermuxEnabled by viewModel.isTermuxEnabled.collectAsState()
                         val isGemma4AudioCompatible = remember(selectedModel) {
                             selectedModel?.modelFormat == "litertlm" &&
-                            selectedModel.name.contains("Gemma", ignoreCase = true) &&
-                            selectedModel.name.contains("4", ignoreCase = true) &&
-                            (selectedModel.name.contains("2B", ignoreCase = true) || selectedModel.name.contains("4B", ignoreCase = true) || selectedModel.name.contains("E2", ignoreCase = true) || selectedModel.name.contains("E4", ignoreCase = true))
+                            selectedModel.supportsAudio &&
+                            (selectedModel.name.contains("Gemma-4", ignoreCase = true) || selectedModel.name.contains("Gemma 4", ignoreCase = true)) &&
+                            (selectedModel.name.contains("2B", ignoreCase = true) ||
+                             selectedModel.name.contains("4B", ignoreCase = true) ||
+                             selectedModel.name.contains("12B", ignoreCase = true) ||
+                             selectedModel.name.contains("E2", ignoreCase = true) ||
+                             selectedModel.name.contains("E4", ignoreCase = true))
                         }
 
                         if (isGemma4AudioCompatible) {

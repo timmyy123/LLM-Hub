@@ -359,8 +359,7 @@ dependencies {
     implementation("com.google.mediapipe:tasks-text:0.10.35")
 
     // LiteRT-LM: native Kotlin API for .litertlm models (Gemma-3n, Gemma-4, etc.)
-    // Replaces tasks-genai for litertlm format models. GPU enabled once 0.10.1 hits Maven.
-    implementation("com.google.ai.edge.litertlm:litertlm-android:0.16.1")
+    implementation("com.google.ai.edge.litertlm:litertlm-android:0.17.0")
 
     // CompiledModel API used by the local SoundGen text/core/decoder pipeline.
     // CompiledModel runtime used by SoundGen. Keep this pinned to the latest
