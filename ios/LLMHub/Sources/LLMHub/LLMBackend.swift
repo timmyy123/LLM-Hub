@@ -1122,6 +1122,7 @@ class LLMBackend: ObservableObject {
             let effectiveContext = clampedContextWindow(contextWindow, for: model)
             try await LiteRTLMBackend.shared.loadModel(
                 at: filePath,
+                modelName: model.name,
                 supportsVision: model.supportsVision && enableVision,
                 supportsAudio: model.supportsAudio && enableAudio,
                 supportsGpu: model.supportsGpu,

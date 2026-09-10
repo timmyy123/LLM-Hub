@@ -34,6 +34,7 @@ final class LiteRTLMBackend {
 
     private var engine: Engine?
     private var loadedModelPath: String?
+    private var isGemma4_12B = false
     /// The single active conversation. LiteRT-LM only allows one at a time.
     private var currentConversation: Conversation?
     /// Prevents re-entrancy bugs where a new session is created before the old one is destroyed.
@@ -46,7 +47,15 @@ final class LiteRTLMBackend {
     // MARK: - Model Lifecycle
 
     /// Load a .litertlm model file from disk.
-    func loadModel(at path: String, supportsVision: Bool, supportsAudio: Bool, supportsGpu: Bool = true, supportsMtp: Bool = true, maxTokens: Int?) async throws {
+    func loadModel(
+        at path: String,
+        modelName: String? = nil,
+        supportsVision: Bool,
+        supportsAudio: Bool,
+        supportsGpu: Bool = true,
+        supportsMtp: Bool = true,
+        maxTokens: Int?
+    ) async throws {
         guard FileManager.default.fileExists(atPath: path) else {
             throw LiteRTLMError.modelFileNotFound(path)
         }
@@ -54,11 +63,16 @@ final class LiteRTLMBackend {
         // Unload any existing engine first
         await unload()
 
-        print("ℹ️ [LiteRTLMBackend] loadModel path=\(path) vision=\(supportsVision) audio=\(supportsAudio) maxTokens=\(String(describing: maxTokens))")
+        let identifier = (modelName ?? path).lowercased()
+        self.isGemma4_12B = identifier.contains("12b") || identifier.contains("gemma-4-12b") || identifier.contains("gemma4_12b")
 
         ExperimentalFlags.optIntoExperimentalAPIs()
         ExperimentalFlags.enableSpeculativeDecoding = supportsMtp
         ExperimentalFlags.enableBenchmark = true
+
+        let caps = Capabilities(modelPath: path)
+        let fileHasMtp = caps?.hasSpeculativeDecodingSupport() ?? false
+        print("ℹ️ [LiteRTLMBackend] loadModel path=\(path) vision=\(supportsVision) audio=\(supportsAudio) maxTokens=\(String(describing: maxTokens)) supportsMtp=\(supportsMtp) fileHasMtp=\(fileHasMtp) is12B=\(isGemma4_12B)")
 
         let config = try EngineConfig(
             modelPath: path,
@@ -91,6 +105,7 @@ final class LiteRTLMBackend {
         }
         engine = nil
         loadedModelPath = nil
+        isGemma4_12B = false
         print("ℹ️ [LiteRTLMBackend] unloaded")
     }
 
@@ -135,12 +150,30 @@ final class LiteRTLMBackend {
             temperature: temperature
         )
 
-        // Determine the final system prompt based on agent tools
+        // For Gemma 4 12B, use native ThinkingConfig.
+        // For E2B / E4B (and other models), use prompt injection (<|think|>) so MTP acceleration works directly on the main token stream.
+        let useNativeThinking = useThinking && isGemma4_12B
+        let usePromptInjectThinking = useThinking && !isGemma4_12B
+
+        // Determine the final system prompt based on agent tools and thinking toggles
         let finalSystemPrompt: String?
         if enableAgentTools {
-            finalSystemPrompt = (systemPrompt != nil && !systemPrompt!.isEmpty) ? systemPrompt! : ChatAgentSkillsTools.AGENT_SYSTEM_PROMPT
+            let basePrompt = (systemPrompt != nil && !systemPrompt!.isEmpty) ? systemPrompt! : ChatAgentSkillsTools.AGENT_SYSTEM_PROMPT
+            if usePromptInjectThinking {
+                finalSystemPrompt = "<|think|>\n\(basePrompt)"
+            } else {
+                finalSystemPrompt = basePrompt
+            }
         } else {
-            finalSystemPrompt = systemPrompt
+            if usePromptInjectThinking {
+                if let systemPrompt, !systemPrompt.isEmpty {
+                    finalSystemPrompt = "<|think|>\n\(systemPrompt)"
+                } else {
+                    finalSystemPrompt = "<|think|>"
+                }
+            } else {
+                finalSystemPrompt = systemPrompt
+            }
         }
 
         // Ensure any pending conversation invalidation from a previous run is complete
@@ -149,7 +182,7 @@ final class LiteRTLMBackend {
             activeInvalidationTask = nil
         }
 
-        let thinkingConfig = useThinking ? ThinkingConfig(enableThinking: true) : nil
+        let thinkingConfig = useNativeThinking ? ThinkingConfig(enableThinking: true) : nil
 
         let conversation: Conversation
         if enableAgentTools {

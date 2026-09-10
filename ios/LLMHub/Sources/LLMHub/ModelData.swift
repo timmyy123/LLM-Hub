@@ -3592,7 +3592,7 @@ public static let models: [AIModel] = [
     // MARK: - Gemma 4 LiteRT-LM (Google native on-device, GPU/Metal)
     AIModel(
         name: "Gemma 4 E2B (LiteRT-LM)",
-        description: "Google Gemma 4 E2B via LiteRT-LM — Google's native on-device runtime with GPU/Metal acceleration. Multimodal: supports text + vision + audio. 32k context. (2.41 GB)",
+        description: "Google Gemma 4 E2B via LiteRT-LM — Google's native on-device runtime with GPU/Metal acceleration. Multimodal: supports text + vision + audio with MTP acceleration. 32k context. (2.41 GB)",
         url: "https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/a4a831c060880f3733135ad22f10e0e9f758f45d/gemma-4-E2B-it.litertlm?download=true",
         category: .multimodal,
         sizeBytes: 2588147712,
@@ -3601,6 +3601,7 @@ public static let models: [AIModel] = [
         supportsAudio: true,
         supportsThinking: true,
         supportsGpu: true,
+        supportsMtp: true,
         requirements: ModelRequirements(minRamGB: 4, recommendedRamGB: 6),
         contextWindowSize: 32768,
         modelFormat: .litertlm,
@@ -3608,7 +3609,7 @@ public static let models: [AIModel] = [
     ),
     AIModel(
         name: "Gemma 4 E4B (LiteRT-LM)",
-        description: "Google Gemma 4 E4B via LiteRT-LM — Google's native on-device runtime with GPU/Metal acceleration. Multimodal: supports text + vision + audio. 32k context. (3.41 GB)",
+        description: "Google Gemma 4 E4B via LiteRT-LM — Google's native on-device runtime with GPU/Metal acceleration. Multimodal: supports text + vision + audio with MTP acceleration. 32k context. (3.41 GB)",
         url: "https://huggingface.co/litert-community/gemma-4-E4B-it-litert-lm/resolve/28299f30ee4d43294517a4ac93abd6163412f07f/gemma-4-E4B-it.litertlm?download=true",
         category: .multimodal,
         sizeBytes: 3659530240,
@@ -3617,6 +3618,7 @@ public static let models: [AIModel] = [
         supportsAudio: true,
         supportsThinking: true,
         supportsGpu: true,
+        supportsMtp: true,
         requirements: ModelRequirements(minRamGB: 6, recommendedRamGB: 8),
         contextWindowSize: 32768,
         modelFormat: .litertlm,
