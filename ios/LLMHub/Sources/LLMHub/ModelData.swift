@@ -172,12 +172,7 @@ public struct AIModel: Identifiable, Codable, Sendable {
     public var isGemma4LiteRTLM: Bool {
         modelFormat == .litertlm
             && supportsAudio
-            && (name.lowercased().contains("gemma 4 e2b") ||
-                name.lowercased().contains("gemma 4 e4b") ||
-                name.lowercased().contains("gemma 4 12b") ||
-                name.lowercased().contains("gemma-4-e2b") ||
-                name.lowercased().contains("gemma-4-e4b") ||
-                name.lowercased().contains("gemma-4-12b"))
+            && (name.lowercased().contains("gemma 4") || name.lowercased().contains("gemma-4") || name.lowercased().contains("gemma_4"))
     }
 
     public var isWhisperModel: Bool {

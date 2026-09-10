@@ -206,10 +206,7 @@ private func downloadableTranslatorModels() -> [AIModel] {
 }
 
 private func isTranslatorSupportedModel(_ model: AIModel) -> Bool {
-    if model.name.localizedCaseInsensitiveContains("gemma 4 12b") && model.modelFormat == .litertlm {
-        return !model.isDependencyOnly
-    }
-    return !model.isDependencyOnly
+    !model.isDependencyOnly
         && model.category == .multimodal
         && model.supportsVision
         && (model.name.hasPrefix("Translate Gemma 4B") || (model.name.localizedCaseInsensitiveContains("gemma 4") && !model.name.localizedCaseInsensitiveContains("translate")))
@@ -473,7 +470,7 @@ struct FeatureModelSettingsSheet: View {
     let modelFilter: ((AIModel) -> Bool)?
     let onLoad: () async -> Void
     let onUnload: () -> Void
-    var showsThinkingToggle: Bool = true
+    var showsThinkingToggle: Bool = false
     var extraModelConfigsContent: AnyView? = nil
 
     @Environment(\.dismiss) private var dismiss
@@ -492,9 +489,6 @@ struct FeatureModelSettingsSheet: View {
         let name = model.name.lowercased()
         if name.contains("lfm") { return false }
         if name.contains("granite-4.2") || name.contains("granite 4.2") { return false }
-        if name.contains("gemma-4") || name.contains("gemma 4") || name.contains("gemma_4") {
-            return model.modelFormat == .litertlm
-        }
         return model.supportsThinking
     }
 
@@ -1138,7 +1132,7 @@ private struct IOS26TranscriberScreen: View {
     @State private var selectedAudioURL: URL?
     @State private var audioTranscriptionTask: Task<Void, Never>?
     @AppStorage("feature_transcriber_model_name") private var selectedModelName: String = ""
-    @AppStorage("feature_transcriber_max_tokens") private var maxTokens: Double = 512
+    @AppStorage("feature_transcriber_max_tokens") private var maxTokens: Double = 4096
     @State private var isModelLoading = false
     @State private var modelLoadError: String? = nil
     @State private var whisperHistory: [TranscriptionSession] = []
@@ -1391,7 +1385,8 @@ private struct IOS26TranscriberScreen: View {
                     llm.isLoaded = false
                     llm.currentlyLoadedModel = nil
                     llm.unloadModel()
-                }
+                },
+                showsThinkingToggle: false
             )
             .environmentObject(settings)
         }
@@ -1445,6 +1440,9 @@ private struct IOS26TranscriberScreen: View {
             // Don't reset selectedModelName — preserve last-used model across visits.
             // Empty = system transcriber (default on first launch via @AppStorage default).
             Task { await syncRunAnywhereModelDiscovery() }
+            if maxTokens < 4096 {
+                maxTokens = 4096
+            }
         }
     }
 
@@ -1745,7 +1743,7 @@ private struct IOS26TranscriberScreen: View {
                 try await llm.generate(
                     prompt: "Transcribe this audio.",
                     audioURL: audioInputURL,
-                    maxTokensOverride: 512
+                    maxTokensOverride: Int(max(maxTokens, 4096))
                 ) { text, _, _ in
                     Task { @MainActor in
                         latest = sanitizeModelOutputText(text)
@@ -1773,12 +1771,13 @@ private struct IOS26TranscriberScreen: View {
     private func ensureAudioModelLoaded(force: Bool) async {
         guard let model = selectedModel else { return }
         let modelContextCap = model.contextWindowSize > 0 ? model.contextWindowSize : 4096
-        let effectiveContext = min(max(1, Int(maxTokens)), modelContextCap)
+        let effectiveTokens = maxTokens < 4096 ? 4096 : maxTokens
+        let effectiveContext = min(max(1, Int(effectiveTokens)), modelContextCap)
         let shouldReload = force
             || llm.currentlyLoadedModel != model.name
             || llm.loadedContextWindow != effectiveContext
 
-        llm.maxTokens = min(Int(maxTokens), effectiveContext)
+        llm.maxTokens = min(Int(effectiveTokens), effectiveContext)
         llm.contextWindow = effectiveContext
         llm.enableVision = false
         // Auto-enable audio when a Gemma4 LiteRT-LM model is selected; no toggle needed.
@@ -3335,7 +3334,8 @@ struct WritingAidScreen: View {
                 writingMode: selectedModeBinding,
                 modelFilter: isNonTranslatorFeatureModel,
                 onLoad: { await ensureModelLoaded(force: false) },
-                onUnload: { llm.unloadModel() }
+                onUnload: { llm.unloadModel() },
+                showsThinkingToggle: true
             )
             .environmentObject(settings)
         }
@@ -3602,7 +3602,8 @@ struct TranslatorScreen: View {
                 writingMode: nil,
                 modelFilter: isTranslatorSupportedModel,
                 onLoad: { await ensureModelLoaded(force: false) },
-                onUnload: { llm.unloadModel() }
+                onUnload: { llm.unloadModel() },
+                showsThinkingToggle: false
             )
             .environmentObject(settings)
         }
@@ -4585,7 +4586,8 @@ struct ScamDetectorScreen: View {
                 writingMode: nil,
                 modelFilter: isNonTranslatorFeatureModel,
                 onLoad: { await ensureModelLoaded(force: false) },
-                onUnload: { llm.unloadModel() }
+                onUnload: { llm.unloadModel() },
+                showsThinkingToggle: true
             )
             .environmentObject(settings)
         }
@@ -7474,7 +7476,8 @@ public struct MusicGeneratorScreen: View {
                     defer { isLoading = false }
                     _ = await ensureModelLoaded(force: true)
                 },
-                onUnload: { musicBackend.unloadModel() }
+                onUnload: { musicBackend.unloadModel() },
+                showsThinkingToggle: false
             )
             .environmentObject(settings)
         }
