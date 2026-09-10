@@ -56,16 +56,15 @@ final class LiteRTLMBackend {
 
         print("ℹ️ [LiteRTLMBackend] loadModel path=\(path) vision=\(supportsVision) audio=\(supportsAudio) maxTokens=\(String(describing: maxTokens))")
 
-        let isGemma4_12B = path.lowercased().hasSuffix(".litertlm") && (path.lowercased().contains("gemma-4-12b") || path.lowercased().contains("gemma4_12b"))
         ExperimentalFlags.optIntoExperimentalAPIs()
-        ExperimentalFlags.enableSpeculativeDecoding = supportsMtp && !isGemma4_12B
+        ExperimentalFlags.enableSpeculativeDecoding = supportsMtp
         ExperimentalFlags.enableBenchmark = true
 
         let config = try EngineConfig(
             modelPath: path,
             backend: supportsGpu ? .gpu : .cpu(),
-            visionBackend: (supportsVision && !isGemma4_12B) ? .cpu() : nil,
-            audioBackend: (supportsAudio && !isGemma4_12B) ? .cpu() : nil,
+            visionBackend: supportsVision ? .cpu() : nil,
+            audioBackend: supportsAudio ? .cpu() : nil,
             maxNumTokens: maxTokens,
             cacheDir: liteRTCacheDir()
         )
@@ -136,25 +135,12 @@ final class LiteRTLMBackend {
             temperature: temperature
         )
 
-        // Determine the final system prompt based on agent tools and thinking toggles
+        // Determine the final system prompt based on agent tools
         let finalSystemPrompt: String?
         if enableAgentTools {
-            let basePrompt = (systemPrompt != nil && !systemPrompt!.isEmpty) ? systemPrompt! : ChatAgentSkillsTools.AGENT_SYSTEM_PROMPT
-            if useThinking {
-                finalSystemPrompt = "<|think|>\n\(basePrompt)"
-            } else {
-                finalSystemPrompt = basePrompt
-            }
+            finalSystemPrompt = (systemPrompt != nil && !systemPrompt!.isEmpty) ? systemPrompt! : ChatAgentSkillsTools.AGENT_SYSTEM_PROMPT
         } else {
-            if useThinking {
-                if let systemPrompt, !systemPrompt.isEmpty {
-                    finalSystemPrompt = "<|think|>\n\(systemPrompt)"
-                } else {
-                    finalSystemPrompt = "<|think|>"
-                }
-            } else {
-                finalSystemPrompt = systemPrompt
-            }
+            finalSystemPrompt = systemPrompt
         }
 
         // Ensure any pending conversation invalidation from a previous run is complete
@@ -163,20 +149,24 @@ final class LiteRTLMBackend {
             activeInvalidationTask = nil
         }
 
+        let thinkingConfig = useThinking ? ThinkingConfig(enableThinking: true) : nil
+
         let conversation: Conversation
         if enableAgentTools {
             ExperimentalFlags.enableConversationConstrainedDecoding = true
             let config = ConversationConfig(
                 systemMessage: finalSystemPrompt.map { Message($0) },
                 tools: ChatAgentSkillsTools.allTools(),
-                samplerConfig: samplerConfig
+                samplerConfig: samplerConfig,
+                thinkingConfig: thinkingConfig
             )
             conversation = try await engine.createConversation(with: config)
             ExperimentalFlags.enableConversationConstrainedDecoding = false
         } else {
             let config = ConversationConfig(
                 systemMessage: finalSystemPrompt.map { Message($0) },
-                samplerConfig: samplerConfig
+                samplerConfig: samplerConfig,
+                thinkingConfig: thinkingConfig
             )
             conversation = try await engine.createConversation(with: config)
         }
@@ -304,6 +294,8 @@ final class LiteRTLMBackend {
         cleaned = cleaned
             .replacingOccurrences(of: "<|start_header_id|>", with: "")
             .replacingOccurrences(of: "<|end_header_id|>", with: "")
+            .replacingOccurrences(of: "<channel|>", with: "")
+            .replacingOccurrences(of: "<|channel|>", with: "")
         return cleaned
     }
 

@@ -172,7 +172,12 @@ public struct AIModel: Identifiable, Codable, Sendable {
     public var isGemma4LiteRTLM: Bool {
         modelFormat == .litertlm
             && supportsAudio
-            && name.lowercased().contains("gemma 4")
+            && (name.lowercased().contains("gemma 4 e2b") ||
+                name.lowercased().contains("gemma 4 e4b") ||
+                name.lowercased().contains("gemma 4 12b") ||
+                name.lowercased().contains("gemma-4-e2b") ||
+                name.lowercased().contains("gemma-4-e4b") ||
+                name.lowercased().contains("gemma-4-12b"))
     }
 
     public var isWhisperModel: Bool {
@@ -3619,17 +3624,18 @@ public static let models: [AIModel] = [
     ),
     AIModel(
         name: "Gemma 4 12B (LiteRT-LM)",
-        description: "Google Gemma 4 12B via LiteRT-LM — Google's native on-device runtime with GPU/Metal acceleration. 32k context. (6.54 GB)",
-        url: "https://huggingface.co/litert-community/gemma-4-12B-it-litert-lm/resolve/44cf85a326f79b814fa86a60af414c042755b43a/gemma-4-12B-it.litertlm?download=true",
-        category: .text,
-        sizeBytes: 6547589312,
+        description: "Google Gemma 4 12B via LiteRT-LM — Google's native on-device runtime with GPU/Metal acceleration. Multimodal: supports text + vision + audio with MTP acceleration. 32k context. (6.88 GB)",
+        url: "https://huggingface.co/litert-community/gemma-4-12B-it-litert-lm/resolve/7a0b1ce0ea821bcd01c5f72af84155e02191152f/gemma-4-12B-it.litertlm?download=true",
+        category: .multimodal,
+        sizeBytes: 6883278368,
         source: "Google via LiteRT Community",
-        supportsVision: false,
-        supportsAudio: false,
+        supportsVision: true,
+        supportsAudio: true,
         supportsThinking: true,
         supportsGpu: true,
+        supportsMtp: true,
         requirements: ModelRequirements(minRamGB: 12, recommendedRamGB: 16),
-        contextWindowSize: 4096,
+        contextWindowSize: 32768,
         modelFormat: .litertlm,
         additionalFiles: []
     ),

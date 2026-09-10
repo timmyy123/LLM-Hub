@@ -3556,10 +3556,7 @@ struct TranslatorScreen: View {
 
     private var canUseAudioInput: Bool {
         guard let model = selectedModel else { return false }
-        return enableAudio
-            && model.supportsAudio
-            && model.modelFormat == .litertlm
-            && model.name.lowercased().contains("gemma 4")
+        return enableAudio && model.isGemma4LiteRTLM
     }
 
     var body: some View {
