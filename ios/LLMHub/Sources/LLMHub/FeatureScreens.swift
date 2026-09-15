@@ -682,7 +682,7 @@ struct FeatureModelSettingsSheet: View {
             }
             .navigationTitle(settings.localized("feature_settings_title"))
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(.hidden, for: .navigationBar)
+            .apolloNavigationBackground()
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(settings.localized("done")) { dismiss() }
@@ -1335,7 +1335,7 @@ private struct IOS26TranscriberScreen: View {
         .navigationTitle(settings.localized("transcriber_title"))
         .navigationBarTitleDisplayMode(.inline)
         .apolloScreenBackground()
-        .toolbarBackground(.hidden, for: .navigationBar)
+        .apolloNavigationBackground()
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button {
@@ -1351,7 +1351,7 @@ private struct IOS26TranscriberScreen: View {
                 }
             }
         }
-        .sheet(isPresented: $showSettings) {
+        .apolloSheet(isPresented: $showSettings) {
             FeatureModelSettingsSheet(
                 selectedModelName: $selectedModelName,
                 maxTokens: $maxTokens,
@@ -1963,35 +1963,34 @@ struct TranscriberScreen: View {
     @EnvironmentObject var settings: AppSettings
     let onNavigateBack: () -> Void
 
+    @ViewBuilder
     var body: some View {
-        Group {
-            if #available(iOS 17.0, *) {
-                IOS26TranscriberScreen(onNavigateBack: onNavigateBack)
-            } else {
-                VStack(spacing: 12) {
-                    Image(systemName: "mic.slash")
-                        .font(.system(size: 48, weight: .semibold))
-                        .foregroundStyle(.secondary)
-                    Text(settings.localized("transcriber_title"))
-                        .font(.title3.weight(.bold))
-                    Text("Live on-device transcriber requires iOS 17 or newer.")
-                        .font(.subheadline)
-                        .foregroundStyle(.white.opacity(0.7))
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .navigationTitle(settings.localized("transcriber_title"))
-                .navigationBarTitleDisplayMode(.inline)
-                .apolloScreenBackground()
-                .toolbarBackground(.hidden, for: .navigationBar)
-                .toolbar {
-                    ToolbarItem(placement: .navigationBarLeading) {
-                        Button {
-                            onNavigateBack()
-                        } label: {
-                            Image(systemName: "arrow.left")
-                        }
+        if #available(iOS 17.0, *) {
+            IOS26TranscriberScreen(onNavigateBack: onNavigateBack)
+        } else {
+            VStack(spacing: 12) {
+                Image(systemName: "mic.slash")
+                    .font(.system(size: 48, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                Text(settings.localized("transcriber_title"))
+                    .font(.title3.weight(.bold))
+                Text("Live on-device transcriber requires iOS 17 or newer.")
+                    .font(.subheadline)
+                    .foregroundStyle(.white.opacity(0.7))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .navigationTitle(settings.localized("transcriber_title"))
+            .navigationBarTitleDisplayMode(.inline)
+            .apolloScreenBackground()
+            .apolloNavigationBackground()
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button {
+                        onNavigateBack()
+                    } label: {
+                        Image(systemName: "arrow.left")
                     }
                 }
             }
@@ -2249,7 +2248,7 @@ private struct IOS17VibeVoiceScreen: View {
         .navigationTitle(settings.localized("feature_vibevoice"))
         .navigationBarTitleDisplayMode(.inline)
         .apolloScreenBackground()
-        .toolbarBackground(.hidden, for: .navigationBar)
+        .apolloNavigationBackground()
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button {
@@ -2266,7 +2265,7 @@ private struct IOS17VibeVoiceScreen: View {
                 }
             }
         }
-        .sheet(isPresented: $showSettings) {
+        .apolloSheet(isPresented: $showSettings) {
             FeatureModelSettingsSheet(
                 selectedModelName: $selectedModelName,
                 maxTokens: $maxTokens,
@@ -3303,7 +3302,7 @@ struct WritingAidScreen: View {
         .navigationBarTitleDisplayMode(.inline)
         .apolloScreenBackground()
         .simultaneousGesture(TapGesture().onEnded { dismissKeyboard() })
-        .toolbarBackground(.hidden, for: .navigationBar)
+        .apolloNavigationBackground()
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button {
@@ -3318,7 +3317,7 @@ struct WritingAidScreen: View {
                 Button { showSettings = true } label: { Image(systemName: "slider.horizontal.3") }
             }
         }
-        .sheet(isPresented: $showSettings) {
+        .apolloSheet(isPresented: $showSettings) {
             FeatureModelSettingsSheet(
                 selectedModelName: $selectedModelName,
                 maxTokens: $maxTokens,
@@ -3571,7 +3570,7 @@ struct TranslatorScreen: View {
         .navigationBarTitleDisplayMode(.inline)
         .apolloScreenBackground()
         .simultaneousGesture(TapGesture().onEnded { dismissKeyboard() })
-        .toolbarBackground(.hidden, for: .navigationBar)
+        .apolloNavigationBackground()
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button {
@@ -3586,7 +3585,7 @@ struct TranslatorScreen: View {
                 Button { showSettings = true } label: { Image(systemName: "slider.horizontal.3") }
             }
         }
-        .sheet(isPresented: $showSettings) {
+        .apolloSheet(isPresented: $showSettings) {
             FeatureModelSettingsSheet(
                 selectedModelName: $selectedModelName,
                 maxTokens: $maxTokens,
@@ -4555,7 +4554,7 @@ struct ScamDetectorScreen: View {
         .navigationBarTitleDisplayMode(.inline)
         .apolloScreenBackground()
         .simultaneousGesture(TapGesture().onEnded { dismissKeyboard() })
-        .toolbarBackground(.hidden, for: .navigationBar)
+        .apolloNavigationBackground()
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button {
@@ -4570,7 +4569,7 @@ struct ScamDetectorScreen: View {
                 Button { showSettings = true } label: { Image(systemName: "slider.horizontal.3") }
             }
         }
-        .sheet(isPresented: $showSettings) {
+        .apolloSheet(isPresented: $showSettings) {
             FeatureModelSettingsSheet(
                 selectedModelName: $selectedModelName,
                 maxTokens: $maxTokens,
@@ -4974,7 +4973,7 @@ private struct WorkspaceFilesSheet: View {
             }
             .navigationTitle("Files")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(.hidden, for: .navigationBar)
+            .apolloNavigationBackground()
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(settings.localized("done")) { dismiss() }
@@ -5599,7 +5598,7 @@ struct VibeCoderScreen: View {
                 }
             }
         }
-        .toolbarBackground(.hidden, for: .navigationBar)
+        .apolloNavigationBackground()
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button {
@@ -5614,7 +5613,7 @@ struct VibeCoderScreen: View {
                 Button { showSettings = true } label: { Image(systemName: "slider.horizontal.3") }
             }
         }
-        .sheet(isPresented: $showSettings) {
+        .apolloSheet(isPresented: $showSettings) {
             FeatureModelSettingsSheet(
                 selectedModelName: $selectedModelName,
                 maxTokens: $maxTokens,
@@ -6552,7 +6551,7 @@ struct ImageGeneratorScreen: View {
         .navigationTitle(settings.localized("image_generator_title"))
         .navigationBarTitleDisplayMode(.inline)
         .apolloScreenBackground()
-        .toolbarBackground(.hidden, for: .navigationBar)
+        .apolloNavigationBackground()
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button {
@@ -6565,7 +6564,7 @@ struct ImageGeneratorScreen: View {
                 Button { showSettings = true } label: { Image(systemName: "slider.horizontal.3") }
             }
         }
-        .sheet(isPresented: $showSettings) {
+        .apolloSheet(isPresented: $showSettings) {
             ImageGeneratorSettingsSheet(
                 availableModels: availableModels,
                 selectedModelId: $selectedModelId,
@@ -7213,8 +7212,10 @@ private struct ImageGeneratorSettingsSheet: View {
                 }
                 .padding()
             }
+            .apolloScreenBackground()
             .navigationTitle(settings.localized("feature_settings_title"))
             .navigationBarTitleDisplayMode(.inline)
+            .apolloNavigationBackground()
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button(settings.localized("close")) { dismiss() }
@@ -7436,7 +7437,7 @@ public struct MusicGeneratorScreen: View {
         .navigationTitle(settings.localized("feature_music_generator"))
         .navigationBarTitleDisplayMode(.inline)
         .apolloScreenBackground()
-        .toolbarBackground(.hidden, for: .navigationBar)
+        .apolloNavigationBackground()
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button {
@@ -7456,7 +7457,7 @@ public struct MusicGeneratorScreen: View {
                 .tint(.white)
             }
         }
-        .sheet(isPresented: $showSettings) {
+        .apolloSheet(isPresented: $showSettings) {
             FeatureModelSettingsSheet(
                 selectedModelName: $selectedModelName,
                 maxTokens: $maxTokens,

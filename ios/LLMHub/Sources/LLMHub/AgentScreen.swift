@@ -71,7 +71,7 @@ public struct AgentScreen: View {
         .apolloScreenBackground()
         .navigationTitle(settings.localized("agent_title"))
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(.hidden, for: .navigationBar)
+        .apolloNavigationBackground()
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button {
@@ -90,7 +90,7 @@ public struct AgentScreen: View {
                 }
             }
         }
-        .sheet(isPresented: $showSettings) {
+        .apolloSheet(isPresented: $showSettings) {
             agentSettingsSheet
         }
         .onAppear {

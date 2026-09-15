@@ -993,6 +993,7 @@ struct ModelDownloadScreen: View {
                     .padding(.horizontal, 16)
                     .padding(.vertical, 12)
                 }
+                .apolloTopScrollEdgeHidden()
                 .background(.ultraThinMaterial)
                 .overlay(alignment: .bottom) {
                     Rectangle()
@@ -1074,11 +1075,12 @@ struct ModelDownloadScreen: View {
                     .padding(.top, 24)
                     .padding(.bottom, 24)
                 }
+                .apolloTopScrollEdgeHidden()
             }
         }
         .navigationTitle(settings.localized("ai_models"))
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(.hidden, for: .navigationBar)
+        .apolloNavigationBackground()
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button {
@@ -1109,11 +1111,11 @@ struct ModelDownloadScreen: View {
                 .accessibilityLabel(settings.localized("import_external_model"))
             }
         }
-        .sheet(isPresented: $showImportSheet) {
+        .apolloSheet(isPresented: $showImportSheet) {
             ImportExternalModelSheet(vm: vm)
                 .environmentObject(settings)
         }
-        .sheet(item: $editingTemplateModel) { model in
+        .apolloSheet(item: $editingTemplateModel) { model in
             EditPromptTemplateSheet(model: model, vm: vm)
                 .environmentObject(settings)
         }
@@ -1267,7 +1269,7 @@ struct EditPromptTemplateSheet: View {
             }
             .navigationTitle(settings.localized("edit_prompt_template"))
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(.hidden, for: .navigationBar)
+            .apolloNavigationBackground()
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button(settings.localized("cancel")) {
@@ -1511,7 +1513,7 @@ struct ImportExternalModelSheet: View {
             }
             .navigationTitle(settings.localized("import_external_model"))
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(.hidden, for: .navigationBar)
+            .apolloNavigationBackground()
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button(settings.localized("cancel")) { dismiss() }

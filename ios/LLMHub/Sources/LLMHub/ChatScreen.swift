@@ -3189,10 +3189,11 @@ struct ChatDrawerPanel: View {
 
             }
             .scrollContentBackground(.hidden)
+            .apolloTopScrollEdgeHidden()
             .background(ApolloLiquidBackground())
             .navigationTitle(settings.localized("drawer_title"))
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(.hidden, for: .navigationBar)
+            .apolloNavigationBackground()
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     // Back arrow to Home - same as Android drawer's ArrowBack
@@ -3296,6 +3297,7 @@ struct ChatScreen: View {
                         .padding(.bottom, 12)
                     }
                     .safeAreaPadding(.bottom, 130)
+                    .apolloTopScrollEdgeHidden()
                     .scrollDismissesKeyboard(.interactively)
                     .onTapGesture {
                         isComposerFocused = false
@@ -3599,7 +3601,7 @@ struct ChatScreen: View {
             isAtBottom = atBottom
         }
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(.hidden, for: .navigationBar)
+        .apolloNavigationBackground()
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button {
@@ -3642,7 +3644,7 @@ struct ChatScreen: View {
                 }
             }
         }
-        .sheet(isPresented: $showSettings) {
+        .apolloSheet(isPresented: $showSettings) {
              ChatSettingsSheet(vm: vm)
                 .environmentObject(settings)
         }
@@ -3658,7 +3660,7 @@ struct ChatScreen: View {
                 previewImagePath = nil
             }
         }
-        .sheet(isPresented: $showDrawer) {
+        .apolloSheet(isPresented: $showDrawer) {
             ChatDrawerPanel(
                 vm: vm,
                 onClose: { showDrawer = false },

@@ -59,6 +59,56 @@ private struct ApolloScreenBackgroundModifier: ViewModifier {
 }
 
 extension View {
+    /// Keep the presenting screen out of the exposed area above a modal sheet.
+    /// A sheet preserves the presenter's lifecycle, including active model sessions.
+    func apolloSheet<SheetContent: View>(
+        isPresented: Binding<Bool>,
+        @ViewBuilder content: @escaping () -> SheetContent
+    ) -> some View {
+        overlay {
+            if isPresented.wrappedValue {
+                Color.black.ignoresSafeArea().allowsHitTesting(false)
+                    .accessibilityHidden(true)
+            }
+        }
+        .sheet(isPresented: isPresented) {
+            content().presentationBackground(Color.black)
+        }
+    }
+
+    func apolloSheet<Item: Identifiable, SheetContent: View>(
+        item: Binding<Item?>,
+        @ViewBuilder content: @escaping (Item) -> SheetContent
+    ) -> some View {
+        overlay {
+            if item.wrappedValue != nil {
+                Color.black.ignoresSafeArea().allowsHitTesting(false)
+                    .accessibilityHidden(true)
+            }
+        }
+        .sheet(item: item) { value in
+            content(value).presentationBackground(Color.black)
+        }
+    }
+
+    /// The navigation bar and its scroll views share the screen's background.
+    /// This affects the full-width backdrop, while retaining native button styling.
+    func apolloNavigationBackground() -> some View {
+        toolbarBackground(.hidden, for: .navigationBar)
+            .apolloTopScrollEdgeHidden()
+    }
+
+    /// Keep the page gradient visible beneath the header when content scrolls.
+    /// Scroll-edge effects are independent of the navigation bar background.
+    @ViewBuilder
+    func apolloTopScrollEdgeHidden() -> some View {
+        if #available(iOS 26.0, *) {
+            scrollEdgeEffectHidden(true, for: .top)
+        } else {
+            self
+        }
+    }
+
     func apolloScreenBackground() -> some View {
         modifier(ApolloScreenBackgroundModifier())
     }

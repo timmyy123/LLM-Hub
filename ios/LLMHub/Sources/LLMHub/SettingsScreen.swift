@@ -204,10 +204,11 @@ struct SettingsScreen: View {
             }
             .listStyle(.insetGrouped)
             .scrollContentBackground(.hidden)
+            .apolloTopScrollEdgeHidden()
         }
         .navigationTitle(settings.localized("feature_settings_title"))
         .navigationBarTitleDisplayMode(.large)
-        .toolbarBackground(.hidden, for: .navigationBar)
+        .apolloNavigationBackground()
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button {
@@ -221,24 +222,26 @@ struct SettingsScreen: View {
             }
         }
         // Language Dialog
-        .sheet(isPresented: $showLanguageDialog) {
-            LanguagePickerSheet()
-                .environmentObject(settings)
+        .apolloSheet(isPresented: $showLanguageDialog) {
+            NavigationStack {
+                LanguagePickerSheet()
+                    .environmentObject(settings)
+            }
         }
         // Memory Manager Sheet
-        .sheet(isPresented: $showMemoryDialog) {
+        .apolloSheet(isPresented: $showMemoryDialog) {
             MemoryManagerSheet(onDismiss: { showMemoryDialog = false })
                 .environmentObject(settings)
         }
-        .sheet(isPresented: $showAbout) {
+        .apolloSheet(isPresented: $showAbout) {
             AboutScreen()
                 .environmentObject(settings)
         }
-        .sheet(isPresented: $showTerms) {
+        .apolloSheet(isPresented: $showTerms) {
             TermsOfServiceScreen()
                 .environmentObject(settings)
         }
-        .sheet(isPresented: $showHfTokenDialog) {
+        .apolloSheet(isPresented: $showHfTokenDialog) {
             HuggingFaceTokenSheet(onDismiss: { showHfTokenDialog = false })
                 .environmentObject(settings)
         }
@@ -500,10 +503,11 @@ struct MemoryManagerSheet: View {
                     }
                     .padding(.vertical)
                 }
+                .apolloTopScrollEdgeHidden()
             }
             .navigationTitle(settings.localized("manage_memory"))
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(.hidden, for: .navigationBar)
+            .apolloNavigationBackground()
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button(settings.localized("done")) { onDismiss() }
@@ -546,7 +550,7 @@ struct MemoryManagerSheet: View {
                     }
                 }
             }
-            .sheet(isPresented: $showChatImport) {
+            .apolloSheet(isPresented: $showChatImport) {
                 ChatImportSheet(
                     onDismiss: { showChatImport = false },
                     onImport: { _, success in
@@ -557,7 +561,7 @@ struct MemoryManagerSheet: View {
                 )
                 .environmentObject(settings)
             }
-            .sheet(item: $editingDocument) { doc in
+            .apolloSheet(item: $editingDocument) { doc in
                 EditMemorySheet(document: doc, onDismiss: { editingDocument = nil })
                     .environmentObject(settings)
             }
@@ -654,7 +658,7 @@ private struct EditMemorySheet: View {
             }
             .navigationTitle(settings.localized("edit_memory"))
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(.hidden, for: .navigationBar)
+            .apolloNavigationBackground()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(settings.localized("cancel")) { onDismiss() }
@@ -728,11 +732,12 @@ private struct ChatImportSheet: View {
                     }
                     .listStyle(.insetGrouped)
                     .scrollContentBackground(.hidden)
+                    .apolloTopScrollEdgeHidden()
                 }
             }
             .navigationTitle(settings.localized("select_chats_to_import"))
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(.hidden, for: .navigationBar)
+            .apolloNavigationBackground()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(settings.localized("cancel")) { onDismiss() }
@@ -809,10 +814,11 @@ struct LanguagePickerSheet: View {
             }
             .listStyle(.insetGrouped)
             .scrollContentBackground(.hidden)
+            .apolloTopScrollEdgeHidden()
         }
         .navigationTitle(settings.localized("select_language"))
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(.hidden, for: .navigationBar)
+        .apolloNavigationBackground()
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
                 Button(settings.localized("done")) { dismiss() }
@@ -1036,10 +1042,11 @@ struct AboutScreen: View {
                 }
                 .listStyle(.insetGrouped)
                 .scrollContentBackground(.hidden)
+                .apolloTopScrollEdgeHidden()
             }
             .navigationTitle(settings.localized("about_llm_hub"))
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(.hidden, for: .navigationBar)
+            .apolloNavigationBackground()
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button(settings.localized("done")) { dismiss() }
@@ -1105,10 +1112,11 @@ struct TermsOfServiceScreen: View {
                 }
                 .listStyle(.insetGrouped)
                 .scrollContentBackground(.hidden)
+                .apolloTopScrollEdgeHidden()
             }
             .navigationTitle(settings.localized("terms_of_service"))
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(.hidden, for: .navigationBar)
+            .apolloNavigationBackground()
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button(settings.localized("done")) { dismiss() }
@@ -1223,9 +1231,11 @@ private struct HuggingFaceTokenSheet: View {
                     }
                     .padding(20)
                 }
+                .apolloTopScrollEdgeHidden()
             }
             .navigationTitle(settings.localized("hf_token_title"))
             .navigationBarTitleDisplayMode(.inline)
+            .apolloNavigationBackground()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(settings.localized("close")) {

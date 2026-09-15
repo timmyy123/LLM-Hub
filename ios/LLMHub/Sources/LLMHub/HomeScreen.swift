@@ -223,7 +223,7 @@ struct HomeScreen: View {
         }
         .apolloScreenBackground()
         .toolbar(.hidden, for: .navigationBar)
-        .sheet(isPresented: $showPremium) {
+        .apolloSheet(isPresented: $showPremium) {
             PremiumScreen()
                 .environmentObject(settings)
         }

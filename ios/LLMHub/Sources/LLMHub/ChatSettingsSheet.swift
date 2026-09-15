@@ -245,10 +245,11 @@ struct ChatSettingsSheet: View {
                     }
                     .padding()
                 }
+                .apolloTopScrollEdgeHidden()
             }
             .navigationTitle(settings.localized("feature_settings_title"))
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(.hidden, for: .navigationBar)
+            .apolloNavigationBackground()
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(settings.localized("done")) {

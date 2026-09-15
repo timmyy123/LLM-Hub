@@ -34,7 +34,7 @@ import os
 ///     print("Playback finished: \(success)")
 /// }
 /// ```
-public class AudioPlaybackManager: NSObject, ObservableObject, AVAudioPlayerDelegate, @unchecked Sendable {
+public class AudioPlaybackManager: NSObject, ObservableObject, @unchecked Sendable {
     private let logger = SDKLogger(category: "AudioPlayback")
 
     /// AVFoundation objects and one-shot callbacks are accessed only while the
@@ -43,6 +43,7 @@ public class AudioPlaybackManager: NSObject, ObservableObject, AVAudioPlayerDele
     /// objects after taking a strong snapshot.
     private struct State: @unchecked Sendable {
         var audioPlayer: AVAudioPlayer?
+        var delegateProxy: AudioPlayerDelegateProxy?
         var playbackCompletion: (@Sendable (Bool) -> Void)?
         var playbackContinuation: CheckedContinuation<Void, Error>?
         var progressTimer: Timer?
@@ -149,9 +150,13 @@ public class AudioPlaybackManager: NSObject, ObservableObject, AVAudioPlayerDele
 
         // Create and configure audio player
         let player = try AVAudioPlayer(data: audioData)
-        player.delegate = self
+        let proxy = AudioPlayerDelegateProxy(manager: self)
+        player.delegate = proxy
         player.prepareToPlay()
-        lock.withLockUnchecked { $0.audioPlayer = player }
+        lock.withLockUnchecked { state in
+            state.audioPlayer = player
+            state.delegateProxy = proxy
+        }
 
         duration = player.duration
         currentTime = 0.0
@@ -228,6 +233,7 @@ public class AudioPlaybackManager: NSObject, ObservableObject, AVAudioPlayerDele
             state.playbackContinuation = nil
             state.playbackCompletion = nil
             state.audioPlayer = nil
+            state.delegateProxy = nil
             return taken
         }
 
@@ -242,27 +248,27 @@ public class AudioPlaybackManager: NSObject, ObservableObject, AVAudioPlayerDele
         completion?(success)
     }
 
-    // MARK: - AVAudioPlayerDelegate
+    // MARK: - Playback Delegate Handling
 
-    public func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
+    func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
         logger.info("Playback finished: \(flag ? "success" : "failed")")
         cleanupPlayback(success: flag)
     }
 
-    public func audioPlayerDecodeErrorDidOccur(_ player: AVAudioPlayer, error: Error?) {
+    func audioPlayerDecodeErrorDidOccur(_ player: AVAudioPlayer, error: Error?) {
         logger.error("Playback decode error: \(error?.localizedDescription ?? "unknown")")
         cleanupPlayback(success: false)
     }
 
     #if os(iOS) || os(tvOS)
-    public func audioPlayerBeginInterruption(_ player: AVAudioPlayer) {
+    func audioPlayerBeginInterruption(_ player: AVAudioPlayer) {
         logger.info("Playback interrupted")
         DispatchQueue.main.async {
             self.isPlaying = false
         }
     }
 
-    public func audioPlayerEndInterruption(_ player: AVAudioPlayer, withOptions flags: Int) {
+    func audioPlayerEndInterruption(_ player: AVAudioPlayer, withOptions flags: Int) {
         logger.info("Playback interruption ended")
         if flags == AVAudioSession.InterruptionOptions.shouldResume.rawValue {
             player.play()
@@ -276,6 +282,37 @@ public class AudioPlaybackManager: NSObject, ObservableObject, AVAudioPlayerDele
     deinit {
         stop()
     }
+}
+
+// MARK: - AudioPlayerDelegateProxy
+
+/// Internal proxy to isolate AVAudioPlayerDelegate callbacks from AudioPlaybackManager,
+/// preventing the compiler from inferring @MainActor onto AudioPlaybackManager.
+private final class AudioPlayerDelegateProxy: NSObject, AVAudioPlayerDelegate, @unchecked Sendable {
+    private weak var manager: AudioPlaybackManager?
+
+    nonisolated init(manager: AudioPlaybackManager) {
+        self.manager = manager
+        super.init()
+    }
+
+    func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
+        manager?.audioPlayerDidFinishPlaying(player, successfully: flag)
+    }
+
+    func audioPlayerDecodeErrorDidOccur(_ player: AVAudioPlayer, error: Error?) {
+        manager?.audioPlayerDecodeErrorDidOccur(player, error: error)
+    }
+
+    #if os(iOS) || os(tvOS)
+    func audioPlayerBeginInterruption(_ player: AVAudioPlayer) {
+        manager?.audioPlayerBeginInterruption(player)
+    }
+
+    func audioPlayerEndInterruption(_ player: AVAudioPlayer, withOptions flags: Int) {
+        manager?.audioPlayerEndInterruption(player, withOptions: flags)
+    }
+    #endif
 }
 
 // MARK: - Errors

@@ -143,7 +143,7 @@ struct ContentView: View {
                     }
 
                 }
-                .sheet(isPresented: $showPremium) {
+                .apolloSheet(isPresented: $showPremium) {
                     PremiumScreen()
                         .environmentObject(AppSettings.shared)
                 }
