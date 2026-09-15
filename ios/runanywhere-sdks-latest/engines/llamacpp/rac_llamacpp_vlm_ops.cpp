@@ -115,9 +115,16 @@ static void llamacpp_vlm_vtable_destroy(void* impl) {
     rac_vlm_llamacpp_destroy(impl);
 }
 
-// `create` adapter for llama.cpp VLM. Parses the optional "mmproj_path" key
-// from config_json (so VLM's 2-path create signature maps cleanly into the
-// uniform rac_vlm_service_ops_t::create slot).
+// AcceleratorPolicy wire values, mirrored from idl/model_types.proto for the
+// same reason rac_backend_llamacpp_register.cpp mirrors them: they arrive as
+// JSON numbers over the config_json ABI and this engine links neither protobuf
+// nor the generated tree. Keep in step with ACCELERATOR_POLICY_CPU/GPU.
+constexpr int kAcceleratorPolicyCpu = 2;  // ACCELERATOR_POLICY_CPU
+constexpr int kAcceleratorPolicyGpu = 3;  // ACCELERATOR_POLICY_GPU
+
+// `create` adapter for llama.cpp VLM. Parses "mmproj_path" (so VLM's 2-path
+// create signature maps cleanly into the uniform rac_vlm_service_ops_t::create
+// slot) plus the same load knobs the LLM path honours.
 rac_result_t llamacpp_vlm_create_impl(const char* model_id, const char* config_json,
                                       void** out_impl) {
     if (!model_id || !out_impl) {
@@ -128,7 +135,7 @@ rac_result_t llamacpp_vlm_create_impl(const char* model_id, const char* config_j
     std::string mmproj_path_owned;
     const char* mmproj_path = nullptr;
     rac_vlm_llamacpp_config_t llamacpp_config = RAC_VLM_LLAMACPP_CONFIG_DEFAULT;
-    const rac_vlm_llamacpp_config_t* config_ptr = nullptr;
+    bool have_config = false;
 
     if (config_json && config_json[0] != '\0') {
         try {
@@ -138,15 +145,35 @@ rac_result_t llamacpp_vlm_create_impl(const char* model_id, const char* config_j
                 mmproj_path = mmproj_path_owned.c_str();
                 RAC_LOG_DEBUG(LOG_CAT, "Parsed mmproj_path from config_json: %s", mmproj_path);
             }
-            if (json.contains("context_size") && json["context_size"].is_number()) {
+            if (json.contains("context_length") && json["context_length"].is_number_integer()) {
+                llamacpp_config.context_size = json["context_length"].get<int32_t>();
+                have_config = true;
+                RAC_LOG_DEBUG(LOG_CAT, "Parsed context_length from config_json: %d", llamacpp_config.context_size);
+            } else if (json.contains("context_size") && json["context_size"].is_number()) {
                 llamacpp_config.context_size = json["context_size"].get<int>();
-                config_ptr = &llamacpp_config;
+                have_config = true;
                 RAC_LOG_DEBUG(LOG_CAT, "Parsed context_size from config_json: %d", llamacpp_config.context_size);
             }
             if (json.contains("gpu_layers") && json["gpu_layers"].is_number()) {
                 llamacpp_config.gpu_layers = json["gpu_layers"].get<int>();
-                config_ptr = &llamacpp_config;
+                have_config = true;
                 RAC_LOG_DEBUG(LOG_CAT, "Parsed gpu_layers from config_json: %d", llamacpp_config.gpu_layers);
+            }
+            int policy = 0;
+            if (json.contains("accelerator_policy") &&
+                json["accelerator_policy"].is_number_integer()) {
+                policy = json["accelerator_policy"].get<int>();
+            } else if (json.contains("use_gpu") && json["use_gpu"].is_boolean()) {
+                policy = json["use_gpu"].get<bool>() ? kAcceleratorPolicyGpu
+                                                     : kAcceleratorPolicyCpu;
+            }
+            if (policy == kAcceleratorPolicyCpu) {
+                llamacpp_config.gpu_layers = 0;       // every layer stays on the CPU
+                llamacpp_config.use_gpu_vision = 0;   // and so does the vision encoder
+                have_config = true;
+            } else if (policy == kAcceleratorPolicyGpu) {
+                llamacpp_config.gpu_layers = -1;  // offload all of them
+                have_config = true;
             }
         } catch (const std::exception& e) {
             RAC_LOG_WARNING(LOG_CAT, "config_json parse failed (%s); using defaults", e.what());
@@ -157,7 +184,7 @@ rac_result_t llamacpp_vlm_create_impl(const char* model_id, const char* config_j
                  mmproj_path ? mmproj_path : "(none)");
 
     rac_handle_t backend_handle = nullptr;
-    rac_result_t rc = rac_vlm_llamacpp_create(model_id, mmproj_path, config_ptr, &backend_handle);
+    rac_result_t rc = rac_vlm_llamacpp_create(model_id, mmproj_path, have_config ? &llamacpp_config : nullptr, &backend_handle);
     if (rc != RAC_SUCCESS) {
         RAC_LOG_ERROR(LOG_CAT, "rac_vlm_llamacpp_create failed: %d", rc);
         return rc;

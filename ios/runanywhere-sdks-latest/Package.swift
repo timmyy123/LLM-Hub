@@ -72,13 +72,15 @@ let mlxRuntimeNativeDependencies: [Target.Dependency] = buildMLXDistributionFram
     ? ["MLXBackend"]
     : ["MLXBackend", "RABackendMLXBinary"]
 
+let packageDirectory = URL(fileURLWithPath: #filePath).deletingLastPathComponent().path
+
 let mlxRuntimeDistributionSwiftSettings: [SwiftSetting] = buildMLXDistributionFramework
     ? [
         // MLXBackend remains a header-only import in this lane. Point Clang at
         // the canonical ABI declarations without linking a second Commons
         // archive into the runtime artifact.
         .define("RUNANYWHERE_MLX_DISTRIBUTION"),
-        .unsafeFlags(["-Xcc", "-Isdk/runanywhere-commons/include"]),
+        .unsafeFlags(["-Xcc", "-I\(packageDirectory)/sdk/runanywhere-commons/include"]),
     ]
     : []
 

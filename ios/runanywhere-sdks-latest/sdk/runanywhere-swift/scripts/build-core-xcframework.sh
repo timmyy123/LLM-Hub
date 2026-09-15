@@ -1145,8 +1145,16 @@ build_mlx_runtime_swift_slice() {
         --scratch-path "${scratch}" \
         "${prefix_flags[@]}"
 
+    local target_archive="${built_archive}"
+    if [ ! -f "${target_archive}" ]; then
+        local found_archive
+        found_archive="$(find "${scratch}" -name "libRunAnywhereMLXRuntime.a" -type f -print -quit 2>/dev/null)"
+        if [ -n "${found_archive}" ] && [ -f "${found_archive}" ]; then
+            target_archive="${found_archive}"
+        fi
+    fi
     run mkdir -p "$(dirname "${staged_archive}")"
-    run cp "${built_archive}" "${staged_archive}"
+    run cp "${target_archive}" "${staged_archive}"
     run /usr/bin/strip -S "${staged_archive}"
     sanitize_mlx_runtime_generated_paths "${staged_archive}" "${scratch}"
     validate_mlx_runtime_archive "${staged_archive}" "${label}" "${metal_bundle}"
@@ -1364,8 +1372,16 @@ build_mlx_runtime_xcframework() {
         -framework "${simulator_metal_framework}" \
         -output "${metal_output}"
     run normalize_xcframework_info_plist "${metal_output}"
-    run cp -R "${device_build_dir}/swift-crypto_Crypto.bundle" "${resources}/"
-    run cp -R "${device_build_dir}/swift-transformers_Hub.bundle" "${resources}/"
+    local crypto_bundle="${device_build_dir}/swift-crypto_Crypto.bundle"
+    if [ ! -d "${crypto_bundle}" ]; then
+        crypto_bundle="$(find "${device_scratch}" -name "swift-crypto_Crypto.bundle" -type d -print -quit 2>/dev/null)"
+    fi
+    local hub_bundle="${device_build_dir}/swift-transformers_Hub.bundle"
+    if [ ! -d "${hub_bundle}" ]; then
+        hub_bundle="$(find "${device_scratch}" -name "swift-transformers_Hub.bundle" -type d -print -quit 2>/dev/null)"
+    fi
+    run cp -R "${crypto_bundle}" "${resources}/"
+    run cp -R "${hub_bundle}" "${resources}/"
     stage_mlx_runtime_notices \
         "${device_scratch}/checkouts" \
         "${resources}/ThirdPartyNotices"
@@ -1412,7 +1428,7 @@ merge_llamacpp_backend_slice "${DEV_BIN}" "Release-iphoneos" "${LLAMACPP_DEV_LIB
 merge_llamacpp_backend_slice "${SIM_BIN}" "Release-iphonesimulator" "${LLAMACPP_SIM_LIB}" "arm64"
 merge_llamacpp_backend_macos_slice "${MAC_BIN}" "${LLAMACPP_MAC_LIB}" "arm64"
 LLAMACPP_HASHED_MEMBER_INVENTORY=(
-    llama=2 ggml=2 ggml-cpu=2 ggml-metal-device=2 quants=2 repack=2
+    ggml=2 ggml-cpu=2 ggml-metal-device=2 quants=2 repack=2
 )
 run python3 "${ARCHIVE_MEMBER_NORMALIZER}" "${LLAMACPP_DEV_LIB}" "${LLAMACPP_HASHED_MEMBER_INVENTORY[@]}"
 run python3 "${ARCHIVE_MEMBER_NORMALIZER}" "${LLAMACPP_SIM_LIB}" "${LLAMACPP_HASHED_MEMBER_INVENTORY[@]}"
