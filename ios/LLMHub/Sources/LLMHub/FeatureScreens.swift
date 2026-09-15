@@ -703,7 +703,6 @@ struct FeatureModelSettingsSheet: View {
     private func refreshModelsIfNeeded() async {
         if !models.isEmpty { return }
         isRefreshingModels = true
-        try? RunAnywhere.initialize(environment: .development)
         var loaded: [AIModel]
         if let modelFilter {
             loaded = ModelData.allModels().filter { model in

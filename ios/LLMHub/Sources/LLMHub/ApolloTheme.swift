@@ -58,6 +58,64 @@ private struct ApolloScreenBackgroundModifier: ViewModifier {
     }
 }
 
+private struct ApolloSheetModifier<SheetContent: View>: ViewModifier {
+    @Binding var isPresented: Bool
+    @State private var coversPresenter = false
+    let sheetContent: () -> SheetContent
+
+    func body(content: Content) -> some View {
+        content
+            .overlay {
+                if coversPresenter {
+                    Color.black.ignoresSafeArea().allowsHitTesting(false)
+                        .accessibilityHidden(true)
+                }
+            }
+            .sheet(isPresented: $isPresented, onDismiss: { coversPresenter = false }) {
+                sheetContent()
+                    .presentationBackground(Color.black)
+                    .onAppear {
+                        // Wait until the sheet's presentation has started. Covering the
+                        // presenter before this point produces a full-screen black flash.
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                            if isPresented { coversPresenter = true }
+                        }
+                    }
+            }
+            .onChange(of: isPresented) { _, presented in
+                if !presented { coversPresenter = false }
+            }
+    }
+}
+
+private struct ApolloItemSheetModifier<Item: Identifiable, SheetContent: View>: ViewModifier {
+    @Binding var item: Item?
+    @State private var coversPresenter = false
+    let sheetContent: (Item) -> SheetContent
+
+    func body(content: Content) -> some View {
+        content
+            .overlay {
+                if coversPresenter {
+                    Color.black.ignoresSafeArea().allowsHitTesting(false)
+                        .accessibilityHidden(true)
+                }
+            }
+            .sheet(item: $item, onDismiss: { coversPresenter = false }) { value in
+                sheetContent(value)
+                    .presentationBackground(Color.black)
+                    .onAppear {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                            if item != nil { coversPresenter = true }
+                        }
+                    }
+            }
+            .onChange(of: item?.id) { _, id in
+                if id == nil { coversPresenter = false }
+            }
+    }
+}
+
 extension View {
     /// Keep the presenting screen out of the exposed area above a modal sheet.
     /// A sheet preserves the presenter's lifecycle, including active model sessions.
@@ -65,30 +123,14 @@ extension View {
         isPresented: Binding<Bool>,
         @ViewBuilder content: @escaping () -> SheetContent
     ) -> some View {
-        overlay {
-            if isPresented.wrappedValue {
-                Color.black.ignoresSafeArea().allowsHitTesting(false)
-                    .accessibilityHidden(true)
-            }
-        }
-        .sheet(isPresented: isPresented) {
-            content().presentationBackground(Color.black)
-        }
+        modifier(ApolloSheetModifier(isPresented: isPresented, sheetContent: content))
     }
 
     func apolloSheet<Item: Identifiable, SheetContent: View>(
         item: Binding<Item?>,
         @ViewBuilder content: @escaping (Item) -> SheetContent
     ) -> some View {
-        overlay {
-            if item.wrappedValue != nil {
-                Color.black.ignoresSafeArea().allowsHitTesting(false)
-                    .accessibilityHidden(true)
-            }
-        }
-        .sheet(item: item) { value in
-            content(value).presentationBackground(Color.black)
-        }
+        modifier(ApolloItemSheetModifier(item: item, sheetContent: content))
     }
 
     /// The navigation bar and its scroll views share the screen's background.
