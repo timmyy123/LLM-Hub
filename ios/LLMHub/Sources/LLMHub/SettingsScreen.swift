@@ -204,7 +204,7 @@ struct SettingsScreen: View {
             }
             .listStyle(.insetGrouped)
             .scrollContentBackground(.hidden)
-            .apolloTopScrollEdgeHidden()
+            .apolloTopScrollEdgeFade()
         }
         .navigationTitle(settings.localized("feature_settings_title"))
         .navigationBarTitleDisplayMode(.large)
@@ -503,7 +503,7 @@ struct MemoryManagerSheet: View {
                     }
                     .padding(.vertical)
                 }
-                .apolloTopScrollEdgeHidden()
+                .apolloTopScrollEdgeFade()
             }
             .navigationTitle(settings.localized("manage_memory"))
             .navigationBarTitleDisplayMode(.inline)
@@ -732,7 +732,7 @@ private struct ChatImportSheet: View {
                     }
                     .listStyle(.insetGrouped)
                     .scrollContentBackground(.hidden)
-                    .apolloTopScrollEdgeHidden()
+                    .apolloTopScrollEdgeFade()
                 }
             }
             .navigationTitle(settings.localized("select_chats_to_import"))
@@ -814,7 +814,7 @@ struct LanguagePickerSheet: View {
             }
             .listStyle(.insetGrouped)
             .scrollContentBackground(.hidden)
-            .apolloTopScrollEdgeHidden()
+            .apolloTopScrollEdgeFade()
         }
         .navigationTitle(settings.localized("select_language"))
         .navigationBarTitleDisplayMode(.inline)
@@ -1042,7 +1042,7 @@ struct AboutScreen: View {
                 }
                 .listStyle(.insetGrouped)
                 .scrollContentBackground(.hidden)
-                .apolloTopScrollEdgeHidden()
+                .apolloTopScrollEdgeFade()
             }
             .navigationTitle(settings.localized("about_llm_hub"))
             .navigationBarTitleDisplayMode(.inline)
@@ -1112,7 +1112,7 @@ struct TermsOfServiceScreen: View {
                 }
                 .listStyle(.insetGrouped)
                 .scrollContentBackground(.hidden)
-                .apolloTopScrollEdgeHidden()
+                .apolloTopScrollEdgeFade()
             }
             .navigationTitle(settings.localized("terms_of_service"))
             .navigationBarTitleDisplayMode(.inline)
@@ -1231,7 +1231,7 @@ private struct HuggingFaceTokenSheet: View {
                     }
                     .padding(20)
                 }
-                .apolloTopScrollEdgeHidden()
+                .apolloTopScrollEdgeFade()
             }
             .navigationTitle(settings.localized("hf_token_title"))
             .navigationBarTitleDisplayMode(.inline)

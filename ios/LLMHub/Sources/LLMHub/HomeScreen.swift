@@ -159,7 +159,7 @@ struct HomeScreen: View {
                             .clipShape(Capsule())
                             .fixedSize(horizontal: true, vertical: false)
                         }
-                        .padding(.top, max(10, geo.safeAreaInsets.top) + topPadding)
+                        .padding(.top, topPadding)
 
                         // Hero Card for Chat
                         Button {
@@ -199,8 +199,8 @@ struct HomeScreen: View {
                     .padding(.horizontal, horizontalPadding)
                     .padding(.bottom, gridBottomPadding)
                 }
-                .ignoresSafeArea(.container, edges: [.top, .bottom])
-                .apolloTopScrollEdgeHidden()
+                .ignoresSafeArea(.container, edges: .bottom)
+                .apolloTopScrollEdgeFade()
             }
             .onAppear {
                 if githubStars == nil {

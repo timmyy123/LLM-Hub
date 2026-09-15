@@ -993,7 +993,7 @@ struct ModelDownloadScreen: View {
                     .padding(.horizontal, 16)
                     .padding(.vertical, 12)
                 }
-                .apolloTopScrollEdgeHidden()
+                .apolloTopScrollEdgeFade()
                 .background(.ultraThinMaterial)
                 .overlay(alignment: .bottom) {
                     Rectangle()
@@ -1075,7 +1075,7 @@ struct ModelDownloadScreen: View {
                     .padding(.top, 24)
                     .padding(.bottom, 24)
                 }
-                .apolloTopScrollEdgeHidden()
+                .apolloTopScrollEdgeFade()
             }
         }
         .navigationTitle(settings.localized("ai_models"))

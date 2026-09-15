@@ -95,15 +95,16 @@ extension View {
     /// This affects the full-width backdrop, while retaining native button styling.
     func apolloNavigationBackground() -> some View {
         toolbarBackground(.hidden, for: .navigationBar)
-            .apolloTopScrollEdgeHidden()
+            .apolloTopScrollEdgeFade()
     }
 
-    /// Keep the page gradient visible beneath the header when content scrolls.
-    /// Scroll-edge effects are independent of the navigation bar background.
+    /// Use the native soft transition beneath top bars and the status area.
+    /// Select soft explicitly instead of relying on the system automatic style.
     @ViewBuilder
-    func apolloTopScrollEdgeHidden() -> some View {
+    func apolloTopScrollEdgeFade() -> some View {
         if #available(iOS 26.0, *) {
-            scrollEdgeEffectHidden(true, for: .top)
+            scrollEdgeEffectHidden(false, for: .top)
+                .scrollEdgeEffectStyle(.soft, for: .top)
         } else {
             self
         }

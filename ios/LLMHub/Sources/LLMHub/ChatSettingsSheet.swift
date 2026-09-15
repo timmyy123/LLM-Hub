@@ -245,7 +245,7 @@ struct ChatSettingsSheet: View {
                     }
                     .padding()
                 }
-                .apolloTopScrollEdgeHidden()
+                .apolloTopScrollEdgeFade()
             }
             .navigationTitle(settings.localized("feature_settings_title"))
             .navigationBarTitleDisplayMode(.inline)

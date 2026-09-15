@@ -3189,7 +3189,7 @@ struct ChatDrawerPanel: View {
 
             }
             .scrollContentBackground(.hidden)
-            .apolloTopScrollEdgeHidden()
+            .apolloTopScrollEdgeFade()
             .background(ApolloLiquidBackground())
             .navigationTitle(settings.localized("drawer_title"))
             .navigationBarTitleDisplayMode(.inline)
@@ -3297,7 +3297,7 @@ struct ChatScreen: View {
                         .padding(.bottom, 12)
                     }
                     .safeAreaPadding(.bottom, 130)
-                    .apolloTopScrollEdgeHidden()
+                    .apolloTopScrollEdgeFade()
                     .scrollDismissesKeyboard(.interactively)
                     .onTapGesture {
                         isComposerFocused = false
