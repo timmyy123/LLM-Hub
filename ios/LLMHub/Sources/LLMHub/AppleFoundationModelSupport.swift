@@ -39,3 +39,42 @@ func appleFoundationModelIfAvailable() -> AIModel? {
 
     return nil
 }
+
+/// The caller already supplies conversation history in `prompt`. A new session
+/// prevents duplicate turns and carries the current model's instructions verbatim.
+@MainActor
+func generateAppleFoundationResponse(
+    prompt: String,
+    systemPrompt: String?,
+    temperature: Double,
+    maxTokens: Int,
+    onUpdate: @escaping (String, Int, Double) -> Void
+) async throws {
+    #if canImport(FoundationModels)
+    if #available(iOS 26.0, *) {
+        try Task.checkCancellation()
+        let model = SystemLanguageModel.default
+        guard model.isAvailable else {
+            throw NSError(domain: "AppleFoundationModel", code: 1, userInfo: [
+                NSLocalizedDescriptionKey: "Apple Intelligence is unavailable. Check Apple Intelligence settings and model download status."
+            ])
+        }
+        let session = LanguageModelSession(model: model, instructions: systemPrompt)
+        let options = GenerationOptions(
+            temperature: temperature,
+            maximumResponseTokens: max(1, maxTokens)
+        )
+        let stream = session.streamResponse(to: prompt, options: options)
+        for try await snapshot in stream {
+            try Task.checkCancellation()
+            // Apple streams cumulative text. Do not append snapshots or invent token counts.
+            onUpdate(snapshot.content, 0, 0)
+        }
+        try Task.checkCancellation()
+        return
+    }
+    #endif
+    throw NSError(domain: "AppleFoundationModel", code: 2, userInfo: [
+        NSLocalizedDescriptionKey: "Apple Foundation Models requires iOS 26 or later."
+    ])
+}

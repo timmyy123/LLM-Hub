@@ -197,7 +197,11 @@ public struct AgentScreen: View {
         isLoadingModel = true
         errorMessage = nil
         defer { isLoadingModel = false }
-        guard let model = ModelData.allModels().first(where: {
+        var candidates = ModelData.allModels()
+        if let appleModel = appleFoundationModelIfAvailable() {
+            candidates.append(appleModel)
+        }
+        guard let model = candidates.first(where: {
             $0.name == agentModelName && isAgentModel($0)
         }) else {
             errorMessage = "Model not found"

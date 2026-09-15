@@ -704,7 +704,7 @@ struct FeatureModelSettingsSheet: View {
         if !models.isEmpty { return }
         isRefreshingModels = true
         try? RunAnywhere.initialize(environment: .development)
-        let loaded: [AIModel]
+        var loaded: [AIModel]
         if let modelFilter {
             loaded = ModelData.allModels().filter { model in
                 guard !model.isDependencyOnly else { return false }
@@ -718,6 +718,13 @@ struct FeatureModelSettingsSheet: View {
             }
         } else {
             loaded = downloadableFeatureModels()
+        }
+        // Apple's native model is not part of the downloadable model catalog.
+        // Apply the feature capability filter to it just like other candidates.
+        if let appleModel = appleFoundationModelIfAvailable(),
+           modelFilter?(appleModel) ?? true,
+           !loaded.contains(where: { $0.id == appleModel.id }) {
+            loaded.append(appleModel)
         }
         models = loaded
         if selectedModelName.isEmpty || !loaded.contains(where: { $0.name == selectedModelName }) {

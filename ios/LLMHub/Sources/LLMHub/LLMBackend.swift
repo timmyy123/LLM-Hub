@@ -16,7 +16,6 @@ class LLMBackend: ObservableObject {
     private static let harmonyFinalHeader = "<|start|>assistant<|channel|>final<|message|>"
     private static let harmonyAssistantHeader = "<|start|>assistant"
     private static let appleFoundationAliasId = "apple.foundation.system"
-    private static let runAnywhereFoundationModelId = "foundation-models-default"
 
     @Published var isLoaded: Bool = false
     @Published var currentlyLoadedModel: String? = nil
@@ -665,7 +664,7 @@ class LLMBackend: ObservableObject {
     }
 
     private func activeRunAnywhereModelId(for model: AIModel) -> String {
-        isAppleFoundationAlias(model) ? Self.runAnywhereFoundationModelId : model.id
+        model.id
     }
 
     func listGGUFFiles(in directory: URL) -> [URL] {
@@ -1104,12 +1103,37 @@ class LLMBackend: ObservableObject {
         #if canImport(LiteRTLM)
         await LiteRTLMBackend.shared.unload()
         #endif
+        // Release the previous SDK model before clearing its identifiers.
+        if let id = loadedLLMModelId {
+            var request = RAModelUnloadRequest()
+            request.modelID = id
+            request.category = .language
+            _ = await RunAnywhere.unloadModel(request)
+        }
+        if let id = loadedVLMModelId {
+            var request = RAModelUnloadRequest()
+            request.modelID = id
+            request.category = .multimodal
+            _ = await RunAnywhere.unloadModel(request)
+        }
         self.isLoaded = false
         self.currentlyLoadedModel = nil
         self.loadedContextWindow = nil
         self.loadedLLMModelId = nil
         self.loadedVLMModelId = nil
         self.loadedVLMProjectorPath = nil
+
+        if isAppleFoundationAlias(model) {
+            guard let nativeModel = appleFoundationModelIfAvailable() else {
+                throw NSError(domain: "LLMBackend", code: -101, userInfo: [
+                    NSLocalizedDescriptionKey: "Apple Intelligence is unavailable. Enable it in Settings and wait for its model to finish downloading."
+                ])
+            }
+            isLoaded = true
+            currentlyLoadedModel = model.name
+            loadedContextWindow = nativeModel.contextWindowSize
+            return
+        }
 
         // ── LiteRT-LM path ──────────────────────────────────────────────────
         #if canImport(LiteRTLM)
@@ -1141,30 +1165,7 @@ class LLMBackend: ObservableObject {
         let effectiveContext = clampedContextWindow(contextWindow, for: model)
         let runAnywhereModelId = activeRunAnywhereModelId(for: model)
 
-        if let loadedLLMModelId {
-            var unloadRequest = RAModelUnloadRequest()
-            unloadRequest.modelID = loadedLLMModelId
-            unloadRequest.category = .language
-            _ = await RunAnywhere.unloadModel(unloadRequest)
-        }
-        if let loadedVLMModelId {
-            var unloadRequest = RAModelUnloadRequest()
-            unloadRequest.modelID = loadedVLMModelId
-            unloadRequest.category = .multimodal
-            _ = await RunAnywhere.unloadModel(unloadRequest)
-        }
-
-        if isAppleFoundationAlias(model) {
-            // Apple Foundation model is built in; no download or registration required.
-            var loadRequest = RAModelLoadRequest()
-            loadRequest.modelID = runAnywhereModelId
-            loadRequest.category = .language
-            loadRequest.framework = .foundationModels
-            let loadResult = await RunAnywhere.loadModel(loadRequest)
-            guard loadResult.success else {
-                throw NSError(domain: "LLMBackend", code: -101, userInfo: [NSLocalizedDescriptionKey: loadResult.errorMessage.isEmpty ? "Model load failed" : loadResult.errorMessage])
-            }
-        } else {
+        do {
             try await registerModel(model, contextLengthOverride: effectiveContext)
             _ = try? migrateCustomModelIfNeeded(model)
             _ = try? migrateLegacyModelIfNeeded(model)
@@ -1352,6 +1353,18 @@ class LLMBackend: ObservableObject {
         enableAgentToolsOverride: Bool? = nil,
         onUpdate: @escaping (String, Int, Double) -> Void
     ) async throws {
+        if currentlyLoadedModel == "Apple Foundation Model" {
+            guard isLoaded else { throw CancellationError() }
+            try await generateAppleFoundationResponse(
+                prompt: prompt,
+                systemPrompt: systemPrompt,
+                temperature: Double(temperature),
+                maxTokens: max(1, maxTokensOverride ?? maxTokens),
+                onUpdate: onUpdate
+            )
+            return
+        }
+
         // ── LiteRT-LM path ──────────────────────────────────────────────────
         #if canImport(LiteRTLM)
         if let model = loadedAIModel(), model.modelFormat == .litertlm {
@@ -1544,53 +1557,6 @@ class LLMBackend: ObservableObject {
             let baseFinalOutput = isGemma4 ? Self.cleanGemma4Output(finalText) : finalText
             let finalOutput = isMuseGlimmerModel ? Self.normalizeMuseGlimmerOutput(baseFinalOutput, thinkingEnabled: enableThinking) : baseFinalOutput
             onUpdate(finalOutput, Int(result.completionTokens), Double(result.tokensPerSecond))
-            return
-        }
-
-        if let model = loadedAIModel(), model.id == Self.appleFoundationAliasId || loadedLLMModelId == Self.runAnywhereFoundationModelId {
-            // Foundation models may not stream in exact per-token order; generate non-stream and emulate incremental updates for UX.
-            let result = try await RunAnywhere.generate(prompt: usePrompt, options: options)
-            let fullText = result.text
-
-            // If the SDK provides separate thinking content, wrap it in sentinels so the
-            // thinking drawer shows the real reasoning and the answer streams below it —
-            // matching the same overlay path used for other models.
-            let sdkThinking = result.thinkingContent.trimmingCharacters(in: .whitespacesAndNewlines)
-            let answerText = fullText.trimmingCharacters(in: .whitespacesAndNewlines)
-            let hasSdkThinking = !sdkThinking.isEmpty || result.thinkingTokens > 0
-
-            if hasSdkThinking {
-                // First, surface the thinking content immediately so the drawer opens.
-                let thinkingDisplay = Self.thinkingSentinelOpen + sdkThinking + Self.thinkingSentinelClose
-                onUpdate(thinkingDisplay, 0, 0)
-
-                // Then stream the answer word-by-word after the thinking sentinels.
-                var currentOutput = thinkingDisplay
-                let answerTokens = answerText.split(separator: " ", omittingEmptySubsequences: false)
-                for (index, token) in answerTokens.enumerated() {
-                    if index > 0 { currentOutput += " " }
-                    currentOutput += String(token)
-                    onUpdate(currentOutput, 0, 0)
-                    try? await Task.sleep(nanoseconds: 10_000_000) // 10ms for smoother perception
-                }
-
-                let finalDisplay = currentOutput.isEmpty ? thinkingDisplay : currentOutput
-                onUpdate(finalDisplay, Int(result.responseTokens), result.tokensPerSecond)
-            } else {
-                // No thinking content — stream the answer directly (heuristic drawer handled by UI).
-                var currentOutput = ""
-                let tokens = fullText.split(separator: " ", omittingEmptySubsequences: false)
-                for (index, token) in tokens.enumerated() {
-                    if index > 0 { currentOutput += " " }
-                    currentOutput += String(token)
-                    onUpdate(currentOutput, Int(result.responseTokens), result.tokensPerSecond)
-                    try? await Task.sleep(nanoseconds: 10_000_000) // 10ms for smoother perception
-                }
-
-                if currentOutput.isEmpty {
-                    onUpdate(fullText, Int(result.responseTokens), result.tokensPerSecond)
-                }
-            }
             return
         }
 
