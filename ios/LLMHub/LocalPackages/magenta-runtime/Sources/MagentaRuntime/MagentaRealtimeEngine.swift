@@ -91,7 +91,7 @@ public enum MagentaRealtimeEngine {
                 MLXArray([Float(1.0)], [1]),
                 MLXArray(negativeMusic, [1, 1, conditionLength]),
                 MLXArray(negativeNotes, [1, 1, conditionLength]),
-                MLXArray([Int32](), [1, 0, musicCoCaLevels]),
+                MLX.zeros([1, 0, musicCoCaLevels], dtype: .int32),
             ]
             arguments.append(contentsOf: state)
             let outputs = try invoke(function, arguments: arguments, stateCount: state.count)
