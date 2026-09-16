@@ -361,8 +361,10 @@ private func downloadableFeatureModels() -> [AIModel] {
 
 @MainActor
 private func selectedFeatureModel(named selectedModelName: String) -> AIModel? {
-    downloadableFeatureModels().first(where: { $0.name == selectedModelName })
-        ?? ModelData.allModels().first(where: { $0.name == selectedModelName })
+    if let appleModel = appleFoundationModelIfAvailable(), appleModel.name == selectedModelName {
+        return appleModel
+    }
+    return ModelData.allModels().first(where: { $0.name == selectedModelName })
 }
 
 @MainActor

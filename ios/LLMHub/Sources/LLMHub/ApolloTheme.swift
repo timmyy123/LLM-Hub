@@ -152,6 +152,15 @@ extension View {
         }
     }
 
+    @ViewBuilder
+    func apolloTopScrollEdgeHidden() -> some View {
+        if #available(iOS 26.0, *) {
+            scrollEdgeEffectHidden(true, for: .top)
+        } else {
+            self
+        }
+    }
+
     func apolloScreenBackground() -> some View {
         modifier(ApolloScreenBackgroundModifier())
     }

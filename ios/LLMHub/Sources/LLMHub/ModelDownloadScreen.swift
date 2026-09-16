@@ -993,7 +993,7 @@ struct ModelDownloadScreen: View {
                     .padding(.horizontal, 16)
                     .padding(.vertical, 12)
                 }
-                .apolloTopScrollEdgeFade()
+                .apolloTopScrollEdgeHidden()
                 .background(.ultraThinMaterial)
                 .overlay(alignment: .bottom) {
                     Rectangle()
@@ -1080,7 +1080,8 @@ struct ModelDownloadScreen: View {
         }
         .navigationTitle(settings.localized("ai_models"))
         .navigationBarTitleDisplayMode(.inline)
-        .apolloNavigationBackground()
+        .toolbarBackground(.hidden, for: .navigationBar)
+        .apolloTopScrollEdgeHidden()
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button {
