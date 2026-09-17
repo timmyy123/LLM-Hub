@@ -4686,20 +4686,6 @@ object ModelData {
             modelFormat = "mnn_cpu"
         ),
 
-        // Ternary Bonsai Models (prism-ml) — F16 variants only (Q2_0 ternary quantization unsupported by Nexa SDK)
-        LLMModel(
-            name = "Ternary Bonsai 1.7B (F16)",
-            description = "Ternary Bonsai 1.7B in full float16 precision. Highest quality variant for high-end devices with ample RAM. (3.21GB)",
-            url = "https://huggingface.co/prism-ml/Ternary-Bonsai-1.7B-gguf/resolve/main/Ternary-Bonsai-1.7B-F16.gguf?download=true",
-            category = "text",
-            sizeBytes = 3446249408L, // 3.21GB (actual size from HuggingFace)
-            source = "Prism ML",
-            supportsVision = false,
-            supportsGpu = true,
-            requirements = ModelRequirements(minRamGB = 5, recommendedRamGB = 6),
-            contextWindowSize = 4096,
-            modelFormat = "gguf"
-        ),
 
         // Granite 4.1 3B Models (unsloth)
         LLMModel(
@@ -4902,35 +4888,6 @@ object ModelData {
             modelFormat = "gguf"
         ),
 
-        // Ternary Bonsai 4B Models
-        LLMModel(
-            name = "Ternary Bonsai 4B (F16)",
-            description = "Ternary Bonsai 4B at full precision F16. 8k context. (8.05GB)",
-            url = "https://huggingface.co/prism-ml/Ternary-Bonsai-4B-gguf/resolve/a3eb42bafe873f9686bc97486c43b72ef7d75ec8/Ternary-Bonsai-4B-F16.gguf?download=true",
-            category = "text",
-            sizeBytes = 8049911840L,
-            source = "Prism ML",
-            supportsVision = false,
-            supportsGpu = true,
-            requirements = ModelRequirements(minRamGB = 10, recommendedRamGB = 12),
-            contextWindowSize = 8192,
-            modelFormat = "gguf"
-        ),
-
-        // Ternary Bonsai 8B Models
-        LLMModel(
-            name = "Ternary Bonsai 8B (F16)",
-            description = "Ternary Bonsai 8B at full precision F16. 8k context. (16.38GB)",
-            url = "https://huggingface.co/prism-ml/Ternary-Bonsai-8B-gguf/resolve/c2aefbeb4b24469cd11579c3384b990404c17a30/Ternary-Bonsai-8B-F16.gguf?download=true",
-            category = "text",
-            sizeBytes = 16383663200L,
-            source = "Prism ML",
-            supportsVision = false,
-            supportsGpu = true,
-            requirements = ModelRequirements(minRamGB = 18, recommendedRamGB = 24),
-            contextWindowSize = 8192,
-            modelFormat = "gguf"
-        ),
         // WhisperKit ASR Models (TFLite + QNN NPU acceleration via argmaxinc/WhisperKit)
         // Each model needs 5 files: AudioEncoder.tflite, MelSpectrogram.tflite, TextDecoder.tflite,
         // tokenizer.json, config.json — all required by the WhisperKit JNI layer.

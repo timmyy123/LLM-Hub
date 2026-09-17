@@ -3280,52 +3280,6 @@ public static let models: [AIModel] = [
         modelFormat: .gguf,
         additionalFiles: []
     ),
-    // MARK: - Ternary Bonsai Models (prism-ml)
-    AIModel(
-        name: "Ternary Bonsai 1.7B (F16)",
-        description: "Ternary Bonsai 1.7B in full float16 precision. Highest quality variant for high-end devices with ample RAM. (3.21GB)",
-        url: "https://huggingface.co/prism-ml/Ternary-Bonsai-1.7B-gguf/resolve/main/Ternary-Bonsai-1.7B-F16.gguf?download=true",
-        category: .text,
-        sizeBytes: 3446249408,
-        source: "Prism ML",
-        supportsVision: false,
-        supportsAudio: false,
-        supportsGpu: true,
-        requirements: ModelRequirements(minRamGB: 5, recommendedRamGB: 6),
-        contextWindowSize: 4096,
-        modelFormat: .gguf,
-        additionalFiles: []
-    ),
-    AIModel(
-        name: "Ternary Bonsai 4B (F16)",
-        description: "Ternary Bonsai 4B at full precision F16. 8k context. (8.05GB)",
-        url: "https://huggingface.co/prism-ml/Ternary-Bonsai-4B-gguf/resolve/a3eb42bafe873f9686bc97486c43b72ef7d75ec8/Ternary-Bonsai-4B-F16.gguf?download=true",
-        category: .text,
-        sizeBytes: 8049911840,
-        source: "Prism ML",
-        supportsVision: false,
-        supportsAudio: false,
-        supportsGpu: true,
-        requirements: ModelRequirements(minRamGB: 10, recommendedRamGB: 12),
-        contextWindowSize: 8192,
-        modelFormat: .gguf,
-        additionalFiles: []
-    ),
-    AIModel(
-        name: "Ternary Bonsai 8B (F16)",
-        description: "Ternary Bonsai 8B at full precision F16. 8k context. (16.38GB)",
-        url: "https://huggingface.co/prism-ml/Ternary-Bonsai-8B-gguf/resolve/c2aefbeb4b24469cd11579c3384b990404c17a30/Ternary-Bonsai-8B-F16.gguf?download=true",
-        category: .text,
-        sizeBytes: 16383663200,
-        source: "Prism ML",
-        supportsVision: false,
-        supportsAudio: false,
-        supportsGpu: true,
-        requirements: ModelRequirements(minRamGB: 18, recommendedRamGB: 24),
-        contextWindowSize: 8192,
-        modelFormat: .gguf,
-        additionalFiles: []
-    ),
     // MARK: - Granite 4.1 3B Models (Unsloth)
     AIModel(
         name: "Granite 4.1 3B (Q2_K_XL)",
