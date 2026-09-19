@@ -324,11 +324,12 @@ fun ChatScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
+                    .consumeWindowInsets(paddingValues)
+                    .imePadding()
                     .pointerInput(Unit) {
                         // Dismiss keyboard when tapping anywhere in the chat window
                         detectTapGestures(onTap = { focusManager.clearFocus() })
                     }
-                    // REMOVED imePadding() from here
             ) {
                 // Messages list
                 LazyColumn(
@@ -417,7 +418,6 @@ fun ChatScreen(
                 }
 
                 // Message input
-                Box(modifier = Modifier.imePadding()) {
                 MessageInput(
                     onSendMessage = { text, attachmentUri, audioData ->
                         // Triple-layer keyboard dismissal for maximum reliability
@@ -454,7 +454,6 @@ fun ChatScreen(
                         { viewModel.toggleWebSearch() }
                     } else null
                 )
-                }
             }
         }
     }

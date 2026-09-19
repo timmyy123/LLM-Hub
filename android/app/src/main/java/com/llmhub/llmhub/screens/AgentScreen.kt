@@ -166,6 +166,8 @@ fun AgentScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .consumeWindowInsets(paddingValues)
+                .imePadding()
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
 
@@ -282,25 +284,23 @@ fun AgentScreen(
                 }
 
                 // Input bar using standard AI Chat MessageInput component
-                Box(modifier = Modifier.imePadding()) {
-                    MessageInput(
-                        onSendMessage = { text, _, audioData ->
-                            if (text.isNotBlank()) {
-                                viewModel.sendMessage(text)
-                            } else if (audioData != null) {
-                                viewModel.sendAudioMessage(audioData, context)
-                            }
-                        },
-                        enabled = true,
-                        supportsAttachments = true,
-                        supportsVision = false,
-                        supportsAudio = isAudioSupportedInAgent,
-                        isLoading = isGenerating,
-                        onCancelGeneration = if (isGenerating) { { viewModel.stopGeneration() } } else null,
-                        isWebSearchEnabled = isWebSearchEnabled,
-                        onToggleWebSearch = { viewModel.toggleWebSearch() }
-                    )
-                }
+                MessageInput(
+                    onSendMessage = { text, _, audioData ->
+                        if (text.isNotBlank()) {
+                            viewModel.sendMessage(text)
+                        } else if (audioData != null) {
+                            viewModel.sendAudioMessage(audioData, context)
+                        }
+                    },
+                    enabled = true,
+                    supportsAttachments = true,
+                    supportsVision = false,
+                    supportsAudio = isAudioSupportedInAgent,
+                    isLoading = isGenerating,
+                    onCancelGeneration = if (isGenerating) { { viewModel.stopGeneration() } } else null,
+                    isWebSearchEnabled = isWebSearchEnabled,
+                    onToggleWebSearch = { viewModel.toggleWebSearch() }
+                )
             }
         }
 
