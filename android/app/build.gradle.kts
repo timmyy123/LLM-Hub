@@ -392,7 +392,7 @@ dependencies {
     implementation("com.github.medavox:IPA-Transcribers:v0.2")
 
     // GenieX SDK for GGUF model support (LLM/VLM inference on CPU/GPU/NPU)
-    implementation(files("libs/geniex-android-aar-v0.6.1.aar"))
+    implementation(files("libs/geniex-android-aar-v0.7.0.aar"))
 
     // WhisperKit for fast on-device ASR (TFLite + QNN NPU acceleration)
     implementation("com.argmaxinc:whisperkit:0.3.3")
@@ -435,7 +435,7 @@ val geniexAarConfig by configurations.creating {
     isCanBeConsumed = false
     isCanBeResolved = true
 }
-dependencies { geniexAarConfig(files("libs/geniex-android-aar-v0.6.1.aar")) }
+dependencies { geniexAarConfig(files("libs/geniex-android-aar-v0.7.0.aar")) }
 
 val npuPackAssetsDir = rootProject.file("geniex_npu_pack/src/main/assets/npu")
 

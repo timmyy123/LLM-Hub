@@ -1,9 +1,9 @@
 # Vendored llama.cpp
 
 - Upstream: https://github.com/ggml-org/llama.cpp
-- Version: `v0.4.0` / `b10816`
-- Commit: `427291b5b34cd914a31b3fd3b61a68f6184f4b9f`
-- Source archive SHA-256: `128a83d8deb5ec83a47d9932ae0458d8bd8fcfe88c1f982919b84ccac269e3c3`
+- Version: `b11048`
+- Commit: `59fc5a1ca3842241dd53617ae2ae030c1a015061`
+- Source archive SHA-256: `fc0a53035c43453d0ce8d0cb8aa26a046617dce1098138b6416276264ec38f67`
 - License: MIT (see `LICENSE`)
 
 Only the source directories required by the Android CPU engine are vendored, including
