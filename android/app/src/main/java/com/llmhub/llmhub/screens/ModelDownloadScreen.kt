@@ -96,91 +96,6 @@ private fun shouldShowNpuBadge(model: LLMModel): Boolean {
     }
 }
 
-private fun isVisionProjector(model: LLMModel): Boolean {
-    val name = model.name.lowercase()
-    val url = model.url.lowercase()
-    return name.contains("projector") || name.contains("mmproj") || url.contains("mmproj")
-}
-
-private fun extractParamSize(familyName: String): Double? {
-    val lower = familyName.lowercase()
-    if (lower.contains("h-tiny")) return 7.0
-    if (lower.contains("h-small")) return 32.0
-    if (lower.contains("phi-4 mini") || lower.contains("phi-4-mini")) return 3.8
-
-    // Match billions: e.g. 1B, 1.2B, 1.6B, E2B, 2.6B, 3B, E4B, 4B, 8B, 12B, 14B, 20B, 24B, 26B, 30B, 31B, 70B
-    val bMatch = Regex("""(?i)\b(?:e)?(\d+(?:\.\d+)?)\s*b\b""").find(familyName)
-    if (bMatch != null) {
-        return bMatch.groupValues[1].toDoubleOrNull()
-    }
-
-    // Match millions: e.g. 135M, 360M
-    val mMatch = Regex("""(?i)\b(\d+(?:\.\d+)?)\s*m\b""").find(familyName)
-    if (mMatch != null) {
-        val millions = mMatch.groupValues[1].toDoubleOrNull()
-        if (millions != null) {
-            return millions / 1000.0
-        }
-    }
-
-    return null
-}
-
-private fun getFamilySortScore(family: String, variants: List<LLMModel>): Double {
-    extractParamSize(family)?.let { return it }
-
-    // Check if any non-projector variant has a recognizable param size in its name
-    for (variant in variants) {
-        if (!isVisionProjector(variant)) {
-            extractParamSize(variant.name.substringBefore("(").trim())?.let { return it }
-        }
-    }
-
-    // Fallback: estimate equivalent param size from minimum non-projector file size
-    val nonProjectors = variants.filterNot { isVisionProjector(it) }
-    val candidateModels = if (nonProjectors.isNotEmpty()) nonProjectors else variants
-    val minBytes = candidateModels.map { it.sizeBytes }.filter { it > 0 }.minOrNull() ?: 0L
-    if (minBytes > 0L) {
-        val sizeGB = minBytes.toDouble() / (1024.0 * 1024.0 * 1024.0)
-        // In typical 4-bit quantization, ~0.75 GB corresponds to ~1B parameters
-        return sizeGB / 0.75
-    }
-
-    return 999.0
-}
-
-private fun sortVariants(variants: List<LLMModel>): List<LLMModel> {
-    val (projectors, mainModels) = variants.partition { isVisionProjector(it) }
-    val sortedMain = mainModels.sortedWith(
-        compareBy<LLMModel> { if (it.sizeBytes > 0) it.sizeBytes else Long.MAX_VALUE }
-            .thenBy { it.name.lowercase() }
-    )
-    val sortedProjectors = projectors.sortedWith(
-        compareBy<LLMModel> { if (it.sizeBytes > 0) it.sizeBytes else Long.MAX_VALUE }
-            .thenBy { it.name.lowercase() }
-    )
-    return sortedMain + sortedProjectors
-}
-
-private fun groupAndSortModelFamilies(models: List<LLMModel>): Map<String, List<LLMModel>> {
-    val grouped = models.groupBy { it.name.substringBefore("(").trim() }
-    return grouped
-        .mapValues { sortVariants(it.value) }
-        .toList()
-        .sortedWith(
-            compareBy<Pair<String, List<LLMModel>>> { (family, variants) ->
-                getFamilySortScore(family, variants)
-            }.thenBy { (family, variants) ->
-                val nonProjectors = variants.filterNot { isVisionProjector(it) }
-                val candidateModels = if (nonProjectors.isNotEmpty()) nonProjectors else variants
-                candidateModels.map { it.sizeBytes }.filter { it > 0 }.minOrNull() ?: Long.MAX_VALUE
-            }.thenBy { (family, _) ->
-                family.lowercase()
-            }
-        )
-        .toMap()
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ModelDownloadScreen(
@@ -210,8 +125,8 @@ fun ModelDownloadScreen(
     val imageGenerationModels = models.filter {
         it.category == "image_generation" || it.category == "qnn_npu" || it.category == "mnn_cpu"
     }
-    val textGrouped = groupAndSortModelFamilies(textModels)
-    val multimodalGrouped = groupAndSortModelFamilies(multimodalModels)
+    val textGrouped = textModels.groupBy { it.name.substringBefore("(").trim() }
+    val multimodalGrouped = multimodalModels.groupBy { it.name.substringBefore("(").trim() }
     val asrGrouped = asrModels.groupBy { it.name.substringBefore("(").trim() }
     val ttsGrouped = ttsModels.groupBy { it.name.substringBefore("(").trim() }
     val embeddingGrouped = embeddingModels.groupBy { it.name.substringBefore("(").trim() }
