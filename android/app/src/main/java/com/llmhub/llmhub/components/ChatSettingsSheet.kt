@@ -174,6 +174,7 @@ fun ChatSettingsSheet(
             val newIsGemma3n = model.name.contains("Gemma-3n", ignoreCase = true)
             val newIsPhi4Mini = model.name.contains("Phi-4 Mini", ignoreCase = true)
             val newIsGemma4_12B = model.modelFormat == "litertlm" && (model.name.contains("Gemma-4 12B", ignoreCase = true) || model.name.contains("Gemma 4 12B", ignoreCase = true))
+            val newIsGemma4Small = model.modelFormat == "litertlm" && model.name.contains("Gemma-4", ignoreCase = true) && !newIsGemma4_12B
             val newDefaultUseGpu = if (newIsGemma4_12B) true else if (newIsPhi4Mini) false else model.supportsGpu
             
             try {
@@ -216,10 +217,10 @@ fun ChatSettingsSheet(
                     val ggufNpuDefault = model.modelFormat == "gguf" && com.llmhub.llmhub.data.DeviceInfo.isQualcommNpuSupported()
                     useGpu = if (newIsGemma4_12B) true else newDefaultUseGpu
                     useNpu = ggufNpuDefault
-                    disableVision = newIsGemma3n || !selectedModelSupportsVisionInput
-                    disableAudio = newIsGemma3n
+                    disableVision = newIsGemma3n || newIsGemma4Small || !selectedModelSupportsVisionInput
+                    disableAudio = newIsGemma3n || newIsGemma4Small
                     enableThinking = true
-                    agentToolsEnabled = true
+                    agentToolsEnabled = !newIsGemma4Small
                     systemPromptText = ""
                 }
             } catch (e: Exception) {
@@ -237,10 +238,10 @@ fun ChatSettingsSheet(
                 val ggufNpuDefault = selectedModel?.modelFormat == "gguf" && com.llmhub.llmhub.data.DeviceInfo.isQualcommNpuSupported()
                 useGpu = if (newIsGemma4_12B) true else newDefaultUseGpu
                 useNpu = ggufNpuDefault
-                disableVision = newIsGemma3n || !selectedModelSupportsVisionInput
-                disableAudio = newIsGemma3n
+                disableVision = newIsGemma3n || newIsGemma4Small || !selectedModelSupportsVisionInput
+                disableAudio = newIsGemma3n || newIsGemma4Small
                 enableThinking = true
-                agentToolsEnabled = true
+                agentToolsEnabled = !newIsGemma4Small
                 systemPromptText = ""
             }
         }
@@ -949,10 +950,10 @@ fun ChatSettingsSheet(
                                     temperature = 1.0f
                                     useGpu = newDefaultUseGpu
                                     useNpu = false
-                                    disableVision = newIsGemma3n || !selectedModelSupportsVisionInput
-                                    disableAudio = newIsGemma3n
+                                    disableVision = newIsGemma3n || (isGemma4Model && !isGemma4_12B) || !selectedModelSupportsVisionInput
+                                    disableAudio = newIsGemma3n || (isGemma4Model && !isGemma4_12B)
                                     enableThinking = true
-                                    agentToolsEnabled = true
+                                    agentToolsEnabled = !(isGemma4Model && !isGemma4_12B)
                                     systemPromptText = ""
                                 }
                             },
