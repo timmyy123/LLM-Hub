@@ -355,8 +355,8 @@ dependencies {
     // vision/audio component initialization. Disable vision/audio when not needed for faster loading.
     // tasks-genai latest: 0.10.29; tasks-text latest: 0.10.29
     implementation("com.google.mediapipe:tasks-genai:0.10.35")
-    implementation("com.google.mediapipe:tasks-vision:0.10.35")
-    implementation("com.google.mediapipe:tasks-text:0.10.35")
+    implementation("com.google.mediapipe:tasks-vision:1.0.0")
+    implementation("com.google.mediapipe:tasks-text:1.0.0")
 
     // LiteRT-LM: native Kotlin API for .litertlm models (Gemma-3n, Gemma-4, etc.)
     // Replaces tasks-genai for litertlm format models. GPU enabled once 0.10.1 hits Maven.
