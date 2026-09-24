@@ -6,6 +6,9 @@ import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import android.widget.Toast
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -18,10 +21,16 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.input.pointer.changedToUp
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.llmhub.llmhub.R
 import com.llmhub.llmhub.components.ModelSelectorCard
@@ -61,12 +70,31 @@ fun MusicGeneratorScreen(
     val generatedTracks = remember { mutableStateListOf<GeneratedMusicTrack>() }
     var playingTrackId by remember { mutableStateOf<Long?>(null) }
     var loadedTrackId by remember { mutableStateOf<Long?>(null) }
+    var currentPositionMs by remember { mutableIntStateOf(0) }
+    var currentDurationMs by remember { mutableIntStateOf(0) }
+    var isDraggingTimeline by remember { mutableStateOf(false) }
     var mediaPlayer by remember { mutableStateOf<android.media.MediaPlayer?>(null) }
     val scrollState = rememberScrollState()
 
     LaunchedEffect(generatedTracks.size) {
         if (generatedTracks.isNotEmpty()) {
             scrollState.animateScrollTo(scrollState.maxValue)
+        }
+    }
+
+    LaunchedEffect(playingTrackId, isDraggingTimeline) {
+        while (playingTrackId != null && !isDraggingTimeline) {
+            val player = mediaPlayer
+            if (player != null) {
+                try {
+                    if (player.isPlaying) {
+                        currentPositionMs = player.currentPosition
+                        val dur = player.duration
+                        if (dur > 0) currentDurationMs = dur
+                    }
+                } catch (_: Exception) {}
+            }
+            kotlinx.coroutines.delay(40)
         }
     }
 
@@ -112,9 +140,72 @@ fun MusicGeneratorScreen(
             mediaPlayer?.stop()
             mediaPlayer?.release()
             mediaPlayer = null
+            playingTrackId = null
+            loadedTrackId = null
+            currentPositionMs = 0
+            currentDurationMs = 0
             CoroutineScope(Dispatchers.IO).launch {
                 MusicGeneratorBackend.unloadModel()
             }
+        }
+    }
+
+    fun seekToFraction(track: GeneratedMusicTrack, fraction: Float) {
+        try {
+            if (loadedTrackId != track.id || mediaPlayer == null) {
+                mediaPlayer?.release()
+                mediaPlayer = android.media.MediaPlayer().apply {
+                    setDataSource(track.file.absolutePath)
+                    setOnCompletionListener {
+                        playingTrackId = null
+                        currentPositionMs = 0
+                    }
+                    prepare()
+                }
+                loadedTrackId = track.id
+                currentDurationMs = mediaPlayer?.duration?.takeIf { it > 0 } ?: (track.requestedDurationSeconds * 1000)
+            }
+            val dur = if (currentDurationMs > 0) currentDurationMs else (track.requestedDurationSeconds * 1000)
+            val targetMs = (dur * fraction).toInt().coerceIn(0, dur)
+            currentPositionMs = targetMs
+            mediaPlayer?.seekTo(targetMs)
+        } catch (e: Exception) {
+            android.util.Log.e("MusicGeneratorScreen", "Error seeking: ${e.message}", e)
+        }
+    }
+
+    fun togglePlayPause(track: GeneratedMusicTrack) {
+        if (!track.file.exists()) return
+        try {
+            if (loadedTrackId != track.id || mediaPlayer == null) {
+                mediaPlayer?.release()
+                mediaPlayer = android.media.MediaPlayer().apply {
+                    setDataSource(track.file.absolutePath)
+                    setOnCompletionListener {
+                        playingTrackId = null
+                        currentPositionMs = 0
+                    }
+                    prepare()
+                }
+                loadedTrackId = track.id
+                currentDurationMs = mediaPlayer?.duration?.takeIf { it > 0 } ?: (track.requestedDurationSeconds * 1000)
+                currentPositionMs = 0
+            }
+
+            if (playingTrackId == track.id) {
+                mediaPlayer?.pause()
+                playingTrackId = null
+            } else {
+                if (currentDurationMs > 0 && currentPositionMs >= currentDurationMs - 100) {
+                    mediaPlayer?.seekTo(0)
+                    currentPositionMs = 0
+                }
+                mediaPlayer?.start()
+                playingTrackId = track.id
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("MusicGeneratorScreen", "Error playing audio: ${e.message}", e)
+            playingTrackId = null
         }
     }
 
@@ -433,17 +524,19 @@ fun MusicGeneratorScreen(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
                         colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant
                         )
                     ) {
                         Column(
-                            modifier = Modifier.padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Row(
                                     modifier = Modifier.weight(1f),
@@ -452,22 +545,17 @@ fun MusicGeneratorScreen(
                                     Icon(
                                         imageVector = Icons.Default.GraphicEq,
                                         contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(20.dp)
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Column {
-                                        Text(
-                                            text = track.prompt,
-                                            style = MaterialTheme.typography.titleSmall,
-                                            fontWeight = FontWeight.Bold,
-                                            maxLines = 2
-                                        )
-                                        Text(
-                                            text = "${track.requestedDurationSeconds}s Audio Clip",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
+                                    Text(
+                                        text = track.prompt,
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.SemiBold,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
                                 }
                                 IconButton(
                                     onClick = {
@@ -480,53 +568,143 @@ fun MusicGeneratorScreen(
                                                 Toast.LENGTH_SHORT
                                             ).show()
                                         }
-                                    }
+                                    },
+                                    modifier = Modifier.size(36.dp)
                                 ) {
-                                    Icon(Icons.Default.Download, contentDescription = "Save audio")
+                                    Icon(
+                                        Icons.Default.Download,
+                                        contentDescription = "Save audio",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                                IconButton(
+                                    onClick = {
+                                        if (loadedTrackId == track.id) {
+                                            mediaPlayer?.stop()
+                                            mediaPlayer?.release()
+                                            mediaPlayer = null
+                                            loadedTrackId = null
+                                            playingTrackId = null
+                                            currentPositionMs = 0
+                                            currentDurationMs = 0
+                                        }
+                                        track.file.delete()
+                                        generatedTracks.remove(track)
+                                    },
+                                    modifier = Modifier.size(36.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.Delete,
+                                        contentDescription = "Delete audio",
+                                        tint = MaterialTheme.colorScheme.error,
+                                        modifier = Modifier.size(20.dp)
+                                    )
                                 }
                             }
 
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.Center,
-                                verticalAlignment = Alignment.CenterVertically
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                FilledIconButton(
-                                    onClick = {
-                                        if (!track.file.exists()) return@FilledIconButton
+                                val isThisTrackLoaded = loadedTrackId == track.id
+                                val isThisTrackPlaying = playingTrackId == track.id
 
-                                        if (playingTrackId == track.id) {
-                                            mediaPlayer?.pause()
-                                            playingTrackId = null
-                                        } else {
-                                            try {
-                                                if (mediaPlayer == null || loadedTrackId != track.id) {
-                                                    mediaPlayer?.release()
-                                                    mediaPlayer = android.media.MediaPlayer().apply {
-                                                        setDataSource(track.file.absolutePath)
-                                                        prepare()
-                                                        setOnCompletionListener {
-                                                            playingTrackId = null
-                                                        }
-                                                    }
-                                                    loadedTrackId = track.id
-                                                }
-                                                mediaPlayer?.start()
-                                                playingTrackId = track.id
-                                            } catch (e: Exception) {
-                                                android.util.Log.e("MusicGeneratorScreen", "Error playing audio: ${e.message}", e)
-                                                playingTrackId = null
-                                            }
-                                        }
-                                    },
-                                    modifier = Modifier.size(56.dp)
+                                IconButton(
+                                    onClick = { togglePlayPause(track) },
+                                    modifier = Modifier.size(40.dp)
                                 ) {
                                     Icon(
-                                        imageVector = if (playingTrackId == track.id) Icons.Default.Pause else Icons.Default.PlayArrow,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(32.dp)
+                                        imageVector = if (isThisTrackPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                        contentDescription = if (isThisTrackPlaying) "Pause" else "Play",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(28.dp)
                                     )
                                 }
+
+                                val barHeights = remember(track.file.absolutePath, track.file.lastModified()) {
+                                    extractRealWaveform(track.file, 36)
+                                }
+                                val waveformColor = MaterialTheme.colorScheme.primary
+                                val totalTrackMs = if (isThisTrackLoaded && currentDurationMs > 0) {
+                                    currentDurationMs
+                                } else {
+                                    track.requestedDurationSeconds * 1000
+                                }
+                                val posMs = if (isThisTrackLoaded) currentPositionMs else 0
+                                val progress = if (totalTrackMs > 0) (posMs.toFloat() / totalTrackMs.toFloat()).coerceIn(0f, 1f) else 0f
+
+                                Canvas(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(40.dp)
+                                        .pointerInput(track.id) {
+                                            awaitEachGesture {
+                                                val down = awaitFirstDown(requireUnconsumed = false)
+                                                try {
+                                                    isDraggingTimeline = true
+                                                    val newFrac = (down.position.x / size.width.toFloat()).coerceIn(0f, 1f)
+                                                    seekToFraction(track, newFrac)
+
+                                                    while (true) {
+                                                        val event = awaitPointerEvent()
+                                                        val change = event.changes.firstOrNull() ?: break
+                                                        if (change.changedToUp()) {
+                                                            change.consume()
+                                                            break
+                                                        }
+                                                        if (change.pressed) {
+                                                            change.consume()
+                                                            val dragFrac = (change.position.x / size.width.toFloat()).coerceIn(0f, 1f)
+                                                            seekToFraction(track, dragFrac)
+                                                        }
+                                                    }
+                                                } finally {
+                                                    isDraggingTimeline = false
+                                                }
+                                            }
+                                        }
+                                ) {
+                                    val barCount = barHeights.size
+                                    val spacingPx = 3f
+                                    val totalSpacing = spacingPx * (barCount - 1)
+                                    val barWidth = ((size.width - totalSpacing) / barCount).coerceAtLeast(1f)
+                                    val centerY = size.height / 2f
+                                    val maxBarHeight = size.height
+                                    val activeColor = waveformColor
+                                    val inactiveColor = waveformColor.copy(alpha = 0.35f)
+                                    val progressBars = (progress * barCount).coerceIn(0f, barCount.toFloat())
+
+                                    for (i in 0 until barCount) {
+                                        val height = (barHeights[i] * maxBarHeight).coerceAtLeast(4f).coerceAtMost(maxBarHeight)
+                                        val left = i * (barWidth + spacingPx)
+                                        val top = centerY - height / 2f
+                                        val color = if (i < progressBars) activeColor else inactiveColor
+                                        drawRoundRect(
+                                            color = color,
+                                            topLeft = Offset(left, top),
+                                            size = Size(barWidth, height),
+                                            cornerRadius = CornerRadius(barWidth / 2f)
+                                        )
+                                    }
+
+                                    if (progress > 0f) {
+                                        val playheadX = (progress * size.width).coerceIn(0f, size.width)
+                                        drawLine(
+                                            color = activeColor,
+                                            start = Offset(playheadX, 0f),
+                                            end = Offset(playheadX, size.height),
+                                            strokeWidth = 2.dp.toPx()
+                                        )
+                                    }
+                                }
+
+                                Text(
+                                    text = "${formatAudioTime(posMs)} / ${formatAudioTime(totalTrackMs)}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                             }
                         }
                     }
@@ -605,3 +783,60 @@ private suspend fun saveAudioToMusicLibrary(context: Context, source: java.io.Fi
             false
         }
     }
+
+private fun formatAudioTime(ms: Int): String {
+    val totalSeconds = (ms / 1000).coerceAtLeast(0)
+    val minutes = totalSeconds / 60
+    val seconds = totalSeconds % 60
+    return String.format(java.util.Locale.US, "%d:%02d", minutes, seconds)
+}
+
+private fun extractRealWaveform(file: java.io.File, barCount: Int = 36): List<Float> {
+    if (!file.exists() || file.length() <= 44L) {
+        return List(barCount) { 0.25f }
+    }
+    return try {
+        val totalBytes = file.length() - 44L
+        val totalFrames = totalBytes / 4L
+        if (totalFrames <= 0L) return List(barCount) { 0.25f }
+
+        val bars = FloatArray(barCount)
+        val framesPerBar = (totalFrames / barCount).coerceAtLeast(1L)
+        val buffer = ByteArray(8192)
+
+        java.io.BufferedInputStream(java.io.FileInputStream(file)).use { input ->
+            var skipped = 0L
+            while (skipped < 44L) {
+                val s = input.skip(44L - skipped)
+                if (s <= 0) break
+                skipped += s
+            }
+
+            var currentFrame = 0L
+            var readBytes: Int
+            while (input.read(buffer).also { readBytes = it } > 0) {
+                var i = 0
+                while (i + 3 < readBytes) {
+                    val barIndex = ((currentFrame / framesPerBar).toInt()).coerceIn(0, barCount - 1)
+                    val left = (buffer[i].toInt() and 0xFF) or (buffer[i + 1].toInt() shl 8)
+                    val right = (buffer[i + 2].toInt() and 0xFF) or (buffer[i + 3].toInt() shl 8)
+                    val absLeft = kotlin.math.abs(left.toShort().toInt())
+                    val absRight = kotlin.math.abs(right.toShort().toInt())
+                    val peak = maxOf(absLeft, absRight)
+                    if (peak > bars[barIndex]) {
+                        bars[barIndex] = peak.toFloat()
+                    }
+                    currentFrame++
+                    i += 4
+                }
+            }
+        }
+
+        val maxVal = bars.maxOrNull() ?: 1f
+        val norm = if (maxVal > 100f) 1f / maxVal else 1f / 32768f
+        bars.map { ((it * norm) * 0.88f + 0.12f).coerceIn(0.12f, 1f) }
+    } catch (e: Exception) {
+        android.util.Log.e("MusicGeneratorScreen", "Failed to extract waveform: ${e.message}", e)
+        List(barCount) { 0.25f }
+    }
+}

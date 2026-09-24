@@ -328,18 +328,7 @@ object MusicGeneratorBackend {
         }
     }
 
-    private fun createModel(file: File, stage: String = file.name, preferGpu: Boolean = false): CompiledModel {
-        if (preferGpu) {
-            try {
-                Log.i(TAG, "Compiling $stage with GPU, CPU fallback: ${file.name}")
-                return CompiledModel.create(
-                    file.absolutePath,
-                    CompiledModel.Options(Accelerator.GPU, Accelerator.CPU)
-                ).also { Log.i(TAG, "$stage GPU compilation complete") }
-            } catch (t: Throwable) {
-                Log.w(TAG, "GPU load failed for $stage (${file.name}), CPU fallback", t)
-            }
-        }
+    private fun createModel(file: File, stage: String = file.name): CompiledModel {
         Log.i(TAG, "Compiling $stage with CPU: ${file.name}")
         return CompiledModel.create(file.absolutePath, CompiledModel.Options(Accelerator.CPU))
             .also { Log.i(TAG, "$stage compilation complete") }
@@ -368,9 +357,9 @@ object MusicGeneratorBackend {
                 )
                 val decodeFile = requireFile(modelDir, decodeOriginal, "sghd_decode.litert")
                 val tokenizer = BpeTokenizer.load(requireFile(modelDir, "tokenizer.model", "sghd_vocab.spm"))
-                textModel = createModel(textFile, "SoundGen HD conditioner", preferGpu = false)
-                coreModel = createModel(coreFile, "SoundGen HD DiT", preferGpu = false)
-                decodeModel = createModel(decodeFile, "SoundGen HD decoder", preferGpu = false)
+                textModel = createModel(textFile, "SoundGen HD conditioner")
+                coreModel = createModel(coreFile, "SoundGen HD DiT")
+                decodeModel = createModel(decodeFile, "SoundGen HD decoder")
                 HdBundle(
                     modelName,
                     requireNotNull(textModel),
@@ -384,9 +373,9 @@ object MusicGeneratorBackend {
                 val coreFile = requireFile(modelDir, "dit_model.tflite", "dit_model.litert", "sg_core.litert")
                 val decodeFile = requireFile(modelDir, "autoencoder_model.tflite", "sg_decode.litert")
                 val tokenizer = SentencePieceTokenizer.load(requireFile(modelDir, "spiece.model", "sg_vocab.spm"))
-                textModel = createModel(textFile, "Quick conditioner", preferGpu = true)
-                coreModel = createModel(coreFile, "Quick DiT", preferGpu = true)
-                decodeModel = createModel(decodeFile, "Quick decoder", preferGpu = true)
+                textModel = createModel(textFile, "Quick conditioner")
+                coreModel = createModel(coreFile, "Quick DiT")
+                decodeModel = createModel(decodeFile, "Quick decoder")
                 QuickBundle(
                     modelName,
                     requireNotNull(textModel),
