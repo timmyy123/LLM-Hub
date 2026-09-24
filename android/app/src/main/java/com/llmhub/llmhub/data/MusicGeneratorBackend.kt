@@ -86,6 +86,7 @@ object MusicGeneratorBackend {
         modelMutex.withLock {
             loadedBundle?.close()
             loadedBundle = null
+            System.gc()
             Log.i(TAG, "Local SoundGen model unloaded")
         }
     }
@@ -114,7 +115,7 @@ object MusicGeneratorBackend {
             modelMutex.withLock {
                 val bundle = loadModelLocked(context, modelName)
                 val seed = System.nanoTime()
-                when (bundle) {
+                val result = when (bundle) {
                     is HdBundle -> generateHd(
                         context = context,
                         bundle = bundle,
@@ -132,6 +133,8 @@ object MusicGeneratorBackend {
                         onProgress
                     )
                 }
+                System.gc()
+                result
             }
         } catch (t: Throwable) {
             Log.e(TAG, "Local SoundGen generation failed", t)
@@ -149,10 +152,6 @@ object MusicGeneratorBackend {
     ): File {
         val tokenizer = bundle.tokenizer
 
-        // This exported Quick bundle cannot be compiled by Samsung's current
-        // LiteRT OpenCL delegate: the conditioner uses INT64 and DiT contains GPU
-        // kernels that fail initialization after partitioning. Use one explicit
-        // CPU execution plan for every graph; there is no retry or fallback path.
         onProgress(0.01f)
         bundle.textModel.let { textModel ->
             onProgress(0.03f)
@@ -187,6 +186,10 @@ object MusicGeneratorBackend {
                         }
                     }
                     var latent = gaussian(seed, 16_384)
+                    val nextLatent = FloatArray(16_384)
+                    val noise = FloatArray(16_384)
+                    val timeArray = FloatArray(1)
+
                     coreModel.buffers { inputs, outputs ->
                         inputs[0].writeFloat(conditioning)
                         inputs[1].writeFloat(conditioningMask)
@@ -194,14 +197,16 @@ object MusicGeneratorBackend {
                             val time = schedule[step]
                             val nextTime = schedule[step + 1]
                             inputs[2].writeFloat(latent)
-                            inputs[3].writeFloat(floatArrayOf(time))
+                            timeArray[0] = time
+                            inputs[3].writeFloat(timeArray)
                             Log.i(TAG, "Running Quick DiT step ${step + 1}/8")
                             coreModel.run(inputs, outputs)
                             val velocity = outputs[0].readFloat()
-                            val noise = gaussian(seed + step + 4564L, latent.size)
-                            latent = FloatArray(latent.size) { i ->
-                                noise[i] * nextTime + (1f - nextTime) * (latent[i] - velocity[i] * time)
+                            fillGaussian(seed + step + 4564L, noise)
+                            for (i in 0 until 16_384) {
+                                nextLatent[i] = noise[i] * nextTime + (1f - nextTime) * (latent[i] - velocity[i] * time)
                             }
+                            System.arraycopy(nextLatent, 0, latent, 0, 16_384)
                             onProgress(0.12f + ((step + 1) * 0.78f / 8f))
                         }
                     }
@@ -272,24 +277,39 @@ object MusicGeneratorBackend {
                         }
                     }
                     schedule[0] = 1f
+
                     var latent = gaussian(seed, latentSize)
+                    val nextLatent = FloatArray(latentSize)
+                    val noise = FloatArray(latentSize)
+                    val timeArray = FloatArray(1)
+                    val durationArray = floatArrayOf(durationSeconds)
+                    val zerosArray = FloatArray(frameCount * 257)
+
                     coreModel.buffers { inputs, outputs ->
                         inputs[2].writeFloat(conditioning)
                         inputs[3].writeFloat(conditioningMask)
-                        inputs[4].writeFloat(floatArrayOf(durationSeconds))
-                        inputs[5].writeFloat(FloatArray(frameCount * 257))
+                        inputs[4].writeFloat(durationArray)
+                        inputs[5].writeFloat(zerosArray)
                         repeat(8) { step ->
                             val time = schedule[step]
                             val nextTime = schedule[step + 1]
                             inputs[0].writeFloat(latent)
-                            inputs[1].writeFloat(floatArrayOf(time))
+                            timeArray[0] = time
+                            inputs[1].writeFloat(timeArray)
                             coreModel.run(inputs, outputs)
                             val velocity = outputs[0].readFloat()
-                            val noise = if (step < 7) gaussian(seed + step + 1L, latentSize) else null
-                            latent = FloatArray(latentSize) { i ->
-                                val predicted = latent[i] - velocity[i] * time
-                                if (noise == null) predicted else noise[i] * nextTime + (1f - nextTime) * predicted
+                            if (step < 7) {
+                                fillGaussian(seed + step + 1L, noise)
+                                for (i in 0 until latentSize) {
+                                    val predicted = latent[i] - velocity[i] * time
+                                    nextLatent[i] = noise[i] * nextTime + (1f - nextTime) * predicted
+                                }
+                            } else {
+                                for (i in 0 until latentSize) {
+                                    nextLatent[i] = latent[i] - velocity[i] * time
+                                }
                             }
+                            System.arraycopy(nextLatent, 0, latent, 0, latentSize)
                             onProgress(0.05f + ((step + 1) * 0.8f / 8f))
                         }
                     }
@@ -308,7 +328,18 @@ object MusicGeneratorBackend {
         }
     }
 
-    private fun createCpuModel(file: File, stage: String = file.name): CompiledModel {
+    private fun createModel(file: File, stage: String = file.name, preferGpu: Boolean = false): CompiledModel {
+        if (preferGpu) {
+            try {
+                Log.i(TAG, "Compiling $stage with GPU, CPU fallback: ${file.name}")
+                return CompiledModel.create(
+                    file.absolutePath,
+                    CompiledModel.Options(Accelerator.GPU, Accelerator.CPU)
+                ).also { Log.i(TAG, "$stage GPU compilation complete") }
+            } catch (t: Throwable) {
+                Log.w(TAG, "GPU load failed for $stage (${file.name}), CPU fallback", t)
+            }
+        }
         Log.i(TAG, "Compiling $stage with CPU: ${file.name}")
         return CompiledModel.create(file.absolutePath, CompiledModel.Options(Accelerator.CPU))
             .also { Log.i(TAG, "$stage compilation complete") }
@@ -337,9 +368,9 @@ object MusicGeneratorBackend {
                 )
                 val decodeFile = requireFile(modelDir, decodeOriginal, "sghd_decode.litert")
                 val tokenizer = BpeTokenizer.load(requireFile(modelDir, "tokenizer.model", "sghd_vocab.spm"))
-                textModel = createCpuModel(textFile, "SoundGen HD conditioner")
-                coreModel = createCpuModel(coreFile, "SoundGen HD DiT")
-                decodeModel = createCpuModel(decodeFile, "SoundGen HD decoder")
+                textModel = createModel(textFile, "SoundGen HD conditioner", preferGpu = false)
+                coreModel = createModel(coreFile, "SoundGen HD DiT", preferGpu = false)
+                decodeModel = createModel(decodeFile, "SoundGen HD decoder", preferGpu = false)
                 HdBundle(
                     modelName,
                     requireNotNull(textModel),
@@ -353,9 +384,9 @@ object MusicGeneratorBackend {
                 val coreFile = requireFile(modelDir, "dit_model.tflite", "dit_model.litert", "sg_core.litert")
                 val decodeFile = requireFile(modelDir, "autoencoder_model.tflite", "sg_decode.litert")
                 val tokenizer = SentencePieceTokenizer.load(requireFile(modelDir, "spiece.model", "sg_vocab.spm"))
-                textModel = createCpuModel(textFile, "Quick conditioner")
-                coreModel = createCpuModel(coreFile, "Quick DiT")
-                decodeModel = createCpuModel(decodeFile, "Quick decoder")
+                textModel = createModel(textFile, "Quick conditioner", preferGpu = true)
+                coreModel = createModel(coreFile, "Quick DiT", preferGpu = true)
+                decodeModel = createModel(decodeFile, "Quick decoder", preferGpu = true)
                 QuickBundle(
                     modelName,
                     requireNotNull(textModel),
@@ -402,6 +433,13 @@ object MusicGeneratorBackend {
         error("Missing SoundGen component (${names.joinToString()}) in ${directory.absolutePath}; redownload this model")
     }
 
+    private fun fillGaussian(seed: Long, target: FloatArray) {
+        val random = Random(seed)
+        for (i in target.indices) {
+            target[i] = random.nextGaussian().toFloat()
+        }
+    }
+
     private fun gaussian(seed: Long, size: Int): FloatArray {
         val random = Random(seed)
         return FloatArray(size) { random.nextGaussian().toFloat() }
@@ -419,19 +457,41 @@ object MusicGeneratorBackend {
             "Decoder returned ${planarAudio.size} samples, expected at least ${rightOffset + frames}"
         }
         val scale = if (normalize) {
-            val peak = planarAudio.maxOf { kotlin.math.abs(it) }
+            var peak = 0f
+            for (i in 0 until frames) {
+                val left = kotlin.math.abs(planarAudio[i])
+                val right = kotlin.math.abs(planarAudio[rightOffset + i])
+                if (left > peak) peak = left
+                if (right > peak) peak = right
+            }
             if (peak > 1e-6f) 1f / peak else 1f
         } else 1f
-        val pcm = ByteBuffer.allocate(frames * CHANNELS * 2).order(ByteOrder.LITTLE_ENDIAN)
-        repeat(frames) { index ->
-            pcm.putShort((planarAudio[index] * scale).coerceIn(-1f, 1f).times(32767f).roundToInt().toShort())
-            pcm.putShort((planarAudio[rightOffset + index] * scale).coerceIn(-1f, 1f).times(32767f).roundToInt().toShort())
-        }
+
         val outputDir = File(context.cacheDir, prefix).apply { mkdirs() }
         val output = File(outputDir, "${prefix}_${System.currentTimeMillis()}.wav")
-        FileOutputStream(output).use { stream ->
-            stream.write(createWavHeader(pcm.array().size, SAMPLE_RATE, CHANNELS))
-            stream.write(pcm.array())
+
+        val dataSize = frames * CHANNELS * 2
+        val chunkFrames = 4096
+        val chunkBytes = chunkFrames * CHANNELS * 2
+        val byteBuffer = ByteBuffer.allocate(chunkBytes).order(ByteOrder.LITTLE_ENDIAN)
+
+        FileOutputStream(output).buffered().use { stream ->
+            stream.write(createWavHeader(dataSize, SAMPLE_RATE, CHANNELS))
+            var frameIdx = 0
+            while (frameIdx < frames) {
+                byteBuffer.clear()
+                val batchFrames = minOf(chunkFrames, frames - frameIdx)
+                for (b in 0 until batchFrames) {
+                    val idx = frameIdx + b
+                    val leftSample = (planarAudio[idx] * scale).coerceIn(-1f, 1f).times(32767f).roundToInt().toShort()
+                    val rightSample = (planarAudio[rightOffset + idx] * scale).coerceIn(-1f, 1f).times(32767f).roundToInt().toShort()
+                    byteBuffer.putShort(leftSample)
+                    byteBuffer.putShort(rightSample)
+                }
+                stream.write(byteBuffer.array(), 0, batchFrames * CHANNELS * 2)
+                frameIdx += batchFrames
+            }
+            stream.flush()
         }
         return output
     }
