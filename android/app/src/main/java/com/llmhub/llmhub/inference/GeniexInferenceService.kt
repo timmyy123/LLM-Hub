@@ -48,6 +48,8 @@ import com.llmhub.llmhub.websearch.DuckDuckGoSearchService
 import com.llmhub.llmhub.websearch.SearchIntentDetector
 import com.llmhub.llmhub.websearch.WebSearchCitationStore
 
+private class VlmPrefixReuseException(message: String) : Exception(message)
+
 /** State machine states for parsing GPT-OSS Harmony format output. */
 private enum class HarmonyState {
     BEFORE_HEADER,   // buffering until <|channel|>analysis<|message|>
@@ -134,6 +136,7 @@ class GeniexInferenceService @Inject constructor(
     private var llmWrapper: LlmWrapper? = null
     private var vlmWrapper: VlmWrapper? = null
     private var isVlmLoaded: Boolean = false
+    private var lastVlmChatId: String? = null
 
     private var currentModel: LLMModel? = null
     private var currentPreferredBackend: LlmInference.Backend? = null
@@ -664,6 +667,7 @@ class GeniexInferenceService @Inject constructor(
              llmWrapper = null
              vlmWrapper = null
              isVlmLoaded = false
+             lastVlmChatId = null
              currentModel = null
              currentPreferredBackend = null
              currentDeviceId = null
@@ -840,6 +844,19 @@ class GeniexInferenceService @Inject constructor(
                     // === VLM path: use VlmChatMessage + VlmContent for images ===
                     val vlm = vlmWrapper!!
 
+                    if (chatId.isNotBlank() && lastVlmChatId != null && lastVlmChatId != chatId) {
+                        Log.d(TAG, "VLM: Switching chat context from '$lastVlmChatId' to '$chatId'; resetting VLM KV cache")
+                        try {
+                            vlm.stopStream()
+                            vlm.reset()
+                        } catch (e: Exception) {
+                            Log.w(TAG, "VLM: Error resetting session on chat switch: ${e.message}")
+                        }
+                    }
+                    if (chatId.isNotBlank()) {
+                        lastVlmChatId = chatId
+                    }
+
                     // Give the SDK actual system/user/assistant turns. Wrapping the entire
                     // transcript in one user message made role labels ordinary text and diverged
                     // from the text-only GGUF path's chat-template handling.
@@ -848,7 +865,7 @@ class GeniexInferenceService @Inject constructor(
                     val lastUserIndex = promptTurns.indexOfLast { it.role == "user" }
                     val vlmMessages = promptTurns.mapIndexed { index, turn ->
                         var text = turn.text
-                        if (index == lastUserIndex && imagePaths.isNotEmpty() && isPlaceholderText(text)) {
+                        if (isPlaceholderText(text)) {
                             text = "Describe what you see in this image in detail."
                         }
                         val contents = mutableListOf<VlmContent>()
@@ -906,54 +923,81 @@ class GeniexInferenceService @Inject constructor(
                     val tAfterInject = System.currentTimeMillis()
                     Log.d(TAG, "GEN[$requestId] VLM inject_media=${tAfterInject - tAfterTemplate}ms image_count=${configWithMedia.imageCount}")
 
-                    // Generate using the SDK-formatted prompt and track time-to-first-token
-                    val vlmStart = System.currentTimeMillis()
-                    var firstTokenAt = 0L
-                    var tokenCount = 0L
-                    try {
-                        vlm.generateStreamFlow(formattedPrompt, configWithMedia)
-                            .collect { streamResult ->
-                                if (isActive) {
-                                    if (streamResult is com.geniex.sdk.bean.LlmStreamResult.Token) {
-                                        tokenCount++
-                                        if (firstTokenAt == 0L) {
-                                            firstTokenAt = System.currentTimeMillis()
-                                            val prefillOnlyMs = firstTokenAt - vlmStart
-                                            val totalToFirstTokenMs = firstTokenAt - requestStart
-                                            Log.i(
-                                                TAG,
-                                                "GEN[$requestId] VLM first_token prefill=${prefillOnlyMs}ms total_to_first_token=${totalToFirstTokenMs}ms image_prep=${imagePrepMs}ms"
-                                            )
+                    // Generate using the SDK-formatted prompt and track time-to-first-token.
+                    // If KV-cache prefix reuse fails (common in multi-turn conversations where earlier
+                    // turns diverged slightly), reset the VLM state and retry from scratch cleanly.
+                    var retryCount = 0
+                    val maxRetries = 1
+                    var vlmSuccess = false
+
+                    while (!vlmSuccess && retryCount <= maxRetries) {
+                        val vlmStart = System.currentTimeMillis()
+                        var firstTokenAt = 0L
+                        var tokenCount = 0L
+                        try {
+                            vlm.generateStreamFlow(formattedPrompt, configWithMedia)
+                                .collect { streamResult ->
+                                    if (isActive) {
+                                        if (streamResult is com.geniex.sdk.bean.LlmStreamResult.Token) {
+                                            tokenCount++
+                                            if (firstTokenAt == 0L) {
+                                                firstTokenAt = System.currentTimeMillis()
+                                                val prefillOnlyMs = firstTokenAt - vlmStart
+                                                val totalToFirstTokenMs = firstTokenAt - requestStart
+                                                Log.i(
+                                                    TAG,
+                                                    "GEN[$requestId] VLM first_token prefill=${prefillOnlyMs}ms total_to_first_token=${totalToFirstTokenMs}ms image_prep=${imagePrepMs}ms"
+                                                )
+                                            }
+                                        } else if (streamResult is com.geniex.sdk.bean.LlmStreamResult.Completed) {
+                                            generationCompletedNormally.set(true)
+                                            val end = System.currentTimeMillis()
+                                            val decodeMs = if (firstTokenAt > 0L) end - firstTokenAt else 0L
+                                            val totalMs = end - requestStart
+                                            if (decodeMs > 0 && tokenCount > 0) {
+                                                lastDecodeSpeedTokPerSec = tokenCount * 1000.0 / decodeMs
+                                            }
+                                            Log.i(TAG, "GEN[$requestId] VLM completed total=${totalMs}ms decode=${decodeMs}ms tokens=$tokenCount")
                                         }
-                                    } else if (streamResult is com.geniex.sdk.bean.LlmStreamResult.Completed) {
-                                        generationCompletedNormally.set(true)
-                                        val end = System.currentTimeMillis()
-                                        val decodeMs = if (firstTokenAt > 0L) end - firstTokenAt else 0L
-                                        val totalMs = end - requestStart
-                                        if (decodeMs > 0 && tokenCount > 0) {
-                                            lastDecodeSpeedTokPerSec = tokenCount * 1000.0 / decodeMs
-                                        }
-                                        Log.i(TAG, "GEN[$requestId] VLM completed total=${totalMs}ms decode=${decodeMs}ms tokens=$tokenCount")
+                                        handleStreamResult(streamResult, isThinkingModel, isHarmonyModel, isMuseGlimmerModel, thinkingEnabled)
                                     }
-                                    handleStreamResult(streamResult, isThinkingModel, isHarmonyModel, isMuseGlimmerModel, thinkingEnabled)
                                 }
+                            vlmSuccess = true
+                        } catch (t: Throwable) {
+                            if (t is kotlinx.coroutines.CancellationException || t is java.util.concurrent.CancellationException) {
+                                Log.d(TAG, "GenieX VLM generation cancelled; keeping GenieX backend available")
+                                try {
+                                    vlmWrapper?.stopStream()
+                                    vlmWrapper?.reset()
+                                } catch (e: Exception) {
+                                    Log.w(TAG, "Failed to stop/reset VLM stream on cancellation: ${e.message}")
+                                }
+                                close()
+                                return@launch
                             }
-                    } catch (t: Throwable) {
-                        if (t is kotlinx.coroutines.CancellationException || t is java.util.concurrent.CancellationException) {
-                            Log.d(TAG, "GenieX VLM generation cancelled; keeping GenieX backend available")
-                            try {
-                                vlmWrapper?.stopStream()
-                            } catch (e: Exception) {
-                                Log.w(TAG, "Failed to stop VLM stream on cancellation: ${e.message}")
+                            val isPrefixReuseError = t is VlmPrefixReuseException ||
+                                t.message?.contains("prefix reuse", ignoreCase = true) == true ||
+                                t.message?.contains("-201202") == true ||
+                                t.cause?.message?.contains("prefix reuse", ignoreCase = true) == true
+                            if (isPrefixReuseError && retryCount < maxRetries && tokenCount == 0L) {
+                                retryCount++
+                                Log.w(TAG, "VLM prefix reuse failed (prompt diverged from cache). Resetting VLM KV cache and retrying generation from scratch...")
+                                try {
+                                    vlmWrapper?.stopStream()
+                                    vlmWrapper?.reset()
+                                } catch (re: Exception) {
+                                    Log.w(TAG, "Failed to reset VLM on prefix reuse failure: ${re.message}")
+                                }
+                                harmonyBuffer.clear()
+                                harmonyState = if (!thinkingEnabled && isHarmonyModel) HarmonyState.IN_FINAL else HarmonyState.BEFORE_HEADER
+                                museBuffer.clear()
+                                museGlimmerState = if (!thinkingEnabled && isMuseGlimmerModel) MuseGlimmerState.IN_FINAL else MuseGlimmerState.BEFORE_HEADER
+                            } else {
+                                Log.e(TAG, "Error during GenieX VLM generation: ${t.message}", t)
+                                close(Exception("GenieX VLM generation error: ${t.message}"))
+                                return@launch
                             }
-                            close()
-                            return@launch
                         }
-                        // Defensive: mark GenieX unavailable on severe native/SDK failures and surface an error
-                        Log.e(TAG, "Fatal error during GenieX VLM generation; disabling GenieX backend", t)
-                        geniexAvailable = false
-                        close(Exception("GenieX backend fatal error: ${t.message}"))
-                        return@launch
                     }
                 } else {
                     // === LLM path: text-only generation ===
@@ -1029,9 +1073,8 @@ class GeniexInferenceService @Inject constructor(
                             close()
                             return@launch
                         }
-                        Log.e(TAG, "Fatal error during GenieX LLM generation; disabling GenieX backend", t)
-                        geniexAvailable = false
-                        close(Exception("GenieX backend fatal error: ${t.message}"))
+                        Log.e(TAG, "Error during GenieX LLM generation: ${t.message}", t)
+                        close(Exception("GenieX LLM generation error: ${t.message}"))
                         return@launch
                     }
                 }
@@ -1135,6 +1178,12 @@ class GeniexInferenceService @Inject constructor(
                 close()
             }
             is LlmStreamResult.Error -> {
+                val th = streamResult.throwable
+                val errMsg = th?.message.orEmpty()
+                if (errMsg.contains("prefix reuse", ignoreCase = true) || errMsg.contains("-201202")) {
+                    Log.w(TAG, "VLM prefix reuse failure reported by SDK: $errMsg")
+                    throw VlmPrefixReuseException("VLM prefix reuse failed: $errMsg")
+                }
                 // Log detailed SDK error fields (field names vary by GenieX SDK builds)
                 val cls = streamResult::class.java
                 val code = runCatching {
@@ -1156,7 +1205,7 @@ class GeniexInferenceService @Inject constructor(
                         it.isAccessible = true
                         it.get(streamResult)?.toString()
                     }
-                }.getOrNull()
+                }.getOrNull() ?: errMsg.ifBlank { null }
                 Log.e(TAG, "VLM/LLM SDK Error - code=${code ?: "unknown"} message=${message ?: "unknown"} class=${cls.simpleName}")
                 close(Exception("SDK Error code=${code ?: "unknown"} message=${message ?: "unknown"}"))
             }
@@ -1584,9 +1633,10 @@ class GeniexInferenceService @Inject constructor(
 
     /** Check if text is a placeholder like "Shared a file" or just a filename like "📄 photo.png" */
     private fun isPlaceholderText(text: String): Boolean {
-        val cleaned = text.trim()
+        val cleaned = text.trim().removeSuffix("[Image attached]").trim()
         if (cleaned.isEmpty()) return true
         if (cleaned.equals("Shared a file", ignoreCase = true)) return true
+        if (runCatching { context.getString(R.string.shared_file) }.getOrNull()?.let { cleaned.equals(it, ignoreCase = true) } == true) return true
         if (cleaned.contains("Shared a file", ignoreCase = true) && cleaned.length < 40) return true
         // Matches emoji + filename patterns like "📄 1000004995.png"
         val withoutEmoji = cleaned.replace(Regex("^[\\p{So}\\p{Sc}\\s]+"), "").trim()
@@ -1984,6 +2034,7 @@ class GeniexInferenceService @Inject constructor(
     override suspend fun resetChatSession(chatId: String) {
         try {
             if (isVlmLoaded && vlmWrapper != null) {
+                lastVlmChatId = null
                 Log.d(TAG, "VLM: Resetting conversation state in-place for chat $chatId")
                 vlmWrapper?.stopStream()
                 val resetCode = vlmWrapper?.reset()

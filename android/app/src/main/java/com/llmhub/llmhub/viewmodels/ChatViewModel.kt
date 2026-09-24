@@ -1183,7 +1183,7 @@ class ChatViewModel(
                     modelPromptContent = "" // Audio token will be added later in prompt building
                 } else {
                     finalMessageContent = "📄 ${attachmentFileInfo?.name}"
-                    modelPromptContent = context.getString(R.string.shared_file)
+                    modelPromptContent = finalMessageContent
                 }
             }
 
