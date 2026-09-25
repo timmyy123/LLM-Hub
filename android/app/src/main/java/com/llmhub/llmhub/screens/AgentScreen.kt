@@ -68,9 +68,10 @@ fun AgentScreen(
     val isGenerating by viewModel.isGenerating.collectAsState()
     val isGemmaAudioEnabled by viewModel.isGemmaAudioEnabled.collectAsState()
     var showSettingsSheet by remember { mutableStateOf(false) }
-    // LiteRT-LM models only for AI Agent feature
+    // Both formats use the Agent's shared tool prompt, parser, approvals and executor.
     val availableModelsState = produceState<List<LLMModel>>(initialValue = emptyList(), context) {
-        value = ModelAvailabilityProvider.loadAvailableModels(context).filter { it.modelFormat == "litertlm" }
+        value = ModelAvailabilityProvider.loadAvailableModels(context)
+            .filter { it.modelFormat == "litertlm" || it.modelFormat == "gguf" }
     }
     val availableModels = availableModelsState.value
     val loadingModelName by viewModel.loadingModelName.collectAsState()
@@ -355,7 +356,7 @@ fun AgentScreen(
                         selectedMaxTokens = tokens
                         agentPrefs.edit().putInt("selected_max_tokens", tokens).apply()
                     },
-                    onLoadModel = { model, maxTokens, backend, deviceId, _, enableThinking ->
+                    onLoadModel = { model, maxTokens, backend, deviceId, nGpuLayers, enableThinking ->
                         selectedModelName = model.name
                         selectedMaxTokens = maxTokens
                         selectedBackendName = backend?.name
@@ -366,6 +367,7 @@ fun AgentScreen(
                             .putBoolean("agent_enable_thinking", enableThinking)
                             .putString("selected_backend", backend?.name)
                             .putString("selected_npu_device_id", deviceId)
+                            .putInt("selected_gpu_layers", nGpuLayers)
                             .apply()
                         viewModel.setGenerationParameters(maxTokens = maxTokens, enableThinking = enableThinking, contextWindow = maxTokens)
                         viewModel.loadModel(model, preferredBackend = backend, deviceId = deviceId)

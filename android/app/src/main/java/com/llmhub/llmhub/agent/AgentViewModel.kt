@@ -10,6 +10,7 @@ import androidx.lifecycle.viewModelScope
 import com.llmhub.llmhub.R
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import com.llmhub.llmhub.data.LLMModel
+import com.llmhub.llmhub.data.DeviceInfo
 import com.llmhub.llmhub.data.ModelAvailabilityProvider
 import com.llmhub.llmhub.inference.InferenceService
 import com.llmhub.llmhub.inference.UnifiedInferenceService
@@ -215,12 +216,37 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
     suspend fun loadModelSuspend(model: LLMModel, preferredBackend: LlmInference.Backend? = null, deviceId: String? = null) {
         _loadingModelName.value = model.name
         try {
+            val maxTokens = agentPrefs.getInt("selected_max_tokens", 4096)
+            val enableThinking = agentPrefs.getBoolean("agent_enable_thinking", true)
+            inferenceService.setGenerationParameters(
+                maxTokens = maxTokens,
+                topK = null,
+                topP = null,
+                temperature = null,
+                nGpuLayers = agentPrefs.getInt("selected_gpu_layers", 999),
+                enableThinking = enableThinking,
+                contextWindow = maxTokens,
+            )
+            val savedBackend = when (agentPrefs.getString("selected_backend", null)) {
+                "GPU" -> LlmInference.Backend.GPU
+                "CPU" -> LlmInference.Backend.CPU
+                else -> null
+            }
+            val defaultNpu = model.modelFormat == "gguf" && DeviceInfo.isLlamaCppHexagonSupported()
+            val finalBackend = preferredBackend ?: savedBackend ?: if (defaultNpu) LlmInference.Backend.GPU else null
+            val finalDeviceId = when {
+                finalBackend != LlmInference.Backend.GPU -> null
+                preferredBackend != null -> deviceId
+                savedBackend != null -> agentPrefs.getString("selected_npu_device_id", null)
+                defaultNpu -> "dev0"
+                else -> null
+            }
             inferenceService.loadModel(
                 model = model,
-                preferredBackend = preferredBackend,
+                preferredBackend = finalBackend,
                 disableVision = true,
                 disableAudio = !_isGemmaAudioEnabled.value,
-                deviceId = deviceId
+                deviceId = finalDeviceId
             )
             _activeModelName.value = inferenceService.getCurrentlyLoadedModel()?.name
         } finally {
@@ -305,7 +331,8 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
                 if (inferenceService.getCurrentlyLoadedModel() == null) {
                     val agentPrefs = getApplication<Application>().getSharedPreferences("agent_prefs", Context.MODE_PRIVATE)
                     val savedName = agentPrefs.getString("selected_model_name", "") ?: ""
-                    val availableModels = ModelAvailabilityProvider.loadAvailableModels(getApplication()).filter { it.modelFormat == "litertlm" }
+                    val availableModels = ModelAvailabilityProvider.loadAvailableModels(getApplication())
+                        .filter { it.modelFormat == "litertlm" || it.modelFormat == "gguf" }
                     val modelToLoad = availableModels.find { it.name == savedName } ?: availableModels.firstOrNull()
                     if (modelToLoad != null) {
                         loadModelSuspend(modelToLoad)
@@ -337,7 +364,8 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
                 if (loadedModel == null) {
                     val agentPrefs = getApplication<Application>().getSharedPreferences("agent_prefs", Context.MODE_PRIVATE)
                     val savedName = agentPrefs.getString("selected_model_name", "") ?: ""
-                    val availableModels = ModelAvailabilityProvider.loadAvailableModels(getApplication()).filter { it.modelFormat == "litertlm" }
+                    val availableModels = ModelAvailabilityProvider.loadAvailableModels(getApplication())
+                        .filter { it.modelFormat == "litertlm" || it.modelFormat == "gguf" }
                     val modelToLoad = availableModels.find { it.name == savedName } ?: availableModels.firstOrNull()
                     if (modelToLoad != null) {
                         loadModelSuspend(modelToLoad)
@@ -345,7 +373,8 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
                     }
                 }
 
-                if (loadedModel != null && (loadedModel.supportsAudio || loadedModel.name.contains("Gemma-4", ignoreCase = true))) {
+                if (loadedModel?.modelFormat == "litertlm" &&
+                    (loadedModel.supportsAudio || loadedModel.name.contains("Gemma-4", ignoreCase = true))) {
                     // Native Gemma Audio ingestion
                     processPromptWithTools(prompt = "User spoken request", audioBytes = audioBytes)
                 } else {
@@ -548,7 +577,7 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun parseToolCall(text: String): ParsedTool? {
         val marker = Regex("""\[\s*TOOL:\s*([a-zA-Z0-9._]+)\s*\(""", RegexOption.IGNORE_CASE)
-            .find(text) ?: return null
+            .find(text) ?: return parseJsonToolCall(text)
         val name = marker.groupValues[1]
         val argsStart = marker.range.last + 1
         var parenthesisDepth = 1
@@ -594,6 +623,30 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
             cleanName = "calculate_math"
         }
         return ParsedTool(cleanName, args)
+    }
+
+    // Some GGUF tool-trained models emit their own tagged JSON format even when the
+    // Agent asks for [TOOL: ...]. Feed it into the same approval/execution path.
+    private fun parseJsonToolCall(text: String): ParsedTool? {
+        val openTag = "<tool_call>"
+        val closeTag = "</tool_call>"
+        val start = text.indexOf(openTag, ignoreCase = true)
+        if (start < 0) return null
+        val end = text.indexOf(closeTag, start + openTag.length, ignoreCase = true)
+        if (end < 0) return null
+        val json = runCatching {
+            JSONObject(text.substring(start + openTag.length, end).trim())
+        }.getOrNull() ?: return null
+        val function = json.optJSONObject("function") ?: json
+        val name = function.optString("name").trim()
+        if (!name.matches(Regex("[a-zA-Z0-9._]+"))) return null
+        val arguments = function.opt("arguments") ?: return null
+        val args = when (arguments) {
+            is JSONObject -> arguments.toString()
+            is String -> arguments
+            else -> return null
+        }
+        return ParsedTool(name.replace('.', '_').lowercase(), args)
     }
 
     private suspend fun handleParsedToolCall(tool: ParsedTool, originalPrompt: String) {

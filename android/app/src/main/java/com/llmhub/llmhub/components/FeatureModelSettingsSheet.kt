@@ -122,10 +122,11 @@ fun FeatureModelSettingsSheet(
             }
         )
     }
-    var useNpu by remember(initialSelectedNpuDeviceId, selectedModel) {
+    var useNpu by remember(initialSelectedBackend, initialSelectedNpuDeviceId, selectedModel) {
         mutableStateOf(
             initialSelectedNpuDeviceId != null ||
-                (selectedModel?.modelFormat == "gguf" && DeviceInfo.isLlamaCppHexagonSupported())
+                (initialSelectedBackend == null && defaultUseGpu &&
+                    selectedModel?.modelFormat == "gguf" && DeviceInfo.isLlamaCppHexagonSupported())
         )
     }
     var gpuLayers by remember { mutableStateOf(999) }

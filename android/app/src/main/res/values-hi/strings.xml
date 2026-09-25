@@ -934,7 +934,7 @@
     <string name="agent_calendar_confirm">कैलेंडर ईवेंट बनाएं: %@</string>
     <string name="agent_shortcut_confirm">शॉर्टकट चलाएं: %@</string>
     <string name="agent_welcome_message">नमस्ते! मैं आपका AI एजेंट हूँ। मैं वेब खोज, नक्शा दिखाना, कैलेंडर ईवेंट, मौसम, अलार्म, संदेश और हैश की गणना कर सकता हूँ। आज मैं आपकी क्या सहायता कर सकता हूँ?</string>
-    <string name="agent_no_model_android">एजेंट का उपयोग करने के लिए पहले Gemma 4 E2/4B मॉडल डाउनलोड करें</string>
+    <string name="agent_no_model_android">एजेंट का उपयोग करने के लिए पहले GGUF या LiteRT-LM मॉडल डाउनलोड करें</string>
     <string name="agent_no_model_ios">एजेंट का उपयोग करने के लिए पहले एक मॉडल डाउनलोड करें</string>
     <string name="open_maps">नक्शा खोलें</string>
     <string name="agent_processing_tool">एजेंट टूल प्रोसेस कर रहा है...</string>
