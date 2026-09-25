@@ -128,7 +128,7 @@ class WritingAidViewModel(application: Application) : AndroidViewModel(applicati
                 } ?: available.firstOrNull()
                 modelToSelect?.let {
                     _selectedModel.value = it
-                    if (it.modelFormat == "gguf" && DeviceInfo.isQualcommNpuSupported() && _selectedNpuDeviceId.value == null) {
+                    if (it.modelFormat == "gguf" && DeviceInfo.isLlamaCppHexagonSupported() && _selectedNpuDeviceId.value == null) {
                         _selectedBackend.value = LlmInference.Backend.GPU
                         _selectedNpuDeviceId.value = "dev0"
                     } else {
@@ -160,7 +160,7 @@ class WritingAidViewModel(application: Application) : AndroidViewModel(applicati
         if (isGemma4_12B) {
             _selectedBackend.value = LlmInference.Backend.GPU
             _selectedNpuDeviceId.value = null
-        } else if (model.modelFormat == "gguf" && DeviceInfo.isQualcommNpuSupported() && _selectedNpuDeviceId.value == null) {
+        } else if (model.modelFormat == "gguf" && DeviceInfo.isLlamaCppHexagonSupported() && _selectedNpuDeviceId.value == null) {
             _selectedBackend.value = LlmInference.Backend.GPU
             _selectedNpuDeviceId.value = "dev0"
         } else {

@@ -362,7 +362,7 @@ class ChatViewModel(
         if (isLiteRtLmGemma4_12B) {
             _selectedBackend.value = LlmInference.Backend.GPU
             _selectedNpuDeviceId.value = null
-        } else if (model.modelFormat == "gguf" && DeviceInfo.isQualcommNpuSupported() && _selectedNpuDeviceId.value == null) {
+        } else if (model.modelFormat == "gguf" && DeviceInfo.isLlamaCppHexagonSupported() && _selectedNpuDeviceId.value == null) {
             _selectedBackend.value = LlmInference.Backend.GPU
             _selectedNpuDeviceId.value = "dev0"
         } else {
@@ -415,7 +415,7 @@ class ChatViewModel(
                     if (isLiteRtLmGemma4_12B) {
                         _selectedBackend.value = LlmInference.Backend.GPU
                         _selectedNpuDeviceId.value = null
-                    } else if (model.modelFormat == "gguf" && DeviceInfo.isQualcommNpuSupported()) {
+                    } else if (model.modelFormat == "gguf" && DeviceInfo.isLlamaCppHexagonSupported()) {
                         _selectedBackend.value = LlmInference.Backend.GPU
                         _selectedNpuDeviceId.value = "dev0"
                     } else {
@@ -2464,18 +2464,19 @@ class ChatViewModel(
     }
     
     private suspend fun loadModelWithSavedConfig(model: LLMModel): Boolean {
-        val deviceId = if (!backendExplicitlySet && model.modelFormat == "gguf" && DeviceInfo.isQualcommNpuSupported() && _selectedNpuDeviceId.value == null) {
-            _selectedNpuDeviceId.value = "dev0"
-            "dev0"
-        } else {
-            _selectedNpuDeviceId.value
-        }
+        // A lazy load must use this model's saved sheet config, not the backend/device
+        // still held in the chat UI from a different model or a previous session.
+        val savedConfig = modelPrefs.getModelConfig(model.name)
+        val defaultNpuDevice = if (
+            savedConfig == null && !backendExplicitlySet && model.modelFormat == "gguf" &&
+            DeviceInfo.isLlamaCppHexagonSupported()
+        ) "dev0" else null
         return com.llmhub.llmhub.data.loadModelWithSavedConfig(
             model = model,
             modelPrefs = modelPrefs,
             inferenceService = inferenceService,
-            backendOverride = _selectedBackend.value,
-            deviceIdOverride = deviceId,
+            backendOverride = if (backendExplicitlySet) _selectedBackend.value else null,
+            deviceIdOverride = if (backendExplicitlySet) _selectedNpuDeviceId.value else savedConfig?.deviceId ?: defaultNpuDevice,
             onConfigApplied = { cfg ->
                 isVisionDisabled = cfg.disableVision
                 isAudioDisabled = cfg.disableAudio

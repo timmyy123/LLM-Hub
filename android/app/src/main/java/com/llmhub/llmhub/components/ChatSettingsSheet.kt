@@ -108,7 +108,7 @@ fun ChatSettingsSheet(
             selectedModel?.supportsGpu == true &&
                 !isPhi4Mini &&
                 selectedModel?.modelFormat == "gguf" &&
-                com.llmhub.llmhub.data.DeviceInfo.isQualcommNpuSupported()
+                com.llmhub.llmhub.data.DeviceInfo.isLlamaCppHexagonSupported()
         }
     }
     
@@ -134,7 +134,7 @@ fun ChatSettingsSheet(
     var useNpu by remember {
         mutableStateOf(
             initialSelectedNpuDeviceId != null ||
-                (selectedModel?.modelFormat == "gguf" && com.llmhub.llmhub.data.DeviceInfo.isQualcommNpuSupported())
+                (selectedModel?.modelFormat == "gguf" && com.llmhub.llmhub.data.DeviceInfo.isLlamaCppHexagonSupported())
         )
     }
     var gpuLayers by remember { mutableStateOf(999) }
@@ -214,7 +214,7 @@ fun ChatSettingsSheet(
                     topK = 64
                     topP = 0.95f
                     temperature = 1.0f
-                    val ggufNpuDefault = model.modelFormat == "gguf" && com.llmhub.llmhub.data.DeviceInfo.isQualcommNpuSupported()
+                    val ggufNpuDefault = model.modelFormat == "gguf" && com.llmhub.llmhub.data.DeviceInfo.isLlamaCppHexagonSupported()
                     useGpu = if (newIsGemma4_12B) true else newDefaultUseGpu
                     useNpu = ggufNpuDefault
                     disableVision = newIsGemma3n || newIsGemma4Small || !selectedModelSupportsVisionInput
@@ -235,7 +235,7 @@ fun ChatSettingsSheet(
                 topK = 64
                 topP = 0.95f
                 temperature = 1.0f
-                val ggufNpuDefault = selectedModel?.modelFormat == "gguf" && com.llmhub.llmhub.data.DeviceInfo.isQualcommNpuSupported()
+                val ggufNpuDefault = selectedModel?.modelFormat == "gguf" && com.llmhub.llmhub.data.DeviceInfo.isLlamaCppHexagonSupported()
                 useGpu = if (newIsGemma4_12B) true else newDefaultUseGpu
                 useNpu = ggufNpuDefault
                 disableVision = newIsGemma3n || newIsGemma4Small || !selectedModelSupportsVisionInput

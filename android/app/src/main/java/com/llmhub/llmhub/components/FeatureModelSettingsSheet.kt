@@ -107,7 +107,7 @@ fun FeatureModelSettingsSheet(
             selectedModel?.supportsGpu == true &&
                 !isPhi4Mini &&
                 selectedModel?.modelFormat == "gguf" &&
-                DeviceInfo.isQualcommNpuSupported()
+                DeviceInfo.isLlamaCppHexagonSupported()
         }
     }
 
@@ -125,7 +125,7 @@ fun FeatureModelSettingsSheet(
     var useNpu by remember(initialSelectedNpuDeviceId, selectedModel) {
         mutableStateOf(
             initialSelectedNpuDeviceId != null ||
-                (selectedModel?.modelFormat == "gguf" && DeviceInfo.isQualcommNpuSupported())
+                (selectedModel?.modelFormat == "gguf" && DeviceInfo.isLlamaCppHexagonSupported())
         )
     }
     var gpuLayers by remember { mutableStateOf(999) }

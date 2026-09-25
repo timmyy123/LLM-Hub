@@ -4,14 +4,22 @@
 #include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <cstdlib>
 #include <cstdint>
 #include <string>
 #include <thread>
 #include <vector>
 
 #include "llama.h"
+#include "ggml-backend.h"
 #include "mtmd-helper.h"
 #include "mtmd.h"
+
+#ifdef LLMHUB_SNAPDRAGON
+#define LLAMA_JNI(name) Java_com_llmhub_llmhub_inference_LlamaCppSnapdragonNative_##name
+#else
+#define LLAMA_JNI(name) Java_com_llmhub_llmhub_inference_LlamaCppNative_##name
+#endif
 
 namespace {
 
@@ -159,9 +167,23 @@ int decode_tokens(const std::vector<llama_token> & tokens) {
 } // namespace
 
 extern "C" JNIEXPORT jint JNICALL
-Java_com_llmhub_llmhub_inference_LlamaCppNative_nativeInit(JNIEnv *, jobject) {
+LLAMA_JNI(nativeInit)(JNIEnv * env, jobject, jstring library_dir, jstring htp_dir) {
     if (!g_backend_initialized) {
         llama_log_set(log_callback, nullptr);
+#ifdef LLMHUB_SNAPDRAGON
+        const std::string htp_path = from_jstring(env, htp_dir);
+        if (!htp_path.empty()) {
+            const char * old_path = std::getenv("ADSP_LIBRARY_PATH");
+            const std::string path = htp_path + (old_path != nullptr ? ";" + std::string(old_path) : "");
+            setenv("ADSP_LIBRARY_PATH", path.c_str(), 1);
+        }
+        const std::string native_path = from_jstring(env, library_dir);
+        ggml_backend_load_all_from_path(native_path.c_str());
+#else
+        (void) env;
+        (void) library_dir;
+        (void) htp_dir;
+#endif
         llama_backend_init();
         g_backend_initialized = true;
     }
@@ -169,14 +191,28 @@ Java_com_llmhub_llmhub_inference_LlamaCppNative_nativeInit(JNIEnv *, jobject) {
 }
 
 extern "C" JNIEXPORT jint JNICALL
-Java_com_llmhub_llmhub_inference_LlamaCppNative_nativeLoadModel(
+LLAMA_JNI(nativeLoadModel)(
     JNIEnv * env, jobject, jstring model_path, jstring mmproj_path,
-    jint context_size, jint thread_count) {
+    jint context_size, jint thread_count, jstring device_name, jint gpu_layers) {
     unload_model();
     const std::string path = from_jstring(env, model_path);
 
     llama_model_params model_params = llama_model_default_params();
+#ifdef LLMHUB_SNAPDRAGON
+    const std::string requested_device = from_jstring(env, device_name);
+    ggml_backend_dev_t selected_device = ggml_backend_dev_by_name(requested_device.c_str());
+    if (selected_device == nullptr) {
+        __android_log_print(ANDROID_LOG_ERROR, TAG, "Requested accelerator unavailable: %s", requested_device.c_str());
+        return 3;
+    }
+    ggml_backend_dev_t selected_devices[] = {selected_device, nullptr};
+    model_params.devices = selected_devices;
+    model_params.n_gpu_layers = std::max(1, static_cast<int>(gpu_layers));
+#else
+    (void) device_name;
+    (void) gpu_layers;
     model_params.n_gpu_layers = 0;
+#endif
     g_model = llama_model_load_from_file(path.c_str(), model_params);
     if (g_model == nullptr) return 1;
 
@@ -196,7 +232,7 @@ Java_com_llmhub_llmhub_inference_LlamaCppNative_nativeLoadModel(
     if (!projector_path.empty()) {
         mtmd_helper_log_set(log_callback, nullptr);
         mtmd_context_params mtmd_params = mtmd_context_params_default();
-        mtmd_params.use_gpu = false;
+        mtmd_params.use_gpu = model_params.n_gpu_layers > 0;
         mtmd_params.n_threads = thread_count;
         mtmd_params.print_timings = true;
         g_mtmd = mtmd_init_from_file(projector_path.c_str(), g_model, mtmd_params);
@@ -216,17 +252,17 @@ Java_com_llmhub_llmhub_inference_LlamaCppNative_nativeLoadModel(
 }
 
 extern "C" JNIEXPORT jboolean JNICALL
-Java_com_llmhub_llmhub_inference_LlamaCppNative_nativeSupportsVision(JNIEnv *, jobject) {
+LLAMA_JNI(nativeSupportsVision)(JNIEnv *, jobject) {
     return g_mtmd != nullptr && mtmd_support_vision(g_mtmd) ? JNI_TRUE : JNI_FALSE;
 }
 
 extern "C" JNIEXPORT jstring JNICALL
-Java_com_llmhub_llmhub_inference_LlamaCppNative_nativeMediaMarker(JNIEnv * env, jobject) {
+LLAMA_JNI(nativeMediaMarker)(JNIEnv * env, jobject) {
     return env->NewStringUTF(mtmd_default_marker());
 }
 
 extern "C" JNIEXPORT jstring JNICALL
-Java_com_llmhub_llmhub_inference_LlamaCppNative_nativeFormatChat(
+LLAMA_JNI(nativeFormatChat)(
     JNIEnv * env, jobject, jobjectArray role_array, jobjectArray content_array) {
     if (g_model == nullptr) return nullptr;
     std::vector<std::string> roles;
@@ -238,7 +274,7 @@ Java_com_llmhub_llmhub_inference_LlamaCppNative_nativeFormatChat(
 }
 
 extern "C" JNIEXPORT jint JNICALL
-Java_com_llmhub_llmhub_inference_LlamaCppNative_nativeStartCompletion(
+LLAMA_JNI(nativeStartCompletion)(
     JNIEnv * env, jobject, jstring formatted_prompt, jobjectArray image_path_array,
     jint max_tokens, jfloat temperature, jint top_k, jfloat top_p) {
     if (g_model == nullptr || g_context == nullptr) return 1;
@@ -394,7 +430,7 @@ Java_com_llmhub_llmhub_inference_LlamaCppNative_nativeStartCompletion(
 }
 
 extern "C" JNIEXPORT jstring JNICALL
-Java_com_llmhub_llmhub_inference_LlamaCppNative_nativeNextToken(JNIEnv * env, jobject) {
+LLAMA_JNI(nativeNextToken)(JNIEnv * env, jobject) {
     if (g_context == nullptr || g_sampler == nullptr || g_stop.load() || g_generated >= g_max_tokens) {
         return nullptr;
     }
@@ -421,25 +457,25 @@ Java_com_llmhub_llmhub_inference_LlamaCppNative_nativeNextToken(JNIEnv * env, jo
 }
 
 extern "C" JNIEXPORT void JNICALL
-Java_com_llmhub_llmhub_inference_LlamaCppNative_nativeStop(JNIEnv *, jobject) {
+LLAMA_JNI(nativeStop)(JNIEnv *, jobject) {
     g_stop.store(true);
 }
 
 extern "C" JNIEXPORT void JNICALL
-Java_com_llmhub_llmhub_inference_LlamaCppNative_nativeReset(JNIEnv *, jobject) {
+LLAMA_JNI(nativeReset)(JNIEnv *, jobject) {
     g_stop.store(true);
     if (g_context != nullptr) llama_memory_clear(llama_get_memory(g_context), false);
     if (g_sampler != nullptr) llama_sampler_reset(g_sampler);
 }
 
 extern "C" JNIEXPORT void JNICALL
-Java_com_llmhub_llmhub_inference_LlamaCppNative_nativeUnload(JNIEnv *, jobject) {
+LLAMA_JNI(nativeUnload)(JNIEnv *, jobject) {
     g_stop.store(true);
     unload_model();
 }
 
 extern "C" JNIEXPORT jdouble JNICALL
-Java_com_llmhub_llmhub_inference_LlamaCppNative_nativeDecodeSpeed(JNIEnv *, jobject) {
+LLAMA_JNI(nativeDecodeSpeed)(JNIEnv *, jobject) {
     const int64_t elapsed = now_us() - g_decode_start_us;
     return elapsed > 0 ? static_cast<double>(g_generated) * 1000000.0 / static_cast<double>(elapsed) : 0.0;
 }

@@ -10,9 +10,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.DrawerValue
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.NavHostController
@@ -23,7 +21,6 @@ import com.llmhub.llmhub.screens.*
 import com.llmhub.llmhub.viewmodels.ChatViewModelFactory
 import com.llmhub.llmhub.viewmodels.ThemeViewModel
 import com.llmhub.llmhub.R
-import com.llmhub.llmhub.inference.GgufEnginePolicy
 import androidx.compose.runtime.collectAsState
 
 sealed class Screen(val route: String) {
@@ -74,38 +71,6 @@ fun LlmHubNavigation(
     val isMainFeatureRoute = currentRoute == Screen.Chat.route || currentRoute?.startsWith(Screen.Agent.route) == true
     var wasInMainFeatureRoute by remember { mutableStateOf(isMainFeatureRoute) }
     val context = LocalContext.current
-    var showGgufCrashPrompt by remember {
-        mutableStateOf(GgufEnginePolicy.hasInterruptedGeniexLoad(context))
-    }
-
-    fun dismissGgufCrashPrompt() {
-        GgufEnginePolicy.acknowledgeInterruptedGeniexLoad(context)
-        showGgufCrashPrompt = false
-    }
-
-    if (showGgufCrashPrompt) {
-        AlertDialog(
-            onDismissRequest = { dismissGgufCrashPrompt() },
-            title = { Text(stringResource(R.string.gguf_engine_crash_title)) },
-            text = { Text(stringResource(R.string.gguf_engine_crash_message)) },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        dismissGgufCrashPrompt()
-                        navController.navigate(Screen.Settings.route)
-                    },
-                ) {
-                    Text(stringResource(R.string.gguf_engine_open_settings))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { dismissGgufCrashPrompt() }) {
-                    Text(stringResource(R.string.dismiss))
-                }
-            },
-        )
-    }
-
     // Billing — observe premium status for paywall gating
     val billingManager = (context.applicationContext as LlmHubApplication).billingManager
     val isPremium by billingManager.isPremium.collectAsState()

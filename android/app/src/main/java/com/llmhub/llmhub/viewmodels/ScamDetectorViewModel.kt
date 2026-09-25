@@ -160,7 +160,7 @@ class ScamDetectorViewModel(application: Application) : AndroidViewModel(applica
             }
 
             val model = _selectedModel.value
-            if (model?.modelFormat == "gguf" && DeviceInfo.isQualcommNpuSupported() && _selectedNpuDeviceId.value == null) {
+            if (model?.modelFormat == "gguf" && DeviceInfo.isLlamaCppHexagonSupported() && _selectedNpuDeviceId.value == null) {
                 _selectedBackend.value = LlmInference.Backend.GPU
                 _selectedNpuDeviceId.value = "dev0"
             }
@@ -185,7 +185,7 @@ class ScamDetectorViewModel(application: Application) : AndroidViewModel(applica
         if (isGemma4_12B) {
             _selectedBackend.value = LlmInference.Backend.GPU
             _selectedNpuDeviceId.value = null
-        } else if (model.modelFormat == "gguf" && DeviceInfo.isQualcommNpuSupported() && _selectedNpuDeviceId.value == null) {
+        } else if (model.modelFormat == "gguf" && DeviceInfo.isLlamaCppHexagonSupported() && _selectedNpuDeviceId.value == null) {
             _selectedBackend.value = LlmInference.Backend.GPU
             _selectedNpuDeviceId.value = "dev0"
         } else {

@@ -139,7 +139,7 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
             }
 
             val model = _selectedModel.value
-            if (model?.modelFormat == "gguf" && DeviceInfo.isQualcommNpuSupported() && _selectedNpuDeviceId.value == null) {
+            if (model?.modelFormat == "gguf" && DeviceInfo.isLlamaCppHexagonSupported() && _selectedNpuDeviceId.value == null) {
                 _selectedBackend.value = LlmInference.Backend.GPU
                 _selectedNpuDeviceId.value = "dev0"
             }
@@ -208,7 +208,7 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
         if (isGemma4_12B) {
             _selectedBackend.value = LlmInference.Backend.GPU
             _selectedNpuDeviceId.value = null
-        } else if (model.modelFormat == "gguf" && DeviceInfo.isQualcommNpuSupported() && _selectedNpuDeviceId.value == null) {
+        } else if (model.modelFormat == "gguf" && DeviceInfo.isLlamaCppHexagonSupported() && _selectedNpuDeviceId.value == null) {
             _selectedBackend.value = LlmInference.Backend.GPU
             _selectedNpuDeviceId.value = "dev0"
         }

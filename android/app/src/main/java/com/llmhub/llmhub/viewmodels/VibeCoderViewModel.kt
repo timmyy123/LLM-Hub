@@ -254,7 +254,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
         } else {
             null
         }
-        if (model.modelFormat == "gguf" && DeviceInfo.isQualcommNpuSupported() && _selectedNpuDeviceId.value == null) {
+        if (model.modelFormat == "gguf" && DeviceInfo.isLlamaCppHexagonSupported() && _selectedNpuDeviceId.value == null) {
             _selectedNpuDeviceId.value = "dev0"
         }
 

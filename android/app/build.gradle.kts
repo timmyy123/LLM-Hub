@@ -1,7 +1,5 @@
 import java.util.Properties
 import java.io.FileInputStream
-import java.util.zip.ZipFile
-import java.util.zip.ZipEntry
 
 // Load local.properties at the top-level so it's available everywhere
 val localProperties = Properties()
@@ -62,9 +60,7 @@ android {
     }
 
     // Configure asset packs for install-time delivery
-    // geniex_npu_pack delivers QNN HTP runtime libs (~175 MB)
-    // keeping the base module well under Play Store's 200 MB limit
-    assetPacks += mutableSetOf(":qnn_pack", ":sd_pack", ":geniex_npu_pack")
+    assetPacks += mutableSetOf(":qnn_pack", ":sd_pack")
 
     buildTypes {
         release {
@@ -140,7 +136,7 @@ android {
             // Android only enforces 16KB page alignment on API 35+ devices with new kernel.
             // These libs still load correctly on all current devices; suppress the build warning.
             // Track: https://github.com/argmaxinc/WhisperKitAndroid/issues
-            // Exclude QNN HTP runtime libs from base module — delivered via geniex_npu_pack asset pack
+            // QNN runtime libraries for other features are delivered separately.
             // NOTE: libQnnTFLiteDelegate.so must NOT be excluded — WhisperKit needs it in the APK
             excludes += setOf(
                 "**/libQnnHtp*.so",
@@ -391,9 +387,6 @@ dependencies {
     // IPA Transcribers - pure-Kotlin G2P fallback for Kokoro TTS
     implementation("com.github.medavox:IPA-Transcribers:v0.2")
 
-    // GenieX SDK for GGUF model support (LLM/VLM inference on CPU/GPU/NPU)
-    implementation(files("libs/geniex-android-aar-v0.7.0.aar"))
-
     // WhisperKit for fast on-device ASR (TFLite + QNN NPU acceleration)
     implementation("com.argmaxinc:whisperkit:0.3.3")
     implementation("com.qualcomm.qti:qnn-runtime:2.34.0")
@@ -421,77 +414,8 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
 }
 
-// ── Extract QNN HTP .so files from GenieX AAR into geniex_npu_pack ──────────────
-// GenieX 0.5.0 bundles ~175 MB of QNN HTP runtime libs (libQnn*, libPlatformValidator,
-// libCalculator, libhta*) in its jni/arm64-v8a/ folder. We extract them into the
-// geniex_npu_pack asset pack source directory so Play Asset Delivery can serve them
-// at install time. This keeps the base module well under Play Store's 200 MB limit.
-//
-// The extracted libs are stripped from the main jniLibs via packaging excludes below.
-// At runtime, the app extracts them from the asset pack to filesDir and loads via dlopen.
-// For APK sideloads, NPU falls back to GPU / CPU automatically.
-
-val geniexAarConfig by configurations.creating {
-    isCanBeConsumed = false
-    isCanBeResolved = true
-}
-dependencies { geniexAarConfig(files("libs/geniex-android-aar-v0.7.0.aar")) }
-
-val npuPackAssetsDir = rootProject.file("geniex_npu_pack/src/main/assets/npu")
-
-val extractGeniexNpuAssets by tasks.registering {
-    description = "Extracts QNN HTP .so files from GenieX AAR into geniex_npu_pack"
-    group = "build setup"
-    inputs.files(geniexAarConfig)
-    outputs.dir(npuPackAssetsDir)
-    outputs.upToDateWhen {
-        npuPackAssetsDir.resolve("libQnnHtp.so").exists()
-    }
-    doLast {
-        val aar = geniexAarConfig.singleFile
-        npuPackAssetsDir.deleteRecursively()
-        npuPackAssetsDir.mkdirs()
-        var extracted = 0
-        ZipFile(aar).use { zip ->
-            zip.entries().toList().asSequence()
-                .filter { !it.isDirectory && it.name.startsWith("jni/arm64-v8a/") }
-                .filter { entry ->
-                    val name = entry.name.substringAfterLast("/")
-                    name.startsWith("libQnn") ||
-                    name.startsWith("libPlatformValidator") ||
-                    name.startsWith("libCalculator") ||
-                    name.startsWith("libcalculator") ||
-                    name.startsWith("libhta") ||
-                    name.startsWith("libNetRunDirect")
-                }
-                .forEach { entry ->
-                    val fileName = entry.name.substringAfterLast("/")
-                    val target = npuPackAssetsDir.resolve(fileName)
-                    target.parentFile.mkdirs()
-                    zip.getInputStream(entry).use { src ->
-                        target.outputStream().use { dst -> src.copyTo(dst) }
-                    }
-                    extracted++
-                }
-        }
-        logger.lifecycle("extractGeniexNpu: extracted $extracted files → ${npuPackAssetsDir.absolutePath}")
-    }
-}
-
 // Detect at configuration time whether this is an AAB bundle build or an APK build.
 val isBundleBuild = gradle.startParameter.taskNames.any { it.contains("bundle", ignoreCase = true) }
-
-// Run extraction + wire dependency only during AAB bundle builds
-if (isBundleBuild) {
-    tasks.configureEach {
-        val n = name
-        if ((n.startsWith("merge") && n.contains("Assets", ignoreCase = true)) ||
-            (n.startsWith("assetPack") && n.contains("PreBundleTask", ignoreCase = true))
-        ) {
-            dependsOn(extractGeniexNpuAssets)
-        }
-    }
-}
 
 // ── Strip ALL assets/npu/, cvtbase/, qnnlibs/ from base module (AAB builds only) ──────
 // npu/cvtbase/qnnlibs are delivered via asset packs in AAB; strip from base merged output.

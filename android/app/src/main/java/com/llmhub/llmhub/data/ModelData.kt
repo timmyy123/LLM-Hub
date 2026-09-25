@@ -44,6 +44,13 @@ object DeviceInfo {
         return getChipsetSuffix() in setOf("888", "8gen1", "8gen2", "8gen3", "8gen4", "8gen5", "7gen4")
     }
 
+    /** llama.cpp b11179 ships Hexagon HTP kernels for v73/v75/v79/v81, not v69. */
+    fun isLlamaCppHexagonSupported(): Boolean = getDeviceSoc() in setOf(
+        "SM8550", "SM8550P", "QCS8550", "QCM8550",
+        "SM8650", "SM8650P", "SM8750", "SM8750P",
+        "SM8845", "SM8850", "SM8850P",
+    )
+
     /**
      * Normalize chipset suffix for SD QNN package naming.
      * Current hosted SD-QNN variants are keyed as 8gen1 and 8gen2, where 8gen2 is
