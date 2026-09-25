@@ -39,34 +39,35 @@ object MusicGeneratorBackend {
     @Volatile private var loadedBundle: LoadedBundle? = null
 
     private sealed class LoadedBundle(
-        val modelName: String,
+        val modelName: String
+    ) : AutoCloseable
+
+    private class QuickBundle(
+        modelName: String,
+        val textFile: File,
+        val coreFile: File,
+        val decodeFile: File,
+        val tokenizer: SentencePieceTokenizer
+    ) : LoadedBundle(modelName) {
+        override fun close() {
+            // QuickBundle runs models on-demand per stage and closes each immediately
+        }
+    }
+
+    private class HdBundle(
+        modelName: String,
         val textModel: CompiledModel,
         val coreModel: CompiledModel,
-        val decodeModel: CompiledModel
-    ) : AutoCloseable {
+        val decodeModel: CompiledModel,
+        val tokenizer: BpeTokenizer,
+        val longModel: Boolean
+    ) : LoadedBundle(modelName) {
         override fun close() {
             runCatching { decodeModel.close() }
             runCatching { coreModel.close() }
             runCatching { textModel.close() }
         }
     }
-
-    private class QuickBundle(
-        modelName: String,
-        textModel: CompiledModel,
-        coreModel: CompiledModel,
-        decodeModel: CompiledModel,
-        val tokenizer: SentencePieceTokenizer
-    ) : LoadedBundle(modelName, textModel, coreModel, decodeModel)
-
-    private class HdBundle(
-        modelName: String,
-        textModel: CompiledModel,
-        coreModel: CompiledModel,
-        decodeModel: CompiledModel,
-        val tokenizer: BpeTokenizer,
-        val longModel: Boolean
-    ) : LoadedBundle(modelName, textModel, coreModel, decodeModel)
 
     fun isModelLoaded(modelName: String): Boolean = loadedBundle?.modelName == modelName
 
@@ -152,79 +153,85 @@ object MusicGeneratorBackend {
     ): File {
         val tokenizer = bundle.tokenizer
 
-        onProgress(0.01f)
-        bundle.textModel.let { textModel ->
-            onProgress(0.03f)
-            bundle.coreModel.let { coreModel ->
-                onProgress(0.06f)
-                bundle.decodeModel.let { decodeModel ->
-                    onProgress(0.09f)
-                    val tokenIds = tokenizer.encode(prompt)
-                    val ids = LongArray(128)
-                    val mask = LongArray(128)
-                    repeat(min(tokenIds.size, 128)) { index ->
-                        ids[index] = tokenIds[index].toLong()
-                        mask[index] = 1L
-                    }
+        onProgress(0.02f)
+        val tokenIds = tokenizer.encode(prompt)
+        val ids = LongArray(128)
+        val mask = LongArray(128)
+        repeat(min(tokenIds.size, 128)) { index ->
+            ids[index] = tokenIds[index].toLong()
+            mask[index] = 1L
+        }
 
-                    val (conditioning, conditioningMask) = textModel.buffers { inputs, outputs ->
-                        inputs[0].writeLong(ids)
-                        inputs[1].writeLong(mask)
-                        inputs[2].writeFloat(floatArrayOf(durationSeconds))
-                        Log.i(TAG, "Running Quick conditioner")
-                        textModel.run(inputs, outputs)
-                        Log.i(TAG, "Quick conditioner complete")
-                        outputs[0].readFloat() to outputs[2].readFloat()
-                    }
-                    onProgress(0.12f)
+        // Stage 1: Text Conditioner (Float32, ~420MB). Compiled, executed, and immediately released.
+        onProgress(0.04f)
+        val (conditioning, conditioningMask) = createModelQuick(bundle.textFile, "Quick conditioner").useModel { textModel ->
+            textModel.buffers { inputs, outputs ->
+                inputs[0].writeLong(ids)
+                inputs[1].writeLong(mask)
+                inputs[2].writeFloat(floatArrayOf(durationSeconds))
+                Log.i(TAG, "Running Quick conditioner")
+                textModel.run(inputs, outputs)
+                Log.i(TAG, "Quick conditioner complete")
+                outputs[0].readFloat() to outputs[2].readFloat()
+            }
+        }
+        System.gc()
+        onProgress(0.12f)
 
-                    val schedule = FloatArray(9) { index ->
-                        when (index) {
-                            0 -> 1f
-                            8 -> 0f
-                            else -> 1f / (exp((-6f + index).toDouble()).toFloat() + 1f)
-                        }
-                    }
-                    var latent = gaussian(seed, 16_384)
-                    val nextLatent = FloatArray(16_384)
-                    val noise = FloatArray(16_384)
-                    val timeArray = FloatArray(1)
+        // Stage 2: DiT Core (Float32, ~328MB). Compiled, runs 8 diffusion steps, and immediately released.
+        val schedule = FloatArray(9) { index ->
+            when (index) {
+                0 -> 1f
+                8 -> 0f
+                else -> 1f / (exp((-6f + index).toDouble()).toFloat() + 1f)
+            }
+        }
+        var latent = gaussian(seed, 16_384)
+        val nextLatent = FloatArray(16_384)
+        val noise = FloatArray(16_384)
+        val timeArray = FloatArray(1)
 
-                    coreModel.buffers { inputs, outputs ->
-                        inputs[0].writeFloat(conditioning)
-                        inputs[1].writeFloat(conditioningMask)
-                        repeat(8) { step ->
-                            val time = schedule[step]
-                            val nextTime = schedule[step + 1]
-                            inputs[2].writeFloat(latent)
-                            timeArray[0] = time
-                            inputs[3].writeFloat(timeArray)
-                            Log.i(TAG, "Running Quick DiT step ${step + 1}/8")
-                            coreModel.run(inputs, outputs)
-                            val velocity = outputs[0].readFloat()
-                            fillGaussian(seed + step + 4564L, noise)
-                            for (i in 0 until 16_384) {
-                                nextLatent[i] = noise[i] * nextTime + (1f - nextTime) * (latent[i] - velocity[i] * time)
-                            }
-                            System.arraycopy(nextLatent, 0, latent, 0, 16_384)
-                            onProgress(0.12f + ((step + 1) * 0.78f / 8f))
-                        }
+        createModelQuick(bundle.coreFile, "Quick DiT").useModel { coreModel ->
+            coreModel.buffers { inputs, outputs ->
+                inputs[0].writeFloat(conditioning)
+                inputs[1].writeFloat(conditioningMask)
+                repeat(8) { step ->
+                    val time = schedule[step]
+                    val nextTime = schedule[step + 1]
+                    inputs[2].writeFloat(latent)
+                    timeArray[0] = time
+                    inputs[3].writeFloat(timeArray)
+                    Log.i(TAG, "Running Quick DiT step ${step + 1}/8")
+                    coreModel.run(inputs, outputs)
+                    val velocity = outputs[0].readFloat()
+                    fillGaussian(seed + step + 4564L, noise)
+                    for (i in 0 until 16_384) {
+                        nextLatent[i] = noise[i] * nextTime + (1f - nextTime) * (latent[i] - velocity[i] * time)
                     }
-
-                    val audio = decodeModel.buffers { inputs, outputs ->
-                        inputs[0].writeFloat(latent)
-                        Log.i(TAG, "Running Quick decoder")
-                        decodeModel.run(inputs, outputs)
-                        Log.i(TAG, "Quick decoder complete")
-                        outputs[0].readFloat()
-                    }
-                    onProgress(0.95f)
-                    val frames = min(QUICK_CHANNEL_SAMPLES, max(1, (durationSeconds * SAMPLE_RATE).roundToInt()))
-                    return writeStereoWav(context, "soundgen", audio, QUICK_CHANNEL_SAMPLES, frames, normalize = false)
-                        .also { onProgress(1f) }
+                    System.arraycopy(nextLatent, 0, latent, 0, 16_384)
+                    onProgress(0.12f + ((step + 1) * 0.78f / 8f))
                 }
             }
         }
+        System.gc()
+        onProgress(0.92f)
+
+        // Stage 3: Audio Decoder (Float32, ~298MB). Compiled, executed, and immediately released.
+        val audio = createModelQuick(bundle.decodeFile, "Quick decoder").useModel { decodeModel ->
+            decodeModel.buffers { inputs, outputs ->
+                inputs[0].writeFloat(latent)
+                Log.i(TAG, "Running Quick decoder")
+                decodeModel.run(inputs, outputs)
+                Log.i(TAG, "Quick decoder complete")
+                outputs[0].readFloat()
+            }
+        }
+        System.gc()
+        onProgress(0.96f)
+
+        val frames = min(QUICK_CHANNEL_SAMPLES, max(1, (durationSeconds * SAMPLE_RATE).roundToInt()))
+        return writeStereoWav(context, "soundgen", audio, QUICK_CHANNEL_SAMPLES, frames, normalize = false)
+            .also { onProgress(1f) }
     }
 
     private fun generateHd(
@@ -328,7 +335,23 @@ object MusicGeneratorBackend {
         }
     }
 
-    private fun createModel(file: File, stage: String = file.name): CompiledModel {
+    private fun createModelQuick(file: File, stage: String = file.name): CompiledModel {
+        return try {
+            Log.i(TAG, "Compiling $stage with GPU: ${file.name}")
+            CompiledModel.create(
+                file.absolutePath,
+                CompiledModel.Options(Accelerator.GPU, Accelerator.CPU)
+            ).also { Log.i(TAG, "$stage GPU compilation complete") }
+        } catch (t: Throwable) {
+            Log.w(TAG, "GPU load failed for $stage (${file.name}), CPU fallback", t)
+            CompiledModel.create(
+                file.absolutePath,
+                CompiledModel.Options(Accelerator.CPU)
+            ).also { Log.i(TAG, "$stage CPU compilation complete") }
+        }
+    }
+
+    private fun createModelHd(file: File, stage: String = file.name): CompiledModel {
         Log.i(TAG, "Compiling $stage with CPU: ${file.name}")
         return CompiledModel.create(file.absolutePath, CompiledModel.Options(Accelerator.CPU))
             .also { Log.i(TAG, "$stage compilation complete") }
@@ -357,9 +380,9 @@ object MusicGeneratorBackend {
                 )
                 val decodeFile = requireFile(modelDir, decodeOriginal, "sghd_decode.litert")
                 val tokenizer = BpeTokenizer.load(requireFile(modelDir, "tokenizer.model", "sghd_vocab.spm"))
-                textModel = createModel(textFile, "SoundGen HD conditioner")
-                coreModel = createModel(coreFile, "SoundGen HD DiT")
-                decodeModel = createModel(decodeFile, "SoundGen HD decoder")
+                textModel = createModelHd(textFile, "SoundGen HD conditioner")
+                coreModel = createModelHd(coreFile, "SoundGen HD DiT")
+                decodeModel = createModelHd(decodeFile, "SoundGen HD decoder")
                 HdBundle(
                     modelName,
                     requireNotNull(textModel),
@@ -373,15 +396,12 @@ object MusicGeneratorBackend {
                 val coreFile = requireFile(modelDir, "dit_model.tflite", "dit_model.litert", "sg_core.litert")
                 val decodeFile = requireFile(modelDir, "autoencoder_model.tflite", "sg_decode.litert")
                 val tokenizer = SentencePieceTokenizer.load(requireFile(modelDir, "spiece.model", "sg_vocab.spm"))
-                textModel = createModel(textFile, "Quick conditioner")
-                coreModel = createModel(coreFile, "Quick DiT")
-                decodeModel = createModel(decodeFile, "Quick decoder")
                 QuickBundle(
-                    modelName,
-                    requireNotNull(textModel),
-                    requireNotNull(coreModel),
-                    requireNotNull(decodeModel),
-                    tokenizer
+                    modelName = modelName,
+                    textFile = textFile,
+                    coreFile = coreFile,
+                    decodeFile = decodeFile,
+                    tokenizer = tokenizer
                 )
             }
             loadedBundle = bundle
@@ -394,6 +414,13 @@ object MusicGeneratorBackend {
             throw t
         }
     }
+
+    private inline fun <T> CompiledModel.useModel(block: (CompiledModel) -> T): T =
+        try {
+            block(this)
+        } finally {
+            runCatching { close() }
+        }
 
     private inline fun <T> CompiledModel.buffers(block: (List<TensorBuffer>, List<TensorBuffer>) -> T): T {
         val inputs = createInputBuffers()
