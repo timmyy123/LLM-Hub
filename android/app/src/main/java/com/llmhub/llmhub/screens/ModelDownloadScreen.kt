@@ -1590,8 +1590,8 @@ private fun ImportExternalModelDialog(
                             }
                         }
                         
-                        // Only show context window for text models (TASK, LITERTLM, GGUF)
-                        if (modelFormat == ModelFormat.TASK || modelFormat == ModelFormat.LITERTLM || modelFormat == ModelFormat.GGUF) {
+                        // GGUF context length comes from its file header after import/download.
+                        if (modelFormat == ModelFormat.TASK || modelFormat == ModelFormat.LITERTLM) {
                             val contextWindowError = contextWindowSize.toIntOrNull() == null || contextWindowSize.toIntOrNull()!! <= 0
                             val contextWindowErrorText = stringResource(R.string.context_window_size_invalid)
                             
@@ -1616,15 +1616,16 @@ private fun ImportExternalModelDialog(
                 onClick = {
                     selectedHuggingFaceModel?.let { remote ->
                         if (modelName.isNotBlank()) {
-                            onDownloadHuggingFace(modelName, modelFormat.name.lowercase(), remote, selectedHuggingFaceProjector, supportsVision, contextWindowSize.toIntOrNull() ?: 4096, supportsMtp)
+                            val contextSize = if (modelFormat == ModelFormat.GGUF) 4096 else contextWindowSize.toIntOrNull() ?: 4096
+                            onDownloadHuggingFace(modelName, modelFormat.name.lowercase(), remote, selectedHuggingFaceProjector, supportsVision, contextSize, supportsMtp)
                         }
                         return@Button
                     }
                     // Validate inputs
                     val nameValid = modelName.isNotBlank()
                     val fileValid = selectedFileUri != null
-                    // Context window only required for text models (TASK, LITERTLM, GGUF)
-                    val contextValid = if (modelFormat == ModelFormat.TASK || modelFormat == ModelFormat.LITERTLM || modelFormat == ModelFormat.GGUF) {
+                    // Only formats without GGUF header metadata need a manual context value.
+                    val contextValid = if (modelFormat == ModelFormat.TASK || modelFormat == ModelFormat.LITERTLM) {
                         contextWindowSize.toIntOrNull() != null && contextWindowSize.toIntOrNull()!! > 0
                     } else {
                         true // Image models don't need context window
@@ -1706,7 +1707,7 @@ private fun ImportExternalModelDialog(
                                 minRamGB = 4,
                                 recommendedRamGB = 8
                             ),
-                            contextWindowSize = contextWindowSize.toInt(),
+                            contextWindowSize = if (modelFormat == ModelFormat.GGUF) 4096 else contextWindowSize.toInt(),
                             modelFormat = modelFormat.name.lowercase(),
                             // projector file will be copied asynchronously by ViewModel after import
                             additionalFiles = emptyList(),

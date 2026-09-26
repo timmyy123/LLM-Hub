@@ -72,7 +72,7 @@
     <string name="ai_thinking">AI กำลังคิด...</string>
     <string name="thinking_label">กำลังคิด</string>
     <string name="thinking_tokens">กำลังคิด (%1$dโทเค็น)</string>
-    <string name="version_number">เวอร์ชัน 4.3.5</string>
+    <string name="version_number">เวอร์ชัน 4.4.0</string>
     <string name="app_version">เวอร์ชันของแอป</string>
     <string name="terms_of_service">ข้อกำหนดในการให้บริการ</string>
     <string name="tos_last_updated">อัปเดตล่าสุด: 22 มิถุนายน 2569</string>
@@ -538,7 +538,8 @@
     <string name="translator_auto_detect">ตรวจจับอัตโนมัติ</string>
     <string name="translator_translate">แปล</string>
     <string name="translator_result">การแปล</string>
-    <string name="translator_requires_gemma3n">คุณลักษณะนี้ต้องใช้รุ่น Gemma-3n หรือ Gemma-4 E2B/E4B กรุณาดาวน์โหลดหนึ่งรายการจากหน้าจอโมเดล</string>
+    <string name="translator_requires_gemma3n">สามารถใช้โมเดล LLM ใดก็ได้สำหรับการแปล แนะนำให้ใช้โมเดล Gemma 4 เพื่อประสิทธิภาพหลายภาษาที่ดีที่สุด</string>
+    <string name="translator_load_model_desc">ดาวน์โหลดโมเดล LLM ใดก็ได้เพื่อเริ่มการแปล แนะนำให้ใช้โมเดล Gemma 4 เพื่อประสิทธิภาพหลายภาษาที่ดีที่สุด</string>
     <string name="transcriber_title">ทรานสคริปเตอร์ออฟไลน์</string>
     <string name="transcriber_record">บันทึกเสียง</string>
     <string name="transcriber_upload">อัปโหลดเสียง</string>
@@ -815,7 +816,7 @@
     <string name="agent_calendar_confirm">สร้างกิจกรรม: %1$s</string>
     <string name="agent_shortcut_confirm">เรียกใช้ทางลัด: %1$s</string>
     <string name="agent_welcome_message">สวัสดี! ฉันคือเอเจนต์ AI ของคุณ ฉันสามารถค้นหาเว็บ แสดงแผนที่ จัดการกิจกรรมในปฏิทิน ตรวจสอบสภาพอากาศ ตั้งปลุก ส่งข้อความ และคำนวณแฮชได้ วันนี้มีอะไรให้ฉันช่วยไหม?</string>
-    <string name="agent_no_model_android">โปรดดาวน์โหลดโมเดล LiteRT-LM ก่อนเพื่อใช้งานเอเจนต์</string>
+    <string name="agent_no_model_android">โปรดดาวน์โหลดโมเดล GGUF หรือ LiteRT-LM ก่อนใช้งานเอเจนต์</string>
     <string name="agent_no_model_ios">โปรดดาวน์โหลดโมเดลก่อนเพื่อใช้งานเอเจนต์</string>
     <string name="open_maps">เปิดแผนที่</string>
     <string name="agent_processing_tool">แอปพลิเคชันกำลังประมวลผลเครื่องมือ...</string>

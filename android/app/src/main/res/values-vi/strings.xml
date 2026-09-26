@@ -72,7 +72,7 @@
     <string name="ai_thinking">AI đang suy nghĩ...</string>
     <string name="thinking_label">Suy nghĩ</string>
     <string name="thinking_tokens">Suy nghĩ (%1$dmã thông báo)</string>
-    <string name="version_number">Phiên bản 4.3.5</string>
+    <string name="version_number">Phiên bản 4.4.0</string>
     <string name="app_version">Phiên bản ứng dụng</string>
     <string name="terms_of_service">Điều khoản dịch vụ</string>
     <string name="tos_last_updated">Cập nhật lần cuối: Ngày 22 tháng 6 năm 2026</string>
@@ -538,7 +538,8 @@
     <string name="translator_auto_detect">Tự động phát hiện</string>
     <string name="translator_translate">Dịch</string>
     <string name="translator_result">Bản dịch</string>
-    <string name="translator_requires_gemma3n">Tính năng này yêu cầu mẫu Gemma-3n hoặc Gemma-4 E2B/E4B. Vui lòng tải xuống một cái từ màn hình Mô hình.</string>
+    <string name="translator_requires_gemma3n">Bất kỳ mô hình LLM nào cũng có thể được sử dụng để dịch. Các mô hình Gemma 4 được khuyến nghị để có hiệu suất đa ngôn ngữ tốt nhất.</string>
+    <string name="translator_load_model_desc">Tải xuống bất kỳ mô hình LLM nào để bắt đầu dịch. Các mô hình Gemma 4 được khuyến nghị để có hiệu suất đa ngôn ngữ tốt nhất.</string>
     <string name="transcriber_title">Phiên âm ngoại tuyến</string>
     <string name="transcriber_record">Ghi âm thanh</string>
     <string name="transcriber_upload">Tải lên âm thanh</string>
@@ -815,7 +816,7 @@
     <string name="agent_calendar_confirm">Tạo sự kiện: %1$s</string>
     <string name="agent_shortcut_confirm">Chạy phím tắt: %1$s</string>
     <string name="agent_welcome_message">Xin chào! Tôi là Đại lý AI của bạn. Tôi có thể tìm kiếm trên web, hiển thị bản đồ, quản lý sự kiện lịch, kiểm tra thời tiết, đặt báo thức, gửi tin nhắn và tính toán hash. Tôi có thể giúp gì cho bạn hôm nay?</string>
-    <string name="agent_no_model_android">Vui lòng tải xuống mô hình LiteRT-LM trước để sử dụng Đại lý</string>
+    <string name="agent_no_model_android">Vui lòng tải mô hình GGUF hoặc LiteRT-LM trước khi sử dụng Đại lý</string>
     <string name="agent_no_model_ios">Vui lòng tải xuống mô hình trước để sử dụng Đại lý</string>
     <string name="open_maps">Mở bản đồ</string>
     <string name="agent_processing_tool">Tác nhân đang xử lý công cụ...</string>

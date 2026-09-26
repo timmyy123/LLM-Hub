@@ -28,12 +28,15 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.llmhub.llmhub.LlmHubApplication
 import com.llmhub.llmhub.R
+import com.llmhub.llmhub.data.GgufLayerLimits
 import com.llmhub.llmhub.components.ModelSelectorCard
 import com.llmhub.llmhub.components.ThinkingAwareResultContent
 import com.llmhub.llmhub.components.getDisplayContentWithoutThinking
 import com.llmhub.llmhub.viewmodels.WritingAidViewModel
 import com.llmhub.llmhub.viewmodels.WritingMode
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -68,14 +71,26 @@ fun WritingAidScreen(
     val selectedNGpuLayers by viewModel.selectedNGpuLayers.collectAsState()
 
     // Slider local state (synced from viewmodel)
-    val baseMaxTokensCap by remember(selectedModel) {
-        derivedStateOf { selectedModel?.contextWindowSize?.coerceAtLeast(1) ?: 4096 }
-    }
+    var ggufContextLimit by remember(selectedModel?.name) { mutableStateOf<Int?>(null) }
+    val baseMaxTokensCap = (ggufContextLimit ?: selectedModel?.contextWindowSize ?: 4096).coerceAtLeast(1)
     var maxTokensValue by remember(selectedMaxTokens, baseMaxTokensCap) {
         mutableStateOf(selectedMaxTokens.coerceIn(1, baseMaxTokensCap))
     }
     var maxTokensText by remember(maxTokensValue) { mutableStateOf(maxTokensValue.toString()) }
-    var gpuLayers by remember(selectedNGpuLayers) { mutableStateOf(selectedNGpuLayers ?: 999) }
+    var gpuLayerLimit by remember { mutableIntStateOf(GgufLayerLimits.UNKNOWN) }
+    var gpuLayers by remember(selectedNGpuLayers, gpuLayerLimit) {
+        mutableStateOf((selectedNGpuLayers ?: gpuLayerLimit).coerceIn(0, gpuLayerLimit))
+    }
+    LaunchedEffect(selectedModel?.name) {
+        gpuLayerLimit = GgufLayerLimits.UNKNOWN
+        selectedModel?.let { model ->
+            val (layers, fileContext) = withContext(Dispatchers.IO) {
+                GgufLayerLimits.forModel(context, model) to GgufLayerLimits.contextForModel(context, model)
+            }
+            gpuLayerLimit = layers ?: GgufLayerLimits.UNKNOWN
+            ggufContextLimit = fileContext
+        }
+    }
     val isGguf by remember(selectedModel) { derivedStateOf { selectedModel?.modelFormat == "gguf" } }
     val isLiteRtLm by remember(selectedModel) { derivedStateOf { selectedModel?.modelFormat == "litertlm" } }
     val isThinkingOrHarmonyModel by remember(selectedModel) {
@@ -228,7 +243,7 @@ fun WritingAidScreen(
                                         gpuLayers = it.toInt()
                                         viewModel.setNGpuLayers(gpuLayers)
                                     },
-                                    valueRange = 0f..999f,
+                                    valueRange = 0f..gpuLayerLimit.toFloat(),
                                     modifier = Modifier.weight(1f).height(28.dp),
                                     thumb = {
                                         SliderDefaults.Thumb(
@@ -241,7 +256,7 @@ fun WritingAidScreen(
                                 OutlinedTextField(
                                     value = gpuLayers.toString(),
                                     onValueChange = { v ->
-                                        val n = v.filter { it.isDigit() }.toIntOrNull()?.coerceIn(0, 999) ?: gpuLayers
+                                        val n = v.filter { it.isDigit() }.toIntOrNull()?.coerceIn(0, gpuLayerLimit) ?: gpuLayers
                                         gpuLayers = n
                                         viewModel.setNGpuLayers(n)
                                     },

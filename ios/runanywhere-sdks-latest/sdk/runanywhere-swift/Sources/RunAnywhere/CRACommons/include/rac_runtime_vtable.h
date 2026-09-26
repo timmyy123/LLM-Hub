@@ -1,6 +1,0 @@
-#ifndef RAC_SWIFT_RUNTIME_VTABLE_FORWARDER_H
-#define RAC_SWIFT_RUNTIME_VTABLE_FORWARDER_H
-
-#include "rac/plugin/rac_runtime_vtable.h"
-
-#endif  // RAC_SWIFT_RUNTIME_VTABLE_FORWARDER_H

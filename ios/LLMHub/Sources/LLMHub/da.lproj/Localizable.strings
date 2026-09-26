@@ -72,7 +72,7 @@
 "thinking_tokens" = "Tænker (%1$dtokens)";
 "enable_thinking" = "Aktiver Thinking";
 "thinking_toggle_label" = "Aktiver Thinking";
-"version_number" = "Version 4.3.5";
+"version_number" = "Version 4.4.0";
 "app_version" = "Appversion";
 "terms_of_service" = "Servicevilkår";
 "tos_last_updated" = "Sidst opdateret: 16. juli 2025";
@@ -510,8 +510,8 @@
 "translator_auto_detect" = "Automatisk registrering";
 "translator_translate" = "Oversæt";
 "translator_result" = "Oversættelse";
-"translator_requires_gemma3n" = "Denne funktion kræver en Gemma 4-model. Download venligst en fra skærmen Models.";
-"translator_load_model_desc" = "Download eller indlæs en Gemma 4-model for at begynde at oversætte.";
+"translator_requires_gemma3n" = "Enhver LLM-model kan bruges til oversættelse. Gemma 4-modeller anbefales for den bedste flersprogede ydeevne.";
+"translator_load_model_desc" = "Download en vilkårlig LLM-model for at begynde at oversætte. Gemma 4-modeller anbefales for den bedste flersprogede ydeevne.";
 "translator_missing_vision_projector" = "Vision projektor (mmproj) mangler til%1$@.";
 "transcriber_title" = "Offline transskribering";
 "transcriber_record" = "Optag lyd";

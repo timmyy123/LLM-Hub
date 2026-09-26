@@ -2,8 +2,7 @@ import SwiftUI
 
 // MARK: - Thinking Token Parsing
 
-/// Sentinel constants — must match values emitted by the inference backend
-/// (OnnxInferenceService / NexaInferenceService on Android; RunAnywhere on iOS).
+/// Sentinel constants used by thinking-aware model output across backends.
 private let kSentinelThink    = "\u{200B}\u{200B}THINK\u{200B}\u{200B}"
 private let kSentinelEndThink = "\u{200B}\u{200B}ENDTHINK\u{200B}\u{200B}"
 private let kRawOpenThink     = "<think>"
@@ -39,7 +38,7 @@ func contentHasThinkingMarkers(_ content: String) -> Bool {
 /// Split `content` into `(thinkingPart, answerPart)`.
 /// Returns `("", content)` when no thinking markers are present.
 func parseThinkingAndAnswer(_ content: String) -> (thinking: String, answer: String) {
-    // 1) Sentinel-wrapped thinking (RunAnywhere / Nexa backend)
+    // 1) Sentinel-wrapped thinking
     if content.contains(kSentinelThink) {
         let afterThink = content.substringAfterFirst(kSentinelThink)
         if afterThink.contains(kSentinelEndThink) {
@@ -139,7 +138,7 @@ func supportsUnmarkedStreamingThinkingHeuristic(forModelNamed modelName: String?
     }
 
     // Android gets GPT-OSS thinking via Harmony-aware backend formatting/parsing.
-    // The current iOS RunAnywhere path in this app does not surface those boundaries,
+    // The current iOS llama.cpp path in this app does not surface those boundaries,
     // so treating the raw stream as temporary reasoning creates a fake drawer that
     // later disappears. Disable the heuristic for GPT-OSS until real boundaries exist.
     if normalizedName.contains("gpt-oss") || normalizedName.contains("gpt_oss") {

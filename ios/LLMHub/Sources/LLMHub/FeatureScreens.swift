@@ -5,7 +5,6 @@ import CoreMedia
 import PhotosUI
 @preconcurrency import Speech
 import UniformTypeIdentifiers
-import RunAnywhere
 #if canImport(UIKit)
 import UIKit
 #endif
@@ -15,6 +14,14 @@ import FoundationModels
 #if canImport(Network)
 import Network
 #endif
+
+@MainActor
+private func contextLimitForFeatureModel(_ model: AIModel, fallback: Int = 4096) -> Int {
+    if model.modelFormat == .gguf {
+        return LLMBackend.shared.modelMaxContextWindow(for: model)
+    }
+    return model.contextWindowSize > 0 ? model.contextWindowSize : fallback
+}
 
 enum WritingAidMode: String, CaseIterable {
     case friendly = "writing_aid_tone_friendly"
@@ -206,10 +213,7 @@ private func downloadableTranslatorModels() -> [AIModel] {
 }
 
 private func isTranslatorSupportedModel(_ model: AIModel) -> Bool {
-    !model.isDependencyOnly
-        && model.category == .multimodal
-        && model.supportsVision
-        && (model.name.hasPrefix("Translate Gemma 4B") || (model.name.localizedCaseInsensitiveContains("gemma 4") && !model.name.localizedCaseInsensitiveContains("translate")))
+    model.isLanguageModel && !model.isDependencyOnly
 }
 
 private func usesGemma4TurnTemplate(_ model: AIModel) -> Bool {
@@ -248,34 +252,7 @@ private func translatorVisionFamilyName(for modelName: String) -> String {
 @MainActor
 private func translatorHasDownloadedVisionProjector(for model: AIModel) -> Bool {
     guard model.modelFormat == .gguf, model.supportsVision else { return true }
-
-    let family = translatorVisionFamilyName(for: model.name)
-    let quantTag = translatorQuantizationTag(for: model.name)
-
-    let candidates = ModelData.allModels().filter { candidate in
-        candidate.isDependencyOnly
-            && candidate.inferenceFramework == model.inferenceFramework
-            && translatorVisionFamilyName(for: candidate.name) == family
-            && isRunAnywhereModelDownloaded(candidate)
-    }
-
-    guard !candidates.isEmpty else { return false }
-
-    if family.hasPrefix("gemma 4") {
-        return candidates.contains {
-            $0.name.lowercased().contains("f16") || $0.url.lowercased().contains("f16")
-        }
-    }
-
-    if quantTag == "f16" {
-        return candidates.contains { ($0.name.lowercased().contains("f16") || $0.url.lowercased().contains("f16")) }
-    }
-
-    return candidates.contains {
-        $0.name.lowercased().contains("q8_0")
-            || $0.url.lowercased().contains("q8_0")
-            || $0.name.lowercased().contains("bf16")
-    }
+    return LLMBackend.shared.isVisionProjectorAvailable(for: model)
 }
 
 @MainActor
@@ -284,13 +261,13 @@ private func hasDownloadedVisionProjector(for model: AIModel) -> Bool {
     return ModelData.allModels().contains { candidate in
         candidate.isDependencyOnly
             && candidate.inferenceFramework == model.inferenceFramework
-            && isRunAnywhereModelDownloaded(candidate)
+            && isInstalledModelDownloaded(candidate)
     }
 }
 
 @MainActor
-private func isRunAnywhereModelDownloaded(_ model: AIModel) -> Bool {
-    guard let folderURL = try? CppBridge.ModelPaths.getModelFolder(modelId: model.id, framework: model.inferenceFramework) else {
+private func isInstalledModelDownloaded(_ model: AIModel) -> Bool {
+    guard let folderURL = try? SimplifiedFileManager.shared.getModelFolderURL(modelId: model.id, framework: model.inferenceFramework) else {
         return false
     }
 
@@ -368,13 +345,8 @@ private func selectedFeatureModel(named selectedModelName: String) -> AIModel? {
 }
 
 @MainActor
-private func syncRunAnywhereModelDiscovery() async {
-    do {
-        try RunAnywhere.initialize(environment: .development)
-    } catch {
-        // Ignore repeated initialization attempts.
-    }
-    await RunAnywhere.refreshModelRegistry()
+private func refreshDownloadedModelStatus() async {
+    ModelDownloadViewModel.shared.refreshStatuses()
 }
 
 @MainActor
@@ -480,6 +452,7 @@ struct FeatureModelSettingsSheet: View {
     @State private var models: [AIModel] = []
     @State private var isRefreshingModels = false
     @State private var gpuLayersTemp: Double = 999
+    @State private var gpuLayerLimit: Double = 999
 
     private var selectedModel: AIModel? {
         models.first(where: { $0.name == selectedModelName })
@@ -501,12 +474,15 @@ struct FeatureModelSettingsSheet: View {
 
     private var selectedModelSupportsAudio: Bool {
         guard let model = selectedModel else { return false }
-        return model.supportsAudio
+        return model.isGemma4LiteRTLM
     }
 
     private var maxContextCap: Double {
-        let advertised = selectedModel?.contextWindowSize ?? 4096
-        return Double(max(2, advertised))
+        guard let selectedModel else { return 4096 }
+        let cap = selectedModel.modelFormat == .gguf
+            ? llm.modelMaxContextWindow(for: selectedModel)
+            : selectedModel.contextWindowSize
+        return Double(max(2, cap))
     }
 
     @ObservedObject private var whisperBackend = WhisperBackend.shared
@@ -574,7 +550,7 @@ struct FeatureModelSettingsSheet: View {
                                 if let model = selectedModel, model.modelFormat == .gguf {
                                     GPULayersSlider(
                                         value: $gpuLayersTemp,
-                                        maxLabel: settings.localized("max"),
+                                        maxLayers: gpuLayerLimit,
                                         label: settings.localized("gpu_layers_label"),
                                         onCommit: { saveGpuLayers(gpuLayersTemp) }
                                     )
@@ -731,7 +707,7 @@ struct FeatureModelSettingsSheet: View {
         if selectedModelName.isEmpty || !loaded.contains(where: { $0.name == selectedModelName }) {
             selectedModelName = loaded.first?.name ?? ""
         }
-        let cap = Double(max(1, selectedModel?.contextWindowSize ?? 4096))
+        let cap = Double(maxContextCap)
         maxTokens = min(max(1, maxTokens), cap)
         isRefreshingModels = false
     }
@@ -745,6 +721,7 @@ struct FeatureModelSettingsSheet: View {
 
     private func loadInitialGpuLayers() {
         guard let selectedModel = selectedModel else { return }
+        gpuLayerLimit = Double(GGUFLayerLimits.unknown)
         let key = "gpu_layers_\(selectedModel.id)"
         if UserDefaults.standard.object(forKey: key) != nil {
             let stored = UserDefaults.standard.integer(forKey: key)
@@ -752,21 +729,25 @@ struct FeatureModelSettingsSheet: View {
         } else {
             gpuLayersTemp = 999
         }
+        if let url = LLMBackend.shared.ggufFileURL(for: selectedModel) {
+            let modelID = selectedModel.id
+            Task {
+                let limit = await Task.detached(priority: .utility) {
+                    GGUFLayerLimits.read(from: url)
+                }.value ?? GGUFLayerLimits.unknown
+                guard self.selectedModel?.id == modelID else { return }
+                gpuLayersTemp = min(max(0, gpuLayersTemp), Double(limit))
+                gpuLayerLimit = Double(limit)
+            }
+        }
     }
 
     private func saveGpuLayers(_ value: Double) {
         guard let selectedModel = selectedModel else { return }
         let key = "gpu_layers_\(selectedModel.id)"
-        let intValue = Int32(value)
+        let intValue = Int32(min(max(0, value), gpuLayerLimit))
         UserDefaults.standard.set(intValue, forKey: key)
 
-        Task {
-            await CppBridge.ModelRegistry.shared.setGpuLayers(modelId: selectedModel.id, gpuLayers: intValue)
-            if let folderURL = try? SimplifiedFileManager.shared.getModelFolderURL(modelId: selectedModel.id, framework: selectedModel.inferenceFramework),
-               let ggufFile = LLMBackend.shared.listGGUFFiles(in: folderURL).first(where: { !$0.lastPathComponent.lowercased().contains("mmproj") }) {
-                await CppBridge.ModelRegistry.shared.setGpuLayers(modelId: ggufFile.path, gpuLayers: intValue)
-            }
-        }
     }
 }
 
@@ -1447,7 +1428,7 @@ private struct IOS26TranscriberScreen: View {
         .onAppear {
             // Don't reset selectedModelName — preserve last-used model across visits.
             // Empty = system transcriber (default on first launch via @AppStorage default).
-            Task { await syncRunAnywhereModelDiscovery() }
+            Task { await refreshDownloadedModelStatus() }
             if maxTokens < 4096 {
                 maxTokens = 4096
             }
@@ -1778,7 +1759,7 @@ private struct IOS26TranscriberScreen: View {
 
     private func ensureAudioModelLoaded(force: Bool) async {
         guard let model = selectedModel else { return }
-        let modelContextCap = model.contextWindowSize > 0 ? model.contextWindowSize : 4096
+        let modelContextCap = contextLimitForFeatureModel(model)
         let effectiveTokens = maxTokens < 4096 ? 4096 : maxTokens
         let effectiveContext = min(max(1, Int(effectiveTokens)), modelContextCap)
         let shouldReload = force
@@ -2296,7 +2277,6 @@ private struct IOS17VibeVoiceScreen: View {
         }
         .onAppear {
             Task {
-                try? RunAnywhere.initialize(environment: .development)
                 let available = downloadableFeatureModels().filter(isNonTranslatorFeatureModel)
                 // Preserve a valid last-used LLM, but clear any stale selection
                 // left by older builds that exposed dedicated media models here.
@@ -3038,7 +3018,7 @@ private struct IOS17VibeVoiceScreen: View {
         isLoading = true
         defer { isLoading = false }
 
-        let modelContextCap = model.contextWindowSize > 0 ? model.contextWindowSize : 4096
+        let modelContextCap = contextLimitForFeatureModel(model)
         let effectiveContext = min(max(1, Int(maxTokens)), modelContextCap)
         let shouldReload = force
             || llm.currentlyLoadedModel != model.name
@@ -3095,7 +3075,7 @@ struct WritingAidScreen: View {
             return val
         }
         if let model = selectedFeatureModel(named: modelName) {
-            let cap = model.contextWindowSize > 0 ? model.contextWindowSize : 4096
+            let cap = contextLimitForFeatureModel(model)
             return Double(min(4096, cap))
         }
         return 4096
@@ -3348,7 +3328,7 @@ struct WritingAidScreen: View {
         }
         .onAppear {
             Task {
-                await syncRunAnywhereModelDiscovery()
+                await refreshDownloadedModelStatus()
                 let available = downloadableFeatureModels().filter(isNonTranslatorFeatureModel)
                 if selectedModelName.isEmpty || !available.contains(where: { $0.name == selectedModelName }) {
                     selectedModelName = available.first?.name ?? ""
@@ -3411,7 +3391,7 @@ struct WritingAidScreen: View {
         isLoading = true
         defer { isLoading = false }
 
-        let modelContextCap = model.contextWindowSize > 0 ? model.contextWindowSize : 4096
+        let modelContextCap = contextLimitForFeatureModel(model)
         let effectiveContext = min(max(1, Int(maxTokens)), modelContextCap)
         let shouldReload = force
             || llm.currentlyLoadedModel != model.name
@@ -3482,7 +3462,7 @@ struct TranslatorScreen: View {
             return val
         }
         if let model = selectedFeatureModel(named: modelName) {
-            let cap = model.contextWindowSize > 0 ? model.contextWindowSize : 2048
+            let cap = contextLimitForFeatureModel(model, fallback: 2048)
             return Double(min(2048, cap))
         }
         return 2048
@@ -3517,7 +3497,7 @@ struct TranslatorScreen: View {
     @ObservedObject private var llm = LLMBackend.shared
 
     private var selectedModel: AIModel? {
-        ModelData.allModels().first(where: { $0.name == selectedModelName && isTranslatorSupportedModel($0) })
+        selectedFeatureModel(named: selectedModelName).flatMap { isTranslatorSupportedModel($0) ? $0 : nil }
     }
 
     private var isCurrentModelLoaded: Bool {
@@ -3617,7 +3597,7 @@ struct TranslatorScreen: View {
         .onChange(of: showSettings) { _, isPresented in
             if !isPresented {
                 Task {
-                    await syncRunAnywhereModelDiscovery()
+                    await refreshDownloadedModelStatus()
                     let available = downloadableFeatureModels().filter(isTranslatorSupportedModel)
                     availableTranslatorModels = available
                     if selectedModelName.isEmpty || !available.contains(where: { $0.name == selectedModelName }) {
@@ -3628,7 +3608,7 @@ struct TranslatorScreen: View {
         }
         .onAppear {
             Task {
-                await syncRunAnywhereModelDiscovery()
+                await refreshDownloadedModelStatus()
                 let available = downloadableFeatureModels().filter(isTranslatorSupportedModel)
                 availableTranslatorModels = available
                 if selectedModelName.isEmpty || !available.contains(where: { $0.name == selectedModelName }) {
@@ -3706,7 +3686,7 @@ struct TranslatorScreen: View {
             Image(systemName: "network")
                 .font(.system(size: 48, weight: .semibold))
                 .foregroundStyle(.secondary)
-            Text(settings.localized(requiresDownload ? "translator_requires_gemma3n" : "scam_detector_load_model"))
+            Text(settings.localized(requiresDownload ? "load_model_to_start" : "scam_detector_load_model"))
                 .font(.title3.weight(.bold))
                 .multilineTextAlignment(.center)
             Text(settings.localized(requiresDownload ? "translator_load_model_desc" : "scam_detector_load_model_desc"))
@@ -3843,7 +3823,7 @@ struct TranslatorScreen: View {
                         .featureActionIconButtonStyle()
                     }
 
-                    if enableVision {
+                    if enableVision && (selectedModel?.supportsVision == true) {
                         PhotosPicker(selection: $selectedImageItem, matching: .images) {
                             Image(systemName: hasSelectedImage ? "photo.badge.plus" : "photo")
                                 .font(.system(size: 18, weight: .semibold))
@@ -4127,7 +4107,7 @@ struct TranslatorScreen: View {
             rawPromptText = rawTranslateGemmaPrompt(source: source, target: targetLanguage, text: trimmedInput)
         }
 
-        if let model = selectedModel, (model.modelFormat == .gguf || model.name.localizedCaseInsensitiveContains("gemma")) {
+        if let model = selectedModel, model.name.localizedCaseInsensitiveContains("gemma") {
             if !rawPromptText.contains("<start_of_turn>") {
                 return "<start_of_turn>user\n\(rawPromptText)<end_of_turn>\n<start_of_turn>model\n"
             }
@@ -4138,14 +4118,14 @@ struct TranslatorScreen: View {
 
     private func ensureModelLoaded(force: Bool) async {
         guard let model = selectedModel else {
-            errorMessage = settings.localized("translator_requires_gemma3n")
+            errorMessage = settings.localized("scam_detector_load_model")
             return
         }
 
         isLoading = true
         defer { isLoading = false }
 
-        let modelContextCap = model.contextWindowSize > 0 ? model.contextWindowSize : 4096
+        let modelContextCap = contextLimitForFeatureModel(model)
         let effectiveContext = min(max(1, Int(maxTokens)), modelContextCap)
         let shouldReload = force
             || llm.currentlyLoadedModel != model.name
@@ -4282,7 +4262,7 @@ struct ScamDetectorScreen: View {
             return val
         }
         if let model = selectedFeatureModel(named: modelName) {
-            let cap = model.contextWindowSize > 0 ? model.contextWindowSize : 4096
+            let cap = contextLimitForFeatureModel(model)
             return Double(min(4096, cap))
         }
         return 4096
@@ -4600,7 +4580,7 @@ struct ScamDetectorScreen: View {
         }
         .onAppear {
             Task {
-                await syncRunAnywhereModelDiscovery()
+                await refreshDownloadedModelStatus()
                 let available = downloadableFeatureModels().filter(isNonTranslatorFeatureModel)
                 if selectedModelName.isEmpty || !available.contains(where: { $0.name == selectedModelName }) {
                     selectedModelName = available.first?.name ?? ""
@@ -4758,7 +4738,7 @@ struct ScamDetectorScreen: View {
         isLoading = true
         defer { isLoading = false }
 
-        let modelContextCap = model.contextWindowSize > 0 ? model.contextWindowSize : 4096
+        let modelContextCap = contextLimitForFeatureModel(model)
         let effectiveContext = min(max(1, Int(maxTokens)), modelContextCap)
         let shouldReload = force
             || llm.currentlyLoadedModel != model.name
@@ -5040,7 +5020,7 @@ struct VibeCoderScreen: View {
             return val
         }
         if let model = selectedFeatureModel(named: modelName) {
-            let cap = model.contextWindowSize > 0 ? model.contextWindowSize : 4096
+            let cap = contextLimitForFeatureModel(model)
             return Double(min(4096, cap))
         }
         return 4096
@@ -5646,7 +5626,7 @@ struct VibeCoderScreen: View {
             restoreChatSessionsFromStorage()
 
             Task {
-                await syncRunAnywhereModelDiscovery()
+                await refreshDownloadedModelStatus()
                 let available = downloadableFeatureModels().filter(isNonTranslatorFeatureModel)
                 let hasSelectedModelName = !selectedModelName.isEmpty
                 let selectedModelExists = available.contains { model in
@@ -6018,7 +5998,7 @@ struct VibeCoderScreen: View {
         isLoading = true
         defer { isLoading = false }
 
-        let modelContextCap = model.contextWindowSize > 0 ? model.contextWindowSize : 4096
+        let modelContextCap = contextLimitForFeatureModel(model)
         let effectiveContext = min(max(1, Int(maxTokens)), modelContextCap)
         let shouldReload = force
             || llm.currentlyLoadedModel != model.name
@@ -7492,7 +7472,7 @@ public struct MusicGeneratorScreen: View {
         }
         .onAppear {
             Task {
-                await syncRunAnywhereModelDiscovery()
+                await refreshDownloadedModelStatus()
                 let available = downloadableFeatureModels().filter(isMusicGenerationFeatureModel)
                 if selectedModelName.isEmpty || !available.contains(where: { $0.name == selectedModelName }) {
                     selectedModelName = available.first?.name ?? ""

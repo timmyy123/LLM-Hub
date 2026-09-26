@@ -65,8 +65,11 @@ let package = Package(
                 "Sources/whisper/coreml/whisper-encoder.mm",
                 "Sources/whisper/whisper.cpp",
             ] + additionalSources,
-            publicHeadersPath: "Sources/whisper/include",
+            // Do not export whisper.h/ggml.h as a Clang module to the app:
+            // llama.cpp embeds a newer, incompatible ggml API.
+            publicHeadersPath: "Sources/whisper/public",
             cSettings: [
+                .headerSearchPath("Sources/whisper/include"),
                 .unsafeFlags(["-Wno-shorten-64-to-32", "-fvisibility=hidden"]),
                 .define("GGML_USE_ACCELERATE"),
                 .define("WHISPER_SHARED"),
@@ -74,6 +77,7 @@ let package = Package(
                 .define("WHISPER_COREML_ALLOW_FALLBACK")
             ] + additionalSettings,
             cxxSettings: [
+                .headerSearchPath("Sources/whisper/include"),
                 .unsafeFlags(["-fvisibility=hidden"]),
                 .define("WHISPER_SHARED")
             ],

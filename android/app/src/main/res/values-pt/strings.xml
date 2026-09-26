@@ -78,7 +78,7 @@
     <string name="ai_thinking">A IA está pensando...</string>
     <string name="thinking_label">Pensamento</string>
     <string name="thinking_tokens">Pensamento (%1$d tokens)</string>
-    <string name="version_number">Versão 4.3.5</string>
+    <string name="version_number">Versão 4.4.0</string>
     <string name="app_version">Versão do App</string>
     
     <!-- Navigation -->
@@ -439,7 +439,8 @@
     <string name="translator_auto_detect">Detectar Automaticamente</string>
     <string name="translator_translate">Traduzir</string>
     <string name="translator_result">Tradução</string>
-    <string name="translator_requires_gemma3n">Este recurso requer um modelo Gemma-3n ou Gemma-4 E2B/E4B. Por favor baixe um na tela de Modelos.</string>
+    <string name="translator_requires_gemma3n">Qualquer modelo LLM pode ser usado para tradução. Os modelos Gemma 4 são recomendados para o melhor desempenho multilíngue.</string>
+    <string name="translator_load_model_desc">Baixe qualquer modelo LLM para começar a traduzir. Os modelos Gemma 4 são recomendados para o melhor desempenho multilíngue.</string>
     
     <!-- Transcriber Screen -->
     <string name="transcriber_title">Transcritor Offline</string>
@@ -861,7 +862,7 @@
     <string name="agent_calendar_confirm">Criar evento: %1$s</string>
     <string name="agent_shortcut_confirm">Executar atalho: %1$s</string>
     <string name="agent_welcome_message">Olá! Sou o seu Agente de IA. Posso pesquisar na web, mostrar mapas, gerir eventos do calendário, ver o tempo, definir alarmes, enviar mensagens e calcular hashes. Como posso ajudar hoje?</string>
-    <string name="agent_no_model_android">Faça o download de um modelo LiteRT-LM primeiro para usar o Agente</string>
+    <string name="agent_no_model_android">Baixe primeiro um modelo GGUF ou LiteRT-LM para usar o Agente</string>
     <string name="agent_no_model_ios">Faça o download de um modelo primeiro para usar o Agente</string>
     <string name="open_maps">Abrir mapas</string>
     <string name="agent_processing_tool">Agente processando ferramenta...</string>

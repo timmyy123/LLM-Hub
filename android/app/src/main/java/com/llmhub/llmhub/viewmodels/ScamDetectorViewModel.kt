@@ -8,6 +8,7 @@ import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.llmhub.llmhub.data.LLMModel
+import com.llmhub.llmhub.data.effectiveContextWindow
 import com.llmhub.llmhub.data.ModelAvailabilityProvider
 import com.llmhub.llmhub.data.ModelConfig
 import com.llmhub.llmhub.data.ModelPreferences
@@ -160,7 +161,7 @@ class ScamDetectorViewModel(application: Application) : AndroidViewModel(applica
             }
 
             val model = _selectedModel.value
-            if (model?.modelFormat == "gguf" && DeviceInfo.isQualcommNpuSupported() && _selectedNpuDeviceId.value == null) {
+            if (model?.modelFormat == "gguf" && DeviceInfo.isLlamaCppHexagonSupported() && _selectedNpuDeviceId.value == null) {
                 _selectedBackend.value = LlmInference.Backend.GPU
                 _selectedNpuDeviceId.value = "dev0"
             }
@@ -185,7 +186,7 @@ class ScamDetectorViewModel(application: Application) : AndroidViewModel(applica
         if (isGemma4_12B) {
             _selectedBackend.value = LlmInference.Backend.GPU
             _selectedNpuDeviceId.value = null
-        } else if (model.modelFormat == "gguf" && DeviceInfo.isQualcommNpuSupported() && _selectedNpuDeviceId.value == null) {
+        } else if (model.modelFormat == "gguf" && DeviceInfo.isLlamaCppHexagonSupported() && _selectedNpuDeviceId.value == null) {
             _selectedBackend.value = LlmInference.Backend.GPU
             _selectedNpuDeviceId.value = "dev0"
         } else {
@@ -244,7 +245,7 @@ class ScamDetectorViewModel(application: Application) : AndroidViewModel(applica
     }
 
     fun setMaxTokens(maxTokens: Int) {
-        val cap = _selectedModel.value?.contextWindowSize?.coerceAtLeast(1) ?: 4096
+        val cap = _selectedModel.value?.effectiveContextWindow(getApplication<Application>()) ?: 4096
         _selectedMaxTokens.value = maxTokens.coerceIn(1, cap)
         saveSettings()
     }

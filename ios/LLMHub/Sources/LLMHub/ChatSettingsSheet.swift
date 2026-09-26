@@ -1,8 +1,126 @@
 import SwiftUI
-import RunAnywhere
 #if canImport(FoundationModels)
 import FoundationModels
 #endif
+
+/// Reads only GGUF header metadata, without mapping or loading model tensors.
+enum GGUFLayerLimits {
+    static let unknown = 999
+
+    static func read(from url: URL) -> Int? {
+        readInteger(from: url, suffix: "block_count", offset: 1)
+    }
+
+    static func readContextLength(from url: URL) -> Int? {
+        readInteger(from: url, suffix: "context_length", offset: 0)
+    }
+
+    private static func readInteger(from url: URL, suffix: String, offset: Int) -> Int? {
+        guard let handle = try? FileHandle(forReadingFrom: url),
+              let size = (try? FileManager.default.attributesOfItem(atPath: url.path)[.size] as? NSNumber)?.uint64Value else {
+            return nil
+        }
+        defer { try? handle.close() }
+        do {
+            let reader = Reader(handle: handle, size: size)
+            guard try reader.bytes(4) == Data("GGUF".utf8),
+                  (2...3).contains(try reader.number(4)) else { return nil }
+            _ = try reader.number(8) // tensor count
+            let keyCount = try reader.number(8)
+            guard keyCount <= 1_000_000 else { return nil }
+            var architecture: String?
+            var metadataValues: [String: UInt64] = [:]
+            for _ in 0..<keyCount {
+                let key = try reader.string()
+                let type = try reader.number(4)
+                if key == "general.architecture", type == 8 {
+                    architecture = try reader.string()
+                } else if key.hasSuffix(".\(suffix)"), type == 4 || type == 10 {
+                    metadataValues[key] = try reader.number(type == 4 ? 4 : 8)
+                } else {
+                    try reader.skipValue(type)
+                }
+                if let architecture,
+                   let count = metadataValues["\(architecture).\(suffix)"],
+                   count > 0, count <= UInt64(Int.max - offset) {
+                    // Tokenizer arrays can occupy megabytes of metadata after this point.
+                    // The slider needs only this model limit, not the rest of the header.
+                    return Int(count) + offset
+                }
+            }
+            guard let architecture,
+                  let count = metadataValues["\(architecture).\(suffix)"],
+                  count > 0, count <= UInt64(Int.max - offset) else { return nil }
+            // Full layer offload includes the output layer; context length needs no offset.
+            return Int(count) + offset
+        } catch {
+            return nil
+        }
+    }
+
+    private struct Reader {
+        let handle: FileHandle
+        let size: UInt64
+
+        func bytes(_ count: Int) throws -> Data {
+            let data = try handle.read(upToCount: count) ?? Data()
+            guard data.count == count else { throw CocoaError(.fileReadCorruptFile) }
+            return data
+        }
+
+        func number(_ width: Int) throws -> UInt64 {
+            let data = try bytes(width)
+            return data.enumerated().reduce(UInt64(0)) { value, byte in
+                value | (UInt64(byte.element) << (byte.offset * 8))
+            }
+        }
+
+        func skip(_ count: UInt64) throws {
+            let offset = handle.offsetInFile
+            guard offset <= size, count <= size - offset else { throw CocoaError(.fileReadCorruptFile) }
+            try handle.seek(toOffset: offset + count)
+        }
+
+        func string() throws -> String {
+            let length = try number(8)
+            guard length <= 1_048_576,
+                  let value = String(data: try bytes(Int(length)), encoding: .utf8) else {
+                throw CocoaError(.fileReadCorruptFile)
+            }
+            return value
+        }
+
+        func skipValue(_ type: UInt64) throws {
+            switch type {
+            case 0, 1, 7: try skip(1)
+            case 2, 3: try skip(2)
+            case 4, 5, 6: try skip(4)
+            case 8: try skip(number(8))
+            case 10, 11, 12: try skip(8)
+            case 9:
+                let itemType = try number(4)
+                let count = try number(8)
+                let width: UInt64
+                switch itemType {
+                case 0, 1, 7: width = 1
+                case 2, 3: width = 2
+                case 4, 5, 6: width = 4
+                case 10, 11, 12: width = 8
+                case 8: width = 0
+                default: throw CocoaError(.fileReadCorruptFile)
+                }
+                if width > 0 {
+                    guard count <= (size - handle.offsetInFile) / width else { throw CocoaError(.fileReadCorruptFile) }
+                    try skip(count * width)
+                } else {
+                    guard count <= 1_000_000 else { throw CocoaError(.fileReadCorruptFile) }
+                    for _ in 0..<count { try skip(number(8)) }
+                }
+            default: throw CocoaError(.fileReadCorruptFile)
+            }
+        }
+    }
+}
 
 struct ChatSettingsSheet: View {
     @ObservedObject var vm: ChatViewModel
@@ -14,6 +132,7 @@ struct ChatSettingsSheet: View {
     @State private var draftTemperature: Double = 1.0
     @State private var draftSystemPrompt: String = ""
     @State private var gpuLayersTemp: Double = 999
+    @State private var gpuLayerLimit: Double = 999
     @State private var cachedModels: [AIModel] = []
     
     var body: some View {
@@ -94,7 +213,7 @@ struct ChatSettingsSheet: View {
                             if let model = currentModel, model.modelFormat == .gguf {
                                 GPULayersSlider(
                                     value: $gpuLayersTemp,
-                                    maxLabel: settings.localized("max"),
+                                    maxLayers: gpuLayerLimit,
                                     label: settings.localized("gpu_layers_label"),
                                     onCommit: { saveGpuLayers(gpuLayersTemp) }
                                 )
@@ -302,6 +421,9 @@ struct ChatSettingsSheet: View {
 
     private var modelMaxContextWindow: Double {
         guard let currentModel else { return 4096 }
+        if currentModel.modelFormat == .gguf {
+            return Double(LLMBackend.shared.modelMaxContextWindow(for: currentModel))
+        }
         let advertised = currentModel.contextWindowSize > 0 ? currentModel.contextWindowSize : 4096
         return Double(max(1, advertised))
     }
@@ -331,28 +453,26 @@ struct ChatSettingsSheet: View {
 
     private func loadInitialGpuLayers() {
         guard let currentModel = currentModel else { return }
+        // Read the small GGUF metadata header before presenting the slider. Updating its
+        // range asynchronously made SwiftUI briefly draw the thumb at the left edge.
+        let limit = LLMBackend.shared.ggufFileURL(for: currentModel)
+            .flatMap { GGUFLayerLimits.read(from: $0) } ?? GGUFLayerLimits.unknown
+        gpuLayerLimit = Double(limit)
         let key = "gpu_layers_\(currentModel.id)"
         if UserDefaults.standard.object(forKey: key) != nil {
             let stored = UserDefaults.standard.integer(forKey: key)
-            gpuLayersTemp = Double(stored == 99 ? 999 : stored)
+            gpuLayersTemp = min(max(0, Double(stored == 99 ? 999 : stored)), gpuLayerLimit)
         } else {
-            gpuLayersTemp = 999
+            gpuLayersTemp = gpuLayerLimit
         }
     }
 
     private func saveGpuLayers(_ value: Double) {
         guard let currentModel = currentModel else { return }
         let key = "gpu_layers_\(currentModel.id)"
-        let intValue = Int32(value)
+        let intValue = Int32(min(max(0, value), gpuLayerLimit))
         UserDefaults.standard.set(intValue, forKey: key)
 
-        Task {
-            await CppBridge.ModelRegistry.shared.setGpuLayers(modelId: currentModel.id, gpuLayers: intValue)
-            if let folderURL = try? SimplifiedFileManager.shared.getModelFolderURL(modelId: currentModel.id, framework: currentModel.inferenceFramework),
-               let ggufFile = LLMBackend.shared.listGGUFFiles(in: folderURL).first(where: { !$0.lastPathComponent.lowercased().contains("mmproj") }) {
-                await CppBridge.ModelRegistry.shared.setGpuLayers(modelId: ggufFile.path, gpuLayers: intValue)
-            }
-        }
     }
     private func applyDraftToViewModel() {
         let clampedContext = min(max(1, draftContextWindow), modelMaxContextWindow)
@@ -471,14 +591,12 @@ struct ConfigSlider: View {
 
 struct GPULayersSlider: View {
     @Binding var value: Double
-    let maxLabel: String
+    let maxLayers: Double
     let label: String
     let onCommit: () -> Void
 
-    @State private var isSliding = false
-
     private var displayValue: String {
-        isSliding ? "\(Int(value))" : (value == 999 ? maxLabel : "\(Int(value))")
+        "\(Int(value))"
     }
 
     var body: some View {
@@ -495,10 +613,9 @@ struct GPULayersSlider: View {
             }
             Slider(
                 value: $value,
-                in: 0...999,
+                in: 0...maxLayers,
                 step: 1,
                 onEditingChanged: { editing in
-                    isSliding = editing
                     if !editing {
                         onCommit()
                     }

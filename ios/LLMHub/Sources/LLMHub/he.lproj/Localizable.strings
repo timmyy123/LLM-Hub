@@ -70,7 +70,7 @@
 "ai_thinking" = "ה-AI חושב…";
 "thinking_label" = "חשיבה";
 "thinking_tokens" = "חשיבה (%1$d אסימונים)";
-"version_number" = "גרסה 4.3.5";
+"version_number" = "גרסה 4.4.0";
 "app_version" = "גרסת אפליקציה";
 "terms_of_service" = "תנאי שימוש";
 "tos_last_updated" = "עודכן לאחרונה: 16 ביולי 2025";
@@ -418,7 +418,8 @@
 "translator_auto_detect" = "זיהוי אוטומטי";
 "translator_translate" = "תרגם";
 "translator_result" = "תרגום";
-"translator_requires_gemma3n" = "תכונה זו דורשת מודל Gemma 4. הורד אחד ממסך המודלים.";
+"translator_requires_gemma3n" = "ניתן להשתמש בכל מודל LLM לתרגום. מודלי Gemma 4 מומלצים לביצועים רב-לשוניים מיטביים.";
+"translator_load_model_desc" = "הורד מודל LLM כלשהו כדי להתחיל לתרגם. מודלי Gemma 4 מומלצים לביצועים רב-לשוניים מיטביים.";
 "transcriber_title" = "מתמלל לא מקוון";
 "transcriber_record" = "הקלט אודיו";
 "transcriber_upload" = "העלה אודיו";

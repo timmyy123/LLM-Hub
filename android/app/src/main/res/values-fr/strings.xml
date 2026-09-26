@@ -78,7 +78,7 @@
     <string name="ai_thinking">L\'IA réfléchit...</string>
     <string name="thinking_label">Réflexion</string>
     <string name="thinking_tokens">Réflexion (%1$d jetons)</string>
-    <string name="version_number">Version 4.3.5</string>
+    <string name="version_number">Version 4.4.0</string>
     <string name="app_version">Version de l\'App</string>
     
     <!-- Terms of Service -->
@@ -501,7 +501,8 @@
     <string name="translator_auto_detect">Détection Automatique</string>
     <string name="translator_translate">Traduire</string>
     <string name="translator_result">Traduction</string>
-    <string name="translator_requires_gemma3n">Cette fonctionnalité nécessite un modèle Gemma-3n ou Gemma-4 E2B/E4B. Veuillez en télécharger un depuis l\'écran Modèles.</string>
+    <string name="translator_requires_gemma3n">N\'importe quel modèle LLM peut être utilisé pour la traduction. Les modèles Gemma 4 sont recommandés pour de meilleures performances multilingues.</string>
+    <string name="translator_load_model_desc">Téléchargez n\'importe quel modèle LLM pour commencer à traduire. Les modèles Gemma 4 sont recommandés pour de meilleures performances multilingues.</string>
     
     <!-- Transcriber Screen -->
     <string name="transcriber_title">Transcripteur Hors Ligne</string>
@@ -894,7 +895,7 @@
     <string name="agent_calendar_confirm">Créer un événement: %1$s</string>
     <string name="agent_shortcut_confirm">Exécuter le raccourci: %1$s</string>
     <string name="agent_welcome_message">Bonjour ! Je suis votre Agent IA. Je peux rechercher sur le Web, afficher des cartes, gérer les événements du calendrier, consulter la météo, régler des alarmes, envoyer des messages et calculer des hachages. Comment puis-je vous aider aujourd\'hui ?</string>
-    <string name="agent_no_model_android">Veuillez d\'abord télécharger un modèle LiteRT-LM pour utiliser l\'Agent</string>
+    <string name="agent_no_model_android">Veuillez télécharger un modèle GGUF ou LiteRT-LM avant d’utiliser Agent</string>
     <string name="agent_no_model_ios">Veuillez d\'abord télécharger un modèle pour utiliser l\'Agent</string>
     <string name="open_maps">Ouvrir les cartes</string>
     <string name="agent_processing_tool">L’agent traite l’outil...</string>

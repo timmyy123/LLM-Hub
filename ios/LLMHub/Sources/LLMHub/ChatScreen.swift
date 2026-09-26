@@ -1,7 +1,6 @@
 import AVFoundation
 import Foundation
 import PhotosUI
-import RunAnywhere
 import Speech
 import SwiftUI
 import UIKit
@@ -859,16 +858,6 @@ class ChatViewModel: ObservableObject {
     }
 
     init() {
-        do {
-            try RunAnywhere.initialize(environment: .development)
-        } catch {
-            // Ignore repeated initialization attempts.
-        }
-
-        Task {
-            await RunAnywhere.refreshModelRegistry()
-        }
-
         settingsByModelId = Self.loadPerModelSettings(from: userDefaults)
 
         if let savedModelName = userDefaults.string(forKey: PersistenceKeys.selectedModelName),
@@ -2070,7 +2059,7 @@ class ChatViewModel: ObservableObject {
         // 3. Build the Raw Prompt String
         var parts: [String] = []
 
-        // Prepend the RAW prompt sentinel for the RunAnywhere SDK
+        // Preserve the raw prompt sentinel used by the direct llama.cpp prompt path.
         // This prevents the SDK from wrapping our already-formatted string.
         parts.append("__RAW_PROMPT__")
 
@@ -3779,7 +3768,6 @@ struct ChatScreen: View {
             hasInitializedChatSession = true
             vm.unloadModel()
             Task {
-                await RunAnywhere.refreshModelRegistry()
                 await RagServiceManager.shared.initialize(modelId: AppSettings.shared.selectedEmbeddingModelId)
             }
         }

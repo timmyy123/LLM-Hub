@@ -128,7 +128,7 @@
     <string name="acknowledgments_text">Особая благодарность Google, Meta, Microsoft, IBM, и сообществу HuggingFace за предоставление невероятных LLM-моделей, которые питают это приложение. Этот проект также опирается на удивительную работу сообщества разработчиков Android и экосистемы открытого исходного кода.</string>
     <string name="sd_models_credit">Модели генерации изображений работают на основе реализаций Stable Diffusion от xororz с использованием бэкендов Qualcomm QNN (NPU) и CPU.</string>
     <string name="nexa_sdk_credit">Вывод моделей GGUF работает на основе Nexa SDK.</string>
-    <string name="version_number">Версия 4.3.5</string>
+    <string name="version_number">Версия 4.4.0</string>
     <string name="ai_thinking">ИИ думает...</string>
     <string name="thinking_label">Размышление</string>
     <string name="thinking_tokens">Размышление (%1$d токенов)</string>
@@ -456,7 +456,8 @@
     <string name="translator_auto_detect">Автоопределение</string>
     <string name="translator_translate">Перевести</string>
     <string name="translator_result">Перевод</string>
-    <string name="translator_requires_gemma3n">Эта функция требует модель Gemma-3n или Gemma-4 E2B/E4B. Пожалуйста, загрузите её с экрана Модели.</string>
+    <string name="translator_requires_gemma3n">Для перевода можно использовать любую LLM-модель. Модели Gemma 4 рекомендуются для наилучшей многоязычной производительности.</string>
+    <string name="translator_load_model_desc">Загрузите любую LLM-модель, чтобы начать перевод. Модели Gemma 4 рекомендуются для наилучшей многоязычной производительности.</string>
     
     <!-- Transcriber Screen -->
     <string name="transcriber_title">Офлайн транскрибатор</string>
@@ -880,7 +881,7 @@
     <string name="agent_calendar_confirm">Создать событие: %1$s</string>
     <string name="agent_shortcut_confirm">Запустить ярлык: %1$s</string>
     <string name="agent_welcome_message">Здравствуйте! Я ваш ИИ-агент. Я могу искать в Интернете, показывать карты, управлять событиями в календаре, проверять погоду, устанавливать будильники, отправлять сообщения и вычислять хэши. Чем я могу помочь вам сегодня?</string>
-    <string name="agent_no_model_android">Пожалуйста, сначала скачайте модель LiteRT-LM, чтобы использовать Агента</string>
+    <string name="agent_no_model_android">Чтобы использовать Агента, сначала скачайте модель GGUF или LiteRT-LM</string>
     <string name="agent_no_model_ios">Пожалуйста, сначала скачайте модель, чтобы использовать Агента</string>
     <string name="open_maps">Открыть карты</string>
     <string name="agent_processing_tool">Агент обрабатывает инструмент...</string>

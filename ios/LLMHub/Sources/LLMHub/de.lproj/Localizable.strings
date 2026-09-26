@@ -69,7 +69,7 @@
 "ai_thinking" = "KI denkt nach...";
 "thinking_label" = "Denken";
 "thinking_tokens" = "Denken (%1$d Tokens)";
-"version_number" = "Version 4.3.5";
+"version_number" = "Version 4.4.0";
 "app_version" = "App-Version";
 "terms_of_service" = "Nutzungsbedingungen";
 "tos_last_updated" = "Zuletzt aktualisiert: 16. Juli 2025";
@@ -398,7 +398,8 @@
 "translator_auto_detect" = "Automatisch erkennen";
 "translator_translate" = "Übersetzen";
 "translator_result" = "Übersetzung";
-"translator_requires_gemma3n" = "Diese Funktion erfordert ein Gemma 4-Modell. Bitte laden Sie eines vom Modellbildschirm herunter.";
+"translator_requires_gemma3n" = "Jedes LLM-Modell kann für Übersetzungen verwendet werden. Gemma 4-Modelle werden für die beste mehrsprachige Leistung empfohlen.";
+"translator_load_model_desc" = "Laden Sie ein beliebiges LLM-Modell herunter, um mit dem Übersetzen zu beginnen. Gemma 4-Modelle werden für die beste mehrsprachige Leistung empfohlen.";
 "transcriber_title" = "Offline-Transkriptor";
 "transcriber_record" = "Audio aufnehmen";
 "transcriber_upload" = "Audio hochladen";

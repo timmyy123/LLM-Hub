@@ -1,11 +1,11 @@
 import Foundation
-import RunAnywhere
 import ModelZoo
 
 public enum ModelFormat: String, Codable, Sendable {
     case task
     case litertlm
     case gguf
+    case tflite
     case onnx
     case coreml
     case drawthings
@@ -396,7 +396,7 @@ public struct ModelData {
                 }
                 return true
             }
-            // For HF-downloaded custom models, check the RunAnywhere/model directory
+            // For HF-downloaded custom models, check the legacy model storage directory.
             if let dir = try? SimplifiedFileManager.shared.getModelFolderURL(
                 modelId: model.id, framework: model.inferenceFramework
             ), FileManager.default.fileExists(atPath: dir.path) {
@@ -4057,69 +4057,82 @@ public static let models: [AIModel] = [
         additionalFiles: []
     ),
 
-    // MARK: - EmbeddingGemma 300M ONNX — Embedding Models for RAG
+    // MARK: - EmbeddingGemma 300M LiteRT — Embedding Models for RAG
 
     AIModel(
-        id: "embeddinggemma-300m-onnx-q4",
-        name: "EmbeddingGemma 300M (Q4)",
-        description: "Google EmbeddingGemma 300M Q4 quantized ONNX. Lightweight semantic embedding model for RAG and memory. (219 MB)",
-        url: "https://huggingface.co/onnx-community/embeddinggemma-300m-ONNX/resolve/main/onnx/model_q4.onnx?download=true",
+        id: "embeddinggemma-300m-litert-256",
+        name: "EmbeddingGemma 300M LiteRT (256 tokens)",
+        description: "Google EmbeddingGemma mixed-precision LiteRT model for RAG and memory. (179 MB)",
+        url: "https://huggingface.co/litert-community/embeddinggemma-300m/resolve/29888fcee3216acadc7e844906e5fe0d79a61875/embeddinggemma-300M_seq256_mixed-precision.tflite?download=true",
         category: .embedding,
-        sizeBytes: 218725224,
-        source: "Google / ONNX Community",
+        sizeBytes: 179131736,
+        source: "Google / LiteRT Community",
         supportsVision: false,
         supportsAudio: false,
         supportsThinking: false,
-        supportsGpu: true,
+        supportsGpu: false,
         requirements: ModelRequirements(minRamGB: 1, recommendedRamGB: 2),
-        contextWindowSize: 512,
-        modelFormat: .onnx,
+        contextWindowSize: 256,
+        modelFormat: .tflite,
         additionalFiles: [
-            "https://huggingface.co/onnx-community/embeddinggemma-300m-ONNX/resolve/main/onnx/model_q4.onnx_data?download=true",
-            "https://huggingface.co/onnx-community/embeddinggemma-300m-ONNX/resolve/main/tokenizer.json?download=true",
-            "https://huggingface.co/onnx-community/embeddinggemma-300m-ONNX/resolve/main/tokenizer_config.json?download=true"
+            "https://huggingface.co/litert-community/embeddinggemma-300m/resolve/29888fcee3216acadc7e844906e5fe0d79a61875/sentencepiece.model?download=true"
         ]
     ),
     AIModel(
-        id: "embeddinggemma-300m-onnx-int8",
-        name: "EmbeddingGemma 300M (INT8)",
-        description: "Google EmbeddingGemma 300M INT8 quantized ONNX. Balanced size and accuracy for RAG and memory. (331 MB)",
-        url: "https://huggingface.co/onnx-community/embeddinggemma-300m-ONNX/resolve/main/onnx/model_quantized.onnx?download=true",
+        id: "embeddinggemma-300m-litert-512",
+        name: "EmbeddingGemma 300M LiteRT (512 tokens)",
+        description: "Google EmbeddingGemma mixed-precision LiteRT model for RAG and memory. (179 MB)",
+        url: "https://huggingface.co/litert-community/embeddinggemma-300m/resolve/29888fcee3216acadc7e844906e5fe0d79a61875/embeddinggemma-300M_seq512_mixed-precision.tflite?download=true",
         category: .embedding,
-        sizeBytes: 330938640,
-        source: "Google / ONNX Community",
+        sizeBytes: 179132472,
+        source: "Google / LiteRT Community",
         supportsVision: false,
         supportsAudio: false,
         supportsThinking: false,
-        supportsGpu: true,
+        supportsGpu: false,
         requirements: ModelRequirements(minRamGB: 1, recommendedRamGB: 2),
         contextWindowSize: 512,
-        modelFormat: .onnx,
+        modelFormat: .tflite,
         additionalFiles: [
-            "https://huggingface.co/onnx-community/embeddinggemma-300m-ONNX/resolve/main/onnx/model_quantized.onnx_data?download=true",
-            "https://huggingface.co/onnx-community/embeddinggemma-300m-ONNX/resolve/main/tokenizer.json?download=true",
-            "https://huggingface.co/onnx-community/embeddinggemma-300m-ONNX/resolve/main/tokenizer_config.json?download=true"
+            "https://huggingface.co/litert-community/embeddinggemma-300m/resolve/29888fcee3216acadc7e844906e5fe0d79a61875/sentencepiece.model?download=true"
         ]
     ),
     AIModel(
-        id: "embeddinggemma-300m-onnx-fp16",
-        name: "EmbeddingGemma 300M (FP16)",
-        description: "Google EmbeddingGemma 300M FP16 ONNX. High-quality semantic embeddings for RAG and memory. Best accuracy. (640 MB)",
-        url: "https://huggingface.co/onnx-community/embeddinggemma-300m-ONNX/resolve/main/onnx/model_fp16.onnx?download=true",
+        id: "embeddinggemma-300m-litert-1024",
+        name: "EmbeddingGemma 300M LiteRT (1024 tokens)",
+        description: "Google EmbeddingGemma mixed-precision LiteRT model for RAG and memory. (183 MB)",
+        url: "https://huggingface.co/litert-community/embeddinggemma-300m/resolve/29888fcee3216acadc7e844906e5fe0d79a61875/embeddinggemma-300M_seq1024_mixed-precision.tflite?download=true",
         category: .embedding,
-        sizeBytes: 639569517,
-        source: "Google / ONNX Community",
+        sizeBytes: 183329528,
+        source: "Google / LiteRT Community",
         supportsVision: false,
         supportsAudio: false,
         supportsThinking: false,
-        supportsGpu: true,
+        supportsGpu: false,
+        requirements: ModelRequirements(minRamGB: 1, recommendedRamGB: 2),
+        contextWindowSize: 1024,
+        modelFormat: .tflite,
+        additionalFiles: [
+            "https://huggingface.co/litert-community/embeddinggemma-300m/resolve/29888fcee3216acadc7e844906e5fe0d79a61875/sentencepiece.model?download=true"
+        ]
+    ),
+    AIModel(
+        id: "embeddinggemma-300m-litert-2048",
+        name: "EmbeddingGemma 300M LiteRT (2048 tokens)",
+        description: "Google EmbeddingGemma mixed-precision LiteRT model for RAG and memory. (196 MB)",
+        url: "https://huggingface.co/litert-community/embeddinggemma-300m/resolve/29888fcee3216acadc7e844906e5fe0d79a61875/embeddinggemma-300M_seq2048_mixed-precision.tflite?download=true",
+        category: .embedding,
+        sizeBytes: 195912440,
+        source: "Google / LiteRT Community",
+        supportsVision: false,
+        supportsAudio: false,
+        supportsThinking: false,
+        supportsGpu: false,
         requirements: ModelRequirements(minRamGB: 2, recommendedRamGB: 3),
-        contextWindowSize: 512,
-        modelFormat: .onnx,
+        contextWindowSize: 2048,
+        modelFormat: .tflite,
         additionalFiles: [
-            "https://huggingface.co/onnx-community/embeddinggemma-300m-ONNX/resolve/main/onnx/model_fp16.onnx_data?download=true",
-            "https://huggingface.co/onnx-community/embeddinggemma-300m-ONNX/resolve/main/tokenizer.json?download=true",
-            "https://huggingface.co/onnx-community/embeddinggemma-300m-ONNX/resolve/main/tokenizer_config.json?download=true"
+            "https://huggingface.co/litert-community/embeddinggemma-300m/resolve/29888fcee3216acadc7e844906e5fe0d79a61875/sentencepiece.model?download=true"
         ]
     ),
     AIModel(

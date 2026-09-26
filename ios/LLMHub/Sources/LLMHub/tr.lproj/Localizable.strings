@@ -70,7 +70,7 @@
 "ai_thinking" = "Yapay zeka düşünüyor...";
 "thinking_label" = "Düşünme";
 "thinking_tokens" = "Düşünme (%1$d token)";
-"version_number" = "Sürüm 4.3.5";
+"version_number" = "Sürüm 4.4.0";
 "app_version" = "Uygulama Sürümü";
 "terms_of_service" = "Hizmet Şartları";
 "tos_last_updated" = "Son güncelleme: 16 Temmuz 2025";
@@ -415,7 +415,8 @@
 "translator_auto_detect" = "Otomatik Algıla";
 "translator_translate" = "Çevir";
 "translator_result" = "Çeviri";
-"translator_requires_gemma3n" = "Bu özellik bir Gemma 4 modeli gerektirir. Lütfen Modeller ekranından bir tane indirin.";
+"translator_requires_gemma3n" = "Çeviri için herhangi bir LLM modeli kullanılabilir. En iyi çok dilli performans için Gemma 4 modelleri önerilir.";
+"translator_load_model_desc" = "Çeviriye başlamak için herhangi bir LLM modeli indirin. En iyi çok dilli performans için Gemma 4 modelleri önerilir.";
 "transcriber_title" = "Çevrimdışı Transkripsiyon";
 "transcriber_record" = "Ses Kaydet";
 "transcriber_upload" = "Ses Yükle";

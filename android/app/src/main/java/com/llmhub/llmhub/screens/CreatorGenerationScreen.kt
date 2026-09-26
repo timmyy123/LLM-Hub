@@ -59,7 +59,6 @@ fun CreatorGenerationScreen(
     
     var userPrompt by remember { mutableStateOf("") }
     var showSettingsSheet by remember { mutableStateOf(false) }
-    var keepModelOnExit by remember { mutableStateOf(false) }
     var editedIcon by remember { mutableStateOf("") }
     var editedName by remember { mutableStateOf("") }
     var editedDescription by remember { mutableStateOf("") }
@@ -91,7 +90,7 @@ fun CreatorGenerationScreen(
 
     // Unload model when leaving this screen
     DisposableEffect(Unit) {
-        onDispose { if (!keepModelOnExit) viewModel.stopAndUnloadOnExit() }
+        onDispose { if (!viewModel.isRetainingModelForChat()) viewModel.stopAndUnloadOnExit() }
     }
 
     LaunchedEffect(imeVisible.value) {
@@ -369,7 +368,7 @@ fun CreatorGenerationScreen(
                                 )
                                 viewModel.saveCreator(creatorToSave) {
                                     // Navigate to a new chat with this creator
-                                    keepModelOnExit = true
+                                    viewModel.retainLoadedModelForChat()
                                     onNavigateToChat(creatorToSave.id)
                                 }
                             },

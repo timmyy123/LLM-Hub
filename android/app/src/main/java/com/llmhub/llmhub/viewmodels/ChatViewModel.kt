@@ -132,6 +132,7 @@ class ChatViewModel(
     // inference service, so we can skip applySavedModelConfig + loadModel when nothing changed.
     private var lastAppliedModelName: String? = null
     private var lastAppliedConfig: ModelConfig? = null
+    private var creatorHandoffModelName: String? = null
 
     // NOTE: intent heuristics removed — global memory will be queried whenever the
     // memory preference is enabled. Localization-specific intent checks were removed
@@ -362,7 +363,7 @@ class ChatViewModel(
         if (isLiteRtLmGemma4_12B) {
             _selectedBackend.value = LlmInference.Backend.GPU
             _selectedNpuDeviceId.value = null
-        } else if (model.modelFormat == "gguf" && DeviceInfo.isQualcommNpuSupported() && _selectedNpuDeviceId.value == null) {
+        } else if (model.modelFormat == "gguf" && DeviceInfo.isLlamaCppHexagonSupported() && _selectedNpuDeviceId.value == null) {
             _selectedBackend.value = LlmInference.Backend.GPU
             _selectedNpuDeviceId.value = "dev0"
         } else {
@@ -415,7 +416,7 @@ class ChatViewModel(
                     if (isLiteRtLmGemma4_12B) {
                         _selectedBackend.value = LlmInference.Backend.GPU
                         _selectedNpuDeviceId.value = null
-                    } else if (model.modelFormat == "gguf" && DeviceInfo.isQualcommNpuSupported()) {
+                    } else if (model.modelFormat == "gguf" && DeviceInfo.isLlamaCppHexagonSupported()) {
                         _selectedBackend.value = LlmInference.Backend.GPU
                         _selectedNpuDeviceId.value = "dev0"
                     } else {
@@ -2464,18 +2465,20 @@ class ChatViewModel(
     }
     
     private suspend fun loadModelWithSavedConfig(model: LLMModel): Boolean {
-        val deviceId = if (!backendExplicitlySet && model.modelFormat == "gguf" && DeviceInfo.isQualcommNpuSupported() && _selectedNpuDeviceId.value == null) {
-            _selectedNpuDeviceId.value = "dev0"
-            "dev0"
-        } else {
-            _selectedNpuDeviceId.value
-        }
+        creatorHandoffModelName = null
+        // A lazy load must use this model's saved sheet config, not the backend/device
+        // still held in the chat UI from a different model or a previous session.
+        val savedConfig = modelPrefs.getModelConfig(model.name)
+        val defaultNpuDevice = if (
+            savedConfig == null && !backendExplicitlySet && model.modelFormat == "gguf" &&
+            DeviceInfo.isLlamaCppHexagonSupported()
+        ) "dev0" else null
         return com.llmhub.llmhub.data.loadModelWithSavedConfig(
             model = model,
             modelPrefs = modelPrefs,
             inferenceService = inferenceService,
-            backendOverride = _selectedBackend.value,
-            deviceIdOverride = deviceId,
+            backendOverride = if (backendExplicitlySet) _selectedBackend.value else null,
+            deviceIdOverride = if (backendExplicitlySet) _selectedNpuDeviceId.value else savedConfig?.deviceId ?: defaultNpuDevice,
             onConfigApplied = { cfg ->
                 isVisionDisabled = cfg.disableVision
                 isAudioDisabled = cfg.disableAudio
@@ -2488,6 +2491,7 @@ class ChatViewModel(
     private fun isModelAlreadyLoadedWithCurrentConfig(model: LLMModel): Boolean {
         val loaded = inferenceService.getCurrentlyLoadedModel() ?: return false
         if (loaded.name != model.name) return false
+        if (creatorHandoffModelName == model.name) return true
         if (lastAppliedModelName != model.name) return false
         val cfg = lastAppliedConfig ?: return false
         // Re-read the saved config synchronously is not possible here; compare against
@@ -3194,6 +3198,11 @@ class ChatViewModel(
             this.currentModel = modelToUse
             _selectedModel.value = modelToUse
             loadSettingsForModel(modelToUse)
+            // Creator and Chat share the app-scoped inference service. Adopt its loaded
+            // weights for this direct handoff instead of treating the first send as a lazy load.
+            if (creatorId != null && inferenceService.getCurrentlyLoadedModel()?.name == modelToUse.name) {
+                creatorHandoffModelName = modelToUse.name
+            }
             repository.updateChatModel(newChatId, modelToUse.name)
             _currentChat.value = repository.getChatById(newChatId)
             

@@ -78,7 +78,7 @@
     <string name="ai_thinking">AI sedang berpikir...</string>
     <string name="thinking_label">Pemikiran</string>
     <string name="thinking_tokens">Pemikiran (%1$d token)</string>
-    <string name="version_number">Versi 4.3.5</string>
+    <string name="version_number">Versi 4.4.0</string>
     <string name="app_version">Versi Aplikasi</string>
     
     <!-- Terms of Service -->
@@ -475,7 +475,8 @@
     <string name="translator_auto_detect">Deteksi Otomatis</string>
     <string name="translator_translate">Terjemahkan</string>
     <string name="translator_result">Terjemahan</string>
-    <string name="translator_requires_gemma3n">Fitur ini memerlukan model Gemma-3n atau Gemma-4 E2B/E4B. Harap unduh satu dari layar Model.</string>
+    <string name="translator_requires_gemma3n">Model LLM apa pun dapat digunakan untuk terjemahan. Model Gemma 4 direkomendasikan untuk performa multibahasa terbaik.</string>
+    <string name="translator_load_model_desc">Unduh model LLM apa pun untuk mulai menerjemahkan. Model Gemma 4 direkomendasikan untuk performa multibahasa terbaik.</string>
     
     <!-- Transcriber Screen -->
     <string name="transcriber_title">Transkriptor Offline</string>
@@ -910,7 +911,7 @@
     <string name="agent_calendar_confirm">Buat acara: %1$s</string>
     <string name="agent_shortcut_confirm">Jalankan pintasan: %1$s</string>
     <string name="agent_welcome_message">Hello! I am your AI Agent. I can search the web, display maps, manage calendar events, check weather, set alarms, send messages, and calculate hashes. How can I help you today?</string>
-    <string name="agent_no_model_android">Silakan unduh model LiteRT-LM terlebih dahulu untuk menggunakan Agen</string>
+    <string name="agent_no_model_android">Unduh model GGUF atau LiteRT-LM terlebih dahulu untuk menggunakan Agen</string>
     <string name="agent_no_model_ios">Please download a model first to use Agent</string>
     <string name="open_maps">Open Maps</string>
     <string name="agent_processing_tool">Agent is processing tool...</string>

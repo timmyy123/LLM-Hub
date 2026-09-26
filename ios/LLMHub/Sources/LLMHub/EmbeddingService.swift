@@ -1,9 +1,8 @@
 import Foundation
-import RunAnywhere
+import MagentaRuntime
 
 // MARK: - EmbeddingService
-// Wraps the RunAnywhere embeddings lifecycle and keeps the app-facing API as
-// plain float vectors for the in-memory RAG service.
+// Runs the downloaded EmbeddingGemma .tflite file with LiteRT.
 
 actor EmbeddingService {
 
@@ -13,6 +12,7 @@ actor EmbeddingService {
     private(set) var currentModelID: String? = nil
     private(set) var currentModelName: String? = nil
     private(set) var embeddingDimension: Int = 0
+    private var model: LiteRTEmbeddingModel?
 
     // MARK: - Init
 
@@ -20,27 +20,25 @@ actor EmbeddingService {
 
     // MARK: - Lifecycle
 
-    /// Initialize the embedding service and load a GGUF embedding model.
-    func initialize(modelID: String, modelPath _: String, modelName: String) async throws {
+    /// Compile the selected EmbeddingGemma LiteRT model once.
+    func initialize(modelID: String, modelPath: String, modelName: String) async throws {
         if currentModelID != modelID {
             await cleanup()
         }
-
-        let testResult = try await RunAnywhere.embeddings.embed("test", modelID: modelID)
-        guard let vector = testResult.vectors.first, !vector.values.isEmpty else {
-            throw EmbeddingError.modelLoadFailed("empty test embedding")
+        let loaded = try LiteRTEmbeddingModel(modelURL: URL(fileURLWithPath: modelPath))
+        guard loaded.sequenceLength > 2, loaded.dimension > 0 else {
+            throw EmbeddingError.modelLoadFailed("invalid embedding tensor shape")
         }
 
+        model = loaded
         isInitialized = true
         currentModelID = modelID
         currentModelName = modelName
-        embeddingDimension = testResult.dimension > 0 ? Int(testResult.dimension) : vector.values.count
+        embeddingDimension = loaded.dimension
     }
 
     func cleanup() async {
-        if isInitialized {
-            try? await RunAnywhere.embeddings.unload()
-        }
+        model = nil
         isInitialized = false
         currentModelID = nil
         currentModelName = nil
@@ -50,19 +48,14 @@ actor EmbeddingService {
     // MARK: - Embed
 
     /// Generate a dense float embedding for the given text.
-    func embed(_ text: String) async throws -> [Float] {
-        guard isInitialized, let modelID = currentModelID else {
+    func embed(_ text: String, isQuery: Bool = false) async throws -> [Float] {
+        guard isInitialized, let model else {
             throw EmbeddingError.notInitialized
         }
 
-        let trimmed = String(text.trimmingCharacters(in: .whitespacesAndNewlines).prefix(1024))
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return [] }
-
-        let result = try await RunAnywhere.embeddings.embed(trimmed, modelID: modelID)
-        guard let output = result.vectors.first?.values, !output.isEmpty else {
-            throw EmbeddingError.embeddingFailed("empty result")
-        }
-        return output
+        return try model.embed(trimmed, isQuery: isQuery)
     }
 }
 

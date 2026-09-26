@@ -77,7 +77,7 @@
     <string name="ai_thinking">ה-AI חושב…</string>
     <string name="thinking_label">חשיבה</string>
     <string name="thinking_tokens">חשיבה (%1$d אסימונים)</string>
-    <string name="version_number">גרסה 4.3.5</string>
+    <string name="version_number">גרסה 4.4.0</string>
     <string name="app_version">גרסת אפליקציה</string>
 
     <!-- Terms of Service -->
@@ -475,7 +475,8 @@
     <string name="translator_auto_detect">זיהוי אוטומטי</string>
     <string name="translator_translate">תרגם</string>
     <string name="translator_result">תרגום</string>
-    <string name="translator_requires_gemma3n">תכונה זו דורשת מודל Gemma-3n או Gemma-4 E2B/E4B. הורד אחד ממסך המודלים.</string>
+    <string name="translator_requires_gemma3n">ניתן להשתמש בכל מודל LLM לתרגום. מודלי Gemma 4 מומלצים לביצועים רב-לשוניים מיטביים.</string>
+    <string name="translator_load_model_desc">הורד מודל LLM כלשהו כדי להתחיל לתרגם. מודלי Gemma 4 מומלצים לביצועים רב-לשוניים מיטביים.</string>
 
     <!-- Transcriber Screen -->
     <string name="transcriber_title">מתמלל לא מקוון</string>
@@ -907,7 +908,7 @@
     <string name="agent_calendar_confirm">צור אירוע: %1$s</string>
     <string name="agent_shortcut_confirm">הפעל קיצור דרך: %1$s</string>
     <string name="agent_welcome_message">שלום! אני סוכן ה-AI שלך. אני יכול לחפש באינטרנט, להציג מפות, לנהל אירועי לוח שנה, לבדוק מזג אוויר, להגדיר שעונים מעוררים, לשלוח הודעות ולחשב האשים. איך אני יכול לעזור לך היום?</string>
-    <string name="agent_no_model_android">אנא הורד תחילה דגם LiteRT-LM כדי להשתמש בסוכן</string>
+    <string name="agent_no_model_android">כדי להשתמש בסוכן, הורד תחילה מודל GGUF או LiteRT-LM</string>
     <string name="agent_no_model_ios">אנא הורד תחילה דגם כדי להשתמש בסוכן</string>
     <string name="open_maps">פתח מפות</string>
     <string name="agent_processing_tool">הסוכן מעבד את הכלי...</string>

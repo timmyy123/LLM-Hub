@@ -6,6 +6,7 @@ import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.llmhub.llmhub.data.LLMModel
+import com.llmhub.llmhub.data.effectiveContextWindow
 import com.llmhub.llmhub.data.ModelAvailabilityProvider
 import com.llmhub.llmhub.data.ModelConfig
 import com.llmhub.llmhub.data.ModelPreferences
@@ -229,8 +230,8 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     private fun restoreSettingsForModel(model: LLMModel) {
-        val savedTokens = prefs.getInt("max_tokens_${model.name}", minOf(4096, model.contextWindowSize.coerceAtLeast(1)))
-        _selectedMaxTokens.value = savedTokens.coerceIn(1, model.contextWindowSize.coerceAtLeast(1))
+        val savedTokens = prefs.getInt("max_tokens_${model.name}", minOf(4096, model.effectiveContextWindow(getApplication<Application>())))
+        _selectedMaxTokens.value = savedTokens.coerceIn(1, model.effectiveContextWindow(getApplication<Application>()))
 
         val isGemma4_12B = model.modelFormat == "litertlm" && (model.name.contains("Gemma-4 12B", ignoreCase = true) || model.name.contains("Gemma 4 12B", ignoreCase = true))
         val savedBackendName = prefs.getString("selected_backend_${model.name}", prefs.getString("selected_backend", LlmInference.Backend.GPU.name))
@@ -254,7 +255,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
         } else {
             null
         }
-        if (model.modelFormat == "gguf" && DeviceInfo.isQualcommNpuSupported() && _selectedNpuDeviceId.value == null) {
+        if (model.modelFormat == "gguf" && DeviceInfo.isLlamaCppHexagonSupported() && _selectedNpuDeviceId.value == null) {
             _selectedNpuDeviceId.value = "dev0"
         }
 
@@ -479,7 +480,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun setMaxTokens(maxTokens: Int) {
-        val cap = _selectedModel.value?.contextWindowSize?.coerceAtLeast(1) ?: 4096
+        val cap = _selectedModel.value?.effectiveContextWindow(getApplication<Application>()) ?: 4096
         _selectedMaxTokens.value = maxTokens.coerceIn(1, cap)
         recalculateContextUsage()
         saveSettings()
@@ -823,9 +824,9 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
     ) {
         val model = _selectedModel.value
         val effectiveMaxTokens = when {
-            maxTokens != null && model != null -> maxTokens.coerceIn(1, model.contextWindowSize.coerceAtLeast(1))
+            maxTokens != null && model != null -> maxTokens.coerceIn(1, model.effectiveContextWindow(getApplication<Application>()))
             maxTokens != null -> maxTokens
-            model != null -> _selectedMaxTokens.value.coerceIn(1, model.contextWindowSize.coerceAtLeast(1))
+            model != null -> _selectedMaxTokens.value.coerceIn(1, model.effectiveContextWindow(getApplication<Application>()))
             else -> _selectedMaxTokens.value
         }
 
@@ -1317,7 +1318,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
 
     private fun shouldResetSessionBeforeMessage(newPrompt: String): Boolean {
         val model = _selectedModel.value ?: return false
-        val maxTokens = _selectedMaxTokens.value.coerceAtMost(model.contextWindowSize.coerceAtLeast(1))
+        val maxTokens = _selectedMaxTokens.value.coerceAtMost(model.effectiveContextWindow(getApplication<Application>()))
         // Same formula as ring, plus the incoming prompt chars
         val rawChars = _chatMessages.value.sumOf { it.text.length }
         val effectiveChars = (rawChars - ringCharOffset).coerceAtLeast(0) +
@@ -1343,7 +1344,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
     private fun recalculateContextUsage() {
         val model = _selectedModel.value
         val maxTokens = if (model != null) {
-            _selectedMaxTokens.value.coerceAtMost(model.contextWindowSize.coerceAtLeast(1))
+            _selectedMaxTokens.value.coerceAtMost(model.effectiveContextWindow(getApplication<Application>()))
         } else {
             _selectedMaxTokens.value.coerceAtLeast(1)
         }

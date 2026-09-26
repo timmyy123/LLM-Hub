@@ -70,7 +70,7 @@
 "ai_thinking" = "هوش مصنوعی در حال فکر کردن…";
 "thinking_label" = "تفکر";
 "thinking_tokens" = "تفکر (%1$d توکن)";
-"version_number" = "نسخه 4.3.5";
+"version_number" = "نسخه 4.4.0";
 "app_version" = "نسخه برنامه";
 "terms_of_service" = "شرایط خدمات";
 "tos_last_updated" = "آخرین بروزرسانی: 16 ژوئیه 2025";
@@ -418,7 +418,8 @@
 "translator_auto_detect" = "تشخیص خودکار";
 "translator_translate" = "ترجمه";
 "translator_result" = "ترجمه";
-"translator_requires_gemma3n" = "این ویژگی به یک مدل Gemma 4 نیاز دارد. لطفاً یکی را از صفحه مدل‌ها دانلود کنید.";
+"translator_requires_gemma3n" = "هر مدل LLM می‌تواند برای ترجمه استفاده شود. مدل‌های Gemma 4 برای بهترین عملکرد چندزبانه توصیه می‌شوند.";
+"translator_load_model_desc" = "هر مدل LLM را برای شروع ترجمه دانلود کنید. مدل‌های Gemma 4 برای بهترین عملکرد چندزبانه توصیه می‌شوند.";
 "transcriber_title" = "رونویس‌گر آفلاین";
 "transcriber_record" = "ضبط صدا";
 "transcriber_upload" = "آپلود صدا";

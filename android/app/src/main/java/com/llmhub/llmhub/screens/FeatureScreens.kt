@@ -38,12 +38,16 @@ import androidx.activity.ComponentActivity
 import coil.compose.AsyncImage
 import com.llmhub.llmhub.LlmHubApplication
 import com.llmhub.llmhub.R
+import com.llmhub.llmhub.data.GgufLayerLimits
 import com.llmhub.llmhub.components.ModelSelectorCard
 import com.llmhub.llmhub.components.SelectableMarkdownText
 import com.llmhub.llmhub.components.ThinkingAwareResultContent
 import com.llmhub.llmhub.components.getDisplayContentWithoutThinking
 import com.llmhub.llmhub.data.hasDownloadedVisionProjector
 import com.llmhub.llmhub.data.requiresExternalVisionProjector
+import com.llmhub.llmhub.data.hasNativeVoiceSupport
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import com.llmhub.llmhub.ui.components.AudioInputService
 import com.llmhub.llmhub.viewmodels.TranslatorViewModel
 import androidx.compose.foundation.BorderStroke
@@ -490,7 +494,6 @@ fun TranslatorScreen(
                         viewModel.loadModel()
                     },
                     onUnloadModel = { viewModel.unloadModel() },
-                    filterMultimodalOnly = true,
                     modifier = Modifier.fillMaxWidth()
                 )
                 
@@ -525,31 +528,32 @@ fun TranslatorScreen(
                 
                 Spacer(modifier = Modifier.height(8.dp))
                 
-                // Audio toggle
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column {
-                        Text(
-                            text = stringResource(R.string.translator_enable_audio),
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Medium
-                        )
-                        Text(
-                            text = stringResource(R.string.translator_audio_description),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                // Audio toggle (only show for defined Gemma models that support audio)
+                if (selectedModel?.hasNativeVoiceSupport() == true) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(
+                                text = stringResource(R.string.translator_enable_audio),
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = stringResource(R.string.translator_audio_description),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = audioEnabled,
+                            onCheckedChange = { viewModel.toggleAudio(it) }
                         )
                     }
-                    Switch(
-                        checked = audioEnabled,
-                        onCheckedChange = { viewModel.toggleAudio(it) },
-                        enabled = selectedModel?.supportsAudio == true
-                    )
                 }
                 
                 // Thinking toggle (shown only for thinking/reasoning models)
@@ -723,7 +727,7 @@ fun TranslatorScreen(
                     Spacer(modifier = Modifier.height(24.dp))
                     Text(
                         text = stringResource(
-                            if (availableModels.isEmpty()) R.string.translator_requires_gemma3n
+                            if (availableModels.isEmpty()) R.string.load_model_to_start
                             else R.string.scam_detector_load_model
                         ),
                         style = MaterialTheme.typography.titleLarge,
@@ -732,7 +736,10 @@ fun TranslatorScreen(
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
-                        text = stringResource(R.string.scam_detector_load_model_desc),
+                        text = stringResource(
+                            if (availableModels.isEmpty()) R.string.translator_load_model_desc
+                            else R.string.scam_detector_load_model_desc
+                        ),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
@@ -859,8 +866,8 @@ fun TranslatorScreen(
                                             }
                                         }
                                         
-                                        // Audio recording button (only show if audio is enabled)
-                                        if (audioEnabled && selectedModel?.supportsAudio == true) {
+                                        // Audio recording button (only show for defined Gemma models that support audio)
+                                        if (audioEnabled && selectedModel?.hasNativeVoiceSupport() == true) {
                                             Row(
                                                 verticalAlignment = Alignment.CenterVertically,
                                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -2029,14 +2036,26 @@ fun ScamDetectorScreen(
     var showSettingsSheet by remember { mutableStateOf(false) }
 
     // Slider local state for settings sheet
-    val baseMaxTokensCapScam by remember(selectedModel) {
-        derivedStateOf { selectedModel?.contextWindowSize?.coerceAtLeast(1) ?: 4096 }
-    }
+    var ggufContextLimitScam by remember(selectedModel?.name) { mutableStateOf<Int?>(null) }
+    val baseMaxTokensCapScam = (ggufContextLimitScam ?: selectedModel?.contextWindowSize ?: 4096).coerceAtLeast(1)
     var maxTokensValueScam by remember(selectedMaxTokensScam, baseMaxTokensCapScam) {
         mutableStateOf(selectedMaxTokensScam.coerceIn(1, baseMaxTokensCapScam))
     }
     var maxTokensTextScam by remember(maxTokensValueScam) { mutableStateOf(maxTokensValueScam.toString()) }
-    var gpuLayersScam by remember(selectedNGpuLayersScam) { mutableStateOf(selectedNGpuLayersScam ?: 999) }
+    var gpuLayerLimitScam by remember { mutableIntStateOf(GgufLayerLimits.UNKNOWN) }
+    var gpuLayersScam by remember(selectedNGpuLayersScam, gpuLayerLimitScam) {
+        mutableStateOf((selectedNGpuLayersScam ?: gpuLayerLimitScam).coerceIn(0, gpuLayerLimitScam))
+    }
+    LaunchedEffect(selectedModel?.name) {
+        gpuLayerLimitScam = GgufLayerLimits.UNKNOWN
+        selectedModel?.let { model ->
+            val (layers, fileContext) = withContext(Dispatchers.IO) {
+                GgufLayerLimits.forModel(context, model) to GgufLayerLimits.contextForModel(context, model)
+            }
+            gpuLayerLimitScam = layers ?: GgufLayerLimits.UNKNOWN
+            ggufContextLimitScam = fileContext
+        }
+    }
     val isGgufScam by remember(selectedModel) { derivedStateOf { selectedModel?.modelFormat == "gguf" } }
     
     // TTS Service — always use system TTS (Kokoro is English-only)
@@ -2185,7 +2204,7 @@ fun ScamDetectorScreen(
                                         gpuLayersScam = it.toInt()
                                         viewModel.setNGpuLayers(gpuLayersScam)
                                     },
-                                    valueRange = 0f..999f,
+                                    valueRange = 0f..gpuLayerLimitScam.toFloat(),
                                     modifier = Modifier.weight(1f).height(28.dp),
                                     thumb = {
                                         SliderDefaults.Thumb(
@@ -2198,7 +2217,7 @@ fun ScamDetectorScreen(
                                 OutlinedTextField(
                                     value = gpuLayersScam.toString(),
                                     onValueChange = { v ->
-                                        val n = v.filter { it.isDigit() }.toIntOrNull()?.coerceIn(0, 999) ?: gpuLayersScam
+                                        val n = v.filter { it.isDigit() }.toIntOrNull()?.coerceIn(0, gpuLayerLimitScam) ?: gpuLayersScam
                                         gpuLayersScam = n
                                         viewModel.setNGpuLayers(n)
                                     },
@@ -2619,5 +2638,3 @@ private fun TranscriptionCard(
         }
     }
 }
-
-

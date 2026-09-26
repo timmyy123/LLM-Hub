@@ -1,5 +1,4 @@
 import SwiftUI
-import RunAnywhere
 import UniformTypeIdentifiers
 import ModelZoo
 
@@ -174,7 +173,7 @@ class ModelDownloadViewModel: ObservableObject {
             ?? FileManager.default.temporaryDirectory.appendingPathComponent(modelId, isDirectory: true)
     }
 
-    private static func migrateCustomModelIntoRunAnywhere(_ model: AIModel) -> AIModel {
+    private static func migrateCustomModelIntoAppStorage(_ model: AIModel) -> AIModel {
         guard model.source == "Custom" else { return model }
 
         let destinationDir = customModelDirectory(for: model.id)
@@ -211,16 +210,6 @@ class ModelDownloadViewModel: ObservableObject {
     }
 
     init() {
-        do {
-            try RunAnywhere.initialize(environment: .development)
-        } catch {
-            // Ignore repeated initialization attempts.
-        }
-
-        Task {
-            await RunAnywhere.refreshModelRegistry()
-        }
-
         // Initialize with default states for built-in models
         for model in ModelData.models {
             downloadStates[model.id] = .notDownloaded
@@ -308,7 +297,7 @@ class ModelDownloadViewModel: ObservableObject {
         var needsResave = false
         for raw in imported {
             guard !models.contains(where: { $0.id == raw.id }) else { continue }
-            let model = Self.migrateCustomModelIntoRunAnywhere(ModelData.normalizeCustomModel(raw))
+            let model = Self.migrateCustomModelIntoAppStorage(ModelData.normalizeCustomModel(raw))
             if model.url != raw.url || model.additionalFiles != raw.additionalFiles { needsResave = true }
             models.append(model)
             downloadStates[model.id] = .downloaded
@@ -508,12 +497,6 @@ class ModelDownloadViewModel: ObservableObject {
         markPending(model.id)
         
         let task = Task {
-            do {
-                try RunAnywhere.initialize(environment: .development)
-            } catch {
-                // Initialization may already be in progress/complete in other flows.
-            }
-
             let destinationDir: URL
             do {
                 destinationDir = try destinationDirectory(for: model)
@@ -551,7 +534,6 @@ class ModelDownloadViewModel: ObservableObject {
                     self.refreshStatuses()
                 }
 
-                await RunAnywhere.refreshModelRegistry()
             } catch is CancellationError {
                 await MainActor.run {
                     self.downloadStates[model.id] = .paused
@@ -1122,7 +1104,6 @@ struct ModelDownloadScreen: View {
         }
         .onAppear {
             Task {
-                try? await RunAnywhere.completeServicesInitialization()
                 vm.refreshStatuses()
                 vm.resumePendingDownloads()
             }
@@ -1375,11 +1356,13 @@ struct ImportExternalModelSheet: View {
             handleFileSelected(result: result)
         }
 
-        // Context window size
-        importField(label: settings.localized("context_window_size")) {
-            TextField("4096", text: $contextWindowSize)
-                .keyboardType(.numberPad)
-                .foregroundColor(.white)
+        // GGUF declares its own context length in the file header.
+        if modelFormat != .gguf {
+            importField(label: settings.localized("context_window_size")) {
+                TextField("4096", text: $contextWindowSize)
+                    .keyboardType(.numberPad)
+                    .foregroundColor(.white)
+            }
         }
 
         // Prompt template (optional)
@@ -1620,7 +1603,8 @@ struct ImportExternalModelSheet: View {
             return
         }
 
-        let contextSize = Int(contextWindowSize) ?? 4096
+        // Remote GGUF headers become available after download; the runtime reads them then.
+        let contextSize = modelFormat == .gguf ? 4096 : (Int(contextWindowSize) ?? 4096)
         let templateValue = promptTemplate.trimmingCharacters(in: .whitespacesAndNewlines)
 
         let modelId = name.lowercased()
@@ -1704,7 +1688,9 @@ struct ImportExternalModelSheet: View {
                 supportsGpu: supportsGpu,
                 supportsMtp: modelFormat == .litertlm ? supportsMtp : true,
                 requirements: ModelRequirements(minRamGB: max(2, Int(fileSize / 1_073_741_824) + 1), recommendedRamGB: max(4, Int(fileSize / 1_073_741_824) + 2)),
-                contextWindowSize: contextSize,
+                contextWindowSize: modelFormat == .gguf
+                    ? (GGUFLayerLimits.readContextLength(from: destFile) ?? contextSize)
+                    : contextSize,
                 modelFormat: modelFormat,
                 additionalFiles: [],
                 promptTemplate: templateValue.isEmpty ? nil : templateValue

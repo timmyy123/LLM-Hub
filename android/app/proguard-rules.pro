@@ -78,9 +78,6 @@
 
 # ── GenieX SDK Protection ────────────────────────────────────────────
 # GenieX SDK uses native libraries, JNI, and reflection on ChatMessage role/content
--keep class com.geniex.sdk.** { *; }
--keepclassmembers class com.geniex.sdk.** { *; }
--dontwarn com.geniex.sdk.**
 
 # ── WhisperKit (ASR) & Qualcomm QNN NPU ─────────────────────────────
 # WhisperKitService uses reflection on WhisperKitImpl, loadModels, and isModelLoaded
@@ -128,4 +125,3 @@
 -dontwarn com.itextpdf.**
 -dontwarn org.apache.commons.**
 -dontwarn org.osmdroid.**
-

@@ -72,7 +72,7 @@
 "thinking_tokens" = "Denken (%1$dtokens)";
 "enable_thinking" = "Denk na";
 "thinking_toggle_label" = "Denk na";
-"version_number" = "Versie 4.3.5";
+"version_number" = "Versie 4.4.0";
 "app_version" = "App-versie";
 "terms_of_service" = "Servicevoorwaarden";
 "tos_last_updated" = "Laatst bijgewerkt: 16 juli 2025";
@@ -510,8 +510,8 @@
 "translator_auto_detect" = "Automatische detectie";
 "translator_translate" = "Vertaal";
 "translator_result" = "Vertaling";
-"translator_requires_gemma3n" = "Voor deze functie is een Gemma 4-model vereist. Download er een vanuit het scherm Modellen.";
-"translator_load_model_desc" = "Download of laad een Gemma 4-model om te beginnen met vertalen.";
+"translator_requires_gemma3n" = "Elk LLM-model kan worden gebruikt voor vertaling. Gemma 4-modellen worden aanbevolen voor de beste meertalige prestaties.";
+"translator_load_model_desc" = "Download een willekeurig LLM-model om te beginnen met vertalen. Gemma 4-modellen worden aanbevolen voor de beste meertalige prestaties.";
 "translator_missing_vision_projector" = "Vision-projector (mmproj) ontbreekt voor%1$@.";
 "transcriber_title" = "Offline transcribent";
 "transcriber_record" = "Audio opnemen";

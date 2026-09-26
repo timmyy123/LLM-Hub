@@ -78,7 +78,7 @@
     <string name="ai_thinking">La IA está pensando...</string>
     <string name="thinking_label">Pensamiento</string>
     <string name="thinking_tokens">Pensamiento (%1$d tokens)</string>
-    <string name="version_number">Versión 4.3.5</string>
+    <string name="version_number">Versión 4.4.0</string>
     <string name="app_version">Versión de la App</string>
     
     <!-- Terms of Service -->
@@ -476,7 +476,8 @@
     <string name="translator_auto_detect">Detectar Automáticamente</string>
     <string name="translator_translate">Traducir</string>
     <string name="translator_result">Traducción</string>
-    <string name="translator_requires_gemma3n">Esta función requiere un modelo Gemma-3n o Gemma-4 E2B/E4B. Por favor descarga uno desde la pantalla de Modelos.</string>
+    <string name="translator_requires_gemma3n">Se puede usar cualquier modelo LLM para traducir. Se recomiendan los modelos Gemma 4 para un mejor rendimiento multilingüe.</string>
+    <string name="translator_load_model_desc">Descarga cualquier modelo LLM para empezar a traducir. Se recomiendan los modelos Gemma 4 para un mejor rendimiento multilingüe.</string>
     
     <!-- Transcriber Screen -->
     <string name="transcriber_title">Transcriptor Sin Conexión</string>
@@ -911,7 +912,7 @@
     <string name="agent_calendar_confirm">Crear evento: %1$s</string>
     <string name="agent_shortcut_confirm">Ejecutar acceso directo: %1$s</string>
     <string name="agent_welcome_message">¡Hola! Soy tu Agente de IA. Puedo buscar en la web, mostrar mapas, gestionar eventos del calendario, consultar el tiempo, configurar alarmas, enviar mensajes y calcular hashes. ¿Cómo puedo ayudarte hoy?</string>
-    <string name="agent_no_model_android">Descargue primero un modelo LiteRT-LM para usar el Agente</string>
+    <string name="agent_no_model_android">Descargue primero un modelo GGUF o LiteRT-LM para usar el Agente</string>
     <string name="agent_no_model_ios">Descargue primero un modelo para usar el Agente</string>
     <string name="open_maps">Abrir mapas</string>
     <string name="agent_processing_tool">El agente está procesando la herramienta...</string>

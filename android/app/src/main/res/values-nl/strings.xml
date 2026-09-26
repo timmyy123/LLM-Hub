@@ -72,7 +72,7 @@
     <string name="ai_thinking">AI denkt...</string>
     <string name="thinking_label">Denken</string>
     <string name="thinking_tokens">Denken (%1$dtokens)</string>
-    <string name="version_number">Versie 4.3.5</string>
+    <string name="version_number">Versie 4.4.0</string>
     <string name="app_version">App-versie</string>
     <string name="terms_of_service">Servicevoorwaarden</string>
     <string name="tos_last_updated">Laatst bijgewerkt: 22 juni 2026</string>
@@ -538,7 +538,8 @@
     <string name="translator_auto_detect">Automatische detectie</string>
     <string name="translator_translate">Vertaal</string>
     <string name="translator_result">Vertaling</string>
-    <string name="translator_requires_gemma3n">Voor deze functie is een Gemma-3n- of Gemma-4 E2B/E4B-model vereist. Download er een vanuit het scherm Modellen.</string>
+    <string name="translator_requires_gemma3n">Elk LLM-model kan worden gebruikt voor vertaling. Gemma 4-modellen worden aanbevolen voor de beste meertalige prestaties.</string>
+    <string name="translator_load_model_desc">Download een willekeurig LLM-model om te beginnen met vertalen. Gemma 4-modellen worden aanbevolen voor de beste meertalige prestaties.</string>
     <string name="transcriber_title">Offline transcribent</string>
     <string name="transcriber_record">Audio opnemen</string>
     <string name="transcriber_upload">Audio uploaden</string>
@@ -815,7 +816,7 @@
     <string name="agent_calendar_confirm">Afspraak aanmaken: %1$s</string>
     <string name="agent_shortcut_confirm">Snelkoppeling uitvoeren: %1$s</string>
     <string name="agent_welcome_message">Hallo! Ik ben je AI-agent. Ik kan zoeken op het web, kaarten tonen, agenda-afspraken beheren, het weer bekijken, wekkers instellen, berichten sturen en hashes berekenen. Hoe kan ik je vandaag helpen?</string>
-    <string name="agent_no_model_android">Download eerst een LiteRT-LM-model om de Agent te gebruiken</string>
+    <string name="agent_no_model_android">Download eerst een GGUF- of LiteRT-LM-model om de Agent te gebruiken</string>
     <string name="agent_no_model_ios">Download eerst een model om Agent te gebruiken</string>
     <string name="open_maps">Kaarten openen</string>
     <string name="agent_processing_tool">Agent verwerkt hulpprogramma...</string>

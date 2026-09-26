@@ -72,7 +72,7 @@
     <string name="ai_thinking">AI tænker...</string>
     <string name="thinking_label">Tænker</string>
     <string name="thinking_tokens">Tænker (%1$dtokens)</string>
-    <string name="version_number">Version 4.3.5</string>
+    <string name="version_number">Version 4.4.0</string>
     <string name="app_version">Appversion</string>
     <string name="terms_of_service">Servicevilkår</string>
     <string name="tos_last_updated">Sidst opdateret: 22. juni 2026</string>
@@ -550,7 +550,8 @@
     <string name="translator_auto_detect">Automatisk registrering</string>
     <string name="translator_translate">Oversæt</string>
     <string name="translator_result">Oversættelse</string>
-    <string name="translator_requires_gemma3n">Denne funktion kræver en Gemma-3n eller Gemma-4 E2B/E4B model. Download venligst en fra skærmen Models.</string>
+    <string name="translator_requires_gemma3n">Enhver LLM-model kan bruges til oversættelse. Gemma 4-modeller anbefales for den bedste flersprogede ydeevne.</string>
+    <string name="translator_load_model_desc">Download en vilkårlig LLM-model for at begynde at oversætte. Gemma 4-modeller anbefales for den bedste flersprogede ydeevne.</string>
     <string name="transcriber_title">Offline transskribering</string>
     <string name="transcriber_record">Optag lyd</string>
     <string name="transcriber_upload">Upload lyd</string>
@@ -876,7 +877,7 @@ Du forsøger at sende et billede, men den nuværende model er **kun-tekst**:
     <string name="agent_calendar_confirm">Opret begivenhed: %1$s</string>
     <string name="agent_shortcut_confirm">Kør genvej: %1$s</string>
     <string name="agent_welcome_message">Hej! Jeg er din AI-agent. Jeg kan søge på nettet, vise kort, administrere kalenderbegivenheder, tjekke vejret, indstille alarmer, sende beskeder og beregne hashes. Hvordan kan jeg hjælpe dig i dag?</string>
-    <string name="agent_no_model_android">Download venligst en LiteRT-LM-model først for at bruge Agent</string>
+    <string name="agent_no_model_android">Download først en GGUF- eller LiteRT-LM-model for at bruge Agent</string>
     <string name="agent_no_model_ios">Download venligst en model først for at bruge Agent</string>
     <string name="open_maps">Åbn kort</string>
     <string name="agent_processing_tool">Agent behandler værktøj...</string>

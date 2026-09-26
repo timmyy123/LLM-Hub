@@ -78,7 +78,7 @@
     <string name="ai_thinking">AI सोच रहा है...</string>
     <string name="thinking_label">सोच रहा है</string>
     <string name="thinking_tokens">सोच रहा है (%1$d टोकन)</string>
-    <string name="version_number">संस्करण 4.3.5</string>
+    <string name="version_number">संस्करण 4.4.0</string>
     <string name="app_version">ऐप संस्करण</string>
     
     <!-- Terms of Service -->
@@ -621,7 +621,8 @@
     <string name="translator_auto_detect">ऑटो पहचान (Auto Detect)</string>
     <string name="translator_translate">अनुवाद करें</string>
     <string name="translator_result">अनुवाद परिणाम</string>
-    <string name="translator_requires_gemma3n">इस सुविधा के लिए Gemma 4 मॉडल की आवश्यकता है। कृपया मॉडल स्क्रीन से एक डाउनलोड करें।</string>
+    <string name="translator_requires_gemma3n">अनुवाद के लिए किसी भी LLM मॉडल का उपयोग किया जा सकता है। सर्वश्रेष्ठ बहुभाषी प्रदर्शन के लिए Gemma 4 मॉडल अनुशंसित हैं।</string>
+    <string name="translator_load_model_desc">अनुवाद शुरू करने के लिए कोई भी LLM मॉडल डाउनलोड करें। सर्वश्रेष्ठ बहुभाषी प्रदर्शन के लिए Gemma 4 मॉडल अनुशंसित हैं।</string>
     
     <!-- Transcriber Screen -->
     <string name="transcriber_title">ऑफ़लाइन ट्रांसक्राइबर</string>
@@ -934,7 +935,7 @@
     <string name="agent_calendar_confirm">कैलेंडर ईवेंट बनाएं: %@</string>
     <string name="agent_shortcut_confirm">शॉर्टकट चलाएं: %@</string>
     <string name="agent_welcome_message">नमस्ते! मैं आपका AI एजेंट हूँ। मैं वेब खोज, नक्शा दिखाना, कैलेंडर ईवेंट, मौसम, अलार्म, संदेश और हैश की गणना कर सकता हूँ। आज मैं आपकी क्या सहायता कर सकता हूँ?</string>
-    <string name="agent_no_model_android">एजेंट का उपयोग करने के लिए पहले Gemma 4 E2/4B मॉडल डाउनलोड करें</string>
+    <string name="agent_no_model_android">एजेंट का उपयोग करने के लिए पहले GGUF या LiteRT-LM मॉडल डाउनलोड करें</string>
     <string name="agent_no_model_ios">एजेंट का उपयोग करने के लिए पहले एक मॉडल डाउनलोड करें</string>
     <string name="open_maps">नक्शा खोलें</string>
     <string name="agent_processing_tool">एजेंट टूल प्रोसेस कर रहा है...</string>

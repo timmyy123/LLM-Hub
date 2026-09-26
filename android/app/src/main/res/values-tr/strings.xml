@@ -78,7 +78,7 @@
     <string name="ai_thinking">Yapay zeka düşünüyor...</string>
     <string name="thinking_label">Düşünme</string>
     <string name="thinking_tokens">Düşünme (%1$d token)</string>
-    <string name="version_number">Sürüm 4.3.5</string>
+    <string name="version_number">Sürüm 4.4.0</string>
     <string name="app_version">Uygulama Sürümü</string>
     
     <!-- Terms of Service -->
@@ -472,7 +472,8 @@
     <string name="translator_auto_detect">Otomatik Algıla</string>
     <string name="translator_translate">Çevir</string>
     <string name="translator_result">Çeviri</string>
-    <string name="translator_requires_gemma3n">Bu özellik bir Gemma-3n veya Gemma-4 E2B/E4B modeli gerektirir. Lütfen Modeller ekranından bir tane indirin.</string>
+    <string name="translator_requires_gemma3n">Çeviri için herhangi bir LLM modeli kullanılabilir. En iyi çok dilli performans için Gemma 4 modelleri önerilir.</string>
+    <string name="translator_load_model_desc">Çeviriye başlamak için herhangi bir LLM modeli indirin. En iyi çok dilli performans için Gemma 4 modelleri önerilir.</string>
     
     <!-- Transcriber Screen -->
     <string name="transcriber_title">Çevrimdışı Transkripsiyon</string>
@@ -906,7 +907,7 @@
     <string name="agent_calendar_confirm">Etkinlik oluştur: %1$s</string>
     <string name="agent_shortcut_confirm">Kısayolu çalıştır: %1$s</string>
     <string name="agent_welcome_message">Merhaba! Ben sizin Yapay Zeka Ajanınızım. Web\'de arama yapabilir, haritaları gösterebilir, takvim etkinliklerini yönetebilir, hava durumunu kontrol edebilir, alarmlar kurabilir, mesaj gönderebilir ve hash hesaplayabilirim. Bugün size nasıl yardımcı olabilirim?</string>
-    <string name="agent_no_model_android">Ajanı kullanmak için lütfen önce bir LiteRT-LM modeli indirin</string>
+    <string name="agent_no_model_android">Ajanı kullanmak için önce bir GGUF veya LiteRT-LM modeli indirin</string>
     <string name="agent_no_model_ios">Ajanı kullanmak için lütfen önce bir model indirin</string>
     <string name="open_maps">Haritaları Aç</string>
     <string name="agent_processing_tool">Temsilci aracı işliyor...</string>

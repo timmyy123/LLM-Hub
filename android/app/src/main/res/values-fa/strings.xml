@@ -77,7 +77,7 @@
     <string name="ai_thinking">هوش مصنوعی در حال فکر کردن…</string>
     <string name="thinking_label">تفکر</string>
     <string name="thinking_tokens">تفکر (%1$d توکن)</string>
-    <string name="version_number">نسخه 4.3.5</string>
+    <string name="version_number">نسخه 4.4.0</string>
     <string name="app_version">نسخه برنامه</string>
 
     <!-- Terms of Service (Short titles translated; body kept concise translation) -->
@@ -476,7 +476,8 @@
     <string name="translator_auto_detect">تشخیص خودکار</string>
     <string name="translator_translate">ترجمه</string>
     <string name="translator_result">ترجمه</string>
-    <string name="translator_requires_gemma3n">این ویژگی به یک مدل Gemma-3n یا Gemma-4 E2B/E4B نیاز دارد. لطفاً یکی را از صفحه مدل‌ها دانلود کنید.</string>
+    <string name="translator_requires_gemma3n">هر مدل LLM می‌تواند برای ترجمه استفاده شود. مدل‌های Gemma 4 برای بهترین عملکرد چندزبانه توصیه می‌شوند.</string>
+    <string name="translator_load_model_desc">هر مدل LLM را برای شروع ترجمه دانلود کنید. مدل‌های Gemma 4 برای بهترین عملکرد چندزبانه توصیه می‌شوند.</string>
 
     <!-- Transcriber Screen -->
     <string name="transcriber_title">رونویس‌گر آفلاین</string>
@@ -908,7 +909,7 @@
     <string name="agent_calendar_confirm">ایجاد رویداد: %1$s</string>
     <string name="agent_shortcut_confirm">اجرای میانبر: %1$s</string>
     <string name="agent_welcome_message">سلام! من عامل هوش مصنوعی شما هستم. می‌توانم در وب جستجو کنم، نقشه‌ها را نشان دهم، رویدادهای تقویم را مدیریت کنم، آب و هوا را بررسی کنم، هشدارها را تنظیم کنم، پیام بفرستم و هش‌ها را محاسبه کنم. امروز چگونه می‌توانم به شما کمک کنم؟</string>
-    <string name="agent_no_model_android">لطفاً ابتدا یک مدل LiteRT-LM را دانلود کنید تا از عامل استفاده کنید</string>
+    <string name="agent_no_model_android">برای استفاده از عامل، ابتدا یک مدل GGUF یا LiteRT-LM دانلود کنید</string>
     <string name="agent_no_model_ios">لطفاً ابتدا یک مدل دانلود کنید تا از عامل استفاده کنید</string>
     <string name="open_maps">باز کردن نقشه</string>
     <string name="agent_processing_tool">عامل در حال پردازش ابزار است...</string>

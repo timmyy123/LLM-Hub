@@ -70,7 +70,7 @@
 "ai_thinking" = "AI sedang berpikir...";
 "thinking_label" = "Pemikiran";
 "thinking_tokens" = "Pemikiran (%1$d token)";
-"version_number" = "Versi 4.3.5";
+"version_number" = "Versi 4.4.0";
 "app_version" = "Versi Aplikasi";
 "terms_of_service" = "Ketentuan Layanan";
 "tos_last_updated" = "Terakhir diperbarui: 16 Juli 2025";
@@ -415,7 +415,8 @@
 "translator_auto_detect" = "Deteksi Otomatis";
 "translator_translate" = "Terjemahkan";
 "translator_result" = "Terjemahan";
-"translator_requires_gemma3n" = "Fitur ini memerlukan model Gemma 4. Harap unduh satu dari layar Model.";
+"translator_requires_gemma3n" = "Model LLM apa pun dapat digunakan untuk terjemahan. Model Gemma 4 direkomendasikan untuk performa multibahasa terbaik.";
+"translator_load_model_desc" = "Unduh model LLM apa pun untuk mulai menerjemahkan. Model Gemma 4 direkomendasikan untuk performa multibahasa terbaik.";
 "transcriber_title" = "Transkriptor Offline";
 "transcriber_record" = "Rekam Audio";
 "transcriber_upload" = "Unggah Audio";

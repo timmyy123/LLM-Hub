@@ -1,5 +1,4 @@
 import Foundation
-import RunAnywhere
 
 // MARK: - RagServiceManager
 // Singleton that manages the EmbeddingService lifecycle and RagService.
@@ -16,7 +15,7 @@ final class RagServiceManager: ObservableObject {
 
     // MARK: - Published State
 
-    @Published private(set) var isReady: Bool = false         // C embedding API loaded successfully
+    @Published private(set) var isReady: Bool = false
     @Published private(set) var statusMessage: String = ""
     @Published private(set) var isReembedding: Bool = false
 
@@ -67,7 +66,7 @@ final class RagServiceManager: ObservableObject {
         statusMessage = "Loading embedding model…"
         isReady = false
 
-        // Locate the downloaded ONNX file.
+        // Locate the downloaded LiteRT model and its SentencePiece tokenizer.
         guard let model = ModelData.allModels().first(where: { $0.id == modelId }) else {
             print("❌ [RAG] initialize — model \(modelId) not found in catalog")
             statusMessage = "Embedding model not found in catalog."
@@ -80,26 +79,22 @@ final class RagServiceManager: ObservableObject {
             return
         }
 
-        let onnxURL: URL
-        if let found = (try? FileManager.default.contentsOfDirectory(at: modelDir, includingPropertiesForKeys: nil))?.first(where: { $0.pathExtension.lowercased() == "onnx" }) {
-            onnxURL = found
+        let tfliteURL: URL
+        if let found = (try? FileManager.default.contentsOfDirectory(at: modelDir, includingPropertiesForKeys: nil))?.first(where: { $0.pathExtension.lowercased() == "tflite" }) {
+            tfliteURL = found
         } else {
-            print("❌ [RAG] initialize — no .onnx file in \(modelDir.path)")
-            statusMessage = "ONNX file not found for embedding model."
+            print("❌ [RAG] initialize — no .tflite file in \(modelDir.path)")
+            statusMessage = "LiteRT model file not found for embedding model."
             return
         }
-
-        do {
-            try ensureTokenizerVocab(in: modelDir)
-        } catch {
-            print("❌ [RAG] initialize — tokenizer prep failed: \(error.localizedDescription)")
+        guard FileManager.default.fileExists(atPath: modelDir.appendingPathComponent("sentencepiece.model").path) else {
             statusMessage = "Tokenizer files missing for embedding model."
             return
         }
 
         do {
-            print("ℹ️ [RAG] initialize — calling embeddingService.initialize at \(onnxURL.lastPathComponent)")
-            try await embeddingService.initialize(modelID: modelId, modelPath: onnxURL.path, modelName: model.name)
+            print("ℹ️ [RAG] initialize — calling embeddingService.initialize at \(tfliteURL.lastPathComponent)")
+            try await embeddingService.initialize(modelID: modelId, modelPath: tfliteURL.path, modelName: model.name)
             initializedModelName = modelId
             isReady = true
             statusMessage = AppSettings.shared.localized("embedding_enabled")
@@ -162,14 +157,14 @@ final class RagServiceManager: ObservableObject {
         maxResults: Int = 3
     ) async -> [ContextChunk] {
         let idStr = chatId.uuidString
-        let queryEmbedding = isReady ? (try? await embeddingService.embed(query)) : nil
+        let queryEmbedding = isReady ? (try? await embeddingService.embed(query, isQuery: true)) : nil
         let results = await ragService.search(chatId: idStr, query: query, queryEmbedding: queryEmbedding, maxResults: maxResults)
         print("🔍 [RAG] searchRelevantContext — chatId=\(idStr.prefix(8)) query=\"\(query.prefix(40))\" hasEmbedding=\(queryEmbedding != nil) results=\(results.count)")
         return results
     }
 
     func searchGlobalContext(query: String, maxResults: Int = 5, relaxed: Bool = false) async -> [ContextChunk] {
-        let queryEmbedding = isReady ? (try? await embeddingService.embed(query)) : nil
+        let queryEmbedding = isReady ? (try? await embeddingService.embed(query, isQuery: true)) : nil
         let results = await ragService.search(chatId: globalMemoryChatId, query: query, queryEmbedding: queryEmbedding, maxResults: maxResults, relaxedLexicalFallback: relaxed)
         print("🔍 [Memory] searchGlobalContext — query=\"\(query.prefix(40))\" hasEmbedding=\(queryEmbedding != nil) relaxed=\(relaxed) results=\(results.count)")
         for r in results {
@@ -277,50 +272,4 @@ final class RagServiceManager: ObservableObject {
         }
     }
 
-    private func ensureTokenizerVocab(in modelDir: URL) throws {
-        let fm = FileManager.default
-        let vocabURL = modelDir.appendingPathComponent("vocab.txt")
-        if fm.fileExists(atPath: vocabURL.path) {
-            return
-        }
-
-        let tokenizerURL = modelDir.appendingPathComponent("tokenizer.json")
-        guard fm.fileExists(atPath: tokenizerURL.path) else {
-            throw NSError(domain: "RAG", code: 1, userInfo: [NSLocalizedDescriptionKey: "tokenizer.json not found"])
-        }
-
-        let data = try Data(contentsOf: tokenizerURL)
-        guard
-            let root = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-            let model = root["model"] as? [String: Any],
-            let vocabAny = model["vocab"] as? [String: Any]
-        else {
-            throw NSError(domain: "RAG", code: 2, userInfo: [NSLocalizedDescriptionKey: "invalid tokenizer.json format"])
-        }
-
-        var pairs: [(String, Int)] = []
-        pairs.reserveCapacity(vocabAny.count)
-        for (token, rawId) in vocabAny {
-            if let id = rawId as? Int {
-                pairs.append((token, id))
-            } else if let num = rawId as? NSNumber {
-                pairs.append((token, num.intValue))
-            }
-        }
-
-        guard !pairs.isEmpty else {
-            throw NSError(domain: "RAG", code: 3, userInfo: [NSLocalizedDescriptionKey: "tokenizer vocab is empty"])
-        }
-
-        pairs.sort { $0.1 < $1.1 }
-        let maxId = pairs.last?.1 ?? 0
-        var vocabLines = Array(repeating: "[UNK]", count: max(0, maxId + 1))
-        for (token, id) in pairs where id >= 0 && id < vocabLines.count {
-            vocabLines[id] = token
-        }
-
-        let text = vocabLines.joined(separator: "\n")
-        try text.write(to: vocabURL, atomically: true, encoding: .utf8)
-        print("ℹ️ [RAG] initialize — generated vocab.txt from tokenizer.json (\(vocabLines.count) entries)")
-    }
 }

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22.1)
 
-project(llmhub_llama_cpu LANGUAGES C CXX)
+project(llmhub_llama LANGUAGES C CXX)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
@@ -8,8 +8,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-# A baseline ARMv8 CPU build is deliberate: this backend is the compatibility path
-# for devices on which GenieX's accelerated runtime cannot initialize.
+# Keep the baseline ARMv8 CPU runtime for devices without Snapdragon OpenCL/Hexagon.
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 set(LLAMA_BUILD_COMMON OFF CACHE BOOL "" FORCE)
 set(LLAMA_BUILD_TESTS OFF CACHE BOOL "" FORCE)
@@ -47,3 +46,20 @@ target_include_directories(llmhub_llama_cpu PRIVATE
     "${LLAMA_CPP_DIR}/tools/mtmd"
 )
 target_link_libraries(llmhub_llama_cpu PRIVATE llama mtmd android log)
+
+# The official b11179 Snapdragon release is packaged alongside the app, not fetched
+# by Gradle. It is loaded only when the user selects Adreno GPU or Hexagon NPU.
+set(LLAMA_PREBUILT_LIB_DIR "${CMAKE_CURRENT_LIST_DIR}/../jniLibs/arm64-v8a")
+foreach(prebuilt IN ITEMS ggml llama mtmd)
+    add_library(llmhub_prebuilt_${prebuilt} SHARED IMPORTED)
+    set_target_properties(llmhub_prebuilt_${prebuilt} PROPERTIES
+        IMPORTED_LOCATION "${LLAMA_PREBUILT_LIB_DIR}/lib${prebuilt}.so")
+endforeach()
+
+add_library(llmhub_llama_snapdragon SHARED llama_cpp_jni.cpp)
+target_compile_definitions(llmhub_llama_snapdragon PRIVATE LLMHUB_SNAPDRAGON=1)
+target_include_directories(llmhub_llama_snapdragon PRIVATE
+    "${CMAKE_CURRENT_LIST_DIR}/llama-prebuilt/include")
+target_link_libraries(llmhub_llama_snapdragon PRIVATE
+    llmhub_prebuilt_llama llmhub_prebuilt_mtmd llmhub_prebuilt_ggml android log)
+target_link_options(llmhub_llama_snapdragon PRIVATE "-Wl,--allow-shlib-undefined")

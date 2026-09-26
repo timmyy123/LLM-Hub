@@ -1,7 +1,4 @@
 import Foundation
-import LlamaCPPRuntime
-import ONNXRuntime
-import RunAnywhere
 import SwiftUI
 import UIKit
 import ModelZoo
@@ -33,22 +30,6 @@ struct LLMHubApp: App {
             await PurchaseManager.shared.loadProduct()
         }
 
-        // Initialize RunAnywhere SDK first — sets up C++ module registry
-        // and service infrastructure. Backends MUST be registered after this.
-        do {
-            try RunAnywhere.initialize(environment: .development)
-        } catch {
-            // Ignore repeated-initialization errors.
-        }
-
-        // Register backends AFTER initialize(), matching the RunAnywhere
-        // sample app startup order so the module registry is ready.
-        // ONNX.register() is @MainActor — use assumeIsolated so it runs
-        // synchronously here on the main thread instead of being deferred.
-        LlamaCPP.register(priority: 100)
-        MainActor.assumeIsolated {
-            ONNX.register()
-        }
     }
 
     var body: some Scene {
@@ -59,10 +40,6 @@ struct LLMHubApp: App {
                 .environment(\.locale, settings.selectedLanguage.locale)
                 .ifLet(layoutDirectionOverride) { view, dir in
                     view.environment(\.layoutDirection, dir)
-                }
-                .task {
-                    await registerRunAnywhereModelCatalog()
-                    await RunAnywhere.refreshModelRegistry()
                 }
         }
     }
@@ -84,84 +61,4 @@ struct LLMHubApp: App {
         }
     }
 
-    private func registerRunAnywhereModelCatalog() async {
-        for model in ModelData.allModels() {
-            await register(model)
-        }
-    }
-
-    private func register(_ model: AIModel) async {
-        guard model.modelFormat != .drawthings else { return }
-        guard let primaryURL = URL(string: model.url) else { return }
-
-        if model.additionalFiles.isEmpty {
-            try? await RunAnywhere.registerModel(
-                id: model.id,
-                name: model.name,
-                url: primaryURL.absoluteString,
-                framework: model.inferenceFramework,
-                modality: {
-                    switch model.category {
-                    case .text:
-                        return model.supportsVision ? .multimodal : .language
-                    case .multimodal:
-                        return .multimodal
-                    case .embedding:
-                        return .embedding
-                    case .imageGeneration:
-                        return .imageGeneration
-                    case .videoGeneration:
-                        return .imageGeneration // or .videoGeneration if RunAnywhere has it
-                    case .imageUpscale:
-                        return .imageGeneration
-                    case .asr, .musicGeneration:
-                        return .language
-                    }
-                }(),
-                memoryRequirement: model.sizeBytes,
-                supportsThinking: model.supportsThinking
-            )
-            return
-        }
-
-        let descriptors = model.allDownloadURLs.map {
-            RAModelFileDescriptor(url: $0, filename: filename(from: $0), isRequired: true)
-        }
-
-        try? await RunAnywhere.registerModel(
-            multiFile: descriptors,
-            id: model.id,
-            name: model.name,
-            framework: model.inferenceFramework,
-            modality: {
-                switch model.category {
-                case .text:
-                    return model.supportsVision ? .multimodal : .language
-                case .multimodal:
-                    return .multimodal
-                case .embedding:
-                    return .embedding
-                case .imageGeneration:
-                    return .imageGeneration
-                case .videoGeneration:
-                    return .imageGeneration
-                case .imageUpscale:
-                    return .imageGeneration
-                case .asr, .musicGeneration:
-                    return .language
-                }
-            }(),
-            memoryRequirement: model.sizeBytes,
-            contextLength: model.contextWindowSize,
-            supportsThinking: model.supportsThinking
-        )
-    }
-
-    private func filename(from url: URL) -> String {
-        URLComponents(url: url, resolvingAgainstBaseURL: false)?
-            .path
-            .split(separator: "/")
-            .last
-            .map(String.init) ?? url.lastPathComponent
-    }
 }

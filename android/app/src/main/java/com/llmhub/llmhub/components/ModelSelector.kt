@@ -414,7 +414,7 @@ fun ModelSelectorCard(
                             )
 
                             // NPU Option (GGUF-on-Hexagon). Show only for GGUF models on Qualcomm devices.
-                            val showNpuOption = selectedModel?.modelFormat == "gguf" && com.llmhub.llmhub.data.DeviceInfo.isQualcommNpuSupported()
+                            val showNpuOption = selectedModel?.modelFormat == "gguf" && com.llmhub.llmhub.data.DeviceInfo.isLlamaCppHexagonSupported()
                             if (showNpuOption) {
                                 DropdownMenuItem(
                                     text = { Text(stringResource(R.string.backend_npu)) },

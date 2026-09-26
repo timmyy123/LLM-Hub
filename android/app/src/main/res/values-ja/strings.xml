@@ -75,7 +75,7 @@
     <string name="acknowledgments_text">このアプリケーションを支える素晴らしいLLMモデルを提供してくれたGoogle、Meta、Microsoft、IBM、およびHuggingFaceコミュニティに特別な感謝を。このプロジェクトは、Android開発コミュニティとオープンソースエコシステムの素晴らしい仕事にも依存しています。</string>    <string name="sd_models_credit">画像生成モデルは、Qualcomm QNN（NPU）とCPUバックエンドを使用したxororzのStable Diffusion実装により提供されています。</string>    <string name="nexa_sdk_credit">GGUFモデルの推論はNexa SDKによって提供されています。</string>    <string name="ai_thinking">AIが考え中...</string>
     <string name="thinking_label">思考</string>
     <string name="thinking_tokens">思考（%1$d トークン）</string>
-    <string name="version_number">バージョン 4.3.5</string>
+    <string name="version_number">バージョン 4.4.0</string>
     <string name="app_version">アプリバージョン</string>
     
     <!-- Terms of Service -->
@@ -470,7 +470,8 @@
     <string name="translator_auto_detect">自動検出</string>
     <string name="translator_translate">翻訳</string>
     <string name="translator_result">翻訳</string>
-    <string name="translator_requires_gemma3n">この機能にはGemma-3nまたはGemma-4 E2B/E4Bモデルが必要です。モデル画面から1つダウンロードしてください。</string>
+    <string name="translator_requires_gemma3n">翻訳には任意のLLMモデルを使用できます。最高の多言語パフォーマンスを得るにはGemma 4モデルをお勧めします。</string>
+    <string name="translator_load_model_desc">翻訳を開始するには任意のLLMモデルをダウンロードしてください。最高の多言語パフォーマンスを得るにはGemma 4モデルをお勧めします。</string>
     
     <!-- Transcriber Screen -->
     <string name="transcriber_title">オフライン文字起こし</string>
@@ -905,7 +906,7 @@
     <string name="agent_calendar_confirm">イベントを作成: %1$s</string>
     <string name="agent_shortcut_confirm">ショートカットを実行: %1$s</string>
     <string name="agent_welcome_message">こんにちは！私はあなたのAIエージェントです。Web検索、マップ表示、カレンダーの予定管理、天気予報の確認、アラーム設定、メッセージ送信、ハッシュ計算ができます。本日はどのようなご用件でしょうか？</string>
-    <string name="agent_no_model_android">エージェントを使用するには、まずLiteRT-LMモデルをダウンロードしてください</string>
+    <string name="agent_no_model_android">エージェントを使用するには、まずGGUFまたはLiteRT-LMモデルをダウンロードしてください</string>
     <string name="agent_no_model_ios">エージェントを使用するには、まずモデルをダウンロードしてください</string>
     <string name="open_maps">マップを開く</string>
     <string name="agent_processing_tool">エージェントがツールを処理中...</string>
