@@ -1551,11 +1551,17 @@ class LLMBackend: ObservableObject {
                     contextSize: clampedContextWindow(contextWindow, for: model),
                     gpuLayers: isCPU ? 0 : max(0, layers)
                 )
-                let original = try Data(contentsOf: imageURL)
                 #if canImport(UIKit)
-                imageData = UIImage(data: original)?.jpegData(compressionQuality: 0.95) ?? original
+                // Match the 448-pixel image passed to RunAnywhere. Sending the full-resolution
+                // photo makes llama.cpp split tall images into many costly 512px vision slices.
+                if let thumbnail = downsampledUIImage(from: imageURL),
+                   let encoded = thumbnail.jpegData(compressionQuality: 0.95) {
+                    imageData = encoded
+                } else {
+                    imageData = try Data(contentsOf: imageURL)
+                }
                 #else
-                imageData = original
+                imageData = try Data(contentsOf: imageURL)
                 #endif
             }
 
