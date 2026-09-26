@@ -472,7 +472,8 @@
     <string name="translator_auto_detect">اكتشاف تلقائي</string>
     <string name="translator_translate">ترجمة</string>
     <string name="translator_result">الترجمة</string>
-    <string name="translator_requires_gemma3n">تتطلب هذه الميزة نموذج Gemma-3n أو Gemma-4 E2B/E4B. يرجى تنزيل نموذج من شاشة النماذج.</string>
+    <string name="translator_requires_gemma3n">يمكن استخدام أي نموذج LLM للترجمة. يوصى بنماذج Gemma 4 للحصول على أفضل أداء متعدد اللغات.</string>
+    <string name="translator_load_model_desc">قم بتنزيل أي نموذج LLM لبدء الترجمة. يوصى بنماذج Gemma 4 للحصول على أفضل أداء متعدد اللغات.</string>
 
     <!-- Transcriber Screen -->
     <string name="transcriber_title">ناسخ دون اتصال</string>

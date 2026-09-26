@@ -470,7 +470,8 @@
     <string name="translator_auto_detect">自動検出</string>
     <string name="translator_translate">翻訳</string>
     <string name="translator_result">翻訳</string>
-    <string name="translator_requires_gemma3n">この機能にはGemma-3nまたはGemma-4 E2B/E4Bモデルが必要です。モデル画面から1つダウンロードしてください。</string>
+    <string name="translator_requires_gemma3n">翻訳には任意のLLMモデルを使用できます。最高の多言語パフォーマンスを得るにはGemma 4モデルをお勧めします。</string>
+    <string name="translator_load_model_desc">翻訳を開始するには任意のLLMモデルをダウンロードしてください。最高の多言語パフォーマンスを得るにはGemma 4モデルをお勧めします。</string>
     
     <!-- Transcriber Screen -->
     <string name="transcriber_title">オフライン文字起こし</string>

@@ -8,6 +8,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.llmhub.llmhub.data.LLMModel
 import com.llmhub.llmhub.data.ModelAvailabilityProvider
+import com.llmhub.llmhub.data.hasNativeVoiceSupport
 import com.llmhub.llmhub.data.ModelConfig
 import com.llmhub.llmhub.data.ModelPreferences
 import com.llmhub.llmhub.screens.Language
@@ -120,25 +121,25 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
         viewModelScope.launch {
             val context = getApplication<Application>()
             val allModels = ModelAvailabilityProvider.loadAvailableModels(context)
-             val multimodalModels = allModels.filter { it.category != "tts" && it.category != "embedding" && it.category != "asr" && (
-                 it.supportsVision || it.supportsAudio
-             ) }
-             _availableModels.value = multimodalModels
+            _availableModels.value = allModels
 
             // Restore saved model or use first as default
             val savedModelName = prefs.getString("selected_model_name", null)
             if (savedModelName != null) {
-                val savedModel = multimodalModels.find { it.name == savedModelName }
+                val savedModel = allModels.find { it.name == savedModelName }
                 if (savedModel != null) {
                     _selectedModel.value = savedModel
                 }
             }
             
-            if (multimodalModels.isNotEmpty() && _selectedModel.value == null) {
-                _selectedModel.value = multimodalModels.first()
+            if (allModels.isNotEmpty() && _selectedModel.value == null) {
+                _selectedModel.value = allModels.first()
             }
 
             val model = _selectedModel.value
+            if (model?.hasNativeVoiceSupport() != true) {
+                _audioEnabled.value = false
+            }
             if (model?.modelFormat == "gguf" && DeviceInfo.isLlamaCppHexagonSupported() && _selectedNpuDeviceId.value == null) {
                 _selectedBackend.value = LlmInference.Backend.GPU
                 _selectedNpuDeviceId.value = "dev0"
@@ -200,7 +201,7 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
         if (!model.supportsVision) {
             _visionEnabled.value = false
         }
-        if (!model.supportsAudio) {
+        if (!model.hasNativeVoiceSupport()) {
             _audioEnabled.value = false
         }
         

@@ -415,7 +415,8 @@
 "translator_auto_detect" = "اكتشاف تلقائي";
 "translator_translate" = "ترجمة";
 "translator_result" = "الترجمة";
-"translator_requires_gemma3n" = "تتطلب هذه الميزة نموذج Gemma 4. يرجى تنزيل نموذج من شاشة النماذج.";
+"translator_requires_gemma3n" = "يمكن استخدام أي نموذج LLM للترجمة. يوصى بنماذج Gemma 4 للحصول على أفضل أداء متعدد اللغات.";
+"translator_load_model_desc" = "قم بتنزيل أي نموذج LLM لبدء الترجمة. يوصى بنماذج Gemma 4 للحصول على أفضل أداء متعدد اللغات.";
 "transcriber_title" = "ناسخ دون اتصال";
 "transcriber_record" = "تسجيل صوت";
 "transcriber_upload" = "رفع ملف صوتي";

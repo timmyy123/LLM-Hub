@@ -550,7 +550,8 @@
     <string name="translator_auto_detect">Automatisk registrering</string>
     <string name="translator_translate">Oversæt</string>
     <string name="translator_result">Oversættelse</string>
-    <string name="translator_requires_gemma3n">Denne funktion kræver en Gemma-3n eller Gemma-4 E2B/E4B model. Download venligst en fra skærmen Models.</string>
+    <string name="translator_requires_gemma3n">Enhver LLM-model kan bruges til oversættelse. Gemma 4-modeller anbefales for den bedste flersprogede ydeevne.</string>
+    <string name="translator_load_model_desc">Download en vilkårlig LLM-model for at begynde at oversætte. Gemma 4-modeller anbefales for den bedste flersprogede ydeevne.</string>
     <string name="transcriber_title">Offline transskribering</string>
     <string name="transcriber_record">Optag lyd</string>
     <string name="transcriber_upload">Upload lyd</string>

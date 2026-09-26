@@ -476,7 +476,8 @@
     <string name="translator_auto_detect">تشخیص خودکار</string>
     <string name="translator_translate">ترجمه</string>
     <string name="translator_result">ترجمه</string>
-    <string name="translator_requires_gemma3n">این ویژگی به یک مدل Gemma-3n یا Gemma-4 E2B/E4B نیاز دارد. لطفاً یکی را از صفحه مدل‌ها دانلود کنید.</string>
+    <string name="translator_requires_gemma3n">هر مدل LLM می‌تواند برای ترجمه استفاده شود. مدل‌های Gemma 4 برای بهترین عملکرد چندزبانه توصیه می‌شوند.</string>
+    <string name="translator_load_model_desc">هر مدل LLM را برای شروع ترجمه دانلود کنید. مدل‌های Gemma 4 برای بهترین عملکرد چندزبانه توصیه می‌شوند.</string>
 
     <!-- Transcriber Screen -->
     <string name="transcriber_title">رونویس‌گر آفلاین</string>

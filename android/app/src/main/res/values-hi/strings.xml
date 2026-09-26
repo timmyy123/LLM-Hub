@@ -621,7 +621,8 @@
     <string name="translator_auto_detect">ऑटो पहचान (Auto Detect)</string>
     <string name="translator_translate">अनुवाद करें</string>
     <string name="translator_result">अनुवाद परिणाम</string>
-    <string name="translator_requires_gemma3n">इस सुविधा के लिए Gemma 4 मॉडल की आवश्यकता है। कृपया मॉडल स्क्रीन से एक डाउनलोड करें।</string>
+    <string name="translator_requires_gemma3n">अनुवाद के लिए किसी भी LLM मॉडल का उपयोग किया जा सकता है। सर्वश्रेष्ठ बहुभाषी प्रदर्शन के लिए Gemma 4 मॉडल अनुशंसित हैं।</string>
+    <string name="translator_load_model_desc">अनुवाद शुरू करने के लिए कोई भी LLM मॉडल डाउनलोड करें। सर्वश्रेष्ठ बहुभाषी प्रदर्शन के लिए Gemma 4 मॉडल अनुशंसित हैं।</string>
     
     <!-- Transcriber Screen -->
     <string name="transcriber_title">ऑफ़लाइन ट्रांसक्राइबर</string>

@@ -416,7 +416,8 @@
 "translator_auto_detect" = "Rilevamento automatico";
 "translator_translate" = "Traduci";
 "translator_result" = "Traduzione";
-"translator_requires_gemma3n" = "Questa funzionalità richiede un modello Gemma 4. Per favore scaricane uno dalla schermata Modelli.";
+"translator_requires_gemma3n" = "Qualsiasi modello LLM può essere utilizzato per la traduzione. I modelli Gemma 4 sono consigliati per le migliori prestazioni multilingue.";
+"translator_load_model_desc" = "Scarica qualsiasi modello LLM per iniziare a tradurre. I modelli Gemma 4 sono consigliati per le migliori prestazioni multilingue.";
 "transcriber_title" = "Trascrittore offline";
 "transcriber_record" = "Registra audio";
 "transcriber_upload" = "Carica audio";

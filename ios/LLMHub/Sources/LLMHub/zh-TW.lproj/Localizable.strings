@@ -509,7 +509,8 @@
 "translator_auto_detect" = "自動檢測";
 "translator_translate" = "翻譯";
 "translator_result" = "翻譯結果";
-"translator_requires_gemma3n" = "此功能需要一個 Gemma 4 模型。請從模型列表下載一個。";
+"translator_requires_gemma3n" = "任何 LLM 模型均可用於翻譯。推薦使用 Gemma 4 模型以獲得最佳多語言性能。";
+"translator_load_model_desc" = "下載任何 LLM 模型即可開始翻譯。推薦使用 Gemma 4 模型以獲得最佳多語言性能。";
 "transcriber_title" = "聽寫";
 "transcriber_record" = "錄製音訊";
 "transcriber_upload" = "上傳音訊";

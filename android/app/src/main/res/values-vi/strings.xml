@@ -538,7 +538,8 @@
     <string name="translator_auto_detect">Tự động phát hiện</string>
     <string name="translator_translate">Dịch</string>
     <string name="translator_result">Bản dịch</string>
-    <string name="translator_requires_gemma3n">Tính năng này yêu cầu mẫu Gemma-3n hoặc Gemma-4 E2B/E4B. Vui lòng tải xuống một cái từ màn hình Mô hình.</string>
+    <string name="translator_requires_gemma3n">Bất kỳ mô hình LLM nào cũng có thể được sử dụng để dịch. Các mô hình Gemma 4 được khuyến nghị để có hiệu suất đa ngôn ngữ tốt nhất.</string>
+    <string name="translator_load_model_desc">Tải xuống bất kỳ mô hình LLM nào để bắt đầu dịch. Các mô hình Gemma 4 được khuyến nghị để có hiệu suất đa ngôn ngữ tốt nhất.</string>
     <string name="transcriber_title">Phiên âm ngoại tuyến</string>
     <string name="transcriber_record">Ghi âm thanh</string>
     <string name="transcriber_upload">Tải lên âm thanh</string>

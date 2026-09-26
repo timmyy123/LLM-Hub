@@ -381,7 +381,8 @@
 "translator_auto_detect" = "Detectar Automaticamente";
 "translator_translate" = "Traduzir";
 "translator_result" = "Tradução";
-"translator_requires_gemma3n" = "Este recurso requer um modelo Gemma 4. Por favor baixe um na tela de Modelos.";
+"translator_requires_gemma3n" = "Qualquer modelo LLM pode ser usado para tradução. Os modelos Gemma 4 são recomendados para o melhor desempenho multilíngue.";
+"translator_load_model_desc" = "Baixe qualquer modelo LLM para começar a traduzir. Os modelos Gemma 4 são recomendados para o melhor desempenho multilíngue.";
 "transcriber_title" = "Transcritor Offline";
 "transcriber_record" = "Gravar Áudio";
 "transcriber_upload" = "Enviar Áudio";

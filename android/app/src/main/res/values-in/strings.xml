@@ -475,7 +475,8 @@
     <string name="translator_auto_detect">Deteksi Otomatis</string>
     <string name="translator_translate">Terjemahkan</string>
     <string name="translator_result">Terjemahan</string>
-    <string name="translator_requires_gemma3n">Fitur ini memerlukan model Gemma-3n atau Gemma-4 E2B/E4B. Harap unduh satu dari layar Model.</string>
+    <string name="translator_requires_gemma3n">Model LLM apa pun dapat digunakan untuk terjemahan. Model Gemma 4 direkomendasikan untuk performa multibahasa terbaik.</string>
+    <string name="translator_load_model_desc">Unduh model LLM apa pun untuk mulai menerjemahkan. Model Gemma 4 direkomendasikan untuk performa multibahasa terbaik.</string>
     
     <!-- Transcriber Screen -->
     <string name="transcriber_title">Transkriptor Offline</string>

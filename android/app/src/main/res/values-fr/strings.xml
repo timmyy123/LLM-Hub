@@ -501,7 +501,8 @@
     <string name="translator_auto_detect">Détection Automatique</string>
     <string name="translator_translate">Traduire</string>
     <string name="translator_result">Traduction</string>
-    <string name="translator_requires_gemma3n">Cette fonctionnalité nécessite un modèle Gemma-3n ou Gemma-4 E2B/E4B. Veuillez en télécharger un depuis l\'écran Modèles.</string>
+    <string name="translator_requires_gemma3n">N\'importe quel modèle LLM peut être utilisé pour la traduction. Les modèles Gemma 4 sont recommandés pour de meilleures performances multilingues.</string>
+    <string name="translator_load_model_desc">Téléchargez n\'importe quel modèle LLM pour commencer à traduire. Les modèles Gemma 4 sont recommandés pour de meilleures performances multilingues.</string>
     
     <!-- Transcriber Screen -->
     <string name="transcriber_title">Transcripteur Hors Ligne</string>

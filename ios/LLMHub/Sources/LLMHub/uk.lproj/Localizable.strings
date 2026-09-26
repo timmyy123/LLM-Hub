@@ -418,7 +418,8 @@
 "translator_auto_detect" = "Автовизначення";
 "translator_translate" = "Перекласти";
 "translator_result" = "Переклад";
-"translator_requires_gemma3n" = "Ця функція потребує модель Gemma 4. Завантажте її на екрані моделей.";
+"translator_requires_gemma3n" = "Для перекладу можна використовувати будь-яку LLM-модель. Моделі Gemma 4 рекомендуються для найкращої багатомовної продуктивності.";
+"translator_load_model_desc" = "Завантажте будь-яку LLM-модель, щоб почати переклад. Моделі Gemma 4 рекомендуються для найкращої багатомовної продуктивності.";
 "transcriber_title" = "Офлайн-транскрибатор";
 "transcriber_record" = "Записати аудіо";
 "transcriber_upload" = "Завантажити аудіо";

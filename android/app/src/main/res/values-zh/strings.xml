@@ -576,7 +576,8 @@
     <string name="translator_auto_detect">自动检测</string>
     <string name="translator_translate">翻译</string>
     <string name="translator_result">翻译结果</string>
-    <string name="translator_requires_gemma3n">此功能需要一个 Gemma-3n 或 Gemma-4 E2B/E4B 模型。请从模型列表下载一个。</string>
+    <string name="translator_requires_gemma3n">任何 LLM 模型均可用于翻译。推荐使用 Gemma 4 模型以获得最佳多语言性能。</string>
+    <string name="translator_load_model_desc">下载任何 LLM 模型即可开始翻译。推荐使用 Gemma 4 模型以获得最佳多语言性能。</string>
 
     <!-- Transcriber Screen -->
     <string name="transcriber_title">听写</string>

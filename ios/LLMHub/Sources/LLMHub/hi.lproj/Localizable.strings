@@ -510,8 +510,8 @@
 "translator_auto_detect" = "ऑटो पहचान (Auto Detect)";
 "translator_translate" = "अनुवाद करें";
 "translator_result" = "अनुवाद परिणाम";
-"translator_requires_gemma3n" = "इस सुविधा के लिए Gemma 4 मॉडल की आवश्यकता है। कृपया मॉडल स्क्रीन से एक डाउनलोड करें।";
-"translator_load_model_desc" = "अनुवाद शुरू करने के लिए Gemma 4 मॉडल डाउनलोड या लोड करें।";
+"translator_requires_gemma3n" = "अनुवाद के लिए किसी भी LLM मॉडल का उपयोग किया जा सकता है। सर्वश्रेष्ठ बहुभाषी प्रदर्शन के लिए Gemma 4 मॉडल अनुशंसित हैं।";
+"translator_load_model_desc" = "अनुवाद शुरू करने के लिए कोई भी LLM मॉडल डाउनलोड करें। सर्वश्रेष्ठ बहुभाषी प्रदर्शन के लिए Gemma 4 मॉडल अनुशंसित हैं।";
 "translator_missing_vision_projector" = "%1$@ के लिए विज़न प्रोजेक्टर (mmproj) गायब है।";
 "transcriber_title" = "ऑफ़लाइन ट्रांसक्राइबर";
 "transcriber_record" = "ऑडियो रिकॉर्ड करें";

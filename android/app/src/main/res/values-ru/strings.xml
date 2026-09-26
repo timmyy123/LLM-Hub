@@ -456,7 +456,8 @@
     <string name="translator_auto_detect">Автоопределение</string>
     <string name="translator_translate">Перевести</string>
     <string name="translator_result">Перевод</string>
-    <string name="translator_requires_gemma3n">Эта функция требует модель Gemma-3n или Gemma-4 E2B/E4B. Пожалуйста, загрузите её с экрана Модели.</string>
+    <string name="translator_requires_gemma3n">Для перевода можно использовать любую LLM-модель. Модели Gemma 4 рекомендуются для наилучшей многоязычной производительности.</string>
+    <string name="translator_load_model_desc">Загрузите любую LLM-модель, чтобы начать перевод. Модели Gemma 4 рекомендуются для наилучшей многоязычной производительности.</string>
     
     <!-- Transcriber Screen -->
     <string name="transcriber_title">Офлайн транскрибатор</string>

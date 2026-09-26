@@ -206,10 +206,7 @@ private func downloadableTranslatorModels() -> [AIModel] {
 }
 
 private func isTranslatorSupportedModel(_ model: AIModel) -> Bool {
-    !model.isDependencyOnly
-        && model.category == .multimodal
-        && model.supportsVision
-        && (model.name.hasPrefix("Translate Gemma 4B") || (model.name.localizedCaseInsensitiveContains("gemma 4") && !model.name.localizedCaseInsensitiveContains("translate")))
+    model.isLanguageModel && !model.isDependencyOnly
 }
 
 private func usesGemma4TurnTemplate(_ model: AIModel) -> Bool {
@@ -248,34 +245,7 @@ private func translatorVisionFamilyName(for modelName: String) -> String {
 @MainActor
 private func translatorHasDownloadedVisionProjector(for model: AIModel) -> Bool {
     guard model.modelFormat == .gguf, model.supportsVision else { return true }
-
-    let family = translatorVisionFamilyName(for: model.name)
-    let quantTag = translatorQuantizationTag(for: model.name)
-
-    let candidates = ModelData.allModels().filter { candidate in
-        candidate.isDependencyOnly
-            && candidate.inferenceFramework == model.inferenceFramework
-            && translatorVisionFamilyName(for: candidate.name) == family
-            && isRunAnywhereModelDownloaded(candidate)
-    }
-
-    guard !candidates.isEmpty else { return false }
-
-    if family.hasPrefix("gemma 4") {
-        return candidates.contains {
-            $0.name.lowercased().contains("f16") || $0.url.lowercased().contains("f16")
-        }
-    }
-
-    if quantTag == "f16" {
-        return candidates.contains { ($0.name.lowercased().contains("f16") || $0.url.lowercased().contains("f16")) }
-    }
-
-    return candidates.contains {
-        $0.name.lowercased().contains("q8_0")
-            || $0.url.lowercased().contains("q8_0")
-            || $0.name.lowercased().contains("bf16")
-    }
+    return LLMBackend.shared.isVisionProjectorAvailable(for: model)
 }
 
 @MainActor
@@ -502,7 +472,7 @@ struct FeatureModelSettingsSheet: View {
 
     private var selectedModelSupportsAudio: Bool {
         guard let model = selectedModel else { return false }
-        return model.supportsAudio
+        return model.isGemma4LiteRTLM
     }
 
     private var maxContextCap: Double {
@@ -3530,7 +3500,7 @@ struct TranslatorScreen: View {
     @ObservedObject private var llm = LLMBackend.shared
 
     private var selectedModel: AIModel? {
-        ModelData.allModels().first(where: { $0.name == selectedModelName && isTranslatorSupportedModel($0) })
+        selectedFeatureModel(named: selectedModelName).flatMap { isTranslatorSupportedModel($0) ? $0 : nil }
     }
 
     private var isCurrentModelLoaded: Bool {
@@ -3719,7 +3689,7 @@ struct TranslatorScreen: View {
             Image(systemName: "network")
                 .font(.system(size: 48, weight: .semibold))
                 .foregroundStyle(.secondary)
-            Text(settings.localized(requiresDownload ? "translator_requires_gemma3n" : "scam_detector_load_model"))
+            Text(settings.localized(requiresDownload ? "load_model_to_start" : "scam_detector_load_model"))
                 .font(.title3.weight(.bold))
                 .multilineTextAlignment(.center)
             Text(settings.localized(requiresDownload ? "translator_load_model_desc" : "scam_detector_load_model_desc"))
@@ -3856,7 +3826,7 @@ struct TranslatorScreen: View {
                         .featureActionIconButtonStyle()
                     }
 
-                    if enableVision {
+                    if enableVision && (selectedModel?.supportsVision == true) {
                         PhotosPicker(selection: $selectedImageItem, matching: .images) {
                             Image(systemName: hasSelectedImage ? "photo.badge.plus" : "photo")
                                 .font(.system(size: 18, weight: .semibold))
@@ -4140,7 +4110,7 @@ struct TranslatorScreen: View {
             rawPromptText = rawTranslateGemmaPrompt(source: source, target: targetLanguage, text: trimmedInput)
         }
 
-        if let model = selectedModel, (model.modelFormat == .gguf || model.name.localizedCaseInsensitiveContains("gemma")) {
+        if let model = selectedModel, model.name.localizedCaseInsensitiveContains("gemma") {
             if !rawPromptText.contains("<start_of_turn>") {
                 return "<start_of_turn>user\n\(rawPromptText)<end_of_turn>\n<start_of_turn>model\n"
             }
@@ -4151,7 +4121,7 @@ struct TranslatorScreen: View {
 
     private func ensureModelLoaded(force: Bool) async {
         guard let model = selectedModel else {
-            errorMessage = settings.localized("translator_requires_gemma3n")
+            errorMessage = settings.localized("scam_detector_load_model")
             return
         }
 

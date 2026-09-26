@@ -415,7 +415,8 @@
 "translator_auto_detect" = "自動検出";
 "translator_translate" = "翻訳";
 "translator_result" = "翻訳";
-"translator_requires_gemma3n" = "この機能にはGemma 4モデルが必要です。モデル画面から1つダウンロードしてください。";
+"translator_requires_gemma3n" = "翻訳には任意のLLMモデルを使用できます。最高の多言語パフォーマンスを得るにはGemma 4モデルをお勧めします。";
+"translator_load_model_desc" = "翻訳を開始するには任意のLLMモデルをダウンロードしてください。最高の多言語パフォーマンスを得るにはGemma 4モデルをお勧めします。";
 "transcriber_title" = "オフライン文字起こし";
 "transcriber_record" = "音声を録音";
 "transcriber_upload" = "音声をアップロード";

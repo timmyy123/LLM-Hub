@@ -45,6 +45,7 @@ import com.llmhub.llmhub.components.ThinkingAwareResultContent
 import com.llmhub.llmhub.components.getDisplayContentWithoutThinking
 import com.llmhub.llmhub.data.hasDownloadedVisionProjector
 import com.llmhub.llmhub.data.requiresExternalVisionProjector
+import com.llmhub.llmhub.data.hasNativeVoiceSupport
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import com.llmhub.llmhub.ui.components.AudioInputService
@@ -493,7 +494,6 @@ fun TranslatorScreen(
                         viewModel.loadModel()
                     },
                     onUnloadModel = { viewModel.unloadModel() },
-                    filterMultimodalOnly = true,
                     modifier = Modifier.fillMaxWidth()
                 )
                 
@@ -528,31 +528,32 @@ fun TranslatorScreen(
                 
                 Spacer(modifier = Modifier.height(8.dp))
                 
-                // Audio toggle
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column {
-                        Text(
-                            text = stringResource(R.string.translator_enable_audio),
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Medium
-                        )
-                        Text(
-                            text = stringResource(R.string.translator_audio_description),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                // Audio toggle (only show for defined Gemma models that support audio)
+                if (selectedModel?.hasNativeVoiceSupport() == true) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(
+                                text = stringResource(R.string.translator_enable_audio),
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = stringResource(R.string.translator_audio_description),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = audioEnabled,
+                            onCheckedChange = { viewModel.toggleAudio(it) }
                         )
                     }
-                    Switch(
-                        checked = audioEnabled,
-                        onCheckedChange = { viewModel.toggleAudio(it) },
-                        enabled = selectedModel?.supportsAudio == true
-                    )
                 }
                 
                 // Thinking toggle (shown only for thinking/reasoning models)
@@ -726,7 +727,7 @@ fun TranslatorScreen(
                     Spacer(modifier = Modifier.height(24.dp))
                     Text(
                         text = stringResource(
-                            if (availableModels.isEmpty()) R.string.translator_requires_gemma3n
+                            if (availableModels.isEmpty()) R.string.load_model_to_start
                             else R.string.scam_detector_load_model
                         ),
                         style = MaterialTheme.typography.titleLarge,
@@ -735,7 +736,10 @@ fun TranslatorScreen(
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
-                        text = stringResource(R.string.scam_detector_load_model_desc),
+                        text = stringResource(
+                            if (availableModels.isEmpty()) R.string.translator_load_model_desc
+                            else R.string.scam_detector_load_model_desc
+                        ),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
@@ -862,8 +866,8 @@ fun TranslatorScreen(
                                             }
                                         }
                                         
-                                        // Audio recording button (only show if audio is enabled)
-                                        if (audioEnabled && selectedModel?.supportsAudio == true) {
+                                        // Audio recording button (only show for defined Gemma models that support audio)
+                                        if (audioEnabled && selectedModel?.hasNativeVoiceSupport() == true) {
                                             Row(
                                                 verticalAlignment = Alignment.CenterVertically,
                                                 horizontalArrangement = Arrangement.spacedBy(8.dp)

@@ -472,7 +472,8 @@
     <string name="translator_auto_detect">Otomatik Algıla</string>
     <string name="translator_translate">Çevir</string>
     <string name="translator_result">Çeviri</string>
-    <string name="translator_requires_gemma3n">Bu özellik bir Gemma-3n veya Gemma-4 E2B/E4B modeli gerektirir. Lütfen Modeller ekranından bir tane indirin.</string>
+    <string name="translator_requires_gemma3n">Çeviri için herhangi bir LLM modeli kullanılabilir. En iyi çok dilli performans için Gemma 4 modelleri önerilir.</string>
+    <string name="translator_load_model_desc">Çeviriye başlamak için herhangi bir LLM modeli indirin. En iyi çok dilli performans için Gemma 4 modelleri önerilir.</string>
     
     <!-- Transcriber Screen -->
     <string name="transcriber_title">Çevrimdışı Transkripsiyon</string>

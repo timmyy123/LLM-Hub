@@ -538,7 +538,8 @@
     <string name="translator_auto_detect">Automatische detectie</string>
     <string name="translator_translate">Vertaal</string>
     <string name="translator_result">Vertaling</string>
-    <string name="translator_requires_gemma3n">Voor deze functie is een Gemma-3n- of Gemma-4 E2B/E4B-model vereist. Download er een vanuit het scherm Modellen.</string>
+    <string name="translator_requires_gemma3n">Elk LLM-model kan worden gebruikt voor vertaling. Gemma 4-modellen worden aanbevolen voor de beste meertalige prestaties.</string>
+    <string name="translator_load_model_desc">Download een willekeurig LLM-model om te beginnen met vertalen. Gemma 4-modellen worden aanbevolen voor de beste meertalige prestaties.</string>
     <string name="transcriber_title">Offline transcribent</string>
     <string name="transcriber_record">Audio opnemen</string>
     <string name="transcriber_upload">Audio uploaden</string>
