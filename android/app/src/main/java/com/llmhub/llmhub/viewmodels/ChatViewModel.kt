@@ -132,6 +132,7 @@ class ChatViewModel(
     // inference service, so we can skip applySavedModelConfig + loadModel when nothing changed.
     private var lastAppliedModelName: String? = null
     private var lastAppliedConfig: ModelConfig? = null
+    private var creatorHandoffModelName: String? = null
 
     // NOTE: intent heuristics removed — global memory will be queried whenever the
     // memory preference is enabled. Localization-specific intent checks were removed
@@ -2464,6 +2465,7 @@ class ChatViewModel(
     }
     
     private suspend fun loadModelWithSavedConfig(model: LLMModel): Boolean {
+        creatorHandoffModelName = null
         // A lazy load must use this model's saved sheet config, not the backend/device
         // still held in the chat UI from a different model or a previous session.
         val savedConfig = modelPrefs.getModelConfig(model.name)
@@ -2489,6 +2491,7 @@ class ChatViewModel(
     private fun isModelAlreadyLoadedWithCurrentConfig(model: LLMModel): Boolean {
         val loaded = inferenceService.getCurrentlyLoadedModel() ?: return false
         if (loaded.name != model.name) return false
+        if (creatorHandoffModelName == model.name) return true
         if (lastAppliedModelName != model.name) return false
         val cfg = lastAppliedConfig ?: return false
         // Re-read the saved config synchronously is not possible here; compare against
@@ -3195,6 +3198,11 @@ class ChatViewModel(
             this.currentModel = modelToUse
             _selectedModel.value = modelToUse
             loadSettingsForModel(modelToUse)
+            // Creator and Chat share the app-scoped inference service. Adopt its loaded
+            // weights for this direct handoff instead of treating the first send as a lazy load.
+            if (creatorId != null && inferenceService.getCurrentlyLoadedModel()?.name == modelToUse.name) {
+                creatorHandoffModelName = modelToUse.name
+            }
             repository.updateChatModel(newChatId, modelToUse.name)
             _currentChat.value = repository.getChatById(newChatId)
             

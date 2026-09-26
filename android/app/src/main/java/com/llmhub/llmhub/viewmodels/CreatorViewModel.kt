@@ -28,6 +28,13 @@ class CreatorViewModel(
 ) : ViewModel() {
 
     private var generationJob: Job? = null
+    private var preserveLoadedModelForChat = false
+
+    fun retainLoadedModelForChat() {
+        preserveLoadedModelForChat = inferenceService.getCurrentlyLoadedModel() != null
+    }
+
+    fun isRetainingModelForChat(): Boolean = preserveLoadedModelForChat
 
     fun renameCreator(creatorId: String, newName: String) {
         viewModelScope.launch {
@@ -425,6 +432,7 @@ class CreatorViewModel(
 
     override fun onCleared() {
         super.onCleared()
+        if (preserveLoadedModelForChat) return
         viewModelScope.launch {
             try { inferenceService.unloadModel() } catch (_: Exception) {}
         }
