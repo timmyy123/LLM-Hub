@@ -480,6 +480,7 @@ struct FeatureModelSettingsSheet: View {
     @State private var models: [AIModel] = []
     @State private var isRefreshingModels = false
     @State private var gpuLayersTemp: Double = 999
+    @State private var gpuLayerLimit: Double = 999
 
     private var selectedModel: AIModel? {
         models.first(where: { $0.name == selectedModelName })
@@ -574,7 +575,7 @@ struct FeatureModelSettingsSheet: View {
                                 if let model = selectedModel, model.modelFormat == .gguf {
                                     GPULayersSlider(
                                         value: $gpuLayersTemp,
-                                        maxLabel: settings.localized("max"),
+                                        maxLayers: gpuLayerLimit,
                                         label: settings.localized("gpu_layers_label"),
                                         onCommit: { saveGpuLayers(gpuLayersTemp) }
                                     )
@@ -745,6 +746,7 @@ struct FeatureModelSettingsSheet: View {
 
     private func loadInitialGpuLayers() {
         guard let selectedModel = selectedModel else { return }
+        gpuLayerLimit = Double(GGUFLayerLimits.unknown)
         let key = "gpu_layers_\(selectedModel.id)"
         if UserDefaults.standard.object(forKey: key) != nil {
             let stored = UserDefaults.standard.integer(forKey: key)
@@ -752,12 +754,23 @@ struct FeatureModelSettingsSheet: View {
         } else {
             gpuLayersTemp = 999
         }
+        if let url = LLMBackend.shared.ggufFileURL(for: selectedModel) {
+            let modelID = selectedModel.id
+            Task {
+                let limit = await Task.detached(priority: .utility) {
+                    GGUFLayerLimits.read(from: url)
+                }.value ?? GGUFLayerLimits.unknown
+                guard self.selectedModel?.id == modelID else { return }
+                gpuLayersTemp = min(max(0, gpuLayersTemp), Double(limit))
+                gpuLayerLimit = Double(limit)
+            }
+        }
     }
 
     private func saveGpuLayers(_ value: Double) {
         guard let selectedModel = selectedModel else { return }
         let key = "gpu_layers_\(selectedModel.id)"
-        let intValue = Int32(value)
+        let intValue = Int32(min(max(0, value), gpuLayerLimit))
         UserDefaults.standard.set(intValue, forKey: key)
 
         Task {

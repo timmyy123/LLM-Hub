@@ -38,12 +38,15 @@ import androidx.activity.ComponentActivity
 import coil.compose.AsyncImage
 import com.llmhub.llmhub.LlmHubApplication
 import com.llmhub.llmhub.R
+import com.llmhub.llmhub.data.GgufLayerLimits
 import com.llmhub.llmhub.components.ModelSelectorCard
 import com.llmhub.llmhub.components.SelectableMarkdownText
 import com.llmhub.llmhub.components.ThinkingAwareResultContent
 import com.llmhub.llmhub.components.getDisplayContentWithoutThinking
 import com.llmhub.llmhub.data.hasDownloadedVisionProjector
 import com.llmhub.llmhub.data.requiresExternalVisionProjector
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import com.llmhub.llmhub.ui.components.AudioInputService
 import com.llmhub.llmhub.viewmodels.TranslatorViewModel
 import androidx.compose.foundation.BorderStroke
@@ -2036,7 +2039,16 @@ fun ScamDetectorScreen(
         mutableStateOf(selectedMaxTokensScam.coerceIn(1, baseMaxTokensCapScam))
     }
     var maxTokensTextScam by remember(maxTokensValueScam) { mutableStateOf(maxTokensValueScam.toString()) }
-    var gpuLayersScam by remember(selectedNGpuLayersScam) { mutableStateOf(selectedNGpuLayersScam ?: 999) }
+    var gpuLayerLimitScam by remember { mutableIntStateOf(GgufLayerLimits.UNKNOWN) }
+    var gpuLayersScam by remember(selectedNGpuLayersScam, gpuLayerLimitScam) {
+        mutableStateOf((selectedNGpuLayersScam ?: gpuLayerLimitScam).coerceIn(0, gpuLayerLimitScam))
+    }
+    LaunchedEffect(selectedModel?.name) {
+        gpuLayerLimitScam = GgufLayerLimits.UNKNOWN
+        gpuLayerLimitScam = selectedModel?.let { model ->
+            withContext(Dispatchers.IO) { GgufLayerLimits.forModel(context, model) }
+        } ?: GgufLayerLimits.UNKNOWN
+    }
     val isGgufScam by remember(selectedModel) { derivedStateOf { selectedModel?.modelFormat == "gguf" } }
     
     // TTS Service — always use system TTS (Kokoro is English-only)
@@ -2185,7 +2197,7 @@ fun ScamDetectorScreen(
                                         gpuLayersScam = it.toInt()
                                         viewModel.setNGpuLayers(gpuLayersScam)
                                     },
-                                    valueRange = 0f..999f,
+                                    valueRange = 0f..gpuLayerLimitScam.toFloat(),
                                     modifier = Modifier.weight(1f).height(28.dp),
                                     thumb = {
                                         SliderDefaults.Thumb(
@@ -2198,7 +2210,7 @@ fun ScamDetectorScreen(
                                 OutlinedTextField(
                                     value = gpuLayersScam.toString(),
                                     onValueChange = { v ->
-                                        val n = v.filter { it.isDigit() }.toIntOrNull()?.coerceIn(0, 999) ?: gpuLayersScam
+                                        val n = v.filter { it.isDigit() }.toIntOrNull()?.coerceIn(0, gpuLayerLimitScam) ?: gpuLayersScam
                                         gpuLayersScam = n
                                         viewModel.setNGpuLayers(n)
                                     },
@@ -2619,5 +2631,4 @@ private fun TranscriptionCard(
         }
     }
 }
-
 

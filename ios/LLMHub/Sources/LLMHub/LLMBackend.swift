@@ -681,6 +681,12 @@ class LLMBackend: ObservableObject {
             .sorted { $0.lastPathComponent.lowercased() < $1.lastPathComponent.lowercased() }
     }
 
+    func ggufFileURL(for model: AIModel) -> URL? {
+        guard model.modelFormat == .gguf,
+              let path = try? resolveModelGGUFPath(for: model) else { return nil }
+        return URL(fileURLWithPath: path)
+    }
+
     private func resolveModelGGUFPath(for model: AIModel) throws -> String {
         // Custom imported models store the GGUF path directly in model.url.
         if model.source == "Custom" {

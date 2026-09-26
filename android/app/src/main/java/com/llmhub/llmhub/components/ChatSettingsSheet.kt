@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import com.llmhub.llmhub.R
 import com.llmhub.llmhub.data.LLMModel
+import com.llmhub.llmhub.data.GgufLayerLimits
 import com.llmhub.llmhub.data.ModelConfig
 import com.llmhub.llmhub.data.ModelPreferences
 import com.llmhub.llmhub.data.hasDownloadedVisionProjector
@@ -27,6 +28,7 @@ import com.llmhub.llmhub.data.requiresExternalVisionProjector
 import com.llmhub.llmhub.inference.MediaPipeInferenceService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Bottom sheet for AI Chat settings - combines model selection with model configs
@@ -138,6 +140,7 @@ fun ChatSettingsSheet(
         )
     }
     var gpuLayers by remember { mutableStateOf(999) }
+    var gpuLayerLimit by remember { mutableIntStateOf(GgufLayerLimits.UNKNOWN) }
 
     var disableVision by remember { mutableStateOf(isGemma3nModel) }
     var disableAudio by remember { mutableStateOf(isGemma3nModel) }
@@ -170,6 +173,10 @@ fun ChatSettingsSheet(
     // Load saved config when model changes
     LaunchedEffect(selectedModel?.name) {
         selectedModel?.let { model ->
+            gpuLayerLimit = GgufLayerLimits.UNKNOWN
+            gpuLayerLimit = withContext(Dispatchers.IO) {
+                GgufLayerLimits.forModel(context, model)
+            } ?: GgufLayerLimits.UNKNOWN
             val newBaseCap = MediaPipeInferenceService.getMaxTokensForModelStatic(model)
             val newIsGemma3n = model.name.contains("Gemma-3n", ignoreCase = true)
             val newIsPhi4Mini = model.name.contains("Phi-4 Mini", ignoreCase = true)
@@ -198,7 +205,7 @@ fun ChatSettingsSheet(
                     useNpu = if (newIsGemma4_12B) false else saved.deviceId == "dev0"
                     disableVision = saved.disableVision || !selectedModelSupportsVisionInput
                     disableAudio = saved.disableAudio
-                    gpuLayers = saved.nGpuLayers
+                    gpuLayers = saved.nGpuLayers.coerceIn(0, gpuLayerLimit)
                     enableThinking = saved.enableThinking
                     agentToolsEnabled = saved.agentToolsEnabled
                     systemPromptText = saved.systemPrompt
@@ -222,6 +229,7 @@ fun ChatSettingsSheet(
                     enableThinking = true
                     agentToolsEnabled = !newIsGemma4Small
                     systemPromptText = ""
+                    gpuLayers = gpuLayerLimit
                 }
             } catch (e: Exception) {
                 // Reset to defaults on error
@@ -243,6 +251,7 @@ fun ChatSettingsSheet(
                 enableThinking = true
                 agentToolsEnabled = !newIsGemma4Small
                 systemPromptText = ""
+                gpuLayers = gpuLayerLimit
             }
         }
     }
@@ -794,7 +803,7 @@ fun ChatSettingsSheet(
                                 Slider(
                                     value = gpuLayers.toFloat(),
                                     onValueChange = { gpuLayers = it.toInt() },
-                                    valueRange = 0f..999f,
+                                    valueRange = 0f..gpuLayerLimit.toFloat(),
                                     modifier = Modifier.weight(1f).height(28.dp),
                                     thumb = {
                                         SliderDefaults.Thumb(
@@ -806,7 +815,7 @@ fun ChatSettingsSheet(
                                 Spacer(modifier = Modifier.width(8.dp))
                                 OutlinedTextField(
                                     value = gpuLayers.toString(),
-                                    onValueChange = { v -> gpuLayers = v.filter { it.isDigit() }.toIntOrNull()?.coerceIn(0, 999) ?: gpuLayers },
+                                    onValueChange = { v -> gpuLayers = v.filter { it.isDigit() }.toIntOrNull()?.coerceIn(0, gpuLayerLimit) ?: gpuLayers },
                                     modifier = Modifier.width(72.dp),
                                     singleLine = true
                                 )

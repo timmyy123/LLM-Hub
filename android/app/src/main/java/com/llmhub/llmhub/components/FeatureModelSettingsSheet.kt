@@ -31,6 +31,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -46,6 +47,7 @@ import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import com.llmhub.llmhub.R
 import com.llmhub.llmhub.data.DeviceInfo
 import com.llmhub.llmhub.data.LLMModel
+import com.llmhub.llmhub.data.GgufLayerLimits
 import com.llmhub.llmhub.data.ModelConfig
 import com.llmhub.llmhub.data.ModelPreferences
 import com.llmhub.llmhub.data.hasDownloadedVisionProjector
@@ -54,6 +56,7 @@ import com.llmhub.llmhub.inference.MediaPipeInferenceService
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -130,14 +133,21 @@ fun FeatureModelSettingsSheet(
         )
     }
     var gpuLayers by remember { mutableStateOf(999) }
+    var gpuLayerLimit by remember { mutableIntStateOf(GgufLayerLimits.UNKNOWN) }
     var enableThinking by remember { mutableStateOf(true) }
 
     LaunchedEffect(selectedModel?.name) {
         selectedModel?.let { model ->
+            gpuLayerLimit = GgufLayerLimits.UNKNOWN
+            gpuLayerLimit = withContext(Dispatchers.IO) {
+                GgufLayerLimits.forModel(context, model)
+            } ?: GgufLayerLimits.UNKNOWN
             val saved = modelPrefs.getModelConfig(model.name)
             if (saved != null) {
-                gpuLayers = saved.nGpuLayers
+                gpuLayers = saved.nGpuLayers.coerceIn(0, gpuLayerLimit)
                 enableThinking = saved.enableThinking
+            } else {
+                gpuLayers = gpuLayerLimit
             }
         }
     }
@@ -548,7 +558,7 @@ fun FeatureModelSettingsSheet(
                                 Slider(
                                     value = gpuLayers.toFloat(),
                                     onValueChange = { gpuLayers = it.toInt() },
-                                    valueRange = 0f..999f,
+                                    valueRange = 0f..gpuLayerLimit.toFloat(),
                                     modifier = Modifier.weight(1f).height(28.dp),
                                     thumb = {
                                         SliderDefaults.Thumb(
@@ -560,7 +570,7 @@ fun FeatureModelSettingsSheet(
                                 Spacer(modifier = Modifier.width(8.dp))
                                 OutlinedTextField(
                                     value = gpuLayers.toString(),
-                                    onValueChange = { v -> gpuLayers = v.filter { it.isDigit() }.toIntOrNull()?.coerceIn(0, 999) ?: gpuLayers },
+                                    onValueChange = { v -> gpuLayers = v.filter { it.isDigit() }.toIntOrNull()?.coerceIn(0, gpuLayerLimit) ?: gpuLayers },
                                     modifier = Modifier.width(72.dp),
                                     singleLine = true
                                 )
