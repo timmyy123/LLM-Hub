@@ -1,5 +1,4 @@
 import Foundation
-import RunAnywhere
 import ModelZoo
 
 public enum ModelFormat: String, Codable, Sendable {
@@ -397,7 +396,7 @@ public struct ModelData {
                 }
                 return true
             }
-            // For HF-downloaded custom models, check the RunAnywhere/model directory
+            // For HF-downloaded custom models, check the legacy model storage directory.
             if let dir = try? SimplifiedFileManager.shared.getModelFolderURL(
                 modelId: model.id, framework: model.inferenceFramework
             ), FileManager.default.fileExists(atPath: dir.path) {

@@ -1,5 +1,4 @@
 import SwiftUI
-import RunAnywhere
 import UniformTypeIdentifiers
 import ModelZoo
 
@@ -174,7 +173,7 @@ class ModelDownloadViewModel: ObservableObject {
             ?? FileManager.default.temporaryDirectory.appendingPathComponent(modelId, isDirectory: true)
     }
 
-    private static func migrateCustomModelIntoRunAnywhere(_ model: AIModel) -> AIModel {
+    private static func migrateCustomModelIntoAppStorage(_ model: AIModel) -> AIModel {
         guard model.source == "Custom" else { return model }
 
         let destinationDir = customModelDirectory(for: model.id)
@@ -211,16 +210,6 @@ class ModelDownloadViewModel: ObservableObject {
     }
 
     init() {
-        do {
-            try RunAnywhere.initialize(environment: .development)
-        } catch {
-            // Ignore repeated initialization attempts.
-        }
-
-        Task {
-            await RunAnywhere.refreshModelRegistry()
-        }
-
         // Initialize with default states for built-in models
         for model in ModelData.models {
             downloadStates[model.id] = .notDownloaded
@@ -308,7 +297,7 @@ class ModelDownloadViewModel: ObservableObject {
         var needsResave = false
         for raw in imported {
             guard !models.contains(where: { $0.id == raw.id }) else { continue }
-            let model = Self.migrateCustomModelIntoRunAnywhere(ModelData.normalizeCustomModel(raw))
+            let model = Self.migrateCustomModelIntoAppStorage(ModelData.normalizeCustomModel(raw))
             if model.url != raw.url || model.additionalFiles != raw.additionalFiles { needsResave = true }
             models.append(model)
             downloadStates[model.id] = .downloaded
@@ -508,12 +497,6 @@ class ModelDownloadViewModel: ObservableObject {
         markPending(model.id)
         
         let task = Task {
-            do {
-                try RunAnywhere.initialize(environment: .development)
-            } catch {
-                // Initialization may already be in progress/complete in other flows.
-            }
-
             let destinationDir: URL
             do {
                 destinationDir = try destinationDirectory(for: model)
@@ -551,7 +534,6 @@ class ModelDownloadViewModel: ObservableObject {
                     self.refreshStatuses()
                 }
 
-                await RunAnywhere.refreshModelRegistry()
             } catch is CancellationError {
                 await MainActor.run {
                     self.downloadStates[model.id] = .paused
@@ -1122,7 +1104,6 @@ struct ModelDownloadScreen: View {
         }
         .onAppear {
             Task {
-                try? await RunAnywhere.completeServicesInitialization()
                 vm.refreshStatuses()
                 vm.resumePendingDownloads()
             }

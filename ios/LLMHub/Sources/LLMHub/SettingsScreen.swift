@@ -1,6 +1,5 @@
 import SwiftUI
 import UIKit
-import RunAnywhere
 
 // MARK: - Settings Screen (mirroring Android SettingsScreen.kt)
 struct SettingsScreen: View {
@@ -94,7 +93,6 @@ struct SettingsScreen: View {
                             subtitleKey: "manage_memory_subtitle"
                         ) {
                             Task {
-                                await RunAnywhere.refreshModelRegistry()
                                 await RagServiceManager.shared.initialize(modelId: settings.selectedEmbeddingModelId)
                                 await MainActor.run {
                                     showMemoryDialog = true

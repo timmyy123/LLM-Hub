@@ -1,5 +1,4 @@
 import SwiftUI
-import RunAnywhere
 #if canImport(FoundationModels)
 import FoundationModels
 #endif
@@ -474,13 +473,6 @@ struct ChatSettingsSheet: View {
         let intValue = Int32(min(max(0, value), gpuLayerLimit))
         UserDefaults.standard.set(intValue, forKey: key)
 
-        Task {
-            await CppBridge.ModelRegistry.shared.setGpuLayers(modelId: currentModel.id, gpuLayers: intValue)
-            if let folderURL = try? SimplifiedFileManager.shared.getModelFolderURL(modelId: currentModel.id, framework: currentModel.inferenceFramework),
-               let ggufFile = LLMBackend.shared.listGGUFFiles(in: folderURL).first(where: { !$0.lastPathComponent.lowercased().contains("mmproj") }) {
-                await CppBridge.ModelRegistry.shared.setGpuLayers(modelId: ggufFile.path, gpuLayers: intValue)
-            }
-        }
     }
     private func applyDraftToViewModel() {
         let clampedContext = min(max(1, draftContextWindow), modelMaxContextWindow)

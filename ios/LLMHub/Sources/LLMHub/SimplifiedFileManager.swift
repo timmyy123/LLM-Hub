@@ -1,5 +1,10 @@
 import Foundation
-import RunAnywhere
+
+public enum InferenceFramework: String, Sendable {
+    case onnx = "ONNX"
+    case llamaCpp = "LlamaCpp"
+    case foundationModels = "FoundationModels"
+}
 
 final class SimplifiedFileManager: @unchecked Sendable {
     static let shared = SimplifiedFileManager()
@@ -7,9 +12,9 @@ final class SimplifiedFileManager: @unchecked Sendable {
     private init() {}
 
     func getModelFolderURL(modelId: String, framework: InferenceFramework) throws -> URL {
-        if let url = try? CppBridge.ModelPaths.getModelFolder(modelId: modelId, framework: framework) {
-            try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-            return url
+        guard !modelId.isEmpty, modelId != ".", modelId != "..",
+              !modelId.contains("/"), !modelId.contains("\\"), !modelId.contains("\0") else {
+            throw CocoaError(.fileReadInvalidFileName)
         }
 
         let documentsDir = try FileManager.default.url(
@@ -18,7 +23,9 @@ final class SimplifiedFileManager: @unchecked Sendable {
             appropriateFor: nil,
             create: true
         )
-        let url = documentsDir.appendingPathComponent("models", isDirectory: true)
+        // Preserve the installed-model location used by earlier app versions.
+        let url = documentsDir.appendingPathComponent("RunAnywhere/Models", isDirectory: true)
+            .appendingPathComponent(framework.rawValue, isDirectory: true)
             .appendingPathComponent(modelId, isDirectory: true)
         try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
         return url

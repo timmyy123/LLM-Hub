@@ -1,6 +1,5 @@
 import Foundation
 import LlamaCppRuntime
-import RunAnywhere
 #if canImport(UIKit)
 import UIKit
 import ImageIO
@@ -34,11 +33,6 @@ class LLMBackend: ObservableObject {
     var enableThinking: Bool = true
     var enableAgentTools: Bool = true
 
-    private var isSDKInitialized = false
-    private var areModelsRegistered = false
-    private var loadedLLMModelId: String?
-    private var loadedVLMModelId: String?
-    private var loadedVLMProjectorPath: String?
 
     private init() {}
 
@@ -531,7 +525,7 @@ class LLMBackend: ObservableObject {
         }
     }
 
-    private func runAnywhereModelDirectory(for model: AIModel) -> URL? {
+    private func installedModelDirectory(for model: AIModel) -> URL? {
         try? SimplifiedFileManager.shared.getModelFolderURL(modelId: model.id, framework: model.inferenceFramework)
     }
 
@@ -541,7 +535,7 @@ class LLMBackend: ObservableObject {
             return true
         }
 
-        if let runAnywhereDir = runAnywhereModelDirectory(for: model),
+        if let runAnywhereDir = installedModelDirectory(for: model),
            FileManager.default.fileExists(atPath: runAnywhereDir.path),
            hasAllRequiredFiles(in: runAnywhereDir, for: model) {
             return true
@@ -554,70 +548,6 @@ class LLMBackend: ObservableObject {
         }
 
         return false
-    }
-
-    private func migrateLegacyModelIfNeeded(_ model: AIModel) throws -> Bool {
-        if isModelAvailableLocally(model),
-           let runAnywhereDir = runAnywhereModelDirectory(for: model),
-           FileManager.default.fileExists(atPath: runAnywhereDir.path),
-           hasAllRequiredFiles(in: runAnywhereDir, for: model) {
-            return false
-        }
-
-        guard let legacyDir = legacyModelDirectory(for: model),
-              FileManager.default.fileExists(atPath: legacyDir.path),
-              hasAllRequiredFiles(in: legacyDir, for: model) else {
-            return false
-        }
-
-        let destinationDir = try SimplifiedFileManager.shared.getModelFolderURL(modelId: model.id, framework: model.inferenceFramework)
-        try FileManager.default.createDirectory(at: destinationDir, withIntermediateDirectories: true)
-
-        for fileName in model.requiredFileNames {
-            let sourceURL = legacyDir.appendingPathComponent(fileName)
-            let destinationURL = destinationDir.appendingPathComponent(fileName)
-
-            if FileManager.default.fileExists(atPath: destinationURL.path) {
-                try? FileManager.default.removeItem(at: destinationURL)
-            }
-            try FileManager.default.copyItem(at: sourceURL, to: destinationURL)
-        }
-
-        print("ℹ️ [LLMBackend] Migrated legacy model files for \(model.id)")
-        return true
-    }
-
-    private func migrateCustomModelIfNeeded(_ model: AIModel) throws -> Bool {
-        guard model.source == "Custom",
-              let destinationDir = runAnywhereModelDirectory(for: model) else {
-            return false
-        }
-
-        try FileManager.default.createDirectory(at: destinationDir, withIntermediateDirectories: true)
-
-        var copiedAny = false
-        let mainSourceURL = URL(fileURLWithPath: model.url)
-        let mainDestinationURL = destinationDir.appendingPathComponent(mainSourceURL.lastPathComponent)
-        if FileManager.default.fileExists(atPath: mainSourceURL.path),
-           !FileManager.default.fileExists(atPath: mainDestinationURL.path) {
-            try FileManager.default.copyItem(at: mainSourceURL, to: mainDestinationURL)
-            copiedAny = true
-        }
-
-        for filePath in model.additionalFiles {
-            let sourceURL = URL(fileURLWithPath: filePath)
-            let destinationURL = destinationDir.appendingPathComponent(sourceURL.lastPathComponent)
-            if FileManager.default.fileExists(atPath: sourceURL.path),
-               !FileManager.default.fileExists(atPath: destinationURL.path) {
-                try FileManager.default.copyItem(at: sourceURL, to: destinationURL)
-                copiedAny = true
-            }
-        }
-
-        if copiedAny {
-            print("ℹ️ [LLMBackend] Migrated custom model files into RunAnywhere storage for \(model.id)")
-        }
-        return copiedAny
     }
 
     private func filename(from url: URL) -> String {
@@ -653,18 +583,6 @@ class LLMBackend: ObservableObject {
             #endif
         }
         return nil
-    }
-
-    private func framework(for model: AIModel) -> InferenceFramework {
-        model.inferenceFramework
-    }
-
-    private func isAppleFoundationAlias(_ model: AIModel) -> Bool {
-        model.id == Self.appleFoundationAliasId
-    }
-
-    private func activeRunAnywhereModelId(for model: AIModel) -> String {
-        model.id
     }
 
     func listGGUFFiles(in directory: URL) -> [URL] {
@@ -824,173 +742,6 @@ class LLMBackend: ObservableObject {
         return path != nil
     }
 
-    private func ensureVLMLoaded(for model: AIModel) async throws {
-        let modelPath = try resolveModelGGUFPath(for: model)
-        let mmprojPath = resolveVisionProjectorPath(for: model)
-
-        guard let mmprojPath, !mmprojPath.isEmpty else {
-            throw NSError(
-                domain: "LLMBackend",
-                code: -102,
-                userInfo: [NSLocalizedDescriptionKey: "Vision projector (mmproj) is missing for \(model.name)"]
-            )
-        }
-
-        let modelSummary = fileSummary(at: modelPath)
-        let projectorSummary = fileSummary(at: mmprojPath)
-        let modelHeader = ggufHeaderSummary(at: modelPath)
-        let projectorHeader = ggufHeaderSummary(at: mmprojPath)
-
-        print("ℹ️ [LLMBackend] VLM prepare model=\(model.id) main={\(modelSummary)} header={\(modelHeader)} mmproj={\(projectorSummary)} header={\(projectorHeader)}")
-
-        guard modelHeader == "GGUF" else {
-            throw NSError(
-                domain: "LLMBackend",
-                code: -103,
-                userInfo: [NSLocalizedDescriptionKey: "Main model file is invalid: \(modelSummary) header=\(modelHeader)"]
-            )
-        }
-
-        guard projectorHeader == "GGUF" else {
-            throw NSError(
-                domain: "LLMBackend",
-                code: -104,
-                userInfo: [NSLocalizedDescriptionKey: "Vision projector file is invalid: \(projectorSummary) header=\(projectorHeader)"]
-            )
-        }
-
-        let shouldReload = !(loadedVLMModelId == model.id && loadedVLMProjectorPath == mmprojPath)
-
-        guard shouldReload else { return }
-
-        if let loadedLLMModelId {
-            var unloadRequest = RAModelUnloadRequest()
-            unloadRequest.modelID = loadedLLMModelId
-            unloadRequest.category = .language
-            _ = await RunAnywhere.unloadModel(unloadRequest)
-            self.loadedLLMModelId = nil
-            print("ℹ️ [LLMBackend] Unloaded text LLM before VLM load to avoid duplicate model residency")
-        }
-
-        if let loadedVLMModelId {
-            var unloadRequest = RAModelUnloadRequest()
-            unloadRequest.modelID = loadedVLMModelId
-            unloadRequest.category = .multimodal
-            _ = await RunAnywhere.unloadModel(unloadRequest)
-        }
-        self.loadedVLMModelId = nil
-        self.loadedVLMProjectorPath = nil
-
-        await syncGpuLayersToRegistry(for: model)
-        do {
-            var loadRequest = RAModelLoadRequest()
-            loadRequest.modelID = model.id
-            loadRequest.category = .multimodal
-            loadRequest.framework = framework(for: model)
-            let loadResult = await RunAnywhere.loadModel(loadRequest)
-            guard loadResult.success else {
-                throw NSError(
-                    domain: "LLMBackend",
-                    code: -111,
-                    userInfo: [NSLocalizedDescriptionKey: loadResult.errorMessage.isEmpty ? "VLM load failed" : loadResult.errorMessage]
-                )
-            }
-        } catch {
-            let details = "main={\(modelSummary)} header={\(modelHeader)} mmproj={\(projectorSummary)} header={\(projectorHeader)}"
-            throw NSError(
-                domain: "LLMBackend",
-                code: -111,
-                userInfo: [NSLocalizedDescriptionKey: "VLM load failed for \(model.name): \(error.localizedDescription). \(details)"]
-            )
-        }
-        loadedVLMModelId = model.id
-        loadedVLMProjectorPath = mmprojPath
-    }
-
-    private func ensureTextModelLoaded(for model: AIModel) async throws {
-        if let loadedVLMModelId {
-            var unloadRequest = RAModelUnloadRequest()
-            unloadRequest.modelID = loadedVLMModelId
-            unloadRequest.category = .multimodal
-            _ = await RunAnywhere.unloadModel(unloadRequest)
-            self.loadedVLMModelId = nil
-            self.loadedVLMProjectorPath = nil
-            print("ℹ️ [LLMBackend] Unloaded VLM before text generation to avoid duplicate model residency")
-        }
-
-        let shouldLoad = loadedLLMModelId != model.id
-        guard shouldLoad else { return }
-
-        var loadRequest = RAModelLoadRequest()
-        loadRequest.modelID = model.id
-        loadRequest.category = .language
-        loadRequest.framework = framework(for: model)
-        let loadResult = await RunAnywhere.loadModel(loadRequest)
-        guard loadResult.success else {
-            throw NSError(
-                domain: "LLMBackend",
-                code: -112,
-                userInfo: [NSLocalizedDescriptionKey: loadResult.errorMessage.isEmpty ? "Text model load failed" : loadResult.errorMessage]
-            )
-        }
-        loadedLLMModelId = model.id
-    }
-
-    private func syncGpuLayersToRegistry(for model: AIModel) async {
-        let key = "gpu_layers_\(model.id)"
-        let stored = UserDefaults.standard.object(forKey: key) != nil ?
-            Int32(UserDefaults.standard.integer(forKey: key)) : 999
-        let targetValue: Int32 = (stored == 99) ? 999 : stored
-
-        await CppBridge.ModelRegistry.shared.setGpuLayers(modelId: model.id, gpuLayers: targetValue)
-        let runAnywhereModelId = activeRunAnywhereModelId(for: model)
-        await CppBridge.ModelRegistry.shared.setGpuLayers(modelId: runAnywhereModelId, gpuLayers: targetValue)
-
-        if let folderURL = try? SimplifiedFileManager.shared.getModelFolderURL(modelId: model.id, framework: framework(for: model)) {
-            await CppBridge.ModelRegistry.shared.setGpuLayers(modelId: folderURL.path, gpuLayers: targetValue)
-            for ggufFile in listGGUFFiles(in: folderURL) {
-                await CppBridge.ModelRegistry.shared.setGpuLayers(modelId: ggufFile.path, gpuLayers: targetValue)
-            }
-        }
-        if let folderURL = runAnywhereModelDirectory(for: model) {
-            await CppBridge.ModelRegistry.shared.setGpuLayers(modelId: folderURL.path, gpuLayers: targetValue)
-            for ggufFile in listGGUFFiles(in: folderURL) {
-                await CppBridge.ModelRegistry.shared.setGpuLayers(modelId: ggufFile.path, gpuLayers: targetValue)
-            }
-        }
-    }
-
-    private func fileSummary(at path: String) -> String {
-        let url = URL(fileURLWithPath: path)
-        let name = url.lastPathComponent
-
-        guard FileManager.default.fileExists(atPath: path) else {
-            return "\(name) missing"
-        }
-
-        let attributes = try? FileManager.default.attributesOfItem(atPath: path)
-        let size = (attributes?[.size] as? NSNumber)?.int64Value ?? -1
-        let formatter = ByteCountFormatter()
-        formatter.allowedUnits = [.useGB, .useMB, .useKB]
-        formatter.countStyle = .file
-        let sizeLabel = size >= 0 ? formatter.string(fromByteCount: size) : "unknown"
-
-        return "\(name) \(sizeLabel)"
-    }
-
-    private func ggufHeaderSummary(at path: String) -> String {
-        guard let handle = FileHandle(forReadingAtPath: path) else { return "unreadable" }
-        defer {
-            try? handle.close()
-        }
-
-        let data = handle.readData(ofLength: 4)
-        guard data.count == 4, let header = String(data: data, encoding: .ascii) else {
-            return "invalid"
-        }
-        return header
-    }
-
 #if canImport(UIKit)
     private func downsampledUIImage(from imageURL: URL, maxDimension: CGFloat = 448) -> UIImage? {
         let sourceOptions = [kCGImageSourceShouldCache: false] as CFDictionary
@@ -1013,15 +764,6 @@ class LLMBackend: ObservableObject {
     }
 #endif
 
-    private func vlmImage(from imageURL: URL) -> RAVLMImage {
-        #if canImport(UIKit)
-        if let uiImage = downsampledUIImage(from: imageURL) {
-            return RAVLMImage.fromUIImage(uiImage) ?? RAVLMImage.fromFilePath(imageURL.path)
-        }
-        #endif
-        return RAVLMImage.fromFilePath(imageURL.path)
-    }
-
     func modelMaxContextWindow(for model: AIModel) -> Int {
         if model.modelFormat == .gguf,
            let url = ggufFileURL(for: model),
@@ -1036,74 +778,6 @@ class LLMBackend: ObservableObject {
         min(max(1, requested), modelMaxContextWindow(for: model))
     }
 
-    private func registerModel(_ model: AIModel, contextLengthOverride: Int? = nil) async throws {
-        guard model.modelFormat == .gguf || model.modelFormat == .onnx else { return }
-        
-        // Custom models store an absolute file path in model.url — use file:// URL.
-        let primaryURL: URL
-        if model.source == "Custom" {
-            primaryURL = URL(fileURLWithPath: model.url)
-        } else {
-            guard let url = URL(string: model.url) else { return }
-            primaryURL = url
-        }
-        let contextLength = contextLengthOverride ?? model.contextWindowSize
-
-        let urls: [URL]
-        if model.source == "Custom" {
-            urls = ([model.url] + model.additionalFiles).map { URL(fileURLWithPath: $0) }
-        } else {
-            urls = model.allDownloadURLs
-        }
-
-        if urls.count <= 1 {
-            try await RunAnywhere.registerModel(
-                id: model.id,
-                name: model.name,
-                url: primaryURL.absoluteString,
-                framework: framework(for: model),
-                modality: model.supportsVision ? .multimodal : .language,
-                contextLength: contextLength,
-                memoryRequirement: model.sizeBytes,
-                supportsThinking: model.supportsThinking
-            )
-            return
-        }
-
-        let descriptors = urls.map {
-            RAModelFileDescriptor(url: $0, filename: filename(from: $0), isRequired: true)
-        }
-
-        try await RunAnywhere.registerModel(
-            multiFile: descriptors,
-            id: model.id,
-            name: model.name,
-            framework: framework(for: model),
-            modality: model.supportsVision ? .multimodal : .language,
-            memoryRequirement: model.sizeBytes,
-            contextLength: contextLength,
-            supportsThinking: model.supportsThinking
-        )
-    }
-
-    private func ensureSDKReady() async throws {
-        if !isSDKInitialized {
-            try RunAnywhere.initialize(environment: .development)
-            isSDKInitialized = true
-        }
-
-        if !areModelsRegistered {
-            for model in ModelData.allModels() {
-                guard model.modelFormat == .gguf || model.modelFormat == .onnx else { continue }
-                try await registerModel(model)
-            }
-            areModelsRegistered = true
-        }
-
-        // Ensure model path APIs are configured before storage checks/migration.
-        try await RunAnywhere.completeServicesInitialization()
-    }
-
     func loadModel(_ model: AIModel) async throws {
         isBackendLoading = true
         defer { isBackendLoading = false }
@@ -1113,27 +787,14 @@ class LLMBackend: ObservableObject {
         #if canImport(LiteRTLM)
         await LiteRTLMBackend.shared.unload()
         #endif
-        // Release the previous SDK model before clearing its identifiers.
-        if let id = loadedLLMModelId {
-            var request = RAModelUnloadRequest()
-            request.modelID = id
-            request.category = .language
-            _ = await RunAnywhere.unloadModel(request)
-        }
-        if let id = loadedVLMModelId {
-            var request = RAModelUnloadRequest()
-            request.modelID = id
-            request.category = .multimodal
-            _ = await RunAnywhere.unloadModel(request)
+        if model.modelFormat != .gguf {
+            await DirectLlamaCppBackend.shared.unload()
         }
         self.isLoaded = false
         self.currentlyLoadedModel = nil
         self.loadedContextWindow = nil
-        self.loadedLLMModelId = nil
-        self.loadedVLMModelId = nil
-        self.loadedVLMProjectorPath = nil
 
-        if isAppleFoundationAlias(model) {
+        if model.id == Self.appleFoundationAliasId {
             guard let nativeModel = appleFoundationModelIfAvailable() else {
                 throw NSError(domain: "LLMBackend", code: -101, userInfo: [
                     NSLocalizedDescriptionKey: "Apple Intelligence is unavailable. Enable it in Settings and wait for its model to finish downloading."
@@ -1189,150 +850,15 @@ class LLMBackend: ObservableObject {
                 path: modelPath, projector: projector,
                 contextSize: contextSize, gpuLayers: gpuLayers
             )
-            loadedLLMModelId = nil
-            loadedVLMModelId = nil
-            loadedVLMProjectorPath = projector
             isLoaded = true
             currentlyLoadedModel = model.name
             loadedContextWindow = contextSize
             return
         }
 
-        await DirectLlamaCppBackend.shared.unload()
-
-        try await ensureSDKReady()
-        let effectiveContext = clampedContextWindow(contextWindow, for: model)
-        let runAnywhereModelId = activeRunAnywhereModelId(for: model)
-
-        do {
-            try await registerModel(model, contextLengthOverride: effectiveContext)
-            _ = try? migrateCustomModelIfNeeded(model)
-            _ = try? migrateLegacyModelIfNeeded(model)
-
-            // Only local load here. Downloads are handled by the model download screen.
-            guard isModelAvailableLocally(model) else {
-                throw NSError(domain: "LLMBackend", code: -100, userInfo: [NSLocalizedDescriptionKey: "Model is not downloaded locally"])
-            }
-
-            // The C++ backend looks up context_length from the registry using the absolute
-            // file path as the identifier. Re-register the model under its absolute path so
-            // the C++ ID lookup succeeds and uses effectiveContext (e.g. 2048) instead of
-            // auto-detecting a larger value (e.g. 4096) which causes OOM on <8 GB devices.
-            let useMultimodal = model.supportsVision && enableVision && isVisionProjectorAvailable(for: model)
-            let loadCategory: RAModelCategory = useMultimodal ? .multimodal : .language
-
-            // The C++ backend looks up context_length from the registry using the absolute
-            // file path as the identifier. Re-register the model under its absolute path so
-            // the C++ ID lookup succeeds and uses effectiveContext (e.g. 2048) instead of
-            // auto-detecting a larger value (e.g. 4096) which causes OOM on <8 GB devices.
-            if model.source == "Custom",
-               let folderURL = runAnywhereModelDirectory(for: model),
-               let ggufFile = listGGUFFiles(in: folderURL).first(where: {
-                   let name = $0.lastPathComponent.lowercased()
-                   return !name.contains("mmproj") && !name.contains("projector")
-               }) {
-                let ggufURL = ggufFile
-                var registeredModelInfo = await CppBridge.ModelRegistry.shared.get(modelId: runAnywhereModelId) ?? ModelInfo(
-                    id: runAnywhereModelId,
-                    name: model.name,
-                    category: loadCategory,
-                    format: .gguf,
-                    framework: framework(for: model),
-                    downloadURL: ggufURL,
-                    localPath: folderURL,
-                    contextLength: Int32(effectiveContext),
-                    supportsThinking: model.supportsThinking
-                )
-                registeredModelInfo.contextLength = Int32(effectiveContext)
-                registeredModelInfo.category = loadCategory
-                registeredModelInfo.setLocalPath(folderURL)
-                try? await CppBridge.ModelRegistry.shared.save(registeredModelInfo)
-
-                var pathModelInfo = await CppBridge.ModelRegistry.shared.get(modelId: ggufURL.path) ?? registeredModelInfo
-                pathModelInfo.id = ggufURL.path
-                pathModelInfo.contextLength = Int32(effectiveContext)
-                pathModelInfo.category = loadCategory
-                pathModelInfo.setLocalPath(folderURL)
-                try? await CppBridge.ModelRegistry.shared.save(pathModelInfo)
-            } else if let folderURL = try? SimplifiedFileManager.shared.getModelFolderURL(
-                modelId: runAnywhereModelId,
-                framework: framework(for: model)
-            ), let ggufFile = listGGUFFiles(in: folderURL).first(where: {
-                let name = $0.lastPathComponent.lowercased()
-                return !name.contains("mmproj") && !name.contains("projector")
-            }) {
-                var registeredModelInfo = await CppBridge.ModelRegistry.shared.get(modelId: runAnywhereModelId) ?? ModelInfo(
-                    id: runAnywhereModelId,
-                    name: model.name,
-                    category: loadCategory,
-                    format: .gguf,
-                    framework: framework(for: model),
-                    downloadURL: URL(string: model.url),
-                    localPath: folderURL,
-                    contextLength: Int32(effectiveContext),
-                    supportsThinking: model.supportsThinking
-                )
-                registeredModelInfo.contextLength = Int32(effectiveContext)
-                registeredModelInfo.category = loadCategory
-                registeredModelInfo.setLocalPath(folderURL)
-                try? await CppBridge.ModelRegistry.shared.save(registeredModelInfo)
-
-                var pathModelInfo = await CppBridge.ModelRegistry.shared.get(modelId: ggufFile.path) ?? registeredModelInfo
-                pathModelInfo.id = ggufFile.path
-                pathModelInfo.contextLength = Int32(effectiveContext)
-                pathModelInfo.category = loadCategory
-                pathModelInfo.setLocalPath(folderURL)
-                try? await CppBridge.ModelRegistry.shared.save(pathModelInfo)
-            }
-
-            if useMultimodal,
-               let folderURL = (model.source == "Custom" ? runAnywhereModelDirectory(for: model) : try? SimplifiedFileManager.shared.getModelFolderURL(modelId: runAnywhereModelId, framework: framework(for: model))),
-               let projectorPath = resolveVisionProjectorPath(for: model) {
-                let projectorSourceURL = URL(fileURLWithPath: projectorPath)
-                let projectorDestURL = folderURL.appendingPathComponent(projectorSourceURL.lastPathComponent)
-                print("🔍 [LLMBackend] Symlink check: source=\(projectorSourceURL.path), dest=\(projectorDestURL.path)")
-                if projectorSourceURL.path != projectorDestURL.path {
-                    do {
-                        try FileManager.default.removeItem(at: projectorDestURL)
-                        print("🔍 [LLMBackend] Removed old symlink/file at \(projectorDestURL.path)")
-                    } catch {
-                        print("🔍 [LLMBackend] Failed to remove at \(projectorDestURL.path): \(error)")
-                    }
-                    do {
-                        let relativePath = "../" + projectorSourceURL.deletingLastPathComponent().lastPathComponent + "/" + projectorSourceURL.lastPathComponent
-                        print("🔍 [LLMBackend] Creating symlink to relativePath=\(relativePath)")
-                        try FileManager.default.createSymbolicLink(atPath: projectorDestURL.path, withDestinationPath: relativePath)
-                        print("🔍 [LLMBackend] Symlink created successfully!")
-                    } catch {
-                        print("🔍 [LLMBackend] Failed to create symlink: \(error)")
-                    }
-                }
-            }
-
-            await syncGpuLayersToRegistry(for: model)
-            var loadRequest = RAModelLoadRequest()
-            loadRequest.modelID = runAnywhereModelId
-            loadRequest.category = loadCategory
-            loadRequest.framework = framework(for: model)
-            let loadResult = await RunAnywhere.loadModel(loadRequest)
-            guard loadResult.success else {
-                throw NSError(domain: "LLMBackend", code: -101, userInfo: [NSLocalizedDescriptionKey: loadResult.errorMessage.isEmpty ? "Model load failed" : loadResult.errorMessage])
-            }
-
-            if useMultimodal {
-                loadedVLMModelId = runAnywhereModelId
-                loadedVLMProjectorPath = resolveVisionProjectorPath(for: model)
-                loadedLLMModelId = nil
-            } else {
-                loadedLLMModelId = runAnywhereModelId
-                loadedVLMModelId = nil
-                loadedVLMProjectorPath = nil
-            }
-        }
-
-        isLoaded = true
-        currentlyLoadedModel = model.name
-        loadedContextWindow = effectiveContext
+        throw NSError(domain: "LLMBackend", code: -122, userInfo: [
+            NSLocalizedDescriptionKey: "Unsupported language model format"
+        ])
     }
 
     // MARK: - LiteRT-LM load path
@@ -1357,18 +883,6 @@ class LLMBackend: ObservableObject {
     func unloadModel() {
         Task {
             await DirectLlamaCppBackend.shared.unload()
-            if let loadedLLMModelId {
-                var unloadRequest = RAModelUnloadRequest()
-                unloadRequest.modelID = loadedLLMModelId
-                unloadRequest.category = .language
-                _ = await RunAnywhere.unloadModel(unloadRequest)
-            }
-            if let loadedVLMModelId {
-                var unloadRequest = RAModelUnloadRequest()
-                unloadRequest.modelID = loadedVLMModelId
-                unloadRequest.category = .multimodal
-                _ = await RunAnywhere.unloadModel(unloadRequest)
-            }
             #if canImport(LiteRTLM)
             await LiteRTLMBackend.shared.unload()
             #endif
@@ -1376,9 +890,6 @@ class LLMBackend: ObservableObject {
                 self.isLoaded = false
                 self.currentlyLoadedModel = nil
                 self.loadedContextWindow = nil
-                self.loadedLLMModelId = nil
-                self.loadedVLMModelId = nil
-                self.loadedVLMProjectorPath = nil
             }
         }
     }
@@ -1432,10 +943,6 @@ class LLMBackend: ObservableObject {
         // ────────────────────────────────────────────────────────────────────
 
         _ = audioURL
-
-        if loadedAIModel()?.modelFormat != .gguf {
-            try await ensureSDKReady()
-        }
 
         let effectiveMaxTokens: Int = {
             if let override = maxTokensOverride { return max(1, override) }
@@ -1557,8 +1064,8 @@ class LLMBackend: ObservableObject {
                     gpuLayers: isCPU ? 0 : max(0, layers)
                 )
                 #if canImport(UIKit)
-                // Match the 448-pixel image passed to RunAnywhere. Sending the full-resolution
-                // photo makes llama.cpp split tall images into many costly 512px vision slices.
+                // Keep vision input at 448 pixels. Sending the full-resolution photo makes
+                // llama.cpp split tall images into many costly 512px vision slices.
                 if let thumbnail = downsampledUIImage(from: imageURL),
                    let encoded = thumbnail.jpegData(compressionQuality: 0.95) {
                     imageData = encoded
@@ -1595,289 +1102,8 @@ class LLMBackend: ObservableObject {
             return
         }
 
-        var options = RALLMGenerationOptions.defaults()
-        options.maxTokens = Int32(effectiveMaxTokens)
-        options.temperature = Float(temperature)
-        options.topP = Float(topP)
-        options.stopSequences = stopSequences.isEmpty && isPhi4MiniModel ? ["<|end|>", "<|user|>", "<|system|>"] : stopSequences.isEmpty && isMuseGlimmerModel ? ["<|eot|>"] : stopSequences.isEmpty && isGranite42Model ? ["<|im_end|>", "<|im_start|>user", "<|im_start|>system"] : stopSequences
-        options.streamingEnabled = true
-        options.systemPrompt = effectiveSystemPrompt ?? ""
-        if !isLfmModel {
-            options.disableThinking = !enableThinking
-        }
-
-        do {
-
-        if let imageURL,
-           enableVision,
-           let model = loadedAIModel(),
-           model.supportsVision,
-           isVisionProjectorAvailable(for: model) {
-            try await ensureVLMLoaded(for: model)
-
-            let image = vlmImage(from: imageURL)
-            var vlmOptions = RAVLMGenerationOptions.defaults()
-            vlmOptions.maxTokens = Int32(effectiveMaxTokens)
-            vlmOptions.temperature = Float(temperature)
-            vlmOptions.topP = Float(topP)
-            vlmOptions.systemPrompt = effectiveSystemPrompt ?? ""
-            let stream = try await RunAnywhere.processImageStream(image, prompt: usePrompt, options: vlmOptions)
-
-            let isGemma4 = (loadedModelName.range(of: "gemma 4", options: .caseInsensitive) != nil ||
-                            loadedModelName.range(of: "gemma-4", options: .caseInsensitive) != nil) &&
-                           loadedModelName.range(of: "translate", options: .caseInsensitive) == nil
-
-            var currentOutput = ""
-            var finalResult: RAVLMResult?
-            for try await event in stream {
-                try Task.checkCancellation()
-                if !event.token.isEmpty {
-                    currentOutput += event.token
-                    let baseOutput = isGemma4 ? Self.cleanGemma4Output(currentOutput) : currentOutput
-                    let displayOutput = isMuseGlimmerModel ? Self.normalizeMuseGlimmerOutput(baseOutput, thinkingEnabled: enableThinking) : baseOutput
-                    onUpdate(displayOutput, 0, 0)
-                }
-                if event.isFinal {
-                    finalResult = event.hasResult ? event.result : nil
-                    break
-                }
-            }
-
-            let result = finalResult ?? RAVLMResult()
-            // For Muse, the token stream retains the ATEM recipient markers used
-            // to separate `to=self` reasoning from the `to=user` answer. The VLM
-            // SDK's synthesized final `result.text` may strip only part of those
-            // markers; replacing the stream with it makes the completed message
-            // collapse back into one raw reasoning+answer block.
-            let finalText = isMuseGlimmerModel && !currentOutput.isEmpty
-                ? currentOutput
-                : (result.text.isEmpty ? currentOutput : result.text)
-            let baseFinalOutput = isGemma4 ? Self.cleanGemma4Output(finalText) : finalText
-            let finalOutput = isMuseGlimmerModel ? Self.normalizeMuseGlimmerOutput(baseFinalOutput, thinkingEnabled: enableThinking) : baseFinalOutput
-            onUpdate(finalOutput, Int(result.completionTokens), Double(result.tokensPerSecond))
-            return
-        }
-
-        if let model = loadedAIModel() {
-            try await ensureTextModelLoaded(for: model)
-        }
-
-        print("ℹ️ [LLMBackend] generate visionEnabled=\(enableVision) audioEnabled=\(enableAudio) images=0 videos=0")
-
-        // === Harmony two-phase generation (GPT-OSS, thinking enabled) ===
-        // <|end|> is a stop token built into the GGUF, so phase 1 ends after the analysis
-        // section. We immediately start phase 2 with the thinking as context to get the
-        // final answer — mirroring Android's Harmony state machine but as two sequential calls.
-        if isHarmonyModel && enableThinking {
-            // Phase 1 — get thinking content (generation stops at <|end|>)
-            print("🧠 [ThinkingDebug][harmony-phase1] starting")
-            print("🧠 [ThinkingDebug][gate] model=\(loadedModelName) supportsThinking=\(modelSupportsThinking) enableThinking=\(enableThinking)")
-            let streamResult1 = try await RunAnywhere.generateStream(prompt: usePrompt, options: options)
-            var thinkingRaw = ""
-            var phase1Chunks = 0
-
-            for try await event in streamResult1 {
-                try Task.checkCancellation()
-                thinkingRaw += event.token
-                phase1Chunks += 1
-                let pureThinking = Self.extractHarmonyThinking(thinkingRaw)
-                if phase1Chunks == 1 {
-                    print("🧠 [ThinkingDebug][harmony-phase1] firstChunk=\(String(event.token.prefix(80)))")
-                }
-                onUpdate(Self.thinkingSentinelOpen + pureThinking, 0, 0)
-                if event.isFinal { break }
-            }
-
-            let pureThinking = Self.extractHarmonyThinking(thinkingRaw)
-            print("🧠 [ThinkingDebug][harmony-phase1] complete thinkingChars=\(pureThinking.count) chunks=\(phase1Chunks)")
-
-            // Phase 2 — inject thinking as context, get the final answer
-            // Prompt = original (ending with <|start|>assistant) +
-            //          <|channel|>analysis<|message|>THINKING<|end|><|start|>assistant<|channel|>final<|message|>
-            // thinkingRaw starts with "analysis<|message|>..." so prepending "<|channel|>" reconstructs
-            // the full Harmony structure with the correct special tokens.
-            let phase2Prompt = usePrompt + "<|channel|>" + thinkingRaw + Self.harmonyEndTag + Self.harmonyFinalHeader
-            print("🧠 [ThinkingDebug][harmony-phase2] starting phase2PromptLen=\(phase2Prompt.count)")
-
-            let streamResult2 = try await RunAnywhere.generateStream(prompt: phase2Prompt, options: options)
-            var finalOutput = ""
-            var phase2Chunks = 0
-            var phase2Final: RALLMStreamFinalResult?
-            // The model may echo a channel prefix before the actual answer ("final<|message|>" or
-            // "analysis<|message|>" variants). Strip it in-place so the answer stays clean.
-            let finalChannelPrefixes = [
-                "<|start|>assistant<|channel|>final<|message|>",
-                "<|start|>assistant<|channel|>analysis<|message|>",
-                "<|start|>assistantfinal<|message|>",
-                "<|start|>assistantanalysis<|message|>",
-                "<|start|>assistant",
-                "<|channel|>final<|message|>",
-                "<|channel|>analysis<|message|>",
-                "final<|message|>",
-                "analysis<|message|>",
-            ]
-
-            for try await event in streamResult2 {
-                try Task.checkCancellation()
-                finalOutput += event.token
-                phase2Chunks += 1
-                if phase2Chunks == 1 {
-                    print("🧠 [ThinkingDebug][harmony-phase2] firstChunk=\(String(event.token.prefix(80)))")
-                }
-                if event.isFinal {
-                    phase2Final = event.hasResult ? event.result : nil
-                }
-                // Strip any leading channel prefix before surfacing to UI.
-                var displayFinal = finalOutput
-                for pfx in finalChannelPrefixes {
-                    if displayFinal.hasPrefix(pfx) {
-                        displayFinal = String(displayFinal.dropFirst(pfx.count))
-                        break
-                    }
-                    // Prefix still assembling — hide until complete
-                    if pfx.hasPrefix(displayFinal) {
-                        displayFinal = ""
-                        break
-                    }
-                }
-                onUpdate(Self.thinkingSentinelOpen + pureThinking + Self.thinkingSentinelClose + displayFinal, 0, 0)
-                if event.isFinal { break }
-            }
-
-            // Strip channel prefix from the fully accumulated answer before saving.
-            var cleanFinal = finalOutput.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
-            for pfx in finalChannelPrefixes {
-                if cleanFinal.hasPrefix(pfx) {
-                    cleanFinal = String(cleanFinal.dropFirst(pfx.count))
-                        .trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
-                    break
-                }
-            }
-            print("🧠 [ThinkingDebug][harmony-phase2] complete finalChars=\(cleanFinal.count) chunks=\(phase2Chunks)")
-            let result2 = phase2Final ?? RALLMStreamFinalResult()
-            onUpdate(
-                Self.thinkingSentinelOpen + pureThinking + Self.thinkingSentinelClose + cleanFinal,
-                Int(result2.completionTokens),
-                Double(result2.tokensPerSecond)
-            )
-            return
-        }
-
-        let streamResult = try await RunAnywhere.generateStream(prompt: usePrompt, options: options)
-        var currentOutput = ""
-        var chunkCount = 0
-        var loggedRealThinkingMarker = false
-
-        print(
-            "🧠 [ThinkingDebug][gate] model=\(loadedModelName) supportsThinking=\(modelSupportsThinking) enableThinking=\(enableThinking) harmony=\(isHarmonyModel)"
-        )
-
-        let isGemma4 = (loadedModelName.range(of: "gemma 4", options: .caseInsensitive) != nil ||
-                        loadedModelName.range(of: "gemma-4", options: .caseInsensitive) != nil) &&
-                       loadedModelName.range(of: "translate", options: .caseInsensitive) == nil
-
-        var finalStreamResult: RALLMStreamFinalResult?
-        for try await event in streamResult {
-            // Respect Task cancellation — stop consuming tokens when the caller
-            // cancels (e.g. user taps stop, or turn-leak auto-stop).
-            try Task.checkCancellation()
-
-            chunkCount += 1
-            currentOutput += event.token
-            // Strip <unusedN> thinking tokens (Gemma 4 emits these when thinking mode activates)
-            if currentOutput.contains("<unused") {
-                currentOutput = currentOutput.replacingOccurrences(
-                    of: #"<unused\d+>"#, with: "", options: .regularExpression)
-            }
-            var displayOutput = isGemma4 ? Self.cleanGemma4Output(currentOutput) : currentOutput
-            if isLfmModel {
-                if !displayOutput.contains("<think>") && !displayOutput.contains(Self.thinkingSentinelOpen) && !displayOutput.contains("</think>") {
-                    displayOutput = Self.thinkingSentinelOpen + displayOutput
-                }
-            }
-            let museNormalizedOutput = isMuseGlimmerModel ? Self.normalizeMuseGlimmerOutput(displayOutput, thinkingEnabled: enableThinking) : displayOutput
-            let normalizedOutput = isHarmonyModel ? Self.normalizeHarmonyOutput(museNormalizedOutput) : (museNormalizedOutput, false)
-
-            if chunkCount == 1 {
-                print("🧠 [ThinkingDebug][stream] firstChunk preview=\(String(event.token.prefix(120)))")
-            }
-
-            let hasRealThinkingMarkers = normalizedOutput.0.contains(Self.thinkingSentinelOpen)
-                || currentOutput.contains(Self.thinkingSentinelClose)
-                || currentOutput.contains("<think>")
-                || currentOutput.contains("</think>")
-                || normalizedOutput.1
-
-            if hasRealThinkingMarkers && !loggedRealThinkingMarker {
-                loggedRealThinkingMarker = true
-                print("🧠 [ThinkingDebug][stream] first real thinking marker chunk=\(chunkCount) preview=\(String(normalizedOutput.0.prefix(160)))")
-            }
-
-            if chunkCount == 1 || chunkCount % 40 == 0 {
-                print("🧠 [ThinkingDebug][stream] chunk=\(chunkCount) chars=\(currentOutput.count) hasRealMarkers=\(hasRealThinkingMarkers) preview=\(String(currentOutput.prefix(120)))")
-            }
-
-            // Always surface the real cumulative stream text. If the backend emits actual
-            // thinking markers, the UI parser will split them. If it doesn't, the text is
-            // just the answer and should remain visible while streaming.
-            onUpdate(normalizedOutput.0, 0, 0)
-
-            if event.isFinal {
-                finalStreamResult = event.hasResult ? event.result : nil
-                break
-            }
-        }
-
-        let result = finalStreamResult ?? RALLMStreamFinalResult()
-        // Strip trailing stop tokens that leak through when generation ends on EOG
-        let gemmaTrailingTokens = ["<end_of_turn>", "<turn|>", "</s>", "<eos>", "<|eot_id|>"]
-        for tok in gemmaTrailingTokens {
-            if currentOutput.hasSuffix(tok) {
-                currentOutput = String(currentOutput.dropLast(tok.count))
-                    .trimmingCharacters(in: .whitespacesAndNewlines)
-                break
-            }
-        }
-        if isGemma4 {
-            currentOutput = Self.cleanGemma4Output(currentOutput)
-        }
-        let museNormalizedFinalOutput = isMuseGlimmerModel ? Self.normalizeMuseGlimmerOutput(currentOutput, thinkingEnabled: enableThinking) : currentOutput
-        let normalizedFinalOutput = isHarmonyModel ? Self.normalizeHarmonyOutput(museNormalizedFinalOutput) : (museNormalizedFinalOutput, false)
-        let sdkThinking = result.hasThinkingContent ? result.thinkingContent.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines) : ""
-        let sdkHasThinking = !sdkThinking.isEmpty || !result.thinkingContent.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        let streamHasThinkingMarkers = normalizedFinalOutput.0.contains(Self.thinkingSentinelOpen)
-            || currentOutput.contains(Self.thinkingSentinelClose)
-            || currentOutput.contains("<think>")
-            || currentOutput.contains("</think>")
-            || normalizedFinalOutput.1
-        let shouldUseFinalThinkingOverlay = sdkHasThinking && !streamHasThinkingMarkers
-
-        if shouldUseFinalThinkingOverlay {
-            let response = result.text.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
-            let displayText: String
-            if !sdkThinking.isEmpty {
-                displayText = Self.thinkingSentinelOpen + sdkThinking + Self.thinkingSentinelClose + response
-            } else {
-                displayText = response.isEmpty ? currentOutput : response
-            }
-
-            print(
-                "🧠 [ThinkingDebug][final] rawChars=\(currentOutput.count) responseChars=\(result.text.count) thinkingChars=\(result.thinkingContent.count) tokens=\(result.completionTokens) responseTokens=\(result.completionTokens) sdkHasThinking=\(sdkHasThinking) rawPreview=\(String(currentOutput.prefix(120))) responsePreview=\(String(result.text.prefix(120))) thinkingPreview=\(String(result.thinkingContent.prefix(120)))"
-            )
-
-            onUpdate(displayText, Int(result.completionTokens), Double(result.tokensPerSecond))
-        } else {
-            print(
-                "🧠 [ThinkingDebug][final] raw-only rawChars=\(currentOutput.count) responseChars=\(result.text.count) thinkingChars=\(result.thinkingContent.count) tokens=\(result.completionTokens) responseTokens=\(result.completionTokens) streamHasMarkers=\(streamHasThinkingMarkers) rawPreview=\(String(currentOutput.prefix(120)))"
-            )
-            onUpdate(normalizedFinalOutput.0, Int(result.completionTokens), Double(result.tokensPerSecond))
-        }
-        } catch {
-            let isRawPrompt = prompt.hasPrefix("__RAW_PROMPT__")
-            print(
-                "❌ [LLMBackend] generate failed model=\(loadedModelName) maxTokens=\(effectiveMaxTokens) contextWindow=\(loadedContextWindow ?? contextWindow) promptChars=\(usePrompt.count) rawPrompt=\(isRawPrompt) error=\(error)"
-            )
-            throw error
-        }
+        throw NSError(domain: "LLMBackend", code: -122, userInfo: [
+            NSLocalizedDescriptionKey: "Unsupported language model format"
+        ])
     }
 }

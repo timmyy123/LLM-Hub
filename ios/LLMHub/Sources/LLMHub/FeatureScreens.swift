@@ -5,7 +5,6 @@ import CoreMedia
 import PhotosUI
 @preconcurrency import Speech
 import UniformTypeIdentifiers
-import RunAnywhere
 #if canImport(UIKit)
 import UIKit
 #endif
@@ -262,13 +261,13 @@ private func hasDownloadedVisionProjector(for model: AIModel) -> Bool {
     return ModelData.allModels().contains { candidate in
         candidate.isDependencyOnly
             && candidate.inferenceFramework == model.inferenceFramework
-            && isRunAnywhereModelDownloaded(candidate)
+            && isInstalledModelDownloaded(candidate)
     }
 }
 
 @MainActor
-private func isRunAnywhereModelDownloaded(_ model: AIModel) -> Bool {
-    guard let folderURL = try? CppBridge.ModelPaths.getModelFolder(modelId: model.id, framework: model.inferenceFramework) else {
+private func isInstalledModelDownloaded(_ model: AIModel) -> Bool {
+    guard let folderURL = try? SimplifiedFileManager.shared.getModelFolderURL(modelId: model.id, framework: model.inferenceFramework) else {
         return false
     }
 
@@ -346,13 +345,8 @@ private func selectedFeatureModel(named selectedModelName: String) -> AIModel? {
 }
 
 @MainActor
-private func syncRunAnywhereModelDiscovery() async {
-    do {
-        try RunAnywhere.initialize(environment: .development)
-    } catch {
-        // Ignore repeated initialization attempts.
-    }
-    await RunAnywhere.refreshModelRegistry()
+private func refreshDownloadedModelStatus() async {
+    ModelDownloadViewModel.shared.refreshStatuses()
 }
 
 @MainActor
@@ -754,13 +748,6 @@ struct FeatureModelSettingsSheet: View {
         let intValue = Int32(min(max(0, value), gpuLayerLimit))
         UserDefaults.standard.set(intValue, forKey: key)
 
-        Task {
-            await CppBridge.ModelRegistry.shared.setGpuLayers(modelId: selectedModel.id, gpuLayers: intValue)
-            if let folderURL = try? SimplifiedFileManager.shared.getModelFolderURL(modelId: selectedModel.id, framework: selectedModel.inferenceFramework),
-               let ggufFile = LLMBackend.shared.listGGUFFiles(in: folderURL).first(where: { !$0.lastPathComponent.lowercased().contains("mmproj") }) {
-                await CppBridge.ModelRegistry.shared.setGpuLayers(modelId: ggufFile.path, gpuLayers: intValue)
-            }
-        }
     }
 }
 
@@ -1441,7 +1428,7 @@ private struct IOS26TranscriberScreen: View {
         .onAppear {
             // Don't reset selectedModelName — preserve last-used model across visits.
             // Empty = system transcriber (default on first launch via @AppStorage default).
-            Task { await syncRunAnywhereModelDiscovery() }
+            Task { await refreshDownloadedModelStatus() }
             if maxTokens < 4096 {
                 maxTokens = 4096
             }
@@ -2290,7 +2277,6 @@ private struct IOS17VibeVoiceScreen: View {
         }
         .onAppear {
             Task {
-                try? RunAnywhere.initialize(environment: .development)
                 let available = downloadableFeatureModels().filter(isNonTranslatorFeatureModel)
                 // Preserve a valid last-used LLM, but clear any stale selection
                 // left by older builds that exposed dedicated media models here.
@@ -3342,7 +3328,7 @@ struct WritingAidScreen: View {
         }
         .onAppear {
             Task {
-                await syncRunAnywhereModelDiscovery()
+                await refreshDownloadedModelStatus()
                 let available = downloadableFeatureModels().filter(isNonTranslatorFeatureModel)
                 if selectedModelName.isEmpty || !available.contains(where: { $0.name == selectedModelName }) {
                     selectedModelName = available.first?.name ?? ""
@@ -3611,7 +3597,7 @@ struct TranslatorScreen: View {
         .onChange(of: showSettings) { _, isPresented in
             if !isPresented {
                 Task {
-                    await syncRunAnywhereModelDiscovery()
+                    await refreshDownloadedModelStatus()
                     let available = downloadableFeatureModels().filter(isTranslatorSupportedModel)
                     availableTranslatorModels = available
                     if selectedModelName.isEmpty || !available.contains(where: { $0.name == selectedModelName }) {
@@ -3622,7 +3608,7 @@ struct TranslatorScreen: View {
         }
         .onAppear {
             Task {
-                await syncRunAnywhereModelDiscovery()
+                await refreshDownloadedModelStatus()
                 let available = downloadableFeatureModels().filter(isTranslatorSupportedModel)
                 availableTranslatorModels = available
                 if selectedModelName.isEmpty || !available.contains(where: { $0.name == selectedModelName }) {
@@ -4594,7 +4580,7 @@ struct ScamDetectorScreen: View {
         }
         .onAppear {
             Task {
-                await syncRunAnywhereModelDiscovery()
+                await refreshDownloadedModelStatus()
                 let available = downloadableFeatureModels().filter(isNonTranslatorFeatureModel)
                 if selectedModelName.isEmpty || !available.contains(where: { $0.name == selectedModelName }) {
                     selectedModelName = available.first?.name ?? ""
@@ -5640,7 +5626,7 @@ struct VibeCoderScreen: View {
             restoreChatSessionsFromStorage()
 
             Task {
-                await syncRunAnywhereModelDiscovery()
+                await refreshDownloadedModelStatus()
                 let available = downloadableFeatureModels().filter(isNonTranslatorFeatureModel)
                 let hasSelectedModelName = !selectedModelName.isEmpty
                 let selectedModelExists = available.contains { model in
@@ -7486,7 +7472,7 @@ public struct MusicGeneratorScreen: View {
         }
         .onAppear {
             Task {
-                await syncRunAnywhereModelDiscovery()
+                await refreshDownloadedModelStatus()
                 let available = downloadableFeatureModels().filter(isMusicGenerationFeatureModel)
                 if selectedModelName.isEmpty || !available.contains(where: { $0.name == selectedModelName }) {
                     selectedModelName = available.first?.name ?? ""

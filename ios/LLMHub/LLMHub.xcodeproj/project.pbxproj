@@ -17,7 +17,6 @@
 		2CD0F1D1F3E04E66AA24812C /* RagServiceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9DF631F25054004865F2A2B /* RagServiceManager.swift */; };
 		366119C26429D712F621B7DF /* ModelDownloadScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E674F93296C177D68CCEFED /* ModelDownloadScreen.swift */; };
 		3701462555C0F00B7A0F5B01 /* ChatScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = C54A0BA40DE3F5B7A1ED9A63 /* ChatScreen.swift */; };
-		3D9B9E094861BF2162D95F61 /* RunAnywhere in Frameworks */ = {isa = PBXBuildFile; productRef = 9307F4EE8A20C529993E87D1 /* RunAnywhere */; };
 		3DAB449A0AE3C67F8D2F39B1 /* FeatureScreens.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2A92FE9D6B44A3156E987C2 /* FeatureScreens.swift */; };
 		467EEBBF61BCADC562B0C42C /* ChatModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0805DB9589154E465145E2DB /* ChatModels.swift */; };
 		4805DAC855214DF2936F0FD5 /* AgentTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0C36C1D16AF4675BEDB54C5 /* AgentTools.swift */; };
@@ -40,7 +39,6 @@
 		AF000001000000000000AF01 /* AppleFoundationModelSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF000001000000000000AF02 /* AppleFoundationModelSupport.swift */; };
 		AFCC035B534D28D50731B66D /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = A69D8D4DF513F8D642F73064 /* Localizable.strings */; };
 		B0DC2F58405BDC55315A8099 /* ModelDownloader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05BF91E2CF47146ED081A0A8 /* ModelDownloader.swift */; };
-		B1C4A2D3F5E6789012345678 /* RunAnywhereONNX in Frameworks */ = {isa = PBXBuildFile; productRef = B1C4A2D4F5E6789012345678 /* RunAnywhereONNX */; };
 		BB0639256B9F424CC61F2737 /* Icon.png in Resources */ = {isa = PBXBuildFile; fileRef = F841EEA264BDE0E6E2A1BC18 /* Icon.png */; };
 		BBEFB76ECA4FB739E947BF5D /* LLMHubApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8576188C8596440A08A0B171 /* LLMHubApp.swift */; };
 		CB4333B9DD904E3DBB3184F9 /* MemoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27AC91B048B74436A4029665 /* MemoryStore.swift */; };
@@ -160,10 +158,8 @@
 			files = (
 				24E38142303A08E70031A1EA /* WhisperWrapper in Frameworks */,
 				F1A2B3C4D5E6F708192A3B5B /* MagentaRuntime in Frameworks */,
-				3D9B9E094861BF2162D95F61 /* RunAnywhere in Frameworks */,
 				2461869E2FB9A616005E46A3 /* StoreKit.framework in Frameworks */,
 				DC1100000000000000000005 /* LlamaCppBinary in Frameworks */,
-				B1C4A2D3F5E6789012345678 /* RunAnywhereONNX in Frameworks */,
 				9D4F93BDDE99FDE1ECFA704A /* Accelerate.framework in Frameworks */,
 				FA001122334455667788AAFF /* ZIPFoundation in Frameworks */,
 				AD000002000000000000BB09 /* LiteRTLM in Frameworks */,
@@ -275,9 +271,7 @@
 			name = LLMHub;
 			packageProductDependencies = (
 				F1A2B3C4D5E6F708192A3B5C /* MagentaRuntime */,
-				9307F4EE8A20C529993E87D1 /* RunAnywhere */,
 				DC1100000000000000000004 /* LlamaCppBinary */,
-				B1C4A2D4F5E6789012345678 /* RunAnywhereONNX */,
 				FA001122334455667788AA11 /* ZIPFoundation */,
 				AD000002000000000000BB08 /* LiteRTLM */,
 				MGK00001000000000000MG02 /* MediaGenerationKit */,
@@ -333,7 +327,6 @@
 			mainGroup = 60C52022B63693117913378C;
 			packageReferences = (
 				F1A2B3C4D5E6F708192A3B5D /* XCLocalSwiftPackageReference "LocalPackages/magenta-runtime" */,
-				A26F31FFA020DC1866683F48 /* XCLocalSwiftPackageReference "../runanywhere-sdks-latest" */,
 				DC1100000000000000000001 /* XCLocalSwiftPackageReference "LocalPackages/llama-b11200" */,
 				FA001122334455667788AA55 /* XCRemoteSwiftPackageReference "ZIPFoundation" */,
 				AD000002000000000000BB07 /* XCLocalSwiftPackageReference "LocalPackages/LiteRT-LM" */,
@@ -684,10 +677,6 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		A26F31FFA020DC1866683F48 /* XCLocalSwiftPackageReference "../runanywhere-sdks-latest" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = "../runanywhere-sdks-latest";
-		};
 		DC1100000000000000000001 /* XCLocalSwiftPackageReference "LocalPackages/llama-b11200" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = "LocalPackages/llama-b11200";
@@ -727,20 +716,10 @@
 			package = DC1100000000000000000001 /* XCLocalSwiftPackageReference "LocalPackages/llama-b11200" */;
 			productName = LlamaCppBinary;
 		};
-		9307F4EE8A20C529993E87D1 /* RunAnywhere */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = A26F31FFA020DC1866683F48 /* XCLocalSwiftPackageReference "../runanywhere-sdks-latest" */;
-			productName = RunAnywhere;
-		};
 		AD000002000000000000BB08 /* LiteRTLM */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = AD000002000000000000BB07 /* XCLocalSwiftPackageReference "LocalPackages/LiteRT-LM" */;
 			productName = LiteRTLM;
-		};
-		B1C4A2D4F5E6789012345678 /* RunAnywhereONNX */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = A26F31FFA020DC1866683F48 /* XCLocalSwiftPackageReference "../runanywhere-sdks-latest" */;
-			productName = RunAnywhereONNX;
 		};
 		F1A2B3C4D5E6F708192A3B5C /* MagentaRuntime */ = {
 			isa = XCSwiftPackageProductDependency;
