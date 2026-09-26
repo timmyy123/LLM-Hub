@@ -233,6 +233,12 @@ LLAMA_JNI(nativeLoadModel)(
         mtmd_helper_log_set(log_callback, nullptr);
         mtmd_context_params mtmd_params = mtmd_context_params_default();
         mtmd_params.use_gpu = model_params.n_gpu_layers > 0;
+#ifdef LLMHUB_SNAPDRAGON
+        // Keep the vision encoder on the same explicitly selected accelerator as the text model.
+        // Without this, mtmd picks the first GPU backend (often OpenCL even for HTP0 requests).
+        mtmd_params.device = selected_device;
+        __android_log_print(ANDROID_LOG_INFO, TAG, "Vision encoder device: %s", requested_device.c_str());
+#endif
         mtmd_params.n_threads = thread_count;
         mtmd_params.print_timings = true;
         g_mtmd = mtmd_init_from_file(projector_path.c_str(), g_model, mtmd_params);
