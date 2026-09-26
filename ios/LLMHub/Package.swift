@@ -17,7 +17,6 @@ let package = Package(
     ],
     dependencies: [
         .package(path: "LocalPackages/magenta-runtime"),
-        .package(url: "https://github.com/apple/ml-stable-diffusion", from: "1.1.1"),
         .package(url: "https://github.com/weichsel/ZIPFoundation.git", from: "0.9.20"),
         .package(path: "LocalPackages/media-generation-kit"),
         .package(path: "LocalPackages/LiteRT-LM"),
@@ -30,7 +29,6 @@ let package = Package(
             dependencies: [
                 .product(name: "LlamaCppBinary", package: "llama-b11200"),
                 .product(name: "MagentaRuntime", package: "magenta-runtime"),
-                .product(name: "StableDiffusion", package: "ml-stable-diffusion"),
                 .product(name: "ZIPFoundation", package: "ZIPFoundation"),
                 .product(name: "LiteRTLM", package: "LiteRT-LM"),
                 .product(name: "MediaGenerationKit", package: "media-generation-kit"),
