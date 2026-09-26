@@ -9,6 +9,14 @@ enum GGUFLayerLimits {
     static let unknown = 999
 
     static func read(from url: URL) -> Int? {
+        readInteger(from: url, suffix: "block_count", offset: 1)
+    }
+
+    static func readContextLength(from url: URL) -> Int? {
+        readInteger(from: url, suffix: "context_length", offset: 0)
+    }
+
+    private static func readInteger(from url: URL, suffix: String, offset: Int) -> Int? {
         guard let handle = try? FileHandle(forReadingFrom: url),
               let size = (try? FileManager.default.attributesOfItem(atPath: url.path)[.size] as? NSNumber)?.uint64Value else {
             return nil
@@ -22,30 +30,30 @@ enum GGUFLayerLimits {
             let keyCount = try reader.number(8)
             guard keyCount <= 1_000_000 else { return nil }
             var architecture: String?
-            var blockCounts: [String: UInt64] = [:]
+            var metadataValues: [String: UInt64] = [:]
             for _ in 0..<keyCount {
                 let key = try reader.string()
                 let type = try reader.number(4)
                 if key == "general.architecture", type == 8 {
                     architecture = try reader.string()
-                } else if key.hasSuffix(".block_count"), type == 4 || type == 10 {
-                    blockCounts[key] = try reader.number(type == 4 ? 4 : 8)
+                } else if key.hasSuffix(".\(suffix)"), type == 4 || type == 10 {
+                    metadataValues[key] = try reader.number(type == 4 ? 4 : 8)
                 } else {
                     try reader.skipValue(type)
                 }
                 if let architecture,
-                   let count = blockCounts["\(architecture).block_count"],
-                   (1...998).contains(count) {
+                   let count = metadataValues["\(architecture).\(suffix)"],
+                   count > 0, count <= UInt64(Int.max - offset) {
                     // Tokenizer arrays can occupy megabytes of metadata after this point.
-                    // The slider needs only the layer count, not the rest of the header.
-                    return Int(count) + 1
+                    // The slider needs only this model limit, not the rest of the header.
+                    return Int(count) + offset
                 }
             }
             guard let architecture,
-                  let count = blockCounts["\(architecture).block_count"],
-                  (1...998).contains(count) else { return nil }
-            // llama.cpp can also offload the output layer, so full offload is blocks + 1.
-            return Int(count) + 1
+                  let count = metadataValues["\(architecture).\(suffix)"],
+                  count > 0, count <= UInt64(Int.max - offset) else { return nil }
+            // Full layer offload includes the output layer; context length needs no offset.
+            return Int(count) + offset
         } catch {
             return nil
         }
@@ -414,6 +422,9 @@ struct ChatSettingsSheet: View {
 
     private var modelMaxContextWindow: Double {
         guard let currentModel else { return 4096 }
+        if currentModel.modelFormat == .gguf {
+            return Double(LLMBackend.shared.modelMaxContextWindow(for: currentModel))
+        }
         let advertised = currentModel.contextWindowSize > 0 ? currentModel.contextWindowSize : 4096
         return Double(max(1, advertised))
     }

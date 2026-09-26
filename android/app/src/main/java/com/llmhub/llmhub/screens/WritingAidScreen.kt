@@ -71,9 +71,8 @@ fun WritingAidScreen(
     val selectedNGpuLayers by viewModel.selectedNGpuLayers.collectAsState()
 
     // Slider local state (synced from viewmodel)
-    val baseMaxTokensCap by remember(selectedModel) {
-        derivedStateOf { selectedModel?.contextWindowSize?.coerceAtLeast(1) ?: 4096 }
-    }
+    var ggufContextLimit by remember(selectedModel?.name) { mutableStateOf<Int?>(null) }
+    val baseMaxTokensCap = (ggufContextLimit ?: selectedModel?.contextWindowSize ?: 4096).coerceAtLeast(1)
     var maxTokensValue by remember(selectedMaxTokens, baseMaxTokensCap) {
         mutableStateOf(selectedMaxTokens.coerceIn(1, baseMaxTokensCap))
     }
@@ -84,9 +83,13 @@ fun WritingAidScreen(
     }
     LaunchedEffect(selectedModel?.name) {
         gpuLayerLimit = GgufLayerLimits.UNKNOWN
-        gpuLayerLimit = selectedModel?.let { model ->
-            withContext(Dispatchers.IO) { GgufLayerLimits.forModel(context, model) }
-        } ?: GgufLayerLimits.UNKNOWN
+        selectedModel?.let { model ->
+            val (layers, fileContext) = withContext(Dispatchers.IO) {
+                GgufLayerLimits.forModel(context, model) to GgufLayerLimits.contextForModel(context, model)
+            }
+            gpuLayerLimit = layers ?: GgufLayerLimits.UNKNOWN
+            ggufContextLimit = fileContext
+        }
     }
     val isGguf by remember(selectedModel) { derivedStateOf { selectedModel?.modelFormat == "gguf" } }
     val isLiteRtLm by remember(selectedModel) { derivedStateOf { selectedModel?.modelFormat == "litertlm" } }

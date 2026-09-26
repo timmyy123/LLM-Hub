@@ -63,9 +63,10 @@ fun ChatSettingsSheet(
     }
     
     // Model-specific configurations
-    val baseMaxTokensCap = remember(selectedModel) { 
-        (selectedModel?.let { MediaPipeInferenceService.getMaxTokensForModelStatic(it) } ?: 2048).coerceAtLeast(1) 
-    }
+    var ggufContextLimit by remember(selectedModel?.name) { mutableStateOf<Int?>(null) }
+    val baseMaxTokensCap = (ggufContextLimit
+        ?: selectedModel?.let { MediaPipeInferenceService.getMaxTokensForModelStatic(it) }
+        ?: 2048).coerceAtLeast(1)
 
 
     
@@ -174,10 +175,12 @@ fun ChatSettingsSheet(
     LaunchedEffect(selectedModel?.name) {
         selectedModel?.let { model ->
             gpuLayerLimit = GgufLayerLimits.UNKNOWN
-            gpuLayerLimit = withContext(Dispatchers.IO) {
-                GgufLayerLimits.forModel(context, model)
-            } ?: GgufLayerLimits.UNKNOWN
-            val newBaseCap = MediaPipeInferenceService.getMaxTokensForModelStatic(model)
+            val (layers, fileContext) = withContext(Dispatchers.IO) {
+                GgufLayerLimits.forModel(context, model) to GgufLayerLimits.contextForModel(context, model)
+            }
+            gpuLayerLimit = layers ?: GgufLayerLimits.UNKNOWN
+            ggufContextLimit = fileContext
+            val newBaseCap = (fileContext ?: MediaPipeInferenceService.getMaxTokensForModelStatic(model)).coerceAtLeast(1)
             val newIsGemma3n = model.name.contains("Gemma-3n", ignoreCase = true)
             val newIsPhi4Mini = model.name.contains("Phi-4 Mini", ignoreCase = true)
             val newIsGemma4_12B = model.modelFormat == "litertlm" && (model.name.contains("Gemma-4 12B", ignoreCase = true) || model.name.contains("Gemma 4 12B", ignoreCase = true))
@@ -943,7 +946,7 @@ fun ChatSettingsSheet(
                                     }
                                     
                                     // Reset to defaults
-                                    val newMaxTokensCap = MediaPipeInferenceService.getMaxTokensForModelStatic(model)
+                                    val newMaxTokensCap = baseMaxTokensCap
                                     val newIsGemma3n = model.name.contains("Gemma-3n", ignoreCase = true)
                                     val newIsPhi4Mini = model.name.contains("Phi-4 Mini", ignoreCase = true)
                                     val newDefaultUseGpu = if (newIsPhi4Mini) false else model.supportsGpu

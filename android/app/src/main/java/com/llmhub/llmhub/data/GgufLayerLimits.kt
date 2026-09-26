@@ -4,26 +4,35 @@ import android.content.Context
 import java.io.File
 import java.io.RandomAccessFile
 
-/** Reads GGUF metadata only; model tensors are never loaded. Includes llama.cpp's output layer. */
+/** Reads GGUF metadata only; model tensors are never loaded. Layer limits include the output layer. */
 object GgufLayerLimits {
     const val UNKNOWN = 999
 
     fun forModel(context: Context, model: LLMModel): Int? {
+        val file = modelFile(context, model) ?: return null
+        return runCatching { readLimit(file, "block_count", 1) }.getOrNull()
+    }
+
+    fun contextForModel(context: Context, model: LLMModel): Int? {
+        val file = modelFile(context, model) ?: return null
+        return runCatching { readLimit(file, "context_length", 0) }.getOrNull()
+    }
+
+    private fun modelFile(context: Context, model: LLMModel): File? {
         if (model.modelFormat != "gguf") return null
         val root = File(context.filesDir, "models")
         val folderName = model.name.replace(" ", "_").replace(Regex("[^a-zA-Z0-9_.-]"), "")
         val folder = File(root, folderName).takeIf { it.isDirectory } ?: root
-        val file = sequenceOf(File(folder, model.localFileName()), File(root, model.localFileName()))
+        return sequenceOf(File(folder, model.localFileName()), File(root, model.localFileName()))
             .firstOrNull { it.isFile }
             ?: folder.listFiles()?.firstOrNull {
                 it.isFile && it.extension.equals("gguf", true) &&
                     !it.name.contains("mmproj", true) && !it.name.contains("projector", true)
             }
             ?: return null
-        return runCatching { readLimit(file) }.getOrNull()
     }
 
-    private fun readLimit(file: File): Int? = RandomAccessFile(file, "r").use { input ->
+    private fun readLimit(file: File, keySuffix: String, offset: Int): Int? = RandomAccessFile(file, "r").use { input ->
         fun u32(): Long {
             val a = input.readUnsignedByte().toLong()
             val b = input.readUnsignedByte().toLong()
@@ -84,25 +93,29 @@ object GgufLayerLimits {
         val keyCount = u64()
         require(keyCount <= 1_000_000)
         var architecture: String? = null
-        val blockCounts = mutableMapOf<String, Long>()
+        val metadataValues = mutableMapOf<String, Long>()
         repeat(keyCount.toInt()) {
             val key = string()
             val type = u32()
             when {
                 key == "general.architecture" && type == 8L -> architecture = string()
-                key.endsWith(".block_count") && type in 4L..5L -> blockCounts[key] = u32()
-                key.endsWith(".block_count") && type in 10L..11L -> blockCounts[key] = u64()
+                key.endsWith(".$keySuffix") && type in 4L..5L -> metadataValues[key] = u32()
+                key.endsWith(".$keySuffix") && type in 10L..11L -> metadataValues[key] = u64()
                 else -> skipValue(type)
             }
-            val count = architecture?.let { blockCounts["$it.block_count"] }
-            if (count != null && count in 1..998) {
-                // Large tokenizer arrays often follow the block count. No need to scan them.
-                return@use count.toInt() + 1
+            val count = architecture?.let { metadataValues["$it.$keySuffix"] }
+            if (count != null && count in 1..(Int.MAX_VALUE.toLong() - offset)) {
+                // Large tokenizer arrays often follow these model limits. No need to scan them.
+                return@use count.toInt() + offset
             }
         }
-        val count = architecture?.let { blockCounts["$it.block_count"] }
-            ?: blockCounts.values.singleOrNull()
+        val count = architecture?.let { metadataValues["$it.$keySuffix"] }
+            ?: metadataValues.values.singleOrNull()
             ?: return@use null
-        count.takeIf { it in 1..998 }?.toInt()?.plus(1)
+        count.takeIf { it in 1..(Int.MAX_VALUE.toLong() - offset) }?.toInt()?.plus(offset)
     }
 }
+
+/** Use the GGUF header for downloaded GGUFs; keep catalog limits for every other format. */
+fun LLMModel.effectiveContextWindow(context: Context): Int =
+    GgufLayerLimits.contextForModel(context, this) ?: contextWindowSize.coerceAtLeast(1)

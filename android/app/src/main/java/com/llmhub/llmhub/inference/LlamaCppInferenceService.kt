@@ -7,6 +7,7 @@ import android.util.Log
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import com.llmhub.llmhub.R
 import com.llmhub.llmhub.data.LLMModel
+import com.llmhub.llmhub.data.effectiveContextWindow
 import com.llmhub.llmhub.data.localFileName
 import com.llmhub.llmhub.websearch.DuckDuckGoSearchService
 import com.llmhub.llmhub.websearch.SearchIntentDetector
@@ -180,9 +181,10 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
 
             // The sheet shows 4096 for legacy configs with contextWindow=0. Honor
             // the user's chosen value instead of silently truncating it to 8192.
+            val modelContextLimit = model.effectiveContextWindow(context)
             contextSize = (overrideContextWindow?.takeIf { it > 0 }
-                ?: minOf(4096, model.contextWindowSize))
-                .coerceIn(512, model.contextWindowSize.coerceAtLeast(512))
+                ?: minOf(4096, modelContextLimit))
+                .coerceIn(512, modelContextLimit.coerceAtLeast(512))
             val threads = (Runtime.getRuntime().availableProcessors() - 2).coerceIn(2, 8)
             val modelDir = modelFile.parentFile ?: File(context.filesDir, "models")
             val mmprojFile = if (model.supportsVision && !disableVision) {

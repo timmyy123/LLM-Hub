@@ -16,6 +16,14 @@ import FoundationModels
 import Network
 #endif
 
+@MainActor
+private func contextLimitForFeatureModel(_ model: AIModel, fallback: Int = 4096) -> Int {
+    if model.modelFormat == .gguf {
+        return LLMBackend.shared.modelMaxContextWindow(for: model)
+    }
+    return model.contextWindowSize > 0 ? model.contextWindowSize : fallback
+}
+
 enum WritingAidMode: String, CaseIterable {
     case friendly = "writing_aid_tone_friendly"
     case professional = "writing_aid_tone_professional"
@@ -476,8 +484,11 @@ struct FeatureModelSettingsSheet: View {
     }
 
     private var maxContextCap: Double {
-        let advertised = selectedModel?.contextWindowSize ?? 4096
-        return Double(max(2, advertised))
+        guard let selectedModel else { return 4096 }
+        let cap = selectedModel.modelFormat == .gguf
+            ? llm.modelMaxContextWindow(for: selectedModel)
+            : selectedModel.contextWindowSize
+        return Double(max(2, cap))
     }
 
     @ObservedObject private var whisperBackend = WhisperBackend.shared
@@ -702,7 +713,7 @@ struct FeatureModelSettingsSheet: View {
         if selectedModelName.isEmpty || !loaded.contains(where: { $0.name == selectedModelName }) {
             selectedModelName = loaded.first?.name ?? ""
         }
-        let cap = Double(max(1, selectedModel?.contextWindowSize ?? 4096))
+        let cap = Double(maxContextCap)
         maxTokens = min(max(1, maxTokens), cap)
         isRefreshingModels = false
     }
@@ -1761,7 +1772,7 @@ private struct IOS26TranscriberScreen: View {
 
     private func ensureAudioModelLoaded(force: Bool) async {
         guard let model = selectedModel else { return }
-        let modelContextCap = model.contextWindowSize > 0 ? model.contextWindowSize : 4096
+        let modelContextCap = contextLimitForFeatureModel(model)
         let effectiveTokens = maxTokens < 4096 ? 4096 : maxTokens
         let effectiveContext = min(max(1, Int(effectiveTokens)), modelContextCap)
         let shouldReload = force
@@ -3021,7 +3032,7 @@ private struct IOS17VibeVoiceScreen: View {
         isLoading = true
         defer { isLoading = false }
 
-        let modelContextCap = model.contextWindowSize > 0 ? model.contextWindowSize : 4096
+        let modelContextCap = contextLimitForFeatureModel(model)
         let effectiveContext = min(max(1, Int(maxTokens)), modelContextCap)
         let shouldReload = force
             || llm.currentlyLoadedModel != model.name
@@ -3078,7 +3089,7 @@ struct WritingAidScreen: View {
             return val
         }
         if let model = selectedFeatureModel(named: modelName) {
-            let cap = model.contextWindowSize > 0 ? model.contextWindowSize : 4096
+            let cap = contextLimitForFeatureModel(model)
             return Double(min(4096, cap))
         }
         return 4096
@@ -3394,7 +3405,7 @@ struct WritingAidScreen: View {
         isLoading = true
         defer { isLoading = false }
 
-        let modelContextCap = model.contextWindowSize > 0 ? model.contextWindowSize : 4096
+        let modelContextCap = contextLimitForFeatureModel(model)
         let effectiveContext = min(max(1, Int(maxTokens)), modelContextCap)
         let shouldReload = force
             || llm.currentlyLoadedModel != model.name
@@ -3465,7 +3476,7 @@ struct TranslatorScreen: View {
             return val
         }
         if let model = selectedFeatureModel(named: modelName) {
-            let cap = model.contextWindowSize > 0 ? model.contextWindowSize : 2048
+            let cap = contextLimitForFeatureModel(model, fallback: 2048)
             return Double(min(2048, cap))
         }
         return 2048
@@ -4128,7 +4139,7 @@ struct TranslatorScreen: View {
         isLoading = true
         defer { isLoading = false }
 
-        let modelContextCap = model.contextWindowSize > 0 ? model.contextWindowSize : 4096
+        let modelContextCap = contextLimitForFeatureModel(model)
         let effectiveContext = min(max(1, Int(maxTokens)), modelContextCap)
         let shouldReload = force
             || llm.currentlyLoadedModel != model.name
@@ -4265,7 +4276,7 @@ struct ScamDetectorScreen: View {
             return val
         }
         if let model = selectedFeatureModel(named: modelName) {
-            let cap = model.contextWindowSize > 0 ? model.contextWindowSize : 4096
+            let cap = contextLimitForFeatureModel(model)
             return Double(min(4096, cap))
         }
         return 4096
@@ -4741,7 +4752,7 @@ struct ScamDetectorScreen: View {
         isLoading = true
         defer { isLoading = false }
 
-        let modelContextCap = model.contextWindowSize > 0 ? model.contextWindowSize : 4096
+        let modelContextCap = contextLimitForFeatureModel(model)
         let effectiveContext = min(max(1, Int(maxTokens)), modelContextCap)
         let shouldReload = force
             || llm.currentlyLoadedModel != model.name
@@ -5023,7 +5034,7 @@ struct VibeCoderScreen: View {
             return val
         }
         if let model = selectedFeatureModel(named: modelName) {
-            let cap = model.contextWindowSize > 0 ? model.contextWindowSize : 4096
+            let cap = contextLimitForFeatureModel(model)
             return Double(min(4096, cap))
         }
         return 4096
@@ -6001,7 +6012,7 @@ struct VibeCoderScreen: View {
         isLoading = true
         defer { isLoading = false }
 
-        let modelContextCap = model.contextWindowSize > 0 ? model.contextWindowSize : 4096
+        let modelContextCap = contextLimitForFeatureModel(model)
         let effectiveContext = min(max(1, Int(maxTokens)), modelContextCap)
         let shouldReload = force
             || llm.currentlyLoadedModel != model.name

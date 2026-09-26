@@ -1022,7 +1022,12 @@ class LLMBackend: ObservableObject {
         return RAVLMImage.fromFilePath(imageURL.path)
     }
 
-    private func modelMaxContextWindow(for model: AIModel) -> Int {
+    func modelMaxContextWindow(for model: AIModel) -> Int {
+        if model.modelFormat == .gguf,
+           let url = ggufFileURL(for: model),
+           let fileContext = GGUFLayerLimits.readContextLength(from: url) {
+            return fileContext
+        }
         let advertised = model.contextWindowSize > 0 ? model.contextWindowSize : 2048
         return max(1, advertised)
     }

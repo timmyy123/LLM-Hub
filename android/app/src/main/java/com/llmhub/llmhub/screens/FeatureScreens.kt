@@ -2036,9 +2036,8 @@ fun ScamDetectorScreen(
     var showSettingsSheet by remember { mutableStateOf(false) }
 
     // Slider local state for settings sheet
-    val baseMaxTokensCapScam by remember(selectedModel) {
-        derivedStateOf { selectedModel?.contextWindowSize?.coerceAtLeast(1) ?: 4096 }
-    }
+    var ggufContextLimitScam by remember(selectedModel?.name) { mutableStateOf<Int?>(null) }
+    val baseMaxTokensCapScam = (ggufContextLimitScam ?: selectedModel?.contextWindowSize ?: 4096).coerceAtLeast(1)
     var maxTokensValueScam by remember(selectedMaxTokensScam, baseMaxTokensCapScam) {
         mutableStateOf(selectedMaxTokensScam.coerceIn(1, baseMaxTokensCapScam))
     }
@@ -2049,9 +2048,13 @@ fun ScamDetectorScreen(
     }
     LaunchedEffect(selectedModel?.name) {
         gpuLayerLimitScam = GgufLayerLimits.UNKNOWN
-        gpuLayerLimitScam = selectedModel?.let { model ->
-            withContext(Dispatchers.IO) { GgufLayerLimits.forModel(context, model) }
-        } ?: GgufLayerLimits.UNKNOWN
+        selectedModel?.let { model ->
+            val (layers, fileContext) = withContext(Dispatchers.IO) {
+                GgufLayerLimits.forModel(context, model) to GgufLayerLimits.contextForModel(context, model)
+            }
+            gpuLayerLimitScam = layers ?: GgufLayerLimits.UNKNOWN
+            ggufContextLimitScam = fileContext
+        }
     }
     val isGgufScam by remember(selectedModel) { derivedStateOf { selectedModel?.modelFormat == "gguf" } }
     
@@ -2635,4 +2638,3 @@ private fun TranscriptionCard(
         }
     }
 }
-

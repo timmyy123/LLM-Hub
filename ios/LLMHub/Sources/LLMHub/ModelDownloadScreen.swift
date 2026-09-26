@@ -1375,11 +1375,13 @@ struct ImportExternalModelSheet: View {
             handleFileSelected(result: result)
         }
 
-        // Context window size
-        importField(label: settings.localized("context_window_size")) {
-            TextField("4096", text: $contextWindowSize)
-                .keyboardType(.numberPad)
-                .foregroundColor(.white)
+        // GGUF declares its own context length in the file header.
+        if modelFormat != .gguf {
+            importField(label: settings.localized("context_window_size")) {
+                TextField("4096", text: $contextWindowSize)
+                    .keyboardType(.numberPad)
+                    .foregroundColor(.white)
+            }
         }
 
         // Prompt template (optional)
@@ -1620,7 +1622,8 @@ struct ImportExternalModelSheet: View {
             return
         }
 
-        let contextSize = Int(contextWindowSize) ?? 4096
+        // Remote GGUF headers become available after download; the runtime reads them then.
+        let contextSize = modelFormat == .gguf ? 4096 : (Int(contextWindowSize) ?? 4096)
         let templateValue = promptTemplate.trimmingCharacters(in: .whitespacesAndNewlines)
 
         let modelId = name.lowercased()
@@ -1704,7 +1707,9 @@ struct ImportExternalModelSheet: View {
                 supportsGpu: supportsGpu,
                 supportsMtp: modelFormat == .litertlm ? supportsMtp : true,
                 requirements: ModelRequirements(minRamGB: max(2, Int(fileSize / 1_073_741_824) + 1), recommendedRamGB: max(4, Int(fileSize / 1_073_741_824) + 2)),
-                contextWindowSize: contextSize,
+                contextWindowSize: modelFormat == .gguf
+                    ? (GGUFLayerLimits.readContextLength(from: destFile) ?? contextSize)
+                    : contextSize,
                 modelFormat: modelFormat,
                 additionalFiles: [],
                 promptTemplate: templateValue.isEmpty ? nil : templateValue

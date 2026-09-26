@@ -6,6 +6,7 @@ import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.llmhub.llmhub.data.LLMModel
+import com.llmhub.llmhub.data.effectiveContextWindow
 import com.llmhub.llmhub.data.ModelAvailabilityProvider
 import com.llmhub.llmhub.data.ModelConfig
 import com.llmhub.llmhub.data.ModelPreferences
@@ -198,7 +199,7 @@ class WritingAidViewModel(application: Application) : AndroidViewModel(applicati
     }
 
     fun setMaxTokens(maxTokens: Int) {
-        val cap = _selectedModel.value?.contextWindowSize?.coerceAtLeast(1) ?: 4096
+        val cap = _selectedModel.value?.effectiveContextWindow(getApplication<Application>()) ?: 4096
         _selectedMaxTokens.value = maxTokens.coerceIn(1, cap)
         saveSettings()
         applyGenerationParametersToService()
@@ -212,7 +213,7 @@ class WritingAidViewModel(application: Application) : AndroidViewModel(applicati
 
     private fun applyGenerationParametersToService() {
         val model = _selectedModel.value ?: return
-        val effectiveCtx = _selectedMaxTokens.value.coerceIn(1, model.contextWindowSize.coerceAtLeast(1))
+        val effectiveCtx = _selectedMaxTokens.value.coerceIn(1, model.effectiveContextWindow(getApplication<Application>()))
         inferenceService.setGenerationParameters(
             maxTokens = effectiveCtx,
             topK = null,

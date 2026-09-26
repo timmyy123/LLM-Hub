@@ -84,9 +84,11 @@ fun FeatureModelSettingsSheet(
     var showBackendMenu by remember { mutableStateOf(false) }
     var selectedModel by remember { mutableStateOf(initialSelectedModel ?: currentlyLoadedModel ?: availableModels.firstOrNull()) }
 
-    val baseMaxTokensCap = remember(selectedModel) {
-        selectedModel?.let { MediaPipeInferenceService.getMaxTokensForModelStatic(it) } ?: 4096
-    }
+    var ggufContextLimit by remember(selectedModel?.name) { mutableStateOf<Int?>(null) }
+    var ggufContextChecked by remember(selectedModel?.name) { mutableStateOf(false) }
+    val baseMaxTokensCap = ggufContextLimit
+        ?: selectedModel?.let { MediaPipeInferenceService.getMaxTokensForModelStatic(it) }
+        ?: 4096
     val isLiteRtLm = remember(selectedModel) { selectedModel?.modelFormat == "litertlm" }
     val isPhi4Mini = remember(selectedModel) {
         selectedModel?.name?.contains("Phi-4 Mini", ignoreCase = true) == true
@@ -139,9 +141,15 @@ fun FeatureModelSettingsSheet(
     LaunchedEffect(selectedModel?.name) {
         selectedModel?.let { model ->
             gpuLayerLimit = GgufLayerLimits.UNKNOWN
-            gpuLayerLimit = withContext(Dispatchers.IO) {
-                GgufLayerLimits.forModel(context, model)
-            } ?: GgufLayerLimits.UNKNOWN
+            val (layers, fileContext) = withContext(Dispatchers.IO) {
+                GgufLayerLimits.forModel(context, model) to GgufLayerLimits.contextForModel(context, model)
+            }
+            gpuLayerLimit = layers ?: GgufLayerLimits.UNKNOWN
+            ggufContextLimit = fileContext
+            if (fileContext != null) {
+                maxTokensValue = initialMaxTokens.coerceIn(1, fileContext)
+            }
+            ggufContextChecked = true
             val saved = modelPrefs.getModelConfig(model.name)
             if (saved != null) {
                 gpuLayers = saved.nGpuLayers.coerceIn(0, gpuLayerLimit)
@@ -183,7 +191,8 @@ fun FeatureModelSettingsSheet(
         }
     }
 
-    LaunchedEffect(selectedModel?.name, baseMaxTokensCap, isGemma4_12B) {
+    LaunchedEffect(selectedModel?.name, baseMaxTokensCap, isGemma4_12B, ggufContextChecked) {
+        if (selectedModel?.modelFormat == "gguf" && !ggufContextChecked) return@LaunchedEffect
         // Preserve user's saved value, just cap it to the selected model's context window
         val capped = minOf(maxTokensValue.coerceAtLeast(1), baseMaxTokensCap.coerceAtLeast(1))
         maxTokensValue = capped
