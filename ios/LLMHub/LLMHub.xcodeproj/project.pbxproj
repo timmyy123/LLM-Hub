@@ -24,6 +24,7 @@
 		4D4350000000000000000001 /* MCPClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D4350000000000000000002 /* MCPClient.swift */; };
 		519D6CF4E16444179C7C5903 /* AgentViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A161C7E902C4A77ABC84BC4 /* AgentViewModel.swift */; };
 		53F6C1EA0149E74AC5BB3E22 /* LLMBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = ECD7AAE029AF6E8F7EA01B3D /* LLMBackend.swift */; };
+		DC1100000000000000000005 /* LlamaCppBinary in Frameworks */ = {isa = PBXBuildFile; productRef = DC1100000000000000000004 /* LlamaCppBinary */; };
 		59504FB10CC196F7E32BAB32 /* ModelData.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3C1A239A9E6DC307A0767C5 /* ModelData.swift */; };
 		5A9D0089FE08164E4232AD63 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 368DEEF34DE54ABD87FE0EF3 /* Assets.xcassets */; };
 		5B3D51C9690D4FC0AD7649BF /* AgentScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 639A98878F3E415495148409 /* AgentScreen.swift */; };
@@ -47,7 +48,6 @@
 		CBC2016A51F62C4A68987D57 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F7A456876803C1FBBE0A211 /* ContentView.swift */; };
 		DF4968608455CAC5D2C20BE3 /* ChatSettingsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = E06F261B9A91F8AA8BAA4778 /* ChatSettingsSheet.swift */; };
 		E1B2C3D4E5F600001A2B3C4D /* ChatAgentSkillsTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1B2C3D4E5F600002A2B3C4D /* ChatAgentSkillsTools.swift */; };
-		E534E3B14352A9FCAA9F1A89 /* RunAnywhereLlamaCPP in Frameworks */ = {isa = PBXBuildFile; productRef = 72F0EB7DB1F54E3913BC8763 /* RunAnywhereLlamaCPP */; };
 		F1A2B3C4D5E6F708192A3B4D /* AudioTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A2B3C4D5E6F708192A3B4C /* AudioTools.swift */; };
 		F1A2B3C4D5E6F708192A3B50 /* LiteRTLMBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A2B3C4D5E6F708192A3B4F /* LiteRTLMBackend.swift */; };
 		F1A2B3C4D5E6F708192A3B5B /* MagentaRuntime in Frameworks */ = {isa = PBXBuildFile; productRef = F1A2B3C4D5E6F708192A3B5C /* MagentaRuntime */; };
@@ -162,7 +162,7 @@
 				F1A2B3C4D5E6F708192A3B5B /* MagentaRuntime in Frameworks */,
 				3D9B9E094861BF2162D95F61 /* RunAnywhere in Frameworks */,
 				2461869E2FB9A616005E46A3 /* StoreKit.framework in Frameworks */,
-				E534E3B14352A9FCAA9F1A89 /* RunAnywhereLlamaCPP in Frameworks */,
+				DC1100000000000000000005 /* LlamaCppBinary in Frameworks */,
 				B1C4A2D3F5E6789012345678 /* RunAnywhereONNX in Frameworks */,
 				9D4F93BDDE99FDE1ECFA704A /* Accelerate.framework in Frameworks */,
 				FA001122334455667788AAFF /* ZIPFoundation in Frameworks */,
@@ -276,7 +276,7 @@
 			packageProductDependencies = (
 				F1A2B3C4D5E6F708192A3B5C /* MagentaRuntime */,
 				9307F4EE8A20C529993E87D1 /* RunAnywhere */,
-				72F0EB7DB1F54E3913BC8763 /* RunAnywhereLlamaCPP */,
+				DC1100000000000000000004 /* LlamaCppBinary */,
 				B1C4A2D4F5E6789012345678 /* RunAnywhereONNX */,
 				FA001122334455667788AA11 /* ZIPFoundation */,
 				AD000002000000000000BB08 /* LiteRTLM */,
@@ -334,6 +334,7 @@
 			packageReferences = (
 				F1A2B3C4D5E6F708192A3B5D /* XCLocalSwiftPackageReference "LocalPackages/magenta-runtime" */,
 				A26F31FFA020DC1866683F48 /* XCLocalSwiftPackageReference "../runanywhere-sdks-latest" */,
+				DC1100000000000000000001 /* XCLocalSwiftPackageReference "LocalPackages/llama-b11200" */,
 				FA001122334455667788AA55 /* XCRemoteSwiftPackageReference "ZIPFoundation" */,
 				AD000002000000000000BB07 /* XCLocalSwiftPackageReference "LocalPackages/LiteRT-LM" */,
 				MGK00001000000000000MG03 /* XCLocalSwiftPackageReference "LocalPackages/media-generation-kit" */,
@@ -545,8 +546,6 @@
 				MARKETING_VERSION = 1.3.7;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
-					"-force_load",
-					"$(BUILT_PRODUCTS_DIR)/librac_commons.a",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.llmhub.llmhub;
 				PRODUCT_NAME = LLMHub;
@@ -594,8 +593,6 @@
 				MARKETING_VERSION = 1.3.7;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
-					"-force_load",
-					"$(BUILT_PRODUCTS_DIR)/librac_commons.a",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.llmhub.llmhub;
 				PRODUCT_NAME = LLMHub;
@@ -691,6 +688,10 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = "../runanywhere-sdks-latest";
 		};
+		DC1100000000000000000001 /* XCLocalSwiftPackageReference "LocalPackages/llama-b11200" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = "LocalPackages/llama-b11200";
+		};
 		AD000002000000000000BB07 /* XCLocalSwiftPackageReference "LocalPackages/LiteRT-LM" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = "LocalPackages/LiteRT-LM";
@@ -721,10 +722,10 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		72F0EB7DB1F54E3913BC8763 /* RunAnywhereLlamaCPP */ = {
+		DC1100000000000000000004 /* LlamaCppBinary */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = A26F31FFA020DC1866683F48 /* XCLocalSwiftPackageReference "../runanywhere-sdks-latest" */;
-			productName = RunAnywhereLlamaCPP;
+			package = DC1100000000000000000001 /* XCLocalSwiftPackageReference "LocalPackages/llama-b11200" */;
+			productName = LlamaCppBinary;
 		};
 		9307F4EE8A20C529993E87D1 /* RunAnywhere */ = {
 			isa = XCSwiftPackageProductDependency;

@@ -4,58 +4,13 @@ import WhisperWrapper
 
 private enum WhisperError: Error, LocalizedError {
     case modelNotLoaded
-    case couldNotLoadModel(String)
     case transcriptionFailed
 
     var errorDescription: String? {
         switch self {
         case .modelNotLoaded: return "No Whisper model loaded"
-        case .couldNotLoadModel(let p): return "Failed to load Whisper model at \(p)"
         case .transcriptionFailed: return "Whisper transcription failed"
         }
-    }
-}
-
-private actor WhisperContext {
-    private nonisolated(unsafe) var ctx: OpaquePointer
-
-    init(ctx: OpaquePointer) { self.ctx = ctx }
-    deinit { whisper_free(ctx) }
-
-    static func load(path: String) throws -> WhisperContext {
-        var params = whisper_context_default_params()
-        params.use_gpu = true
-        guard let c = whisper_init_from_file_with_params(path, params) else {
-            throw WhisperError.couldNotLoadModel(path)
-        }
-        return WhisperContext(ctx: c)
-    }
-
-    func transcribe(samples: [Float]) throws -> String {
-        let nThreads = Int32(max(1, min(8, ProcessInfo.processInfo.processorCount - 2)))
-        var params = whisper_full_default_params(WHISPER_SAMPLING_GREEDY)
-        params.n_threads        = nThreads
-        params.print_realtime   = false
-        params.print_progress   = false
-        params.print_timestamps = false
-        params.print_special    = false
-        params.translate        = false  // never translate — preserve original language
-        params.language         = nil    // nil = auto-detect, do not force English
-        params.no_context       = true
-        params.single_segment   = false
-        let result = samples.withUnsafeBufferPointer { buf in
-            whisper_full(ctx, params, buf.baseAddress, Int32(buf.count))
-        }
-        guard result == 0 else { throw WhisperError.transcriptionFailed }
-        var text = ""
-        for i in 0..<whisper_full_n_segments(ctx) {
-            if let t = whisper_full_get_segment_text(ctx, i) {
-                text += String(cString: t)
-            }
-        }
-        return text
-            .replacingOccurrences(of: "[BLANK_AUDIO]", with: "")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }
 
@@ -96,14 +51,14 @@ public final class WhisperBackend: ObservableObject {
     @Published public var isTranscribing = false
     @Published public var currentModelName: String?
 
-    private var whisperCtx: WhisperContext?
+    private var whisperCtx: WhisperEngine?
     private init() {}
 
     public func load(modelPath: String, modelName: String) async throws {
         if currentModelName == modelName, isLoaded { return }
         unload()
         let ctx = try await Task.detached(priority: .userInitiated) {
-            try WhisperContext.load(path: modelPath)
+            try WhisperEngine(path: modelPath)
         }.value
         whisperCtx = ctx
         isLoaded = true

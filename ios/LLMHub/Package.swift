@@ -22,14 +22,15 @@ let package = Package(
         .package(url: "https://github.com/weichsel/ZIPFoundation.git", from: "0.9.20"),
         .package(path: "LocalPackages/media-generation-kit"),
         .package(path: "LocalPackages/LiteRT-LM"),
-        .package(url: "https://github.com/ggerganov/whisper.spm", from: "1.6.2"),
+        .package(path: "LocalPackages/llama-b11200"),
+        .package(path: "LocalPackages/whisper-wrapper"),
     ],
     targets: [
         .target(
             name: "LLMHub",
             dependencies: [
                 .product(name: "RunAnywhere", package: "runanywhere-sdks-latest"),
-                .product(name: "RunAnywhereLlamaCPP", package: "runanywhere-sdks-latest"),
+                .product(name: "LlamaCppBinary", package: "llama-b11200"),
                 .product(name: "RunAnywhereONNX", package: "runanywhere-sdks-latest"),
                 .product(name: "RunAnywhereMLX", package: "runanywhere-sdks-latest"),
                 .product(name: "MagentaRuntime", package: "magenta-runtime"),
@@ -37,7 +38,7 @@ let package = Package(
                 .product(name: "ZIPFoundation", package: "ZIPFoundation"),
                 .product(name: "LiteRTLM", package: "LiteRT-LM"),
                 .product(name: "MediaGenerationKit", package: "media-generation-kit"),
-                .product(name: "whisper", package: "whisper.spm"),
+                .product(name: "WhisperWrapper", package: "whisper-wrapper"),
             ],
             exclude: [
                 "check_strings.py"
@@ -68,8 +69,7 @@ let package = Package(
                 .process("zh-TW.lproj")
             ],
             linkerSettings: [
-                .linkedFramework("Accelerate"),
-                .unsafeFlags(["-Xlinker", "-all_load"])
+                .linkedFramework("Accelerate")
             ]
         ),
     ]

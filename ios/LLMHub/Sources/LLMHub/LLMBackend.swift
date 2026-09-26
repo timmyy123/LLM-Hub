@@ -1,5 +1,5 @@
 import Foundation
-import LlamaCPPRuntime
+import LlamaCppRuntime
 import RunAnywhere
 #if canImport(UIKit)
 import UIKit
@@ -1084,7 +1084,6 @@ class LLMBackend: ObservableObject {
     private func ensureSDKReady() async throws {
         if !isSDKInitialized {
             try RunAnywhere.initialize(environment: .development)
-            LlamaCPP.register()
             isSDKInitialized = true
         }
 
@@ -1166,6 +1165,35 @@ class LLMBackend: ObservableObject {
         }
         #endif
         // ────────────────────────────────────────────────────────────────────
+
+        if model.modelFormat == .gguf {
+            guard isModelAvailableLocally(model) else {
+                throw NSError(domain: "LLMBackend", code: -100, userInfo: [
+                    NSLocalizedDescriptionKey: "Model is not downloaded locally"
+                ])
+            }
+            let modelPath = try resolveModelGGUFPath(for: model)
+            let projector = model.supportsVision && enableVision
+                ? resolveVisionProjectorPath(for: model) : nil
+            let contextSize = clampedContextWindow(contextWindow, for: model)
+            let isCPU = selectedBackend.caseInsensitiveCompare("CPU") == .orderedSame
+            let storedLayers = UserDefaults.standard.object(forKey: "gpu_layers_\(model.id)") != nil
+                ? UserDefaults.standard.integer(forKey: "gpu_layers_\(model.id)") : 999
+            let gpuLayers = isCPU ? 0 : max(0, storedLayers)
+            try await DirectLlamaCppBackend.shared.load(
+                path: modelPath, projector: projector,
+                contextSize: contextSize, gpuLayers: gpuLayers
+            )
+            loadedLLMModelId = nil
+            loadedVLMModelId = nil
+            loadedVLMProjectorPath = projector
+            isLoaded = true
+            currentlyLoadedModel = model.name
+            loadedContextWindow = contextSize
+            return
+        }
+
+        await DirectLlamaCppBackend.shared.unload()
 
         try await ensureSDKReady()
         let effectiveContext = clampedContextWindow(contextWindow, for: model)
@@ -1323,6 +1351,7 @@ class LLMBackend: ObservableObject {
 
     func unloadModel() {
         Task {
+            await DirectLlamaCppBackend.shared.unload()
             if let loadedLLMModelId {
                 var unloadRequest = RAModelUnloadRequest()
                 unloadRequest.modelID = loadedLLMModelId
@@ -1399,7 +1428,9 @@ class LLMBackend: ObservableObject {
 
         _ = audioURL
 
-        try await ensureSDKReady()
+        if loadedAIModel()?.modelFormat != .gguf {
+            try await ensureSDKReady()
+        }
 
         let effectiveMaxTokens: Int = {
             if let override = maxTokensOverride { return max(1, override) }
@@ -1501,6 +1532,56 @@ class LLMBackend: ObservableObject {
             } else {
                 usePrompt = strippedPrompt
             }
+        }
+
+        if let model = loadedModel, model.modelFormat == .gguf {
+            var imageData: Data?
+            if let imageURL, enableVision, model.supportsVision {
+                guard let projector = resolveVisionProjectorPath(for: model) else {
+                    throw NSError(domain: "LLMBackend", code: -111, userInfo: [
+                        NSLocalizedDescriptionKey: "The vision projector is not downloaded"
+                    ])
+                }
+                let path = try resolveModelGGUFPath(for: model)
+                let isCPU = selectedBackend.caseInsensitiveCompare("CPU") == .orderedSame
+                let layers = UserDefaults.standard.object(forKey: "gpu_layers_\(model.id)") != nil
+                    ? UserDefaults.standard.integer(forKey: "gpu_layers_\(model.id)") : 999
+                try await DirectLlamaCppBackend.shared.load(
+                    path: path, projector: projector,
+                    contextSize: clampedContextWindow(contextWindow, for: model),
+                    gpuLayers: isCPU ? 0 : max(0, layers)
+                )
+                let original = try Data(contentsOf: imageURL)
+                #if canImport(UIKit)
+                imageData = UIImage(data: original)?.jpegData(compressionQuality: 0.95) ?? original
+                #else
+                imageData = original
+                #endif
+            }
+
+            let effectiveStops = stopSequences.isEmpty && isPhi4MiniModel
+                ? ["<|end|>", "<|user|>", "<|system|>"]
+                : stopSequences.isEmpty && isMuseGlimmerModel ? ["<|eot|>"]
+                : stopSequences.isEmpty && isGranite42Model
+                    ? ["<|im_end|>", "<|im_start|>user", "<|im_start|>system"]
+                    : stopSequences
+            let stream = await DirectLlamaCppBackend.shared.stream(
+                prompt: usePrompt, imageData: imageData,
+                maxTokens: effectiveMaxTokens, temperature: temperature,
+                topK: topK, topP: topP, stopSequences: effectiveStops
+            )
+            for try await update in stream {
+                try Task.checkCancellation()
+                let gemmaText = (loadedModelName.range(of: "gemma 4", options: .caseInsensitive) != nil ||
+                                 loadedModelName.range(of: "gemma-4", options: .caseInsensitive) != nil)
+                    ? Self.cleanGemma4Output(update.text) : update.text
+                let museText = isMuseGlimmerModel
+                    ? Self.normalizeMuseGlimmerOutput(gemmaText, thinkingEnabled: enableThinking)
+                    : gemmaText
+                let display = isHarmonyModel ? Self.normalizeHarmonyOutput(museText).0 : museText
+                onUpdate(display, update.completionTokens, update.tokensPerSecond)
+            }
+            return
         }
 
         var options = RALLMGenerationOptions.defaults()

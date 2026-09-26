@@ -22,6 +22,16 @@ int32_t MagentaLiteRTRunModel(const char *model_path,
                               size_t output_capacity,
                               int32_t expected_output_type);
 
+/// Persistent LiteRT embedding model. Returns NULL on failure and writes a
+/// diagnostic status. The caller owns the returned handle.
+void *LiteRTEmbeddingCreate(const char *model_path, int32_t *status);
+void LiteRTEmbeddingDestroy(void *handle);
+int32_t LiteRTEmbeddingSequenceLength(void *handle);
+int32_t LiteRTEmbeddingDimension(void *handle);
+int32_t LiteRTEmbeddingRun(void *handle, const int32_t *tokens,
+                          size_t token_count, float *output,
+                          size_t output_count);
+
 #ifdef __cplusplus
 }
 #endif

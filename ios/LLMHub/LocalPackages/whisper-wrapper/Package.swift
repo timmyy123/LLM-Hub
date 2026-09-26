@@ -14,8 +14,13 @@ let package = Package(
         .target(
             name: "WhisperWrapper",
             dependencies: [
-                .product(name: "whisper", package: "whisper.spm"),
+                "WhisperBridge",
             ]
+        ),
+        .target(
+            name: "WhisperBridge",
+            dependencies: [.product(name: "whisper", package: "whisper.spm")],
+            publicHeadersPath: "include"
         ),
     ]
 )

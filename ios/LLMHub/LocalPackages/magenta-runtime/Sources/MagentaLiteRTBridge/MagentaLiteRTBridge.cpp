@@ -1,6 +1,7 @@
 #include "MagentaLiteRTBridge.h"
 
 #include <cstring>
+#include <memory>
 #include <vector>
 
 namespace {
@@ -102,7 +103,134 @@ struct Resources {
   }
 };
 
+struct EmbeddingResources : Resources {
+  int32_t sequence_length = 0;
+  int32_t dimension = 0;
+};
+
 }  // namespace
+
+void *LiteRTEmbeddingCreate(const char *model_path, int32_t *status_out) {
+  if (status_out) *status_out = -1;
+  if (!model_path) return nullptr;
+  auto resources = std::make_unique<EmbeddingResources>();
+  LiteRtStatus status = LiteRtCreateEnvironment(0, nullptr, &resources->environment);
+  if (status != kOk) { if (status_out) *status_out = 1000 + status; return nullptr; }
+  status = LiteRtCreateModelFromFile(resources->environment, model_path,
+                                     &resources->model);
+  if (status != kOk) { if (status_out) *status_out = 1100 + status; return nullptr; }
+
+  LiteRtSignature signature = nullptr;
+  LiteRtParamIndex input_count = 0, output_count = 0;
+  status = LiteRtGetModelSignature(resources->model, 0, &signature);
+  if (status != kOk || !signature ||
+      LiteRtGetNumSignatureInputs(signature, &input_count) != kOk ||
+      LiteRtGetNumSignatureOutputs(signature, &output_count) != kOk ||
+      input_count != 1 || output_count != 1) {
+    if (status_out) *status_out = -2;
+    return nullptr;
+  }
+
+  LiteRtTensor input_tensor = nullptr, output_tensor = nullptr;
+  LiteRtRankedTensorType input_type{}, output_type{};
+  if (LiteRtGetSignatureInputTensorByIndex(signature, 0, &input_tensor) != kOk ||
+      LiteRtGetSignatureOutputTensorByIndex(signature, 0, &output_tensor) != kOk ||
+      LiteRtGetRankedTensorType(input_tensor, &input_type) != kOk ||
+      LiteRtGetRankedTensorType(output_tensor, &output_type) != kOk ||
+      input_type.element_type != kLiteRtElementTypeInt32 ||
+      output_type.element_type != kLiteRtElementTypeFloat32 ||
+      input_type.layout.rank != 2 || output_type.layout.rank != 2 ||
+      input_type.layout.dimensions[0] != 1 ||
+      output_type.layout.dimensions[0] != 1) {
+    if (status_out) *status_out = -3;
+    return nullptr;
+  }
+  resources->sequence_length = input_type.layout.dimensions[1];
+  resources->dimension = output_type.layout.dimensions[1];
+  if (resources->sequence_length <= 0 || resources->dimension <= 0) {
+    if (status_out) *status_out = -4;
+    return nullptr;
+  }
+
+  status = LiteRtCreateOptions(&resources->options);
+  if (status != kOk) { if (status_out) *status_out = 1200 + status; return nullptr; }
+  status = LiteRtSetOptionsHardwareAccelerators(resources->options,
+                                                kCpuAccelerator);
+  if (status != kOk) { if (status_out) *status_out = 1300 + status; return nullptr; }
+  status = LiteRtCreateCompiledModel(resources->environment, resources->model,
+                                     resources->options, &resources->compiled);
+  if (status != kOk) { if (status_out) *status_out = 1400 + status; return nullptr; }
+
+  LiteRtTensorBufferRequirements input_requirements = nullptr;
+  LiteRtTensorBufferRequirements output_requirements = nullptr;
+  LiteRtTensorBuffer input_buffer = nullptr, output_buffer = nullptr;
+  if (LiteRtGetCompiledModelInputBufferRequirements(
+          resources->compiled, 0, 0, &input_requirements) != kOk ||
+      LiteRtCreateManagedTensorBufferFromRequirements(
+          resources->environment, &input_type, input_requirements,
+          &input_buffer) != kOk || !input_buffer) {
+    if (status_out) *status_out = -5;
+    return nullptr;
+  }
+  resources->inputs.push_back(input_buffer);
+  if (LiteRtGetCompiledModelOutputBufferRequirements(
+          resources->compiled, 0, 0, &output_requirements) != kOk ||
+      LiteRtCreateManagedTensorBufferFromRequirements(
+          resources->environment, &output_type, output_requirements,
+          &output_buffer) != kOk || !output_buffer) {
+    if (status_out) *status_out = -6;
+    return nullptr;
+  }
+  resources->outputs.push_back(output_buffer);
+  if (status_out) *status_out = 0;
+  return resources.release();
+}
+
+void LiteRTEmbeddingDestroy(void *handle) {
+  delete static_cast<EmbeddingResources *>(handle);
+}
+
+int32_t LiteRTEmbeddingSequenceLength(void *handle) {
+  auto *resources = static_cast<EmbeddingResources *>(handle);
+  return resources ? resources->sequence_length : 0;
+}
+
+int32_t LiteRTEmbeddingDimension(void *handle) {
+  auto *resources = static_cast<EmbeddingResources *>(handle);
+  return resources ? resources->dimension : 0;
+}
+
+int32_t LiteRTEmbeddingRun(void *handle, const int32_t *tokens,
+                          size_t token_count, float *output,
+                          size_t output_count) {
+  auto *resources = static_cast<EmbeddingResources *>(handle);
+  if (!resources || !tokens || !output ||
+      token_count != static_cast<size_t>(resources->sequence_length) ||
+      output_count != static_cast<size_t>(resources->dimension)) return -1;
+  size_t packed_size = 0;
+  void *destination = nullptr;
+  if (LiteRtGetTensorBufferPackedSize(resources->inputs[0], &packed_size) != kOk ||
+      packed_size != token_count * sizeof(int32_t) ||
+      LiteRtLockTensorBuffer(resources->inputs[0], &destination,
+                             kLiteRtTensorBufferLockModeWrite) != kOk ||
+      !destination) return -2;
+  std::memcpy(destination, tokens, packed_size);
+  if (LiteRtUnlockTensorBuffer(resources->inputs[0]) != kOk) return -3;
+
+  LiteRtStatus status = LiteRtRunCompiledModel(
+      resources->compiled, 0, resources->inputs.size(), resources->inputs.data(),
+      resources->outputs.size(), resources->outputs.data());
+  if (status != kOk) return 1500 + status;
+  void *source = nullptr;
+  if (LiteRtGetTensorBufferPackedSize(resources->outputs[0], &packed_size) != kOk ||
+      packed_size != output_count * sizeof(float) ||
+      LiteRtLockTensorBuffer(resources->outputs[0], &source,
+                             kLiteRtTensorBufferLockModeRead) != kOk ||
+      !source) return -4;
+  std::memcpy(output, source, packed_size);
+  if (LiteRtUnlockTensorBuffer(resources->outputs[0]) != kOk) return -5;
+  return 0;
+}
 
 int32_t MagentaLiteRTRunModel(const char *model_path,
                               const int32_t *int32_input,

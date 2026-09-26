@@ -33,6 +33,13 @@ enum GGUFLayerLimits {
                 } else {
                     try reader.skipValue(type)
                 }
+                if let architecture,
+                   let count = blockCounts["\(architecture).block_count"],
+                   (1...998).contains(count) {
+                    // Tokenizer arrays can occupy megabytes of metadata after this point.
+                    // The slider needs only the layer count, not the rest of the header.
+                    return Int(count) + 1
+                }
             }
             guard let architecture,
                   let count = blockCounts["\(architecture).block_count"],
@@ -436,24 +443,17 @@ struct ChatSettingsSheet: View {
 
     private func loadInitialGpuLayers() {
         guard let currentModel = currentModel else { return }
-        gpuLayerLimit = Double(GGUFLayerLimits.unknown)
+        // Read the small GGUF metadata header before presenting the slider. Updating its
+        // range asynchronously made SwiftUI briefly draw the thumb at the left edge.
+        let limit = LLMBackend.shared.ggufFileURL(for: currentModel)
+            .flatMap { GGUFLayerLimits.read(from: $0) } ?? GGUFLayerLimits.unknown
+        gpuLayerLimit = Double(limit)
         let key = "gpu_layers_\(currentModel.id)"
         if UserDefaults.standard.object(forKey: key) != nil {
             let stored = UserDefaults.standard.integer(forKey: key)
-            gpuLayersTemp = Double(stored == 99 ? 999 : stored)
+            gpuLayersTemp = min(max(0, Double(stored == 99 ? 999 : stored)), gpuLayerLimit)
         } else {
-            gpuLayersTemp = 999
-        }
-        if let url = LLMBackend.shared.ggufFileURL(for: currentModel) {
-            let modelID = currentModel.id
-            Task {
-                let limit = await Task.detached(priority: .utility) {
-                    GGUFLayerLimits.read(from: url)
-                }.value ?? GGUFLayerLimits.unknown
-                guard self.currentModel?.id == modelID else { return }
-                gpuLayersTemp = min(max(0, gpuLayersTemp), Double(limit))
-                gpuLayerLimit = Double(limit)
-            }
+            gpuLayersTemp = gpuLayerLimit
         }
     }
 

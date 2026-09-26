@@ -90,12 +90,19 @@ object GgufLayerLimits {
             val type = u32()
             when {
                 key == "general.architecture" && type == 8L -> architecture = string()
-                key.endsWith(".block_count") && type == 4L -> blockCounts[key] = u32()
-                key.endsWith(".block_count") && type == 10L -> blockCounts[key] = u64()
+                key.endsWith(".block_count") && type in 4L..5L -> blockCounts[key] = u32()
+                key.endsWith(".block_count") && type in 10L..11L -> blockCounts[key] = u64()
                 else -> skipValue(type)
             }
+            val count = architecture?.let { blockCounts["$it.block_count"] }
+            if (count != null && count in 1..998) {
+                // Large tokenizer arrays often follow the block count. No need to scan them.
+                return@use count.toInt() + 1
+            }
         }
-        val count = blockCounts["${architecture ?: return@use null}.block_count"] ?: return@use null
+        val count = architecture?.let { blockCounts["$it.block_count"] }
+            ?: blockCounts.values.singleOrNull()
+            ?: return@use null
         count.takeIf { it in 1..998 }?.toInt()?.plus(1)
     }
 }

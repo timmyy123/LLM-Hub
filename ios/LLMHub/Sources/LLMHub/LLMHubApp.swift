@@ -1,5 +1,4 @@
 import Foundation
-import LlamaCPPRuntime
 import ONNXRuntime
 import RunAnywhere
 import SwiftUI
@@ -45,7 +44,6 @@ struct LLMHubApp: App {
         // sample app startup order so the module registry is ready.
         // ONNX.register() is @MainActor — use assumeIsolated so it runs
         // synchronously here on the main thread instead of being deferred.
-        LlamaCPP.register(priority: 100)
         MainActor.assumeIsolated {
             ONNX.register()
         }

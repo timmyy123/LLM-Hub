@@ -207,7 +207,7 @@ LLAMA_JNI(nativeLoadModel)(
     }
     ggml_backend_dev_t selected_devices[] = {selected_device, nullptr};
     model_params.devices = selected_devices;
-    model_params.n_gpu_layers = std::max(1, static_cast<int>(gpu_layers));
+    model_params.n_gpu_layers = std::max(0, static_cast<int>(gpu_layers));
 #else
     (void) device_name;
     (void) gpu_layers;
