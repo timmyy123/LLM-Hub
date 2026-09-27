@@ -1,5 +1,7 @@
 #include <jni.h>
 #include <android/log.h>
+#include <asm/hwcap.h>
+#include <sys/auxv.h>
 
 #include <algorithm>
 #include <atomic>
@@ -165,6 +167,13 @@ int decode_tokens(const std::vector<llama_token> & tokens) {
 }
 
 } // namespace
+
+#ifndef LLMHUB_SNAPDRAGON
+extern "C" JNIEXPORT jboolean JNICALL
+LLAMA_JNI(nativeHasIlrcpc)(JNIEnv *, jobject) {
+    return (getauxval(AT_HWCAP) & HWCAP_ILRCPC) != 0 ? JNI_TRUE : JNI_FALSE;
+}
+#endif
 
 extern "C" JNIEXPORT jint JNICALL
 LLAMA_JNI(nativeInit)(JNIEnv * env, jobject, jstring library_dir, jstring htp_dir) {

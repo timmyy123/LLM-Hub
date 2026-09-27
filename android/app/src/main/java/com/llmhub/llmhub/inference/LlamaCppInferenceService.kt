@@ -46,6 +46,7 @@ internal object LlamaCppNative : LlamaCppRuntime {
         System.loadLibrary("llmhub_llama_cpu")
     }
 
+    external fun nativeHasIlrcpc(): Boolean
     external override fun nativeInit(libraryDir: String, htpDir: String?): Int
     external override fun nativeLoadModel(
         modelPath: String,
@@ -163,6 +164,12 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
         try {
             val accelerator = when {
                 preferredBackend != LlmInference.Backend.GPU -> null
+                !LlamaCppNative.nativeHasIlrcpc() -> {
+                    // The packaged Snapdragon libggml-cpu.so uses STLUR during prompt decode.
+                    // Loading on GPU/NPU may succeed without ILRCPC, then SIGILL on generation.
+                    Log.w(TAG, "Snapdragon runtime requires ILRCPC; loading GGUF on CPU instead")
+                    null
+                }
                 !deviceId.isNullOrBlank() &&
                     (deviceId.startsWith("dev", true) || deviceId.startsWith("htp", true)) -> "HTP0"
                 else -> "GPUOpenCL"
