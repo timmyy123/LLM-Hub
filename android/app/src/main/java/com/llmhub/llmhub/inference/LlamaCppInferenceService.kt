@@ -15,6 +15,8 @@ import com.llmhub.llmhub.websearch.WebSearchCitationStore
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
@@ -165,13 +167,10 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
                     (deviceId.startsWith("dev", true) || deviceId.startsWith("htp", true)) -> "HTP0"
                 else -> "GPUOpenCL"
             }
-            if (currentModel != null) runtime.nativeUnload()
-            runtime = if (accelerator == null) LlamaCppNative else LlamaCppSnapdragonNative
-            val htpDir = if (accelerator != null) prepareHtpLibraries() else null
-            check(runtime.nativeInit(context.applicationInfo.nativeLibraryDir, htpDir) == 0) {
-                "llama.cpp initialization failed"
-            }
-            nativeInitialized = true
+            if (nativeInitialized) runtime.nativeUnload()
+            currentModel = null
+            loadedBackend = null
+            loadedDeviceId = null
 
             val modelFile = resolveModelFile(model)
             if (!modelFile.isFile || !modelFile.canRead()) {
@@ -195,37 +194,64 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
             if (model.supportsVision && !disableVision && mmprojFile == null) {
                 Log.w(TAG, "Vision projector not found for '${model.name}'; loading text-only")
             }
-            Log.i(
-                TAG,
-                "Loading '${model.name}' with llama.cpp ${accelerator ?: "CPU"}: context=$contextSize " +
-                    "threads=$threads layers=${if (accelerator == null) 0 else overrideGpuLayers ?: 999} " +
-                    "mmproj=${mmprojFile?.name ?: "none"}",
-            )
-            val result = runtime.nativeLoadModel(
-                modelFile.absolutePath,
-                mmprojFile?.absolutePath,
-                contextSize,
-                threads,
-                accelerator,
-                if (accelerator == null) 0 else overrideGpuLayers ?: 999,
-            )
-            if (result != 0) {
-                Log.e(TAG, "llama.cpp model load failed with code $result")
-                currentModel = null
-                loadedBackend = null
-                loadedDeviceId = null
-                return@withContext false
-            }
+            // Retry only accelerator load failures, using the same model and settings on CPU.
+            val attempts: List<String?> = if (accelerator == null) listOf(null) else listOf(accelerator, null)
+            for (attemptAccelerator in attempts) {
+                currentCoroutineContext().ensureActive()
+                val attemptName = attemptAccelerator ?: "CPU"
+                var attemptInitialized = false
+                try {
+                    runtime = if (attemptAccelerator == null) LlamaCppNative else LlamaCppSnapdragonNative
+                    nativeInitialized = false
+                    val htpDir = if (attemptAccelerator != null) prepareHtpLibraries() else null
+                    check(runtime.nativeInit(context.applicationInfo.nativeLibraryDir, htpDir) == 0) {
+                        "llama.cpp initialization failed on $attemptName"
+                    }
+                    nativeInitialized = true
+                    attemptInitialized = true
+                    Log.i(
+                        TAG,
+                        "Loading '${model.name}' with llama.cpp $attemptName: context=$contextSize " +
+                            "threads=$threads layers=${if (attemptAccelerator == null) 0 else overrideGpuLayers ?: 999} " +
+                            "mmproj=${mmprojFile?.name ?: "none"}",
+                    )
+                    val result = runtime.nativeLoadModel(
+                        modelFile.absolutePath,
+                        mmprojFile?.absolutePath,
+                        contextSize,
+                        threads,
+                        attemptAccelerator,
+                        if (attemptAccelerator == null) 0 else overrideGpuLayers ?: 999,
+                    )
+                    check(result == 0) { "llama.cpp model load failed on $attemptName with code $result" }
 
-            currentModel = model
-            loadedBackend = if (accelerator == null) LlmInference.Backend.CPU else LlmInference.Backend.GPU
-            loadedDeviceId = deviceId
-            chatSessions.clear()
-            visionDisabled = disableVision || !model.supportsVision || !runtime.nativeSupportsVision()
-            audioDisabled = true
-            lastDecodeSpeed = null
-            Log.i(TAG, "Loaded '${model.name}' using llama.cpp ${accelerator ?: "CPU"}")
-            true
+                    currentModel = model
+                    loadedBackend = if (attemptAccelerator == null) LlmInference.Backend.CPU else LlmInference.Backend.GPU
+                    loadedDeviceId = if (attemptAccelerator == null) null else deviceId
+                    chatSessions.clear()
+                    visionDisabled = disableVision || !model.supportsVision || !runtime.nativeSupportsVision()
+                    audioDisabled = true
+                    lastDecodeSpeed = null
+                    Log.i(TAG, "Loaded '${model.name}' using llama.cpp $attemptName")
+                    return@withContext true
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (fatal: VirtualMachineError) {
+                    throw fatal
+                } catch (error: Throwable) {
+                    Log.e(TAG, "llama.cpp failed to load '${model.name}' on $attemptName", error)
+                    if (attemptInitialized) {
+                        try {
+                            runtime.nativeUnload()
+                        } catch (cleanupError: Throwable) {
+                            Log.e(TAG, "Failed to clean up $attemptName load", cleanupError)
+                        }
+                    }
+                    nativeInitialized = false
+                    if (attemptAccelerator != null) Log.w(TAG, "Retrying '${model.name}' on CPU")
+                }
+            }
+            false
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (fatal: VirtualMachineError) {

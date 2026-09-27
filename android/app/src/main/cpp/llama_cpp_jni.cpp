@@ -249,6 +249,12 @@ LLAMA_JNI(nativeLoadModel)(
                 mtmd_free(g_mtmd);
                 g_mtmd = nullptr;
             }
+#ifdef LLMHUB_SNAPDRAGON
+            // An accelerator vision failure should trigger the CPU retry, not a
+            // successful but unexpectedly text-only load.
+            unload_model();
+            return 4;
+#endif
         } else {
             __android_log_print(
                 ANDROID_LOG_INFO, TAG, "Loaded vision projector: %s", projector_path.c_str());
