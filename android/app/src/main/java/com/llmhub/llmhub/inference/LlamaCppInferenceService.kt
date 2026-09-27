@@ -9,6 +9,7 @@ import com.llmhub.llmhub.R
 import com.llmhub.llmhub.data.LLMModel
 import com.llmhub.llmhub.data.effectiveContextWindow
 import com.llmhub.llmhub.data.localFileName
+import com.llmhub.llmhub.data.ThemePreferences
 import com.llmhub.llmhub.websearch.DuckDuckGoSearchService
 import com.llmhub.llmhub.websearch.SearchIntentDetector
 import com.llmhub.llmhub.websearch.WebSearchCitationStore
@@ -20,6 +21,7 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.text.SimpleDateFormat
@@ -74,9 +76,26 @@ internal object LlamaCppNative : LlamaCppRuntime {
     external override fun nativeDecodeSpeed(): Double
 }
 
-/** Official b11179 Snapdragon OpenCL/Hexagon runtime, loaded only for GPU/NPU selection. */
+/** Official b11218 Snapdragon OpenCL/Hexagon runtime, loaded only for GPU/NPU selection. */
 internal object LlamaCppSnapdragonNative : LlamaCppRuntime {
     init { System.loadLibrary("llmhub_llama_snapdragon") }
+
+    external override fun nativeInit(libraryDir: String, htpDir: String?): Int
+    external override fun nativeLoadModel(modelPath: String, mmprojPath: String?, contextSize: Int, threadCount: Int, deviceName: String?, gpuLayers: Int): Int
+    external override fun nativeSupportsVision(): Boolean
+    external override fun nativeMediaMarker(): String
+    external override fun nativeFormatChat(roles: Array<String>, contents: Array<String>): String?
+    external override fun nativeStartCompletion(formattedPrompt: String, imagePaths: Array<String>, maxTokens: Int, temperature: Float, topK: Int, topP: Float): Int
+    external override fun nativeNextToken(): String?
+    external override fun nativeStop()
+    external override fun nativeReset()
+    external override fun nativeUnload()
+    external override fun nativeDecodeSpeed(): Double
+}
+
+/** Portable llama.cpp source with its Vulkan GPU backend. */
+internal object LlamaCppVulkanNative : LlamaCppRuntime {
+    init { System.loadLibrary("llmhub_llama_vulkan") }
 
     external override fun nativeInit(libraryDir: String, htpDir: String?): Int
     external override fun nativeLoadModel(modelPath: String, mmprojPath: String?, contextSize: Int, threadCount: Int, deviceName: String?, gpuLayers: Int): Int
@@ -110,6 +129,7 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
     private var runtime: LlamaCppRuntime = LlamaCppNative
     private var loadedBackend: LlmInference.Backend? = null
     private var loadedDeviceId: String? = null
+    private var loadedRuntimeName: String? = null
     private var overrideGpuLayers: Int? = null
     private var currentModel: LLMModel? = null
     private var contextSize = 4096
@@ -133,7 +153,7 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
     private var overrideEnableThinking: Boolean? = null
 
     private fun prepareHtpLibraries(): String {
-        val directory = File(context.filesDir, "llama_htp_b11179")
+        val directory = File(context.filesDir, "llama_htp_b11218")
         check(directory.isDirectory || directory.mkdirs()) { "Cannot create Hexagon library directory" }
         for (architecture in listOf("v73", "v75", "v79", "v81")) {
             val name = "libggml-htp-$architecture.so"
@@ -162,22 +182,26 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
         deviceId: String?,
     ): Boolean = withContext(dispatcher) {
         try {
+            val useVulkan = ThemePreferences(context).ggufUseVulkan.first()
+            val wantsNpu = !deviceId.isNullOrBlank() &&
+                (deviceId.startsWith("dev", true) || deviceId.startsWith("htp", true))
             val accelerator = when {
                 preferredBackend != LlmInference.Backend.GPU -> null
+                !wantsNpu && useVulkan -> "Vulkan0"
                 !LlamaCppNative.nativeHasIlrcpc() -> {
                     // The packaged Snapdragon libggml-cpu.so uses STLUR during prompt decode.
                     // Loading on GPU/NPU may succeed without ILRCPC, then SIGILL on generation.
                     Log.w(TAG, "Snapdragon runtime requires ILRCPC; loading GGUF on CPU instead")
                     null
                 }
-                !deviceId.isNullOrBlank() &&
-                    (deviceId.startsWith("dev", true) || deviceId.startsWith("htp", true)) -> "HTP0"
+                wantsNpu -> "HTP0"
                 else -> "GPUOpenCL"
             }
             if (nativeInitialized) runtime.nativeUnload()
             currentModel = null
             loadedBackend = null
             loadedDeviceId = null
+            loadedRuntimeName = null
 
             val modelFile = resolveModelFile(model)
             if (!modelFile.isFile || !modelFile.canRead()) {
@@ -208,9 +232,13 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
                 val attemptName = attemptAccelerator ?: "CPU"
                 var attemptInitialized = false
                 try {
-                    runtime = if (attemptAccelerator == null) LlamaCppNative else LlamaCppSnapdragonNative
+                    runtime = when (attemptAccelerator) {
+                        null -> LlamaCppNative
+                        "Vulkan0" -> LlamaCppVulkanNative
+                        else -> LlamaCppSnapdragonNative
+                    }
                     nativeInitialized = false
-                    val htpDir = if (attemptAccelerator != null) prepareHtpLibraries() else null
+                    val htpDir = if (attemptAccelerator == "HTP0" || attemptAccelerator == "GPUOpenCL") prepareHtpLibraries() else null
                     check(runtime.nativeInit(context.applicationInfo.nativeLibraryDir, htpDir) == 0) {
                         "llama.cpp initialization failed on $attemptName"
                     }
@@ -235,6 +263,7 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
                     currentModel = model
                     loadedBackend = if (attemptAccelerator == null) LlmInference.Backend.CPU else LlmInference.Backend.GPU
                     loadedDeviceId = if (attemptAccelerator == null) null else deviceId
+                    loadedRuntimeName = attemptName
                     chatSessions.clear()
                     visionDisabled = disableVision || !model.supportsVision || !runtime.nativeSupportsVision()
                     audioDisabled = true
@@ -268,6 +297,7 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
             currentModel = null
             loadedBackend = null
             loadedDeviceId = null
+            loadedRuntimeName = null
             false
         }
     }
@@ -277,6 +307,7 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
         currentModel = null
         loadedBackend = null
         loadedDeviceId = null
+        loadedRuntimeName = null
         lastDecodeSpeed = null
         chatSessions.clear()
     }
@@ -451,7 +482,7 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
             }
             rememberAssistantResponse(chatId, assistantResponse.toString())
             lastDecodeSpeed = runtime.nativeDecodeSpeed().takeIf { it > 0.0 }
-            Log.i(TAG, "CPU fallback generation completed at ${lastDecodeSpeed ?: 0.0} tok/s")
+            Log.i(TAG, "llama.cpp ${loadedRuntimeName ?: "unknown"} generation completed at ${lastDecodeSpeed ?: 0.0} tok/s")
         } catch (cancelled: CancellationException) {
             runtime.nativeStop()
             throw cancelled

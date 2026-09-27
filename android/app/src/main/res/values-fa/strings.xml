@@ -1004,4 +1004,7 @@
     <string name="hf_token_using_default">در حال استفاده از توکن پیش‌فرض</string>
     <string name="hf_token_custom_active">توکن سفارشی فعال است</string>
     <string name="hf_token_clear">بازنشانی به پیش‌فرض</string>
+    <string name="gguf_vulkan_setting">موتور GPU مدل GGUF</string>
+    <string name="crash_recovery_title">برنامه به‌طور غیرمنتظره بسته شد</string>
+    <string name="crash_recovery_message">یک مدل کوچک‌تر بارگیری کنید یا از CPU استفاده کنید.</string>
 </resources>

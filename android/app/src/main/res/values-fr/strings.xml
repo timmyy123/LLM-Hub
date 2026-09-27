@@ -990,4 +990,7 @@
     <string name="hf_token_using_default">Jeton par défaut utilisé</string>
     <string name="hf_token_custom_active">Jeton personnalisé actif</string>
     <string name="hf_token_clear">Rétablir par défaut</string>
+    <string name="gguf_vulkan_setting">Moteur GPU GGUF</string>
+    <string name="crash_recovery_title">Fermeture inattendue de l’application</string>
+    <string name="crash_recovery_message">Essayez de charger un modèle plus petit ou d’utiliser le CPU.</string>
 </resources>

@@ -2,11 +2,14 @@ package com.llmhub.llmhub.screens
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -18,6 +21,8 @@ import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -50,6 +55,7 @@ import com.llmhub.llmhub.BuildConfig
 import com.llmhub.llmhub.data.ModelData
 import com.llmhub.llmhub.data.ModelDownloader
 import com.llmhub.llmhub.data.ThemeMode
+import com.llmhub.llmhub.data.ThemePreferences
 import com.llmhub.llmhub.data.localFileName
 import com.llmhub.llmhub.viewmodels.ThemeViewModel
 import com.llmhub.llmhub.viewmodels.ModelDownloadViewModel
@@ -75,6 +81,10 @@ fun SettingsScreen(
     var showHfTokenDialog by remember { mutableStateOf(false) }
     var customHfToken by remember { mutableStateOf(ModelDownloadViewModel.getCustomToken(context)) }
     val currentThemeMode by themeViewModel.themeMode.collectAsState()
+    val ggufPreferences = remember(context) { ThemePreferences(context) }
+    val ggufUseVulkan by ggufPreferences.ggufUseVulkan.collectAsState(
+        initial = ggufPreferences.defaultGgufUseVulkan(),
+    )
     val embeddingEnabled by themeViewModel.embeddingEnabled.collectAsState()
     val memoryEnabled by themeViewModel.memoryEnabled.collectAsState()
     val selectedEmbeddingModel by themeViewModel.selectedEmbeddingModel.collectAsState()
@@ -128,6 +138,49 @@ fun SettingsScreen(
                         },
                         onClick = { showHfTokenDialog = true }
                     )
+
+                    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp)) {
+                        Text(stringResource(R.string.gguf_vulkan_setting), style = MaterialTheme.typography.bodyLarge)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth().selectableGroup(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            listOf(false to "OpenCL", true to "Vulkan").forEach { (useVulkan, label) ->
+                                val selected = ggufUseVulkan == useVulkan
+                                val buttonShape = RoundedCornerShape(12.dp)
+                                Surface(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(48.dp)
+                                        .clip(buttonShape)
+                                        .selectable(
+                                            selected = selected,
+                                            role = Role.RadioButton,
+                                            onClick = {
+                                                coroutineScope.launch { ggufPreferences.setGgufUseVulkan(useVulkan) }
+                                            },
+                                        ),
+                                    shape = buttonShape,
+                                    color = if (selected) MaterialTheme.colorScheme.primaryContainer
+                                        else MaterialTheme.colorScheme.surface,
+                                    border = BorderStroke(
+                                        1.dp,
+                                        if (selected) MaterialTheme.colorScheme.primary
+                                            else MaterialTheme.colorScheme.outlineVariant,
+                                    ),
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Text(
+                                            label,
+                                            color = if (selected) MaterialTheme.colorScheme.onPrimaryContainer
+                                                else MaterialTheme.colorScheme.onSurface,
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
 
                     // Embedding Model Selection
                     EmbeddingModelSelector(themeViewModel = themeViewModel)

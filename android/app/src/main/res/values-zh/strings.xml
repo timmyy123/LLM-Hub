@@ -1012,4 +1012,7 @@
     <string name="hf_token_using_default">使用預設權杖</string>
     <string name="hf_token_custom_active">自訂權杖已啟用</string>
     <string name="hf_token_clear">重設為預設值</string>
+    <string name="gguf_vulkan_setting">GGUF GPU 后端</string>
+    <string name="crash_recovery_title">应用意外关闭</string>
+    <string name="crash_recovery_message">请尝试加载更小的模型或使用 CPU。</string>
 </resources>

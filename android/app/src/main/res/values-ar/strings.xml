@@ -1004,4 +1004,7 @@
     <string name="hf_token_using_default">استخدام الرمز الافتراضي</string>
     <string name="hf_token_custom_active">الرمز المخصص مفعّل</string>
     <string name="hf_token_clear">إعادة الضبط للافتراضي</string>
+    <string name="gguf_vulkan_setting">واجهة GPU لنماذج GGUF</string>
+    <string name="crash_recovery_title">أُغلق التطبيق بشكل غير متوقع</string>
+    <string name="crash_recovery_message">جرّب تحميل نموذج أصغر أو استخدام المعالج المركزي.</string>
 </resources>

@@ -1,0 +1,8 @@
+*
+!*.*
+!snapshots/
+!fusion/
+*.o
+ggml-common.h
+**/*.swp
+!peg-parser

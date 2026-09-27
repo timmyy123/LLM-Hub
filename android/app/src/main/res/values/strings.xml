@@ -1019,4 +1019,7 @@
     <string name="hf_token_using_default">Using default token</string>
     <string name="hf_token_custom_active">Custom token active</string>
     <string name="hf_token_clear">Reset to default</string>
+    <string name="gguf_vulkan_setting">GGUF GPU backend</string>
+    <string name="crash_recovery_title">App closed unexpectedly</string>
+    <string name="crash_recovery_message">Try loading a smaller model or using CPU.</string>
 </resources>

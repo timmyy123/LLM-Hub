@@ -976,4 +976,7 @@
     <string name="hf_token_using_default">Используется стандартный токен</string>
     <string name="hf_token_custom_active">Пользовательский токен активен</string>
     <string name="hf_token_clear">Сбросить на стандартный</string>
+    <string name="gguf_vulkan_setting">GPU-движок GGUF</string>
+    <string name="crash_recovery_title">Приложение неожиданно закрылось</string>
+    <string name="crash_recovery_message">Попробуйте загрузить модель меньшего размера или использовать ЦП.</string>
 </resources>

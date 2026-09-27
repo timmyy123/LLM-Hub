@@ -1002,4 +1002,7 @@
     <string name="hf_token_using_default">Varsayılan belirteç kullanılıyor</string>
     <string name="hf_token_custom_active">Özel belirteç etkin</string>
     <string name="hf_token_clear">Varsayılana sıfırla</string>
+    <string name="gguf_vulkan_setting">GGUF GPU altyapısı</string>
+    <string name="crash_recovery_title">Uygulama beklenmedik şekilde kapandı</string>
+    <string name="crash_recovery_message">Daha küçük bir model yüklemeyi veya CPU kullanmayı deneyin.</string>
 </resources>

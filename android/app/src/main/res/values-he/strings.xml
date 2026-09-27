@@ -1003,4 +1003,7 @@
     <string name="hf_token_using_default">בשימוש אסימון ברירת מחדל</string>
     <string name="hf_token_custom_active">אסימון מותאם אישית פעיל</string>
     <string name="hf_token_clear">איפוס לברירת מחדל</string>
+    <string name="gguf_vulkan_setting">מנוע GPU של GGUF</string>
+    <string name="crash_recovery_title">האפליקציה נסגרה באופן בלתי צפוי</string>
+    <string name="crash_recovery_message">אפשר לנסות לטעון מודל קטן יותר או להשתמש במעבד.</string>
 </resources>

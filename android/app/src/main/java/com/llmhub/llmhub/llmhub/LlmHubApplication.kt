@@ -10,6 +10,7 @@ import com.llmhub.llmhub.inference.InferenceService
 import com.llmhub.llmhub.inference.UnifiedInferenceService
 import com.llmhub.llmhub.repository.ChatRepository
 import com.llmhub.llmhub.utils.LocaleHelper
+import com.llmhub.llmhub.utils.CrashNotice
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 
@@ -32,6 +33,7 @@ class LlmHubApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        CrashNotice.installJavaCrashHandler(this)
         // Apply saved language preference or system locale
         applySavedLanguage()
         // Eagerly construct billing manager so it starts connecting immediately

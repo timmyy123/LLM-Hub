@@ -911,4 +911,7 @@
     <string name="hf_token_using_default">กำลังใช้โทเค็นเริ่มต้น</string>
     <string name="hf_token_custom_active">โทเค็นที่กำหนดเองใช้งานอยู่</string>
     <string name="hf_token_clear">รีเซ็ตเป็นค่าเริ่มต้น</string>
+    <string name="gguf_vulkan_setting">แบ็กเอนด์ GPU สำหรับ GGUF</string>
+    <string name="crash_recovery_title">แอปปิดโดยไม่คาดคิด</string>
+    <string name="crash_recovery_message">ลองโหลดโมเดลที่เล็กลงหรือใช้ CPU</string>
 </resources>

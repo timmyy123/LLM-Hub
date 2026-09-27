@@ -1,6 +1,7 @@
 package com.llmhub.llmhub.data
 
 import android.content.Context
+import android.os.Build
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
@@ -32,6 +33,7 @@ class ThemePreferences(private val context: Context) {
         private val SELECTED_TTS_MODEL_KEY = stringPreferencesKey("selected_tts_model")
         private val SELECTED_TTS_DEVICE_KEY = stringPreferencesKey("selected_tts_device")
         private val SELECTED_TTS_VOICE_KEY = stringPreferencesKey("selected_tts_voice")
+        private val GGUF_USE_VULKAN_KEY = booleanPreferencesKey("gguf_use_vulkan")
     }
 
     val themeMode: Flow<ThemeMode> = context.dataStore.data
@@ -48,6 +50,31 @@ class ThemePreferences(private val context: Context) {
         .map { preferences ->
             preferences[WEB_SEARCH_KEY] ?: false // Default to disabled
         }
+
+    val ggufUseVulkan: Flow<Boolean> = context.dataStore.data
+        .map { preferences -> preferences[GGUF_USE_VULKAN_KEY] ?: defaultGgufUseVulkan() }
+
+    fun defaultGgufUseVulkan(): Boolean = !isSnapdragonChip()
+
+    private fun isSnapdragonChip(): Boolean {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+            Build.SOC_MANUFACTURER.contains("qualcomm", ignoreCase = true)
+        ) return true
+        val soc = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) Build.SOC_MODEL else ""
+        return listOf(soc, Build.HARDWARE, Build.BOARD).any { identifier ->
+            identifier.startsWith("SM", ignoreCase = true) ||
+                identifier.startsWith("SDM", ignoreCase = true) ||
+                identifier.startsWith("MSM", ignoreCase = true) ||
+                identifier.startsWith("QCS", ignoreCase = true) ||
+                identifier.startsWith("QCM", ignoreCase = true) ||
+                identifier.contains("qcom", ignoreCase = true) ||
+                identifier.contains("qualcomm", ignoreCase = true)
+        }
+    }
+
+    suspend fun setGgufUseVulkan(enabled: Boolean) {
+        context.dataStore.edit { preferences -> preferences[GGUF_USE_VULKAN_KEY] = enabled }
+    }
 
     val appLanguage: Flow<String?> = context.dataStore.data
         .map { preferences ->

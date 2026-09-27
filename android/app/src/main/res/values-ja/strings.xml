@@ -1001,4 +1001,7 @@
     <string name="hf_token_using_default">デフォルトトークンを使用中</string>
     <string name="hf_token_custom_active">カスタムトークン有効</string>
     <string name="hf_token_clear">デフォルトに戻す</string>
+    <string name="gguf_vulkan_setting">GGUF GPUバックエンド</string>
+    <string name="crash_recovery_title">アプリが予期せず終了しました</string>
+    <string name="crash_recovery_message">より小さいモデルを読み込むか、CPUを使用してください。</string>
 </resources>

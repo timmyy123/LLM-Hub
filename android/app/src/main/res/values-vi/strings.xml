@@ -911,4 +911,7 @@
     <string name="hf_token_using_default">Đang dùng mã mặc định</string>
     <string name="hf_token_custom_active">Mã tùy chỉnh đang hoạt động</string>
     <string name="hf_token_clear">Đặt lại về mặc định</string>
+    <string name="gguf_vulkan_setting">Bộ xử lý GPU GGUF</string>
+    <string name="crash_recovery_title">Ứng dụng đã đóng bất ngờ</string>
+    <string name="crash_recovery_message">Hãy thử tải mô hình nhỏ hơn hoặc sử dụng CPU.</string>
 </resources>

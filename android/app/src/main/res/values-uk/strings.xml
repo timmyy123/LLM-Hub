@@ -1004,4 +1004,7 @@
     <string name="hf_token_using_default">Використовується стандартний токен</string>
     <string name="hf_token_custom_active">Користувацький токен активний</string>
     <string name="hf_token_clear">Скинути до стандартного</string>
+    <string name="gguf_vulkan_setting">GPU-рушій GGUF</string>
+    <string name="crash_recovery_title">Застосунок несподівано закрився</string>
+    <string name="crash_recovery_message">Спробуйте завантажити меншу модель або використати ЦП.</string>
 </resources>

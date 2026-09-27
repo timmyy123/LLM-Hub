@@ -998,4 +998,7 @@
     <string name="hf_token_using_default">Uso del token predefinito</string>
     <string name="hf_token_custom_active">Token personalizzato attivo</string>
     <string name="hf_token_clear">Ripristina predefinito</string>
+    <string name="gguf_vulkan_setting">Backend GPU GGUF</string>
+    <string name="crash_recovery_title">App chiusa in modo imprevisto</string>
+    <string name="crash_recovery_message">Prova a caricare un modello più piccolo o a usare la CPU.</string>
 </resources>
