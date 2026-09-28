@@ -4,7 +4,7 @@ import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
+import androidx.core.view.WindowCompat
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.AlertDialog
@@ -45,7 +45,7 @@ class MainActivity : ComponentActivity() {
         // Initialize ThemeViewModel
         themeViewModel = ThemeViewModel(this)
 
-        enableEdgeToEdge()
+        WindowCompat.enableEdgeToEdge(window)
         setContent {
             val currentThemeMode by themeViewModel.themeMode.collectAsState()
             val currentLanguage by themeViewModel.appLanguage.collectAsState()

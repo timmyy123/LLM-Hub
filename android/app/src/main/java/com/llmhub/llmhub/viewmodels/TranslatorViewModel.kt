@@ -2,8 +2,8 @@ package com.llmhub.llmhub.viewmodels
 
 import android.app.Application
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.net.Uri
+import com.llmhub.llmhub.utils.loadInferenceBitmap
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.llmhub.llmhub.data.LLMModel
@@ -524,9 +524,7 @@ $inputText""".trimIndent()
         val app = getApplication<Application>()
         return withContext(Dispatchers.IO) {
             try {
-                app.contentResolver.openInputStream(uri)?.use { stream ->
-                    BitmapFactory.decodeStream(stream)
-                }
+                loadInferenceBitmap(app, uri)
             } catch (_: Exception) {
                 null
             }

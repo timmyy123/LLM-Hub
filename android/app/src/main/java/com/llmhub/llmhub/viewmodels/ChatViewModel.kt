@@ -3,8 +3,8 @@ package com.llmhub.llmhub.viewmodels
 import android.content.Context
 import android.net.Uri
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.util.Log
+import com.llmhub.llmhub.utils.loadInferenceBitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.SavedStateHandle
@@ -3333,26 +3333,13 @@ class ChatViewModel(
             try {
                 Log.d("ChatViewModel", "Opening input stream for URI: $uri")
                 
-                // Get content resolver and open input stream
-                val contentResolver = context.contentResolver
-                val inputStream = contentResolver.openInputStream(uri)
-                
-                if (inputStream != null) {
-                    Log.d("ChatViewModel", "Input stream opened successfully")
-                    inputStream.use { stream ->
-                        val bitmap = BitmapFactory.decodeStream(stream)
-                        if (bitmap != null) {
-                            Log.d("ChatViewModel", "Bitmap decoded successfully: ${bitmap.width}x${bitmap.height}")
-                            bitmap
-                        } else {
-                            Log.w("ChatViewModel", "BitmapFactory.decodeStream returned null")
-                            null
-                        }
-                    }
+                val bitmap = loadInferenceBitmap(context, uri)
+                if (bitmap != null) {
+                    Log.d("ChatViewModel", "Bitmap decoded successfully: ${bitmap.width}x${bitmap.height}")
                 } else {
-                    Log.w("ChatViewModel", "Failed to open input stream for URI: $uri")
-                    null
+                    Log.w("ChatViewModel", "Failed to decode image URI: $uri")
                 }
+                bitmap
             } catch (e: SecurityException) {
                 Log.e("ChatViewModel", "Security exception accessing URI: $uri", e)
                 null

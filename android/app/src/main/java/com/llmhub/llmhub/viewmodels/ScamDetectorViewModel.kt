@@ -2,9 +2,9 @@ package com.llmhub.llmhub.viewmodels
 
 import android.app.Application
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.net.Uri
 import android.util.Log
+import com.llmhub.llmhub.utils.loadInferenceBitmap
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.llmhub.llmhub.data.LLMModel
@@ -616,22 +616,13 @@ Be thorough and specific in your analysis. If you detect a scam, clearly state i
         return withContext(Dispatchers.IO) {
             try {
                 Log.d(TAG, "Opening input stream for URI: $uri")
-                val inputStream = context.contentResolver.openInputStream(uri)
-                if (inputStream != null) {
-                    inputStream.use { stream ->
-                        val bitmap = BitmapFactory.decodeStream(stream)
-                        if (bitmap != null) {
-                            Log.d(TAG, "Bitmap decoded successfully: ${bitmap.width}x${bitmap.height}")
-                            bitmap
-                        } else {
-                            Log.w(TAG, "BitmapFactory.decodeStream returned null")
-                            null
-                        }
-                    }
+                val bitmap = loadInferenceBitmap(context, uri)
+                if (bitmap != null) {
+                    Log.d(TAG, "Bitmap decoded successfully: ${bitmap.width}x${bitmap.height}")
                 } else {
-                    Log.w(TAG, "Failed to open input stream for URI: $uri")
-                    null
+                    Log.w(TAG, "Failed to decode image URI: $uri")
                 }
+                bitmap
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to load image from URI: $uri", e)
                 null
