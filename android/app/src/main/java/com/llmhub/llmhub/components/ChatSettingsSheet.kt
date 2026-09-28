@@ -104,7 +104,7 @@ fun ChatSettingsSheet(
     }
     
     val defaultUseGpu = remember(selectedModel, isGemma4_12B) { 
-        if (isGemma4_12B) true else if (isPhi4Mini) false else selectedModel?.supportsGpu == true
+        if (selectedModel?.modelFormat == "gguf") false else if (isGemma4_12B) true else if (isPhi4Mini) false else selectedModel?.supportsGpu == true
     }
     val canUseNpuForSelectedModel by remember(selectedModel, isPhi4Mini) {
         derivedStateOf {
@@ -136,8 +136,7 @@ fun ChatSettingsSheet(
 
     var useNpu by remember {
         mutableStateOf(
-            initialSelectedNpuDeviceId != null ||
-                (selectedModel?.modelFormat == "gguf" && com.llmhub.llmhub.data.DeviceInfo.isLlamaCppHexagonSupported())
+            initialSelectedNpuDeviceId != null
         )
     }
     var gpuLayers by remember { mutableStateOf(999) }
@@ -185,7 +184,7 @@ fun ChatSettingsSheet(
             val newIsPhi4Mini = model.name.contains("Phi-4 Mini", ignoreCase = true)
             val newIsGemma4_12B = model.modelFormat == "litertlm" && (model.name.contains("Gemma-4 12B", ignoreCase = true) || model.name.contains("Gemma 4 12B", ignoreCase = true))
             val newIsGemma4Small = model.modelFormat == "litertlm" && model.name.contains("Gemma-4", ignoreCase = true) && !newIsGemma4_12B
-            val newDefaultUseGpu = if (newIsGemma4_12B) true else if (newIsPhi4Mini) false else model.supportsGpu
+            val newDefaultUseGpu = if (model.modelFormat == "gguf") false else if (newIsGemma4_12B) true else if (newIsPhi4Mini) false else model.supportsGpu
             
             try {
                 val saved = modelPrefs.getModelConfig(model.name)
@@ -205,7 +204,7 @@ fun ChatSettingsSheet(
                         "CPU" -> false
                         else -> newDefaultUseGpu
                     }
-                    useNpu = if (newIsGemma4_12B) false else saved.deviceId == "dev0"
+                    useNpu = !newIsGemma4_12B && saved.backend == "GPU" && saved.deviceId == "dev0"
                     disableVision = saved.disableVision || !selectedModelSupportsVisionInput
                     disableAudio = saved.disableAudio
                     gpuLayers = saved.nGpuLayers.coerceIn(0, gpuLayerLimit)
@@ -224,9 +223,8 @@ fun ChatSettingsSheet(
                     topK = 64
                     topP = 0.95f
                     temperature = 1.0f
-                    val ggufNpuDefault = model.modelFormat == "gguf" && com.llmhub.llmhub.data.DeviceInfo.isLlamaCppHexagonSupported()
                     useGpu = if (newIsGemma4_12B) true else newDefaultUseGpu
-                    useNpu = ggufNpuDefault
+                    useNpu = false
                     disableVision = newIsGemma3n || newIsGemma4Small || !selectedModelSupportsVisionInput
                     disableAudio = newIsGemma3n || newIsGemma4Small
                     enableThinking = true
@@ -246,9 +244,8 @@ fun ChatSettingsSheet(
                 topK = 64
                 topP = 0.95f
                 temperature = 1.0f
-                val ggufNpuDefault = selectedModel?.modelFormat == "gguf" && com.llmhub.llmhub.data.DeviceInfo.isLlamaCppHexagonSupported()
                 useGpu = if (newIsGemma4_12B) true else newDefaultUseGpu
-                useNpu = ggufNpuDefault
+                useNpu = false
                 disableVision = newIsGemma3n || newIsGemma4Small || !selectedModelSupportsVisionInput
                 disableAudio = newIsGemma3n || newIsGemma4Small
                 enableThinking = true
@@ -949,7 +946,7 @@ fun ChatSettingsSheet(
                                     val newMaxTokensCap = baseMaxTokensCap
                                     val newIsGemma3n = model.name.contains("Gemma-3n", ignoreCase = true)
                                     val newIsPhi4Mini = model.name.contains("Phi-4 Mini", ignoreCase = true)
-                                    val newDefaultUseGpu = if (newIsPhi4Mini) false else model.supportsGpu
+                                    val newDefaultUseGpu = if (model.modelFormat == "gguf" || newIsPhi4Mini) false else model.supportsGpu
                                     val defaultCtx = minOf(4096, newMaxTokensCap)
                                     val defaultMax = minOf(4096, defaultCtx)
                                     

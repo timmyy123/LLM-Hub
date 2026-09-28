@@ -4,7 +4,6 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.util.Log
 import com.llmhub.llmhub.data.LLMModel
-import com.llmhub.llmhub.data.DeviceInfo
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import kotlinx.coroutines.flow.Flow
 
@@ -44,9 +43,8 @@ class UnifiedInferenceService(private val context: Context) : InferenceService {
             preferredBackend
         } else if (cfg?.backend != null) {
             try { LlmInference.Backend.valueOf(cfg.backend) } catch (_: Exception) { preferredBackend }
-        } else if (model.modelFormat == "gguf" && deviceId == null && !DeviceInfo.isLlamaCppHexagonSupported()) {
-            // Initial automatic choice only: the Snapdragon package has no v69 or
-            // non-Qualcomm accelerator. An explicit saved GPU choice still wins.
+        } else if (model.modelFormat == "gguf") {
+            // No per-model choice or caller override: GGUF starts on CPU.
             LlmInference.Backend.CPU
         } else {
             preferredBackend
@@ -55,6 +53,8 @@ class UnifiedInferenceService(private val context: Context) : InferenceService {
         // GPU with a null device means GPU, not a saved NPU device from an older config.
         val finalDeviceId = if (model.modelFormat == "gguf" && preferredBackend != null) {
             deviceId
+        } else if (model.modelFormat == "gguf") {
+            cfg?.deviceId
         } else {
             cfg?.deviceId ?: deviceId
         }

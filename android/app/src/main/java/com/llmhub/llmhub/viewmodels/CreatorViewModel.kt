@@ -198,6 +198,9 @@ class CreatorViewModel(
         if (isGemma4_12B) {
             _selectedBackend.value = LlmInference.Backend.GPU
             _selectedNpuDeviceId.value = null
+        } else if (model.modelFormat == "gguf") {
+            _selectedBackend.value = LlmInference.Backend.CPU
+            _selectedNpuDeviceId.value = null
         } else {
             _selectedBackend.value = if (model.supportsGpu) {
                 _selectedBackend.value ?: LlmInference.Backend.GPU

@@ -62,6 +62,9 @@ fun ModelConfigsDialog(
     val isGemma3nE2B = model.name.contains("Gemma-3n E2B", ignoreCase = true)
     val isGemma3nE4B = model.name.contains("Gemma-3n E4B", ignoreCase = true)
     val isGemma3nModel = isGemma3nE2B || isGemma3nE4B
+    val isGemma4Small = model.modelFormat == "litertlm" &&
+        (model.name.contains("Gemma-4 E2", ignoreCase = true) ||
+            model.name.contains("Gemma-4 E4", ignoreCase = true))
     val isLiteRtLm = model.modelFormat == "litertlm"
 
     // Phi-4 Mini detection: supports GPU on devices with sufficient memory
@@ -80,11 +83,11 @@ fun ModelConfigsDialog(
     var topK by remember { mutableStateOf(64) }
     var topP by remember { mutableStateOf(0.95f) }
     var temperature by remember { mutableStateOf(1.0f) }
-    val defaultUseGpu = remember(model) { if (isPhi4Mini) false else model.supportsGpu }
+    val defaultUseGpu = remember(model) { if (model.modelFormat == "gguf" || isPhi4Mini) false else model.supportsGpu }
     var useGpu by remember { mutableStateOf(defaultUseGpu) } // Default accelerator based on model support
-    // Default vision and audio disabled for Gemma-3n models to conserve resources on mobile
-    var disableVision by remember { mutableStateOf(isGemma3nModel) }
-    var disableAudio by remember { mutableStateOf(isGemma3nModel) }
+    // Keep the lightweight Gemma-3n and Gemma-4 E2/E4 defaults text-only.
+    var disableVision by remember { mutableStateOf(isGemma3nModel || isGemma4Small) }
+    var disableAudio by remember { mutableStateOf(isGemma3nModel || isGemma4Small) }
 
     // Load/save preferences for this model
     val modelPrefs = ModelPreferences(context)
@@ -354,8 +357,8 @@ fun ModelConfigsDialog(
                         topP = 0.95f
                         temperature = 1.0f
                         useGpu = defaultUseGpu
-                        disableVision = isGemma3nModel
-                        disableAudio = isGemma3nModel
+                        disableVision = isGemma3nModel || isGemma4Small
+                        disableAudio = isGemma3nModel || isGemma4Small
                     }, modifier = Modifier
                         .height(48.dp)
                         .defaultMinSize(minWidth = 88.dp)) { Text(stringResource(R.string.reset_to_defaults)) }
@@ -375,7 +378,8 @@ fun ModelConfigsDialog(
                             // Persist model-specific config asynchronously
                             scope.launch(Dispatchers.IO) {
                                 try {
-                                    val cfg = ModelConfig(
+                                    val cfg = (modelPrefs.getModelConfig(model.name)
+                                        ?: com.llmhub.llmhub.data.defaultConfigForModel(model)).copy(
                                         maxTokens = finalMax,
                                         topK = topK,
                                         topP = topP,
@@ -400,4 +404,3 @@ fun ModelConfigsDialog(
         }
     }
 }
-

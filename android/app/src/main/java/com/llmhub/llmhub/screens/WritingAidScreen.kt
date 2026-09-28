@@ -26,6 +26,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import com.llmhub.llmhub.LlmHubApplication
 import com.llmhub.llmhub.R
 import com.llmhub.llmhub.data.GgufLayerLimits
@@ -230,8 +231,8 @@ fun WritingAidScreen(
                             )
                         }
 
-                        // GPU Layers (GGUF only)
-                        if (isGguf) {
+                        // GPU layers only affect GGUF GPU/NPU loads.
+                        if (isGguf && selectedBackend == LlmInference.Backend.GPU) {
                             Text(
                                 text = stringResource(R.string.gpu_layers_label, gpuLayers),
                                 style = MaterialTheme.typography.bodyMedium

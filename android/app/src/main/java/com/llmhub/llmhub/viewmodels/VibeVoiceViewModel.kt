@@ -161,9 +161,9 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
             }
 
             val currentModel = _selectedModel.value
-            if (currentModel?.modelFormat == "gguf" && DeviceInfo.isLlamaCppHexagonSupported() && _selectedNpuDeviceId.value == null) {
-                _selectedBackend.value = LlmInference.Backend.GPU
-                _selectedNpuDeviceId.value = "dev0"
+            if (currentModel?.modelFormat == "gguf" && !prefs.contains("selected_backend")) {
+                _selectedBackend.value = LlmInference.Backend.CPU
+                _selectedNpuDeviceId.value = null
             }
 
             val savedVoiceName = prefs.getString("selected_voice_model_name", null)
@@ -217,9 +217,9 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
         if (_isModelLoaded.value) unloadModel()
         _selectedModel.value = model
 
-        if (model.modelFormat == "gguf" && DeviceInfo.isLlamaCppHexagonSupported() && _selectedNpuDeviceId.value == null) {
-            _selectedBackend.value = LlmInference.Backend.GPU
-            _selectedNpuDeviceId.value = "dev0"
+        if (model.modelFormat == "gguf") {
+            _selectedBackend.value = LlmInference.Backend.CPU
+            _selectedNpuDeviceId.value = null
         }
 
         if (!model.hasNativeVoiceSupport() && _selectedVoiceModel.value == null) {

@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.activity.ComponentActivity
+import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import coil.compose.AsyncImage
 import com.llmhub.llmhub.LlmHubApplication
 import com.llmhub.llmhub.R
@@ -2191,8 +2192,8 @@ fun ScamDetectorScreen(
                             )
                         }
 
-                        // GPU Layers (GGUF only)
-                        if (isGgufScam) {
+                        // GPU layers only affect GGUF GPU/NPU loads.
+                        if (isGgufScam && selectedBackend == LlmInference.Backend.GPU) {
                             Text(
                                 text = stringResource(R.string.gpu_layers_label, gpuLayersScam),
                                 style = MaterialTheme.typography.bodyMedium

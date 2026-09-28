@@ -24,7 +24,6 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import com.llmhub.llmhub.data.DeviceInfo
 
 enum class CodeLanguage {
     HTML,
@@ -234,11 +233,12 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
         _selectedMaxTokens.value = savedTokens.coerceIn(1, model.effectiveContextWindow(getApplication<Application>()))
 
         val isGemma4_12B = model.modelFormat == "litertlm" && (model.name.contains("Gemma-4 12B", ignoreCase = true) || model.name.contains("Gemma 4 12B", ignoreCase = true))
-        val savedBackendName = prefs.getString("selected_backend_${model.name}", prefs.getString("selected_backend", LlmInference.Backend.GPU.name))
+        val defaultBackendName = if (model.modelFormat == "gguf") LlmInference.Backend.CPU.name else LlmInference.Backend.GPU.name
+        val savedBackendName = prefs.getString("selected_backend_${model.name}", defaultBackendName)
         val restoredBackend = try {
-            LlmInference.Backend.valueOf(savedBackendName ?: LlmInference.Backend.GPU.name)
+            LlmInference.Backend.valueOf(savedBackendName ?: defaultBackendName)
         } catch (_: IllegalArgumentException) {
-            LlmInference.Backend.GPU
+            LlmInference.Backend.valueOf(defaultBackendName)
         }
         _selectedBackend.value = if (isGemma4_12B) {
             LlmInference.Backend.GPU
@@ -251,12 +251,9 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
         _selectedNpuDeviceId.value = if (isGemma4_12B) {
             null
         } else if (_selectedBackend.value == LlmInference.Backend.GPU) {
-            prefs.getString("selected_npu_device_id_${model.name}", prefs.getString("selected_npu_device_id", null))
+            prefs.getString("selected_npu_device_id_${model.name}", null)
         } else {
             null
-        }
-        if (model.modelFormat == "gguf" && DeviceInfo.isLlamaCppHexagonSupported() && _selectedNpuDeviceId.value == null) {
-            _selectedNpuDeviceId.value = "dev0"
         }
 
         _enableThinking.value = prefs.getBoolean("enable_thinking_${model.name}", prefs.getBoolean("enable_thinking", true))

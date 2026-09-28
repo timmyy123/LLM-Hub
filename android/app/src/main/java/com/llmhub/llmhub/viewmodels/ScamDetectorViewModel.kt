@@ -28,7 +28,6 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.util.UUID
 import java.util.concurrent.TimeUnit
-import com.llmhub.llmhub.data.DeviceInfo
 
 class ScamDetectorViewModel(application: Application) : AndroidViewModel(application) {
     
@@ -161,9 +160,9 @@ class ScamDetectorViewModel(application: Application) : AndroidViewModel(applica
             }
 
             val model = _selectedModel.value
-            if (model?.modelFormat == "gguf" && DeviceInfo.isLlamaCppHexagonSupported() && _selectedNpuDeviceId.value == null) {
-                _selectedBackend.value = LlmInference.Backend.GPU
-                _selectedNpuDeviceId.value = "dev0"
+            if (model?.modelFormat == "gguf" && !prefs.contains("selected_backend")) {
+                _selectedBackend.value = LlmInference.Backend.CPU
+                _selectedNpuDeviceId.value = null
             }
         }
     }
@@ -186,9 +185,9 @@ class ScamDetectorViewModel(application: Application) : AndroidViewModel(applica
         if (isGemma4_12B) {
             _selectedBackend.value = LlmInference.Backend.GPU
             _selectedNpuDeviceId.value = null
-        } else if (model.modelFormat == "gguf" && DeviceInfo.isLlamaCppHexagonSupported() && _selectedNpuDeviceId.value == null) {
-            _selectedBackend.value = LlmInference.Backend.GPU
-            _selectedNpuDeviceId.value = "dev0"
+        } else if (model.modelFormat == "gguf") {
+            _selectedBackend.value = LlmInference.Backend.CPU
+            _selectedNpuDeviceId.value = null
         } else {
             _selectedBackend.value = if (model.supportsGpu) {
                 _selectedBackend.value ?: LlmInference.Backend.GPU

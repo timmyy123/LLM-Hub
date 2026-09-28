@@ -27,7 +27,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
-import com.llmhub.llmhub.data.DeviceInfo
 
 class TranslatorViewModel(application: Application) : AndroidViewModel(application) {
     private val inferenceService = (application as com.llmhub.llmhub.LlmHubApplication).inferenceService
@@ -140,9 +139,9 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
             if (model?.hasNativeVoiceSupport() != true) {
                 _audioEnabled.value = false
             }
-            if (model?.modelFormat == "gguf" && DeviceInfo.isLlamaCppHexagonSupported() && _selectedNpuDeviceId.value == null) {
-                _selectedBackend.value = LlmInference.Backend.GPU
-                _selectedNpuDeviceId.value = "dev0"
+            if (model?.modelFormat == "gguf" && !prefs.contains("selected_backend")) {
+                _selectedBackend.value = LlmInference.Backend.CPU
+                _selectedNpuDeviceId.value = null
             }
         }
     }
@@ -209,9 +208,9 @@ class TranslatorViewModel(application: Application) : AndroidViewModel(applicati
         if (isGemma4_12B) {
             _selectedBackend.value = LlmInference.Backend.GPU
             _selectedNpuDeviceId.value = null
-        } else if (model.modelFormat == "gguf" && DeviceInfo.isLlamaCppHexagonSupported() && _selectedNpuDeviceId.value == null) {
-            _selectedBackend.value = LlmInference.Backend.GPU
-            _selectedNpuDeviceId.value = "dev0"
+        } else if (model.modelFormat == "gguf") {
+            _selectedBackend.value = LlmInference.Backend.CPU
+            _selectedNpuDeviceId.value = null
         }
 
         saveSettings()

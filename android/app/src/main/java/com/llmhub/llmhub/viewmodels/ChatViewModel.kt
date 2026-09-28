@@ -36,7 +36,6 @@ import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import androidx.lifecycle.ViewModelProvider
 import androidx.activity.ComponentActivity
 import com.llmhub.llmhub.ui.components.TtsService
-import com.llmhub.llmhub.data.DeviceInfo
 import com.llmhub.llmhub.websearch.WebSearchCitationStore
 
 class ChatViewModel(
@@ -363,9 +362,9 @@ class ChatViewModel(
         if (isLiteRtLmGemma4_12B) {
             _selectedBackend.value = LlmInference.Backend.GPU
             _selectedNpuDeviceId.value = null
-        } else if (model.modelFormat == "gguf" && DeviceInfo.isLlamaCppHexagonSupported() && _selectedNpuDeviceId.value == null) {
-            _selectedBackend.value = LlmInference.Backend.GPU
-            _selectedNpuDeviceId.value = "dev0"
+        } else if (model.modelFormat == "gguf") {
+            _selectedBackend.value = LlmInference.Backend.CPU
+            _selectedNpuDeviceId.value = null
         } else {
             if (_selectedBackend.value == null || (!model.supportsGpu && _selectedBackend.value == LlmInference.Backend.GPU)) {
                 _selectedBackend.value = if (model.supportsGpu) {
@@ -405,8 +404,8 @@ class ChatViewModel(
                 val cfg = modelPrefs.getModelConfig(model.name)
                 if (cfg != null) {
                     _selectedBackend.value = cfg.backend?.let {
-                        try { LlmInference.Backend.valueOf(it) } catch (_: Exception) { LlmInference.Backend.GPU }
-                    } ?: LlmInference.Backend.GPU
+                        try { LlmInference.Backend.valueOf(it) } catch (_: Exception) { if (model.modelFormat == "gguf") LlmInference.Backend.CPU else LlmInference.Backend.GPU }
+                    } ?: if (model.modelFormat == "gguf") LlmInference.Backend.CPU else LlmInference.Backend.GPU
                     _selectedNpuDeviceId.value = cfg.deviceId
                     isVisionDisabled = cfg.disableVision
                     isAudioDisabled = cfg.disableAudio
@@ -416,9 +415,9 @@ class ChatViewModel(
                     if (isLiteRtLmGemma4_12B) {
                         _selectedBackend.value = LlmInference.Backend.GPU
                         _selectedNpuDeviceId.value = null
-                    } else if (model.modelFormat == "gguf" && DeviceInfo.isLlamaCppHexagonSupported()) {
-                        _selectedBackend.value = LlmInference.Backend.GPU
-                        _selectedNpuDeviceId.value = "dev0"
+                    } else if (model.modelFormat == "gguf") {
+                        _selectedBackend.value = LlmInference.Backend.CPU
+                        _selectedNpuDeviceId.value = null
                     } else {
                         _selectedBackend.value = if (model.supportsGpu) LlmInference.Backend.GPU else LlmInference.Backend.CPU
                         _selectedNpuDeviceId.value = null
@@ -2469,16 +2468,12 @@ class ChatViewModel(
         // A lazy load must use this model's saved sheet config, not the backend/device
         // still held in the chat UI from a different model or a previous session.
         val savedConfig = modelPrefs.getModelConfig(model.name)
-        val defaultNpuDevice = if (
-            savedConfig == null && !backendExplicitlySet && model.modelFormat == "gguf" &&
-            DeviceInfo.isLlamaCppHexagonSupported()
-        ) "dev0" else null
         return com.llmhub.llmhub.data.loadModelWithSavedConfig(
             model = model,
             modelPrefs = modelPrefs,
             inferenceService = inferenceService,
             backendOverride = if (backendExplicitlySet) _selectedBackend.value else null,
-            deviceIdOverride = if (backendExplicitlySet) _selectedNpuDeviceId.value else savedConfig?.deviceId ?: defaultNpuDevice,
+            deviceIdOverride = if (backendExplicitlySet) _selectedNpuDeviceId.value else savedConfig?.deviceId,
             onConfigApplied = { cfg ->
                 isVisionDisabled = cfg.disableVision
                 isAudioDisabled = cfg.disableAudio

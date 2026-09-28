@@ -21,7 +21,6 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import com.llmhub.llmhub.data.DeviceInfo
 
 class WritingAidViewModel(application: Application) : AndroidViewModel(application) {
     
@@ -129,9 +128,9 @@ class WritingAidViewModel(application: Application) : AndroidViewModel(applicati
                 } ?: available.firstOrNull()
                 modelToSelect?.let {
                     _selectedModel.value = it
-                    if (it.modelFormat == "gguf" && DeviceInfo.isLlamaCppHexagonSupported() && _selectedNpuDeviceId.value == null) {
-                        _selectedBackend.value = LlmInference.Backend.GPU
-                        _selectedNpuDeviceId.value = "dev0"
+                    if (it.modelFormat == "gguf" && !prefs.contains("selected_backend")) {
+                        _selectedBackend.value = LlmInference.Backend.CPU
+                        _selectedNpuDeviceId.value = null
                     } else {
                         _selectedBackend.value = if (it.supportsGpu) {
                             _selectedBackend.value ?: LlmInference.Backend.GPU
@@ -161,9 +160,9 @@ class WritingAidViewModel(application: Application) : AndroidViewModel(applicati
         if (isGemma4_12B) {
             _selectedBackend.value = LlmInference.Backend.GPU
             _selectedNpuDeviceId.value = null
-        } else if (model.modelFormat == "gguf" && DeviceInfo.isLlamaCppHexagonSupported() && _selectedNpuDeviceId.value == null) {
-            _selectedBackend.value = LlmInference.Backend.GPU
-            _selectedNpuDeviceId.value = "dev0"
+        } else if (model.modelFormat == "gguf") {
+            _selectedBackend.value = LlmInference.Backend.CPU
+            _selectedNpuDeviceId.value = null
         } else {
             _selectedBackend.value = if (model.supportsGpu) {
                 _selectedBackend.value ?: LlmInference.Backend.GPU
