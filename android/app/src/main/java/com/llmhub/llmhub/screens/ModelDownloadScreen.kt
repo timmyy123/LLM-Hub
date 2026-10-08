@@ -993,6 +993,16 @@ private fun resolveLocalModelFiles(model: LLMModel, context: Context): List<File
     val modelsDir = File(context.filesDir, "models")
     val sdModelsDir = File(context.filesDir, "sd_models")
 
+    if (model.category == "image_upscale") {
+        val upscalerModelsDir = File(context.filesDir, "upscaler_models")
+        val safeName = model.name.replace(Regex("[^a-zA-Z0-9_\\-]"), "_")
+        val dir = File(upscalerModelsDir, safeName)
+        if (dir.exists() && dir.isDirectory) {
+            files += dir.listFiles()?.filter { it.isFile } ?: emptyList()
+        }
+        return files
+    }
+
     when (model.modelFormat.lowercase()) {
         "qnn_npu", "mnn_cpu" -> {
             val modelDir = File(sdModelsDir, model.name.replace(" ", "_"))

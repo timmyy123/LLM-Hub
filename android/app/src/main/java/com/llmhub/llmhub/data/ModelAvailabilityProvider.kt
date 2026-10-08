@@ -20,6 +20,7 @@ object ModelAvailabilityProvider {
                 model.category != "imageGeneration" &&
                 model.category != "videoGeneration" &&
                 model.category != "imageUpscale" &&
+                model.category != "image_upscale" &&
                 model.category != "tts" &&
                 model.category != "textToSpeech" &&
                 model.category != "music_generation" &&

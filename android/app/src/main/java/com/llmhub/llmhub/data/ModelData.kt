@@ -133,6 +133,20 @@ object ModelData {
             requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 6),
             contextWindowSize = 0,
             modelFormat = "upscaler_bin"
+        ),
+        LLMModel(
+            name = "Real-ESRGAN General x4v3 (GPU/CPU)",
+            description = "Real-ESRGAN general x4v3 upscaler powered by LiteRT. Fast 4x super-resolution with GPU acceleration and automatic CPU fallback. Works on all devices. ~3.5 MB download.",
+            url = "https://huggingface.co/litert-community/real-esrgan-x4v3-litert/resolve/0a6fc35ba3e34e80b53f43089c1d2b612d33bea9/realesr_general_x4v3.tflite",
+            category = "image_upscale",
+            sizeBytes = 3549456L,
+            source = "litert-community/real-esrgan-x4v3-litert",
+            supportsVision = false,
+            supportsAudio = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 4),
+            contextWindowSize = 0,
+            modelFormat = "tflite"
         )
     )
 

@@ -866,7 +866,7 @@
     <string name="image_upscale_upscaling">Upscaling…</string>
     <string name="image_upscale_save">Save to Gallery</string>
     <string name="image_upscale_models_title">Image Upscale Models</string>
-    <string name="image_upscale_models_description">QNN-accelerated AI models for upscaling and enhancing image resolution up to 4x</string>
+    <string name="image_upscale_models_description">AI models for upscaling and enhancing image resolution up to 4x (GPU, CPU, and Qualcomm NPU)</string>
     <string name="tts_models">TTS Models</string>
     <string name="tts_models_description">Text-to-speech models for local voice synthesis</string>
     <string name="tts_model_setting">TTS Model</string>

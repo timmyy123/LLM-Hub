@@ -416,7 +416,15 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
             } else if (model.category == "image_upscale") {
                 val upscalerModelsDir = File(context.filesDir, "upscaler_models")
                 val safeName = model.name.replace(Regex("[^a-zA-Z0-9_\\-]"), "_")
-                val modelFile = File(upscalerModelsDir, "$safeName/upscaler.bin")
+                val targetFileName = if (model.modelFormat == "tflite" || model.localFileName().endsWith(".tflite")) {
+                    "upscaler.tflite"
+                } else {
+                    "upscaler.bin"
+                }
+                val modelFile = File(upscalerModelsDir, "$safeName/upscaler.tflite").takeIf { it.exists() }
+                    ?: File(upscalerModelsDir, "$safeName/upscaler.bin").takeIf { it.exists() }
+                    ?: File(upscalerModelsDir, "$safeName/${model.localFileName()}").takeIf { it.exists() }
+                    ?: File(upscalerModelsDir, "$safeName/$targetFileName")
                 val downloaded = modelFile.exists() && modelFile.length() > 0
                 val fileSize = if (downloaded) modelFile.length() else 0L
                 model.copy(
@@ -721,7 +729,12 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
                         val safeName = model.name.replace(Regex("[^a-zA-Z0-9_\\-]"), "_")
                         val modelDir = File(upscalerModelsDir, safeName)
                         modelDir.mkdirs()
-                        val destFile = File(modelDir, "upscaler.bin")
+                        val targetFileName = if (model.modelFormat == "tflite" || model.localFileName().endsWith(".tflite")) {
+                            "upscaler.tflite"
+                        } else {
+                            "upscaler.bin"
+                        }
+                        val destFile = File(modelDir, targetFileName)
                         // The downloaded file is in the standard models/ temp location — move/copy it
                         val tempFile = File(context.filesDir, "models/${model.localFileName()}")
                         if (tempFile.exists()) {

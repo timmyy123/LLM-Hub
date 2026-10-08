@@ -33,6 +33,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.llmhub.llmhub.R
+import com.llmhub.llmhub.data.ModelData
+import com.llmhub.llmhub.data.LiteRtUpscaler
 import com.llmhub.llmhub.service.SDBackendService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -70,8 +72,19 @@ fun ImageUpscaleScreen(
     val availableModels = remember(upscalerModelsDir) {
         if (!upscalerModelsDir.exists()) return@remember emptyList<Pair<String, File>>()
         upscalerModelsDir.listFiles()
-            ?.filter { it.isDirectory && File(it, "upscaler.bin").exists() }
-            ?.map { Pair(it.name.replace("_", " "), File(it, "upscaler.bin")) }
+            ?.filter { it.isDirectory }
+            ?.mapNotNull { dir ->
+                val modelFile = File(dir, "upscaler.tflite").takeIf { it.exists() }
+                    ?: File(dir, "upscaler.bin").takeIf { it.exists() }
+                    ?: dir.listFiles()?.firstOrNull { it.isFile && (it.name.endsWith(".tflite") || it.name.endsWith(".bin")) }
+                if (modelFile != null) {
+                    val matched = ModelData.upscalerModels.firstOrNull {
+                        it.name.replace(Regex("[^a-zA-Z0-9_\\-]"), "_") == dir.name
+                    }
+                    val displayName = matched?.name ?: dir.name.replace("_", " ").trim()
+                    Pair(displayName, modelFile)
+                } else null
+            }
             ?: emptyList()
     }
 
@@ -395,75 +408,87 @@ fun ImageUpscaleScreen(
                                     isUpscaling = true
                                     outputBitmap = null
                                     try {
-                                        SDBackendService.startUpscaler(context)
+                                        if (model.second.name.endsWith(".bin")) {
+                                            SDBackendService.startUpscaler(context)
 
-                                        val ready = withContext(Dispatchers.IO) {
-                                            repeat(20) {
-                                                try {
-                                                    Socket().use { sock ->
-                                                        sock.connect(InetSocketAddress("127.0.0.1", 8081), 500)
-                                                    }
-                                                    return@withContext true
-                                                } catch (_: Exception) {}
-                                                delay(300)
-                                            }
-                                            false
-                                        }
-
-                                        if (!ready) {
-                                            errorMessage = "Failed to start upscaler backend"
-                                            return@launch
-                                        }
-
-                                        val result = withContext(Dispatchers.IO) {
-                                            val width = bitmap.width
-                                            val height = bitmap.height
-                                            val pixels = IntArray(width * height)
-                                            bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
-                                            val rgbBytes = ByteArray(width * height * 3)
-                                            for (i in pixels.indices) {
-                                                val pixel = pixels[i]
-                                                rgbBytes[i * 3] = ((pixel shr 16) and 0xFF).toByte()
-                                                rgbBytes[i * 3 + 1] = ((pixel shr 8) and 0xFF).toByte()
-                                                rgbBytes[i * 3 + 2] = (pixel and 0xFF).toByte()
+                                            val ready = withContext(Dispatchers.IO) {
+                                                repeat(20) {
+                                                    try {
+                                                        Socket().use { sock ->
+                                                            sock.connect(InetSocketAddress("127.0.0.1", 8081), 500)
+                                                        }
+                                                        return@withContext true
+                                                    } catch (_: Exception) {}
+                                                    delay(300)
+                                                }
+                                                false
                                             }
 
-                                            val client = OkHttpClient.Builder()
-                                                .connectTimeout(5, TimeUnit.SECONDS)
-                                                .readTimeout(300, TimeUnit.SECONDS)
-                                                .writeTimeout(60, TimeUnit.SECONDS)
-                                                .build()
-
-                                            val requestBody = rgbBytes.toRequestBody("application/octet-stream".toMediaType())
-                                            val request = Request.Builder()
-                                                .url("http://127.0.0.1:8081/upscale")
-                                                .post(requestBody)
-                                                .addHeader("X-Image-Width", width.toString())
-                                                .addHeader("X-Image-Height", height.toString())
-                                                .addHeader("X-Upscaler-Path", model.second.absolutePath)
-                                                .build()
-
-                                            val response = client.newCall(request).execute()
-                                            if (!response.isSuccessful) {
-                                                Log.e("ImageUpscaleScreen", "Upscale HTTP ${response.code}")
-                                                return@withContext null
+                                            if (!ready) {
+                                                errorMessage = "Failed to start upscaler backend"
+                                                return@launch
                                             }
 
-                                            val jpegBytes = response.body?.bytes() ?: return@withContext null
-                                            BitmapFactory.decodeByteArray(jpegBytes, 0, jpegBytes.size)
-                                        }
+                                            val result = withContext(Dispatchers.IO) {
+                                                val width = bitmap.width
+                                                val height = bitmap.height
+                                                val pixels = IntArray(width * height)
+                                                bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
+                                                val rgbBytes = ByteArray(width * height * 3)
+                                                for (i in pixels.indices) {
+                                                    val pixel = pixels[i]
+                                                    rgbBytes[i * 3] = ((pixel shr 16) and 0xFF).toByte()
+                                                    rgbBytes[i * 3 + 1] = ((pixel shr 8) and 0xFF).toByte()
+                                                    rgbBytes[i * 3 + 2] = (pixel and 0xFF).toByte()
+                                                }
 
-                                        if (result != null) {
-                                            outputBitmap = result
+                                                val client = OkHttpClient.Builder()
+                                                    .connectTimeout(5, TimeUnit.SECONDS)
+                                                    .readTimeout(300, TimeUnit.SECONDS)
+                                                    .writeTimeout(60, TimeUnit.SECONDS)
+                                                    .build()
+
+                                                val requestBody = rgbBytes.toRequestBody("application/octet-stream".toMediaType())
+                                                val request = Request.Builder()
+                                                    .url("http://127.0.0.1:8081/upscale")
+                                                    .post(requestBody)
+                                                    .addHeader("X-Image-Width", width.toString())
+                                                    .addHeader("X-Image-Height", height.toString())
+                                                    .addHeader("X-Upscaler-Path", model.second.absolutePath)
+                                                    .build()
+
+                                                val response = client.newCall(request).execute()
+                                                if (!response.isSuccessful) {
+                                                    Log.e("ImageUpscaleScreen", "Upscale HTTP ${response.code}")
+                                                    return@withContext null
+                                                }
+
+                                                val jpegBytes = response.body?.bytes() ?: return@withContext null
+                                                BitmapFactory.decodeByteArray(jpegBytes, 0, jpegBytes.size)
+                                            }
+
+                                            if (result != null) {
+                                                outputBitmap = result
+                                            } else {
+                                                errorMessage = "Upscaling failed"
+                                            }
                                         } else {
-                                            errorMessage = "Upscaling failed"
+                                            // LiteRT on-device upscaler with GPU and CPU fallback
+                                            val result = withContext(Dispatchers.Default) {
+                                                LiteRtUpscaler.create(model.second).use { upscaler ->
+                                                    upscaler.upscale(bitmap)
+                                                }
+                                            }
+                                            outputBitmap = result
                                         }
                                     } catch (e: Exception) {
                                         errorMessage = "Error: ${e.message}"
                                         Log.e("ImageUpscaleScreen", "Upscale error", e)
                                     } finally {
                                         isUpscaling = false
-                                        SDBackendService.stop(context)
+                                        if (model.second.name.endsWith(".bin")) {
+                                            SDBackendService.stop(context)
+                                        }
                                     }
                                 }
                             },
