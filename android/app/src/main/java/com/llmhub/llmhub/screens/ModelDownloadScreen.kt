@@ -1110,6 +1110,9 @@ private fun formatSpeed(bytesPerSec: Long): String {
 }
 
 private fun getModelDisplayName(model: LLMModel, context: Context): String {
+    if (model.name == com.llmhub.llmhub.data.PocketTtsModel.NAME) {
+        return java.util.Locale.forLanguageTag("en").getDisplayLanguage(java.util.Locale.getDefault()) + " · ONNX"
+    }
     // Extract the part in parentheses from the model name
     val nameInParentheses = model.name.substringAfter("(").substringBefore(")")
     

@@ -1058,4 +1058,21 @@
     <string name="supertonic_voice_download_failed">Unduhan suara gagal. Coba lagi.</string>
     <string name="supertonic_model_unavailable">Supertonic 3 tidak tersedia. Selesaikan unduhan model atau pilih mesin ucapan lain di Setelan.</string>
     <string name="supertonic_speech_failed">Ucapan gagal. Periksa suara yang dipilih dan pilih bahasa yang didukung di Setelan.</string>
+
+    <!-- On-device PocketTTS.cpp voice cloning -->
+    <string name="pocket_voice_cloning">Kloning suara · Pocket TTS</string>
+    <string name="pocket_voice_help">Rekam di sini atau impor audio. Hanya bahasa Inggris. Impor klip WAV, MP3, atau FLAC yang jernih sepanjang 3–30 detik (maksimal 20 MB). Kloning sepenuhnya di perangkat ini. Memilih suara menggunakan Pocket TTS di seluruh aplikasi kecuali Penerjemah.</string>
+    <string name="pocket_model_required">Unduh Pocket TTS dari layar unduhan model terlebih dahulu.</string>
+    <string name="pocket_cloning">Mengkloning suara di perangkat ini…</string>
+    <string name="pocket_clone_failed">Tidak dapat mengkloning suara. Gunakan klip ucapan WAV, MP3, atau FLAC yang jernih minimal 3 detik.</string>
+    <string name="pocket_import_voice">Impor dan kloning suara</string>
+    <string name="pocket_speech_failed">Tidak dapat menghasilkan ucapan. Pilih suara kloning Pocket TTS di Pengaturan.</string>
+
+    <!-- Microphone recording for local voice cloning -->
+    <string name="pocket_record_voice">Rekam suara</string>
+    <string name="pocket_stop_and_clone">Hentikan dan kloning</string>
+    <string name="pocket_recording">Merekam: %1$d / 30 dtk</string>
+    <string name="pocket_record_failed">Perekaman atau kloning gagal. Coba lagi dengan ucapan jernih minimal 3 detik.</string>
+    <string name="pocket_microphone_required">Izinkan akses mikrofon untuk merekam suara.</string>
+    <string name="pocket_recorded_voice">Rekaman %1$s</string>
 </resources>

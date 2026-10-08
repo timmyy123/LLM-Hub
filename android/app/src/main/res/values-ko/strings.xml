@@ -1056,4 +1056,21 @@
     <string name="supertonic_voice_download_failed">음성 다운로드에 실패했습니다. 다시 시도하세요.</string>
     <string name="supertonic_model_unavailable">Supertonic 3를 사용할 수 없습니다. 모델 다운로드를 완료하거나 설정에서 다른 음성 엔진을 선택하세요.</string>
     <string name="supertonic_speech_failed">음성 생성에 실패했습니다. 선택한 음성을 확인하고 설정에서 지원되는 언어를 선택하세요.</string>
+
+    <!-- On-device PocketTTS.cpp voice cloning -->
+    <string name="pocket_voice_cloning">음성 복제 · Pocket TTS</string>
+    <string name="pocket_voice_help">여기에서 녹음하거나 오디오를 가져오세요. 영어만 지원합니다. 3~30초의 선명한 WAV, MP3 또는 FLAC 클립(최대 20 MB)을 가져오세요. 복제는 모두 기기에서 수행됩니다. 음성을 선택하면 번역기를 제외한 앱 전체에서 Pocket TTS를 사용합니다.</string>
+    <string name="pocket_model_required">먼저 모델 다운로드 화면에서 Pocket TTS를 다운로드하세요.</string>
+    <string name="pocket_cloning">기기에서 음성을 복제하는 중…</string>
+    <string name="pocket_clone_failed">음성을 복제할 수 없습니다. 최소 3초의 선명한 WAV, MP3 또는 FLAC 음성 클립을 사용하세요.</string>
+    <string name="pocket_import_voice">음성 가져오기 및 복제</string>
+    <string name="pocket_speech_failed">음성을 생성할 수 없습니다. 설정에서 복제된 Pocket TTS 음성을 선택하세요.</string>
+
+    <!-- Microphone recording for local voice cloning -->
+    <string name="pocket_record_voice">음성 녹음</string>
+    <string name="pocket_stop_and_clone">중지 및 복제</string>
+    <string name="pocket_recording">녹음 중: %1$d / 30초</string>
+    <string name="pocket_record_failed">녹음 또는 복제에 실패했습니다. 최소 3초의 선명한 음성으로 다시 시도하세요.</string>
+    <string name="pocket_microphone_required">음성을 녹음하려면 마이크 접근을 허용하세요.</string>
+    <string name="pocket_recorded_voice">녹음 %1$s</string>
 </resources>

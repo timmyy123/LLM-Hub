@@ -35,7 +35,7 @@ Model: OpenRAIL-M. Runtime implementation adapted from Supertone’s MIT sample 
 
 1. Download **Supertonic 3 (ONNX)** under Text-to-Speech models.
 2. Select it as the TTS model in Settings. Preset voices and language selection appear there; this CPU-only engine does not expose the Kokoro GPU selector.
-3. Download and select a preset voice in Settings.
+3. Download and select a preset voice in Settings. Supertonic and Kokoro use the same shared voice-download dialog: 56 dp rows, labelled filled Download buttons, red outlined Delete buttons, progress indicators and the empty-state download hint.
 4. The selected voice applies to Chat, Agent, Writing Aid, Scam Analysis, VibeVoice readout, and Text-to-Speech. Translator continues using system TTS.
 
 Previously stored custom voice selections fall back to M1. The app no longer imports, lists, or synthesizes custom Supertonic voices. Existing user files are left untouched.

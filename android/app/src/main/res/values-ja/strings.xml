@@ -1053,4 +1053,21 @@
     <string name="supertonic_voice_download_failed">音声をダウンロードできませんでした。再試行してください。</string>
     <string name="supertonic_model_unavailable">Supertonic 3を利用できません。モデルのダウンロードを完了するか、設定で別の読み上げエンジンを選択してください。</string>
     <string name="supertonic_speech_failed">読み上げに失敗しました。選択した音声を確認し、設定で対応する言語を選択してください。</string>
+
+    <!-- On-device PocketTTS.cpp voice cloning -->
+    <string name="pocket_voice_cloning">音声クローン · Pocket TTS</string>
+    <string name="pocket_voice_help">ここで録音するか、音声を読み込んでください。英語のみ対応。明瞭な3〜30秒のWAV・MP3・FLAC音声（最大20 MB）を読み込んでください。クローン作成はすべて端末内で行われます。音声を選ぶと翻訳機能以外のアプリ全体でPocket TTSが使われます。</string>
+    <string name="pocket_model_required">先にモデルダウンロード画面からPocket TTSをダウンロードしてください。</string>
+    <string name="pocket_cloning">端末内で音声クローンを作成中…</string>
+    <string name="pocket_clone_failed">音声クローンを作成できませんでした。3秒以上の明瞭なWAV・MP3・FLACの音声を使用してください。</string>
+    <string name="pocket_import_voice">音声を読み込んでクローン作成</string>
+    <string name="pocket_speech_failed">音声を生成できませんでした。設定でPocket TTSのクローン音声を選択してください。</string>
+
+    <!-- Microphone recording for local voice cloning -->
+    <string name="pocket_record_voice">音声を録音</string>
+    <string name="pocket_stop_and_clone">停止してクローン作成</string>
+    <string name="pocket_recording">録音中：%1$d / 30秒</string>
+    <string name="pocket_record_failed">録音またはクローン作成に失敗しました。3秒以上の明瞭な音声でもう一度お試しください。</string>
+    <string name="pocket_microphone_required">録音するにはマイクへのアクセスを許可してください。</string>
+    <string name="pocket_recorded_voice">録音 %1$s</string>
 </resources>

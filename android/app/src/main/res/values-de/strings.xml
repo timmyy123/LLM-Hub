@@ -1022,4 +1022,21 @@
     <string name="supertonic_voice_download_failed">Stimme konnte nicht heruntergeladen werden. Bitte erneut versuchen.</string>
     <string name="supertonic_model_unavailable">Supertonic 3 ist nicht verfügbar. Lade das Modell vollständig herunter oder wähle in den Einstellungen eine andere Sprachausgabe.</string>
     <string name="supertonic_speech_failed">Sprachausgabe fehlgeschlagen. Prüfe die gewählte Stimme und wähle in den Einstellungen eine unterstützte Sprache.</string>
+
+    <!-- On-device PocketTTS.cpp voice cloning -->
+    <string name="pocket_voice_cloning">Stimme klonen · Pocket TTS</string>
+    <string name="pocket_voice_help">Nimm hier auf oder importiere Audio. Nur Englisch. Importiere einen klaren WAV-, MP3- oder FLAC-Clip von 3–30 Sekunden (maximal 20 MB). Das Klonen erfolgt vollständig auf diesem Gerät. Die gewählte Stimme nutzt Pocket TTS in der gesamten App außer im Übersetzer.</string>
+    <string name="pocket_model_required">Lade zuerst Pocket TTS auf dem Modelldownload-Bildschirm herunter.</string>
+    <string name="pocket_cloning">Stimme wird auf diesem Gerät geklont…</string>
+    <string name="pocket_clone_failed">Stimme konnte nicht geklont werden. Verwende einen klaren WAV-, MP3- oder FLAC-Sprachclip von mindestens 3 Sekunden.</string>
+    <string name="pocket_import_voice">Stimme importieren und klonen</string>
+    <string name="pocket_speech_failed">Sprache konnte nicht erzeugt werden. Wähle in den Einstellungen eine geklonte Pocket TTS-Stimme.</string>
+
+    <!-- Microphone recording for local voice cloning -->
+    <string name="pocket_record_voice">Stimme aufnehmen</string>
+    <string name="pocket_stop_and_clone">Stoppen und klonen</string>
+    <string name="pocket_recording">Aufnahme: %1$d / 30 s</string>
+    <string name="pocket_record_failed">Aufnahme oder Klonen fehlgeschlagen. Versuche es mit mindestens 3 Sekunden deutlicher Sprache erneut.</string>
+    <string name="pocket_microphone_required">Erlaube den Mikrofonzugriff, um eine Stimme aufzunehmen.</string>
+    <string name="pocket_recorded_voice">Aufnahme %1$s</string>
 </resources>

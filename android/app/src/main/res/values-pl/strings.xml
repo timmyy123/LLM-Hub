@@ -1060,4 +1060,21 @@
     <string name="supertonic_voice_download_failed">Nie udało się pobrać głosu. Spróbuj ponownie.</string>
     <string name="supertonic_model_unavailable">Supertonic 3 jest niedostępny. Dokończ pobieranie modelu lub wybierz inny silnik mowy w Ustawieniach.</string>
     <string name="supertonic_speech_failed">Synteza mowy nie powiodła się. Sprawdź wybrany głos i wybierz obsługiwany język w Ustawieniach.</string>
+
+    <!-- On-device PocketTTS.cpp voice cloning -->
+    <string name="pocket_voice_cloning">Klonowanie głosu · Pocket TTS</string>
+    <string name="pocket_voice_help">Nagraj tutaj lub zaimportuj dźwięk. Tylko angielski. Zaimportuj wyraźny klip WAV, MP3 lub FLAC trwający 3–30 sekund (do 20 MB). Klonowanie odbywa się w całości na urządzeniu. Wybór głosu włącza Pocket TTS w całej aplikacji poza Tłumaczem.</string>
+    <string name="pocket_model_required">Najpierw pobierz Pocket TTS z ekranu pobierania modeli.</string>
+    <string name="pocket_cloning">Klonowanie głosu na urządzeniu…</string>
+    <string name="pocket_clone_failed">Nie udało się sklonować głosu. Użyj wyraźnego klipu mowy WAV, MP3 lub FLAC trwającego co najmniej 3 sekundy.</string>
+    <string name="pocket_import_voice">Importuj i klonuj głos</string>
+    <string name="pocket_speech_failed">Nie udało się wygenerować mowy. Wybierz sklonowany głos Pocket TTS w Ustawieniach.</string>
+
+    <!-- Microphone recording for local voice cloning -->
+    <string name="pocket_record_voice">Nagraj głos</string>
+    <string name="pocket_stop_and_clone">Zatrzymaj i klonuj</string>
+    <string name="pocket_recording">Nagrywanie: %1$d / 30 s</string>
+    <string name="pocket_record_failed">Nagrywanie lub klonowanie nie powiodło się. Spróbuj ponownie z co najmniej 3 sekundami wyraźnej mowy.</string>
+    <string name="pocket_microphone_required">Zezwól na dostęp do mikrofonu, aby nagrać głos.</string>
+    <string name="pocket_recorded_voice">Nagranie %1$s</string>
 </resources>

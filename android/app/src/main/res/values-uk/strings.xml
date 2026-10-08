@@ -1056,4 +1056,21 @@
     <string name="supertonic_voice_download_failed">Не вдалося завантажити голос. Спробуйте ще раз.</string>
     <string name="supertonic_model_unavailable">Supertonic 3 недоступний. Завершіть завантаження моделі або виберіть інший рушій озвучення в Налаштуваннях.</string>
     <string name="supertonic_speech_failed">Помилка озвучення. Перевірте вибраний голос і виберіть підтримувану мову в Налаштуваннях.</string>
+
+    <!-- On-device PocketTTS.cpp voice cloning -->
+    <string name="pocket_voice_cloning">Клонування голосу · Pocket TTS</string>
+    <string name="pocket_voice_help">Запишіть тут або імпортуйте аудіо. Лише англійська. Імпортуйте чіткий запис WAV, MP3 або FLAC тривалістю 3–30 секунд (до 20 МБ). Клонування повністю відбувається на пристрої. Вибір голосу вмикає Pocket TTS у всьому застосунку, крім Перекладача.</string>
+    <string name="pocket_model_required">Спочатку завантажте Pocket TTS на екрані завантаження моделей.</string>
+    <string name="pocket_cloning">Клонування голосу на пристрої…</string>
+    <string name="pocket_clone_failed">Не вдалося клонувати голос. Використайте чіткий запис мовлення WAV, MP3 або FLAC тривалістю щонайменше 3 секунди.</string>
+    <string name="pocket_import_voice">Імпортувати та клонувати голос</string>
+    <string name="pocket_speech_failed">Не вдалося створити мовлення. Виберіть клонований голос Pocket TTS у Налаштуваннях.</string>
+
+    <!-- Microphone recording for local voice cloning -->
+    <string name="pocket_record_voice">Записати голос</string>
+    <string name="pocket_stop_and_clone">Зупинити та клонувати</string>
+    <string name="pocket_recording">Запис: %1$d / 30 с</string>
+    <string name="pocket_record_failed">Не вдалося записати або клонувати голос. Повторіть із чітким мовленням тривалістю щонайменше 3 секунди.</string>
+    <string name="pocket_microphone_required">Дозвольте доступ до мікрофона для запису голосу.</string>
+    <string name="pocket_recorded_voice">Запис %1$s</string>
 </resources>

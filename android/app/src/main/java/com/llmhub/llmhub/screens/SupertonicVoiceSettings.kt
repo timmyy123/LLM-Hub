@@ -36,6 +36,9 @@ internal fun SupertonicVoiceSettings() {
     var revision by remember { mutableIntStateOf(0) }
     var busy by remember { mutableStateOf<String?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
+    val downloadedVoices = remember(revision) {
+        SupertonicModel.voices.keys.filter { SupertonicModel.voiceFile(context, it) != null }.toSet()
+    }
     SettingsItem(Icons.Default.Face, stringResource(R.string.tts_voice_setting),
         if (SupertonicModel.voiceFile(context, selectedVoice) != null) selectedVoice
         else stringResource(R.string.tts_please_download_voice)) { showVoices = true }
@@ -43,49 +46,37 @@ internal fun SupertonicVoiceSettings() {
         if (selectedLanguage.isEmpty()) stringResource(R.string.system_default_language)
         else Locale(selectedLanguage).getDisplayLanguage(Locale.getDefault())) { showLanguages = true }
 
-    if (showVoices) AlertDialog(
-        onDismissRequest = { showVoices = false },
-        title = { Text(stringResource(R.string.tts_voice_setting)) },
-        text = {
-            LazyColumn {
-                items(SupertonicModel.voices.keys.toList(), key = { it }) { key ->
-                    val exists = remember(key, revision) { SupertonicModel.voiceFile(context, key) != null }
-                    Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                        RadioButton(selectedVoice == key, onClick = {
-                            if (exists && busy == null) scope.launch { preferences.setSupertonicVoice(key); showVoices = false }
-                        }, enabled = exists && busy == null)
-                        Column(Modifier.weight(1f)) {
-                            Text(key, style = MaterialTheme.typography.bodyLarge)
-                            SupertonicModel.voices[key]?.let { size ->
-                                Text(android.text.format.Formatter.formatShortFileSize(context, size), style = MaterialTheme.typography.bodySmall)
-                            }
-                        }
-                        if (busy == key) CircularProgressIndicator(Modifier.size(24.dp))
-                        else if (exists) IconButton(enabled = busy == null, onClick = {
-                            scope.launch {
-                                withContext(Dispatchers.IO) { SupertonicModel.voiceFile(context, key)?.delete() }
-                                if (key == selectedVoice) preferences.setSupertonicVoice("M1")
-                                revision++
-                            }
-                        }) { Icon(Icons.Default.Delete, stringResource(R.string.delete)) }
-                        else IconButton(enabled = busy == null, onClick = {
-                            busy = key
-                            scope.launch {
-                                val client = HttpClient(Android)
-                                try {
-                                    ModelDownloader(client, context).downloadVoiceFile(ModelData.ttsModels.first { it.name == SupertonicModel.NAME }, key).collect { }
-                                    preferences.setSupertonicVoice(key)
-                                    revision++
-                                } catch (e: CancellationException) { throw e
-                                } catch (_: Exception) { error = context.getString(R.string.supertonic_voice_download_failed)
-                                } finally { client.close(); busy = null }
-                            }
-                        }) { Icon(Icons.Default.Download, stringResource(R.string.download)) }
-                    }
-                }
+    if (showVoices) TtsVoiceDownloadDialog(
+        voices = SupertonicModel.voices.keys.map { it to it },
+        selectedVoice = selectedVoice,
+        downloadedVoices = downloadedVoices,
+        downloadingVoice = busy,
+        onSelect = { key ->
+            scope.launch { preferences.setSupertonicVoice(key); showVoices = false }
+        },
+        onDelete = { key ->
+            scope.launch {
+                withContext(Dispatchers.IO) { SupertonicModel.voiceFile(context, key)?.delete() }
+                if (key == selectedVoice) preferences.setSupertonicVoice("M1")
+                revision++
             }
         },
-        confirmButton = { TextButton(onClick = { showVoices = false }) { Text(stringResource(R.string.cancel)) } }
+        onDownload = { key ->
+            busy = key
+            scope.launch {
+                val client = HttpClient(Android)
+                try {
+                    val token = com.llmhub.llmhub.viewmodels.ModelDownloadViewModel.getEffectiveToken(context)
+                    ModelDownloader(client, context, token)
+                        .downloadVoiceFile(ModelData.ttsModels.first { it.name == SupertonicModel.NAME }, key).collect { }
+                    preferences.setSupertonicVoice(key)
+                    revision++
+                } catch (e: CancellationException) { throw e
+                } catch (_: Exception) { error = context.getString(R.string.supertonic_voice_download_failed)
+                } finally { client.close(); busy = null }
+            }
+        },
+        onDismiss = { showVoices = false }
     )
     if (showLanguages) AlertDialog(
         onDismissRequest = { showLanguages = false },

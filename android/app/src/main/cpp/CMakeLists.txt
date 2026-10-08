@@ -93,3 +93,5 @@ target_include_directories(llmhub_llama_snapdragon PRIVATE
 target_link_libraries(llmhub_llama_snapdragon PRIVATE
     llmhub_prebuilt_llama llmhub_prebuilt_mtmd llmhub_prebuilt_ggml android log)
 target_link_options(llmhub_llama_snapdragon PRIVATE "-Wl,--allow-shlib-undefined")
+
+add_subdirectory(pocket_tts)

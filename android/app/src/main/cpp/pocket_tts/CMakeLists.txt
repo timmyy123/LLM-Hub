@@ -1,0 +1,13 @@
+# Dependencies are pinned and vendored; configuration never downloads code.
+set(SPM_ENABLE_SHARED OFF CACHE BOOL "" FORCE)
+set(SPM_ENABLE_TCMALLOC OFF CACHE BOOL "" FORCE)
+set(SPM_BUILD_TEST OFF CACHE BOOL "" FORCE)
+add_subdirectory(sentencepiece EXCLUDE_FROM_ALL)
+add_library(pocket_onnx SHARED IMPORTED)
+set_target_properties(pocket_onnx PROPERTIES IMPORTED_LOCATION "${POCKET_ONNX_DIR}/jni/${ANDROID_ABI}/libonnxruntime.so")
+add_library(llmhub_pocket_tts SHARED pocket_jni.cpp)
+target_compile_features(llmhub_pocket_tts PRIVATE cxx_std_17)
+target_include_directories(llmhub_pocket_tts PRIVATE "${POCKET_ONNX_DIR}/headers" sentencepiece/src)
+target_link_libraries(llmhub_pocket_tts PRIVATE sentencepiece-static pocket_onnx log)
+target_compile_options(llmhub_pocket_tts PRIVATE -O3 -fvisibility=hidden)
+target_link_options(llmhub_pocket_tts PRIVATE "-Wl,-z,max-page-size=16384" "-Wl,--exclude-libs,ALL")

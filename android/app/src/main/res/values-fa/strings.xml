@@ -1056,4 +1056,21 @@
     <string name="supertonic_voice_download_failed">بارگیری صدا ناموفق بود. دوباره تلاش کنید.</string>
     <string name="supertonic_model_unavailable">Supertonic 3 در دسترس نیست. بارگیری مدل را کامل کنید یا در تنظیمات موتور گفتار دیگری انتخاب کنید.</string>
     <string name="supertonic_speech_failed">تولید گفتار ناموفق بود. صدای انتخابی را بررسی کنید و در تنظیمات زبان پشتیبانی‌شده‌ای انتخاب کنید.</string>
+
+    <!-- On-device PocketTTS.cpp voice cloning -->
+    <string name="pocket_voice_cloning">شبیه‌سازی صدا · Pocket TTS</string>
+    <string name="pocket_voice_help">اینجا ضبط کنید یا صدا وارد کنید. فقط انگلیسی. یک کلیپ واضح WAV، MP3 یا FLAC به مدت ۳ تا ۳۰ ثانیه (حداکثر ۲۰ مگابایت) وارد کنید. شبیه‌سازی کاملاً روی این دستگاه انجام می‌شود. انتخاب صدا، Pocket TTS را در سراسر برنامه به‌جز مترجم فعال می‌کند.</string>
+    <string name="pocket_model_required">ابتدا Pocket TTS را از صفحه دانلود مدل‌ها دانلود کنید.</string>
+    <string name="pocket_cloning">در حال شبیه‌سازی صدا روی این دستگاه…</string>
+    <string name="pocket_clone_failed">شبیه‌سازی صدا ممکن نشد. از کلیپ گفتار واضح WAV، MP3 یا FLAC با طول حداقل ۳ ثانیه استفاده کنید.</string>
+    <string name="pocket_import_voice">وارد کردن و شبیه‌سازی صدا</string>
+    <string name="pocket_speech_failed">تولید گفتار ممکن نشد. در تنظیمات یک صدای شبیه‌سازی‌شده Pocket TTS انتخاب کنید.</string>
+
+    <!-- Microphone recording for local voice cloning -->
+    <string name="pocket_record_voice">ضبط صدا</string>
+    <string name="pocket_stop_and_clone">توقف و شبیه‌سازی</string>
+    <string name="pocket_recording">در حال ضبط: %1$d / ۳۰ ثانیه</string>
+    <string name="pocket_record_failed">ضبط یا شبیه‌سازی ناموفق بود. با حداقل ۳ ثانیه گفتار واضح دوباره تلاش کنید.</string>
+    <string name="pocket_microphone_required">برای ضبط صدا، دسترسی به میکروفون را مجاز کنید.</string>
+    <string name="pocket_recorded_voice">ضبط %1$s</string>
 </resources>

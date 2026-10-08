@@ -125,3 +125,7 @@
 -dontwarn com.itextpdf.**
 -dontwarn org.apache.commons.**
 -dontwarn org.osmdroid.**
+
+# PocketTTS.cpp JNI cancellation callback and native entry points.
+-keep class com.llmhub.llmhub.ui.components.PocketTtsEngine { *; }
+-keep class * implements com.llmhub.llmhub.ui.components.PocketTtsEngine$CancellationProbe { *; }

@@ -1074,4 +1074,21 @@
     <string name="supertonic_voice_download_failed">Voice download failed. Please try again.</string>
     <string name="supertonic_model_unavailable">Supertonic 3 is unavailable. Complete its model download or choose another TTS engine in Settings.</string>
     <string name="supertonic_speech_failed">Speech failed. Check the selected voice and choose a supported speech language in Settings.</string>
+
+    <!-- On-device PocketTTS.cpp voice cloning -->
+    <string name="pocket_voice_cloning">Voice cloning · Pocket TTS</string>
+    <string name="pocket_voice_help">Record here or import audio. English only. Import a clear 3–30 second WAV, MP3 or FLAC clip (up to 20 MB). Cloning runs entirely on this device. Selecting a voice uses Pocket TTS across the app, except Translator.</string>
+    <string name="pocket_model_required">Download Pocket TTS from the model download screen first.</string>
+    <string name="pocket_cloning">Cloning voice on this device…</string>
+    <string name="pocket_clone_failed">Could not clone this voice. Use a clear WAV, MP3 or FLAC speech clip of at least 3 seconds.</string>
+    <string name="pocket_import_voice">Import and clone voice</string>
+    <string name="pocket_speech_failed">Could not generate speech. Select a cloned Pocket TTS voice in Settings.</string>
+
+    <!-- Microphone recording for local voice cloning -->
+    <string name="pocket_record_voice">Record voice</string>
+    <string name="pocket_stop_and_clone">Stop and clone</string>
+    <string name="pocket_recording">Recording: %1$d / 30 s</string>
+    <string name="pocket_record_failed">Recording or cloning failed. Try again with at least 3 seconds of clear speech.</string>
+    <string name="pocket_microphone_required">Allow microphone access to record a voice.</string>
+    <string name="pocket_recorded_voice">Recording %1$s</string>
 </resources>

@@ -52,6 +52,7 @@ import com.llmhub.llmhub.utils.FileUtils
 import com.llmhub.llmhub.R
 import java.io.File
 import com.llmhub.llmhub.BuildConfig
+import com.llmhub.llmhub.data.PocketTtsModel
 import com.llmhub.llmhub.data.SupertonicModel
 import com.llmhub.llmhub.data.hasCompleteDownloadedBundle
 import com.llmhub.llmhub.data.ModelData
@@ -1644,7 +1645,7 @@ private fun TtsModelSelector(themeViewModel: ThemeViewModel) {
 @Composable
 private fun TtsDeviceSelector(themeViewModel: ThemeViewModel) {
     val selectedTtsModel by themeViewModel.selectedTtsModel.collectAsState()
-    if (selectedTtsModel == null || selectedTtsModel == SupertonicModel.NAME) return
+    if (selectedTtsModel == null || selectedTtsModel in setOf(SupertonicModel.NAME, PocketTtsModel.NAME)) return
 
     val selectedTtsDevice by themeViewModel.selectedTtsDevice.collectAsState()
     var showTtsDeviceDialog by remember { mutableStateOf(false) }
@@ -1728,6 +1729,10 @@ private fun TtsVoiceSelector(themeViewModel: ThemeViewModel) {
     val coroutineScope = rememberCoroutineScope()
     val selectedTtsModel by themeViewModel.selectedTtsModel.collectAsState()
     if (selectedTtsModel == null) return
+    if (selectedTtsModel == PocketTtsModel.NAME) {
+        PocketVoiceSettings()
+        return
+    }
     if (selectedTtsModel == SupertonicModel.NAME) {
         SupertonicVoiceSettings()
         return
@@ -1846,140 +1851,57 @@ private fun TtsVoiceSelector(themeViewModel: ThemeViewModel) {
     )
 
     if (showTtsVoiceDialog) {
-        AlertDialog(
-            onDismissRequest = { showTtsVoiceDialog = false },
-            title = { Text(stringResource(R.string.tts_voice_setting)) },
-            text = {
-                LazyColumn {
-                    if (!anyVoiceDownloaded) {
-                        item {
-                            Text(
-                                text = stringResource(R.string.tts_please_download_voice),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(bottom = 8.dp)
-                            )
-                        }
-                    }
-                    items(voices.size) { index ->
-                        val (voiceKey, voiceLabel) = voices[index]
-                        val isDownloaded = downloadedVoiceKeys[voiceKey] == true
-                        val isDownloading = downloadingVoiceKey == voiceKey
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(56.dp)
-                                .clickable(enabled = isDownloaded && !isDownloading) {
-                                    themeViewModel.setSelectedTtsVoice(voiceKey)
-                                    showTtsVoiceDialog = false
-                                },
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            RadioButton(
-                                selected = selectedTtsVoice == voiceKey,
-                                onClick = {
-                                    if (isDownloaded && !isDownloading) {
-                                        themeViewModel.setSelectedTtsVoice(voiceKey)
-                                        showTtsVoiceDialog = false
-                                    }
-                                }
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = voiceLabel,
-                                style = MaterialTheme.typography.bodyLarge,
-                                modifier = Modifier.weight(1f),
-                                color = if (isDownloaded) {
-                                    MaterialTheme.colorScheme.onSurface
-                                } else {
-                                    MaterialTheme.colorScheme.onSurfaceVariant
-                                }
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            val buttonModifier = Modifier.height(40.dp).widthIn(min = 120.dp)
-                            val buttonPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
-                            if (isDownloaded) {
-                                OutlinedButton(
-                                    onClick = {
-                                        val kokoro = modelsRoot.listFiles { f -> f.isDirectory && f.name.startsWith("Kokoro") }
-                                        kokoro?.forEach { dir -> File(dir, "$voiceKey.bin").delete() }
-                                        downloadedVoiceKeys[voiceKey] = false
-                                        if (selectedTtsVoice == voiceKey) {
-                                            themeViewModel.setSelectedTtsVoice("af_heart")
-                                        }
-                                    },
-                                    colors = ButtonDefaults.outlinedButtonColors(
-                                        contentColor = MaterialTheme.colorScheme.error
-                                    ),
-                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.error),
-                                    modifier = buttonModifier,
-                                    contentPadding = buttonPadding
-                                ) {
-                                    Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text(stringResource(R.string.delete), style = MaterialTheme.typography.labelLarge)
-                                }
-                            } else {
-                                Button(
-                                    onClick = {
-                                        if (downloadingVoiceKey != null) return@Button
-                                        downloadingVoiceKey = voiceKey
-                                        coroutineScope.launch {
-                                            val hfToken = ModelDownloadViewModel.getEffectiveToken(context)
-                                            val client = HttpClient(Android)
-                                            try {
-                                                ModelDownloader(client, context, hfToken)
-                                                    .downloadVoiceFile(selectedModel, voiceKey)
-                                                    .collectLatest { status ->
-                                                        if (status.downloadedBytes > 0) {
-                                                            downloadedVoiceKeys[voiceKey] = voiceFileExists(voiceKey) ||
-                                                                (status.totalBytes > 0 && status.downloadedBytes >= status.totalBytes)
-                                                        }
-                                                    }
-                                                downloadedVoiceKeys[voiceKey] = voiceFileExists(voiceKey)
-                                                themeViewModel.setSelectedTtsVoice(voiceKey)
-                                                android.widget.Toast.makeText(
-                                                    context,
-                                                    "$voiceLabel downloaded",
-                                                    android.widget.Toast.LENGTH_SHORT
-                                                ).show()
-                                            } catch (e: Exception) {
-                                                android.widget.Toast.makeText(
-                                                    context,
-                                                    e.message ?: "Voice download failed",
-                                                    android.widget.Toast.LENGTH_SHORT
-                                                ).show()
-                                            } finally {
-                                                client.close()
-                                                downloadingVoiceKey = null
-                                            }
-                                        }
-                                    },
-                                    enabled = downloadingVoiceKey == null,
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = MaterialTheme.colorScheme.primary
-                                    ),
-                                    modifier = buttonModifier,
-                                    contentPadding = buttonPadding
-                                ) {
-                                    if (isDownloading) {
-                                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
-                                    } else {
-                                        Icon(Icons.Default.CloudDownload, contentDescription = null, modifier = Modifier.size(16.dp))
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text(stringResource(R.string.download), style = MaterialTheme.typography.labelLarge)
-                                    }
+        TtsVoiceDownloadDialog(
+            voices = voices,
+            selectedVoice = selectedTtsVoice,
+            downloadedVoices = downloadedVoiceKeys.filterValues { it }.keys,
+            downloadingVoice = downloadingVoiceKey,
+            onSelect = { voiceKey ->
+                themeViewModel.setSelectedTtsVoice(voiceKey)
+                showTtsVoiceDialog = false
+            },
+            onDelete = { voiceKey ->
+                val kokoro = modelsRoot.listFiles { f -> f.isDirectory && f.name.startsWith("Kokoro") }
+                kokoro?.forEach { dir -> File(dir, "$voiceKey.bin").delete() }
+                downloadedVoiceKeys[voiceKey] = false
+                if (selectedTtsVoice == voiceKey) {
+                    themeViewModel.setSelectedTtsVoice("af_heart")
+                }
+            },
+            onDownload = { voiceKey ->
+                downloadingVoiceKey = voiceKey
+                coroutineScope.launch {
+                    val hfToken = ModelDownloadViewModel.getEffectiveToken(context)
+                    val client = HttpClient(Android)
+                    try {
+                        ModelDownloader(client, context, hfToken)
+                            .downloadVoiceFile(selectedModel, voiceKey)
+                            .collectLatest { status ->
+                                if (status.downloadedBytes > 0) {
+                                    downloadedVoiceKeys[voiceKey] = voiceFileExists(voiceKey) ||
+                                        (status.totalBytes > 0 && status.downloadedBytes >= status.totalBytes)
                                 }
                             }
-                        }
+                        downloadedVoiceKeys[voiceKey] = voiceFileExists(voiceKey)
+                        themeViewModel.setSelectedTtsVoice(voiceKey)
+                        android.widget.Toast.makeText(
+                            context,
+                            "${voices.find { it.first == voiceKey }?.second ?: voiceKey} downloaded",
+                            android.widget.Toast.LENGTH_SHORT
+                        ).show()
+                    } catch (e: Exception) {
+                        android.widget.Toast.makeText(
+                            context,
+                            e.message ?: "Voice download failed",
+                            android.widget.Toast.LENGTH_SHORT
+                        ).show()
+                    } finally {
+                        client.close()
+                        downloadingVoiceKey = null
                     }
                 }
             },
-            confirmButton = {
-                TextButton(onClick = { showTtsVoiceDialog = false }) {
-                    Text(stringResource(R.string.cancel))
-                }
-            }
+            onDismiss = { showTtsVoiceDialog = false }
         )
     }
 }

@@ -963,4 +963,21 @@
     <string name="supertonic_voice_download_failed">ดาวน์โหลดเสียงไม่สำเร็จ โปรดลองอีกครั้ง</string>
     <string name="supertonic_model_unavailable">Supertonic 3 ไม่พร้อมใช้งาน โปรดดาวน์โหลดโมเดลให้เสร็จหรือเลือกเอนจินเสียงอื่นในการตั้งค่า</string>
     <string name="supertonic_speech_failed">สร้างเสียงพูดไม่สำเร็จ โปรดตรวจสอบเสียงที่เลือกและเลือกภาษาที่รองรับในการตั้งค่า</string>
+
+    <!-- On-device PocketTTS.cpp voice cloning -->
+    <string name="pocket_voice_cloning">โคลนเสียง · Pocket TTS</string>
+    <string name="pocket_voice_help">บันทึกที่นี่หรือนำเข้าเสียง รองรับภาษาอังกฤษเท่านั้น นำเข้าคลิป WAV, MP3 หรือ FLAC ที่ชัดเจนยาว 3–30 วินาที (ไม่เกิน 20 MB) การโคลนทำบนอุปกรณ์นี้ทั้งหมด เมื่อเลือกเสียงจะใช้ Pocket TTS ทั่วทั้งแอป ยกเว้นตัวแปลภาษา</string>
+    <string name="pocket_model_required">ดาวน์โหลด Pocket TTS จากหน้าดาวน์โหลดโมเดลก่อน</string>
+    <string name="pocket_cloning">กำลังโคลนเสียงบนอุปกรณ์นี้…</string>
+    <string name="pocket_clone_failed">ไม่สามารถโคลนเสียงได้ โปรดใช้คลิปเสียงพูด WAV, MP3 หรือ FLAC ที่ชัดเจนยาวอย่างน้อย 3 วินาที</string>
+    <string name="pocket_import_voice">นำเข้าและโคลนเสียง</string>
+    <string name="pocket_speech_failed">ไม่สามารถสร้างเสียงพูดได้ เลือกเสียง Pocket TTS ที่โคลนแล้วในการตั้งค่า</string>
+
+    <!-- Microphone recording for local voice cloning -->
+    <string name="pocket_record_voice">บันทึกเสียง</string>
+    <string name="pocket_stop_and_clone">หยุดและโคลน</string>
+    <string name="pocket_recording">กำลังบันทึก: %1$d / 30 วินาที</string>
+    <string name="pocket_record_failed">บันทึกหรือโคลนไม่สำเร็จ ลองอีกครั้งด้วยเสียงพูดที่ชัดเจนอย่างน้อย 3 วินาที</string>
+    <string name="pocket_microphone_required">อนุญาตให้เข้าถึงไมโครโฟนเพื่อบันทึกเสียง</string>
+    <string name="pocket_recorded_voice">เสียงบันทึก %1$s</string>
 </resources>

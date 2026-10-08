@@ -47,7 +47,8 @@ android {
             cmake {
                 arguments += listOf(
                     "-DCMAKE_BUILD_TYPE=Release",
-                    "-DANDROID_STL=c++_static"
+                    "-DANDROID_STL=c++_static",
+                    "-DPOCKET_ONNX_DIR=${layout.buildDirectory.dir("generated/pocket-onnx").get().asFile.absolutePath}"
                 )
             }
         }
@@ -136,7 +137,7 @@ android {
 
             // Pick only the architecture we need to reduce size and alignment issues
             // Prevent duplicate .so files from different MediaPipe tasks modules
-            pickFirsts += setOf("**/libmediapipe_tasks_text_jni.so")
+            pickFirsts += setOf("**/libmediapipe_tasks_text_jni.so", "**/libonnxruntime.so")
             // Exclude DeepSeek OCR library to avoid 16KB page alignment issues
             excludes += setOf("**/libdeepseek-ocr.so")
             // WhisperKit 0.3.3 ships 4KB-aligned .so files (upstream bug, not yet fixed).
@@ -565,4 +566,16 @@ tasks.configureEach {
     if (name.startsWith("assemble") && name.contains("Release", ignoreCase = true)) {
         dependsOn("ensureAssetsForApk")
     }
+}
+
+// Reuse precisely the same runtime binary and headers as the Java ONNX dependency.
+val pocketOnnx by configurations.creating
+dependencies { pocketOnnx("com.microsoft.onnxruntime:onnxruntime-android:1.24.1@aar") }
+val extractPocketOnnx = tasks.register<Sync>("extractPocketOnnx") {
+    from({ pocketOnnx.map { zipTree(it) } })
+    include("headers/**", "jni/arm64-v8a/libonnxruntime.so")
+    into(layout.buildDirectory.dir("generated/pocket-onnx"))
+}
+tasks.configureEach {
+    if (name.startsWith("configureCMake") || name.startsWith("buildCMake")) dependsOn(extractPocketOnnx)
 }

@@ -1056,4 +1056,21 @@
     <string name="supertonic_voice_download_failed">تعذر تنزيل الصوت. حاول مرة أخرى.</string>
     <string name="supertonic_model_unavailable">Supertonic 3 غير متاح. أكمل تنزيل النموذج أو اختر محرك نطق آخر في الإعدادات.</string>
     <string name="supertonic_speech_failed">فشل النطق. تحقق من الصوت المحدد واختر لغة مدعومة في الإعدادات.</string>
+
+    <!-- On-device PocketTTS.cpp voice cloning -->
+    <string name="pocket_voice_cloning">استنساخ الصوت · Pocket TTS</string>
+    <string name="pocket_voice_help">سجّل هنا أو استورد الصوت. للإنجليزية فقط. استورد مقطع WAV أو MP3 أو FLAC واضحًا مدته 3–30 ثانية (حتى 20 ميغابايت). يتم الاستنساخ بالكامل على هذا الجهاز. يستخدم اختيار صوت Pocket TTS في التطبيق باستثناء المترجم.</string>
+    <string name="pocket_model_required">نزّل Pocket TTS من شاشة تنزيل النماذج أولًا.</string>
+    <string name="pocket_cloning">جارٍ استنساخ الصوت على هذا الجهاز…</string>
+    <string name="pocket_clone_failed">تعذّر استنساخ الصوت. استخدم مقطع كلام واضحًا بصيغة WAV أو MP3 أو FLAC مدته 3 ثوانٍ على الأقل.</string>
+    <string name="pocket_import_voice">استيراد الصوت واستنساخه</string>
+    <string name="pocket_speech_failed">تعذّر إنشاء الكلام. اختر صوت Pocket TTS مستنسخًا في الإعدادات.</string>
+
+    <!-- Microphone recording for local voice cloning -->
+    <string name="pocket_record_voice">تسجيل الصوت</string>
+    <string name="pocket_stop_and_clone">إيقاف واستنساخ</string>
+    <string name="pocket_recording">التسجيل: %1$d / 30 ثانية</string>
+    <string name="pocket_record_failed">فشل التسجيل أو الاستنساخ. حاول مجددًا بكلام واضح لمدة 3 ثوانٍ على الأقل.</string>
+    <string name="pocket_microphone_required">اسمح بالوصول إلى الميكروفون لتسجيل صوت.</string>
+    <string name="pocket_recorded_voice">تسجيل %1$s</string>
 </resources>

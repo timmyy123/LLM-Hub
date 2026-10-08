@@ -1056,4 +1056,21 @@
     <string name="supertonic_voice_download_failed">הורדת הקול נכשלה. נסו שוב.</string>
     <string name="supertonic_model_unavailable">Supertonic 3 אינו זמין. השלימו את הורדת המודל או בחרו מנוע דיבור אחר בהגדרות.</string>
     <string name="supertonic_speech_failed">יצירת הדיבור נכשלה. בדקו את הקול שנבחר ובחרו שפה נתמכת בהגדרות.</string>
+
+    <!-- On-device PocketTTS.cpp voice cloning -->
+    <string name="pocket_voice_cloning">שכפול קול · Pocket TTS</string>
+    <string name="pocket_voice_help">הקליטו כאן או ייבאו אודיו. אנגלית בלבד. יש לייבא קטע WAV, MP3 או FLAC ברור באורך 3–30 שניות (עד 20 MB). השכפול מתבצע כולו במכשיר זה. בחירת קול מפעילה את Pocket TTS בכל האפליקציה מלבד המתרגם.</string>
+    <string name="pocket_model_required">תחילה יש להוריד את Pocket TTS ממסך הורדת המודלים.</string>
+    <string name="pocket_cloning">משכפל קול במכשיר זה…</string>
+    <string name="pocket_clone_failed">לא ניתן לשכפל את הקול. יש להשתמש בקטע דיבור ברור מסוג WAV, MP3 או FLAC באורך 3 שניות לפחות.</string>
+    <string name="pocket_import_voice">ייבוא ושכפול קול</string>
+    <string name="pocket_speech_failed">לא ניתן ליצור דיבור. יש לבחור קול משוכפל של Pocket TTS בהגדרות.</string>
+
+    <!-- Microphone recording for local voice cloning -->
+    <string name="pocket_record_voice">הקלטת קול</string>
+    <string name="pocket_stop_and_clone">עצירה ושכפול</string>
+    <string name="pocket_recording">מקליט: %1$d / 30 שניות</string>
+    <string name="pocket_record_failed">ההקלטה או השכפול נכשלו. נסו שוב עם לפחות 3 שניות של דיבור ברור.</string>
+    <string name="pocket_microphone_required">יש לאפשר גישה למיקרופון כדי להקליט קול.</string>
+    <string name="pocket_recorded_voice">הקלטה %1$s</string>
 </resources>

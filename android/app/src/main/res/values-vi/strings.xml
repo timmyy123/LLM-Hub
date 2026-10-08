@@ -963,4 +963,21 @@
     <string name="supertonic_voice_download_failed">Tải giọng thất bại. Vui lòng thử lại.</string>
     <string name="supertonic_model_unavailable">Supertonic 3 không khả dụng. Hoàn tất tải mô hình hoặc chọn công cụ giọng nói khác trong Cài đặt.</string>
     <string name="supertonic_speech_failed">Tạo giọng nói thất bại. Kiểm tra giọng đã chọn và chọn ngôn ngữ được hỗ trợ trong Cài đặt.</string>
+
+    <!-- On-device PocketTTS.cpp voice cloning -->
+    <string name="pocket_voice_cloning">Nhân bản giọng nói · Pocket TTS</string>
+    <string name="pocket_voice_help">Ghi âm tại đây hoặc nhập âm thanh. Chỉ hỗ trợ tiếng Anh. Nhập đoạn WAV, MP3 hoặc FLAC rõ ràng dài 3–30 giây (tối đa 20 MB). Nhân bản hoàn toàn trên thiết bị. Giọng được chọn dùng Pocket TTS trong toàn ứng dụng, trừ Trình dịch.</string>
+    <string name="pocket_model_required">Trước tiên hãy tải Pocket TTS từ màn hình tải mô hình.</string>
+    <string name="pocket_cloning">Đang nhân bản giọng trên thiết bị…</string>
+    <string name="pocket_clone_failed">Không thể nhân bản giọng. Hãy dùng đoạn giọng nói WAV, MP3 hoặc FLAC rõ ràng dài ít nhất 3 giây.</string>
+    <string name="pocket_import_voice">Nhập và nhân bản giọng</string>
+    <string name="pocket_speech_failed">Không thể tạo giọng nói. Chọn giọng Pocket TTS đã nhân bản trong Cài đặt.</string>
+
+    <!-- Microphone recording for local voice cloning -->
+    <string name="pocket_record_voice">Ghi âm giọng nói</string>
+    <string name="pocket_stop_and_clone">Dừng và nhân bản</string>
+    <string name="pocket_recording">Đang ghi: %1$d / 30 giây</string>
+    <string name="pocket_record_failed">Ghi âm hoặc nhân bản thất bại. Thử lại với ít nhất 3 giây giọng nói rõ ràng.</string>
+    <string name="pocket_microphone_required">Cho phép truy cập micrô để ghi âm giọng nói.</string>
+    <string name="pocket_recorded_voice">Bản ghi %1$s</string>
 </resources>

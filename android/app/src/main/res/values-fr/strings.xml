@@ -1042,4 +1042,21 @@
     <string name="supertonic_voice_download_failed">Échec du téléchargement de la voix. Réessayez.</string>
     <string name="supertonic_model_unavailable">Supertonic 3 est indisponible. Terminez le téléchargement du modèle ou choisissez un autre moteur vocal dans les paramètres.</string>
     <string name="supertonic_speech_failed">Échec de la synthèse. Vérifiez la voix sélectionnée et choisissez une langue compatible dans les paramètres.</string>
+
+    <!-- On-device PocketTTS.cpp voice cloning -->
+    <string name="pocket_voice_cloning">Clonage vocal · Pocket TTS</string>
+    <string name="pocket_voice_help">Enregistrez ici ou importez un fichier audio. Anglais uniquement. Importez un extrait clair WAV, MP3 ou FLAC de 3 à 30 secondes (20 Mo maximum). Le clonage se fait entièrement sur cet appareil. La voix choisie utilise Pocket TTS dans toute l’application, sauf le Traducteur.</string>
+    <string name="pocket_model_required">Téléchargez d’abord Pocket TTS depuis l’écran de téléchargement des modèles.</string>
+    <string name="pocket_cloning">Clonage de la voix sur cet appareil…</string>
+    <string name="pocket_clone_failed">Impossible de cloner cette voix. Utilisez un extrait vocal clair WAV, MP3 ou FLAC d’au moins 3 secondes.</string>
+    <string name="pocket_import_voice">Importer et cloner une voix</string>
+    <string name="pocket_speech_failed">Impossible de générer la parole. Sélectionnez une voix clonée Pocket TTS dans les paramètres.</string>
+
+    <!-- Microphone recording for local voice cloning -->
+    <string name="pocket_record_voice">Enregistrer une voix</string>
+    <string name="pocket_stop_and_clone">Arrêter et cloner</string>
+    <string name="pocket_recording">Enregistrement : %1$d / 30 s</string>
+    <string name="pocket_record_failed">Échec de l’enregistrement ou du clonage. Réessayez avec au moins 3 secondes de parole claire.</string>
+    <string name="pocket_microphone_required">Autorisez le microphone pour enregistrer une voix.</string>
+    <string name="pocket_recorded_voice">Enregistrement %1$s</string>
 </resources>

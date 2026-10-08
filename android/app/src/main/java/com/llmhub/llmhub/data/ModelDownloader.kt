@@ -918,7 +918,11 @@ class ModelDownloader(
             currentFileIndex++
             val targetFile = File(modelDir, fileName)
 
-            val expected = if (model.name == SupertonicModel.NAME) SupertonicModel.coreFiles[fileName] else null
+            val expected = when (model.name) {
+                SupertonicModel.NAME -> SupertonicModel.coreFiles[fileName]
+                PocketTtsModel.NAME -> PocketTtsModel.coreFiles[fileName]
+                else -> null
+            }
             if (expected != null && targetFile.length() > expected) {
                 totalDownloaded -= targetFile.length()
                 targetFile.delete()
@@ -984,6 +988,7 @@ class ModelDownloader(
             }
         }
 
+        if (model.name == PocketTtsModel.NAME) check(PocketTtsModel.isComplete(context)) { "Incomplete Pocket TTS bundle" }
         if (model.name == SupertonicModel.NAME) check(SupertonicModel.isComplete(context)) { "Incomplete Supertonic bundle" }
         // Final emit - use authoritative total if we have it
         val authoritativeFinal = if (totalSize > 0) totalSize else totalDownloaded

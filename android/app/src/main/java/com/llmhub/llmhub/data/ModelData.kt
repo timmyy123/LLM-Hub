@@ -925,6 +925,18 @@ object ModelData {
 
     val ttsModels = listOf(
         LLMModel(
+            name = PocketTtsModel.NAME,
+            description = "PocketTTS.cpp: English speech with on-device voice cloning. Import a reference clip in Settings or Text to Speech.",
+            url = PocketTtsModel.url(PocketTtsModel.coreFiles.keys.first()),
+            category = "tts",
+            sizeBytes = PocketTtsModel.coreFiles.values.sum(),
+            source = "Kyutai · CC-BY-4.0 / PocketTTS.cpp · MIT",
+            supportsVision = false, supportsAudio = true, supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 2, recommendedRamGB = 4),
+            contextWindowSize = 0, modelFormat = "onnx",
+            additionalFiles = PocketTtsModel.coreFiles.keys.drop(1).map(PocketTtsModel::url)
+        ),
+        LLMModel(
             name = SupertonicModel.NAME,
             description = "Supertonic 3: offline speech in 31 languages. Download preset voices in Settings.",
             url = "${SupertonicModel.BASE_URL}/onnx/duration_predictor.onnx",

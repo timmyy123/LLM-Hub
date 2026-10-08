@@ -1,8 +1,8 @@
 # On-device voice cloning candidates for Android
 
-Research checked 2026-10-08. These are candidates, not installed app features or measurements from this app. Supertonic 3 remains preset-only: its public release does not include a reference-audio encoder. The external Voice Builder and custom JSON import flow have been removed.
+Research checked 2026-10-08. **Implemented choice: PocketTTS.cpp**, as requested. See [the Android integration and validation](pocket-tts.md). The remaining alternatives below are research notes, not additional installed engines. Supertonic 3 remains preset-only: its public release does not include a reference-audio encoder. The external Voice Builder and custom JSON import flow have been removed.
 
-## Recommended: sherpa-onnx with Pocket TTS
+## Alternative: sherpa-onnx with Pocket TTS
 
 The [official sherpa PocketTTS guide](https://k2-fsa.github.io/sherpa/onnx/tts/pocket.html) documents offline cloning from reference audio without a transcript and distributes a model bundle containing the encoder, decoder, text conditioner, and language-model graphs. The [Kotlin example](https://github.com/k2-fsa/sherpa-onnx/blob/master/kotlin-api-examples/test_pocket_tts.kt) and [Kotlin API](https://github.com/k2-fsa/sherpa-onnx/blob/master/sherpa-onnx/kotlin-api/Tts.kt) expose `OfflineTtsPocketModelConfig` and `generateWithConfig`, with reference PCM and sample rate passed through `GenerationConfig`. The runtime has an [Android build path](https://k2-fsa.github.io/sherpa/onnx/android/build-sherpa-onnx.html).
 
@@ -12,16 +12,16 @@ This is the best first integration candidate because the complete audio encoder 
 
 [ZipVoice](https://github.com/k2-fsa/ZipVoice) supports English and Chinese cloning and offers a distilled version for speed. The [sherpa guide](https://k2-fsa.github.io/sherpa/onnx/tts/zipvoice.html) documents reference audio plus its transcript. The same Kotlin generation interface accepts both inputs. This is a practical candidate where Chinese support matters and a transcript is acceptable. The transcript can be entered by the user or generated with a separate local ASR model; cloning must not depend on a cloud transcription service.
 
-## Additional library: PocketTTS.cpp
+## Implemented library: PocketTTS.cpp
 
-[PocketTTS.cpp](https://github.com/VolgaGerm/PocketTTS.cpp) provides local cloning with an ONNX audio encoder, streaming, cached voice state, and a C FFI/shared-library option. Its documented targets are desktop Linux/macOS/Windows. Android would require NDK/JNI and build adaptation, so it is a less direct route than sherpa's Android/Kotlin support. It could reuse the app's ONNX experience without relying on a remote service.
+[PocketTTS.cpp](https://github.com/VolgaGerm/PocketTTS.cpp) provides local cloning with an ONNX audio encoder, streaming, cached voice state, and a C FFI/shared-library option. Its documented targets are desktop Linux/macOS/Windows. The app now includes that NDK/JNI adaptation, using its existing Android ONNX runtime with a pinned model bundle. Reference encoding and synthesis have passed a JNI smoke test on an ARM64 Android device.
 
 ## NeuTTS caveat
 
 [NeuTTS](https://github.com/neuphonic/neutts) supports local reference-audio cloning and GGUF backbones. However, its documented ONNX codec artifacts are decoder-only and require pre-encoded references; the reference encoder is in the PyTorch codecs. A GGUF model plus ONNX decoder alone would recreate the missing-encoder problem. It requires additional encoder deployment work before satisfying fully in-app cloning. Nano models also use a different model license from Air.
 
-## Proposed app flow
+## Implemented app flow
 
-Record/import reference audio → decode and resample locally → encode reference on-device → synthesize locally → play/save audio. Download the complete encoder and synthesis bundle from the model screen, and manage saved voices in Settings. No external voice-building website or uploaded recording is part of this flow.
+Record/import reference audio → decode and resample locally → encode reference on-device → synthesize locally → play audio. Download the complete encoder and synthesis bundle from the model screen, and manage saved voices in Settings. No external voice-building website or uploaded recording is part of this flow.
 
-Before choosing a release, measure full encoder-plus-synthesis performance and peak memory on an Android ARM64 device, verify native library coexistence with the app's ONNX runtime, and check 16 KB page alignment. No candidate has been benchmarked in this app yet.
+Before choosing a release, measure full encoder-plus-synthesis performance and peak memory on an Android ARM64 device, verify native library coexistence with the app's ONNX runtime, and check 16 KB page alignment. The PocketTTS.cpp JNI smoke test is documented above; broad device performance benchmarking remains separate.

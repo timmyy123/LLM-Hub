@@ -72,6 +72,7 @@ fun LLMModel.requiresExternalVisionProjector(): Boolean {
  * that file before the rest of the model bundle was added to the manifest.
  */
 fun LLMModel.hasCompleteDownloadedBundle(context: Context): Boolean {
+    if (name == PocketTtsModel.NAME) return PocketTtsModel.isComplete(context)
     if (name == SupertonicModel.NAME) return SupertonicModel.isComplete(context)
     val modelsDir = File(context.filesDir, "models")
     val targetDir = if (additionalFiles.isNotEmpty()) {

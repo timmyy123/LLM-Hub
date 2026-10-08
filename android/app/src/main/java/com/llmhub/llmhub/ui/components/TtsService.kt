@@ -11,6 +11,7 @@ import ai.onnxruntime.OnnxTensor
 import ai.onnxruntime.OrtEnvironment
 import ai.onnxruntime.OrtSession
 import com.llmhub.llmhub.data.ThemePreferences
+import com.llmhub.llmhub.data.PocketTtsModel
 import com.llmhub.llmhub.data.SupertonicModel
 import com.llmhub.llmhub.R
 import kotlinx.coroutines.flow.combine
@@ -55,6 +56,7 @@ class TtsService(private val context: Context, private val isTranslationFeature:
     private var tts: TextToSpeech? = null
     private var ortEnvironment: OrtEnvironment? = null
     private var ortSession: OrtSession? = null
+    private var pocketEngine: PocketTtsEngine? = null
     private var supertonicEngine: SupertonicEngine? = null
     private var speechLocale = Locale.getDefault()
     private val configurationScope = CoroutineScope(Dispatchers.Main + kotlinx.coroutines.SupervisorJob())
@@ -160,7 +162,7 @@ class TtsService(private val context: Context, private val isTranslationFeature:
             } else {
                 combine(themePreferences.selectedTtsModel, themePreferences.selectedTtsDevice,
                     themePreferences.selectedTtsVoice) { model, device, voice ->
-                    if (model == SupertonicModel.NAME) listOf(model, "cpu", "")
+                    if (model in setOf(SupertonicModel.NAME, PocketTtsModel.NAME)) listOf(model, "cpu", "")
                     else listOf(model, device, voice)
                 }.distinctUntilChanged().collectLatest { settings ->
                     isInitialized = false
@@ -172,6 +174,8 @@ class TtsService(private val context: Context, private val isTranslationFeature:
                     tts?.shutdown()
                     tts = null
                     withContext(Dispatchers.IO) {
+                        pocketEngine?.close()
+                        pocketEngine = null
                         supertonicEngine?.close()
                         supertonicEngine = null
                         ortSession?.close()
@@ -185,6 +189,26 @@ class TtsService(private val context: Context, private val isTranslationFeature:
 
     private suspend fun initializeTts(selectedModel: String?, selectedDevice: String) {
         Log.d(TAG, "initializeTts: selectedModel = $selectedModel, selectedDevice = $selectedDevice")
+        if (selectedModel == PocketTtsModel.NAME) {
+            try {
+                check(PocketTtsModel.isComplete(context))
+                withContext(Dispatchers.IO) {
+                    pocketEngine = PocketTtsEngine(PocketTtsModel.directory(context), PocketTtsModel.voicesDirectory(context))
+                }
+                currentModelDir = PocketTtsModel.directory(context)
+                isCustomTts = true
+                isInitialized = true
+                startAudioTrackPlayback()
+                startSynthesisWorker()
+                flushPendingQueue()
+            } catch (e: kotlinx.coroutines.CancellationException) { throw e
+            } catch (e: Exception) {
+                Log.e(TAG, "Pocket TTS initialization failed", e)
+                _error.value = context.getString(R.string.pocket_model_required)
+                isInitialized = true
+            }
+            return
+        }
         if (selectedModel == SupertonicModel.NAME) {
             try {
                 check(SupertonicModel.isComplete(context))
@@ -558,6 +582,33 @@ class TtsService(private val context: Context, private val isTranslationFeature:
     private fun startSynthesisWorker() {
         synthesisWorkerJob?.cancel()
         synthesisWorkerJob = synthesisScope.launch {
+            val pocket = pocketEngine
+            if (pocket != null) {
+                for (sentence in sentenceChannel) {
+                    var unqueuedChunks = 1
+                    try {
+                        val voice = PocketTtsModel.voiceFile(context, themePreferences.pocketVoice.first())
+                            ?: error("No Pocket voice selected")
+                        val chunks = SupertonicEngine.chunks(sentence, 240)
+                        activeJobsCount.addAndGet(chunks.size - 1)
+                        unqueuedChunks = chunks.size
+                        for (chunk in chunks) {
+                            val worker = coroutineContext
+                            val audio = pocket.synthesize(chunk, voice) { !worker.isActive }
+                            if (!worker.isActive) throw kotlinx.coroutines.CancellationException()
+                            check(audio.isNotEmpty())
+                            pcmQueue.put(ShortArray(audio.size) { (audio[it].coerceIn(-1f, 1f) * 32767f).toInt().toShort() })
+                            unqueuedChunks--
+                        }
+                    } catch (e: kotlinx.coroutines.CancellationException) { throw e
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Pocket TTS synthesis failed", e)
+                        _error.value = context.getString(R.string.pocket_speech_failed)
+                        if (activeJobsCount.addAndGet(-unqueuedChunks).coerceAtLeast(0) == 0) _isSpeaking.value = false
+                    }
+                }
+                return@launch
+            }
             val supertonic = supertonicEngine
             if (supertonic != null) {
                 for (sentence in sentenceChannel) {
@@ -1738,6 +1789,8 @@ class TtsService(private val context: Context, private val isTranslationFeature:
         CoroutineScope(Dispatchers.IO).launch {
             // Initialization can still be returning from a native session creation.
             configurationJob?.join()
+            pocketEngine?.close()
+            pocketEngine = null
             supertonicEngine?.close()
             supertonicEngine = null
             try { ortSession?.close() } catch (_: Exception) {}
