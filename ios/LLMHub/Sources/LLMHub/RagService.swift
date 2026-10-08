@@ -13,8 +13,6 @@ struct ContextChunk: Sendable {
     let fileName: String
     let similarity: Float
     let chunkIndex: Int
-    /// Set for image/audio memories: (MemoryMedia type, MemoryDocument id).
-    var media: (type: String, docId: String)? = nil
 }
 
 private struct DocumentChunk: Sendable {
@@ -22,8 +20,6 @@ private struct DocumentChunk: Sendable {
     let fileName: String
     let chunkIndex: Int
     var embedding: [Float]?
-    /// Image/audio memory backing this chunk: (MemoryMedia type, file URL).
-    var media: (type: String, url: URL)? = nil
 }
 
 // MARK: - RagService
@@ -52,13 +48,6 @@ actor RagService {
         store[chatId] = existing
     }
 
-    /// Media memories are a single chunk whose text is the label + note injected into prompts.
-    func addMediaDocument(chatId: String, content: String, fileName: String, mediaType: String, mediaURL: URL) {
-        var existing = store[chatId] ?? []
-        existing.append(DocumentChunk(content: content, fileName: fileName, chunkIndex: 0, embedding: nil, media: (mediaType, mediaURL)))
-        store[chatId] = existing
-    }
-
     func addChunk(chatId: String, content: String, fileName: String, chunkIndex: Int, embedding: [Float]) {
         var existing = store[chatId] ?? []
         existing.append(DocumentChunk(content: content, fileName: fileName, chunkIndex: chunkIndex, embedding: embedding))
@@ -71,18 +60,6 @@ actor RagService {
         for i in chunks.indices {
             guard chunks[i].embedding == nil else { continue }
             let text = chunks[i].content
-            if let media = chunks[i].media {
-                if let data = try? Data(contentsOf: media.url),
-                   let emb = try? await service.embedMedia(type: media.type, data: data, note: MemoryMedia.note(fromContent: text)) {
-                    store[chatId]?[i].embedding = emb
-                    count += 1
-                } else if let emb = try? await service.embed(text) {
-                    // Text-only model or unreadable file: fall back to the label + note.
-                    store[chatId]?[i].embedding = emb
-                    count += 1
-                }
-                continue
-            }
             guard text.count >= 50 || chunks.count == 1 else { continue }
             guard let emb = try? await service.embed(text) else { continue }
             store[chatId]?[i].embedding = emb
@@ -114,9 +91,7 @@ actor RagService {
             let jaccard = jaccardSimilarity(queryTokens, tokenize(chunk.content))
 
             let shouldInclude: Bool
-            if queryEmbedding != nil && chunk.embedding != nil && chunk.media != nil {
-                shouldInclude = semantic > MemoryMedia.similarityThreshold
-            } else if queryEmbedding != nil && chunk.embedding != nil {
+            if queryEmbedding != nil && chunk.embedding != nil {
                 shouldInclude = semantic > Self.semanticThreshold
                     || (semantic > Self.semanticRelaxedThreshold && jaccard > Self.jaccardThreshold)
             } else {
@@ -137,15 +112,7 @@ actor RagService {
         return candidates
             .sorted { $0.similarity > $1.similarity }
             .prefix(maxResults)
-            .map {
-                ContextChunk(
-                    content: $0.chunk.content,
-                    fileName: $0.chunk.fileName,
-                    similarity: $0.similarity,
-                    chunkIndex: $0.chunk.chunkIndex,
-                    media: $0.chunk.media.map { ($0.type, $0.url.lastPathComponent) }
-                )
-            }
+            .map { ContextChunk(content: $0.chunk.content, fileName: $0.chunk.fileName, similarity: $0.similarity, chunkIndex: $0.chunk.chunkIndex) }
     }
 
     // MARK: - Queries

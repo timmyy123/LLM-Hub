@@ -53,7 +53,6 @@ import com.llmhub.llmhub.R
 import java.io.File
 import com.llmhub.llmhub.BuildConfig
 import com.llmhub.llmhub.data.ModelData
-import com.llmhub.llmhub.data.MemoryMedia
 import com.llmhub.llmhub.data.ModelDownloader
 import com.llmhub.llmhub.data.ThemeMode
 import com.llmhub.llmhub.data.ThemePreferences
@@ -507,108 +506,6 @@ fun SettingsScreen(
                             }
 
 
-                            // Image/audio memories for multimodal embedding models (EmbeddingGemma 2)
-                            val multimodalMemory = ModelData.isMultimodalEmbeddingModel(selectedEmbeddingModel)
-                            val memoryRecorder = remember {
-                                com.llmhub.llmhub.ui.components.AudioInputService(context).apply {
-                                    silenceAutoStopEnabled = false
-                                    maxDurationMs = 60_000L
-                                }
-                            }
-                            var isRecordingMemory by remember { mutableStateOf(false) }
-                            val recordingElapsedMs by memoryRecorder.elapsedTimeMs.collectAsState()
-                            DisposableEffect(Unit) { onDispose { memoryRecorder.cancelRecording() } }
-
-                            fun saveMediaMemory(type: String, fileName: String, bytes: ByteArray) {
-                                coroutineScope.launch {
-                                    try {
-                                        val db = com.llmhub.llmhub.data.LlmHubDatabase.getDatabase(context)
-                                        val id = "mem_${type}_${System.currentTimeMillis()}"
-                                        withContext(kotlinx.coroutines.Dispatchers.IO) {
-                                            MemoryMedia.mediaFile(context, id).writeBytes(bytes)
-                                        }
-                                        val doc = com.llmhub.llmhub.data.MemoryDocument(
-                                            id = id,
-                                            fileName = fileName,
-                                            content = MemoryMedia.buildContent(type, fileName, pasteText.text),
-                                            metadata = type,
-                                            createdAt = System.currentTimeMillis(),
-                                            status = "PENDING",
-                                            chunkCount = 0
-                                        )
-                                        db.memoryDao().insert(doc)
-                                        com.llmhub.llmhub.data.MemoryProcessor(context, db).processPending()
-                                        pasteText = TextFieldValue("")
-                                        keyboardController?.hide()
-                                        android.widget.Toast.makeText(context, context.getString(R.string.memory_media_saved), android.widget.Toast.LENGTH_SHORT).show()
-                                    } catch (e: Exception) {
-                                        android.util.Log.w("SettingsScreen", "Failed saving media memory: ${e.message}")
-                                        android.widget.Toast.makeText(context, context.getString(R.string.memory_media_failed), android.widget.Toast.LENGTH_SHORT).show()
-                                    }
-                                }
-                            }
-
-                            fun stopMemoryRecording() {
-                                coroutineScope.launch {
-                                    val wav = memoryRecorder.stopRecording(forceKeep = true)
-                                    isRecordingMemory = false
-                                    if (wav != null) {
-                                        saveMediaMemory(MemoryMedia.TYPE_AUDIO, "recording_${System.currentTimeMillis()}.wav", MemoryMedia.trimWav(wav))
-                                    } else {
-                                        android.widget.Toast.makeText(context, context.getString(R.string.memory_media_failed), android.widget.Toast.LENGTH_SHORT).show()
-                                    }
-                                }
-                            }
-
-                            fun startMemoryRecording() {
-                                coroutineScope.launch {
-                                    memoryRecorder.onRecordingAutoStopped = { stopMemoryRecording() }
-                                    isRecordingMemory = memoryRecorder.startRecording()
-                                    if (!isRecordingMemory) {
-                                        android.widget.Toast.makeText(context, context.getString(R.string.memory_media_failed), android.widget.Toast.LENGTH_SHORT).show()
-                                    }
-                                }
-                            }
-
-                            val micPermissionLauncher = rememberLauncherForActivityResult(
-                                contract = ActivityResultContracts.RequestPermission()
-                            ) { granted ->
-                                if (granted) startMemoryRecording()
-                                else android.widget.Toast.makeText(context, context.getString(R.string.memory_mic_permission_denied), android.widget.Toast.LENGTH_SHORT).show()
-                            }
-
-                            val memoryImagePicker = rememberLauncherForActivityResult(
-                                contract = ActivityResultContracts.GetContent()
-                            ) { uri: Uri? ->
-                                uri?.let { selectedUri ->
-                                    coroutineScope.launch {
-                                        val bytes = MemoryMedia.loadImageAsJpeg(context, selectedUri)
-                                        if (bytes == null) {
-                                            android.widget.Toast.makeText(context, context.getString(R.string.memory_media_failed), android.widget.Toast.LENGTH_SHORT).show()
-                                            return@launch
-                                        }
-                                        val name = FileUtils.getFileInfo(context, selectedUri)?.name ?: "image_${System.currentTimeMillis()}.jpg"
-                                        saveMediaMemory(MemoryMedia.TYPE_IMAGE, name, bytes)
-                                    }
-                                }
-                            }
-
-                            val memoryAudioPicker = rememberLauncherForActivityResult(
-                                contract = ActivityResultContracts.GetContent()
-                            ) { uri: Uri? ->
-                                uri?.let { selectedUri ->
-                                    coroutineScope.launch {
-                                        val bytes = MemoryMedia.loadAudioAsWav(context, selectedUri)
-                                        if (bytes == null) {
-                                            android.widget.Toast.makeText(context, context.getString(R.string.memory_media_failed), android.widget.Toast.LENGTH_SHORT).show()
-                                            return@launch
-                                        }
-                                        val name = FileUtils.getFileInfo(context, selectedUri)?.name ?: "audio_${System.currentTimeMillis()}.wav"
-                                        saveMediaMemory(MemoryMedia.TYPE_AUDIO, name, bytes)
-                                    }
-                                }
-                            }
-
                             // collect saved memories from DB (used below for list + processing state)
                             val memoryFlow = remember { com.llmhub.llmhub.data.LlmHubDatabase.getDatabase(context).memoryDao().getAllMemory() }
                             val memoryList by memoryFlow.collectAsState(initial = emptyList())
@@ -763,60 +660,6 @@ fun SettingsScreen(
                                             )
                                         }
 
-                                        if (multimodalMemory) {
-                                            Spacer(modifier = Modifier.height(12.dp))
-                                            Text(
-                                                stringResource(R.string.memory_multimodal_hint),
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                            Spacer(modifier = Modifier.height(8.dp))
-                                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                                                OutlinedButton(
-                                                    onClick = { memoryImagePicker.launch("image/*") },
-                                                    modifier = Modifier.weight(1f).height(48.dp),
-                                                    enabled = !isRecordingMemory,
-                                                    shape = MaterialTheme.shapes.large
-                                                ) {
-                                                    Icon(Icons.Default.Image, contentDescription = null, modifier = Modifier.size(18.dp))
-                                                    Spacer(modifier = Modifier.width(6.dp))
-                                                    Text(stringResource(R.string.memory_upload_image), maxLines = 1)
-                                                }
-                                                OutlinedButton(
-                                                    onClick = { memoryAudioPicker.launch("audio/*") },
-                                                    modifier = Modifier.weight(1f).height(48.dp),
-                                                    enabled = !isRecordingMemory,
-                                                    shape = MaterialTheme.shapes.large
-                                                ) {
-                                                    Icon(Icons.Default.AudioFile, contentDescription = null, modifier = Modifier.size(18.dp))
-                                                    Spacer(modifier = Modifier.width(6.dp))
-                                                    Text(stringResource(R.string.memory_upload_audio), maxLines = 1)
-                                                }
-                                            }
-                                            Spacer(modifier = Modifier.height(8.dp))
-                                            Button(
-                                                onClick = {
-                                                    when {
-                                                        isRecordingMemory -> stopMemoryRecording()
-                                                        memoryRecorder.hasAudioPermission() -> startMemoryRecording()
-                                                        else -> micPermissionLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
-                                                    }
-                                                },
-                                                modifier = Modifier.fillMaxWidth().height(48.dp),
-                                                shape = MaterialTheme.shapes.large,
-                                                colors = if (isRecordingMemory) ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error) else ButtonDefaults.buttonColors()
-                                            ) {
-                                                Icon(if (isRecordingMemory) Icons.Default.Stop else Icons.Default.Mic, contentDescription = null, modifier = Modifier.size(18.dp))
-                                                Spacer(modifier = Modifier.width(6.dp))
-                                                if (isRecordingMemory) {
-                                                    val seconds = recordingElapsedMs / 1000
-                                                    Text(stringResource(R.string.memory_stop_recording) + "  %d:%02d".format(seconds / 60, seconds % 60))
-                                                } else {
-                                                    Text(stringResource(R.string.memory_record_audio))
-                                                }
-                                            }
-                                        }
-
                                         Spacer(modifier = Modifier.height(12.dp))
 
                                         // processing indicator
@@ -848,7 +691,6 @@ fun SettingsScreen(
                                                         try {
                                                             db.memoryDao().deleteAll()
                                                             db.memoryDao().deleteAllChunks()
-                                                            MemoryMedia.deleteAllMedia(context)
                                                             ragManager.clearGlobalDocuments()
                                                             android.widget.Toast.makeText(context, context.getString(R.string.memory_cleared), android.widget.Toast.LENGTH_SHORT).show()
                                                         } catch (e: Exception) {
@@ -888,8 +730,6 @@ fun SettingsScreen(
                                                                 "uploaded" -> context.getString(R.string.global_memory_uploaded_by)
                                                                 "pasted" -> context.getString(R.string.global_memory_pasted_by)
                                                                 "chat_import" -> context.getString(R.string.chat_imported_to_memory)
-                                                                MemoryMedia.TYPE_IMAGE -> context.getString(R.string.memory_type_image)
-                                                                MemoryMedia.TYPE_AUDIO -> context.getString(R.string.memory_type_audio)
                                                                 else -> mem.metadata
                                                             }
                                                             Text(metaLabel + " • " + android.text.format.DateFormat.getDateFormat(context).format(mem.createdAt), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -910,7 +750,6 @@ fun SettingsScreen(
                                                                 try {
                                                                     db.memoryDao().delete(mem)
                                                                     db.memoryDao().deleteChunksForDoc(mem.id)
-                                                                    MemoryMedia.deleteMedia(context, mem.id)
                                                                     ragManager.removeGlobalDocumentChunks(mem.id)
                                                                     val remaining = db.memoryDao().getAllChunks()
                                                                     if (remaining.isNotEmpty()) {

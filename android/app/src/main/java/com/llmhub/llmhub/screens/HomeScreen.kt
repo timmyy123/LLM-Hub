@@ -179,6 +179,22 @@ fun HomeScreen(
                 gradient = Pair(Color(0xFFFF9A9E), Color(0xFFFECFEF)),
                 darkColor = Color(0xFF5C2D41),
                 route = "music_generator"
+            ),
+            FeatureCard(
+                title = R.string.feature_photo_search,
+                description = R.string.feature_photo_search_desc,
+                icon = Icons.Filled.ImageSearch,
+                gradient = Pair(Color(0xFF4FACFE), Color(0xFF8E7CFF)),
+                darkColor = Color(0xFF243A6B),
+                route = "photo_search"
+            ),
+            FeatureCard(
+                title = R.string.feature_audio_search,
+                description = R.string.feature_audio_search_desc,
+                icon = Icons.Filled.GraphicEq,
+                gradient = Pair(Color(0xFF43CEA2), Color(0xFF185A9D)),
+                darkColor = Color(0xFF15404A),
+                route = "audio_search"
             )
         )
     }

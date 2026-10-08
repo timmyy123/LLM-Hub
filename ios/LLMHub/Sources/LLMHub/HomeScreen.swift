@@ -41,7 +41,9 @@ struct HomeScreen: View {
             FeatureCard(titleKey: "feature_vibe_coder", descriptionKey: "feature_vibe_coder_desc", iconSystemName: "chevron.left.slash.chevron.right", gradient: [Color(hex: "a8bcff"), Color(hex: "5f76be")], route: "vibe_coder"),
             FeatureCard(titleKey: "feature_vibevoice", descriptionKey: "feature_vibevoice_desc", iconSystemName: "waveform.circle.fill", gradient: [Color(hex: "89d3f7"), Color(hex: "3a68cc")], route: "vibe_voice"),
             FeatureCard(titleKey: "feature_agent", descriptionKey: "feature_agent_desc", iconSystemName: "cpu.fill", gradient: [Color(hex: "a78bfa"), Color(hex: "ec4899")], route: "agent"),
-            FeatureCard(titleKey: "feature_music_generator", descriptionKey: "feature_music_generator_desc", iconSystemName: "music.note", gradient: [Color(hex: "ff9a9e"), Color(hex: "fecfef")], route: "music_generator")
+            FeatureCard(titleKey: "feature_music_generator", descriptionKey: "feature_music_generator_desc", iconSystemName: "music.note", gradient: [Color(hex: "ff9a9e"), Color(hex: "fecfef")], route: "music_generator"),
+            FeatureCard(titleKey: "feature_photo_search", descriptionKey: "feature_photo_search_desc", iconSystemName: "photo.on.rectangle.angled", gradient: [Color(hex: "7fb6ff"), Color(hex: "8e7cff")], route: "photo_search"),
+            FeatureCard(titleKey: "feature_audio_search", descriptionKey: "feature_audio_search_desc", iconSystemName: "waveform.badge.magnifyingglass", gradient: [Color(hex: "6fe3c1"), Color(hex: "3a7bd5")], route: "audio_search")
         ]
     }
 

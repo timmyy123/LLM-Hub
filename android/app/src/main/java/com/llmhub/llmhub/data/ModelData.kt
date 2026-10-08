@@ -5122,13 +5122,6 @@ object ModelData {
     fun isEmbeddingGemma2NpuModel(model: LLMModel): Boolean =
         model.modelFormat == "litertlm" && model.url.contains("embeddinggemma-2-740m_")
 
-    /** Multimodal LiteRT-LM embedding models (EmbeddingGemma 2) that accept images and audio. */
-    fun isMultimodalEmbeddingModel(modelName: String?): Boolean {
-        if (modelName.isNullOrBlank()) return false
-        val model = models.find { it.name == modelName && it.category == "embedding" } ?: return false
-        return model.modelFormat == "litertlm" && (model.supportsVision || model.supportsAudio)
-    }
-
     val models: List<LLMModel> = baseModels + embeddingGemma2Models + upscalerModels + ttsModels + musicGenerationModels + (if (DeviceInfo.getChipsetSuffix() in setOf("8gen3", "8gen4", "8gen5")) sdxlModels else emptyList())
 
 

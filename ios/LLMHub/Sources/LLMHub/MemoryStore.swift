@@ -7,10 +7,8 @@ struct MemoryDocument: Codable, Identifiable, Sendable {
     let id: String
     var fileName: String
     var content: String
-    var metadata: String   // "pasted" | "uploaded" | "chat_import" | "image" | "audio"
+    var metadata: String   // "pasted" | "uploaded" | "chat_import"
     let createdAt: Date
-
-    var isMedia: Bool { MemoryMedia.isMediaType(metadata) }
 
     init(id: String = "mem_\(UUID().uuidString)", fileName: String, content: String, metadata: String, createdAt: Date = Date()) {
         self.id = id
@@ -18,76 +16,6 @@ struct MemoryDocument: Codable, Identifiable, Sendable {
         self.content = content
         self.metadata = metadata
         self.createdAt = createdAt
-    }
-}
-
-// MARK: - MemoryMedia
-// Image and audio memories for multimodal embedding models (EmbeddingGemma 2). The media bytes
-// live in Documents/memory_media/<docId>; MemoryDocument.content holds a text label plus the
-// user's note, which is what gets injected into chat prompts.
-
-enum MemoryMedia {
-    static let typeImage = "image"
-    static let typeAudio = "audio"
-
-    /// Cross-modal (text query vs. image/audio) cosine scores run lower than text-to-text ones.
-    static let similarityThreshold: Float = 0.30
-
-    private static let imageLabel = "[Image memory"
-    private static let audioLabel = "[Audio memory"
-    private static let maxAudioSeconds = 120
-    private static let wavHeaderBytes = 44
-
-    static func isMediaType(_ metadata: String) -> Bool {
-        metadata == typeImage || metadata == typeAudio
-    }
-
-    static func isMediaContent(_ content: String) -> Bool {
-        content.hasPrefix(imageLabel) || content.hasPrefix(audioLabel)
-    }
-
-    static func buildContent(type: String, fileName: String, note: String) -> String {
-        let label = type == typeImage ? imageLabel : audioLabel
-        let trimmed = note.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? "\(label): \(fileName)]" : "\(label): \(fileName)]\n\(trimmed)"
-    }
-
-    /// The user's note without the generated label line.
-    static func note(fromContent content: String) -> String? {
-        guard isMediaContent(content), let newline = content.firstIndex(of: "\n") else { return nil }
-        let note = content[content.index(after: newline)...].trimmingCharacters(in: .whitespacesAndNewlines)
-        return note.isEmpty ? nil : note
-    }
-
-    static var directory: URL {
-        let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-            .appendingPathComponent("memory_media", isDirectory: true)
-        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        return dir
-    }
-
-    static func fileURL(docId: String) -> URL {
-        directory.appendingPathComponent(docId)
-    }
-
-    static func deleteMedia(docId: String) {
-        try? FileManager.default.removeItem(at: fileURL(docId: docId))
-    }
-
-    static func deleteAllMedia() {
-        try? FileManager.default.removeItem(at: directory)
-    }
-
-    /// Keep the first `maxAudioSeconds` of a 16 kHz mono float32 WAV produced by the app.
-    static func trimWav(_ wav: Data) -> Data {
-        let maxBytes = wavHeaderBytes + maxAudioSeconds * 16_000 * 4
-        guard wav.count > maxBytes,
-              String(data: wav.subdata(in: 36..<40), encoding: .ascii) == "data" else { return wav }
-        var trimmed = Data(wav.prefix(maxBytes))
-        let dataSize = UInt32(maxBytes - wavHeaderBytes)
-        withUnsafeBytes(of: (36 + dataSize).littleEndian) { trimmed.replaceSubrange(4..<8, with: $0) }
-        withUnsafeBytes(of: dataSize.littleEndian) { trimmed.replaceSubrange(40..<44, with: $0) }
-        return trimmed
     }
 }
 
@@ -143,7 +71,6 @@ final class MemoryStore: ObservableObject {
 
     func removeDocument(id: String) {
         documents.removeAll { $0.id == id }
-        MemoryMedia.deleteMedia(docId: id)
         save()
     }
 
@@ -156,7 +83,6 @@ final class MemoryStore: ObservableObject {
 
     func clearAllDocuments() {
         documents.removeAll()
-        MemoryMedia.deleteAllMedia()
         save()
     }
 
@@ -168,7 +94,13 @@ final class MemoryStore: ObservableObject {
 
         // Try new Store format first.
         if let decoded = try? JSONDecoder().decode(Store.self, from: rawData) {
-            documents = decoded.documents
+            // Memory is text-only: image/audio entries can't be embedded or injected into chats.
+            documents = decoded.documents.filter { $0.metadata != "image" && $0.metadata != "audio" }
+            if documents.count != decoded.documents.count {
+                let mediaDir = fileURL.deletingLastPathComponent().appendingPathComponent("memory_media")
+                try? FileManager.default.removeItem(at: mediaDir)
+                save()
+            }
             return
         }
 

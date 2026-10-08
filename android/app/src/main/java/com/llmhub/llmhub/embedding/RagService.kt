@@ -227,10 +227,7 @@ class InMemoryRagService(private val embeddingService: EmbeddingService) : RagSe
         }
         
         // Acceptance logic - MUST MATCH ChatViewModel criteria exactly
-        fun shouldAccept(similarity: Float, overlap: Double, content: String): Boolean {
-            if (com.llmhub.llmhub.data.MemoryMedia.isMediaContent(content)) {
-                return similarity > com.llmhub.llmhub.data.MemoryMedia.MEDIA_SIMILARITY_THRESHOLD
-            }
+        fun shouldAccept(similarity: Float, overlap: Double): Boolean {
             return if (isEmbeddingGemma) {
                 // EmbeddingGemma: trust semantic similarity more, need less lexical overlap
                 (similarity > 0.65f) ||  // High semantic alone
@@ -255,7 +252,7 @@ class InMemoryRagService(private val embeddingService: EmbeddingService) : RagSe
             val similarity = candidate.similarity
             val overlap = wordJaccard(query, candidate.content)
             
-            if (shouldAccept(similarity, overlap, candidate.content)) {
+            if (shouldAccept(similarity, overlap)) {
                 filtered.add(candidate)
             }
         }

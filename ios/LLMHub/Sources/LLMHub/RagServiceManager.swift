@@ -18,9 +18,6 @@ final class RagServiceManager: ObservableObject {
     @Published private(set) var isReady: Bool = false
     @Published private(set) var statusMessage: String = ""
     @Published private(set) var isReembedding: Bool = false
-    /// True when the loaded embedding model can embed image / audio memories (EmbeddingGemma 2).
-    @Published private(set) var supportsImageMemory: Bool = false
-    @Published private(set) var supportsAudioMemory: Bool = false
 
     /// RAG is configured when an embedding model is selected (no separate toggle).
     var isConfigured: Bool {
@@ -55,8 +52,6 @@ final class RagServiceManager: ObservableObject {
             await embeddingService.cleanup()
             isReady = false
             initializedModelName = nil
-            supportsImageMemory = false
-            supportsAudioMemory = false
             statusMessage = AppSettings.shared.localized("embedding_disabled")
             return
         }
@@ -97,13 +92,9 @@ final class RagServiceManager: ObservableObject {
                     modelID: modelId,
                     modelPath: bundleURL.path,
                     modelName: model.name,
-                    cacheDir: modelDir.path,
-                    supportsImage: model.supportsVision,
-                    supportsAudio: model.supportsAudio
+                    cacheDir: modelDir.path
                 )
                 initializedModelName = modelId
-                supportsImageMemory = model.supportsVision
-                supportsAudioMemory = model.supportsAudio
                 isReady = true
                 statusMessage = AppSettings.shared.localized("embedding_enabled")
                 await restoreGlobalMemory()
@@ -132,8 +123,6 @@ final class RagServiceManager: ObservableObject {
             print("ℹ️ [RAG] initialize — calling embeddingService.initialize at \(tfliteURL.lastPathComponent)")
             try await embeddingService.initialize(modelID: modelId, modelPath: tfliteURL.path, modelName: model.name)
             initializedModelName = modelId
-            supportsImageMemory = false
-            supportsAudioMemory = false
             isReady = true
             statusMessage = AppSettings.shared.localized("embedding_enabled")
             print("✅ [RAG] initialize — SUCCESS, isReady=true")
@@ -230,35 +219,6 @@ final class RagServiceManager: ObservableObject {
         return true
     }
 
-    /// Save an image (JPEG/PNG) or 16 kHz mono WAV as a global memory, embedded directly by a
-    /// multimodal embedding model. `note` is stored with it and injected into prompts on retrieval.
-    func addGlobalMediaMemory(type: String, data: Data, fileName: String, note: String) async -> Bool {
-        guard isReady else {
-            print("⚠️ [Memory] addGlobalMediaMemory — BLOCKED (embedding model not ready)")
-            return false
-        }
-        let docId = "mem_\(UUID().uuidString)"
-        let url = MemoryMedia.fileURL(docId: docId)
-        do {
-            try data.write(to: url, options: .atomic)
-        } catch {
-            print("❌ [Memory] addGlobalMediaMemory — failed writing media: \(error.localizedDescription)")
-            return false
-        }
-        let doc = MemoryDocument(
-            id: docId,
-            fileName: fileName,
-            content: MemoryMedia.buildContent(type: type, fileName: fileName, note: note),
-            metadata: type
-        )
-        await ragService.addMediaDocument(chatId: globalMemoryChatId, content: doc.content, fileName: fileName, mediaType: type, mediaURL: url)
-        await ragService.embedAllPending(chatId: globalMemoryChatId, service: embeddingService)
-        memoryStore.appendDocument(doc)
-        populatedChatIds.removeAll()
-        print("✅ [Memory] addGlobalMediaMemory — \(type) \(fileName) (\(data.count) bytes)")
-        return true
-    }
-
     func clearGlobalMemory() async {
         print("ℹ️ [Memory] clearGlobalMemory — clearing all documents")
         await ragService.clear(chatId: globalMemoryChatId)
@@ -343,17 +303,7 @@ final class RagServiceManager: ObservableObject {
     }
 
     private func addToGlobalPool(_ doc: MemoryDocument) async {
-        if doc.isMedia {
-            await ragService.addMediaDocument(
-                chatId: globalMemoryChatId,
-                content: doc.content,
-                fileName: doc.fileName,
-                mediaType: doc.metadata,
-                mediaURL: MemoryMedia.fileURL(docId: doc.id)
-            )
-        } else {
-            await ragService.addRawDocument(chatId: globalMemoryChatId, content: doc.content, fileName: doc.fileName)
-        }
+        await ragService.addRawDocument(chatId: globalMemoryChatId, content: doc.content, fileName: doc.fileName)
     }
 
 }

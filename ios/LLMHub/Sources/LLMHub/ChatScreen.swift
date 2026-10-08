@@ -1153,14 +1153,10 @@ class ChatViewModel: ObservableObject {
             if ragEnabled {
                 var contextParts: [String] = []
                 var injectedContents: Set<String> = []
-                var referencedMedia: [ReferencedMemoryMedia] = []
                 if isMemoryEnabled {
                     let memChunks = await RagServiceManager.shared.searchGlobalContext(query: capturedPrompt, maxResults: 3, relaxed: false)
                     for chunk in memChunks {
                         injectedContents.insert(chunk.content)
-                        if let media = chunk.media {
-                            referencedMedia.append(ReferencedMemoryMedia(docId: media.docId, type: media.type, fileName: chunk.fileName))
-                        }
                         contextParts.append("📝 **\(chunk.fileName)**:\n\(chunk.content.trimmingCharacters(in: .whitespacesAndNewlines))")
                     }
                 }
@@ -1170,7 +1166,6 @@ class ChatViewModel: ObservableObject {
                         contextParts.append("📄 **\(chunk.fileName)**:\n\(chunk.content.trimmingCharacters(in: .whitespacesAndNewlines))")
                     }
                 }
-                attachReferencedMedia(referencedMedia)
                 if !contextParts.isEmpty {
                     ragContextPrefix = "---\n\nUSER MEMORY FACTS AND DOCUMENT CONTEXT:\n\n"
                         + contextParts.joined(separator: "\n\n")
@@ -1340,7 +1335,6 @@ class ChatViewModel: ObservableObject {
             if ragEnabled {
                 var contextParts: [String] = []
                 var injectedContents: Set<String> = []
-                var referencedMedia: [ReferencedMemoryMedia] = []
                 print("🔍 [Chat] Send — RAG enabled, memoryEnabled=\(memoryEnabled)")
 
                 // 2a. Global memory search.
@@ -1352,9 +1346,6 @@ class ChatViewModel: ObservableObject {
                     print("🔍 [Chat] Send — got \(memChunks.count) memory chunks")
                     for chunk in memChunks {
                         injectedContents.insert(chunk.content)
-                        if let media = chunk.media {
-                            referencedMedia.append(ReferencedMemoryMedia(docId: media.docId, type: media.type, fileName: chunk.fileName))
-                        }
                         contextParts.append("📝 **\(chunk.fileName)**:\n\(chunk.content.trimmingCharacters(in: .whitespacesAndNewlines))")
                     }
                 }
@@ -1369,7 +1360,6 @@ class ChatViewModel: ObservableObject {
                     }
                 }
 
-                attachReferencedMedia(referencedMedia)
                 if !contextParts.isEmpty {
                     print("🔍 [Chat] Send — injecting \(contextParts.count) RAG context parts into system prompt")
                     ragContextPrefix = "---\n\nUSER MEMORY FACTS AND DOCUMENT CONTEXT:\n\nIMPORTANT: The following lines contain relevant information from user documents and memory. Use them to answer accurately.\n\n"
@@ -1448,18 +1438,6 @@ class ChatViewModel: ObservableObject {
         }
 
         return true
-    }
-
-    /// Show retrieved image/audio memories under the reply that is being generated.
-    private func attachReferencedMedia(_ media: [ReferencedMemoryMedia]) {
-        let targetIndex = activeGeneratingMessageId.flatMap { id in messages.firstIndex(where: { $0.id == id }) }
-            ?? messages.indices.last
-        guard let idx = targetIndex, !messages[idx].isFromUser else { return }
-        var unique: [ReferencedMemoryMedia] = []
-        for item in media where !unique.contains(item) { unique.append(item) }
-        var msgs = messages
-        msgs[idx].referencedMedia = unique.isEmpty ? nil : unique
-        messages = msgs
     }
 
     private func updateLastAIMessage(content: String, isGenerating: Bool) async {
@@ -2473,28 +2451,6 @@ struct MessageBubble: View {
                         // row below the bubble.
                     }
                 }
-            }
-
-            if !message.isFromUser, !isEditing, let media = message.referencedMedia, !media.isEmpty {
-                VStack(alignment: .leading, spacing: 8) {
-                    ForEach(media) { item in
-                        let url = MemoryMedia.fileURL(docId: item.docId)
-                        if FileManager.default.fileExists(atPath: url.path) {
-                            if item.type == MemoryMedia.typeImage, let uiImage = previewImage(from: url.path) {
-                                Image(uiImage: uiImage)
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(maxWidth: 220)
-                                    .clipShape(RoundedRectangle(cornerRadius: 14))
-                                    .onTapGesture { onOpenImage?(url.path) }
-                            } else if item.type == MemoryMedia.typeAudio {
-                                WaveformAudioPlayerView(url: url, title: item.fileName)
-                                    .frame(maxWidth: 320)
-                            }
-                        }
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
             }
 
             if !isEditing && (

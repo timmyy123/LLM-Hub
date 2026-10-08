@@ -43,6 +43,10 @@ struct ContentView: View {
                                 path.append(Screen.imageUpscaler)
                             case "music_generator":
                                 path.append(Screen.musicGenerator)
+                            case "photo_search":
+                                path.append(Screen.photoSearch)
+                            case "audio_search":
+                                path.append(Screen.audioSearch)
                             case "agent":
                                 if PurchaseManager.shared.isPremium {
                                     path.append(Screen.agent)
@@ -135,6 +139,20 @@ struct ContentView: View {
                             )
                             .navigationBarBackButtonHidden(true)
                             .enableSwipeBack()
+                        case .photoSearch:
+                            PhotoSearchScreen(
+                                onNavigateBack: { path.removeLast() },
+                                onNavigateToModels: { path.append(Screen.models) }
+                            )
+                            .navigationBarBackButtonHidden(true)
+                            .enableSwipeBack()
+                        case .audioSearch:
+                            AudioSearchScreen(
+                                onNavigateBack: { path.removeLast() },
+                                onNavigateToModels: { path.append(Screen.models) }
+                            )
+                            .navigationBarBackButtonHidden(true)
+                            .enableSwipeBack()
                         case .agent:
                             AgentScreen()
                                 .navigationBarBackButtonHidden(true)
@@ -166,6 +184,8 @@ enum Screen: Hashable {
     case videoGenerator
     case imageUpscaler
     case musicGenerator
+    case photoSearch
+    case audioSearch
     case agent
 }
 

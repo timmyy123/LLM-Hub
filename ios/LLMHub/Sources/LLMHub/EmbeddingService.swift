@@ -21,6 +21,10 @@ actor EmbeddingService {
     private(set) var embeddingDimension: Int = 0
     private(set) var supportsImage: Bool = false
     private(set) var supportsAudio: Bool = false
+    /// "GPU" or "CPU" once a LiteRT-LM engine is loaded.
+    private(set) var activeBackendLabel: String? = nil
+    private var lmEngineBackendLabel: String? = nil
+    private var visionTokensPerImage: Int? = nil
     private var model: LiteRTEmbeddingModel?
     private var lmEngine: LiteRTLM.EmbeddingEngine?
 
@@ -53,8 +57,10 @@ actor EmbeddingService {
         modelPath: String,
         modelName: String,
         cacheDir: String?,
-        supportsImage: Bool,
-        supportsAudio: Bool
+        supportsImage: Bool = false,
+        supportsAudio: Bool = false,
+        visionTokensPerImage: Int? = nil,
+        maxInputLength: Int? = nil
     ) async throws {
         await cleanup()
 
@@ -69,7 +75,9 @@ actor EmbeddingService {
                 backend: candidate.backend,
                 visionBackend: candidate.vision,
                 audioBackend: supportsAudio ? .cpu() : nil,
-                cacheDir: cacheDir
+                cacheDir: cacheDir,
+                maxInputLength: maxInputLength,
+                visionTokensPerImage: visionTokensPerImage
             )
             let engine = LiteRTLM.EmbeddingEngine(config: config)
             do {
@@ -82,6 +90,7 @@ actor EmbeddingService {
                     throw EmbeddingError.modelLoadFailed("empty probe embedding")
                 }
                 lmEngine = engine
+                lmEngineBackendLabel = candidate.backend == .gpu ? "GPU" : "CPU"
                 embeddingDimension = probe.embedding.count
                 print("✅ [Embedding] LiteRT-LM engine ready on \(candidate.backend) dim=\(embeddingDimension)")
                 break
@@ -100,6 +109,8 @@ actor EmbeddingService {
         currentModelName = modelName
         self.supportsImage = supportsImage
         self.supportsAudio = supportsAudio
+        self.visionTokensPerImage = visionTokensPerImage
+        activeBackendLabel = lmEngineBackendLabel
     }
 
     func cleanup() async {
@@ -114,6 +125,9 @@ actor EmbeddingService {
         embeddingDimension = 0
         supportsImage = false
         supportsAudio = false
+        activeBackendLabel = nil
+        lmEngineBackendLabel = nil
+        visionTokensPerImage = nil
     }
 
     // MARK: - Embed
@@ -137,24 +151,20 @@ actor EmbeddingService {
         return try model.embed(trimmed, isQuery: isQuery)
     }
 
-    /// Embed an image (PNG/JPEG) or 16 kHz mono WAV, with an optional text note, into the same
-    /// vector space as text. Returns nil when the loaded model can't embed that modality.
-    func embedMedia(type: String, data: Data, note: String?) async throws -> [Float]? {
-        guard isInitialized, let lmEngine else { return nil }
-        var contents: [LiteRTLM.Content] = []
-        if let note, !note.isEmpty {
-            contents.append(.text(Self.documentPrefix + String(note.prefix(Self.maxTextChars))))
-        }
-        switch type {
-        case MemoryMedia.typeImage where supportsImage:
-            contents.append(.imageData(data))
-        case MemoryMedia.typeAudio where supportsAudio:
-            contents.append(.audioData(data))
-        default:
-            return nil
-        }
+    /// Embed a JPEG/PNG image into the same vector space as text queries.
+    func embedImage(_ data: Data) async throws -> [Float]? {
+        guard isInitialized, supportsImage, let lmEngine else { return nil }
         return try await lmEngine.computeEmbedding(
-            contents: contents,
+            contents: [.imageData(data)],
+            options: LiteRTLM.EmbeddingOptions(normalize: true, visionTokensPerImage: visionTokensPerImage)
+        ).embedding
+    }
+
+    /// Embed a 16 kHz mono WAV clip into the same vector space as text queries.
+    func embedAudio(_ wav: Data) async throws -> [Float]? {
+        guard isInitialized, supportsAudio, let lmEngine else { return nil }
+        return try await lmEngine.computeEmbedding(
+            contents: [.audioData(wav)],
             options: LiteRTLM.EmbeddingOptions(normalize: true)
         ).embedding
     }

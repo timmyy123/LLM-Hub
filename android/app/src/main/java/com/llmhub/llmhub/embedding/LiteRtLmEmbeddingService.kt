@@ -21,12 +21,15 @@ import java.io.File
 /**
  * EmbeddingGemma 2 (.litertlm) embeddings through the LiteRT-LM [EmbeddingEngine].
  *
- * Text uses the EmbeddingGemma 2 task prefixes; images and audio are embedded without a
- * prefix into the same 768-d space, so text queries can retrieve media memories.
+ * Text uses the EmbeddingGemma 2 task prefixes. With [enableMedia], images (JPEG/PNG) and audio
+ * (WAV) are embedded without a prefix into the same 768-d space, so text queries retrieve them.
  */
 class LiteRtLmEmbeddingService(
     private val context: Context,
-    private val model: LLMModel
+    private val model: LLMModel,
+    private val enableMedia: Boolean = false,
+    private val visionTokensPerImage: Int? = null,
+    private val maxInputLength: Int? = null
 ) : EmbeddingService {
 
     private var engine: EmbeddingEngine? = null
@@ -39,8 +42,12 @@ class LiteRtLmEmbeddingService(
         private const val DOCUMENT_PREFIX = "title: none | text: "
     }
 
-    override val supportsImageEmbedding: Boolean get() = model.supportsVision
-    override val supportsAudioEmbedding: Boolean get() = model.supportsAudio
+    val supportsImageEmbedding: Boolean get() = enableMedia && model.supportsVision
+    val supportsAudioEmbedding: Boolean get() = enableMedia && model.supportsAudio
+
+    /** Short label of the backend the engine was initialized with, e.g. "GPU". */
+    var activeBackendLabel: String? = null
+        private set
 
     override suspend fun initialize(): Boolean = withContext(Dispatchers.IO) {
         mutex.withLock {
@@ -59,6 +66,7 @@ class LiteRtLmEmbeddingService(
                     val probe = candidate.computeEmbedding(listOf(InputData.Text(QUERY_PREFIX + "test")), EmbeddingOptions(normalize = true))
                     if (probe.embedding.isEmpty()) throw IllegalStateException("empty probe embedding")
                     engine = candidate
+                    activeBackendLabel = label
                     Log.i(TAG, "Initialized ${model.name} with $label (dim=${probe.embedding.size})")
                     return@withLock true
                 } catch (e: Throwable) {
@@ -72,23 +80,25 @@ class LiteRtLmEmbeddingService(
     }
 
     private fun candidateConfigs(modelPath: String): List<Pair<String, EmbeddingEngineConfig>> {
-        val cacheDir = context.cacheDir.path
-        val vision = model.supportsVision
-        val audio = model.supportsAudio
+        // Compiled GPU programs depend on the signature config, so each config gets its own cache.
+        val cacheDir = File(context.cacheDir, "litertlm_embed_m${if (enableMedia) 1 else 0}_v${visionTokensPerImage ?: 0}_t${maxInputLength ?: 0}")
+            .apply { mkdirs() }.path
         fun config(main: Backend, visionBackend: Backend, audioBackend: Backend) = EmbeddingEngineConfig(
             modelPath = modelPath,
             backend = main,
-            visionBackend = if (vision) visionBackend else null,
-            audioBackend = if (audio) audioBackend else null,
-            cacheDir = cacheDir
+            visionBackend = if (supportsImageEmbedding) visionBackend else null,
+            audioBackend = if (supportsAudioEmbedding) audioBackend else null,
+            cacheDir = cacheDir,
+            maxInputLength = maxInputLength,
+            visionTokensPerImage = visionTokensPerImage
         )
 
         if (ModelData.isEmbeddingGemma2NpuModel(model)) {
             val libDir = prepareNpuLibraryDir()
             return listOf(
-                "NPU" to config(Backend.NPU(libDir), Backend.NPU(libDir), Backend.NPU(libDir)),
-                "NPU text + GPU vision + CPU audio" to config(Backend.NPU(libDir), Backend.GPU(), Backend.CPU()),
-                "NPU text + CPU vision/audio" to config(Backend.NPU(libDir), Backend.CPU(), Backend.CPU()),
+                "NPU" to config(Backend.NPU(libDir), Backend.NPU(libDir), Backend.CPU()),
+                "NPU + GPU vision" to config(Backend.NPU(libDir), Backend.GPU(), Backend.CPU()),
+                "NPU + CPU vision" to config(Backend.NPU(libDir), Backend.CPU(), Backend.CPU()),
             )
         }
         return buildList {
@@ -145,7 +155,7 @@ class LiteRtLmEmbeddingService(
             mutex.withLock {
                 val current = engine ?: return@withLock null
                 try {
-                    current.computeEmbedding(contents, EmbeddingOptions(normalize = true))
+                    current.computeEmbedding(contents, EmbeddingOptions(normalize = true, visionTokensPerImage = visionTokensPerImage))
                         .embedding
                         .takeIf { it.isNotEmpty() }
                 } catch (e: Throwable) {
@@ -163,22 +173,24 @@ class LiteRtLmEmbeddingService(
         return embed(listOf(InputData.Text(prefix + clean)))
     }
 
-    override suspend fun generateMediaEmbedding(image: ByteArray?, audio: ByteArray?, note: String?): FloatArray? {
-        val contents = buildList {
-            note?.trim()?.take(MAX_TEXT_CHARS)?.takeIf { it.isNotEmpty() }?.let { add(InputData.Text(DOCUMENT_PREFIX + it)) }
-            if (image != null && supportsImageEmbedding) add(InputData.Image(image))
-            if (audio != null && supportsAudioEmbedding) add(InputData.Audio(audio))
-        }
-        if (contents.none { it !is InputData.Text }) return null
-        return embed(contents)
-    }
+    /** [jpegOrPng] must be JPEG or PNG bytes. */
+    suspend fun generateImageEmbedding(jpegOrPng: ByteArray): FloatArray? =
+        if (supportsImageEmbedding) embed(listOf(InputData.Image(jpegOrPng))) else null
+
+    /** [wav] must be a 16 kHz mono WAV file. */
+    suspend fun generateAudioEmbedding(wav: ByteArray): FloatArray? =
+        if (supportsAudioEmbedding) embed(listOf(InputData.Audio(wav))) else null
 
     override suspend fun isInitialized(): Boolean = engine != null
 
     override fun cleanup() {
         try { engine?.close() } catch (e: Throwable) { Log.w(TAG, "close failed: ${e.message}") }
         engine = null
+        activeBackendLabel = null
     }
+
+    /** Like [cleanup], but waits for an in-flight embedding to finish first. */
+    suspend fun close() = mutex.withLock { cleanup() }
 
     override fun getCurrentModelName(): String = "EmbeddingGemma 2"
 }

@@ -138,22 +138,6 @@ class RagServiceManager(
         }
     }
 
-    /** Embed an image (JPEG/PNG) or audio clip (WAV) with an optional note; null if unsupported. */
-    suspend fun generateMediaEmbedding(image: ByteArray? = null, audio: ByteArray? = null, note: String? = null): FloatArray? {
-        initMutex.withLock {
-            val svc = embeddingService ?: return null
-            return try {
-                svc.generateMediaEmbedding(image, audio, note)
-            } catch (e: Exception) {
-                Log.w(TAG, "Failed to generate media embedding via manager: ${e.message}")
-                null
-            }
-        }
-    }
-
-    suspend fun supportsImageEmbedding(): Boolean = initMutex.withLock { embeddingService?.supportsImageEmbedding == true }
-
-    suspend fun supportsAudioEmbedding(): Boolean = initMutex.withLock { embeddingService?.supportsAudioEmbedding == true }
     
     /**
      * Check if RAG service is ready to use

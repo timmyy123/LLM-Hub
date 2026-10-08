@@ -21,15 +21,6 @@ interface EmbeddingService {
     suspend fun initialize(): Boolean
     fun cleanup()
     fun getCurrentModelName(): String?
-
-    val supportsImageEmbedding: Boolean get() = false
-    val supportsAudioEmbedding: Boolean get() = false
-
-    /**
-     * Embed an image or audio clip (WAV bytes), optionally together with a text [note],
-     * into the same vector space as text. Returns null on models without multimodal support.
-     */
-    suspend fun generateMediaEmbedding(image: ByteArray? = null, audio: ByteArray? = null, note: String? = null): FloatArray? = null
 }
 
 /**

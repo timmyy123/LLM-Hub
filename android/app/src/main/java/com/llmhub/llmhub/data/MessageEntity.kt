@@ -31,5 +31,5 @@ data class MessageEntity(
     val attachmentFileSize: Long? = null, // Original file size
     val tokenCount: Int? = null,
     val tokensPerSecond: Double? = null,
-    val referencedMedia: String? = null // Image/audio memories retrieved for this reply, see MemoryMedia.encodeReferences
+    val referencedMedia: String? = null // Unused; kept so the v6 schema stays valid
 ) 
