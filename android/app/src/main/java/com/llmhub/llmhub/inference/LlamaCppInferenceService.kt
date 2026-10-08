@@ -76,7 +76,7 @@ internal object LlamaCppNative : LlamaCppRuntime {
     external override fun nativeDecodeSpeed(): Double
 }
 
-/** Official b11218 Snapdragon OpenCL/Hexagon runtime, loaded only for GPU/NPU selection. */
+/** Official b11491 Snapdragon OpenCL/Hexagon runtime, loaded only for GPU/NPU selection. */
 internal object LlamaCppSnapdragonNative : LlamaCppRuntime {
     init { System.loadLibrary("llmhub_llama_snapdragon") }
 
@@ -153,7 +153,7 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
     private var overrideEnableThinking: Boolean? = null
 
     private fun prepareHtpLibraries(): String {
-        val directory = File(context.filesDir, "llama_htp_b11218")
+        val directory = File(context.filesDir, "llama_htp_b11491")
         check(directory.isDirectory || directory.mkdirs()) { "Cannot create Hexagon library directory" }
         for (architecture in listOf("v73", "v75", "v79", "v81")) {
             val name = "libggml-htp-$architecture.so"

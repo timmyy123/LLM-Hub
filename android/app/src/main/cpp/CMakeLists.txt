@@ -77,7 +77,7 @@ target_include_directories(llmhub_llama_vulkan PRIVATE
     "${LLAMA_CPP_DIR}/tools/mtmd")
 target_link_libraries(llmhub_llama_vulkan PRIVATE llama mtmd android log)
 
-# The official b11218 Snapdragon release is packaged alongside the app, not fetched
+# The official b11491 Snapdragon release is packaged alongside the app, not fetched
 # by Gradle. It is loaded only when the user selects Adreno GPU or Hexagon NPU.
 set(LLAMA_PREBUILT_LIB_DIR "${CMAKE_CURRENT_LIST_DIR}/../jniLibs/arm64-v8a")
 foreach(prebuilt IN ITEMS ggml llama mtmd)
