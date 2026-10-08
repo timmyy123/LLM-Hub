@@ -7317,26 +7317,6 @@ public struct MusicGeneratorScreen: View {
                             // Prompt Input Card
                             promptInputCard
 
-                            SettingsToggleRow(
-                                icon: "waveform",
-                                iconColor: ApolloPalette.accentStrong,
-                                title: settings.localized("music_live_generation"),
-                                subtitle: settings.localized("music_live_generation_desc"),
-                                isOn: $liveGeneration
-                            )
-                            .disabled(isGenerating || isLoading)
-
-                            if liveGeneration {
-                                SettingsToggleRow(
-                                    icon: "infinity",
-                                    iconColor: ApolloPalette.accentStrong,
-                                    title: settings.localized("music_unlimited_duration"),
-                                    subtitle: settings.localized("music_unlimited_duration_desc"),
-                                    isOn: $unlimitedDuration
-                                )
-                                .disabled(isGenerating || isLoading)
-                            }
-
                             // Duration Controls
                             if !liveGeneration || !unlimitedDuration {
                                 VStack(alignment: .leading, spacing: 12) {
@@ -7506,7 +7486,8 @@ public struct MusicGeneratorScreen: View {
                     _ = await ensureModelLoaded(force: true)
                 },
                 onUnload: { musicBackend.unloadModel() },
-                showsThinkingToggle: false
+                showsThinkingToggle: false,
+                extraModelConfigsContent: AnyView(musicGenerationSettings)
             )
             .environmentObject(settings)
         }
@@ -7521,6 +7502,22 @@ public struct MusicGeneratorScreen: View {
         }
         .onDisappear {
             musicBackend.unloadModel()
+        }
+    }
+
+    private var musicGenerationSettings: some View {
+        VStack(spacing: 8) {
+            Toggle(settings.localized("music_live_generation"), isOn: $liveGeneration)
+                .tint(ApolloPalette.accentStrong)
+                .foregroundColor(.white)
+                .disabled(isGenerating || isLoading)
+
+            if liveGeneration {
+                Toggle(settings.localized("music_unlimited_duration"), isOn: $unlimitedDuration)
+                    .tint(ApolloPalette.accentStrong)
+                    .foregroundColor(.white)
+                    .disabled(isGenerating || isLoading)
+            }
         }
     }
 
