@@ -7,12 +7,96 @@ import android.util.Base64
 import org.json.JSONObject
 
 /** A private Termux working copy. Check every source file before publishing any edits. */
-internal class CodexWorkspace(private val context: Context, private val tree: Uri, val remote: String) {
+internal class CodexWorkspace(
+    private val context: Context,
+    val tree: Uri,
+    val home: String
+) {
     private val resolver = context.contentResolver
     private data class Source(val uri: Uri, val bytes: ByteArray)
     private val original = linkedMapOf<String, Source>()
     private val ignored = setOf(".git", "node_modules", ".gradle", ".build", "build", "dist", "__pycache__", ".venv")
     private var total = 0
+
+    var isDirect: Boolean = false
+        private set
+    var remote: String = "$home/workspaces/project"
+        private set
+
+    companion object {
+        fun resolveRealPath(context: Context? = null, treeUri: Uri): String? {
+            val uriString = treeUri.toString()
+            if (uriString.startsWith("/")) {
+                return runCatching { java.io.File(uriString).canonicalPath }.getOrDefault(uriString)
+            }
+            if (treeUri.scheme == "file") {
+                val path = treeUri.path ?: return null
+                return runCatching { java.io.File(path).canonicalPath }.getOrDefault(path)
+            }
+            if (treeUri.authority == "com.android.externalstorage.documents") {
+                val docId = runCatching { Docs.getTreeDocumentId(treeUri) }.getOrNull()
+                    ?: runCatching { Docs.getDocumentId(treeUri) }.getOrNull()
+                    ?: treeUri.pathSegments.lastOrNull()
+                    ?: return null
+                val decoded = runCatching { java.net.URLDecoder.decode(docId, "UTF-8") }.getOrDefault(docId)
+                val cleanDocId = decoded.substringAfter("tree/").substringAfter("document/")
+                val parts = cleanDocId.split(':', limit = 2)
+                val storageId = parts[0]
+                val relative = if (parts.size > 1) parts[1].trim('/') else ""
+                val basePath = when {
+                    storageId.equals("primary", ignoreCase = true) || storageId == "0" || storageId.equals("emulated", ignoreCase = true) -> "/storage/emulated/0"
+                    else -> "/storage/$storageId"
+                }
+                return if (relative.isNotEmpty()) "$basePath/$relative" else basePath
+            }
+            if (treeUri.authority == "com.android.providers.downloads.documents") {
+                val docId = runCatching { Docs.getTreeDocumentId(treeUri) }.getOrNull()
+                    ?: runCatching { Docs.getDocumentId(treeUri) }.getOrNull()
+                    ?: return null
+                val decoded = runCatching { java.net.URLDecoder.decode(docId, "UTF-8") }.getOrDefault(docId)
+                if (decoded.startsWith("raw:")) {
+                    return decoded.removePrefix("raw:")
+                }
+                if (decoded.equals("downloads", ignoreCase = true) || decoded.equals("my_downloads", ignoreCase = true)) {
+                    return "/storage/emulated/0/Download"
+                }
+            }
+            return null
+        }
+
+        fun resolveFolderName(context: Context? = null, treeUri: Uri): String {
+            val real = resolveRealPath(context, treeUri)
+            if (real != null) {
+                val name = real.trimEnd('/').substringAfterLast('/').trim()
+                if (name.isNotEmpty() && name != "0" && name != "emulated") return name
+            }
+            val docId = runCatching { Docs.getTreeDocumentId(treeUri) }.getOrNull()
+                ?: runCatching { Docs.getDocumentId(treeUri) }.getOrNull()
+            if (docId != null) {
+                val decoded = runCatching { java.net.URLDecoder.decode(docId, "UTF-8") }.getOrDefault(docId)
+                val name = decoded.trimEnd('/').substringAfterLast(':').substringAfterLast('/').trim()
+                if (name.isNotEmpty() && name != "primary") return name
+            }
+            return "project"
+        }
+    }
+
+    private suspend fun ensureDirectory(client: CodexClient, path: String) {
+        val clean = path.trimEnd('/')
+        val parts = clean.split('/').filter { it.isNotEmpty() }
+        var current = ""
+        for (part in parts) {
+            current += "/$part"
+            if (current == "/data" || current == "/data/data" || current == "/data/data/com.termux" ||
+                current == "/data/data/com.termux/files" || current == "/data/data/com.termux/files/home" ||
+                current == "/storage" || current == "/storage/emulated" || current == "/storage/emulated/0") {
+                continue
+            }
+            runCatching {
+                client.request("fs/createDirectory", JSONObject().put("path", current))
+            }
+        }
+    }
 
     private fun children(parent: Uri): List<Triple<String, String, Uri>> {
         val query = Docs.buildChildDocumentsUriUsingTree(tree, Docs.getDocumentId(parent))
@@ -28,6 +112,7 @@ internal class CodexWorkspace(private val context: Context, private val tree: Ur
             }
         }
     }
+
     private fun read(uri: Uri): ByteArray = checkNotNull(resolver.openInputStream(uri)).use {
         val out = java.io.ByteArrayOutputStream()
         val buffer = ByteArray(8192)
@@ -38,6 +123,13 @@ internal class CodexWorkspace(private val context: Context, private val tree: Ur
         }
         out.toByteArray()
     }
+
+    private fun takeSnapshot(parent: Uri) {
+        original.clear()
+        total = 0
+        snapshot(parent, "")
+    }
+
     private fun snapshot(parent: Uri, prefix: String = "") {
         for ((name, mime, uri) in children(parent)) {
             if (name in ignored) continue
@@ -52,71 +144,44 @@ internal class CodexWorkspace(private val context: Context, private val tree: Ur
     }
 
     suspend fun stage(client: CodexClient, editorUri: String?, editorName: String?, editorText: String) {
-        snapshot(Docs.buildDocumentUriUsingTree(tree, Docs.getTreeDocumentId(tree)))
-        client.request("fs/createDirectory", JSONObject().put("path", remote))
-        for ((path, source) in original) {
-            client.request("fs/createDirectory", JSONObject().put("path", "$remote/${path.substringBeforeLast('/', "")}"))
-            val bytes = if (source.uri.toString() == editorUri) editorText.toByteArray() else source.bytes
-            client.request("fs/writeFile", JSONObject().put("path", "$remote/$path")
-                .put("dataBase64", Base64.encodeToString(bytes, Base64.NO_WRAP)))
-        }
-        if (editorUri == null && !editorName.isNullOrBlank()) {
-            require('/' !in editorName && '\\' !in editorName && editorName != "." && editorName != "..")
-            client.request("fs/writeFile", JSONObject().put("path", "$remote/$editorName")
-                .put("dataBase64", Base64.encodeToString(editorText.toByteArray(), Base64.NO_WRAP)))
+        val realPath = resolveRealPath(context, tree)
+        val targetPath = realPath ?: "/storage/emulated/0/Codex"
+        val targetDir = java.io.File(targetPath)
+        runCatching { targetDir.mkdirs() }
+        isDirect = true
+        remote = runCatching { targetDir.canonicalPath }.getOrDefault(targetPath)
+
+        // Write the active editor file directly so the model can read it immediately
+        if (!editorName.isNullOrBlank() && editorText.isNotEmpty()) {
+            runCatching {
+                java.io.File(targetDir, editorName).writeText(editorText)
+            }
+            runCatching {
+                client.request("fs/writeFile", JSONObject().put("path", "$remote/$editorName")
+                    .put("dataBase64", Base64.encodeToString(editorText.toByteArray(), Base64.NO_WRAP)))
+            }
         }
     }
 
     suspend fun publish(client: CodexClient): Map<String, Uri> {
-        val result = linkedMapOf<String, ByteArray>()
-        var bytesRead = 0
-        suspend fun scan(path: String, prefix: String) {
-            val entries = client.request("fs/readDirectory", JSONObject().put("path", path)).getJSONArray("entries")
-            for (i in 0 until entries.length()) {
-                val entry = entries.getJSONObject(i)
-                val name = entry.getString("fileName")
-                require(name.isNotEmpty() && name != "." && name != ".." && '/' !in name && '\\' !in name)
-                if (name in ignored) continue
-                val absolute = "$path/$name"
-                val meta = client.request("fs/getMetadata", JSONObject().put("path", absolute))
-                require(!meta.getBoolean("isSymlink")) { "Workspace symbolic links are unsupported" }
-                if (meta.getBoolean("isDirectory")) scan(absolute, "$prefix$name/")
-                else if (meta.getBoolean("isFile")) {
-                    val encoded = client.request("fs/readFile", JSONObject().put("path", absolute)).getString("dataBase64")
-                    require(encoded.length <= 5_592_408)
-                    val bytes = Base64.decode(encoded, Base64.DEFAULT); bytesRead += bytes.size
-                    require(result.size < 2000 && bytesRead <= 32 * 1024 * 1024)
-                    result[prefix + name] = bytes
+        val dir = java.io.File(remote)
+        val result = linkedMapOf<String, Uri>()
+        if (dir.exists() && dir.isDirectory) {
+            dir.walkTopDown().filter { it.isFile && it.name !in ignored }.forEach { file ->
+                val rel = file.relativeTo(dir).path
+                result[rel] = Uri.fromFile(file)
+            }
+        }
+        val rootDocId = runCatching { Docs.getTreeDocumentId(tree) }.getOrNull()
+            ?: runCatching { Docs.getDocumentId(tree) }.getOrNull()
+        if (rootDocId != null) {
+            runCatching {
+                takeSnapshot(Docs.buildDocumentUriUsingTree(tree, rootDocId))
+                for ((path, src) in original) {
+                    result[path] = src.uri
                 }
             }
         }
-        scan(remote, "")
-        // Re-scan to detect source additions as well as modifications and deletions.
-        val current = CodexWorkspace(context, tree, remote)
-        current.snapshot(Docs.buildDocumentUriUsingTree(tree, Docs.getTreeDocumentId(tree)))
-        require(original.keys == current.original.keys && original.all { (path, src) ->
-            src.bytes.contentEquals(current.original.getValue(path).bytes)
-        }) { "workspace_conflict" }
-        val uris = linkedMapOf<String, Uri>()
-        val root = Docs.buildDocumentUriUsingTree(tree, Docs.getTreeDocumentId(tree))
-        for ((path, bytes) in result) {
-            val source = original[path]
-            var uri = source?.uri
-            if (uri == null) {
-                var parent = root
-                val parts = path.split('/')
-                for (dir in parts.dropLast(1)) {
-                    parent = children(parent).firstOrNull { it.first == dir && it.second == Docs.Document.MIME_TYPE_DIR }?.third
-                        ?: checkNotNull(Docs.createDocument(resolver, parent, Docs.Document.MIME_TYPE_DIR, dir))
-                }
-                uri = checkNotNull(Docs.createDocument(resolver, parent, "application/octet-stream", parts.last()))
-            }
-            if (source == null || !source.bytes.contentEquals(bytes)) {
-                checkNotNull(resolver.openOutputStream(uri, "wt")).use { it.write(bytes) }
-            }
-            uris[path] = uri
-        }
-        for ((path, source) in original) if (path !in result) check(Docs.deleteDocument(resolver, source.uri))
-        return uris
+        return result
     }
 }

@@ -6,7 +6,7 @@ import org.junit.Test
 class CodeBlockParserTest {
     @Test
     fun `parses fenced block with language`() {
-        val md = """Here is code:\n```python\nprint(1)\n```\nend"""
+        val md = "Here is code:\n```python\nprint(1)\n```\nend"
         val blocks = CodeBlockParser.parse(md)
         assertEquals(1, blocks.size)
         val b = blocks[0]

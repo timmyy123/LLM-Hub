@@ -465,6 +465,7 @@ fun FeatureModelSettingsSheet(
                                                 val cfg = (modelPrefs.getModelConfig(model.name)
                                                     ?: com.llmhub.llmhub.data.defaultConfigForModel(model)).copy(
                                                     maxTokens = finalMax,
+                                                    contextWindow = finalMax,
                                                     backend = backend?.name,
                                                     deviceId = deviceId,
                                                     nGpuLayers = gpuLayers,
@@ -533,6 +534,18 @@ fun FeatureModelSettingsSheet(
                                     maxTokensValue = intVal
                                     maxTokensText = intVal.toString()
                                     onMaxTokensChanged(intVal)
+                                    selectedModel?.let { m ->
+                                        scope.launch(Dispatchers.IO) {
+                                            try {
+                                                val cfg = (modelPrefs.getModelConfig(m.name)
+                                                    ?: com.llmhub.llmhub.data.defaultConfigForModel(m)).copy(
+                                                    maxTokens = intVal,
+                                                    contextWindow = intVal
+                                                )
+                                                modelPrefs.setModelConfig(m.name, cfg)
+                                            } catch (_: Exception) {}
+                                        }
+                                    }
                                 },
                                 valueRange = 1f..baseMaxTokensCap.toFloat(),
                                 modifier = Modifier.weight(1f).height(36.dp),
@@ -552,6 +565,18 @@ fun FeatureModelSettingsSheet(
                                     maxTokensText = intVal.toString()
                                     maxTokensValue = intVal
                                     onMaxTokensChanged(intVal)
+                                    selectedModel?.let { m ->
+                                        scope.launch(Dispatchers.IO) {
+                                            try {
+                                                val cfg = (modelPrefs.getModelConfig(m.name)
+                                                    ?: com.llmhub.llmhub.data.defaultConfigForModel(m)).copy(
+                                                    maxTokens = intVal,
+                                                    contextWindow = intVal
+                                                )
+                                                modelPrefs.setModelConfig(m.name, cfg)
+                                            } catch (_: Exception) {}
+                                        }
+                                    }
                                 },
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                 singleLine = true,

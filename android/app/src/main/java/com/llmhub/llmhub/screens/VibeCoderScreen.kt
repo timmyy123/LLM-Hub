@@ -2,6 +2,7 @@ package com.llmhub.llmhub.screens
 
 import android.provider.OpenableColumns
 import android.provider.DocumentsContract
+import com.llmhub.llmhub.vibecode.CodexWorkspace
 import android.app.Activity
 import android.view.WindowManager
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -243,9 +244,17 @@ fun VibeCoderScreen(
         }
         val uri = android.net.Uri.parse(uriString)
         val success = runCatching {
-            context.contentResolver.openOutputStream(uri, "wt")?.use { os ->
-                os.write(generatedCode.toByteArray())
-                os.flush()
+            if (uri.scheme == "file" || uri.scheme.isNullOrEmpty()) {
+                val f = java.io.File(uri.path ?: uriString)
+                f.parentFile?.mkdirs()
+                f.writeText(generatedCode)
+                true
+            } else {
+                context.contentResolver.openOutputStream(uri, "wt")?.use { os ->
+                    os.write(generatedCode.toByteArray())
+                    os.flush()
+                }
+                true
             }
         }.isSuccess
         if (success) {
@@ -256,12 +265,21 @@ fun VibeCoderScreen(
     fun loadFileFromUri(uriString: String) {
         val uri = android.net.Uri.parse(uriString)
         val content = runCatching {
-            context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() } ?: ""
+            if (uri.scheme == "file" || uri.scheme.isNullOrEmpty()) {
+                val f = java.io.File(uri.path ?: uriString)
+                if (f.exists()) f.readText() else ""
+            } else {
+                context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() } ?: ""
+            }
         }.getOrDefault("")
         val fileName = runCatching {
-            context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-                val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                if (cursor.moveToFirst() && nameIndex >= 0) cursor.getString(nameIndex) else null
+            if (uri.scheme == "file" || uri.scheme.isNullOrEmpty()) {
+                java.io.File(uri.path ?: uriString).name
+            } else {
+                context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+                    val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                    if (cursor.moveToFirst() && nameIndex >= 0) cursor.getString(nameIndex) else null
+                }
             }
         }.getOrNull() ?: "untitled.txt"
         viewModel.openEditorFile(uriString, fileName, content)
@@ -272,7 +290,34 @@ fun VibeCoderScreen(
             folderFiles = emptyList()
             return emptyList()
         }
+
+        fun isQualifiedCodeFile(name: String): Boolean {
+            val n = name.lowercase()
+            val supportedExts = listOf(
+                "py", "js", "ts", "java", "kt", "cs", "cpp", "cc", "cxx", "c", "h",
+                "go", "rs", "html", "htm", "css", "php", "rb", "swift", "dart",
+                "lua", "sh", "bash", "zsh", "sql", "json", "md", "txt", "xml"
+            )
+            if (supportedExts.any { n.endsWith(".$it") }) return true
+            return supportedExts.any { n.contains(".$it.") }
+        }
+
         val treeUri = android.net.Uri.parse(folderUriString)
+        val realPath = CodexWorkspace.resolveRealPath(context, treeUri)
+        if (realPath != null) {
+            val dir = java.io.File(realPath)
+            if (dir.exists() && dir.isDirectory) {
+                val files = mutableListOf<Pair<String, String>>()
+                dir.walkTopDown().filter { it.isFile && isQualifiedCodeFile(it.name) }.forEach { file ->
+                    val rel = file.relativeTo(dir).path
+                    files.add(Pair(android.net.Uri.fromFile(file).toString(), rel))
+                }
+                files.sortBy { it.second.lowercase() }
+                folderFiles = files
+                return files
+            }
+        }
+
         val docId = runCatching { DocumentsContract.getTreeDocumentId(treeUri) }.getOrNull()
         if (docId == null) {
             folderFiles = emptyList()
@@ -284,19 +329,6 @@ fun VibeCoderScreen(
             DocumentsContract.Document.COLUMN_DISPLAY_NAME,
             DocumentsContract.Document.COLUMN_MIME_TYPE
         )
-
-        fun isQualifiedCodeFile(name: String): Boolean {
-            val n = name.lowercase()
-            val supportedExts = listOf(
-                "py", "js", "ts", "java", "kt", "cs", "cpp", "cc", "cxx", "c", "h",
-                "go", "rs", "html", "htm", "css", "php", "rb", "swift", "dart",
-                "lua", "sh", "bash", "zsh", "sql"
-            )
-            if (supportedExts.any { n.endsWith(".$it") }) return true
-            // Some providers coerce unknown text MIME names like "foo.java" into "foo.java.txt".
-            // Accept files that still contain a supported extension segment.
-            return supportedExts.any { n.contains(".$it.") }
-        }
 
         fun scanFolder(folderDocId: String, pathPrefix: String) {
             val childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(treeUri, folderDocId)
@@ -330,6 +362,23 @@ fun VibeCoderScreen(
     fun createFileInCurrentFolder(fileName: String) {
         val folder = currentFolderUri ?: return
         val treeUri = android.net.Uri.parse(folder)
+        val realPath = CodexWorkspace.resolveRealPath(context, treeUri)
+        if (realPath != null) {
+            val dir = java.io.File(realPath)
+            dir.mkdirs()
+            val newFile = java.io.File(dir, fileName)
+            if (!newFile.exists()) {
+                runCatching {
+                    newFile.parentFile?.mkdirs()
+                    newFile.createNewFile()
+                }
+            }
+            val newUri = android.net.Uri.fromFile(newFile).toString()
+            viewModel.openEditorFile(newUri, fileName, "")
+            refreshFolderFiles(folder)
+            return
+        }
+
         val treeDocId = runCatching { DocumentsContract.getTreeDocumentId(treeUri) }.getOrNull() ?: return
         val parentDocUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, treeDocId)
         val mime = when {
@@ -358,8 +407,6 @@ fun VibeCoderScreen(
             DocumentsContract.createDocument(context.contentResolver, parentDocUri, mime, fileName)
         }.getOrNull()
         if (newUri != null) {
-            // Some providers coerce unknown source-code files to *.txt.
-            // Force the requested filename/extension when possible.
             val actualName = runCatching {
                 context.contentResolver.query(newUri, null, null, null, null)?.use { cursor ->
                     val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
@@ -386,7 +433,14 @@ fun VibeCoderScreen(
 
     fun deleteFileByUri(uriString: String) {
         val uri = android.net.Uri.parse(uriString)
-        val ok = runCatching { DocumentsContract.deleteDocument(context.contentResolver, uri) }.getOrDefault(false)
+        val ok = runCatching {
+            if (uri.scheme == "file" || uri.scheme.isNullOrEmpty()) {
+                val f = java.io.File(uri.path ?: uriString)
+                f.delete()
+            } else {
+                DocumentsContract.deleteDocument(context.contentResolver, uri)
+            }
+        }.getOrDefault(false)
         if (!ok) {
             viewModel.setError(context.getString(R.string.vibe_coder_delete_file_error))
             return
@@ -405,7 +459,10 @@ fun VibeCoderScreen(
     }
 
     LaunchedEffect(currentFolderUri, workspaceRevision) {
-        refreshFolderFiles(currentFolderUri)
+        val files = refreshFolderFiles(currentFolderUri)
+        if (currentFileUri == null && currentFileName == null && files.isNotEmpty()) {
+            loadFileFromUri(files.first().first)
+        }
     }
 
     LaunchedEffect(currentFileUri, currentFolderUri, generatedCode, isDirty) {

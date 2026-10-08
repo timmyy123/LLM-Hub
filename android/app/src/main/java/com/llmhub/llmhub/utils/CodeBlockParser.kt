@@ -26,11 +26,11 @@ object CodeBlockParser {
                     is FencedCodeBlock -> {
                         val info = child.info?.toString()?.trim() ?: ""
                         val lang = info.takeIf { it.isNotBlank() }?.split(Regex("\\s+"))?.firstOrNull()
-                        val content = child.contentChars?.toString() ?: ""
+                        val content = child.contentChars.toString()
                         result.add(CodeBlock(lang, content, isInline = false))
                     }
                     is Code -> {
-                        val literal = child.chars?.toString() ?: ""
+                        val literal = child.text?.toString() ?: child.chars.toString().trim('`')
                         result.add(CodeBlock(null, literal, isInline = true))
                     }
                 }

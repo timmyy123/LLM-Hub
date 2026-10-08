@@ -213,6 +213,8 @@ class UnifiedInferenceService(private val context: Context) : InferenceService {
         }
     }
 
+    override fun getLoadedContextSize(): Int? = currentService.getLoadedContextSize()
+
     /**
      * Activate or deactivate the Gemma-4 agent skills toolset.
      * Tools are enabled only for Gemma-4 models because they are specifically trained

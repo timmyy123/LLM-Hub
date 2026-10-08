@@ -62,6 +62,15 @@ internal class LocalCodexServer(
             out.write("HTTP/1.1 $status\r\nContent-Type: application/json\r\nContent-Length: ${bytes.size}\r\nConnection: close\r\n\r\n".toByteArray())
             out.write(bytes); out.flush()
         }
+        if (first.getOrNull(0) == "GET" && first.getOrNull(1)?.substringBefore('?') == "/$token/v1/models") {
+            val modelObj = JSONObject()
+                .put("id", "llmhub-local")
+                .put("slug", "llmhub-local")
+                .put("name", "LLM Hub local")
+                .put("supports_parallel_tool_calls", false)
+            json("200 OK", JSONObject().put("models", org.json.JSONArray().put(modelObj)))
+            return
+        }
         if (first.getOrNull(0) != "POST" || first.getOrNull(1)?.substringBefore('?') != "/$token/v1/responses") {
             json("404 Not Found", JSONObject()); return
         }
@@ -115,7 +124,9 @@ internal class LocalCodexServer(
                     liveText = preview
                 }
                 val prompt = CodexResponses.prompt(request)
+                runCatching { android.util.Log.d("LocalCodexServer", "Codex prompt length: ${prompt.length}") }
                 val raw = streamInfer?.invoke(prompt, ::onChunk) ?: infer(prompt)
+                runCatching { android.util.Log.d("LocalCodexServer", "Raw model output (len ${raw.length}): $raw") }
                 val output = CodexResponses.output(raw, request)
                 for (i in 0 until output.length()) {
                     val item = output.getJSONObject(i)
@@ -132,10 +143,11 @@ internal class LocalCodexServer(
                 event(CodexResponses.event("response.completed", "response" to JSONObject().put("id", id)
                     .put("status", "completed").put("output", output)))
             } catch (e: CancellationException) { throw e }
-            catch (_: Exception) {
+            catch (e: Exception) {
+                runCatching { android.util.Log.e("LocalCodexServer", "Error generating or parsing response", e) }
                 event(CodexResponses.event("response.failed", "response" to JSONObject().put("id", id).put("status", "failed")
                     .put("error", JSONObject().put("type", "invalid_request_error")
-                        .put("code", "local_model_error").put("message", modelError))))
+                        .put("code", "local_model_error").put("message", e.message ?: modelError))))
             } finally { heartbeat.cancel() }
         }
     }

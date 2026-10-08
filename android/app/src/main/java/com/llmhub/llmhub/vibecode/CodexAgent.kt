@@ -18,6 +18,7 @@ internal class CodexAgent(private val context: Context) {
         const val VERSION = "0.160.0-termux.3"
         // Explicitly invoked from the setup button; never run merely by enabling the toggle.
         const val INSTALL = "export PATH=/data/data/com.termux/files/usr/bin:\$PATH TERM=dumb npm_config_progress=false; " +
+            "termux-setup-storage 2>/dev/null || true; " +
             "pkg update -y && pkg install nodejs-lts -y && npm install -g @mmmbuto/codex-cli-termux@$VERSION --allow-scripts=@mmmbuto/codex-cli-termux && codex --version"
         fun quote(value: String) = CodexConfig.shellQuote(value)
     }
@@ -37,7 +38,7 @@ internal class CodexAgent(private val context: Context) {
         val token = UUID.randomUUID().toString()
         val runId = UUID.randomUUID().toString()
         val home = "/data/data/com.termux/files/home/.llmhub-codex"
-        val workspace = CodexWorkspace(context, Uri.parse(folder), "$home/workspaces/$session/$runId")
+        val workspace = CodexWorkspace(context, Uri.parse(folder), home)
         val server = LocalCodexServer({ infer(it) {} }, context.getString(R.string.vibe_codex_model_error), streamInfer = infer)
         var client: CodexClient? = null
         var serverJob: Job? = null
@@ -49,7 +50,8 @@ internal class CodexAgent(private val context: Context) {
             val command = """
                 export PATH=/data/data/com.termux/files/usr/bin:${'$'}PATH
                 command -v codex >/dev/null || { echo ${quote(context.getString(R.string.vibe_codex_install_help))} >&2; exit 1; }
-                umask 077
+                [ -d /storage/emulated/0 ] || termux-setup-storage 2>/dev/null || true
+                umask 022
                 mkdir -p ${quote(home)}
                 CODEX_HOME=${quote(home)} codex app-server --listen ws://127.0.0.1:$port --ws-auth capability-token --ws-token-sha256 ${quote(java.security.MessageDigest.getInstance("SHA-256").digest(token.toByteArray()).joinToString("") { "%02x".format(it) })} $config
             """.trimIndent()
@@ -71,6 +73,11 @@ internal class CodexAgent(private val context: Context) {
             val rpc = client ?: throw IllegalStateException(context.getString(R.string.vibe_codex_connection_error), lastFailure)
             status(R.string.vibe_codex_staging)
             workspace.stage(rpc, editorUri, editorName, editorCode)
+            if (workspace.isDirect) {
+                onMessage(CodexActivity("workspace-mode", "Working directly in folder: ${workspace.remote}", "status", "running"))
+            } else {
+                onMessage(CodexActivity("workspace-mode", "Working in staged workspace: ${workspace.remote}", "status", "running"))
+            }
             val threadParams = JSONObject().put("model", "llmhub-local").put("modelProvider", "llmhub_local")
                 .put("cwd", workspace.remote).put("approvalPolicy", "untrusted")
                 .put("baseInstructions", "You are a coding agent working in the current project. " +
@@ -86,8 +93,20 @@ internal class CodexAgent(private val context: Context) {
             val threadId = resumed.getJSONObject("thread").getString("id")
             onThread(threadId)
             status(R.string.vibe_codex_generating)
+            val turnPrompt = buildString {
+                if (!editorName.isNullOrBlank()) {
+                    append("Active editor file: ").append(editorName).append("\n")
+                    if (editorCode.isNotBlank()) {
+                        append("Current file contents:\n```\n").append(editorCode.take(4000)).append("\n```\n")
+                    } else {
+                        append("The file is currently empty. Write the requested code into it using tools.\n")
+                    }
+                    append("\nUser request:\n")
+                }
+                append(prompt)
+            }
             val turn = rpc.request("turn/start", JSONObject().put("threadId", threadId).put("cwd", workspace.remote)
-                .put("input", JSONArray().put(JSONObject().put("type", "text").put("text", prompt)
+                .put("input", JSONArray().put(JSONObject().put("type", "text").put("text", turnPrompt)
                     .put("text_elements", JSONArray())))).getJSONObject("turn").getString("id")
             val renderer = CodexActivityRenderer()
             var completedSuccessfully = false
