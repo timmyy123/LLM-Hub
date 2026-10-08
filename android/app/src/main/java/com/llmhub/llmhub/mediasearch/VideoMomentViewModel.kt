@@ -13,7 +13,6 @@ import com.google.ai.edge.litertlm.InputData
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -109,15 +108,22 @@ class VideoMomentViewModel(application: Application) : MediaSearchViewModel(appl
     fun onQueryChange(text: String) {
         _query.value = text
         searchJob?.cancel()
-        if (text.isBlank()) {
+        _results.value = null
+        _isSearching.value = false
+    }
+
+    /** Gallery searches when the query is submitted, not on each keystroke. */
+    fun submitSearch() {
+        val text = _query.value.trim()
+        searchJob?.cancel()
+        if (text.isEmpty()) {
             _results.value = null
             _isSearching.value = false
             return
         }
         _isSearching.value = true
         searchJob = viewModelScope.launch {
-            delay(300)
-            val vector = ensureModelLoaded()?.generateEmbedding(text.trim(), isQuery = true)
+            val vector = ensureModelLoaded()?.generateEmbedding(text, isQuery = true)
             _results.value = if (vector == null) emptyList() else rank(vector)
             _isSearching.value = false
         }

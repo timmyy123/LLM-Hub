@@ -41,6 +41,7 @@ final class VideoMomentModel: ObservableObject {
     private static let doneMarker: Int32 = -1
     private static let windowMs = 2000
     private static let maxMs = 600_000
+    private static let indexedModelKey = "video_moment_indexed_model"
 
     func start(model: AIModel?) async {
         if !loaded {
@@ -53,8 +54,15 @@ final class VideoMomentModel: ObservableObject {
             await indexTask?.value
             await engine.unload()
             currentModel = model
+        }
+        // A fresh screen has no current model. That is not a model switch, so the saved chunks stay.
+        let indexedModel = UserDefaults.standard.string(forKey: Self.indexedModelKey)
+        if indexedModel != nil, indexedModel != model.id {
             store.clear()
             failed.removeAll()
+        }
+        if indexedModel != model.id {
+            UserDefaults.standard.set(model.id, forKey: Self.indexedModelKey)
         }
         loadPickedVideos()
         await ensureEngine()
@@ -99,17 +107,23 @@ final class VideoMomentModel: ObservableObject {
     func updateQuery(_ text: String) {
         query = text
         searchTask?.cancel()
-        guard !text.trimmingCharacters(in: .whitespaces).isEmpty else {
+        results = nil
+        isSearching = false
+    }
+
+    /// Gallery searches when the query is submitted, not on each keystroke.
+    func submitSearch() {
+        let text = query.trimmingCharacters(in: .whitespaces)
+        searchTask?.cancel()
+        guard !text.isEmpty else {
             results = nil
             isSearching = false
             return
         }
         isSearching = true
         searchTask = Task {
-            try? await Task.sleep(nanoseconds: 300_000_000)
-            guard !Task.isCancelled else { return }
             await ensureEngine()
-            let vector = await engine.embedQuery(text.trimmingCharacters(in: .whitespaces))
+            let vector = await engine.embedQuery(text)
             guard !Task.isCancelled else { return }
             results = vector.map(rank) ?? []
             isSearching = false
@@ -207,18 +221,20 @@ final class VideoMomentModel: ObservableObject {
 
     private func index(_ video: Video, engine: MediaSearchEngine) async {
         let limit = min(video.durationMs, Self.maxMs)
+        let already = Set(store.all.filter { $0.id == video.id && !$0.vector.isEmpty }.map(\.startMs))
         var start = 0
-        var stored = false
-        let samples = await samples16k(video)
+        var stored = !already.isEmpty
+        let samples = already.count * Self.windowMs >= limit ? nil : await samples16k(video)
         while start < limit {
             if Task.isCancelled { return }
             let end = min(start + Self.windowMs, limit)
-            if end - start >= 500 {
+            if already.contains(Int32(start)) {
+                stored = true
+            } else if end - start >= 500 {
                 let parts = await windowParts(video, samples: samples, startMs: start, endMs: end)
                 if let vector = await engine.embedMixed(parts), !parts.isEmpty {
-                    await MainActor.run {
-                        self.store.put(MediaVector(id: video.id, startMs: Int32(start), endMs: Int32(end), vector: vector))
-                    }
+                    store.put(MediaVector(id: video.id, startMs: Int32(start), endMs: Int32(end), vector: vector))
+                    store.saveIfDirty()
                     stored = true
                 }
             }
@@ -291,6 +307,38 @@ private struct MomentMovie: Transferable {
     }
 }
 
+private struct VideoPoster: View {
+    let video: VideoMomentModel.Video
+    let clock: String
+    @State private var image: UIImage?
+
+    var body: some View {
+        Color.white.opacity(0.08)
+            .aspectRatio(1, contentMode: .fit)
+            .overlay {
+                if let image {
+                    Image(uiImage: image)
+                        .resizable()
+                        .scaledToFill()
+                }
+            }
+            .overlay(alignment: .bottomLeading) {
+                Text(clock)
+                    .font(.caption2.bold())
+                    .foregroundStyle(.white)
+                    .padding(8)
+            }
+            .clipped()
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+        .task(id: video.id) {
+            let url = VideoMomentModel.playbackURL(video)
+            if let data = await Task.detached(operation: { videoFrameJPEG(url: url, timeMs: 500) }).value {
+                image = UIImage(data: data)
+            }
+        }
+    }
+}
+
 private struct MomentThumb: View {
     let moment: VideoMomentModel.Moment
     let selected: Bool
@@ -310,12 +358,15 @@ private struct MomentThumb: View {
                 VStack {
                     Text(String(format: "%.2f", moment.score)).font(.caption2).foregroundStyle(.white).padding(.top, 4)
                     Spacer()
-                    Text(thumbClock(moment.startMs)).font(.caption2.bold()).foregroundStyle(.white).padding(.bottom, 4)
+                    Text("\(thumbClock(moment.startMs)) - \(thumbClock(moment.endMs))")
+                        .font(.caption2.bold())
+                        .foregroundStyle(.white)
+                        .padding(.bottom, 4)
                 }
             }
             .frame(width: 84, height: 120)
             .clipShape(RoundedRectangle(cornerRadius: 8))
-            .overlay(RoundedRectangle(cornerRadius: 8).stroke(selected ? Color.accentColor : Color.white, lineWidth: selected ? 3 : 1))
+            .overlay(RoundedRectangle(cornerRadius: 8).stroke(selected ? Color.accentColor : Color.white, lineWidth: selected ? 4 : 2))
         }
         .task(id: moment.id) {
             let url = VideoMomentModel.playbackURL(moment.video)
@@ -360,7 +411,7 @@ private struct ClipEditSheet: View {
 
 private func thumbClock(_ ms: Int) -> String {
     let s = max(0, ms / 1000)
-    return String(format: "%d:%02d", s / 60, s % 60)
+    return String(format: "%02d:%02d", s / 60, s % 60)
 }
 
 private func videoFrameJPEG(url: URL, timeMs: Int) -> Data? {
@@ -379,15 +430,14 @@ struct VideoMomentScreen: View {
 
     @EnvironmentObject var settings: AppSettings
     @StateObject private var model = VideoMomentModel()
+    @StateObject private var playback = MomentPlayer()
     @AppStorage("video_moment_model_id") private var selectedModelId = ""
     @State private var showSettings = false
-    @State private var player: AVPlayer?
-    @State private var playing: VideoMomentModel.Moment?
 
     private func leave() {
         if model.openVideo != nil {
+            playback.stop()
             model.closeVideo()
-            player?.pause()
         } else {
             onNavigateBack()
         }
@@ -459,31 +509,21 @@ struct VideoMomentScreen: View {
                 }
             }
         }
-        .onDisappear { model.stop(); player?.pause() }
+        .onChange(of: model.query) { _, _ in selectedMoment = nil }
+        .onChange(of: model.openVideo?.id) { _, _ in
+            if let video = model.openVideo {
+                selectedMoment = nil
+                playback.load(video)
+            } else {
+                playback.stop()
+            }
+        }
+        .onChange(of: editing?.id) { _, id in
+            if id != nil { playback.pauseForEditor() }
+        }
+        .onDisappear { model.stop(); playback.stop() }
         .sheet(item: $editing) { moment in
             ClipEditSheet(moment: moment) { editing = nil }
-        }
-        .fullScreenCover(item: $playing) { moment in
-            ZStack {
-                Color.black.ignoresSafeArea()
-                if let player { VideoPlayer(player: player) }
-                VStack {
-                    HStack {
-                        Spacer()
-                        Button { playing = nil; player?.pause() } label: {
-                            Image(systemName: "xmark").foregroundStyle(.white).padding()
-                        }
-                    }
-                    Spacer()
-                }
-            }
-            .task {
-                let url = VideoMomentModel.playbackURL(moment.video)
-                let next = AVPlayer(url: url)
-                player = next
-                await next.seek(to: CMTime(value: CMTimeValue(moment.startMs), timescale: 1000))
-                next.play()
-            }
         }
     }
 
@@ -513,12 +553,7 @@ struct VideoMomentScreen: View {
                 ForEach(model.videos) { video in
                     Button { model.open(video) } label: {
                         VStack(spacing: 8) {
-                            ZStack(alignment: .bottomLeading) {
-                                RoundedRectangle(cornerRadius: 16).fill(Color.white.opacity(0.08))
-                                Image(systemName: "film").font(.title).foregroundStyle(.white)
-                                Text(clock(video.durationMs)).font(.caption2.bold()).foregroundStyle(.white).padding(8)
-                            }
-                            .aspectRatio(1, contentMode: .fit)
+                            VideoPoster(video: video, clock: clock(video.durationMs))
                             Text(video.name).font(.caption).foregroundStyle(.white).lineLimit(1)
                         }
                     }
@@ -529,53 +564,316 @@ struct VideoMomentScreen: View {
     }
 
     private func videoSearch(_ video: VideoMomentModel.Video) -> some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: 12) {
-                MediaSearchField(
-                    text: Binding(get: { model.query }, set: { model.updateQuery($0) }),
-                    placeholder: settings.localized("video_moment_hint"),
-                    isSearching: model.isSearching
-                )
-                MediaSearchStatusCard(
-                    isLoadingModel: model.isLoadingModel,
-                    modelError: model.modelError,
-                    progress: model.progress,
-                    isPaused: model.isPaused,
-                    onPause: model.pause,
-                    onResume: model.resume,
-                    onRetry: model.retryModel
-                )
-                if model.results?.isEmpty == true && !model.isSearching {
-                    Text(settings.localized("media_search_no_results")).foregroundStyle(.white.opacity(0.8))
-                }
-                if let results = model.results, !results.isEmpty {
-                    Text(settings.localized("video_moment_top")).font(.caption).foregroundStyle(.white)
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 12) {
-                            ForEach(results) { moment in
-                                MomentThumb(moment: moment, selected: selectedMoment?.id == moment.id) {
-                                    selectedMoment = moment
-                                    playing = moment
-                                }
+        let results = model.results ?? []
+        let intervals = mergedIntervals(results)
+        return ZStack {
+            Color.black
+            MomentPlayerView(player: playback.player)
+            VStack(spacing: 0) {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "magnifyingglass").foregroundStyle(.white.opacity(0.7))
+                        TextField(
+                            settings.localized("video_moment_hint"),
+                            text: Binding(get: { model.query }, set: { model.updateQuery($0) })
+                        )
+                        .foregroundStyle(.white)
+                        .submitLabel(.search)
+                        .autocorrectionDisabled()
+                        .onSubmit { model.submitSearch() }
+                        if model.isSearching {
+                            ProgressView().tint(.white)
+                        } else if !model.query.isEmpty {
+                            Button { model.updateQuery("") } label: {
+                                Image(systemName: "xmark.circle.fill").foregroundStyle(.white.opacity(0.7))
                             }
                         }
                     }
-                }
-                if selectedMoment != nil {
-                    Button { editing = selectedMoment } label: {
-                        Label(settings.localized("video_moment_save_edit"), systemImage: "pencil")
-                            .frame(maxWidth: .infinity).frame(height: 44)
+                    .padding(.horizontal, 14)
+                    .frame(height: 48)
+                    .background(Color.white.opacity(0.16))
+                    .clipShape(Capsule())
+                    MediaSearchStatusCard(
+                        isLoadingModel: model.isLoadingModel,
+                        modelError: model.modelError,
+                        progress: model.progress,
+                        isPaused: model.isPaused,
+                        onPause: model.pause,
+                        onResume: model.resume,
+                        onRetry: model.retryModel
+                    )
+                    if model.results?.isEmpty == true && !model.isSearching {
+                        Text(settings.localized("media_search_no_results")).foregroundStyle(.white)
                     }
-                    .foregroundStyle(.white)
-                    .liquidGlassPrimaryButton(cornerRadius: 22)
+                    if !results.isEmpty {
+                        Text(settings.localized("video_moment_top")).font(.caption).foregroundStyle(.white)
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 12) {
+                                ForEach(results) { moment in
+                                    MomentThumb(moment: moment, selected: selectedMoment?.id == moment.id) {
+                                        selectedMoment = moment
+                                        let end = intervals.first { $0.ids.contains(moment.id) }?.endMs ?? moment.endMs
+                                        playback.playClip(startMs: moment.startMs, endMs: end)
+                                    }
+                                }
+                            }
+                        }
+                        if selectedMoment != nil {
+                            Button { editing = selectedMoment } label: {
+                                Label(settings.localized("video_moment_save_edit"), systemImage: "pencil")
+                                    .padding(.horizontal, 16)
+                                    .frame(height: 40)
+                            }
+                            .foregroundStyle(.white)
+                            .background(.ultraThinMaterial)
+                            .clipShape(Capsule())
+                            .frame(maxWidth: .infinity)
+                        }
+                    }
                 }
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    LinearGradient(colors: [Color.black.opacity(0.9), Color.black.opacity(0)], startPoint: .top, endPoint: .bottom)
+                )
+                Spacer(minLength: 0)
+                MomentTransport(
+                    playhead: playback.playhead,
+                    durationMs: max(video.durationMs, 1),
+                    isPlaying: playback.isPlaying,
+                    isMuted: playback.isMuted,
+                    intervals: intervals,
+                    selectedId: selectedMoment?.id,
+                    onToggle: playback.toggle,
+                    onMute: playback.toggleMute,
+                    onScrub: playback.scrub
+                )
             }
-            .padding(16)
         }
     }
 
     private func clock(_ ms: Int) -> String {
         let s = max(0, ms / 1000)
         return String(format: "%d:%02d", s / 60, s % 60)
+    }
+}
+
+@MainActor
+private final class MomentPlayer: ObservableObject {
+    let player = AVPlayer()
+    @Published private(set) var isPlaying = false
+    @Published private(set) var isMuted = false
+    @Published private(set) var playhead: Double = 0
+    private var timeToken: Any?
+    private var clipEnd: Double?
+    private var durationMs = 1
+    private var scrubbing = false
+
+    func load(_ video: VideoMomentModel.Video) {
+        clipEnd = nil
+        durationMs = max(video.durationMs, 1)
+        playhead = 0
+        isPlaying = false
+        player.replaceCurrentItem(with: AVPlayerItem(url: VideoMomentModel.playbackURL(video)))
+        player.pause()
+        guard timeToken == nil else { return }
+        timeToken = player.addPeriodicTimeObserver(forInterval: CMTime(value: 1, timescale: 10), queue: .main) { [weak self] time in
+            let seconds = time.seconds
+            Task { @MainActor in self?.tick(seconds) }
+        }
+    }
+
+    func playClip(startMs: Int, endMs: Int) {
+        clipEnd = nil
+        let start = Double(startMs) / 1000
+        let end = Double(max(endMs, startMs)) / 1000
+        player.pause()
+        player.seek(to: CMTime(seconds: start, preferredTimescale: 1000), toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] finished in
+            Task { @MainActor in
+                guard let self, finished else { return }
+                guard end > start + 0.05 else {
+                    self.playhead = start * 1000 / Double(self.durationMs)
+                    return
+                }
+                self.clipEnd = end
+                self.player.play()
+                self.isPlaying = true
+            }
+        }
+    }
+
+    func toggle() {
+        clipEnd = nil
+        if player.rate > 0 {
+            player.pause()
+            isPlaying = false
+        } else {
+            player.play()
+            isPlaying = true
+        }
+    }
+
+    func toggleMute() {
+        isMuted.toggle()
+        player.isMuted = isMuted
+    }
+
+    func scrub(_ fraction: Double) {
+        clipEnd = nil
+        scrubbing = true
+        let clamped = min(1, max(0, fraction))
+        playhead = clamped
+        let seconds = clamped * Double(durationMs) / 1000
+        player.seek(to: CMTime(seconds: seconds, preferredTimescale: 1000), toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] _ in
+            Task { @MainActor in self?.scrubbing = false }
+        }
+    }
+
+    func pauseForEditor() {
+        clipEnd = nil
+        player.pause()
+        isPlaying = false
+    }
+
+    func stop() {
+        clipEnd = nil
+        player.pause()
+        isPlaying = false
+        if let timeToken {
+            player.removeTimeObserver(timeToken)
+            self.timeToken = nil
+        }
+        player.replaceCurrentItem(with: nil)
+    }
+
+    private func tick(_ seconds: Double) {
+        guard seconds.isFinite else { return }
+        if let clipEnd, seconds >= clipEnd - 0.05 {
+            self.clipEnd = nil
+            player.pause()
+            isPlaying = false
+            player.seek(to: CMTime(seconds: clipEnd, preferredTimescale: 1000), toleranceBefore: .zero, toleranceAfter: .zero)
+            playhead = min(1, clipEnd * 1000 / Double(durationMs))
+            return
+        }
+        if !scrubbing {
+            playhead = min(1, max(0, seconds * 1000 / Double(durationMs)))
+        }
+        isPlaying = player.rate > 0
+    }
+}
+
+private struct MomentPlayerView: UIViewRepresentable {
+    let player: AVPlayer
+
+    func makeUIView(context: Context) -> MomentPlayerHost {
+        let view = MomentPlayerHost()
+        view.playerLayer.player = player
+        view.playerLayer.videoGravity = .resizeAspect
+        view.backgroundColor = .black
+        return view
+    }
+
+    func updateUIView(_ uiView: MomentPlayerHost, context: Context) {
+        uiView.playerLayer.player = player
+    }
+}
+
+private final class MomentPlayerHost: UIView {
+    override class var layerClass: AnyClass { AVPlayerLayer.self }
+    var playerLayer: AVPlayerLayer { layer as! AVPlayerLayer }
+}
+
+private struct MergedInterval: Identifiable {
+    let startMs: Int
+    let endMs: Int
+    let ids: Set<String>
+    var id: Int { startMs }
+}
+
+private func mergedIntervals(_ results: [VideoMomentModel.Moment]) -> [MergedInterval] {
+    var merged: [MergedInterval] = []
+    for result in results.sorted(by: { $0.startMs < $1.startMs }) {
+        if let last = merged.last, result.startMs <= last.endMs + 500 {
+            merged[merged.count - 1] = MergedInterval(
+                startMs: last.startMs,
+                endMs: max(last.endMs, result.endMs),
+                ids: last.ids.union([result.id])
+            )
+        } else {
+            merged.append(MergedInterval(startMs: result.startMs, endMs: result.endMs, ids: [result.id]))
+        }
+    }
+    return merged
+}
+
+private struct MomentTransport: View {
+    let playhead: Double
+    let durationMs: Int
+    let isPlaying: Bool
+    let isMuted: Bool
+    let intervals: [MergedInterval]
+    let selectedId: String?
+    let onToggle: () -> Void
+    let onMute: () -> Void
+    let onScrub: (Double) -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Button(action: onToggle) {
+                    Image(systemName: isPlaying ? "pause.fill" : "play.fill")
+                        .foregroundStyle(.white)
+                        .frame(width: 44, height: 44)
+                }
+                Spacer()
+                Text("\(thumbClock(Int(playhead * Double(durationMs)))) / \(thumbClock(durationMs))")
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(.white)
+                Spacer()
+                Button(action: onMute) {
+                    Image(systemName: isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")
+                        .foregroundStyle(.white)
+                        .frame(width: 44, height: 44)
+                }
+            }
+            .padding(.horizontal, 8)
+            GeometryReader { geo in
+                let width = max(geo.size.width, 1)
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Color.white.opacity(0.35)).frame(height: 8)
+                    Capsule().fill(Color.white).frame(width: width * playhead, height: 8)
+                    ForEach(intervals) { interval in
+                        let start = CGFloat(interval.startMs) / CGFloat(max(durationMs, 1))
+                        let end = CGFloat(interval.endMs) / CGFloat(max(durationMs, 1))
+                        let selected = selectedId.map { interval.ids.contains($0) } ?? false
+                        let markerWidth = max(6, width * (end - start))
+                        let x = min(width - markerWidth, width * start)
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(selected ? Color.accentColor : Color.white.opacity(0.85))
+                            .frame(width: markerWidth, height: selected ? 18 : 14)
+                            .offset(x: x)
+                    }
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(Color.white)
+                        .frame(width: 4, height: 24)
+                        .offset(x: min(width - 4, max(0, width * playhead - 2)))
+                }
+                .frame(maxHeight: .infinity)
+                .contentShape(Rectangle())
+                .gesture(
+                    DragGesture(minimumDistance: 0).onChanged { value in
+                        onScrub(min(1, max(0, value.location.x / width)))
+                    }
+                )
+            }
+            .frame(height: 48)
+            .padding(.horizontal, 24)
+        }
+        .padding(.bottom, 8)
+        .background(
+            LinearGradient(colors: [Color.black.opacity(0), Color.black.opacity(0.9)], startPoint: .top, endPoint: .bottom)
+        )
     }
 }
