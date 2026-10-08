@@ -1,5 +1,6 @@
 import Foundation
 import ModelZoo
+@preconcurrency import MediaGenerationKit
 
 public enum ModelFormat: String, Codable, Sendable {
     case task
@@ -235,7 +236,9 @@ public struct AIModel: Identifiable, Codable, Sendable {
 
     public var imageGenerationResolution: Int? {
         guard isDrawThingsImageGeneration else { return nil }
-        return id.contains("sd_xl") || id.contains("flux") ? 768 : 512
+        if id.hasPrefix("sd_xl_turbo") { return 512 }
+        return id.contains("sd_xl") || id.contains("flux") || id.hasPrefix("ssd_1b")
+            || id.hasPrefix("playground_v2.5") || id.hasPrefix("sd3_medium_3.5") ? 768 : 512
     }
 
     public var isDependencyOnly: Bool {
@@ -363,6 +366,8 @@ public struct ModelData {
 
     public static func isModelFullyAvailableLocally(_ model: AIModel) -> Bool {
         if model.modelFormat == .drawthings {
+            // Bundled community models must be resolved before querying ModelZoo's mapping.
+            _ = try? MediaGenerationEnvironment.default.resolveModel(model.id, offline: true)
             let allFiles: [String]
             if let specification = ModelZoo.specificationForModel(model.id) {
                 var seen = Set<String>()
@@ -3993,6 +3998,93 @@ public static let models: [AIModel] = [
         additionalFiles: []
     ),
 
+    // Quantized community image models; download sizes are estimates including dependencies.
+    AIModel(
+        id: "sd_xl_turbo_q6p_q8p.ckpt",
+        name: "SDXL Turbo (8-bit)",
+        description: "Fast SDXL image generation in 1–4 steps at 512×512. Approximate download: 3.9 GB including shared encoders.",
+        url: "https://huggingface.co/stabilityai/sdxl-turbo",
+        category: .imageGeneration,
+        sizeBytes: 3_900_000_000,
+        source: "Stability AI / Draw Things",
+        supportsVision: false,
+        supportsAudio: false,
+        supportsThinking: false,
+        supportsGpu: true,
+        requirements: ModelRequirements(minRamGB: 6, recommendedRamGB: 8),
+        contextWindowSize: 0,
+        modelFormat: .drawthings,
+        additionalFiles: []
+    ),
+    AIModel(
+        id: "ssd_1b_q6p_q8p.ckpt",
+        name: "SSD-1B (8-bit)",
+        description: "Compact SDXL model from Segmind for efficient image generation. Approximate download: 3.0 GB including shared encoders.",
+        url: "https://huggingface.co/segmind/SSD-1B",
+        category: .imageGeneration,
+        sizeBytes: 3_000_000_000,
+        source: "Segmind / Draw Things",
+        supportsVision: false,
+        supportsAudio: false,
+        supportsThinking: false,
+        supportsGpu: true,
+        requirements: ModelRequirements(minRamGB: 6, recommendedRamGB: 8),
+        contextWindowSize: 0,
+        modelFormat: .drawthings,
+        additionalFiles: []
+    ),
+    AIModel(
+        id: "playground_v2.5_q6p_q8p.ckpt",
+        name: "Playground v2.5 (8-bit)",
+        description: "Aesthetic image generation from Playground AI. Approximate download: 3.9 GB including shared encoders.",
+        url: "https://huggingface.co/playgroundai/playground-v2.5-1024px-aesthetic",
+        category: .imageGeneration,
+        sizeBytes: 3_900_000_000,
+        source: "Playground AI / Draw Things",
+        supportsVision: false,
+        supportsAudio: false,
+        supportsThinking: false,
+        supportsGpu: true,
+        requirements: ModelRequirements(minRamGB: 8, recommendedRamGB: 12),
+        contextWindowSize: 0,
+        modelFormat: .drawthings,
+        additionalFiles: []
+    ),
+    AIModel(
+        id: "sd3_medium_3.5_q8p.ckpt",
+        name: "Stable Diffusion 3.5 Medium (8-bit)",
+        description: "Stability AI image model with CLIP and quantized T5 encoders. Approximate download: 8.5 GB. Target 16GB devices; peak memory depends on generation settings.",
+        url: "https://huggingface.co/stabilityai/stable-diffusion-3.5-medium",
+        category: .imageGeneration,
+        sizeBytes: 8_500_000_000,
+        source: "Stability AI / Draw Things",
+        supportsVision: false,
+        supportsAudio: false,
+        supportsThinking: false,
+        supportsGpu: true,
+        requirements: ModelRequirements(minRamGB: 16, recommendedRamGB: 16),
+        contextWindowSize: 0,
+        modelFormat: .drawthings,
+        additionalFiles: []
+    ),
+    AIModel(
+        id: "flux_1_dev_q5p.ckpt",
+        name: "FLUX.1 [dev] (5-bit)",
+        description: "Black Forest Labs image model with quantized T5 and CLIP encoders. Approximate download: 13.7 GB. Target 16GB devices; peak memory depends on generation settings.",
+        url: "https://huggingface.co/black-forest-labs/FLUX.1-dev",
+        category: .imageGeneration,
+        sizeBytes: 13_648_674_816,
+        source: "Black Forest Labs / Draw Things",
+        supportsVision: false,
+        supportsAudio: false,
+        supportsThinking: false,
+        supportsGpu: true,
+        requirements: ModelRequirements(minRamGB: 16, recommendedRamGB: 16),
+        contextWindowSize: 0,
+        modelFormat: .drawthings,
+        additionalFiles: []
+    ),
+
     // MARK: - EmbeddingGemma 300M LiteRT — Embedding Models for RAG
 
     AIModel(
@@ -4156,6 +4248,7 @@ public static let models: [AIModel] = [
         contextWindowSize: 512,
         modelFormat: .drawthings
     ),
+
     AIModel(
         id: "realesrgan_x4plus_f16.ckpt",
         name: "Real-ESRGAN X4+",

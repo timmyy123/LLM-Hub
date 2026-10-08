@@ -7148,7 +7148,7 @@ private struct ImageGeneratorSettingsSheet: View {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("\(settings.localized("image_generator_iterations")): \(Int(steps))")
                             .font(.headline)
-                        Slider(value: $steps, in: 10...50, step: 1)
+                        Slider(value: $steps, in: 1...50, step: 1)
                             .tint(ApolloPalette.accentStrong)
                     }
                     .padding()

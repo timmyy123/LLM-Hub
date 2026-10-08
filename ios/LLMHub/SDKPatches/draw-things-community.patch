@@ -1,0 +1,302 @@
+diff --git a/Libraries/LocalImageGenerator/Sources/ModelPreloader.swift b/Libraries/LocalImageGenerator/Sources/ModelPreloader.swift
+index 18fe648..44bd018 100644
+--- a/Libraries/LocalImageGenerator/Sources/ModelPreloader.swift
++++ b/Libraries/LocalImageGenerator/Sources/ModelPreloader.swift
+@@ -1441,7 +1441,13 @@ extension ModelPreloader {
+ 
+   extension ModelPreloader {
+     func isAppActive() -> Bool {
+-      return UIApplication.shared.applicationState == .active
++      if Thread.isMainThread {
++        return UIApplication.shared.applicationState == .active
++      } else {
++        return DispatchQueue.main.sync {
++          UIApplication.shared.applicationState == .active
++        }
++      }
+     }
+ 
+     func addLifecycleObservers() {
+diff --git a/Libraries/MediaGenerationKit/Sources/MediaGenerationEnvironment+Ensure.swift b/Libraries/MediaGenerationKit/Sources/MediaGenerationEnvironment+Ensure.swift
+index 044cb38..0109c1f 100644
+--- a/Libraries/MediaGenerationKit/Sources/MediaGenerationEnvironment+Ensure.swift
++++ b/Libraries/MediaGenerationKit/Sources/MediaGenerationEnvironment+Ensure.swift
+@@ -103,10 +103,12 @@ extension MediaGenerationEnvironment.Storage {
+       if specification.remoteApiModelConfig != nil {
+         throw MediaGenerationKitError.modelNotFoundInCatalog(file)
+       }
+-      allFiles =
+-        includeDependencies
+-        ? ModelZoo.filesToDownload(specification).map(\.file)
+-        : [specification.file]
++      if includeDependencies {
++        var seen = Set<String>()
++        allFiles = ModelZoo.filesToDownload(specification).map(\.file).filter { seen.insert($0).inserted }
++      } else {
++        allFiles = [specification.file]
++      }
+     } else {
+       allFiles = [file]
+     }
+diff --git a/Libraries/MediaGenerationKit/Sources/MediaGenerationEnvironment.swift b/Libraries/MediaGenerationKit/Sources/MediaGenerationEnvironment.swift
+index 38ffeaf..b1f99a3 100644
+--- a/Libraries/MediaGenerationKit/Sources/MediaGenerationEnvironment.swift
++++ b/Libraries/MediaGenerationKit/Sources/MediaGenerationEnvironment.swift
+@@ -46,10 +46,10 @@ public struct MediaGenerationEnvironment: Sendable {
+ 
+     func localResources() -> MediaGenerationLocalResources {
+       lock.lock()
+-      if let cachedLocalResources {
++      if let cached = cachedLocalResources, FileManager.default.fileExists(atPath: cached.tempDir) {
+         lock.unlock()
+-        DeviceCapability.cacheUri = URL(fileURLWithPath: cachedLocalResources.tempDir)
+-        return cachedLocalResources
++        DeviceCapability.cacheUri = URL(fileURLWithPath: cached.tempDir)
++        return cached
+       }
+       let localResources = MediaGenerationExecutionUtilities.createLocalResources()
+       self.cachedLocalResources = localResources
+diff --git a/Libraries/MediaGenerationKit/Sources/MediaGenerationExecutionUtilities.swift b/Libraries/MediaGenerationKit/Sources/MediaGenerationExecutionUtilities.swift
+index cfe2f7e..0495686 100644
+--- a/Libraries/MediaGenerationKit/Sources/MediaGenerationExecutionUtilities.swift
++++ b/Libraries/MediaGenerationKit/Sources/MediaGenerationExecutionUtilities.swift
+@@ -278,10 +278,29 @@ internal enum MediaGenerationExecutionUtilities {
+     }
+   }
+ 
++  private static var hasCleanedUpOldDirectories = false
++  private static let cleanupLock = NSLock()
++
+   private static func createTemporaryDirectory() -> String {
+     let fileManager = FileManager.default
+-    let tempDirURL = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(
+-      UUID().uuidString)
++    let parentURL = (fileManager.urls(for: .cachesDirectory, in: .userDomainMask).first ?? URL(fileURLWithPath: NSTemporaryDirectory())).resolvingSymlinksInPath()
++    
++    cleanupLock.lock()
++    if !hasCleanedUpOldDirectories {
++      // Clean up old mgk- directories from previous sessions to prevent leaking disk space
++      if let urls = try? fileManager.contentsOfDirectory(at: parentURL, includingPropertiesForKeys: nil) {
++        for url in urls {
++          let resolved = url.resolvingSymlinksInPath()
++          if resolved.lastPathComponent.hasPrefix("mgk-") {
++            try? fileManager.removeItem(at: resolved)
++          }
++        }
++      }
++      hasCleanedUpOldDirectories = true
++    }
++    cleanupLock.unlock()
++    
++    let tempDirURL = parentURL.appendingPathComponent("mgk-\(UUID().uuidString)")
+     try! fileManager.createDirectory(
+       at: tempDirURL, withIntermediateDirectories: true, attributes: nil)
+     return tempDirURL.path
+diff --git a/Libraries/MediaGenerationKit/Sources/MediaGenerationPipeline.swift b/Libraries/MediaGenerationKit/Sources/MediaGenerationPipeline.swift
+index 1ceabf7..89a1e1f 100644
+--- a/Libraries/MediaGenerationKit/Sources/MediaGenerationPipeline.swift
++++ b/Libraries/MediaGenerationKit/Sources/MediaGenerationPipeline.swift
+@@ -883,6 +883,7 @@ public struct MediaGenerationPipeline: Sendable {
+   ///   - stateHandler: Optional progress callback. `preview` is non-`nil` only for preview-bearing
+   ///     progress updates.
+   /// - Returns: One or more generated image results.
++  @MainActor
+   public func generate(
+     prompt: String,
+     negativePrompt: String = "",
+diff --git a/Libraries/ModelZoo/Sources/ModelZoo.swift b/Libraries/ModelZoo/Sources/ModelZoo.swift
+index a0e4316..acd1fc1 100644
+--- a/Libraries/ModelZoo/Sources/ModelZoo.swift
++++ b/Libraries/ModelZoo/Sources/ModelZoo.swift
+@@ -2142,6 +2142,27 @@ public struct ModelZoo: DownloadZoo {
+       defaultScale: 8, textEncoder: "open_clip_vit_h14_vision_model_f16.ckpt", deprecated: true,
+       clipEncoder: "svd_i2v_xt_1.0_q6p_q8p.ckpt", conditioning: .noise, objective: .v,
+       noiseDiscretization: .edm(.init(sigmaMax: 700.0))),
++    Specification(
++      name: "Stable Video Diffusion I2V XT v1.1 (8-bit)", file: "svd_i2v_xt_1.1_q6p_q8p.ckpt",
++      prefix: "",
++      version: .svdI2v,
++      defaultScale: 8, textEncoder: "open_clip_vit_h14_vision_model_f16.ckpt",
++      clipEncoder: "svd_i2v_xt_1.1_q6p_q8p.ckpt", conditioning: .noise, objective: .v,
++      noiseDiscretization: .edm(.init(sigmaMax: 700.0))),
++    Specification(
++      name: "AnimateLCM SVD XT v1.1 (8-bit)", file: "animatelcm_svd_xt_v1.1_q6p_q8p.ckpt",
++      prefix: "",
++      version: .svdI2v,
++      defaultScale: 8, textEncoder: "open_clip_vit_h14_vision_model_f16.ckpt",
++      clipEncoder: "open_clip_vit_h14_visual_proj_f16.ckpt", conditioning: .noise, objective: .v,
++      noiseDiscretization: .edm(.init(sigmaMax: 700.0))),
++    Specification(
++      name: "Stable Video Diffusion I2V v1.0 (8-bit)", file: "svd_i2v_1.0_q6p_q8p.ckpt",
++      prefix: "",
++      version: .svdI2v,
++      defaultScale: 8, textEncoder: "open_clip_vit_h14_vision_model_f16.ckpt",
++      clipEncoder: "svd_i2v_1.0_q6p_q8p.ckpt", conditioning: .noise, objective: .v,
++      noiseDiscretization: .edm(.init(sigmaMax: 700.0))),
+     Specification(
+       name: "MiniSD v1.4", file: "minisd_v1.4_f16.ckpt", prefix: "", version: .v1,
+       defaultScale: 4, deprecated: true),
+@@ -2323,9 +2344,7 @@ public struct ModelZoo: DownloadZoo {
+   }
+ 
+   private static func filePathForOtherModelDownloaded(_ name: String) -> String {
+-    let urls = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
+-    let modelZooUrl = urls.first!.appendingPathComponent("Models")
+-    try? FileManager.default.createDirectory(at: modelZooUrl, withIntermediateDirectories: true)
++    let modelZooUrl = persistentModelsDirectory()
+     if isExternalUrlsPreferred, let externalUrl = externalUrls.first {
+       return externalUrl.appendingPathComponent(name).path
+     }
+@@ -2620,11 +2639,68 @@ public struct ModelZoo: DownloadZoo {
+     return models
+   }
+ 
++  /// Returns the stable, Xcode-reinstall-safe directory for Draw Things model files.
++  /// Uses Application Support/Models which is never wiped on device reinstall or Xcode redeploy.
++  /// Falls back to Documents/Models only if Application Support is unavailable.
++  public static func persistentModelsDirectory() -> URL {
++    let fileManager = FileManager.default
++    // Prefer Application Support – survives Xcode reinstall on physical devices
++    if let appSupport = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first {
++      let dir = appSupport.appendingPathComponent("Models", isDirectory: true)
++      try? fileManager.createDirectory(at: dir, withIntermediateDirectories: true)
++      // One-time migration: move completed files from old Documents/Models to AppSupport/Models.
++      // Guarded by UserDefaults so it only runs once, not on every path lookup.
++      let migrationKey = "ModelZoo.migratedToAppSupport.v1"
++      if !UserDefaults.standard.bool(forKey: migrationKey) {
++        UserDefaults.standard.set(true, forKey: migrationKey)
++        if let docsDir = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first {
++          let legacyDir = docsDir.appendingPathComponent("Models", isDirectory: true)
++          if fileManager.fileExists(atPath: legacyDir.path),
++             let legacyFiles = try? fileManager.contentsOfDirectory(atPath: legacyDir.path) {
++            for file in legacyFiles {
++              let src = legacyDir.appendingPathComponent(file)
++              let dst = dir.appendingPathComponent(file)
++              if !fileManager.fileExists(atPath: dst.path) {
++                try? fileManager.moveItem(at: src, to: dst)
++              } else {
++                try? fileManager.removeItem(at: src)
++              }
++            }
++            // Remove legacy dir if now empty
++            if (try? fileManager.contentsOfDirectory(atPath: legacyDir.path))?.isEmpty == true {
++              try? fileManager.removeItem(at: legacyDir)
++            }
++          }
++        }
++      }
++      return dir
++    }
++    // Fallback
++    let docs = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
++    let dir = docs.appendingPathComponent("Models", isDirectory: true)
++    try? fileManager.createDirectory(at: dir, withIntermediateDirectories: true)
++    return dir
++  }
++
++  /// Returns the legacy Documents/Models directory (used by older builds).
++  /// Only used for migration and fallback lookups.
++  private static func legacyDocumentsModelsDirectory() -> URL? {
++    return FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?
++      .appendingPathComponent("Models", isDirectory: true)
++  }
++
+   public static func internalFilePathForModelDownloaded(_ name: String) -> String {
+-    let urls = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
+-    let modelZooUrl = urls.first!.appendingPathComponent("Models")
+-    try? FileManager.default.createDirectory(at: modelZooUrl, withIntermediateDirectories: true)
+-    return modelZooUrl.appendingPathComponent(name).path
++    let appSupportPath = persistentModelsDirectory().appendingPathComponent(name).path
++    // If the file doesn't exist in AppSupport yet, also check the legacy Documents path
++    // so that ResumableDownloader can resume partial downloads from the old location.
++    if !FileManager.default.fileExists(atPath: appSupportPath),
++       let legacyDir = legacyDocumentsModelsDirectory() {
++      let legacyPath = legacyDir.appendingPathComponent(name).path
++      if FileManager.default.fileExists(atPath: legacyPath) {
++        return legacyPath
++      }
++    }
++    return appSupportPath
+   }
+ 
+   public static func filePathForModelDownloaded(_ name: String) -> String {
+diff --git a/Package.swift b/Package.swift
+index 96c34d6..04bd8a6 100644
+--- a/Package.swift
++++ b/Package.swift
+@@ -9,6 +9,7 @@ let package = Package(
+     .executable(name: "gRPCServerCLI", targets: ["gRPCServerCLI"]),
+     .executable(name: "draw-things-cli", targets: ["DrawThingsCLI"]),
+     .library(name: "_MediaGenerationKit", targets: ["_MediaGenerationKit"]),
++    .library(name: "CLICloudAuth", targets: ["CLICloudAuth"]),
+   ],
+   dependencies: [
+     .package(
+@@ -25,7 +26,7 @@ let package = Package(
+       revision: "5c982bf479c4cdf8c7f72002cd79ec88b553ab34"),
+     .package(
+       url: "https://github.com/liuliu/swift-sentencepiece",
+-      revision: "4c8baf1b03569428ab38dda7fdecf27886a16c1f"),
++      revision: "8d17bf2e017c97563e8805545d676be9739b6c0e"),
+     .package(url: "https://github.com/apple/swift-log.git", from: "1.4.4"),
+     .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.3.1"),
+     .package(url: "https://github.com/apple/swift-crypto.git", from: "3.7.1"),
+@@ -42,6 +43,7 @@ let package = Package(
+     .package(
+       url: "https://github.com/kelvin13/swift-png",
+       revision: "075dfb248ae327822635370e9d4f94a5d3fe93b2"),
++    .package(url: "https://github.com/weichsel/ZIPFoundation.git", from: "0.9.0"),
+     .package(name: "SwiftSoup", path: "Vendors/SwiftSoup"),
+     .package(
+       url: "https://github.com/jpsim/Yams.git",
+@@ -93,10 +95,6 @@ let package = Package(
+       ],
+       sources: ["Sources/BinaryResources.swift"]
+     ),
+-    .target(
+-      name: "ZIPFoundation",
+-      path: "Vendors/ZIPFoundation/Sources/ZIPFoundation"
+-    ),
+ 
+     .target(
+       name: "DiffusionMappings",
+@@ -128,7 +126,7 @@ let package = Package(
+         "LLM",
+         "Tokenizer",
+         "WeightsCache",
+-        "ZIPFoundation",
++        .product(name: "ZIPFoundation", package: "ZIPFoundation"),
+         .product(name: "Numerics", package: "swift-numerics"),
+         .product(name: "Atomics", package: "swift-atomics"),
+         .product(name: "Fickling", package: "swift-fickling"),
+@@ -168,7 +166,7 @@ let package = Package(
+         "Diffusion",
+         "DiffusionCoreMLModelManager",
+         "WeightsCache",
+-        "ZIPFoundation",
++        .product(name: "ZIPFoundation", package: "ZIPFoundation"),
+         .product(name: "Algorithms", package: "swift-algorithms"),
+         .product(name: "Atomics", package: "swift-atomics"),
+         .product(name: "NNC", package: "s4nnc"),
+@@ -311,7 +309,7 @@ let package = Package(
+         "ModelZoo",
+         "Upscaler",
+         "WeightsCache",
+-        "ZIPFoundation",
++        .product(name: "ZIPFoundation", package: "ZIPFoundation"),
+         .product(name: "Fickling", package: "swift-fickling"),
+         .product(name: "NNC", package: "s4nnc"),
+       ],
+diff --git a/WORKSPACE.linux b/WORKSPACE.linux
+index 7da8911..e57d3fe 100644
+--- a/WORKSPACE.linux
++++ b/WORKSPACE.linux
+@@ -47,7 +47,7 @@ http_archive(
+ http_archive(
+     name = "build_bazel_rules_apple",
+     sha256 = "e21e13568f6cbd1167a3b4c29ee865440c11b680153a7b6014ee15e64cc57c2d",
+-    url = "https://github.com/bazelbuild/rules_apple/releases/download/4.1.1/rules_apple.4.1.1.tar.gz",
++    url = "https://github.com/bazelbuild/rules_apple/releases/download/4.1.2/rules_apple.4.1.2.tar.gz",
+ )
+ 
+ load(

@@ -1,12 +1,12 @@
 {
-  "originHash" : "63993648e3e5c0e27b5779c6e9f31dd1d64810694a7baeee7207bbdc421b66e1",
+  "originHash" : "0d8739762caa7bfe85caaa8205bde5b2c482c515d469ebbcb5532b91edb7775d",
   "pins" : [
     {
       "identity" : "ccv",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/liuliu/ccv.git",
       "state" : {
-        "revision" : "ae1de9962437c14ff7d84af9bac66305e7ce5927"
+        "revision" : "6a611be1aab6470ae279115ae4eaf7e01bc87135"
       }
     },
     {
@@ -48,7 +48,7 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/liuliu/s4nnc.git",
       "state" : {
-        "revision" : "e3a83b351b84a7917fefd28366a3b9417fee3b2e"
+        "revision" : "e2926609354a093395a4c3c30bcb627b9c1787aa"
       }
     },
     {

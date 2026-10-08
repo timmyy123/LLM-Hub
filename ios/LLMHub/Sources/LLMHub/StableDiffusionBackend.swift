@@ -68,10 +68,18 @@ final class StableDiffusionBackend: ObservableObject {
         let modelsDirectory = try drawThingsModelsDirectory()
 
         do {
-            let loadedPipeline = try await MediaGenerationPipeline.fromPretrained(
+            var loadedPipeline = try await MediaGenerationPipeline.fromPretrained(
                 model.id,
                 backend: .local(directory: modelsDirectory.path)
             )
+            if let resolution = model.imageGenerationResolution {
+                var config = loadedPipeline.configuration
+                config.width = resolution
+                config.height = resolution
+                config.batchSize = 1
+                config.batchCount = 1
+                loadedPipeline.configuration = config
+            }
             self.pipeline = loadedPipeline
             self.loadedModelId = model.id
             self.isLoaded = true
@@ -105,7 +113,10 @@ final class StableDiffusionBackend: ObservableObject {
 
         var configuredPipeline = pipeline
         var config = pipeline.configuration
-        config.steps = steps
+        config.steps = loadedModelId?.hasPrefix("sd_xl_turbo") == true ? min(4, max(1, steps)) : steps
+        if loadedModelId?.hasPrefix("sd_xl_turbo") == true {
+            config.guidanceScale = 1
+        }
         config.seed = seed
         if inputImage != nil {
             config.strength = denoiseStrength
@@ -118,7 +129,7 @@ final class StableDiffusionBackend: ObservableObject {
             prompt: prompt,
             negativePrompt: "ugly, blurry, bad anatomy, bad quality",
             inputs: inputs
-        ) { @Sendable state in
+        ) { @Sendable state, _ in
             if case .generating(let step, let total) = state {
                 Task { @MainActor in
                     StableDiffusionBackend.shared.generationStep = step

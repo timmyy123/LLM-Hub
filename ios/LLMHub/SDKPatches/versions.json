@@ -1,0 +1,12 @@
+{
+  "draw-things-community": {
+    "repository": "https://github.com/drawthingsai/draw-things-community.git",
+    "release": "v26.0928.0",
+    "revision": "18b851b0bc75187d2276a131a2cd3fb9cb095e36"
+  },
+  "media-generation-kit": {
+    "repository": "https://github.com/drawthingsai/media-generation-kit.git",
+    "revision": "8868a9685d9c299816f43ef53efd455ffca437f0",
+    "latestPublishedRelease": "v1.20260401.0"
+  }
+}

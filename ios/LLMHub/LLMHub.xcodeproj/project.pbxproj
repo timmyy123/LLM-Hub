@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D70000000000000000000021 /* configs.json in Resources */ = {isa = PBXBuildFile; fileRef = D70000000000000000000022 /* configs.json */; };
+		D70000000000000000000011 /* models.json in Resources */ = {isa = PBXBuildFile; fileRef = D70000000000000000000012 /* models.json */; };
 		1AE5E42ED85BEFE5C3ED1D2A /* LocalizationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75BBFF4AA65F0EF6FF1DB93D /* LocalizationManager.swift */; };
 		1D92A835955F48E1AA4AEEEF /* EmbeddingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59683F4EC0364144B429B48B /* EmbeddingService.swift */; };
 		1F3A9E5C7B2E4D6F8A1B2C3D /* ApolloTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E4B5F6A7C8D9E0F1A2B3C4D /* ApolloTheme.swift */; };
@@ -81,6 +83,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		D70000000000000000000022 /* configs.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = configs.json; sourceTree = "<group>"; };
+		D70000000000000000000012 /* models.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = models.json; sourceTree = "<group>"; };
 		05BF91E2CF47146ED081A0A8 /* ModelDownloader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelDownloader.swift; sourceTree = "<group>"; };
 		0805DB9589154E465145E2DB /* ChatModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatModels.swift; sourceTree = "<group>"; };
 		223C0ACCB98929BFEDBB0B16 /* it */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = it; path = it.lproj/Localizable.strings; sourceTree = "<group>"; };
@@ -190,6 +194,8 @@
 		44F5735070D2A88436068B98 /* LLMHub */ = {
 			isa = PBXGroup;
 			children = (
+				D70000000000000000000022 /* configs.json */,
+				D70000000000000000000012 /* models.json */,
 				246186A12FB9AB95005E46A3 /* LLMHub-Info.plist */,
 				2461869C2FB762B0005E46A3 /* LLMHub.entitlements */,
 				2E4B5F6A7C8D9E0F1A2B3C4D /* ApolloTheme.swift */,
@@ -358,6 +364,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D70000000000000000000021 /* configs.json in Resources */,
+				D70000000000000000000011 /* models.json in Resources */,
 				5A9D0089FE08164E4232AD63 /* Assets.xcassets in Resources */,
 				BB0639256B9F424CC61F2737 /* Icon.png in Resources */,
 				AFCC035B534D28D50731B66D /* Localizable.strings in Resources */,

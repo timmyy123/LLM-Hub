@@ -76,7 +76,7 @@ final class VideoGeneratorBackend: ObservableObject {
         guard isLoaded, let pipeline = pipeline else {
             throw VideoError.modelNotDownloaded
         }
-        guard let startingImage = inputImage else {
+        guard let inputImage else {
             throw VideoError.inputImageRequired
         }
 
@@ -94,13 +94,13 @@ final class VideoGeneratorBackend: ObservableObject {
         configuredPipeline.configuration = config
         self.pipeline = configuredPipeline
 
-        let inputs: [MediaGenerationPipeline.Input] = [startingImage]
+        let inputs: [MediaGenerationPipeline.Input] = [inputImage]
 
         let results = try await configuredPipeline.generate(
             prompt: prompt,
             negativePrompt: "",
             inputs: inputs
-        ) { @Sendable state in
+        ) { @Sendable state, _ in
             if case .generating(let step, let total) = state {
                 Task { @MainActor in
                     VideoGeneratorBackend.shared.generationStep = step

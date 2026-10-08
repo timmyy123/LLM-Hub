@@ -509,6 +509,8 @@ public actor ModelDownloader {
             struct EnvWrapper {
                 static let env = MediaGenerationEnvironment.default
             }
+            // Resolve community metadata so progress and dependency checks include encoders and VAE.
+            _ = await EnvWrapper.env.resolveModel(model.id, offline: true)
             let tracker = ThroughputTracker()
             let drawThingsFileSizes: [String: Int64] = [
                 "svd_i2v_xt_1.0_q6p_q8p.ckpt": 1334681600,
@@ -564,7 +566,8 @@ public actor ModelDownloader {
                     let trueTotalSize = allFiles.reduce(Int64(0)) { sum, f in
                         sum + (drawThingsFileSizes[f] ?? 0)
                     }
-                    let finalTotalSize = trueTotalSize > 0 ? trueTotalSize : model.sizeBytes
+                    let finalTotalSize = allFiles.allSatisfy { drawThingsFileSizes[$0] != nil }
+                        ? trueTotalSize : model.sizeBytes
                     let progressProportion = Double(cumulativeBytes) / Double(max(1, finalTotalSize))
                     let reportedBytes = min(model.sizeBytes, Int64(progressProportion * Double(model.sizeBytes)))
                     onProgress(DownloadUpdate(bytesDownloaded: reportedBytes, totalBytes: model.sizeBytes, speedBytesPerSecond: 0))
@@ -592,7 +595,8 @@ public actor ModelDownloader {
                     let trueTotalSize = allFiles.reduce(Int64(0)) { sum, f in
                         sum + (drawThingsFileSizes[f] ?? 0)
                     }
-                    let finalTotalSize = trueTotalSize > 0 ? trueTotalSize : model.sizeBytes
+                    let finalTotalSize = allFiles.allSatisfy { drawThingsFileSizes[$0] != nil }
+                        ? trueTotalSize : model.sizeBytes
                     let progressProportion = Double(cumulativeBytes) / Double(max(1, finalTotalSize))
                     let reportedBytes = min(model.sizeBytes, Int64(progressProportion * Double(model.sizeBytes)))
                     

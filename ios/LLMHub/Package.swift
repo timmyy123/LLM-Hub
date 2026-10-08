@@ -39,6 +39,8 @@ let package = Package(
             ],
             resources: [
                 .process("Icon.png"),
+                .copy("models.json"),
+                .copy("configs.json"),
                 .process("en.lproj"),
                 .process("ar.lproj"),
                 .process("da.lproj"),

@@ -440,12 +440,12 @@ struct VideoGeneratorScreen: View {
         generateTask?.cancel()
         generateTask = Task {
             do {
-                if !videoBackend.isLoaded {
-                    guard let model = selectedModel else {
-                        errorMessage = settings.localized("video_generator_no_model")
-                        isGenerating = false
-                        return
-                    }
+                guard let model = selectedModel else {
+                    errorMessage = settings.localized("video_generator_no_model")
+                    isGenerating = false
+                    return
+                }
+                if !videoBackend.isLoaded || videoBackend.loadedModelId != model.id {
                     try await videoBackend.loadModel(url: URL(fileURLWithPath: "/"), modelId: model.id)
                 }
                 let url = try await videoBackend.generateVideo(
