@@ -186,6 +186,10 @@ class LiteRtLmEmbeddingService(
     suspend fun generateAudioEmbedding(wav: ByteArray): FloatArray? =
         if (supportsAudioEmbedding) embed(listOf(InputData.Audio(wav))) else null
 
+    /** One embedding for a Video Moment Finder window: timestamps, audio slices, and frames. */
+    suspend fun generateMixedEmbedding(parts: List<InputData>): FloatArray? =
+        if (parts.isNotEmpty()) embed(parts) else null
+
     override suspend fun isInitialized(): Boolean = engine != null
 
     override fun cleanup() {

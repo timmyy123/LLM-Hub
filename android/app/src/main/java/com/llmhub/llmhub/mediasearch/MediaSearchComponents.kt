@@ -60,8 +60,8 @@ internal fun MediaSearchOnboarding(
     description: String,
     primaryLabel: String,
     onPrimary: () -> Unit,
-    secondaryLabel: String,
-    onSecondary: () -> Unit,
+    secondaryLabel: String? = null,
+    onSecondary: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -91,8 +91,10 @@ internal fun MediaSearchOnboarding(
                 Button(onClick = onPrimary, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
                     Text(primaryLabel)
                 }
-                OutlinedButton(onClick = onSecondary, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
-                    Text(secondaryLabel)
+                if (secondaryLabel != null && onSecondary != null) {
+                    OutlinedButton(onClick = onSecondary, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
+                        Text(secondaryLabel)
+                    }
                 }
             }
         }

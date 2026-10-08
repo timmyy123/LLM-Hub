@@ -6,6 +6,12 @@ import MagentaRuntime
 // Runs EmbeddingGemma either as a raw .tflite file with LiteRT, or as a .litertlm bundle
 // (EmbeddingGemma 2, multimodal) with the LiteRT-LM EmbeddingEngine.
 
+enum MediaEmbedPart: Sendable {
+    case text(String)
+    case image(Data)
+    case audio(Data)
+}
+
 actor EmbeddingService {
 
     // EmbeddingGemma 2 prompt format from the model card.
@@ -161,6 +167,22 @@ actor EmbeddingService {
         guard isInitialized, supportsImage, let lmEngine, !frames.isEmpty else { return nil }
         return try await lmEngine.computeEmbedding(
             contents: frames.map { .imageData($0) },
+            options: LiteRTLM.EmbeddingOptions(normalize: true, visionTokensPerImage: visionTokensPerImage)
+        ).embedding
+    }
+
+    /// One embedding for a Video Moment Finder window: timestamps, audio slices, and frames.
+    func embedMixed(_ parts: [MediaEmbedPart]) async throws -> [Float]? {
+        guard isInitialized, let lmEngine, !parts.isEmpty else { return nil }
+        let contents: [LiteRTLM.Content] = parts.map { part in
+            switch part {
+            case .text(let text): return .text(text)
+            case .image(let data): return .imageData(data)
+            case .audio(let data): return .audioData(data)
+            }
+        }
+        return try await lmEngine.computeEmbedding(
+            contents: contents,
             options: LiteRTLM.EmbeddingOptions(normalize: true, visionTokensPerImage: visionTokensPerImage)
         ).embedding
     }

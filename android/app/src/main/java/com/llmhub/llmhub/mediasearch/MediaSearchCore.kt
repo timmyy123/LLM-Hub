@@ -44,6 +44,9 @@ private const val TAG = "MediaSearch"
 internal const val MEDIA_SEARCH_VISION_TOKENS = 70
 internal const val MEDIA_SEARCH_MAX_INPUT_TOKENS = 256
 
+/** Video Moment Finder windows interleave frames and audio, so they need a longer context. */
+internal const val VIDEO_MOMENT_MAX_INPUT_TOKENS = 1024
+
 /** One embedded item: a photo, or an audio moment covering [startMs]..[endMs] of a file. */
 class MediaVector(val id: String, val startMs: Int, val endMs: Int, val vector: FloatArray)
 
@@ -174,6 +177,31 @@ internal suspend fun loadVideoKeyframes(context: Context, uri: Uri, maxEdge: Int
         } finally {
             try { retriever.release() } catch (_: Exception) { }
         }
+    }
+
+internal fun frameJpegAt(context: Context, uri: Uri, timeMs: Long, maxEdge: Int = 512): ByteArray? =
+    try {
+        val retriever = MediaMetadataRetriever()
+        try {
+            retriever.setDataSource(context, uri)
+            val frame = retriever.getScaledFrameAtTime(
+                timeMs * 1000L,
+                MediaMetadataRetriever.OPTION_CLOSEST_SYNC,
+                maxEdge,
+                maxEdge
+            ) ?: return null
+            val bytes = ByteArrayOutputStream().use { out ->
+                frame.compress(Bitmap.CompressFormat.JPEG, 80, out)
+                out.toByteArray()
+            }
+            frame.recycle()
+            bytes
+        } finally {
+            retriever.release()
+        }
+    } catch (e: Exception) {
+        Log.w(TAG, "Frame at $timeMs failed for $uri: ${e.message}")
+        null
     }
 
 internal const val AUDIO_SAMPLE_RATE = 16_000
@@ -366,7 +394,7 @@ abstract class MediaSearchViewModel(application: Application, private val prefsN
             context, model,
             enableMedia = true,
             visionTokensPerImage = MEDIA_SEARCH_VISION_TOKENS,
-            maxInputLength = MEDIA_SEARCH_MAX_INPUT_TOKENS
+            maxInputLength = maxInputTokens
         )
         val ok = service.initialize()
         _isLoadingModel.value = false
@@ -386,6 +414,9 @@ abstract class MediaSearchViewModel(application: Application, private val prefsN
         embedder = null
         _isModelLoaded.value = false
     }
+
+    /** Instant Media Search uses 256. Video Moment Finder overrides this with 1024. */
+    protected open val maxInputTokens: Int get() = MEDIA_SEARCH_MAX_INPUT_TOKENS
 
     /** Called after the engine becomes ready (e.g. to resume indexing). */
     protected open fun onModelLoaded() {}

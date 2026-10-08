@@ -933,8 +933,16 @@
 "prompt_template_none" = "Ingen (standard)";
 
 /* Photo Search / Audio Search */
-"feature_photo_search" = "Foto- og videosøgning";
-"feature_photo_search_desc" = "Find fotos og videoer på din enhed ved at beskrive dem";
+"feature_photo_search" = "Instant Media Search";
+"feature_photo_search_desc" = "Organize and search your photos and videos locally with EmbeddingGemma 2";
+"feature_video_moment" = "Video Moment Finder";
+"feature_video_moment_desc" = "Search for moments in videos using natural language with EmbeddingGemma 2";
+"video_moment_onboarding_title" = "Search for a moment inside your videos";
+"video_moment_onboarding_desc" = "EmbeddingGemma 2 splits each video into 2 second windows, reads two frames and the audio in each window, then you can jump to the moment you describe.";
+"video_moment_all" = "Analyze all videos";
+"video_moment_pick" = "Select videos";
+"video_moment_hint" = "Describe a moment, e.g. cutting a cake";
+"video_moment_play" = "Play %@";
 "feature_audio_search" = "Lydsøgning";
 "feature_audio_search_desc" = "Find øjeblikke i din lyd ved at beskrive dem";
 "media_search_download_model" = "Download EmbeddingGemma 2";

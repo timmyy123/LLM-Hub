@@ -11,10 +11,6 @@ import UniformTypeIdentifiers
 final class PhotoSearchModel: ObservableObject {
     enum Source: String { case none, allPhotos, selected }
 
-    /// A hit has to clear this cosine, and sit close to the best hit, or it stays out of the grid.
-    static let minimumScore: Float = 0.42
-    static let scoreGap: Float = 0.07
-
     /// "ph:<PHAsset localIdentifier>" for library items, "file:<name>" for imported copies.
     struct Item: Identifiable, Hashable {
         let id: String
@@ -49,6 +45,7 @@ final class PhotoSearchModel: ObservableObject {
     private var storeLoaded = false
 
     private static let sourceKey = "photo_search_source"
+    private static let indexedModelKey = "photo_search_indexed_model"
     private static let importedDir: URL = {
         let dir = MediaSearchConfig.directory.appendingPathComponent("photos", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
@@ -71,6 +68,12 @@ final class PhotoSearchModel: ObservableObject {
             await indexTask?.value
             await engine.unload()
             currentModel = model
+        }
+        if UserDefaults.standard.string(forKey: Self.indexedModelKey) != model.id {
+            store.clear()
+            failed.removeAll()
+            UserDefaults.standard.set(model.id, forKey: Self.indexedModelKey)
+            refreshItems()
         }
         await ensureEngine()
         startIndexing()
@@ -302,11 +305,7 @@ final class PhotoSearchModel: ObservableObject {
             .filter { $0.id != excluding && live.contains($0.id) }
             .map { Match(item: Item(id: $0.id, isVideo: videoIds.contains($0.id)), score: mediaDot(query, $0.vector)) }
             .sorted { $0.score > $1.score }
-            .prefix(120)
-            .map { $0 }
-        guard let best = ranked.first?.score, best >= Self.minimumScore else { return [] }
-        let floor = max(Self.minimumScore, best - Self.scoreGap)
-        return ranked.filter { $0.score >= floor }
+        return ranked
     }
 
     private func loadFrames(_ item: Item, maxEdge: CGFloat) async -> [Data] {

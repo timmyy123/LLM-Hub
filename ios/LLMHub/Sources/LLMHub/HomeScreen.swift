@@ -43,7 +43,7 @@ struct HomeScreen: View {
             FeatureCard(titleKey: "feature_agent", descriptionKey: "feature_agent_desc", iconSystemName: "cpu.fill", gradient: [Color(hex: "a78bfa"), Color(hex: "ec4899")], route: "agent"),
             FeatureCard(titleKey: "feature_music_generator", descriptionKey: "feature_music_generator_desc", iconSystemName: "music.note", gradient: [Color(hex: "ff9a9e"), Color(hex: "fecfef")], route: "music_generator"),
             FeatureCard(titleKey: "feature_photo_search", descriptionKey: "feature_photo_search_desc", iconSystemName: "photo.on.rectangle.angled", gradient: [Color(hex: "7fb6ff"), Color(hex: "8e7cff")], route: "photo_search"),
-            FeatureCard(titleKey: "feature_audio_search", descriptionKey: "feature_audio_search_desc", iconSystemName: "waveform.badge.magnifyingglass", gradient: [Color(hex: "6fe3c1"), Color(hex: "3a7bd5")], route: "audio_search")
+            FeatureCard(titleKey: "feature_video_moment", descriptionKey: "feature_video_moment_desc", iconSystemName: "film.stack", gradient: [Color(hex: "6fe3c1"), Color(hex: "3a7bd5")], route: "video_moment")
         ]
     }
 

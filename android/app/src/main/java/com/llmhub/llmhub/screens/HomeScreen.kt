@@ -189,12 +189,12 @@ fun HomeScreen(
                 route = "photo_search"
             ),
             FeatureCard(
-                title = R.string.feature_audio_search,
-                description = R.string.feature_audio_search_desc,
-                icon = Icons.Filled.GraphicEq,
+                title = R.string.feature_video_moment,
+                description = R.string.feature_video_moment_desc,
+                icon = Icons.Filled.VideoLibrary,
                 gradient = Pair(Color(0xFF43CEA2), Color(0xFF185A9D)),
                 darkColor = Color(0xFF15404A),
-                route = "audio_search"
+                route = "video_moment"
             )
         )
     }

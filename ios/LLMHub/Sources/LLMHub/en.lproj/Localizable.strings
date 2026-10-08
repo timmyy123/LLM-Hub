@@ -938,8 +938,19 @@
 "prompt_template_none" = "None (Default)";
 
 /* Photo Search / Audio Search */
-"feature_photo_search" = "Photo & Video Search";
-"feature_photo_search_desc" = "Find photos and videos on your device by describing them";
+"feature_photo_search" = "Instant Media Search";
+"feature_photo_search_desc" = "Organize and search your photos and videos locally with EmbeddingGemma 2";
+"feature_video_moment" = "Video Moment Finder";
+"feature_video_moment_desc" = "Search for moments in videos using natural language with EmbeddingGemma 2";
+"video_moment_onboarding_title" = "Search for a moment inside your videos";
+"video_moment_onboarding_desc" = "EmbeddingGemma 2 splits each video into 2 second windows, reads two frames and the audio in each window, then you can jump to the moment you describe.";
+"video_moment_all" = "Analyze all videos";
+"video_moment_pick" = "Select videos";
+"video_moment_hint" = "Describe a moment, e.g. cutting a cake";
+"video_moment_play" = "Play %@";
+"video_moment_top" = "Showing top 5 results";
+"video_moment_save_edit" = "Save or edit this clip";
+"video_moment_save" = "Save clip";
 "feature_audio_search" = "Audio Search";
 "feature_audio_search_desc" = "Find moments in your audio by describing them";
 "media_search_download_model" = "Download EmbeddingGemma 2";
@@ -967,6 +978,7 @@
 "photo_search_count" = "%1$d of %2$d photos analyzed";
 "audio_search_onboarding_title" = "Search your audio by describing it";
 "audio_search_onboarding_desc" = "EmbeddingGemma 2 splits each recording into short moments and analyzes them on this device, so you can jump straight to the part you describe.";
+"audio_search_voice_memos" = "In the picker, open Browse and choose Voice Memos. Or share a recording from the Voice Memos app to LLM Hub.";
 "audio_search_scan_device" = "Analyze device audio";
 "audio_search_import" = "Import audio files";
 "audio_search_hint" = "Describe a sound, e.g. people laughing";

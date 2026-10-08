@@ -926,8 +926,16 @@
 "prompt_template_none" = "なし（デフォルト）";
 
 /* Photo Search / Audio Search */
-"feature_photo_search" = "写真と動画の検索";
-"feature_photo_search_desc" = "説明して端末内の写真と動画を見つけます";
+"feature_photo_search" = "Instant Media Search";
+"feature_photo_search_desc" = "Organize and search your photos and videos locally with EmbeddingGemma 2";
+"feature_video_moment" = "Video Moment Finder";
+"feature_video_moment_desc" = "Search for moments in videos using natural language with EmbeddingGemma 2";
+"video_moment_onboarding_title" = "Search for a moment inside your videos";
+"video_moment_onboarding_desc" = "EmbeddingGemma 2 splits each video into 2 second windows, reads two frames and the audio in each window, then you can jump to the moment you describe.";
+"video_moment_all" = "Analyze all videos";
+"video_moment_pick" = "Select videos";
+"video_moment_hint" = "Describe a moment, e.g. cutting a cake";
+"video_moment_play" = "Play %@";
 "feature_audio_search" = "オーディオ検索";
 "feature_audio_search_desc" = "説明するだけで音声内の場面を見つけます";
 "media_search_download_model" = "EmbeddingGemma 2 をダウンロード";

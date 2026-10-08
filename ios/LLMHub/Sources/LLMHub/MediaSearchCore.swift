@@ -169,14 +169,14 @@ actor MediaSearchEngine {
     private let service = EmbeddingService()
     private(set) var loadedModelId: String?
 
-    func load(model: AIModel) async throws {
+    func load(model: AIModel, maxInputTokens: Int = MediaSearchConfig.maxInputTokens, cacheName: String = "media_search_cache") async throws {
         if loadedModelId == model.id, await service.isInitialized { return }
         let dir = try SimplifiedFileManager.shared.getModelFolderURL(modelId: model.id, framework: model.inferenceFramework)
         guard let file = (try? FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil))?
             .first(where: { $0.pathExtension.lowercased() == "litertlm" }) else {
             throw EmbeddingError.modelLoadFailed("EmbeddingGemma 2 file not found")
         }
-        let cache = dir.appendingPathComponent("media_search_cache", isDirectory: true)
+        let cache = dir.appendingPathComponent(cacheName, isDirectory: true)
         try? FileManager.default.createDirectory(at: cache, withIntermediateDirectories: true)
         try await service.initializeLiteRTLM(
             modelID: model.id,
@@ -186,7 +186,7 @@ actor MediaSearchEngine {
             supportsImage: model.supportsVision,
             supportsAudio: model.supportsAudio,
             visionTokensPerImage: MediaSearchConfig.visionTokensPerImage,
-            maxInputLength: MediaSearchConfig.maxInputTokens
+            maxInputLength: maxInputTokens
         )
         loadedModelId = model.id
     }
@@ -211,6 +211,10 @@ actor MediaSearchEngine {
 
     func embedAudio(_ wav: Data) async -> [Float]? {
         try? await service.embedAudio(wav)
+    }
+
+    func embedMixed(_ parts: [MediaEmbedPart]) async -> [Float]? {
+        try? await service.embedMixed(parts)
     }
 }
 

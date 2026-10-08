@@ -22,6 +22,7 @@ import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import com.llmhub.llmhub.data.localFileName
+import com.llmhub.llmhub.data.matchesOwnModelFile
 import android.content.Context
 import com.llmhub.llmhub.BuildConfig
 import com.llmhub.llmhub.data.isModelFileValid
@@ -441,10 +442,7 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
                 // the app was killed and allow resume.
                 var file: File = primaryFile
                 if (!file.exists()) {
-                    val baseName = model.localFileName().substringBeforeLast('.')
-                    val found = modelsDir.listFiles()?.firstOrNull { 
-                        it.name.startsWith(baseName) && (baseName.endsWith(".en") || !it.name.contains(".en"))
-                    }
+                    val found = modelsDir.listFiles()?.firstOrNull { model.matchesOwnModelFile(it.name) }
                     if (found != null) file = found
                 }
 
@@ -955,10 +953,8 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
                     val legacy = File(modelsDir, "${model.name.replace(" ", "_")}.gguf")
                     if (legacy.exists()) legacy.delete()
 
-                    val base = model.localFileName().substringBeforeLast('.')
                     modelsDir.listFiles()?.forEach { f ->
-                        val matchesBase = f.name.startsWith(base) && (base.endsWith(".en") || !f.name.contains(".en"))
-                        if (matchesBase && f.name != model.localFileName()) {
+                        if (model.matchesOwnModelFile(f.name) && f.name != model.localFileName()) {
                             try { f.delete() } catch (_: Exception) { }
                         }
                     }

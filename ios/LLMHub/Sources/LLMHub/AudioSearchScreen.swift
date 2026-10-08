@@ -87,18 +87,77 @@ final class AudioSearchModel: ObservableObject {
         Task { [engine] in await engine.unload() }
     }
 
-    func importFiles(_ urls: [URL]) async {
+    static var importTypes: [UTType] {
+        var types: [UTType] = [.audio, .mpeg4Audio, .mp3, .wav, .aiff]
+        if let memo = UTType("com.apple.m4a-audio") { types.append(memo) }
+        return types
+    }
+
+    static func isAudioURL(_ url: URL) -> Bool {
+        if let type = UTType(filenameExtension: url.pathExtension), importTypes.contains(where: { type.conforms(to: $0) }) {
+            return true
+        }
+        return ["m4a", "mp3", "wav", "aiff", "aif", "caf", "aac", "mp4"].contains(url.pathExtension.lowercased())
+    }
+
+    /// Copy while the security scope from the picker or the Voice Memos share sheet is still valid.
+    /// The scope is gone by the time an async task runs, which dropped every memo on the floor.
+    func importFiles(_ urls: [URL]) {
+        var added = false
         for url in urls {
             let accessing = url.startAccessingSecurityScopedResource()
             defer { if accessing { url.stopAccessingSecurityScopedResource() } }
-            let ext = url.pathExtension.isEmpty ? "m4a" : url.pathExtension
+            let ext = url.pathExtension.isEmpty ? "m4a" : url.pathExtension.lowercased()
             let id = "\(UUID().uuidString).\(ext)"
             let dest = Self.filesDir.appendingPathComponent(id)
-            guard (try? FileManager.default.copyItem(at: url, to: dest)) != nil else { continue }
-            let duration = (try? await AVURLAsset(url: dest).load(.duration)).map { Int(CMTimeGetSeconds($0) * 1000) } ?? 0
-            items.insert(Item(id: id, name: url.lastPathComponent, durationMs: duration), at: 0)
+            do {
+                try FileManager.default.copyItem(at: url, to: dest)
+            } catch {
+                NSLog("[AudioSearch] Could not copy \(url.lastPathComponent): \(error.localizedDescription)")
+                continue
+            }
+            let seconds = (try? AVAudioPlayer(contentsOf: dest))?.duration ?? 0
+            items.insert(Item(id: id, name: url.deletingPathExtension().lastPathComponent, durationMs: Int(seconds * 1000)), at: 0)
+            added = true
         }
+        guard added else { return }
         saveItems()
+        updateProgress()
+        startIndexing()
+    }
+
+    /// Used when Voice Memos shares a recording before this screen exists.
+    static func importShared(_ urls: [URL]) {
+        let existing = (try? JSONDecoder().decode([Item].self, from: Data(contentsOf: itemsURL))) ?? []
+        var items = existing
+        var added = false
+        for url in urls {
+            let accessing = url.startAccessingSecurityScopedResource()
+            defer { if accessing { url.stopAccessingSecurityScopedResource() } }
+            let ext = url.pathExtension.isEmpty ? "m4a" : url.pathExtension.lowercased()
+            let id = "\(UUID().uuidString).\(ext)"
+            let dest = filesDir.appendingPathComponent(id)
+            do {
+                try FileManager.default.copyItem(at: url, to: dest)
+            } catch {
+                NSLog("[AudioSearch] Could not copy shared \(url.lastPathComponent): \(error.localizedDescription)")
+                continue
+            }
+            let seconds = (try? AVAudioPlayer(contentsOf: dest))?.duration ?? 0
+            items.insert(Item(id: id, name: url.deletingPathExtension().lastPathComponent, durationMs: Int(seconds * 1000)), at: 0)
+            added = true
+        }
+        guard added, let data = try? JSONEncoder().encode(items) else { return }
+        try? data.write(to: itemsURL, options: .atomic)
+        NotificationCenter.default.post(name: .audioSearchLibraryChanged, object: nil)
+    }
+
+    func reloadFromDisk() {
+        let disk = (try? JSONDecoder().decode([Item].self, from: Data(contentsOf: Self.itemsURL))) ?? []
+        let known = Set(items.map(\.id))
+        let fresh = disk.filter { !known.contains($0.id) && FileManager.default.fileExists(atPath: fileURL($0).path) }
+        guard !fresh.isEmpty else { return }
+        items.insert(contentsOf: fresh, at: 0)
         updateProgress()
         startIndexing()
     }
@@ -191,13 +250,11 @@ final class AudioSearchModel: ObservableObject {
             grouped[v.id, default: []].append(Moment(startMs: Int(v.startMs), endMs: Int(v.endMs), score: mediaDot(query, v.vector)))
         }
         return grouped.compactMap { id, moments -> Match? in
-            guard let item = byId[id] else { return nil }
-            let best = moments.sorted { $0.score > $1.score }
-            return Match(item: item, score: best[0].score, moments: Array(best.prefix(3)), timeline: moments.sorted { $0.startMs < $1.startMs })
+            guard let item = byId[id], let top = moments.max(by: { $0.score < $1.score }) else { return nil }
+            let ordered = moments.sorted { $0.score > $1.score }
+            return Match(item: item, score: top.score, moments: Array(ordered.prefix(3)), timeline: moments.sorted { $0.startMs < $1.startMs })
         }
         .sorted { $0.score > $1.score }
-        .prefix(40)
-        .map { $0 }
     }
 
     private func startIndexing() {
@@ -364,6 +421,10 @@ struct AudioSearchScreen: View {
                     }
                     .foregroundStyle(.white)
                     .liquidGlassPrimaryButton(cornerRadius: 12)
+                    Text(settings.localized("audio_search_voice_memos"))
+                        .font(.caption)
+                        .foregroundStyle(.white.opacity(0.7))
+                        .multilineTextAlignment(.center)
                 }
             } else {
                 mainView
@@ -395,7 +456,7 @@ struct AudioSearchScreen: View {
             ) {
                 Button {
                     showSettings = false
-                    showImporter = true
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { showImporter = true }
                 } label: {
                     Text(settings.localized("audio_search_import"))
                         .frame(maxWidth: .infinity)
@@ -405,9 +466,13 @@ struct AudioSearchScreen: View {
             }
             .environmentObject(settings)
         }
-        .fileImporter(isPresented: $showImporter, allowedContentTypes: [.audio], allowsMultipleSelection: true) { result in
-            guard case .success(let urls) = result, !urls.isEmpty else { return }
-            Task { await model.importFiles(urls) }
+        .fileImporter(isPresented: $showImporter, allowedContentTypes: AudioSearchModel.importTypes, allowsMultipleSelection: true) { result in
+            if case .success(let urls) = result, !urls.isEmpty {
+                model.importFiles(urls)
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .audioSearchLibraryChanged)) { _ in
+            model.reloadFromDisk()
         }
         .task(id: selectedModel?.id) { await model.start(model: selectedModel) }
         .onDisappear {
@@ -453,6 +518,10 @@ struct AudioSearchScreen: View {
         }
         .scrollDismissesKeyboard(.interactively)
     }
+}
+
+extension Notification.Name {
+    static let audioSearchLibraryChanged = Notification.Name("audioSearchLibraryChanged")
 }
 
 private func formatMs(_ ms: Int) -> String {

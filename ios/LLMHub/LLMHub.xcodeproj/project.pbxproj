@@ -57,6 +57,7 @@
 		SS000001000000000000SS01 /* SplashScreenView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SS000001000000000000SS02 /* SplashScreenView.swift */; };
 		UP000001000000000000UP01 /* ImageUpscalerScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = UP000001000000000000UP02 /* ImageUpscalerScreen.swift */; };
 		MS000001000000000000MS05 /* AudioSearchScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = MS000001000000000000MS06 /* AudioSearchScreen.swift */; };
+		VM000001000000000000VM01 /* VideoMomentScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = VM000001000000000000VM02 /* VideoMomentScreen.swift */; };
 		MS000001000000000000MS03 /* PhotoSearchScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = MS000001000000000000MS04 /* PhotoSearchScreen.swift */; };
 		MS000001000000000000MS01 /* MediaSearchCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = MS000001000000000000MS02 /* MediaSearchCore.swift */; };
 		UP000001000000000000UP03 /* ImageUpscalerBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = UP000001000000000000UP04 /* ImageUpscalerBackend.swift */; };
@@ -149,6 +150,7 @@
 		SS000001000000000000SS02 /* SplashScreenView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashScreenView.swift; sourceTree = "<group>"; };
 		UP000001000000000000UP02 /* ImageUpscalerScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageUpscalerScreen.swift; sourceTree = "<group>"; };
 		MS000001000000000000MS06 /* AudioSearchScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioSearchScreen.swift; sourceTree = "<group>"; };
+		VM000001000000000000VM02 /* VideoMomentScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoMomentScreen.swift; sourceTree = "<group>"; };
 		MS000001000000000000MS04 /* PhotoSearchScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoSearchScreen.swift; sourceTree = "<group>"; };
 		MS000001000000000000MS02 /* MediaSearchCore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaSearchCore.swift; sourceTree = "<group>"; };
 		UP000001000000000000UP04 /* ImageUpscalerBackend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageUpscalerBackend.swift; sourceTree = "<group>"; };
@@ -232,6 +234,7 @@
 				AF000001000000000000AF02 /* AppleFoundationModelSupport.swift */,
 				UP000001000000000000UP02 /* ImageUpscalerScreen.swift */,
 				MS000001000000000000MS06 /* AudioSearchScreen.swift */,
+				VM000001000000000000VM02 /* VideoMomentScreen.swift */,
 				MS000001000000000000MS04 /* PhotoSearchScreen.swift */,
 				MS000001000000000000MS02 /* MediaSearchCore.swift */,
 				SS000001000000000000SS02 /* SplashScreenView.swift */,
@@ -407,6 +410,7 @@
 				AF000001000000000000AF01 /* AppleFoundationModelSupport.swift in Sources */,
 				UP000001000000000000UP01 /* ImageUpscalerScreen.swift in Sources */,
 				MS000001000000000000MS05 /* AudioSearchScreen.swift in Sources */,
+				VM000001000000000000VM01 /* VideoMomentScreen.swift in Sources */,
 				MS000001000000000000MS03 /* PhotoSearchScreen.swift in Sources */,
 				MS000001000000000000MS01 /* MediaSearchCore.swift in Sources */,
 				SS000001000000000000SS01 /* SplashScreenView.swift in Sources */,

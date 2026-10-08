@@ -42,6 +42,19 @@ fun LLMModel.localFileName(): String {
         // Fallback to sanitized model name with appropriate extension
         "${name.replace(" ", "_").replace("[^a-zA-Z0-9_-]".toRegex(), "")}${extension}"
     }
+}
+
+/**
+ * True for this model's own file or a partial download of it (`.part`, `.tmp`).
+ * A longer sibling such as `embeddinggemma-2-740m_Qualcomm_SM8550.litertlm` must not
+ * count as `embeddinggemma-2-740m.litertlm`.
+ */
+fun LLMModel.matchesOwnModelFile(fileName: String): Boolean {
+    val local = localFileName()
+    if (fileName == local) return true
+    val base = local.substringBeforeLast('.')
+    if (!fileName.startsWith("$base.")) return false
+    return base.endsWith(".en") || !fileName.contains(".en")
 } 
 
 /**

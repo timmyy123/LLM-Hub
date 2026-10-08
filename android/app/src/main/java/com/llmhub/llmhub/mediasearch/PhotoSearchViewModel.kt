@@ -179,11 +179,7 @@ class PhotoSearchViewModel(application: Application) : MediaSearchViewModel(appl
                 byId[v.id]?.let { PhotoMatch(it, dot(query, v.vector)) }
             }
         }
-        val ranked = scored.sortedByDescending { it.score }
-        val best = ranked.firstOrNull()?.score ?: return@withContext emptyList()
-        if (best < MIN_SCORE) return@withContext emptyList()
-        val floor = maxOf(MIN_SCORE, best - SCORE_GAP)
-        ranked.filter { it.score >= floor }.take(MAX_RESULTS)
+        scored.sortedByDescending { it.score }
     }
 
     private fun setSource(value: PhotoSource) {
@@ -261,6 +257,13 @@ class PhotoSearchViewModel(application: Application) : MediaSearchViewModel(appl
         if (indexJob?.isActive == true || _isPaused.value) return
         indexJob = viewModelScope.launch(Dispatchers.Default) {
             val service = ensureModelLoaded() ?: return@launch
+            val modelName = selectedModel.value?.name
+            if (modelName != null && prefString(KEY_INDEX_MODEL) != modelName) {
+                storeMutex.withLock { store.clear() }
+                failedIds.clear()
+                putPrefString(KEY_INDEX_MODEL, modelName)
+                updateProgress()
+            }
             var sinceSave = 0
             while (isActive && !_isPaused.value) {
                 // New photos can arrive mid-pass (picker, permission grant), so loop until none are pending.
@@ -300,9 +303,6 @@ class PhotoSearchViewModel(application: Application) : MediaSearchViewModel(appl
         const val KEY_SOURCE = "source"
         const val KEY_SELECTED = "selected_uris"
         const val SAVE_EVERY = 20
-        const val MAX_RESULTS = 120
-        /** A hit has to clear this cosine, and sit close to the best hit. */
-        const val MIN_SCORE = 0.42f
-        const val SCORE_GAP = 0.07f
+        const val KEY_INDEX_MODEL = "indexed_model_name"
     }
 }

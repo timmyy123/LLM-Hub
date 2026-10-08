@@ -926,8 +926,16 @@
 "prompt_template_none" = "없음(기본값)";
 
 /* Photo Search / Audio Search */
-"feature_photo_search" = "사진 및 동영상 검색";
-"feature_photo_search_desc" = "설명으로 기기의 사진과 동영상을 찾습니다";
+"feature_photo_search" = "Instant Media Search";
+"feature_photo_search_desc" = "Organize and search your photos and videos locally with EmbeddingGemma 2";
+"feature_video_moment" = "Video Moment Finder";
+"feature_video_moment_desc" = "Search for moments in videos using natural language with EmbeddingGemma 2";
+"video_moment_onboarding_title" = "Search for a moment inside your videos";
+"video_moment_onboarding_desc" = "EmbeddingGemma 2 splits each video into 2 second windows, reads two frames and the audio in each window, then you can jump to the moment you describe.";
+"video_moment_all" = "Analyze all videos";
+"video_moment_pick" = "Select videos";
+"video_moment_hint" = "Describe a moment, e.g. cutting a cake";
+"video_moment_play" = "Play %@";
 "feature_audio_search" = "오디오 검색";
 "feature_audio_search_desc" = "설명만으로 오디오 속 순간을 찾아보세요";
 "media_search_download_model" = "EmbeddingGemma 2 다운로드";
