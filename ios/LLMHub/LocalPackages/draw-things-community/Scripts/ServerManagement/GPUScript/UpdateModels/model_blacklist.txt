@@ -1,0 +1,10 @@
+# Exact .ckpt filenames to exclude from the generated model-list.
+# Add one filename per line. Blank lines and lines starting with # are ignored.
+
+ideogram_4_fast_i6x.ckpt
+ideogram_4_i6x.ckpt
+ideogram_4_instant_i6x.ckpt
+krea_2_turbo_i6x.ckpt
+qwen_3.5_9b_i5x.ckpt
+qwen_3.6_27b_i2x.ckpt
+qwen_3.6_27b_i4x.ckpt

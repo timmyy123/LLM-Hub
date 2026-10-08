@@ -1,0 +1,18 @@
+# Build stage
+FROM library/swift:6.0.3-jammy AS builder
+
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    libatlas3-base \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV LD_LIBRARY_PATH="/usr/lib/swift/linux:${LD_LIBRARY_PATH}"
+
+RUN groupadd -r -g 1000 appgroup && useradd -r -u 1000 -g appgroup -s /bin/false appuser
+
+
+WORKDIR /app
+RUN chown -R appuser:appgroup /app
+
+# Switch to non-root user
+USER appuser

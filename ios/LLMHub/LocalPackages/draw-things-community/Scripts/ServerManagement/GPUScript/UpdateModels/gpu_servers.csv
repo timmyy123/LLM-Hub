@@ -1,0 +1,18 @@
+# GPU Server Configuration
+# Lines starting with # are comments
+# Empty lines are ignored
+#
+# Format: user@hostname, models_path_1 , models_path_2 [, nas_ip:port]
+#
+# Examples:
+#   root@dfw-043-003, /mnt/models, /mnt/loraModels/models_extra                       # default NAS
+#   root@dt-thpc-001, /mnt/models/official-models, /mnt/models/official-models, 192.168.88.14:8000  # custom NAS
+#
+# Add your GPU servers below:
+
+root@dt-thpc-001, /mnt/models/official-models, /mnt/models/official-models, 192.168.88.14:8000
+root@dt-thpc-002, /mnt/models/official-models, /mnt/models/official-models, 192.168.88.14:8000
+root@dfw-100-007, /mnt/models, /mnt/loraModels/models_extra
+root@dfw-049-008, /mnt/models, /mnt/loraModels/models_extra
+root@dfw-242-009, /mnt/models, /mnt/loraModels/models_extra
+root@dfw-243-010, /mnt/models, /mnt/loraModels/models_extra

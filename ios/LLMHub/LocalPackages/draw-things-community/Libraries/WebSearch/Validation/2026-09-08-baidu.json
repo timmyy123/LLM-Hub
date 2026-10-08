@@ -1,0 +1,1906 @@
+{
+  "startedAtUTC": "2026-09-09T02:15:07.718543+00:00",
+  "finishedAtUTC": "2026-09-09T02:16:08.702920+00:00",
+  "platform": "Native WKWebView and URLSession on the requesting Mac",
+  "scope": "Temporary provider study only; no Baidu app integration or provider setting was added.",
+  "method": [
+    "Same ten-query technical corpus and expected URL substrings as the Sogou study; ten results per query.",
+    "Sequential HTTP, browser, automatic batch 1, automatic batch 2, then supplemental HTTP/browser batches. Each process uses the same persistent default WebKit data store; HTTP has no cookie storage.",
+    "The prototype reads #content_left .c-container h3 links and prefers mu destination metadata over Baidu redirect links. No result pages were fetched.",
+    "Main batches classify a wappass.baidu.com page or 百度安全验证 title as blocked. Follow-up checks allowed the full 15-second timeout for automatic verification and confirmed persistent interactive challenges.",
+    "Browser completion requires a stable set of result URLs across three snapshots. Counts and latencies can vary during incremental rendering.",
+    "MRR includes failures as zero and excludes queries without an expected URL substring. This is a navigational relevance proxy, not comprehensive factual or freshness evaluation.",
+    "This is an exploratory implementation with broad HTTP-error fallback; it does not yet provide production cancellation, challenge UI, iOS validation, or complete edge-case coverage."
+  ],
+  "batches": [
+    {
+      "corpus": "technical",
+      "transport": "http",
+      "batch": 1,
+      "metrics": {
+        "queryCount": 10,
+        "validQueryCount": 7,
+        "nonemptyQueryCount": 7,
+        "meanReciprocalRank": 0.5,
+        "p50SuccessfulLatencySeconds": 1.2188870906829834,
+        "p95SuccessfulLatencySeconds": 1.5809320211410522,
+        "browserInvocations": 0,
+        "fallbackAttempts": 0,
+        "successfulFallbacks": 0,
+        "results": [
+          {
+            "elapsedSeconds": 1.5809320211410522,
+            "expectedURLContains": "github.com/scinfu/SwiftSoup",
+            "explicitEmpty": false,
+            "hits": [
+              {
+                "snippet": "SwiftSoup: Pure Swift HTML Parser, with best of DOM, CSS, and jquery (Supports Linux, iOS, Mac, tvOS, watchOS) - scinfu/SwiftSoup",
+                "title": "GitHub - scinfu/SwiftSoup: SwiftSoup: Pure Swift HTML Parser...",
+                "url": "https://github.com/scinfu/swiftsoup",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "",
+                "title": "scinfu/SwiftSoup - GitHub",
+                "url": "https://github.com/scinfu/SwiftSoup",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "Remove files that became orphaned or were empty by@DarkDustin#334 Fix double-escaping of URLs in attributes by@DarkDustin#335 Add explicit support for tvOS 13+ by@pro100filippin#336 Add some APIs acceptingEvaluatorinstances by@DarkDustin#337 Silence retroactive warnings by@DarkDustin#342 Convert d...",
+                "title": "Release 2.11 · scinfu/SwiftSoup · GitHub",
+                "url": "https://github.com/scinfu/SwiftSoup/releases/tag/2.11",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "SwiftSoup is a Swift library for working with real-world HTML. It provides a very convenient API for extracting and manipulating data, using the best of DOM, CSS, and jquery-like methods. DESC s.homepage='https://github.com/scinfu/SwiftSoup' ...",
+                "title": "SwiftSoup.podspec · 范小兵/SwiftSoup - Gitee.com",
+                "url": "https://gitee.com/fandongtongxue_admin/SwiftSoup/blob/master/SwiftSoup.podspec",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "dependencies: [\"SwiftSoup\"] ) ] swift 运行 CocoaPods与Carthage支持 对于传统的iOS/macOS项目,SwiftSoup也提供了完整的CocoaPods和Carthage支持。 # Podfile配置 pod'SwiftSoup' # Cartfile配置 github\"scinfu/SwiftSoup\" ruby 运行 与SwiftUI/UIKit集成 SwiftSoup可以与SwiftUI或UIKit无缝集成,构建数据驱动的界面。 im...",
+                "title": "SwiftSoup实战指南:构建高效的Swift HTML解析与数据采集工具-CSDN博客",
+                "url": "https://blog.csdn.net/gitblog_00238/article/details/153085747",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "CocoaPods:在 Podfile 中添加pod 'SwiftSoup' Carthage:配置github \"scinfu/SwiftSoup\" Swift Package Manager:通过 Xcode 或 Package.swift 集成 2.2 基础用法示例 // 解析 HTML 文档 lethtml=\"TestHello SwiftSoup!\" do{ letdoc=trySwiftSoup.parse(html) lettitle=trydoc.title()// 获取标题...",
+                "title": "终极SwiftSoup 社区资源汇总:从入门到精通的完整指南-CSDN博客",
+                "url": "https://blog.csdn.net/gitblog_00121/article/details/151495120",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "//github.com/apple/swift-nio-extras useful additions around SwiftNIOfrom: \"1.0.0\"https://github.com/apple/swift-nio-transport-services first-class support for macOS, iOS, tvOS, and watchOSfrom: \"1.0.0\"https://github.com/apple/swift-nio-ssh SSH support.upToNextMinor(from: \"0.2.0\")https...",
+                "title": "GitHub - apple/swift-nio: Event-driven network application...",
+                "url": "https://redirect.github.com/apple/swift-nio",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "此版本的 GitHub Enterprise Server 已于以下日期停止服务 当您选择 default 或 security-extended 查询套件时,浏览 CodeQL 用于分析用 Swift 编写的代码的查询。 谁可以使用此功能? CodeQL 可用于以下存储库类型: 启用了 GitHub Advanced Security 的组织拥有的存储库 ...",
+                "title": "用于CodeQL 分析的 Swift 查询 - GitHub Enterprise Server 3.13...",
+                "url": "https://docs.github.com/zh/enterprise-server@3.13/code-security/code-scanning/managing-your-code-scanning-configuration/swift-built-in-queries",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "GitHub Enterprise Server 3.16 的初始版本包括 CodeQL 操作和 CodeQL CLI 2.20.3,可能不包括所有这些查询。 网站管理员可以将 CodeQL 版本更新到较新版本。 有关详细信息,请参阅“ 为您的设备配置代码扫描 ”。 查询名称相关的 CWE默认延期Copilot自动修复错误的 HTML 筛选正则表达...",
+                "title": "用于CodeQL 分析的 Swift 查询 - GitHub Enterprise Server 3.16...",
+                "url": "https://docs.github.com/zh/enterprise-server@3.16/code-security/code-scanning/managing-your-code-scanning-configuration/swift-built-in-queries",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "SwiftSoup v2.2.0 Swinject v2.6.2 SwinjectAutoregistration v2.6.0 SWXMLHash v4.9.0 TTTAttributedLabel version 2.0.0 %% ADAL SDK for Objective C NOTICES AND INFORMATION BEGIN HERE === Copyright (c) Microsoft Corporation Permission is hereby granted...",
+                "title": "Microsoft Planner Third-Party Notice for iOS | Microsoft...",
+                "url": "https://support.microsoft.com/vi-VN/Planner/microsoft-planner-third-party-notice-for-ios",
+                "usesRedirectURL": false
+              }
+            ],
+            "query": "SwiftSoup GitHub",
+            "transport": "http",
+            "usedBrowser": false,
+            "firstExpectedRank": 1
+          },
+          {
+            "elapsedSeconds": 1.339169979095459,
+            "expectedURLContains": "drawthings.ai",
+            "explicitEmpty": false,
+            "hits": [
+              {
+                "snippet": "With Draw Things, you can bring your ideas to life in minutes, not days. Best of all, it’s completely free and runs offline on all devices to protect your privacy. Your complete creative workflow Bring your id",
+                "title": "Draw Things: AI-assisted Image Generation",
+                "url": "https://drawthings.ai/",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "draw-things-community Public The community repository for the Draw Things app. C 514 GPL-3.0 57 76 2 Updated Jul 14, 2026 community-models Public The source repository to manage \"Community\" section of models and LoRAs in the Draw Things app. ...",
+                "title": "Draw Things · GitHub",
+                "url": "https://github.com/drawthingsai",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "Draw Things: Offline AI Art 摄影与录像 免费· App 内购买 419个评分 4.6 年龄分级 18+ 岁 类别 摄影与录像 开发者 Draw Things, Inc. 语言 DE + 7 种语言 大小 279.2 MB iPhone、iPad、Mac Unleash your imagination with Draw Things, the powerful offline AI creation tool for your iPhone or iPad...",
+                "title": "‎Draw Things: Offline AI Art App - App Store",
+                "url": "https://apps.apple.com/cn/app/draw-things-ai-generation/id6444050820",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "1. 下载 Draw Things 下载地址: 🔗 https://pan.quark.cn/s/be33d23e7e58 ...",
+                "title": "【Mac使用Z-Image生图教程】Draw Things配置方法与真实测试效果...",
+                "url": "https://cloud.tencent.com/developer/article/2690652",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "r/drawthingsapp : Your Reddit hub for Draw Things. Draw Things Community GitHub : For open-source contributions. Contribute 🛠️ This page is community-maintained. Found a gap? Edit it directly or discuss in the Draw Things Community Discord. ...",
+                "title": "Draw Things WIKI",
+                "url": "https://wiki.drawthings.ai/",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "Draw Things 饥饿派画家是一款可以轻松帮助用户去获得各种特艺术绘画灵感的软件,在软件里面拥有超丰富的优质绘画作品,用户轻松就可以去通过软件方面去进行鉴赏,而且这些软件里面的这些作品都是实时更新的,让用户可以更好的通过软件去自由的进行绘画作品的鉴赏。",
+                "title": "Draw Things 饥饿派画家软件下载-Draw Things 饥饿派画家安卓版v...",
+                "url": "https://m.bkill.com/azsoft/3031501.html",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "Draw Things引入了智能绘图助手功能,通过人工智能技术识别你的绘图意图,并给出相应的建议与辅助。无论是绘制图形、编辑图片还是排版文字,智能绘图助手都能为你提供精准的帮助,让设计过程更加高效顺畅。 操作建议:充分利用智能绘图助手功能,在绘图过程中尝试接受其建议,逐步提高设计效率与准确性。",
+                "title": "权威解读Draw Things新动态-百度AI原生应用商店",
+                "url": "https://qianfanmarket.baidu.com/article/detail/50720",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "Draw Things 是一款免费的离线 AI 辅助图像生成工具,可让用户快速高效地创建图像。 Draw Things 是一款免费的离线 AI 辅助图像生成工具,基于流行的稳定扩散模型,Draw Things可帮助您在几分钟内而不是几天内创建您心目中的图像。它是免费的,在您的设备上100%离线运行一切,以保护您的隐私。",
+                "title": "Draw Things - 一款免费的离线 AI 辅助图像生成工具,可让用户快速...",
+                "url": "http://ai.seitei.cn/show/drawthings.html",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "绘画教学 Draw Something 应用 简介 只需在这款绘画教学的手机软件中输入你想画的东西或者食...",
+                "title": "绘画教学DrawSomethingAPP下载安装_2026最新正版手机免费下载_25PP",
+                "url": "https://www.25pp.com/xiazai/841845/",
+                "usesRedirectURL": false
+              }
+            ],
+            "query": "Draw Things app",
+            "transport": "http",
+            "usedBrowser": false,
+            "firstExpectedRank": 1
+          },
+          {
+            "elapsedSeconds": 1.2188870906829834,
+            "expectedURLContains": "platform.openai.com/docs",
+            "explicitEmpty": false,
+            "hits": [
+              {
+                "snippet": "我们完全对齐 OpenAI 官方 OpenAI Docs 和 OpenAI API Reference,使用方法完全一致。基于官方 Model Endpoint Compatibility 在需要使用OpenAI API的地方,将 api.openai.com 替换为平台获取的 Base_URL 即可 替换示例: 官方: https://api.openai.com/v1/chat/c",
+                "title": "指南- API Docs",
+                "url": "https://gpt-best.apifox.cn/",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "OpenAI API 模型對時事的了解程度取決於具體模型。我們的模型概覽頁面詳列每個模型的知識截止日期。 為模型提供最新資訊 要彌合模型訓練截止日期與時事之間的差距,你可以使用透過 OpenAIResponses API提供的內置搜尋工具,例如: 網頁搜尋:讓模型直接從互聯網存取最新資訊。 檔案搜尋:讓模型擷取並使用來自你自訂檔案和資料庫...",
+                "title": "OpenAI API 模型具備當前事件的知識嗎? | OpenAI Help Center",
+                "url": "https://help.openai.com/zh-hant-hk/articles/6639781-openai-api-%E6%A8%A1%E5%9E%8B%E5%85%B7%E5%82%99%E7%95%B6%E5%89%8D%E4%BA%8B%E4%BB%B6%E7%9A%84%E7%9F%A5%E8%AD%98%E5%97%8E",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "OpenAI API 中的函数调用 截至2025 年 3 月 11 日,我们已发布全新 Agents 平台的构建模块。详情请参阅我们的 API 文档:Responses API、工具(包括 Web Search、File Search和Computer Use),以及带有 Tracing的Agents SDK。 函数调用让您能够将 OpenAI 模型连接到外部工具和系统。它有许多用途,例如为 AI 助手赋予...",
+                "title": "OpenAI API 中的函数调用 | OpenAI Help Center",
+                "url": "https://help.openai.com/zh-hans-cn/articles/8555517-function-calling-in-the-openai-api",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "Docs and resources to help you build with, for, and on OpenAI. Introducing GPT-6 Astra Our most capable model, built for the hardest end-to-end work. Start building with Astra View model details API Platform Use our APIs and models to build your own AI experiences. ...",
+                "title": "OpenAI Developers",
+                "url": "https://developers.openai.com/",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "content_copy import 'package:openai_client/openai_client.dart' ; 🚀 Getting Started In order to use the API, you need to have an API key. You can get one here and once you have it, you can use it in the client passing the key itself in the OpenAIConfiguration constructor. ...",
+                "title": "openai_client - Dart API docs",
+                "url": "https://pub.dev/documentation/openai_client/latest/",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "openai api反向代理服务,然后更新 ` openai_base_url ` 109 + 3 . 使用国内的 llm服务提供商,比如 [ 通义千问 ] ( https://help.aliyun.com/zh/dashscope/developer-reference/compatibility-of-openai-with-dashscope/?spm=a2c4g.11186623.0.i1 ) , [ 零一万物 ] ( https://platform.01.ai/docs#...",
+                "title": "docs: 添加国内网络配置代理访问 OpenAI 服务的相关说明 · yolo...",
+                "url": "https://github.com/yolo-zyx/mi-gpt/commit/c4268d97e342152923087f855f6df3ae7488c1fc",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "docs: 添加 OpenAI SDK 和 LangChain API 中文速查文档 - API_REFERENCE.md: OpenAI SDK 常用 API(消息、Function Calling、流式输出) - LANGCHAIN_REFERENCE.md: LangChain/LangGraph 常用 API( @tool 、AgentExecutor、StateGraph) - llm_config.py: 注释 DeepSeek,使用智谱 API - .gitignore: 添加 venv...",
+                "title": "docs: 添加 OpenAI SDK 和 LangChain API 中文速查文档 · Lion...",
+                "url": "https://github.com/Lion-1209/AgentStudy/commit/4d8f66b17fd5650b6efb5d9cef678cb209d60ac2",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "OpenAI API 官方手册 https://platform.openai.com/docs/api-reference/introduction 关于key 通过openai plus 账户可以生成一个秘钥,类似 : sk-***,所有接口交互都必须以 header 形式传递此秘钥。 可以通过 opnai 账户中心 -> 查看秘钥页面获取接口秘钥。 关于开发...",
+                "title": "OpenAI API 接口介绍",
+                "url": "https://www.lesscode.work/sections/0e51e3302f1b47a76fc5ab28a540a1d6.html",
+                "usesRedirectURL": false
+              }
+            ],
+            "query": "OpenAI API docs",
+            "transport": "http",
+            "usedBrowser": false,
+            "firstExpectedRank": null
+          },
+          {
+            "elapsedSeconds": 0.9161779880523682,
+            "error": "search_blocked",
+            "expectedURLContains": "developer.apple.com",
+            "explicitEmpty": false,
+            "hits": [],
+            "query": "site:developer.apple.com URLSession Swift",
+            "transport": "http",
+            "usedBrowser": false,
+            "firstExpectedRank": null
+          },
+          {
+            "elapsedSeconds": 0.4067659378051758,
+            "error": "search_blocked",
+            "expectedURLContains": "swift.org",
+            "explicitEmpty": false,
+            "hits": [],
+            "query": "site:swift.org PackageDescription",
+            "transport": "http",
+            "usedBrowser": false,
+            "firstExpectedRank": null
+          },
+          {
+            "elapsedSeconds": 1.4182630777359009,
+            "expectedURLContains": "swift.org",
+            "explicitEmpty": false,
+            "hits": [
+              {
+                "snippet": "Announcing Swift System Metrics 1.0: Process-Level Monitoring February 20, 2026 We are excited to announce the 1.0 release of Swift System Metrics, a Swift package that collects process-level system metrics like",
+                "title": "Latest Swift News - Blog | Swift.org",
+                "url": "https://www.swift.org/blog/?id=8",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "What's new in Swift: December 2025 Edition December 19, 2025 Welcome to the latest digest of news from the Swift project. Digest Exploring the Swift SDK for Android December 18, 2025 Since the announcement of the preview Swift SDK for Android,the Android workgroup has seen a lot of interest...",
+                "title": "Blog | Swift.org",
+                "url": "https://www.swift.org/blog/",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "Announcing Swift System Metrics 1.0: Process-Level Monitoring February 20, 2026 We are excited to announce the 1.0 release of Swift System Metrics, a Swift package that collects process-level system metrics like CPU utilization time and memory usage. Swift System Metrics runs on both Linux and ma...",
+                "title": "Latest Swift News - Blog | Swift.org",
+                "url": "https://developer.apple.com/swift/blog/?id=31",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "Announcing Swift System Metrics 1.0: Process-Level Monitoring February 20, 2026 We are excited to announce the 1.0 release of Swift System Metrics, a Swift package that collects process-level system metrics like CPU utilization time and memory usage. Swift System Metrics runs on both Linux and ma...",
+                "title": "Latest Swift News - Blog | Swift.org",
+                "url": "https://developer.apple.com/swift/blog/?id=8",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": ": swift-6.1.2-RELEASE...swift-6.1.3-RELEASE Contributors shahmishal and rconnell9 Assets 2 Swift 6.2 Release 14 Oct 06:11 jakepetroules swift-6.2-RELEASE 3cf1cb6 Swift 6.2 Release Latest What's Changed Include the path to the platform's PrivateFrameworks directory in DYLD_FRAMEWORK_PA...",
+                "title": "Releases · swiftlang/swift-package-manager",
+                "url": "https://github.com/swiftlang/swift-package-manager/releases",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "Swift 5.9.1 RELEASE for Linux - AArch64 / Arm64 Debian 11 Debian 12 Ubuntu 23.04 Note~ Ubuntu 20.04 and Ubuntu 22.04 arm64 versions are now available direct fromSwift.org Ubuntu 18.04 is not available as it has reached EOL. Debian 10 is not available as Swift 5.9 is not compatible with...",
+                "title": "Releases · futurejones/swift-arm64",
+                "url": "https://github.com/futurejones/swift-arm64/releases",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "SwiftX-3.15.6 (21-Jun-2023) This release has been withdrawn due to changes in the J-Link DLL. Please use 3.15.7 instead and be sure to install the Segger J-Link software update bundled in the SwiftX installer. ARM Updated to latest ARM J-Link SDK 7.88h ...",
+                "title": "SwiftX Release History - FORTH, Inc",
+                "url": "https://www.forth.com/embedded/revs/",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "This release brings many great improvements and bug fixes. Thanks to our awesome contributors ! For a complete list of changes, please refer to the CHANGELOG . SwifterSwift is a collection of over 500 native Swift extensions , with handy methods, syntactic sugar, and performance improvements for ...",
+                "title": "SwifterSwift - Swift Package Registry",
+                "url": "https://swiftpackageregistry.com/SwifterSwift/SwifterSwift",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "Not a lot going on at the moment This is The Life of a Showgirl in 2025 Taylor Swift的2025年大事总结如下: 1/16 🏆《The Tortured Poets Department》以695.5万总销量问鼎美国2024年专辑排行榜,并成为史...",
+                "title": "...going on at the moment This is... 来自TaylorSwiftLatest...",
+                "url": "https://weibo.com/3268874514/QkZS5ymwV",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "For the best experience, we recommend using the latest version of SKIE with the latest supported version of Kotlin. A new SKIE version with support for a new Kotlin version is usually released within a couple of working days after the Kotlin release. The delay tends to be shorter for the ...",
+                "title": "SKIE Intro | SKIE",
+                "url": "https://skie.touchlab.co/intro",
+                "usesRedirectURL": false
+              }
+            ],
+            "query": "latest Swift release",
+            "transport": "http",
+            "usedBrowser": false,
+            "firstExpectedRank": 1
+          },
+          {
+            "elapsedSeconds": 1.131788969039917,
+            "expectedURLContains": "duckduckgo.com",
+            "explicitEmpty": false,
+            "hits": [
+              {
+                "snippet": "When including !! within your search query (separated by spaces), you will automatically be redirected to the first result. This behavior is comparable to the “Feeling Lucky” feature from DuckDuckGo. To give a",
+                "title": "Search syntax - SearXNG Documentation (2026.9.3+a1144dda3)",
+                "url": "https://docs.searxng.org/user/search-syntax.html",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "Assign custom shortcuts to your most-used engines. Launch any search engine instantly with a quick key combination. Bang syntax support Use DuckDuckGo-style bang commands to jump between engines. Try !i for Google Images, !b for Bing, and customize your own....",
+                "title": "Hello from Aim Search | Aim Search",
+                "url": "https://www.aaiimm.com/",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "search=DuckDuckGoSearchRun() res=search.invoke(\"2026大模型RAG优化方案\") #2. 完整结构化结果(带标题、链接、摘要) fromlangchain_community.tools import DuckDuckGoSearchResults search_detail=DuckDuckGoSearchResults(max_results=3) output=search_detail.invoke(\"LangGraph StateGraph节点原理\") AI写代码 适配你...",
+                "title": "duckduckgo_search 完整详细介绍_duckduckgosearchrun-CSDN博客",
+                "url": "https://blog.csdn.net/tongbowen_123/article/details/162567035",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "search engine you'll find; not because it personalizes results, but because it doesn't. duckduckgo has a number of advantages over google and other commonly used search engines. first, it does not track your searches, nor does it capture what you click on. so your privacy is safe and ...",
+                "title": "DuckDuckGo Respects Our Privacy",
+                "url": "https://www.customers.com/media/docs/articles/DuckDuckGo-Respects-Our-Privacy-06-28-2013.pdf",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "文章浏览阅读8.6k次,点赞9次,收藏26次。你还可以使用 DuckDuckGo 的聊天功能来获取摘要或...",
+                "title": "使用duckduckgo_search Python 包进行 Web 搜索和查询_duckduckgo-search...",
+                "url": "https://blog.csdn.net/qq_41472205/article/details/144383484",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "My favorite search engine is [Duck Duck Go](https://duckduckgo.com). The rendered output looks like this: My favorite search engine is Duck Duck Go . Note: To link to an element on the same page, see linking to heading IDs . To create a link that opens in a new tab or window,...",
+                "title": "Basic Syntax | Markdown Guide",
+                "url": "https://www.markdownguide.org/basic-syntax/",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "",
+                "title": "Duck Duck Go(互联网搜索引擎) - 百度百科",
+                "url": "https://baike.baidu.com/item/Duck%20Duck%20Go/7218557",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "问是否有办法(即URL参数)强制duckduckgo只显示所有搜索项的结果EN这个算法比较巧妙：遍历列表，把列表中的...",
+                "title": "是否有办法(即URL参数)强制duckduckgo只显示所有搜索项的结果...",
+                "url": "https://cloud.tencent.com/developer/ask/sof/116138015",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "Thanks toKezz Bracey’s TutsPlus post, I discovered how easy it is to use DuckDuckGo to remind me of the syntax or code snippet I want to use in my code. What a great feature! In the DuckDuckGo search box, you type in the language/tool/topic you want followed by “cheat sheet” an...",
+                "title": "Make Your Coding Easier, Use DuckDuckGo Cheat Sheets - Lireo...",
+                "url": "https://www.lireo.com/make-your-coding-easier-use-duckduckgo-cheat-sheets/",
+                "usesRedirectURL": false
+              }
+            ],
+            "query": "DuckDuckGo search syntax",
+            "transport": "http",
+            "usedBrowser": false,
+            "firstExpectedRank": null
+          },
+          {
+            "elapsedSeconds": 0.9739030599594116,
+            "expectedURLContains": "github.com",
+            "explicitEmpty": false,
+            "hits": [
+              {
+                "snippet": "( url : \" https://github.com/apple/swift-argument-parser \" , from : \" 1.7.0 \" ) , ] , targets : [ . executableTarget ( name : \" <command-line-tool> \" , dependencies : [ // other dependencies . product ( name : \"",
+                "title": "GitHub - apple/swift-argument-parser: Straightforward, type...",
+                "url": "https://github.com/apple/swift-argument-parser",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "The original (OG) Swift SDK for Parse Platform (iOS, macOS, watchOS, tvOS, visionOS, Linux, Android, Windows). This repo is maintained by one of Parse-Swift's original developer and all new features and bug fixes will occur here. - netreconlab/Parse-Swif",
+                "title": "GitHub - netreconlab/Parse-Swift: The original (OG) Swift SDK...",
+                "url": "https://github.com/netreconlab/Parse-Swift",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "swift-create-xcframework是一款基于Swift开发的命令行工具,它通过封装xcodebuild命令简化了XCFramework的创建过程。本文将深入剖析其源码结构,重点解读ArgumentParser框架与Swift Package Manager(SPM)的深度集成实现,帮助开发者理解如何构建功能完善的Swift命令行工具。 项目架构概览 swift-create-xcframework采用模块化设计,核心功...",
+                "title": "...源码解读:理解ArgumentParser与SwiftPM的深度集成-CSDN博客",
+                "url": "https://blog.csdn.net/gitblog_00142/article/details/152040099",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "// main.swiftletcalendar=myCalendar()letcurrentYear=calendar.component(.year,from:now(...",
+                "title": "Swift 周报 第四十期_swift周报-CSDN博客",
+                "url": "https://blog.csdn.net/qq_36478920/article/details/135118568",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "Interactive mode for ArgumentParser Author:Kth Mentor:Nate Cook swift-argument-parserprovid...",
+                "title": "Swift Summer of Code 2022 Summary | Swift.org",
+                "url": "https://www.swift.org/blog/swift-summer-of-code-2022-summary/",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "此外苹果也推荐了 2 个 ArgumentParser 在 Swift 项目工具中采用的示例: indexstore-db 是...",
+                "title": "GitHub 热点速览 vol.10:疫情下的 GitHub - 知乎",
+                "url": "https://zhuanlan.zhihu.com/p/111806680",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "github codeql条款和条件 启用了 github code security 的 github team上的组织拥有的存储库 codeql包含许多用来分析 swift代码的查询.默认情况下, default 查询套件中的所有查询都会运行.如果选择使用 security-extended 查询套件,则会运行其他查询.有关详细信息,请参阅\" codeql查询套件 \". 用于 swift分析的内置查询 ...",
+                "title": "用于CodeQL 分析的 Swift 查询 - GitHub 文档",
+                "url": "https://docs.github.com/zh/code-security/code-scanning/managing-your-code-scanning-configuration/swift-built-in-queries",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "ArgumentParser deduced that the name of binary should beswift-argsinstead ofSwiftArgs, ...",
+                "title": "Swift Command Line Tools and Argument Parser — Part 1...",
+                "url": "https://scriptingosx.com/2024/08/swift-command-line-tools-and-argument-parser-part-1/",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "ArgumentParser . error ( \"'--prefix' is required with the install action\" ) parsed . swift_exec = os . path . join ( parsed . toolchain , 'bin' , 'swift' ) if not parsed . sourcekitd_dir : parsed . sourcekitd_dir = os . path . join ( parsed . toolchain , 'lib' ) ...",
+                "title": "build-script-helper.py · mirrors_apple/swift-stress-tester...",
+                "url": "https://gitee.com/mirrors_apple/swift-stress-tester/blob/main/build-script-helper.py",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "GitHub 地址→https://github.com/apple/swift-argument-parsers 1.2 fastai 草稿:fastbook ...",
+                "title": "GitHub 热点速览 vol.10:疫情下的 GitHub - 削微寒 - 博客园",
+                "url": "https://www.cnblogs.com/xueweihan/p/12445600.html",
+                "usesRedirectURL": false
+              }
+            ],
+            "query": "\"Swift ArgumentParser\" GitHub",
+            "transport": "http",
+            "usedBrowser": false,
+            "firstExpectedRank": 1
+          },
+          {
+            "elapsedSeconds": 0.40859103202819824,
+            "error": "search_blocked",
+            "explicitEmpty": false,
+            "hits": [],
+            "query": "filetype:pdf Swift concurrency",
+            "transport": "http",
+            "usedBrowser": false,
+            "firstExpectedRank": null
+          },
+          {
+            "elapsedSeconds": 0.8107619285583496,
+            "explicitEmpty": false,
+            "hits": [
+              {
+                "snippet": "*|tag : find elements by tag in any namespace prefix, e.g. *|name finds <dc:name> and <name> elements :empty : selects elements that have no children (ignoring blank text nodes, comments, etc.); e.g. li:empty Selector combinations el#id : elements with ID, e.g.",
+                "title": "GitHub - scinfu/SwiftSoup: SwiftSoup: Pure Swift HTML Parser...",
+                "url": "https://github.com/scinfu/swiftsoup",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "For HTML, use Element.html() , or Node.outerHtml() as appropriate do { let html : String = \" <p>An <a href='http://example.com/'><b>example</b></a> link.</p> \" ; let doc : Document = try SwiftSoup . parse ( html ) let link : Element = try doc . select ( \" a ...",
+                "title": "GitHub - notapplicableio/SwiftSoup: SwiftSoup: Pure Swift...",
+                "url": "https://github.com/CognitiveWin/SwiftSoup",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "self.checkForUpdates(url: url, selector: selector) } } privatefunccheckForUpdates(url:URL,selector:String) { do{ letdocument=trySwiftSoup.parse(url) letelements=trydocument.select(selector) letcurrentContent=tryelements.html() letcurrentHash=currentContent.sha256() ifcurrentHash!=lastContentHash { ...",
+                "title": "SwiftSoup实战指南:构建高效的Swift HTML解析与数据采集工具-CSDN博客",
+                "url": "https://blog.csdn.net/gitblog_00238/article/details/153085747",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "letdoc=trySwiftSoup.parse(html) letparagraph=trydoc.select(\"p\").first() XCTAssertNotNil(paragraph) XCTAssertEqual(tryparagraph?.text(),\"测试内容\") } functestCSSSelector()throws{ lethtml=\"<div class='container'><span class='item'>项目1</span></div>\" letdoc=trySwiftSoup.parse(html) letit...",
+                "title": "SwiftSoup终极指南:7个最佳实践打造可维护的HTML解析代码-CSDN博客",
+                "url": "https://blog.csdn.net/gitblog_00386/article/details/151519740",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "CssSelector.swift:CSS选择器实现 💻CSS选择器使用指南 SwiftSoup提供了丰富的CSS选择器支持,让元素查找变得简单高效。常用选择器包括: #id:通过ID选择元素 .class:通过类名选择元素 tag:通过标签名选择元素 [attribute]:通过属性选择元素 SwiftSoup示例应用展示了各种CSS选择器的使用方法和效果 ...",
+                "title": "SwiftSoup终极指南:快速掌握纯Swift HTML解析器-CSDN博客",
+                "url": "https://blog.csdn.net/gitblog_00735/article/details/156447990",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "For HTML, use Element.html() , or Node.outerHtml() as appropriate do { let html : String = \" <p>An <a href='http://example.com/'><b>example</b></a> link.</p> \" ; let doc : Document = try SwiftSoup . parse ( html ) let link : Element = try doc . select ( \" a ...",
+                "title": "GitHub - samalone/SwiftSoup: SwiftSoup: Pure Swift HTML...",
+                "url": "https://github.com/samalone/swiftsoup",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "For HTML, use Element.html() , or Node.outerHtml() as appropriate do { let html : String = \" <p>An <a href='http://example.com/'><b>example</b></a> link.</p> \" ; let doc : Document = try SwiftSoup . parse ( html ) let link : Element = try doc . select ( \" a ...",
+                "title": "GitHub - happyeverydayzhh/SwiftSoup: SwiftSoup: Pure Swift...",
+                "url": "https://github.com/happyeverydayzhh/SwiftSoup",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "CssSelector.swift- CSS选择器API QueryParser.swift- 查询解析器 掌握SwiftSoup CSS选择器,让你的HTML解析工作事半功倍!💪 【免费下载链接】SwiftSoupSwiftSoup: Pure Swift HTML Parser, with best of DOM, CSS, and jquery (Supports Linux, iOS, Mac, tvOS, watchOS) ...",
+                "title": "SwiftSoup CSS选择器完全手册:从基础到高级用法-CSDN博客",
+                "url": "https://blog.csdn.net/gitblog_00609/article/details/154727807",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "letevaluator=tryQueryParser.parse(selector, root) letelements=root.select(evaluator) swift 运行 4. 实现自定义线程安全包装 对于需要频繁访问的解析结果,可以创建线程安全的包装类: classThreadSafeDocument{ privateletdocument:Document privateletmutex=Mutex() ...",
+                "title": "终极指南:SwiftSoup多线程安全处理与并发环境最佳实践-CSDN博客",
+                "url": "https://blog.csdn.net/gitblog_00690/article/details/151416191",
+                "usesRedirectURL": false
+              }
+            ],
+            "query": "intitle:SwiftSoup selector",
+            "transport": "http",
+            "usedBrowser": false,
+            "firstExpectedRank": null
+          }
+        ]
+      }
+    },
+    {
+      "corpus": "technical",
+      "transport": "browser",
+      "batch": 1,
+      "metrics": {
+        "queryCount": 10,
+        "validQueryCount": 8,
+        "nonemptyQueryCount": 8,
+        "meanReciprocalRank": 0.5,
+        "p50SuccessfulLatencySeconds": 1.5934109687805176,
+        "p95SuccessfulLatencySeconds": 3.1432420015335083,
+        "browserInvocations": 10,
+        "fallbackAttempts": 0,
+        "successfulFallbacks": 0,
+        "results": [
+          {
+            "elapsedSeconds": 3.1432420015335083,
+            "expectedURLContains": "github.com/scinfu/SwiftSoup",
+            "explicitEmpty": false,
+            "hits": [
+              {
+                "snippet": "SwiftSoup: Pure Swift HTML Parser, with best of DOM, CSS, and jquery (Supports Linux, iOS, Mac, tvOS, watchOS) - scinfu/SwiftSoup",
+                "title": "GitHub - scinfu/SwiftSoup: SwiftSoup: Pure Swift HTML Parser...",
+                "url": "https://github.com/scinfu/swiftsoup",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "Remove files that became orphaned or were empty by@DarkDustin#334 Fix double-escaping of URLs in attributes by@DarkDustin#335 Add explicit support for tvOS 13+ by@pro100filippin#336 Add some APIs acceptingEvaluatorinstances by@DarkDustin#337 Silence retroactive warnings by@DarkDustin#342 Convert d...",
+                "title": "Release 2.11 · scinfu/SwiftSoup · GitHub",
+                "url": "https://github.com/scinfu/SwiftSoup/releases/tag/2.11",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "SwiftSoup is a Swift library for working with real-world HTML. It provides a very convenient API for extracting and manipulating data, using the best of DOM, CSS, and jquery-like methods. DESC s.homepage='https://github.com/scinfu/SwiftSoup' ...",
+                "title": "SwiftSoup.podspec · 范小兵/SwiftSoup - Gitee.com",
+                "url": "https://gitee.com/fandongtongxue_admin/SwiftSoup/blob/master/SwiftSoup.podspec",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "dependencies: [\"SwiftSoup\"] ) ] swift 运行 CocoaPods与Carthage支持 对于传统的iOS/macOS项目,SwiftSoup也提供了完整的CocoaPods和Carthage支持。 # Podfile配置 pod'SwiftSoup' # Cartfile配置 github\"scinfu/SwiftSoup\" ruby 运行 与SwiftUI/UIKit集成 SwiftSoup可以与SwiftUI或UIKit无缝集成,构建数据驱动的界面。 im...",
+                "title": "SwiftSoup实战指南:构建高效的Swift HTML解析与数据采集工具-CSDN博客",
+                "url": "https://blog.csdn.net/gitblog_00238/article/details/153085747",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "CocoaPods:在 Podfile 中添加pod 'SwiftSoup' Carthage:配置github \"scinfu/SwiftSoup\" Swift Package Manager:通过 Xcode 或 Package.swift 集成 2.2 基础用法示例 // 解析 HTML 文档 lethtml=\"TestHello SwiftSoup!\" do{ letdoc=trySwiftSoup.parse(html) lettitle=trydoc.title()// 获取标题...",
+                "title": "终极SwiftSoup 社区资源汇总:从入门到精通的完整指南-CSDN博客",
+                "url": "https://blog.csdn.net/gitblog_00121/article/details/151495120",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "//github.com/apple/swift-nio-extras useful additions around SwiftNIOfrom: \"1.0.0\"https://github.com/apple/swift-nio-transport-services first-class support for macOS, iOS, tvOS, and watchOSfrom: \"1.0.0\"https://github.com/apple/swift-nio-ssh SSH support.upToNextMinor(from: \"0.2.0\")https...",
+                "title": "GitHub - apple/swift-nio: Event-driven network application...",
+                "url": "https://redirect.github.com/apple/swift-nio",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "此版本的 GitHub Enterprise Server 已于以下日期停止服务 当您选择 default 或 security-extended 查询套件时,浏览 CodeQL 用于分析用 Swift 编写的代码的查询。 谁可以使用此功能? CodeQL 可用于以下存储库类型: 启用了 GitHub Advanced Security 的组织拥有的存储库 ...",
+                "title": "用于CodeQL 分析的 Swift 查询 - GitHub Enterprise Server 3.13...",
+                "url": "https://docs.github.com/zh/enterprise-server@3.13/code-security/code-scanning/managing-your-code-scanning-configuration/swift-built-in-queries",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "GitHub Enterprise Server 3.16 的初始版本包括 CodeQL 操作和 CodeQL CLI 2.20.3,可能不包括所有这些查询。 网站管理员可以将 CodeQL 版本更新到较新版本。 有关详细信息,请参阅“ 为您的设备配置代码扫描 ”。 查询名称相关的 CWE默认延期Copilot自动修复错误的 HTML 筛选正则表达...",
+                "title": "用于CodeQL 分析的 Swift 查询 - GitHub Enterprise Server 3.16...",
+                "url": "https://docs.github.com/zh/enterprise-server@3.16/code-security/code-scanning/managing-your-code-scanning-configuration/swift-built-in-queries",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "SwiftSoup v2.2.0 Swinject v2.6.2 SwinjectAutoregistration v2.6.0 SWXMLHash v4.9.0 TTTAttributedLabel version 2.0.0 %% ADAL SDK for Objective C NOTICES AND INFORMATION BEGIN HERE === Copyright (c) Microsoft Corporation Permission is hereby granted...",
+                "title": "Microsoft Planner Third-Party Notice for iOS | Microsoft...",
+                "url": "https://support.microsoft.com/vi-VN/Planner/microsoft-planner-third-party-notice-for-ios",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "13 scinfu/SwiftSoup Swiftsoup:纯Swift HTML解析器,配备了DOM,CSS和JQUERY(支持Linux,IOS,Mac,TVOS,WatchOS) ⭐ 3 ⭐ 4795 14 swiftlang/swift-package-manager Swift编程语言的软件包经理 ⭐ 3 ⭐ 9908 15 swiftlang/swift-syntax 一组Swift库,用于解析,检查,生成和转换Swift源代码。 ⭐ 2 ⭐ 3417...",
+                "title": "GitHub 趋势日报 (2025年05月07日) - GitHub 项目趋势日报...",
+                "url": "https://segmentfault.com/a/1190000047176276",
+                "usesRedirectURL": false
+              }
+            ],
+            "query": "SwiftSoup GitHub",
+            "transport": "browser",
+            "usedBrowser": true,
+            "firstExpectedRank": 1
+          },
+          {
+            "elapsedSeconds": 1.5934109687805176,
+            "expectedURLContains": "drawthings.ai",
+            "explicitEmpty": false,
+            "hits": [
+              {
+                "snippet": "With Draw Things, you can bring your ideas to life in minutes, not days. Best of all, it’s completely free and runs offline on all devices to protect your privacy. Your complete creative workflow Bring your id",
+                "title": "Draw Things: AI-assisted Image Generation",
+                "url": "https://drawthings.ai/",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "draw-things-community Public The community repository for the Draw Things app. C 514 GPL-3.0 57 76 2 Updated Jul 14, 2026 community-models Public The source repository to manage \"Community\" section of models and LoRAs in the Draw Things app. ...",
+                "title": "Draw Things · GitHub",
+                "url": "https://github.com/drawthingsai",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "Draw Things: Offline AI Art 摄影与录像 免费· App 内购买 419个评分 4.6 年龄分级 18+ 岁 类别 摄影与录像 开发者 Draw Things, Inc. 语言 DE + 7 种语言 大小 279.2 MB iPhone、iPad、Mac Unleash your imagination with Draw Things, the powerful offline AI creation tool for your iPhone or iPad...",
+                "title": "‎Draw Things: Offline AI Art App - App Store",
+                "url": "https://apps.apple.com/cn/app/draw-things-ai-generation/id6444050820",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "1. 下载 Draw Things 下载地址: 🔗 https://pan.quark.cn/s/be33d23e7e58 ...",
+                "title": "【Mac使用Z-Image生图教程】Draw Things配置方法与真实测试效果...",
+                "url": "https://cloud.tencent.com/developer/article/2690652",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "r/drawthingsapp : Your Reddit hub for Draw Things. Draw Things Community GitHub : For open-source contributions. Contribute 🛠️ This page is community-maintained. Found a gap? Edit it directly or discuss in the Draw Things Community Discord. ...",
+                "title": "Draw Things WIKI",
+                "url": "https://wiki.drawthings.ai/",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "Draw Things 饥饿派画家是一款可以轻松帮助用户去获得各种特艺术绘画灵感的软件,在软件里面拥有超丰富的优质绘画作品,用户轻松就可以去通过软件方面去进行鉴赏,而且这些软件里面的这些作品都是实时更新的,让用户可以更好的通过软件去自由的进行绘画作品的鉴赏。",
+                "title": "Draw Things 饥饿派画家软件下载-Draw Things 饥饿派画家安卓版v...",
+                "url": "https://m.bkill.com/azsoft/3031501.html",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "Draw Things引入了智能绘图助手功能,通过人工智能技术识别你的绘图意图,并给出相应的建议与辅助。无论是绘制图形、编辑图片还是排版文字,智能绘图助手都能为你提供精准的帮助,让设计过程更加高效顺畅。 操作建议:充分利用智能绘图助手功能,在绘图过程中尝试接受其建议,逐步提高设计效率与准确性。",
+                "title": "权威解读Draw Things新动态-百度AI原生应用商店",
+                "url": "https://qianfanmarket.baidu.com/article/detail/50720",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "Draw Things 是一款免费的离线 AI 辅助图像生成工具,可让用户快速高效地创建图像。 Draw Things 是一款免费的离线 AI 辅助图像生成工具,基于流行的稳定扩散模型,Draw Things可帮助您在几分钟内而不是几天内创建您心目中的图像。它是免费的,在您的设备上100%离线运行一切,以保护您的隐私。",
+                "title": "Draw Things - 一款免费的离线 AI 辅助图像生成工具,可让用户快速...",
+                "url": "http://ai.seitei.cn/show/drawthings.html",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "绘画教学 Draw Something 应用 简介 只需在这款绘画教学的手机软件中输入你想画的东西或者食...",
+                "title": "绘画教学DrawSomethingAPP下载安装_2026最新正版手机免费下载_25PP",
+                "url": "https://www.25pp.com/xiazai/841845/",
+                "usesRedirectURL": false
+              }
+            ],
+            "query": "Draw Things app",
+            "transport": "browser",
+            "usedBrowser": true,
+            "firstExpectedRank": 1
+          },
+          {
+            "elapsedSeconds": 1.587373971939087,
+            "expectedURLContains": "platform.openai.com/docs",
+            "explicitEmpty": false,
+            "hits": [
+              {
+                "snippet": "我们完全对齐 OpenAI 官方 OpenAI Docs 和 OpenAI API Reference,使用方法完全一致。基于官方 Model Endpoint Compatibility 在需要使用OpenAI API的地方,将 api.openai.com 替换为平台获取的 Base_URL 即可 替换示例: 官方: https://api.openai.com/v1/chat/c",
+                "title": "指南- API Docs",
+                "url": "https://gpt-best.apifox.cn/",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "OpenAI API 模型對時事的了解程度取決於具體模型。我們的模型概覽頁面詳列每個模型的知識截止日期。 為模型提供最新資訊 要彌合模型訓練截止日期與時事之間的差距,你可以使用透過 OpenAIResponses API提供的內置搜尋工具,例如: 網頁搜尋:讓模型直接從互聯網存取最新資訊。 檔案搜尋:讓模型擷取並使用來自你自訂檔案和資料庫...",
+                "title": "OpenAI API 模型具備當前事件的知識嗎? | OpenAI Help Center",
+                "url": "https://help.openai.com/zh-hant-hk/articles/6639781-openai-api-%E6%A8%A1%E5%9E%8B%E5%85%B7%E5%82%99%E7%95%B6%E5%89%8D%E4%BA%8B%E4%BB%B6%E7%9A%84%E7%9F%A5%E8%AD%98%E5%97%8E",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "OpenAI API 中的函数调用 截至2025 年 3 月 11 日,我们已发布全新 Agents 平台的构建模块。详情请参阅我们的 API 文档:Responses API、工具(包括 Web Search、File Search和Computer Use),以及带有 Tracing的Agents SDK。 函数调用让您能够将 OpenAI 模型连接到外部工具和系统。它有许多用途,例如为 AI 助手赋予...",
+                "title": "OpenAI API 中的函数调用 | OpenAI Help Center",
+                "url": "https://help.openai.com/zh-hans-cn/articles/8555517-function-calling-in-the-openai-api",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "Docs and resources to help you build with, for, and on OpenAI. Introducing GPT-6 Astra Our most capable model, built for the hardest end-to-end work. Start building with Astra View model details API Platform Use our APIs and models to build your own AI experiences. ...",
+                "title": "OpenAI Developers",
+                "url": "https://developers.openai.com/",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "content_copy import 'package:openai_client/openai_client.dart' ; 🚀 Getting Started In order to use the API, you need to have an API key. You can get one here and once you have it, you can use it in the client passing the key itself in the OpenAIConfiguration constructor. ...",
+                "title": "openai_client - Dart API docs",
+                "url": "https://pub.dev/documentation/openai_client/latest/",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "openai api反向代理服务,然后更新 ` openai_base_url ` 109 + 3 . 使用国内的 llm服务提供商,比如 [ 通义千问 ] ( https://help.aliyun.com/zh/dashscope/developer-reference/compatibility-of-openai-with-dashscope/?spm=a2c4g.11186623.0.i1 ) , [ 零一万物 ] ( https://platform.01.ai/docs#...",
+                "title": "docs: 添加国内网络配置代理访问 OpenAI 服务的相关说明 · yolo...",
+                "url": "https://github.com/yolo-zyx/mi-gpt/commit/c4268d97e342152923087f855f6df3ae7488c1fc",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "docs: 添加 OpenAI SDK 和 LangChain API 中文速查文档 - API_REFERENCE.md: OpenAI SDK 常用 API(消息、Function Calling、流式输出) - LANGCHAIN_REFERENCE.md: LangChain/LangGraph 常用 API( @tool 、AgentExecutor、StateGraph) - llm_config.py: 注释 DeepSeek,使用智谱 API - .gitignore: 添加 venv...",
+                "title": "docs: 添加 OpenAI SDK 和 LangChain API 中文速查文档 · Lion...",
+                "url": "https://github.com/Lion-1209/AgentStudy/commit/4d8f66b17fd5650b6efb5d9cef678cb209d60ac2",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "OpenAI API 官方手册 https://platform.openai.com/docs/api-reference/introduction 关于key 通过openai plus 账户可以生成一个秘钥,类似 : sk-***,所有接口交互都必须以 header 形式传递此秘钥。 可以通过 opnai 账户中心 -> 查看秘钥页面获取接口秘钥。 关于开发...",
+                "title": "OpenAI API 接口介绍",
+                "url": "https://www.lesscode.work/sections/0e51e3302f1b47a76fc5ab28a540a1d6.html",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "Learn more about OpenAI API Authentication . Add integration Once you have an access token, you're ready to set up your Superblocks integration. In the web app, navigate to the Integrations page Click on the OpenAI tile Name the integration ...",
+                "title": "OpenAI - Superblocks Docs",
+                "url": "https://docs.superblocks.com/integrations/integrations-library/openai",
+                "usesRedirectURL": false
+              }
+            ],
+            "query": "OpenAI API docs",
+            "transport": "browser",
+            "usedBrowser": true,
+            "firstExpectedRank": null
+          },
+          {
+            "elapsedSeconds": 1.0076179504394531,
+            "error": "search_blocked",
+            "expectedURLContains": "developer.apple.com",
+            "explicitEmpty": false,
+            "hits": [],
+            "query": "site:developer.apple.com URLSession Swift",
+            "transport": "browser",
+            "usedBrowser": true,
+            "firstExpectedRank": null
+          },
+          {
+            "elapsedSeconds": 0.5075370073318481,
+            "error": "search_blocked",
+            "expectedURLContains": "swift.org",
+            "explicitEmpty": false,
+            "hits": [],
+            "query": "site:swift.org PackageDescription",
+            "transport": "browser",
+            "usedBrowser": true,
+            "firstExpectedRank": null
+          },
+          {
+            "elapsedSeconds": 1.593234896659851,
+            "expectedURLContains": "swift.org",
+            "explicitEmpty": false,
+            "hits": [
+              {
+                "snippet": "Announcing Swift System Metrics 1.0: Process-Level Monitoring February 20, 2026 We are excited to announce the 1.0 release of Swift System Metrics, a Swift package that collects process-level system metrics like",
+                "title": "Latest Swift News - Blog | Swift.org",
+                "url": "https://www.swift.org/blog/?id=8",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "What's new in Swift: December 2025 Edition December 19, 2025 Welcome to the latest digest of news from the Swift project. Digest Exploring the Swift SDK for Android December 18, 2025 Since the announcement of the preview Swift SDK for Android,the Android workgroup has seen a lot of interest...",
+                "title": "Blog | Swift.org",
+                "url": "https://www.swift.org/blog/",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "Announcing Swift System Metrics 1.0: Process-Level Monitoring February 20, 2026 We are excited to announce the 1.0 release of Swift System Metrics, a Swift package that collects process-level system metrics like CPU utilization time and memory usage. Swift System Metrics runs on both Linux and ma...",
+                "title": "Latest Swift News - Blog | Swift.org",
+                "url": "https://developer.apple.com/swift/blog/?id=31",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "Announcing Swift System Metrics 1.0: Process-Level Monitoring February 20, 2026 We are excited to announce the 1.0 release of Swift System Metrics, a Swift package that collects process-level system metrics like CPU utilization time and memory usage. Swift System Metrics runs on both Linux and ma...",
+                "title": "Latest Swift News - Blog | Swift.org",
+                "url": "https://developer.apple.com/swift/blog/?id=8",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": ": swift-6.1.2-RELEASE...swift-6.1.3-RELEASE Contributors shahmishal and rconnell9 Assets 2 Swift 6.2 Release 14 Oct 06:11 jakepetroules swift-6.2-RELEASE 3cf1cb6 Swift 6.2 Release Latest What's Changed Include the path to the platform's PrivateFrameworks directory in DYLD_FRAMEWORK_PA...",
+                "title": "Releases · swiftlang/swift-package-manager",
+                "url": "https://github.com/swiftlang/swift-package-manager/releases",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "Swift 5.9.1 RELEASE for Linux - AArch64 / Arm64 Debian 11 Debian 12 Ubuntu 23.04 Note~ Ubuntu 20.04 and Ubuntu 22.04 arm64 versions are now available direct fromSwift.org Ubuntu 18.04 is not available as it has reached EOL. Debian 10 is not available as Swift 5.9 is not compatible with...",
+                "title": "Releases · futurejones/swift-arm64",
+                "url": "https://github.com/futurejones/swift-arm64/releases",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "SwiftX-3.15.6 (21-Jun-2023) This release has been withdrawn due to changes in the J-Link DLL. Please use 3.15.7 instead and be sure to install the Segger J-Link software update bundled in the SwiftX installer. ARM Updated to latest ARM J-Link SDK 7.88h ...",
+                "title": "SwiftX Release History - FORTH, Inc",
+                "url": "https://www.forth.com/embedded/revs/",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "This release brings many great improvements and bug fixes. Thanks to our awesome contributors ! For a complete list of changes, please refer to the CHANGELOG . SwifterSwift is a collection of over 500 native Swift extensions , with handy methods, syntactic sugar, and performance improvements for ...",
+                "title": "SwifterSwift - Swift Package Registry",
+                "url": "https://swiftpackageregistry.com/SwifterSwift/SwifterSwift",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "Not a lot going on at the moment This is The Life of a Showgirl in 2025 Taylor Swift的2025年大事总结如下: 1/16 🏆《The Tortured Poets Department》以695.5万总销量问鼎美国2024年专辑排行榜,并成为史...",
+                "title": "...going on at the moment This is... 来自TaylorSwiftLatest...",
+                "url": "https://weibo.com/3268874514/QkZS5ymwV",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "For the best experience, we recommend using the latest version of SKIE with the latest supported version of Kotlin. A new SKIE version with support for a new Kotlin version is usually released within a couple of working days after the Kotlin release. The delay tends to be shorter for the ...",
+                "title": "SKIE Intro | SKIE",
+                "url": "https://skie.touchlab.co/intro",
+                "usesRedirectURL": false
+              }
+            ],
+            "query": "latest Swift release",
+            "transport": "browser",
+            "usedBrowser": true,
+            "firstExpectedRank": 1
+          },
+          {
+            "elapsedSeconds": 1.5941749811172485,
+            "expectedURLContains": "duckduckgo.com",
+            "explicitEmpty": false,
+            "hits": [
+              {
+                "snippet": "When including !! within your search query (separated by spaces), you will automatically be redirected to the first result. This behavior is comparable to the “Feeling Lucky” feature from DuckDuckGo. To give a",
+                "title": "Search syntax - SearXNG Documentation (2026.9.3+a1144dda3)",
+                "url": "https://docs.searxng.org/user/search-syntax.html",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "Assign custom shortcuts to your most-used engines. Launch any search engine instantly with a quick key combination. Bang syntax support Use DuckDuckGo-style bang commands to jump between engines. Try !i for Google Images, !b for Bing, and customize your own....",
+                "title": "Hello from Aim Search | Aim Search",
+                "url": "https://www.aaiimm.com/",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "search=DuckDuckGoSearchRun() res=search.invoke(\"2026大模型RAG优化方案\") #2. 完整结构化结果(带标题、链接、摘要) fromlangchain_community.tools import DuckDuckGoSearchResults search_detail=DuckDuckGoSearchResults(max_results=3) output=search_detail.invoke(\"LangGraph StateGraph节点原理\") AI写代码 适配你...",
+                "title": "duckduckgo_search 完整详细介绍_duckduckgosearchrun-CSDN博客",
+                "url": "https://blog.csdn.net/tongbowen_123/article/details/162567035",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "search engine you'll find; not because it personalizes results, but because it doesn't. duckduckgo has a number of advantages over google and other commonly used search engines. first, it does not track your searches, nor does it capture what you click on. so your privacy is safe and ...",
+                "title": "DuckDuckGo Respects Our Privacy",
+                "url": "https://www.customers.com/media/docs/articles/DuckDuckGo-Respects-Our-Privacy-06-28-2013.pdf",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "文章浏览阅读8.6k次,点赞9次,收藏26次。你还可以使用 DuckDuckGo 的聊天功能来获取摘要或...",
+                "title": "使用duckduckgo_search Python 包进行 Web 搜索和查询_duckduckgo-search...",
+                "url": "https://blog.csdn.net/qq_41472205/article/details/144383484",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "My favorite search engine is [Duck Duck Go](https://duckduckgo.com). The rendered output looks like this: My favorite search engine is Duck Duck Go . Note: To link to an element on the same page, see linking to heading IDs . To create a link that opens in a new tab or window,...",
+                "title": "Basic Syntax | Markdown Guide",
+                "url": "https://www.markdownguide.org/basic-syntax/",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "",
+                "title": "Duck Duck Go(互联网搜索引擎) - 百度百科",
+                "url": "https://baike.baidu.com/item/Duck%20Duck%20Go/7218557",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "问是否有办法(即URL参数)强制duckduckgo只显示所有搜索项的结果EN这个算法比较巧妙：遍历列表，把列表中的...",
+                "title": "是否有办法(即URL参数)强制duckduckgo只显示所有搜索项的结果...",
+                "url": "https://cloud.tencent.com/developer/ask/sof/116138015",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "Thanks toKezz Bracey’s TutsPlus post, I discovered how easy it is to use DuckDuckGo to remind me of the syntax or code snippet I want to use in my code. What a great feature! In the DuckDuckGo search box, you type in the language/tool/topic you want followed by “cheat sheet” an...",
+                "title": "Make Your Coding Easier, Use DuckDuckGo Cheat Sheets - Lireo...",
+                "url": "https://www.lireo.com/make-your-coding-easier-use-duckduckgo-cheat-sheets/",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "enable Clawdbot to support tool calling functionality for local inference models (sglang/vLLM). Duckduckgo api-free web-search tool is available now. - jokelord/openclaw-local-model-tool-calling-patch",
+                "title": "...models (sglang/vLLM). Duckduckgo api-free web-search tool...",
+                "url": "https://github.com/jokelord/openclaw-local-model-tool-calling-patch",
+                "usesRedirectURL": false
+              }
+            ],
+            "query": "DuckDuckGo search syntax",
+            "transport": "browser",
+            "usedBrowser": true,
+            "firstExpectedRank": null
+          },
+          {
+            "elapsedSeconds": 1.5921649932861328,
+            "expectedURLContains": "github.com",
+            "explicitEmpty": false,
+            "hits": [
+              {
+                "snippet": "( url : \" https://github.com/apple/swift-argument-parser \" , from : \" 1.7.0 \" ) , ] , targets : [ . executableTarget ( name : \" <command-line-tool> \" , dependencies : [ // other dependencies . product ( name : \"",
+                "title": "GitHub - apple/swift-argument-parser: Straightforward, type...",
+                "url": "https://github.com/apple/swift-argument-parser",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "The original (OG) Swift SDK for Parse Platform (iOS, macOS, watchOS, tvOS, visionOS, Linux, Android, Windows). This repo is maintained by one of Parse-Swift's original developer and all new features and bug fixes will occur here. - netreconlab/Parse-Swif",
+                "title": "GitHub - netreconlab/Parse-Swift: The original (OG) Swift SDK...",
+                "url": "https://github.com/netreconlab/Parse-Swift",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "swift-create-xcframework是一款基于Swift开发的命令行工具,它通过封装xcodebuild命令简化了XCFramework的创建过程。本文将深入剖析其源码结构,重点解读ArgumentParser框架与Swift Package Manager(SPM)的深度集成实现,帮助开发者理解如何构建功能完善的Swift命令行工具。 项目架构概览 swift-create-xcframework采用模块化设计,核心功...",
+                "title": "...源码解读:理解ArgumentParser与SwiftPM的深度集成-CSDN博客",
+                "url": "https://blog.csdn.net/gitblog_00142/article/details/152040099",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "// main.swiftletcalendar=myCalendar()letcurrentYear=calendar.component(.year,from:now(...",
+                "title": "Swift 周报 第四十期_swift周报-CSDN博客",
+                "url": "https://blog.csdn.net/qq_36478920/article/details/135118568",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "Interactive mode for ArgumentParser Author:Kth Mentor:Nate Cook swift-argument-parserprovid...",
+                "title": "Swift Summer of Code 2022 Summary | Swift.org",
+                "url": "https://www.swift.org/blog/swift-summer-of-code-2022-summary/",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "此外苹果也推荐了 2 个 ArgumentParser 在 Swift 项目工具中采用的示例: indexstore-db 是...",
+                "title": "GitHub 热点速览 vol.10:疫情下的 GitHub - 知乎",
+                "url": "https://zhuanlan.zhihu.com/p/111806680",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "github codeql条款和条件 启用了 github code security 的 github team上的组织拥有的存储库 codeql包含许多用来分析 swift代码的查询.默认情况下, default 查询套件中的所有查询都会运行.如果选择使用 security-extended 查询套件,则会运行其他查询.有关详细信息,请参阅\" codeql查询套件 \". 用于 swift分析的内置查询 ...",
+                "title": "用于CodeQL 分析的 Swift 查询 - GitHub 文档",
+                "url": "https://docs.github.com/zh/code-security/code-scanning/managing-your-code-scanning-configuration/swift-built-in-queries",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "ArgumentParser deduced that the name of binary should beswift-argsinstead ofSwiftArgs, ...",
+                "title": "Swift Command Line Tools and Argument Parser — Part 1...",
+                "url": "https://scriptingosx.com/2024/08/swift-command-line-tools-and-argument-parser-part-1/",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "ArgumentParser . error ( \"'--prefix' is required with the install action\" ) parsed . swift_exec = os . path . join ( parsed . toolchain , 'bin' , 'swift' ) if not parsed . sourcekitd_dir : parsed . sourcekitd_dir = os . path . join ( parsed . toolchain , 'lib' ) ...",
+                "title": "build-script-helper.py · mirrors_apple/swift-stress-tester...",
+                "url": "https://gitee.com/mirrors_apple/swift-stress-tester/blob/main/build-script-helper.py",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "GitHub 地址→https://github.com/apple/swift-argument-parsers 1.2 fastai 草稿:fastbook ...",
+                "title": "GitHub 热点速览 vol.10:疫情下的 GitHub - 削微寒 - 博客园",
+                "url": "https://www.cnblogs.com/xueweihan/p/12445600.html",
+                "usesRedirectURL": false
+              }
+            ],
+            "query": "\"Swift ArgumentParser\" GitHub",
+            "transport": "browser",
+            "usedBrowser": true,
+            "firstExpectedRank": 1
+          },
+          {
+            "elapsedSeconds": 2.0674179792404175,
+            "explicitEmpty": false,
+            "hits": [
+              {
+                "snippet": "We’re upgrading our site and will be online again soon. Please try again later orcontact usif you have any questions or concerns. If you’d like general information about using Swift online services or to read our privacy policy, please visit ourTerms and Conditions and Privacy Statement.",
+                "title": "MT and MX Equivalence Tables",
+                "url": "https://www2.swift.com/knowledgecentre/rest/v1/publications/stdsmt_mt_mx_eq_tbl/_latest/stdsmt_mt_mx_eq_tbl.pdf",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "ence engines—even the compiled ones—incur sig- nificant runtime interpretation overhead, especially for contingent and open-universe models. this paper describes swift, a compiler for the blog ppl. swift-generated code incorporates optimiza- tions that eliminate interpretation overhead, main- tain ...",
+                "title": "Swift: Compiled Inference for Probabilistic Programming...",
+                "url": "http://sites.cs.ucsb.edu/~lilei/pubs/wu2016swift.pdf",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "how do the constraints mined from library and client contribute to the effectiveness of our approach? dataset. we reuse the api misuse dataset, mubench [49], to evaluate the effectiveness of our api misuse detection. mubench is a state-of-the-art benchmark, and it is actively maintained....",
+                "title": "Mining API Constraints from Library and Client to Detect API...",
+                "url": "https://cs.sjtu.edu.cn/~zhonghao/paper/zeng2021apsec.pdf",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "swiftnet: real-time video object segmentation haochen wang1*, xiaolong jiang1*, haibing ren1, yao hu1, song bai1,2 1alibaba youku cognitive and intelligent lab 2university of oxford {zhinong.whc, xainglu.jxl, haibing.rhb, yaoohu}@alibaba-inc.com songbai.site@gmail.com abstract in ...",
+                "title": "SwiftNet: Real-time Video Object Segmentation",
+                "url": "https://arxiv.org/pdf/2102.04604",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "(pcqa) aims to predict the quality of point clouds, a task closely tied to human visual system (hvs). this makes pcqa as a crucial com- ponent for enhancing compression strategies and improving the visual fidelity of point cloud data. according to the reliance on reference point clouds, ...",
+                "title": "VIP-PCQA: A Multi-Modal Framework for No-reference Point...",
+                "url": "https://jhc.sjtu.edu.cn/~xiaohongliu/papers/2025VIPPCQA.pdf",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "https://www.nvidia.com/content/pdf/nvidia- ampere- ga- 102- gpu- architecture- whitepaper- v2.pdf . [115] j. woo, g. joshi, and y. chi, \"the blessing of heterogeneity in federated q- learning: linear speedup and beyond,\" arxiv preprint arxiv:2305.10697, 2023. [116] j. qi, q...",
+                "title": "SwiftRL: Towards Efficient Reinforcement Learning on Real...",
+                "url": "https://arxiv.org/pdf/2405.03967v1",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": ", univ. of wisconsin, madison , univ. of california, berkeley abstract– tasks in modern data-parallel clusters have highly di- verse resource requirements along cpu, memory, disk and network. we present tetris, a multi-resource cluster scheduler that packs tasks to machines based on thei...",
+                "title": "Multi-Resource Packing for Cluster Schedulers",
+                "url": "https://front.sjtu.edu.cn/~jinyh/gradCourse/Paper/Data%20center%20networking/Multi-Resource%20Packing%20for%20Cluster%20Schedulers.pdf",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "supercomputing technologies group, mit 2001. cilk 5.4.6 reference manual. supercomputing technologies group, mit. http://supertech.lcs.mit.edu/cilk/manual-5.4.6.pdf [43] samuel thibault, raymond namyst, and pierre-andré wacrenier. 2007. building portable thread schedulers for hierarchical ...",
+                "title": "Bandwidth and Locality Aware Task-stealing for Manycore...",
+                "url": "https://cs.sjtu.edu.cn/~leng-jw/resources/Files/zhao18taco-bats.pdf",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "132:5950–5982 https://doi.org/10.1007/s11263-024-02170-z multi-source-free domain adaptive object detection sicheng zhao1 · huizai yao1,2,3 · chuang lin4 · yue gao1,5 · guiguang ding1,5 received: 15 december 2023 / accepted: 28 june 2024 / published online: 11 july 2024 ...",
+                "title": "Multi-source-free Domain Adaptive Object Detection",
+                "url": "https://ise.thss.tsinghua.edu.cn/MIG/2024-6.pdf",
+                "usesRedirectURL": false
+              }
+            ],
+            "query": "filetype:pdf Swift concurrency",
+            "transport": "browser",
+            "usedBrowser": true,
+            "firstExpectedRank": null
+          },
+          {
+            "elapsedSeconds": 1.8438409566879272,
+            "explicitEmpty": false,
+            "hits": [
+              {
+                "snippet": "*|tag : find elements by tag in any namespace prefix, e.g. *|name finds <dc:name> and <name> elements :empty : selects elements that have no children (ignoring blank text nodes, comments, etc.); e.g. li:empty Selector combinations el#id : elements with ID, e.g.",
+                "title": "GitHub - scinfu/SwiftSoup: SwiftSoup: Pure Swift HTML Parser...",
+                "url": "https://github.com/scinfu/swiftsoup",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "For HTML, use Element.html() , or Node.outerHtml() as appropriate do { let html : String = \" <p>An <a href='http://example.com/'><b>example</b></a> link.</p> \" ; let doc : Document = try SwiftSoup . parse ( html ) let link : Element = try doc . select ( \" a ...",
+                "title": "GitHub - notapplicableio/SwiftSoup: SwiftSoup: Pure Swift...",
+                "url": "https://github.com/CognitiveWin/SwiftSoup",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "self.checkForUpdates(url: url, selector: selector) } } privatefunccheckForUpdates(url:URL,selector:String) { do{ letdocument=trySwiftSoup.parse(url) letelements=trydocument.select(selector) letcurrentContent=tryelements.html() letcurrentHash=currentContent.sha256() ifcurrentHash!=lastContentHash { ...",
+                "title": "SwiftSoup实战指南:构建高效的Swift HTML解析与数据采集工具-CSDN博客",
+                "url": "https://blog.csdn.net/gitblog_00238/article/details/153085747",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "letdoc=trySwiftSoup.parse(html) letparagraph=trydoc.select(\"p\").first() XCTAssertNotNil(paragraph) XCTAssertEqual(tryparagraph?.text(),\"测试内容\") } functestCSSSelector()throws{ lethtml=\"<div class='container'><span class='item'>项目1</span></div>\" letdoc=trySwiftSoup.parse(html) letit...",
+                "title": "SwiftSoup终极指南:7个最佳实践打造可维护的HTML解析代码-CSDN博客",
+                "url": "https://blog.csdn.net/gitblog_00386/article/details/151519740",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "CssSelector.swift:CSS选择器实现 💻CSS选择器使用指南 SwiftSoup提供了丰富的CSS选择器支持,让元素查找变得简单高效。常用选择器包括: #id:通过ID选择元素 .class:通过类名选择元素 tag:通过标签名选择元素 [attribute]:通过属性选择元素 SwiftSoup示例应用展示了各种CSS选择器的使用方法和效果 ...",
+                "title": "SwiftSoup终极指南:快速掌握纯Swift HTML解析器-CSDN博客",
+                "url": "https://blog.csdn.net/gitblog_00735/article/details/156447990",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "For HTML, use Element.html() , or Node.outerHtml() as appropriate do { let html : String = \" <p>An <a href='http://example.com/'><b>example</b></a> link.</p> \" ; let doc : Document = try SwiftSoup . parse ( html ) let link : Element = try doc . select ( \" a ...",
+                "title": "GitHub - samalone/SwiftSoup: SwiftSoup: Pure Swift HTML...",
+                "url": "https://github.com/samalone/swiftsoup",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "For HTML, use Element.html() , or Node.outerHtml() as appropriate do { let html : String = \" <p>An <a href='http://example.com/'><b>example</b></a> link.</p> \" ; let doc : Document = try SwiftSoup . parse ( html ) let link : Element = try doc . select ( \" a ...",
+                "title": "GitHub - happyeverydayzhh/SwiftSoup: SwiftSoup: Pure Swift...",
+                "url": "https://github.com/happyeverydayzhh/SwiftSoup",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "CssSelector.swift- CSS选择器API QueryParser.swift- 查询解析器 掌握SwiftSoup CSS选择器,让你的HTML解析工作事半功倍!💪 【免费下载链接】SwiftSoupSwiftSoup: Pure Swift HTML Parser, with best of DOM, CSS, and jquery (Supports Linux, iOS, Mac, tvOS, watchOS) ...",
+                "title": "SwiftSoup CSS选择器完全手册:从基础到高级用法-CSDN博客",
+                "url": "https://blog.csdn.net/gitblog_00609/article/details/154727807",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "letevaluator=tryQueryParser.parse(selector, root) letelements=root.select(evaluator) swift 运行 4. 实现自定义线程安全包装 对于需要频繁访问的解析结果,可以创建线程安全的包装类: classThreadSafeDocument{ privateletdocument:Document privateletmutex=Mutex() ...",
+                "title": "终极指南:SwiftSoup多线程安全处理与并发环境最佳实践-CSDN博客",
+                "url": "https://blog.csdn.net/gitblog_00690/article/details/151416191",
+                "usesRedirectURL": false
+              }
+            ],
+            "query": "intitle:SwiftSoup selector",
+            "transport": "browser",
+            "usedBrowser": true,
+            "firstExpectedRank": null
+          }
+        ]
+      }
+    },
+    {
+      "corpus": "technical",
+      "transport": "automatic",
+      "batch": 1,
+      "metrics": {
+        "queryCount": 10,
+        "validQueryCount": 6,
+        "nonemptyQueryCount": 6,
+        "meanReciprocalRank": 0.625,
+        "p50SuccessfulLatencySeconds": 1.1332510709762573,
+        "p95SuccessfulLatencySeconds": 3.5226908922195435,
+        "browserInvocations": 7,
+        "fallbackAttempts": 7,
+        "successfulFallbacks": 3,
+        "results": [
+          {
+            "elapsedSeconds": 1.1332510709762573,
+            "expectedURLContains": "github.com/scinfu/SwiftSoup",
+            "explicitEmpty": false,
+            "hits": [
+              {
+                "snippet": "SwiftSoup: Pure Swift HTML Parser, with best of DOM, CSS, and jquery (Supports Linux, iOS, Mac, tvOS, watchOS) - scinfu/SwiftSoup",
+                "title": "GitHub - scinfu/SwiftSoup: SwiftSoup: Pure Swift HTML Parser...",
+                "url": "https://github.com/scinfu/swiftsoup",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "Remove files that became orphaned or were empty by@DarkDustin#334 Fix double-escaping of URLs in attributes by@DarkDustin#335 Add explicit support for tvOS 13+ by@pro100filippin#336 Add some APIs acceptingEvaluatorinstances by@DarkDustin#337 Silence retroactive warnings by@DarkDustin#342 Convert d...",
+                "title": "Release 2.11 · scinfu/SwiftSoup · GitHub",
+                "url": "https://github.com/scinfu/SwiftSoup/releases/tag/2.11",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "SwiftSoup is a Swift library for working with real-world HTML. It provides a very convenient API for extracting and manipulating data, using the best of DOM, CSS, and jquery-like methods. DESC s.homepage='https://github.com/scinfu/SwiftSoup' ...",
+                "title": "SwiftSoup.podspec · 范小兵/SwiftSoup - Gitee.com",
+                "url": "https://gitee.com/fandongtongxue_admin/SwiftSoup/blob/master/SwiftSoup.podspec",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "dependencies: [\"SwiftSoup\"] ) ] swift 运行 CocoaPods与Carthage支持 对于传统的iOS/macOS项目,SwiftSoup也提供了完整的CocoaPods和Carthage支持。 # Podfile配置 pod'SwiftSoup' # Cartfile配置 github\"scinfu/SwiftSoup\" ruby 运行 与SwiftUI/UIKit集成 SwiftSoup可以与SwiftUI或UIKit无缝集成,构建数据驱动的界面。 im...",
+                "title": "SwiftSoup实战指南:构建高效的Swift HTML解析与数据采集工具-CSDN博客",
+                "url": "https://blog.csdn.net/gitblog_00238/article/details/153085747",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "CocoaPods:在 Podfile 中添加pod 'SwiftSoup' Carthage:配置github \"scinfu/SwiftSoup\" Swift Package Manager:通过 Xcode 或 Package.swift 集成 2.2 基础用法示例 // 解析 HTML 文档 lethtml=\"TestHello SwiftSoup!\" do{ letdoc=trySwiftSoup.parse(html) lettitle=trydoc.title()// 获取标题...",
+                "title": "终极SwiftSoup 社区资源汇总:从入门到精通的完整指南-CSDN博客",
+                "url": "https://blog.csdn.net/gitblog_00121/article/details/151495120",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "//github.com/apple/swift-nio-extras useful additions around SwiftNIOfrom: \"1.0.0\"https://github.com/apple/swift-nio-transport-services first-class support for macOS, iOS, tvOS, and watchOSfrom: \"1.0.0\"https://github.com/apple/swift-nio-ssh SSH support.upToNextMinor(from: \"0.2.0\")https...",
+                "title": "GitHub - apple/swift-nio: Event-driven network application...",
+                "url": "https://redirect.github.com/apple/swift-nio",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "此版本的 GitHub Enterprise Server 已于以下日期停止服务 当您选择 default 或 security-extended 查询套件时,浏览 CodeQL 用于分析用 Swift 编写的代码的查询。 谁可以使用此功能? CodeQL 可用于以下存储库类型: 启用了 GitHub Advanced Security 的组织拥有的存储库 ...",
+                "title": "用于CodeQL 分析的 Swift 查询 - GitHub Enterprise Server 3.13...",
+                "url": "https://docs.github.com/zh/enterprise-server@3.13/code-security/code-scanning/managing-your-code-scanning-configuration/swift-built-in-queries",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "GitHub Enterprise Server 3.16 的初始版本包括 CodeQL 操作和 CodeQL CLI 2.20.3,可能不包括所有这些查询。 网站管理员可以将 CodeQL 版本更新到较新版本。 有关详细信息,请参阅“ 为您的设备配置代码扫描 ”。 查询名称相关的 CWE默认延期Copilot自动修复错误的 HTML 筛选正则表达...",
+                "title": "用于CodeQL 分析的 Swift 查询 - GitHub Enterprise Server 3.16...",
+                "url": "https://docs.github.com/zh/enterprise-server@3.16/code-security/code-scanning/managing-your-code-scanning-configuration/swift-built-in-queries",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "SwiftSoup v2.2.0 Swinject v2.6.2 SwinjectAutoregistration v2.6.0 SWXMLHash v4.9.0 TTTAttributedLabel version 2.0.0 %% ADAL SDK for Objective C NOTICES AND INFORMATION BEGIN HERE === Copyright (c) Microsoft Corporation Permission is hereby granted...",
+                "title": "Microsoft Planner Third-Party Notice for iOS | Microsoft...",
+                "url": "https://support.microsoft.com/vi-VN/Planner/microsoft-planner-third-party-notice-for-ios",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "13 scinfu/SwiftSoup Swiftsoup:纯Swift HTML解析器,配备了DOM,CSS和JQUERY(支持Linux,IOS,Mac,TVOS,WatchOS) ⭐ 3 ⭐ 4795 14 swiftlang/swift-package-manager Swift编程语言的软件包经理 ⭐ 3 ⭐ 9908 15 swiftlang/swift-syntax 一组Swift库,用于解析,检查,生成和转换Swift源代码。 ⭐ 2 ⭐ 3417...",
+                "title": "GitHub 趋势日报 (2025年05月07日) - GitHub 项目趋势日报...",
+                "url": "https://segmentfault.com/a/1190000047176276",
+                "usesRedirectURL": false
+              }
+            ],
+            "query": "SwiftSoup GitHub",
+            "transport": "automatic",
+            "usedBrowser": false,
+            "firstExpectedRank": 1
+          },
+          {
+            "elapsedSeconds": 0.6925739049911499,
+            "expectedURLContains": "drawthings.ai",
+            "explicitEmpty": false,
+            "hits": [
+              {
+                "snippet": "With Draw Things, you can bring your ideas to life in minutes, not days. Best of all, it’s completely free and runs offline on all devices to protect your privacy. Your complete creative workflow Bring your id",
+                "title": "Draw Things: AI-assisted Image Generation",
+                "url": "https://drawthings.ai/",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "draw-things-community Public The community repository for the Draw Things app. C 514 GPL-3.0 57 76 2 Updated Jul 14, 2026 community-models Public The source repository to manage \"Community\" section of models and LoRAs in the Draw Things app. ...",
+                "title": "Draw Things · GitHub",
+                "url": "https://github.com/drawthingsai",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "Draw Things: Offline AI Art 摄影与录像 免费· App 内购买 419个评分 4.6 年龄分级 18+ 岁 类别 摄影与录像 开发者 Draw Things, Inc. 语言 DE + 7 种语言 大小 279.2 MB iPhone、iPad、Mac Unleash your imagination with Draw Things, the powerful offline AI creation tool for your iPhone or iPad...",
+                "title": "‎Draw Things: Offline AI Art App - App Store",
+                "url": "https://apps.apple.com/cn/app/draw-things-ai-generation/id6444050820",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "1. 下载 Draw Things 下载地址: 🔗 https://pan.quark.cn/s/be33d23e7e58 ...",
+                "title": "【Mac使用Z-Image生图教程】Draw Things配置方法与真实测试效果...",
+                "url": "https://cloud.tencent.com/developer/article/2690652",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "r/drawthingsapp : Your Reddit hub for Draw Things. Draw Things Community GitHub : For open-source contributions. Contribute 🛠️ This page is community-maintained. Found a gap? Edit it directly or discuss in the Draw Things Community Discord. ...",
+                "title": "Draw Things WIKI",
+                "url": "https://wiki.drawthings.ai/",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "Draw Things 饥饿派画家是一款可以轻松帮助用户去获得各种特艺术绘画灵感的软件,在软件里面拥有超丰富的优质绘画作品,用户轻松就可以去通过软件方面去进行鉴赏,而且这些软件里面的这些作品都是实时更新的,让用户可以更好的通过软件去自由的进行绘画作品的鉴赏。",
+                "title": "Draw Things 饥饿派画家软件下载-Draw Things 饥饿派画家安卓版v...",
+                "url": "https://m.bkill.com/azsoft/3031501.html",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "Draw Things引入了智能绘图助手功能,通过人工智能技术识别你的绘图意图,并给出相应的建议与辅助。无论是绘制图形、编辑图片还是排版文字,智能绘图助手都能为你提供精准的帮助,让设计过程更加高效顺畅。 操作建议:充分利用智能绘图助手功能,在绘图过程中尝试接受其建议,逐步提高设计效率与准确性。",
+                "title": "权威解读Draw Things新动态-百度AI原生应用商店",
+                "url": "https://qianfanmarket.baidu.com/article/detail/50720",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "Draw Things 是一款免费的离线 AI 辅助图像生成工具,可让用户快速高效地创建图像。 Draw Things 是一款免费的离线 AI 辅助图像生成工具,基于流行的稳定扩散模型,Draw Things可帮助您在几分钟内而不是几天内创建您心目中的图像。它是免费的,在您的设备上100%离线运行一切,以保护您的隐私。",
+                "title": "Draw Things - 一款免费的离线 AI 辅助图像生成工具,可让用户快速...",
+                "url": "http://ai.seitei.cn/show/drawthings.html",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "绘画教学 Draw Something 应用 简介 只需在这款绘画教学的手机软件中输入你想画的东西或者食...",
+                "title": "绘画教学DrawSomethingAPP下载安装_2026最新正版手机免费下载_25PP",
+                "url": "https://www.25pp.com/xiazai/841845/",
+                "usesRedirectURL": false
+              }
+            ],
+            "query": "Draw Things app",
+            "transport": "automatic",
+            "usedBrowser": false,
+            "firstExpectedRank": 1
+          },
+          {
+            "elapsedSeconds": 0.6622769832611084,
+            "expectedURLContains": "platform.openai.com/docs",
+            "explicitEmpty": false,
+            "hits": [
+              {
+                "snippet": "我们完全对齐 OpenAI 官方 OpenAI Docs 和 OpenAI API Reference,使用方法完全一致。基于官方 Model Endpoint Compatibility 在需要使用OpenAI API的地方,将 api.openai.com 替换为平台获取的 Base_URL 即可 替换示例: 官方: https://api.openai.com/v1/chat/c",
+                "title": "指南- API Docs",
+                "url": "https://gpt-best.apifox.cn/",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "OpenAI API 模型對時事的了解程度取決於具體模型。我們的模型概覽頁面詳列每個模型的知識截止日期。 為模型提供最新資訊 要彌合模型訓練截止日期與時事之間的差距,你可以使用透過 OpenAIResponses API提供的內置搜尋工具,例如: 網頁搜尋:讓模型直接從互聯網存取最新資訊。 檔案搜尋:讓模型擷取並使用來自你自訂檔案和資料庫...",
+                "title": "OpenAI API 模型具備當前事件的知識嗎? | OpenAI Help Center",
+                "url": "https://help.openai.com/zh-hant-hk/articles/6639781-openai-api-%E6%A8%A1%E5%9E%8B%E5%85%B7%E5%82%99%E7%95%B6%E5%89%8D%E4%BA%8B%E4%BB%B6%E7%9A%84%E7%9F%A5%E8%AD%98%E5%97%8E",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "OpenAI API 中的函数调用 截至2025 年 3 月 11 日,我们已发布全新 Agents 平台的构建模块。详情请参阅我们的 API 文档:Responses API、工具(包括 Web Search、File Search和Computer Use),以及带有 Tracing的Agents SDK。 函数调用让您能够将 OpenAI 模型连接到外部工具和系统。它有许多用途,例如为 AI 助手赋予...",
+                "title": "OpenAI API 中的函数调用 | OpenAI Help Center",
+                "url": "https://help.openai.com/zh-hans-cn/articles/8555517-function-calling-in-the-openai-api",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "Docs and resources to help you build with, for, and on OpenAI. Introducing GPT-6 Astra Our most capable model, built for the hardest end-to-end work. Start building with Astra View model details API Platform Use our APIs and models to build your own AI experiences. ...",
+                "title": "OpenAI Developers",
+                "url": "https://developers.openai.com/",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "content_copy import 'package:openai_client/openai_client.dart' ; 🚀 Getting Started In order to use the API, you need to have an API key. You can get one here and once you have it, you can use it in the client passing the key itself in the OpenAIConfiguration constructor. ...",
+                "title": "openai_client - Dart API docs",
+                "url": "https://pub.dev/documentation/openai_client/latest/",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "openai api反向代理服务,然后更新 ` openai_base_url ` 109 + 3 . 使用国内的 llm服务提供商,比如 [ 通义千问 ] ( https://help.aliyun.com/zh/dashscope/developer-reference/compatibility-of-openai-with-dashscope/?spm=a2c4g.11186623.0.i1 ) , [ 零一万物 ] ( https://platform.01.ai/docs#...",
+                "title": "docs: 添加国内网络配置代理访问 OpenAI 服务的相关说明 · yolo...",
+                "url": "https://github.com/yolo-zyx/mi-gpt/commit/c4268d97e342152923087f855f6df3ae7488c1fc",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "docs: 添加 OpenAI SDK 和 LangChain API 中文速查文档 - API_REFERENCE.md: OpenAI SDK 常用 API(消息、Function Calling、流式输出) - LANGCHAIN_REFERENCE.md: LangChain/LangGraph 常用 API( @tool 、AgentExecutor、StateGraph) - llm_config.py: 注释 DeepSeek,使用智谱 API - .gitignore: 添加 venv...",
+                "title": "docs: 添加 OpenAI SDK 和 LangChain API 中文速查文档 · Lion...",
+                "url": "https://github.com/Lion-1209/AgentStudy/commit/4d8f66b17fd5650b6efb5d9cef678cb209d60ac2",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "OpenAI API 官方手册 https://platform.openai.com/docs/api-reference/introduction 关于key 通过openai plus 账户可以生成一个秘钥,类似 : sk-***,所有接口交互都必须以 header 形式传递此秘钥。 可以通过 opnai 账户中心 -> 查看秘钥页面获取接口秘钥。 关于开发...",
+                "title": "OpenAI API 接口介绍",
+                "url": "https://www.lesscode.work/sections/0e51e3302f1b47a76fc5ab28a540a1d6.html",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "Learn more about OpenAI API Authentication . Add integration Once you have an access token, you're ready to set up your Superblocks integration. In the web app, navigate to the Integrations page Click on the OpenAI tile Name the integration ...",
+                "title": "OpenAI - Superblocks Docs",
+                "url": "https://docs.superblocks.com/integrations/integrations-library/openai",
+                "usesRedirectURL": false
+              }
+            ],
+            "query": "OpenAI API docs",
+            "transport": "automatic",
+            "usedBrowser": false,
+            "firstExpectedRank": null
+          },
+          {
+            "elapsedSeconds": 3.5226908922195435,
+            "expectedURLContains": "developer.apple.com",
+            "explicitEmpty": false,
+            "hits": [
+              {
+                "snippet": "Like most networking APIs, the URLSession API is highly asynchronous. It returns data to your app in one of three ways, depending on the methods you call: If you’re using Swift, you can use the methods marked",
+                "title": "URLSession | Apple Developer Documentation",
+                "url": "https://developer.apple.com/documentation/foundation/urlsession/",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "Like most networking APIs, the URLSession API is highly asynchronous. It returns data to your app in one of three ways, depending on the methods you call: If you’re using Swift, you can use the methods marked with the async keyword to perform common tasks. For example, data(from: dele...",
+                "title": "URLSession | Apple Developer Documentation",
+                "url": "https://developer.apple.com/documentation/foundation/urlsession?changes=_4",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "App Store Distribution & Marketing General iTunes Library Xcode Swift CFNetwork 1 0 578 Jun ’26 Reachability Hello, We recently moved to the NWPath.Status implementation for reachability, is that the same reachability that powers URLSessionConfiguration.waitsForConnectivity? Or does the NWPa...",
+                "title": "CFNetwork | Apple Developer Forums",
+                "url": "http://forums.developer.apple.com/forums/tags/cfnetwork/?sortBy=newest",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "(Swift / SwiftUI). **Android Reference (Working Behavior) : ** val dns = DnsOverHttps.Builder() .client(OkHttpClient()) .url(\"https://cloudflare-dns.com/dns-query\".toHttpUrl()) .bootstrapDnsHosts(InetAddress.getByName(\"1.1.1.1\")).build() OkHttpClient.Builder().dns(dns).build() ...",
+                "title": "Swift | Apple Developer Forums",
+                "url": "http://forums.developer.apple.com/forums/tags/swift?page=13",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "Like most networking APIs, the URLSession API is highly asynchronous. It returns data to your app in one of three ways, depending on the methods you call: If you’re using Swift, you can use the methods marked with the async keyword to perform common tasks. For example, data(from: dele...",
+                "title": "URLSession | Apple Developer Documentation",
+                "url": "https://developer.apple.com/documentation/foundation/nsurlsession",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "As a convenience, you can use Swift’s async - await syntax to asynchronously access the contents of a URL through the resource Bytes and lines properties. These properties use the shared URLSession instance to load the resource. URL defines a set of properties for common directories like docum...",
+                "title": "URL | Apple Developer Documentation",
+                "url": "https://developer.apple.com/documentation/foundation/url?language=swift,swift",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "(bufferIsUnique:minimumCapacity:growForAppend:) + 120 4 Foundation 0x00000001845daa58 specialized static _SwiftURL._makeCFURL(from:baseURL:) + 2288 (URL_Swift.swift:1192) 5 Foundation 0x00000001845da118 closure #1 in _SwiftURL._nsurl.getter + 112 (URL_Swift.swift:64) 6 Foundation 0x...",
+                "title": "Network | Apple Developer Forums",
+                "url": "http://forums.developer.apple.com/forums/tags/network/?page=6&sortBy=newest",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "I’ve been experimenting with Foundation Models and built a small Swift package that wraps LanguageModelSession with simple context management. The current approach checks the transcript token count using tokenCount(for:), compacts the transcript when it reaches a threshold, and retries once if excee...",
+                "title": "Swift | Apple Developer Forums",
+                "url": "http://forums.developer.apple.com/forums/tags/swift?page=2&sortBy=newest",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "As a convenience, you can use Swift’s async - await syntax to asynchronously access the contents of a URL through the resource Bytes and lines properties. These properties use the shared URLSession instance to load the resource. URL defines a set of properties for common directories like docum...",
+                "title": "URL | Apple Developer Documentation",
+                "url": "https://developer.apple.com/documentation/foundation/url?changes=la",
+                "usesRedirectURL": false
+              }
+            ],
+            "httpError": "search_blocked",
+            "query": "site:developer.apple.com URLSession Swift",
+            "transport": "automatic",
+            "usedBrowser": true,
+            "firstExpectedRank": 1
+          },
+          {
+            "elapsedSeconds": 1.9927380084991455,
+            "expectedURLContains": "swift.org",
+            "explicitEmpty": false,
+            "hits": [
+              {
+                "snippet": "// swift-tools-version:5.1importPackageDescriptionletpackage=Package(name:\"MyLibrary\",platforms:[.macOS(.v10_15),],products:[.library(name:\"MyLibrary\",targets:[\"MyLibrary\"]),],dependencies:[.package(url:\"https:/",
+                "title": "Package — Swift Package Manager",
+                "url": "https://docs.swift.org/package-manager/PackageDescription/PackageDescription.html",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "// swift-tools-version: 5.8// The swift-tools-version declares the minimum version of Swift required to build this package.importPackageDescriptionletpackage=Package(name:\"MyCLI\",dependencies:[.package(url:\"https://github.com/apple/example-package-figlet\",branch:\"main\"),],targets:[// Targets ar...",
+                "title": "Build a Command-line Tool | Swift.org",
+                "url": "https://www.swift.org/getting-started/cli-swiftpm/",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "// swift-tools-version: 5.9 import PackageDescription import CompilerPluginSupport let package = Package ( name: \"MyPackage\" , platforms: [ .iOS(.v17), .macOS(.v13)], // ... ) Next, add a target for the macro implementation and a target for the macro library to your existing Package...",
+                "title": "Macros | Documentation",
+                "url": "https://docs.swift.org/swift-book/documentation/the-swift-programming-language/macros",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "// swift-tools-version:5.6 import PackageDescription let package = Package ( name : \"api\" , platforms : [ . macOS ( . v12 ) ], dependencies : [ . package ( url : \"https://github.com/vapor/vapor\" , . upToNextMajor ( from : \"4.7.0\" )), . package ( url : \"https://github...",
+                "title": "Deploying to AWS with Fargate, Vapor, and MongoDB Atlas |...",
+                "url": "https://www.swift.org/server/guides/deploying/aws-copilot-fargate-vapor-mongo.html",
+                "usesRedirectURL": false
+              }
+            ],
+            "httpError": "search_blocked",
+            "query": "site:swift.org PackageDescription",
+            "transport": "automatic",
+            "usedBrowser": true,
+            "firstExpectedRank": 1
+          },
+          {
+            "elapsedSeconds": 2.008327007293701,
+            "expectedURLContains": "swift.org",
+            "explicitEmpty": false,
+            "hits": [
+              {
+                "snippet": "Announcing Swift System Metrics 1.0: Process-Level Monitoring February 20, 2026 We are excited to announce the 1.0 release of Swift System Metrics, a Swift package that collects process-level system metrics like",
+                "title": "Latest Swift News - Blog | Swift.org",
+                "url": "https://www.swift.org/blog/?id=8",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "What's new in Swift: December 2025 Edition December 19, 2025 Welcome to the latest digest of news from the Swift project. Digest Exploring the Swift SDK for Android December 18, 2025 Since the announcement of the preview Swift SDK for Android,the Android workgroup has seen a lot of interest...",
+                "title": "Blog | Swift.org",
+                "url": "https://www.swift.org/blog/",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "Announcing Swift System Metrics 1.0: Process-Level Monitoring February 20, 2026 We are excited to announce the 1.0 release of Swift System Metrics, a Swift package that collects process-level system metrics like CPU utilization time and memory usage. Swift System Metrics runs on both Linux and ma...",
+                "title": "Latest Swift News - Blog | Swift.org",
+                "url": "https://developer.apple.com/swift/blog/?id=31",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "Announcing Swift System Metrics 1.0: Process-Level Monitoring February 20, 2026 We are excited to announce the 1.0 release of Swift System Metrics, a Swift package that collects process-level system metrics like CPU utilization time and memory usage. Swift System Metrics runs on both Linux and ma...",
+                "title": "Latest Swift News - Blog | Swift.org",
+                "url": "https://developer.apple.com/swift/blog/?id=8",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": ": swift-6.1.2-RELEASE...swift-6.1.3-RELEASE Contributors shahmishal and rconnell9 Assets 2 Swift 6.2 Release 14 Oct 06:11 jakepetroules swift-6.2-RELEASE 3cf1cb6 Swift 6.2 Release Latest What's Changed Include the path to the platform's PrivateFrameworks directory in DYLD_FRAMEWORK_PA...",
+                "title": "Releases · swiftlang/swift-package-manager",
+                "url": "https://github.com/swiftlang/swift-package-manager/releases",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "Swift 5.9.1 RELEASE for Linux - AArch64 / Arm64 Debian 11 Debian 12 Ubuntu 23.04 Note~ Ubuntu 20.04 and Ubuntu 22.04 arm64 versions are now available direct fromSwift.org Ubuntu 18.04 is not available as it has reached EOL. Debian 10 is not available as Swift 5.9 is not compatible with...",
+                "title": "Releases · futurejones/swift-arm64",
+                "url": "https://github.com/futurejones/swift-arm64/releases",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "SwiftX-3.15.6 (21-Jun-2023) This release has been withdrawn due to changes in the J-Link DLL. Please use 3.15.7 instead and be sure to install the Segger J-Link software update bundled in the SwiftX installer. ARM Updated to latest ARM J-Link SDK 7.88h ...",
+                "title": "SwiftX Release History - FORTH, Inc",
+                "url": "https://www.forth.com/embedded/revs/",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "This release brings many great improvements and bug fixes. Thanks to our awesome contributors ! For a complete list of changes, please refer to the CHANGELOG . SwifterSwift is a collection of over 500 native Swift extensions , with handy methods, syntactic sugar, and performance improvements for ...",
+                "title": "SwifterSwift - Swift Package Registry",
+                "url": "https://swiftpackageregistry.com/SwifterSwift/SwifterSwift",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "Not a lot going on at the moment This is The Life of a Showgirl in 2025 Taylor Swift的2025年大事总结如下: 1/16 🏆《The Tortured Poets Department》以695.5万总销量问鼎美国2024年专辑排行榜,并成为史...",
+                "title": "...going on at the moment This is... 来自TaylorSwiftLatest...",
+                "url": "https://weibo.com/3268874514/QkZS5ymwV",
+                "usesRedirectURL": false
+              },
+              {
+                "snippet": "For the best experience, we recommend using the latest version of SKIE with the latest supported version of Kotlin. A new SKIE version with support for a new Kotlin version is usually released within a couple of working days after the Kotlin release. The delay tends to be shorter for the ...",
+                "title": "SKIE Intro | SKIE",
+                "url": "https://skie.touchlab.co/intro",
+                "usesRedirectURL": false
+              }
+            ],
+            "httpError": "search_blocked",
+            "query": "latest Swift release",
+            "transport": "automatic",
+            "usedBrowser": true,
+            "firstExpectedRank": 1
+          },
+          {
+            "elapsedSeconds": 1.430029034614563,
+            "error": "search_blocked",
+            "expectedURLContains": "duckduckgo.com",
+            "explicitEmpty": false,
+            "hits": [],
+            "httpError": "search_blocked",
+            "query": "DuckDuckGo search syntax",
+            "transport": "automatic",
+            "usedBrowser": true,
+            "firstExpectedRank": null
+          },
+          {
+            "elapsedSeconds": 0.90851891040802,
+            "error": "search_blocked",
+            "expectedURLContains": "github.com",
+            "explicitEmpty": false,
+            "hits": [],
+            "httpError": "search_blocked",
+            "query": "\"Swift ArgumentParser\" GitHub",
+            "transport": "automatic",
+            "usedBrowser": true,
+            "firstExpectedRank": null
+          },
+          {
+            "elapsedSeconds": 0.9115220308303833,
+            "error": "search_blocked",
+            "explicitEmpty": false,
+            "hits": [],
+            "httpError": "search_blocked",
+            "query": "filetype:pdf Swift concurrency",
+            "transport": "automatic",
+            "usedBrowser": true,
+            "firstExpectedRank": null
+          },
+          {
+            "elapsedSeconds": 0.9112919569015503,
+            "error": "search_blocked",
+            "explicitEmpty": false,
+            "hits": [],
+            "httpError": "search_blocked",
+            "query": "intitle:SwiftSoup selector",
+            "transport": "automatic",
+            "usedBrowser": true,
+            "firstExpectedRank": null
+          }
+        ]
+      }
+    },
+    {
+      "corpus": "technical",
+      "transport": "automatic",
+      "batch": 2,
+      "metrics": {
+        "queryCount": 10,
+        "validQueryCount": 0,
+        "nonemptyQueryCount": 0,
+        "meanReciprocalRank": 0.0,
+        "p50SuccessfulLatencySeconds": null,
+        "p95SuccessfulLatencySeconds": null,
+        "browserInvocations": 10,
+        "fallbackAttempts": 10,
+        "successfulFallbacks": 0,
+        "results": [
+          {
+            "elapsedSeconds": 2.939527988433838,
+            "error": "search_blocked",
+            "expectedURLContains": "github.com/scinfu/SwiftSoup",
+            "explicitEmpty": false,
+            "hits": [],
+            "httpError": "search_blocked",
+            "query": "SwiftSoup GitHub",
+            "transport": "automatic",
+            "usedBrowser": true,
+            "firstExpectedRank": null
+          },
+          {
+            "elapsedSeconds": 0.9231710433959961,
+            "error": "search_blocked",
+            "expectedURLContains": "drawthings.ai",
+            "explicitEmpty": false,
+            "hits": [],
+            "httpError": "search_blocked",
+            "query": "Draw Things app",
+            "transport": "automatic",
+            "usedBrowser": true,
+            "firstExpectedRank": null
+          },
+          {
+            "elapsedSeconds": 0.9134089946746826,
+            "error": "search_blocked",
+            "expectedURLContains": "platform.openai.com/docs",
+            "explicitEmpty": false,
+            "hits": [],
+            "httpError": "search_blocked",
+            "query": "OpenAI API docs",
+            "transport": "automatic",
+            "usedBrowser": true,
+            "firstExpectedRank": null
+          },
+          {
+            "elapsedSeconds": 0.9227700233459473,
+            "error": "search_blocked",
+            "expectedURLContains": "developer.apple.com",
+            "explicitEmpty": false,
+            "hits": [],
+            "httpError": "search_blocked",
+            "query": "site:developer.apple.com URLSession Swift",
+            "transport": "automatic",
+            "usedBrowser": true,
+            "firstExpectedRank": null
+          },
+          {
+            "elapsedSeconds": 0.9200060367584229,
+            "error": "search_blocked",
+            "expectedURLContains": "swift.org",
+            "explicitEmpty": false,
+            "hits": [],
+            "httpError": "search_blocked",
+            "query": "site:swift.org PackageDescription",
+            "transport": "automatic",
+            "usedBrowser": true,
+            "firstExpectedRank": null
+          },
+          {
+            "elapsedSeconds": 0.9291759729385376,
+            "error": "search_blocked",
+            "expectedURLContains": "swift.org",
+            "explicitEmpty": false,
+            "hits": [],
+            "httpError": "search_blocked",
+            "query": "latest Swift release",
+            "transport": "automatic",
+            "usedBrowser": true,
+            "firstExpectedRank": null
+          },
+          {
+            "elapsedSeconds": 0.9236680269241333,
+            "error": "search_blocked",
+            "expectedURLContains": "duckduckgo.com",
+            "explicitEmpty": false,
+            "hits": [],
+            "httpError": "search_blocked",
+            "query": "DuckDuckGo search syntax",
+            "transport": "automatic",
+            "usedBrowser": true,
+            "firstExpectedRank": null
+          },
+          {
+            "elapsedSeconds": 0.9208019971847534,
+            "error": "search_blocked",
+            "expectedURLContains": "github.com",
+            "explicitEmpty": false,
+            "hits": [],
+            "httpError": "search_blocked",
+            "query": "\"Swift ArgumentParser\" GitHub",
+            "transport": "automatic",
+            "usedBrowser": true,
+            "firstExpectedRank": null
+          },
+          {
+            "elapsedSeconds": 0.9168469905853271,
+            "error": "search_blocked",
+            "explicitEmpty": false,
+            "hits": [],
+            "httpError": "search_blocked",
+            "query": "filetype:pdf Swift concurrency",
+            "transport": "automatic",
+            "usedBrowser": true,
+            "firstExpectedRank": null
+          },
+          {
+            "elapsedSeconds": 0.9208410978317261,
+            "error": "search_blocked",
+            "explicitEmpty": false,
+            "hits": [],
+            "httpError": "search_blocked",
+            "query": "intitle:SwiftSoup selector",
+            "transport": "automatic",
+            "usedBrowser": true,
+            "firstExpectedRank": null
+          }
+        ]
+      }
+    },
+    {
+      "corpus": "supplemental",
+      "transport": "http",
+      "batch": 1,
+      "metrics": {
+        "queryCount": 6,
+        "validQueryCount": 0,
+        "nonemptyQueryCount": 0,
+        "meanReciprocalRank": 0.0,
+        "p50SuccessfulLatencySeconds": null,
+        "p95SuccessfulLatencySeconds": null,
+        "browserInvocations": 0,
+        "fallbackAttempts": 0,
+        "successfulFallbacks": 0,
+        "results": [
+          {
+            "elapsedSeconds": 1.4009950160980225,
+            "error": "search_blocked",
+            "expectedURLContains": "dpm.org.cn",
+            "explicitEmpty": false,
+            "hits": [],
+            "query": "故宫博物院 官网",
+            "transport": "http",
+            "usedBrowser": false,
+            "firstExpectedRank": null
+          },
+          {
+            "elapsedSeconds": 0.4084089994430542,
+            "error": "search_blocked",
+            "expectedURLContains": "swift",
+            "explicitEmpty": false,
+            "hits": [],
+            "query": "Swift 中文教程",
+            "transport": "http",
+            "usedBrowser": false,
+            "firstExpectedRank": null
+          },
+          {
+            "elapsedSeconds": 0.4102400541305542,
+            "error": "search_blocked",
+            "expectedURLContains": "shurufa.sogou.com",
+            "explicitEmpty": false,
+            "hits": [],
+            "query": "搜狗输入法 官网",
+            "transport": "http",
+            "usedBrowser": false,
+            "firstExpectedRank": null
+          },
+          {
+            "elapsedSeconds": 0.4146840572357178,
+            "error": "search_blocked",
+            "expectedURLContains": "cppreference.com",
+            "explicitEmpty": false,
+            "hits": [],
+            "query": "C++ 参考手册",
+            "transport": "http",
+            "usedBrowser": false,
+            "firstExpectedRank": null
+          },
+          {
+            "elapsedSeconds": 0.40534090995788574,
+            "error": "search_blocked",
+            "expectedURLContains": "github.com/scinfu/SwiftSoup",
+            "explicitEmpty": false,
+            "hits": [],
+            "query": "SwiftSoup GitHub",
+            "transport": "http",
+            "usedBrowser": false,
+            "firstExpectedRank": null
+          },
+          {
+            "elapsedSeconds": 0.4128289222717285,
+            "error": "search_blocked",
+            "explicitEmpty": false,
+            "hits": [],
+            "query": "\"qzxvnonexistent178891sitecheck\"",
+            "transport": "http",
+            "usedBrowser": false,
+            "firstExpectedRank": null
+          }
+        ]
+      }
+    },
+    {
+      "corpus": "supplemental",
+      "transport": "browser",
+      "batch": 1,
+      "metrics": {
+        "queryCount": 6,
+        "validQueryCount": 0,
+        "nonemptyQueryCount": 0,
+        "meanReciprocalRank": 0.0,
+        "p50SuccessfulLatencySeconds": null,
+        "p95SuccessfulLatencySeconds": null,
+        "browserInvocations": 6,
+        "fallbackAttempts": 0,
+        "successfulFallbacks": 0,
+        "results": [
+          {
+            "elapsedSeconds": 1.5565040111541748,
+            "error": "search_blocked",
+            "expectedURLContains": "dpm.org.cn",
+            "explicitEmpty": false,
+            "hits": [],
+            "query": "故宫博物院 官网",
+            "transport": "browser",
+            "usedBrowser": true,
+            "firstExpectedRank": null
+          },
+          {
+            "elapsedSeconds": 0.5051629543304443,
+            "error": "search_blocked",
+            "expectedURLContains": "swift",
+            "explicitEmpty": false,
+            "hits": [],
+            "query": "Swift 中文教程",
+            "transport": "browser",
+            "usedBrowser": true,
+            "firstExpectedRank": null
+          },
+          {
+            "elapsedSeconds": 0.5089420080184937,
+            "error": "search_blocked",
+            "expectedURLContains": "shurufa.sogou.com",
+            "explicitEmpty": false,
+            "hits": [],
+            "query": "搜狗输入法 官网",
+            "transport": "browser",
+            "usedBrowser": true,
+            "firstExpectedRank": null
+          },
+          {
+            "elapsedSeconds": 0.5047870874404907,
+            "error": "search_blocked",
+            "expectedURLContains": "cppreference.com",
+            "explicitEmpty": false,
+            "hits": [],
+            "query": "C++ 参考手册",
+            "transport": "browser",
+            "usedBrowser": true,
+            "firstExpectedRank": null
+          },
+          {
+            "elapsedSeconds": 0.509145975112915,
+            "error": "search_blocked",
+            "expectedURLContains": "github.com/scinfu/SwiftSoup",
+            "explicitEmpty": false,
+            "hits": [],
+            "query": "SwiftSoup GitHub",
+            "transport": "browser",
+            "usedBrowser": true,
+            "firstExpectedRank": null
+          },
+          {
+            "elapsedSeconds": 0.5094109773635864,
+            "error": "search_blocked",
+            "explicitEmpty": false,
+            "hits": [],
+            "query": "\"qzxvnonexistent178891sitecheck\"",
+            "transport": "browser",
+            "usedBrowser": true,
+            "firstExpectedRank": null
+          }
+        ]
+      }
+    }
+  ],
+  "persistentChallengeChecks": {
+    "queryCount": 2,
+    "validQueryCount": 0,
+    "nonemptyQueryCount": 0,
+    "meanReciprocalRank": 0.0,
+    "p50SuccessfulLatencySeconds": null,
+    "p95SuccessfulLatencySeconds": null,
+    "browserInvocations": 2,
+    "fallbackAttempts": 0,
+    "successfulFallbacks": 0,
+    "results": [
+      {
+        "elapsedSeconds": 15.04218602180481,
+        "error": "search_blocked",
+        "expectedURLContains": "github.com/scinfu/SwiftSoup",
+        "explicitEmpty": false,
+        "hits": [],
+        "query": "SwiftSoup GitHub",
+        "transport": "browser",
+        "usedBrowser": true,
+        "firstExpectedRank": null
+      },
+      {
+        "elapsedSeconds": 15.004590034484863,
+        "error": "search_blocked",
+        "expectedURLContains": "dpm.org.cn",
+        "explicitEmpty": false,
+        "hits": [],
+        "query": "故宫博物院 官网",
+        "transport": "browser",
+        "usedBrowser": true,
+        "firstExpectedRank": null
+      }
+    ]
+  },
+  "challengeObservation": {
+    "title": "百度安全验证",
+    "visibleDialogClass": "passMod_dialog-wrapper passMod_show",
+    "interaction": "Image-rotation slider",
+    "instruction": "拖动左侧滑块使图片为正",
+    "manualVerificationAttempted": false,
+    "credentialsOrChallengeTokensStored": false
+  },
+  "comparison": {
+    "sogouSource": "2026-09-08-sogou.json",
+    "sogouFinalTechnicalValidResponses": "10/10 in each final batch",
+    "sogouFinalTechnicalNonemptyResponses": "7/10 in each final batch",
+    "sogouFinalTechnicalMRR": 0,
+    "conclusion": "Baidu is a stronger navigational-relevance candidate but repeated queries encountered persistent interactive verification. Do not assume browser fallback provides reliable unattended availability."
+  }
+}

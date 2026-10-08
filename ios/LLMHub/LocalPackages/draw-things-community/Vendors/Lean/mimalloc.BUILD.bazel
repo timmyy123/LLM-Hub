@@ -1,0 +1,27 @@
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "mimalloc",
+    srcs = ["src/static.c"],
+    hdrs = glob(["include/**/*.h"]),
+    additional_compiler_inputs = ["@//Vendors/Lean:include/LeanAllocatorPolicy.h"],
+    textual_hdrs = glob([
+        "src/**/*.c",
+        "src/**/*.h",
+    ], exclude = ["src/static.c"]),
+    copts = [
+        "-include",
+        "$(location @//Vendors/Lean:include/LeanAllocatorPolicy.h)",
+        "-O3",
+        "-Wno-deprecated-declarations",
+        "-Wno-unused-function",
+    ],
+    defines = [
+        "MI_SECURE=0",
+        "MI_STATIC_LIB",
+        "MI_WIN_NOREDIRECT",
+        "NDEBUG",
+    ],
+    includes = ["include"],
+    linkstatic = True,
+)

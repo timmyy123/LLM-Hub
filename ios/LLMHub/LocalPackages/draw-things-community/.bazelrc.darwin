@@ -1,0 +1,44 @@
+common --enable_bzlmod=false
+
+common:mps --define=enable_mps=true
+
+common --disk_cache=~/.cache/bazel
+
+build --cxxopt='-std=c++17'
+build --config=mps
+
+build --features=swift.use_global_module_cache
+build --strategy=SwiftCompile=worker
+build --features=swift.enable_batch_mode
+build --swiftcopt=-Xfrontend
+build --swiftcopt=-internalize-at-link
+
+# Rust's debug-info stripping can misalign proc-macro dylibs rejected by macOS 27.
+# Keep host build tools loadable until the pinned Rust toolchain includes the fix.
+# https://github.com/rust-lang/rust/issues/157750
+build --@rules_rust//rust/settings:extra_exec_rustc_flags=-Cstrip=none
+
+build --modify_execution_info=^(ObjcLink|BundleApp|ProcessAndSign)$=+no-cache
+
+# The combined Python/Rust/C++/Objective-C runtimes exceed the compact table limit.
+# Preserve DWARF unwind metadata when the linker discards compact unwind tables;
+# otherwise caught C++ exceptions (including OSH's HardExit) can abort the app.
+build --copt=-femit-dwarf-unwind=always
+build --linkopt=-Wl,-no_compact_unwind
+
+# Instrument Swift, Objective-C, C, and C++ code and package the Apple ASan
+# runtime. Use this explicitly with `--config=asan`; sanitizer builds are not
+# suitable for release artifacts.
+build:asan --compilation_mode=dbg
+build:asan --features=asan
+build:asan --copt=-fno-omit-frame-pointer
+build:asan --apple_generate_dsym
+
+common:release --define=enable_mps=true
+common:release --swiftcopt=-whole-module-optimization
+common:release --compilation_mode=opt
+common:release --apple_generate_dsym
+common:release --swiftcopt=-Xfrontend
+common:release --swiftcopt=-internalize-at-link
+
+try-import %workspace%/.bazelrc.local

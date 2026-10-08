@@ -1,0 +1,229 @@
+enum SamplerType: byte {
+  DPMPP2MKarras,
+  EulerA,
+  DDIM,
+  PLMS,
+  DPMPPSDEKarras,
+  UniPC,
+  LCM,
+  EulerASubstep,
+  DPMPPSDESubstep,
+  TCD,
+  EulerATrailing,
+  DPMPPSDETrailing,
+  DPMPP2MAYS,
+  EulerAAYS,
+  DPMPPSDEAYS,
+  DPMPP2MTrailing,
+  DDIMTrailing,
+  UniPCTrailing,
+  UniPCAYS,
+  TCDTrailing,
+}
+
+enum SeedMode: byte {
+  Legacy,
+  TorchCpuCompatible,
+  ScaleAlike,
+  NvidiaGpuCompatible,
+}
+
+enum ControlMode: byte {
+  Balanced,
+  Prompt,
+  Control,
+}
+
+enum ControlInputType: byte {
+  Unspecified,
+  Custom,
+  Depth,
+  Canny,
+  Scribble,
+  Pose,
+  Normalbae,
+  Color,
+  Lineart,
+  Softedge,
+  Seg,
+  Inpaint,
+  Ip2p,
+  Shuffle,
+  Mlsd,
+  Tile,
+  Blur,
+  Lowquality,
+  Gray,
+}
+
+table Control {
+  file: string;
+  weight: float = 1;
+  guidance_start: float = 0;
+  guidance_end: float = 1;
+  no_prompt: bool = false;
+  global_average_pooling: bool = true;
+  down_sampling_rate: float = 1;
+  control_mode: ControlMode = Balanced;
+  target_blocks: [string];
+  input_override: ControlInputType = Unspecified;
+}
+
+enum LoRAMode: byte {
+  All,
+  Base,
+  Refiner,
+}
+
+table LoRA {
+  file: string;
+  weight: float = 0.6;
+  mode: LoRAMode = All;
+}
+
+enum Reason: int {
+  Other,
+  Generate,
+  Imported,
+  Draw,
+  Mask,
+  Scribble,
+  Moodboard,
+  DepthMap,
+  Clear,
+}
+
+enum CompressionMethod: byte {
+  Disabled,
+  H264,
+  H265,
+  Jpeg,
+}
+
+enum ColorCalibration: byte {
+  Disabled,
+  Lab,
+}
+
+table TensorHistoryNode {
+  lineage: long (primary);
+  logical_time: long (primary);
+  start_width: ushort;
+  start_height: ushort;
+  seed: uint;
+  steps: uint;
+  guidance_scale: float;
+  strength: float;
+  model: string;
+  tensor_id: long (indexed);
+  mask_id: long (indexed);
+  wall_clock: long;
+  text_edits: long = -1;
+  text_lineage: long = -1;
+  batch_size: uint = 1;
+  sampler: SamplerType = DPMPP2MKarras;
+  hires_fix: bool = false;
+  hires_fix_start_width: ushort;
+  hires_fix_start_height: ushort;
+  hires_fix_strength: float = 0.7;
+  upscaler: string;
+  scale_factor: ushort = 1;
+  depth_map_id: long (indexed);
+  generated: bool = true;
+  image_guidance_scale: float = 1.5;
+  seed_mode: SeedMode = Legacy;
+  clip_skip: uint = 1;
+  controls: [Control];
+  scribble_id: long (indexed);
+  pose_id: long (indexed);
+  loras: [LoRA];
+  color_palette_id: long (indexed);
+  mask_blur: float;
+  custom_id: long (indexed);
+  face_restoration: string;
+  decode_with_attention: bool = true (deprecated);
+  hires_fix_decode_with_attention: bool = true (deprecated);
+  clip_weight: float = 1;
+  negative_prompt_for_image_prior: bool = true;
+  image_prior_steps: uint = 5;
+  data_stored: int = 0;
+  preview_id: long (indexed);
+  content_offset_x: int;
+  content_offset_y: int;
+  scale_factor_by_120: int = 120;
+  refiner_model: string;
+  original_image_height: uint;
+  original_image_width: uint;
+  crop_top: int;
+  crop_left: int;
+  target_image_height: uint;
+  target_image_width: uint;
+  aesthetic_score: float;
+  negative_aesthetic_score: float;
+  zero_negative_prompt: bool = false;
+  refiner_start: float;
+  negative_original_image_height: uint;
+  negative_original_image_width: uint;
+  shuffle_data_stored: int = 0;
+  fps_id: uint = 5;
+  motion_bucket_id: uint = 127;
+  cond_aug: float = 0.02;
+  start_frame_cfg: float = 1.0;
+  num_frames: uint = 14;
+  mask_blur_outset: int = 0;
+  sharpness: float = 0;
+  shift: float = 1.0;
+  stage_2_steps: uint = 10;
+  stage_2_cfg: float = 1.0;
+  stage_2_shift: float = 1.0;
+  tiled_decoding: bool = false;
+  decoding_tile_width: ushort = 10;
+  decoding_tile_height: ushort = 10;
+  decoding_tile_overlap: ushort = 2;
+  stochastic_sampling_gamma: float = 0.3;
+  preserve_original_after_inpaint: bool = true;
+  tiled_diffusion: bool = false;
+  diffusion_tile_width: ushort = 16;
+  diffusion_tile_height: ushort = 16;
+  diffusion_tile_overlap: ushort = 2;
+  upscaler_scale_factor: ubyte = 0;
+  script_session_id: ulong;
+  t5_text_encoder: bool = true;
+  separate_clip_l: bool = false;
+  clip_l_text: string;
+  separate_open_clip_g: bool = false;
+  open_clip_g_text: string;
+  speed_up_with_guidance_embed: bool = true;
+  guidance_embed: float = 3.5;
+  resolution_dependent_shift: bool = true;
+  profile_data: [ubyte];
+  tea_cache_start: int = 5;
+  tea_cache_end: int = -1;
+  tea_cache_threshold: float = 0.06;
+  tea_cache: bool = false;
+  separate_t5: bool = false;
+  t5_text: string;
+  tea_cache_max_skip_steps: int = 3;
+  text_prompt: string;
+  negative_text_prompt: string;
+  clip_id: long = -1;
+  index_in_a_clip: int = 0;
+  causal_inference_enabled: bool = false;
+  causal_inference: int = 3;
+  causal_inference_pad: int = 0;
+  cfg_zero_star: bool = false;
+  cfg_zero_init_steps: int = 0;
+  generation_time: double = 0;
+  reason: Reason = Other;
+  compression_artifacts: CompressionMethod = Disabled;
+  compression_artifacts_quality: float = 43.1;
+  audio: bool = false;
+  color_calibration: ColorCalibration = Disabled;
+  expand_prompt_to_json: bool = false;
+  shift_for_audio: float = 3.0;
+  uses_sol_attention: bool = false;
+  sol_attention_start: int = 2;
+  sol_attention_tau: float = 0.5;
+}
+
+root_type TensorHistoryNode;

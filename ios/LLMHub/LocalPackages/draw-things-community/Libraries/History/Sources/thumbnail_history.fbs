@@ -1,0 +1,6 @@
+table ThumbnailHistoryNode {
+  id: long (primary);
+  data: [ubyte];
+}
+
+root_type ThumbnailHistoryNode;

@@ -1,0 +1,79 @@
+package(default_visibility = ["//visibility:public"])
+
+exports_files(["src/util/shell.cpp"])
+
+cc_library(
+    name = "LeanNative",
+    srcs = glob([
+        "src/kernel/*.cpp",
+        "src/initialize/*.cpp",
+        "src/library/*.cpp",
+        "src/library/constructions/*.cpp",
+        "src/runtime/*.cpp",
+        "src/runtime/uv/*.cpp",
+        "src/util/*.cpp",
+    ], exclude = [
+        "src/runtime/openssl.cpp",
+        "src/util/shell.cpp",
+    ]),
+    hdrs = glob([
+        "src/**/*.h",
+    ]),
+    copts = [
+        "-std=c++20",
+        "-O3",
+        "-ffp-contract=off",
+        "-fvisibility=hidden",
+        "-fvisibility-inlines-hidden",
+        "-Wno-deprecated-declarations",
+        "-Wno-unused-parameter",
+    ],
+    defines = [
+        "LEAN_BUILD_TYPE=\"Release\"",
+        "LEAN_CHECK_OLEAN_VERSION",
+        "LEAN_EXPORTING",
+        "LEAN_MULTI_THREAD",
+        "LEAN_USE_GMP",
+    ],
+    includes = [
+        "src",
+        "src/include",
+    ],
+    # Preserve the host process: the bridge supplies embedding-safe public entry
+    # points. Keep these local so generated Lean calls still use the public names.
+    local_defines = [
+        "lean_io_exit=lean_native_process_exit",
+        "lean_io_force_exit=lean_native_process_force_exit",
+    ],
+    linkstatic = True,
+    deps = [
+        "@//Vendors/Lean:LeanConfiguration",
+        "@lean_gmp//:gmp",
+        "@lean_libuv//:libuv",
+        "@lean_mimalloc//:mimalloc",
+    ],
+)
+
+cc_library(
+    name = "LeanGenerated",
+    srcs = glob([
+        "stage0/stdlib/Init.c",
+        "stage0/stdlib/Init/**/*.c",
+        "stage0/stdlib/Lean.c",
+        "stage0/stdlib/Lean/**/*.c",
+        "stage0/stdlib/Std.c",
+        "stage0/stdlib/Std/**/*.c",
+    ]),
+    copts = [
+        "-O3",
+        "-ffp-contract=off",
+        "-fvisibility=hidden",
+        "-w",
+    ],
+    # LeanBridge supplies exact -u roots for the interpreter's public ABI.
+    linkstatic = True,
+    deps = [
+        ":LeanNative",
+        "@//Vendors/Lean:LeanConfiguration",
+    ],
+)

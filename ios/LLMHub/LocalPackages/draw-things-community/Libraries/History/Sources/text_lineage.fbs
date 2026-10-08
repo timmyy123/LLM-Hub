@@ -1,0 +1,7 @@
+table TextLineageNode {
+  lineage: long (primary);
+  point_to: long (indexed);
+}
+
+
+root_type TextLineageNode;

@@ -1,0 +1,64 @@
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+genrule(
+    name = "detected_cpp_config",
+    srcs = ["@//Vendors/OSH:detected-cpp-config.h"],
+    outs = ["_build/detected-cpp-config.h"],
+    cmd = "cp $(location @//Vendors/OSH:detected-cpp-config.h) $@",
+)
+
+cc_library(
+    name = "osh_ios",
+    srcs = [
+        "_gen/bin/oils_for_unix.mycpp.cc",
+        "_gen/bin/text_files.cc",
+        "_gen/core/runtime.asdl.cc",
+        "_gen/core/value.asdl.cc",
+        "_gen/cpp/build_stamp.cc",
+        "_gen/data_lang/nil8.asdl.cc",
+        "_gen/display/pretty.asdl.cc",
+        "_gen/frontend/arg_types.cc",
+        "_gen/frontend/consts.cc",
+        "_gen/frontend/help_meta.cc",
+        "_gen/frontend/id_kind.asdl.cc",
+        "_gen/frontend/signal.cc",
+        "_gen/frontend/syntax.asdl.cc",
+        "_gen/osh/arith_parse.cc",
+        "_gen/ysh/grammar_tables.cc",
+        "cpp/core.cc",
+        "cpp/data_lang.cc",
+        "cpp/fanos.cc",
+        "cpp/frontend_flag_spec.cc",
+        "cpp/frontend_match.cc",
+        "cpp/frontend_pyreadline.cc",
+        "cpp/libc.cc",
+        "cpp/osh.cc",
+        "cpp/osh_tdop.cc",
+        "cpp/pgen2.cc",
+        "cpp/pylib.cc",
+        "cpp/stdlib.cc",
+        "mycpp/bump_leak_heap.cc",
+        "mycpp/gc_builtins.cc",
+        "mycpp/gc_iolib.cc",
+        "mycpp/gc_mops.cc",
+        "mycpp/gc_mylib.cc",
+        "mycpp/gc_str.cc",
+        "mycpp/hash.cc",
+        "mycpp/mark_sweep_heap.cc",
+    ],
+    hdrs = glob(["**/*.h"]) + [":detected_cpp_config"],
+    copts = [
+        "-Wno-deprecated-declarations",
+        "-Wno-invalid-offsetof",
+    ],
+    defines = [
+        "OSH_IOS",
+        "MARK_SWEEP",
+    ],
+    includes = ["."],
+    linkstatic = True,
+    textual_hdrs = ["cpp/fanos_shared.c"],
+    deps = ["@//Vendors/OSH:api"],
+)

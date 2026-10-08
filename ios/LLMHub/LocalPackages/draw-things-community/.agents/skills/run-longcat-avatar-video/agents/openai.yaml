@@ -1,0 +1,4 @@
+interface:
+  display_name: "Run LongCat Avatar Video"
+  short_description: "Generate and benchmark LongCat avatar videos"
+  default_prompt: "Use $run-longcat-avatar-video to generate and validate a LongCat avatar video with matched i8x/q8p settings."

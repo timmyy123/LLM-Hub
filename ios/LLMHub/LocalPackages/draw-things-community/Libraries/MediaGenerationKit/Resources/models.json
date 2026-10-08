@@ -1,0 +1,4012 @@
+[
+  {
+    "name": "LTX-2.3 22B [distilled] (Exact)",
+    "version": "ltx2.3",
+    "autoencoder": "ltx_2.3_audio_video_vae_f16.ckpt",
+    "clip_encoder": "ltx_2.3_22b_distilled_f16.ckpt",
+    "prefix": "",
+    "modifier": "kontext",
+    "default_scale": 12,
+    "hires_fix_scale": 24,
+    "file": "ltx_2.3_22b_distilled_f16.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "gemma_3_12b_it_qat_f16.ckpt",
+    "high_precision_autoencoder": false,
+    "latents_upscalers": [
+      {
+        "file": "ltx_2.3_spatial_upscaler_x1.5_f16.ckpt",
+        "scale": "1.5"
+      }
+    ],
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "note": "[LTX-2.3](https://huggingface.co/Lightricks/LTX-2.3) is a significant update to LTX-2 with improved audio and visual quality and enhanced prompt adherence. It is a state-of-the-art open-source audio-video foundation model developed by Lightricks and can generate synchronized video and audio within a single model. The [distilled] checkpoint is the distilled version of the full model and is optimized for fast inference; for best results, use 8 sampling steps and set Text Guidance to 1.0.",
+    "copyright": "\u00a9 2026 Lightricks"
+  },
+  {
+    "name": "LTX-2.3 22B [dev] (Exact)",
+    "version": "ltx2.3",
+    "autoencoder": "ltx_2.3_audio_video_vae_f16.ckpt",
+    "clip_encoder": "ltx_2.3_22b_dev_f16.ckpt",
+    "prefix": "",
+    "modifier": "kontext",
+    "default_scale": 12,
+    "hires_fix_scale": 24,
+    "file": "ltx_2.3_22b_dev_f16.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "gemma_3_12b_it_qat_f16.ckpt",
+    "high_precision_autoencoder": false,
+    "latents_upscalers": [
+      {
+        "file": "ltx_2.3_spatial_upscaler_x1.5_f16.ckpt",
+        "scale": "1.5"
+      }
+    ],
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "note": "[LTX-2.3](https://huggingface.co/Lightricks/LTX-2.3) is a significant update to LTX-2 with improved audio and visual quality and enhanced prompt adherence. It is a state-of-the-art open-source audio-video foundation model developed by Lightricks and can generate synchronized video and audio within a single model. The [dev] checkpoint is the full model variant and is fully trainable. For best results, set Text Guidance to 3.5 and use 20\u201330 sampling steps.",
+    "copyright": "\u00a9 2026 Lightricks"
+  },
+  {
+    "name": "Qwen Image 2512 (BF16, Exact)",
+    "version": "qwen_image",
+    "autoencoder": "qwen_image_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 16,
+    "hires_fix_scale": 24,
+    "file": "qwen_image_2512_bf16.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "qwen_2.5_vl_7b_f16.ckpt",
+    "high_precision_autoencoder": false,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "is_bf16": true,
+    "mmdit": {
+      "dual_attention_layers": [],
+      "qk_norm": true,
+      "activation_qk_scaling": {
+        "0": 2,
+        "1": 2,
+        "2": 2,
+        "3": 2,
+        "4": 2,
+        "5": 2,
+        "6": 2,
+        "7": 2,
+        "8": 2,
+        "9": 2,
+        "10": 2,
+        "11": 2,
+        "12": 2,
+        "13": 2,
+        "14": 2,
+        "15": 2,
+        "16": 2,
+        "17": 2,
+        "18": 2,
+        "19": 2,
+        "20": 2,
+        "21": 2,
+        "22": 2,
+        "23": 2,
+        "24": 2,
+        "25": 2,
+        "26": 2,
+        "27": 2,
+        "28": 2,
+        "29": 2,
+        "30": 2,
+        "31": 2,
+        "32": 2,
+        "33": 2,
+        "34": 2,
+        "35": 2,
+        "36": 2,
+        "37": 2,
+        "38": 2,
+        "39": 2,
+        "40": 2,
+        "41": 2,
+        "42": 2,
+        "43": 2,
+        "44": 2,
+        "45": 2,
+        "46": 2,
+        "47": 2,
+        "48": 2,
+        "49": 2,
+        "50": 2,
+        "51": 2,
+        "52": 2,
+        "53": 2,
+        "54": 2,
+        "55": 2,
+        "56": 2,
+        "57": 2,
+        "58": 2,
+        "59": 2
+      },
+      "activation_ffn_scaling": {
+        "0": 2,
+        "1": 2,
+        "2": 2,
+        "3": 2,
+        "4": 2,
+        "5": 2,
+        "6": 2,
+        "7": 2,
+        "8": 2,
+        "9": 2,
+        "10": 2,
+        "11": 2,
+        "12": 2,
+        "13": 2,
+        "14": 2,
+        "15": 2,
+        "16": 2,
+        "17": 2,
+        "18": 2,
+        "19": 2,
+        "20": 2,
+        "21": 2,
+        "22": 2,
+        "23": 2,
+        "24": 2,
+        "25": 2,
+        "26": 2,
+        "27": 2,
+        "28": 2,
+        "29": 2,
+        "30": 2,
+        "31": 2,
+        "32": 2,
+        "33": 2,
+        "34": 2,
+        "35": 2,
+        "36": 2,
+        "37": 2,
+        "38": 2,
+        "39": 2,
+        "40": 2,
+        "41": 2,
+        "42": 2,
+        "43": 2,
+        "44": 2,
+        "45": 2,
+        "46": 2,
+        "47": 2,
+        "48": 2,
+        "49": 2,
+        "50": 2,
+        "51": 2,
+        "52": 2,
+        "53": 2,
+        "54": 2,
+        "55": 2,
+        "56": 2,
+        "57": 2,
+        "58": 2,
+        "59": 2
+      }
+    },
+    "note": "[Qwen Image 2512](https://huggingface.co/Qwen/Qwen-Image-2512) is the december update of Qwen Image model with improvements on enhanced human realism, finer natural detail and improved text rendering. It is Apache 2.0-licensed and commercially friendly. The model is trained at multiple resolutions using a Flow Matching objective; trailing samplers yield the best results, with 30\u201350 sampling steps recommended. The BF16 version is only compatible with macOS 15, iOS 18 and above.",
+    "copyright": "\u00a9 2025 Alibaba"
+  },
+  {
+    "name": "FLUX.2 [klein] 9B",
+    "version": "flux2_9b",
+    "autoencoder": "flux_2_vae_f16.ckpt",
+    "prefix": "",
+    "modifier": "kontext",
+    "default_scale": 16,
+    "hires_fix_scale": 32,
+    "file": "flux_2_klein_9b_q8p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "qwen_3_8b_q8p.ckpt",
+    "high_precision_autoencoder": false,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "padded_text_encoding_length": 512,
+    "note": "[FLUX.2 [klein] 9B](https://huggingface.co/black-forest-labs/FLUX.2-klein-9B) is a 9 billion parameter rectified flow transformer capable of generating, editing and combining images based on text instructions.",
+    "copyright": "\u00a9 2026 Black Forest Labs",
+    "hugging_face_link": "black-forest-labs/FLUX.2-klein-9B"
+  },
+  {
+    "name": "FLUX.2 [klein] 9B (6-bit)",
+    "version": "flux2_9b",
+    "autoencoder": "flux_2_vae_f16.ckpt",
+    "prefix": "",
+    "modifier": "kontext",
+    "default_scale": 16,
+    "hires_fix_scale": 32,
+    "file": "flux_2_klein_9b_q6p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "qwen_3_8b_q8p.ckpt",
+    "high_precision_autoencoder": false,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "padded_text_encoding_length": 512,
+    "note": "[FLUX.2 [klein] 9B](https://huggingface.co/black-forest-labs/FLUX.2-klein-9B) is a 9 billion parameter rectified flow transformer capable of generating, editing and combining images based on text instructions.",
+    "copyright": "\u00a9 2026 Black Forest Labs",
+    "hugging_face_link": "black-forest-labs/FLUX.2-klein-9B"
+  },
+  {
+    "name": "FLUX.2 [klein] 9B KV",
+    "version": "flux2_9b",
+    "autoencoder": "flux_2_vae_f16.ckpt",
+    "prefix": "",
+    "modifier": "kontext_kv",
+    "default_scale": 16,
+    "hires_fix_scale": 32,
+    "file": "flux_2_klein_9b_kv_q8p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "qwen_3_8b_q8p.ckpt",
+    "high_precision_autoencoder": false,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "padded_text_encoding_length": 512,
+    "note": "[FLUX.2 [klein] 9B KV](https://huggingface.co/black-forest-labs/FLUX.2-klein-9b-kv) is a 9 billion parameter rectified flow transformer capable of generating, editing and combining images based on text instructions. This version contains KV-cache optimization that can speed-up inference.",
+    "copyright": "\u00a9 2026 Black Forest Labs",
+    "hugging_face_link": "black-forest-labs/FLUX.2-klein-9b-kv"
+  },
+  {
+    "name": "FLUX.2 [klein] 9B KV (6-bit)",
+    "version": "flux2_9b",
+    "autoencoder": "flux_2_vae_f16.ckpt",
+    "prefix": "",
+    "modifier": "kontext_kv",
+    "default_scale": 16,
+    "hires_fix_scale": 32,
+    "file": "flux_2_klein_9b_kv_q6p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "qwen_3_8b_q8p.ckpt",
+    "high_precision_autoencoder": false,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "padded_text_encoding_length": 512,
+    "note": "[FLUX.2 [klein] 9B KV](https://huggingface.co/black-forest-labs/FLUX.2-klein-9b-kv) is a 9 billion parameter rectified flow transformer capable of generating, editing and combining images based on text instructions. This version contains KV-cache optimization that can speed-up inference.",
+    "copyright": "\u00a9 2026 Black Forest Labs",
+    "hugging_face_link": "black-forest-labs/FLUX.2-klein-9b-kv"
+  },
+  {
+    "name": "FLUX.2 [dev]",
+    "version": "flux2",
+    "autoencoder": "flux_2_vae_f16.ckpt",
+    "prefix": "",
+    "modifier": "kontext",
+    "default_scale": 16,
+    "hires_fix_scale": 32,
+    "file": "flux_2_dev_q8p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "mistral_small_3.2_24b_instruct_2506_q8p.ckpt",
+    "high_precision_autoencoder": false,
+    "guidance_embed": true,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "note": "[FLUX.2 [dev]](https://huggingface.co/black-forest-labs/FLUX.2-dev) is a 32 billion parameter rectified flow transformer capable of generating, editing and combining images based on text instructions.",
+    "copyright": "\u00a9 2025 Black Forest Labs",
+    "hugging_face_link": "black-forest-labs/FLUX.2-dev"
+  },
+  {
+    "name": "FLUX.2 [dev] (6-bit)",
+    "version": "flux2",
+    "autoencoder": "flux_2_vae_f16.ckpt",
+    "prefix": "",
+    "modifier": "kontext",
+    "default_scale": 16,
+    "hires_fix_scale": 32,
+    "file": "flux_2_dev_q6p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "mistral_small_3.2_24b_instruct_2506_q8p.ckpt",
+    "high_precision_autoencoder": false,
+    "guidance_embed": true,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "note": "[FLUX.2 [dev]](https://huggingface.co/black-forest-labs/FLUX.2-dev) is a 32 billion parameter rectified flow transformer capable of generating, editing and combining images based on text instructions.",
+    "copyright": "\u00a9 2025 Black Forest Labs",
+    "hugging_face_link": "black-forest-labs/FLUX.2-dev"
+  },
+  {
+    "name": "FLUX.2 [klein] 9B Base",
+    "version": "flux2_9b",
+    "autoencoder": "flux_2_vae_f16.ckpt",
+    "prefix": "",
+    "modifier": "kontext",
+    "default_scale": 16,
+    "hires_fix_scale": 32,
+    "file": "flux_2_klein_base_9b_q8p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "qwen_3_8b_q8p.ckpt",
+    "high_precision_autoencoder": false,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "padded_text_encoding_length": 512,
+    "note": "[FLUX.2 [klein] 9B Base](https://huggingface.co/black-forest-labs/FLUX.2-klein-base-9B) is a 9 billion parameter rectified flow transformer capable of generating, editing and combining images based on text instructions.",
+    "copyright": "\u00a9 2026 Black Forest Labs",
+    "hugging_face_link": "black-forest-labs/FLUX.2-klein-base-9B"
+  },
+  {
+    "name": "FLUX.2 [klein] 9B Base (6-bit)",
+    "version": "flux2_9b",
+    "autoencoder": "flux_2_vae_f16.ckpt",
+    "prefix": "",
+    "modifier": "kontext",
+    "default_scale": 16,
+    "hires_fix_scale": 32,
+    "file": "flux_2_klein_base_9b_q6p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "qwen_3_8b_q8p.ckpt",
+    "high_precision_autoencoder": false,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "padded_text_encoding_length": 512,
+    "note": "[FLUX.2 [klein] 9B Base](https://huggingface.co/black-forest-labs/FLUX.2-klein-base-9B) is a 9 billion parameter rectified flow transformer capable of generating, editing and combining images based on text instructions.",
+    "copyright": "\u00a9 2026 Black Forest Labs",
+    "hugging_face_link": "black-forest-labs/FLUX.2-klein-base-9B"
+  },
+  {
+    "name": "FLUX.2 [klein] 4B (Exact)",
+    "version": "flux2_4b",
+    "autoencoder": "flux_2_vae_f16.ckpt",
+    "prefix": "",
+    "modifier": "kontext",
+    "default_scale": 16,
+    "hires_fix_scale": 32,
+    "file": "flux_2_klein_4b_f16.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "qwen_3_4b_f16.ckpt",
+    "high_precision_autoencoder": false,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "padded_text_encoding_length": 512,
+    "note": "[FLUX.2 [klein] 4B](https://huggingface.co/black-forest-labs/FLUX.2-klein-4B) is a 4 billion parameter rectified flow transformer capable of generating, editing and combining images based on text instructions.",
+    "copyright": "\u00a9 2026 Black Forest Labs"
+  },
+  {
+    "name": "FLUX.2 [klein] 4B Base (Exact)",
+    "version": "flux2_4b",
+    "autoencoder": "flux_2_vae_f16.ckpt",
+    "prefix": "",
+    "modifier": "kontext",
+    "default_scale": 16,
+    "hires_fix_scale": 32,
+    "file": "flux_2_klein_base_4b_f16.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "qwen_3_4b_f16.ckpt",
+    "high_precision_autoencoder": false,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "padded_text_encoding_length": 512,
+    "note": "[FLUX.2 [klein] 4B Base](https://huggingface.co/black-forest-labs/FLUX.2-klein-base-4B) is a 4 billion parameter rectified flow transformer capable of generating, editing and combining images based on text instructions.",
+    "copyright": "\u00a9 2026 Black Forest Labs"
+  },
+  {
+    "name": "FLUX.2 [klein] 9B (Exact)",
+    "version": "flux2_9b",
+    "autoencoder": "flux_2_vae_f16.ckpt",
+    "prefix": "",
+    "modifier": "kontext",
+    "default_scale": 16,
+    "hires_fix_scale": 32,
+    "file": "flux_2_klein_9b_f16.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "qwen_3_8b_f16.ckpt",
+    "high_precision_autoencoder": false,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "padded_text_encoding_length": 512,
+    "note": "[FLUX.2 [klein] 9B](https://huggingface.co/black-forest-labs/FLUX.2-klein-9B) is a 9 billion parameter rectified flow transformer capable of generating, editing and combining images based on text instructions.",
+    "copyright": "\u00a9 2026 Black Forest Labs"
+  },
+  {
+    "name": "FLUX.2 [klein] 9B KV (Exact)",
+    "version": "flux2_9b",
+    "autoencoder": "flux_2_vae_f16.ckpt",
+    "prefix": "",
+    "modifier": "kontext_kv",
+    "default_scale": 16,
+    "hires_fix_scale": 32,
+    "file": "flux_2_klein_9b_kv_f16.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "qwen_3_8b_f16.ckpt",
+    "high_precision_autoencoder": false,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "padded_text_encoding_length": 512,
+    "note": "[FLUX.2 [klein] 9B KV](https://huggingface.co/black-forest-labs/FLUX.2-klein-9b-kv) is a 9 billion parameter rectified flow transformer capable of generating, editing and combining images based on text instructions. This version contains KV-cache optimization that can speed-up inference.",
+    "copyright": "\u00a9 2026 Black Forest Labs"
+  },
+  {
+    "name": "FLUX.2 [klein] 9B Base (Exact)",
+    "version": "flux2_9b",
+    "autoencoder": "flux_2_vae_f16.ckpt",
+    "prefix": "",
+    "modifier": "kontext",
+    "default_scale": 16,
+    "hires_fix_scale": 32,
+    "file": "flux_2_klein_base_9b_f16.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "qwen_3_8b_f16.ckpt",
+    "high_precision_autoencoder": false,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "padded_text_encoding_length": 512,
+    "note": "[FLUX.2 [klein] 9B Base](https://huggingface.co/black-forest-labs/FLUX.2-klein-base-9B) is a 9 billion parameter rectified flow transformer capable of generating, editing and combining images based on text instructions.",
+    "copyright": "\u00a9 2026 Black Forest Labs"
+  },
+  {
+    "name": "FLUX.2 [dev] (Exact)",
+    "version": "flux2",
+    "autoencoder": "flux_2_vae_f16.ckpt",
+    "prefix": "",
+    "modifier": "kontext",
+    "default_scale": 16,
+    "hires_fix_scale": 32,
+    "file": "flux_2_dev_f16.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "mistral_small_3.2_24b_instruct_2506_f16.ckpt",
+    "high_precision_autoencoder": false,
+    "guidance_embed": true,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "note": "[FLUX.2 [dev]](https://huggingface.co/black-forest-labs/FLUX.2-dev) is a 32 billion parameter rectified flow transformer capable of generating, editing and combining images based on text instructions.",
+    "copyright": "\u00a9 2025 Black Forest Labs"
+  },
+  {
+    "name": "Z Image Turbo 1.0 (Exact)",
+    "version": "z_image",
+    "autoencoder": "flux_1_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 16,
+    "hires_fix_scale": 24,
+    "file": "z_image_turbo_1.0_f16.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "qwen_3_vl_4b_instruct_f16.ckpt",
+    "high_precision_autoencoder": false,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "note": "[Z Image Turbo](https://huggingface.co/Tongyi-MAI/Z-Image-Turbo) is is a powerful and highly efficient image generation model with 6B parameters. It is Apache 2.0-licensed and commercially friendly. The model is trained at multiple resolutions using a Flow Matching objective; trailing samplers yield the best results, with 8 sampling steps recommended."
+  },
+  {
+    "name": "Z Image Base 1.0 (Exact)",
+    "version": "z_image",
+    "autoencoder": "flux_1_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 16,
+    "hires_fix_scale": 24,
+    "file": "z_image_1.0_f16.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "qwen_3_vl_4b_instruct_f16.ckpt",
+    "high_precision_autoencoder": false,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "mmdit": {
+      "dual_attention_layers": [],
+      "qk_norm": true,
+      "activation_qk_scaling": {
+        "0": 1,
+        "1": 1,
+        "2": 32,
+        "3": 32,
+        "4": 32,
+        "5": 32,
+        "6": 32,
+        "7": 32,
+        "8": 32,
+        "9": 32,
+        "10": 32,
+        "11": 32,
+        "12": 32,
+        "13": 32,
+        "14": 32,
+        "15": 32,
+        "16": 32,
+        "17": 32,
+        "18": 32,
+        "19": 32,
+        "20": 32,
+        "21": 32,
+        "22": 32,
+        "23": 32,
+        "24": 32,
+        "25": 32,
+        "26": 32,
+        "27": 32,
+        "28": 32,
+        "29": 32,
+        "30": 32,
+        "31": 32,
+        "32": 32,
+        "33": 32
+      },
+      "activation_proj_scaling": {
+        "0": 2,
+        "1": 2,
+        "2": 1,
+        "3": 1,
+        "4": 1,
+        "5": 1,
+        "6": 1,
+        "7": 1,
+        "8": 1,
+        "9": 1,
+        "10": 1,
+        "11": 1,
+        "12": 1,
+        "13": 1,
+        "14": 1,
+        "15": 1,
+        "16": 1,
+        "17": 1,
+        "18": 1,
+        "19": 1,
+        "20": 1,
+        "21": 1,
+        "22": 1,
+        "23": 1,
+        "24": 1,
+        "25": 1,
+        "26": 1,
+        "27": 1,
+        "28": 1,
+        "29": 1,
+        "30": 1,
+        "31": 1,
+        "32": 1,
+        "33": 1
+      },
+      "activation_ffn_proj_up_scaling": {
+        "0": 1,
+        "1": 1,
+        "2": 32,
+        "3": 32,
+        "4": 32,
+        "5": 32,
+        "6": 32,
+        "7": 32,
+        "8": 32,
+        "9": 32,
+        "10": 32,
+        "11": 32,
+        "12": 32,
+        "13": 32,
+        "14": 32,
+        "15": 32,
+        "16": 32,
+        "17": 32,
+        "18": 32,
+        "19": 32,
+        "20": 32,
+        "21": 32,
+        "22": 32,
+        "23": 32,
+        "24": 32,
+        "25": 32,
+        "26": 32,
+        "27": 32,
+        "28": 32,
+        "29": 32,
+        "30": 32,
+        "31": 32,
+        "32": 32,
+        "33": 32
+      },
+      "activation_ffn_scaling": {
+        "0": 2,
+        "1": 2,
+        "2": 1,
+        "3": 1,
+        "4": 1,
+        "5": 1,
+        "6": 1,
+        "7": 1,
+        "8": 1,
+        "9": 1,
+        "10": 1,
+        "11": 1,
+        "12": 1,
+        "13": 1,
+        "14": 1,
+        "15": 1,
+        "16": 1,
+        "17": 1,
+        "18": 1,
+        "19": 1,
+        "20": 1,
+        "21": 1,
+        "22": 1,
+        "23": 1,
+        "24": 1,
+        "25": 1,
+        "26": 1,
+        "27": 1,
+        "28": 1,
+        "29": 1,
+        "30": 1,
+        "31": 1,
+        "32": 1,
+        "33": 1
+      }
+    },
+    "note": "[Z Image](https://huggingface.co/Tongyi-MAI/Z-Image) is a powerful and highly efficient image generation model with 6B parameters. It is Apache 2.0-licensed and commercially friendly. The model is trained at multiple resolutions using a Flow Matching objective; trailing samplers yield the best results, with 28 to 50 sampling steps recommended."
+  },
+  {
+    "name": "Qwen Image 1.0 (BF16, Exact)",
+    "version": "qwen_image",
+    "autoencoder": "qwen_image_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 16,
+    "hires_fix_scale": 24,
+    "file": "qwen_image_1.0_bf16.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "qwen_2.5_vl_7b_f16.ckpt",
+    "high_precision_autoencoder": false,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "is_bf16": true,
+    "note": "[Qwen Image](https://huggingface.co/Qwen/Qwen-Image) is a state-of-the-art open-source image generation model known for its exceptional text layout and prompt adherence across a wide range of styles, including photorealistic, cartoon, and artistic. It is Apache 2.0-licensed and commercially friendly. The model is trained at multiple resolutions using a Flow Matching objective; trailing samplers yield the best results, with 30\u201350 sampling steps recommended. The BF16 version is only compatible with macOS 15, iOS 18 and above."
+  },
+  {
+    "name": "Qwen Image 1.0 (Exact)",
+    "version": "qwen_image",
+    "autoencoder": "qwen_image_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 16,
+    "hires_fix_scale": 24,
+    "file": "qwen_image_1.0_f16.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "qwen_2.5_vl_7b_f16.ckpt",
+    "high_precision_autoencoder": false,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "note": "[Qwen Image](https://huggingface.co/Qwen/Qwen-Image) is a state-of-the-art open-source image generation model known for its exceptional text layout and prompt adherence across a wide range of styles, including photorealistic, cartoon, and artistic. It is Apache 2.0-licensed and commercially friendly. The model is trained at multiple resolutions using a Flow Matching objective; trailing samplers yield the best results, with 30\u201350 sampling steps recommended."
+  },
+  {
+    "name": "Qwen Image Edit 2509 (BF16, Exact)",
+    "version": "qwen_image",
+    "autoencoder": "qwen_image_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 16,
+    "hires_fix_scale": 24,
+    "file": "qwen_image_edit_2509_bf16.ckpt",
+    "upcast_attention": false,
+    "modifier": "qwenimage_edit_plus",
+    "text_encoder": "qwen_2.5_vl_7b_f16.ckpt",
+    "clip_encoder": "qwen_2.5_vl_7b_vit_f16.ckpt",
+    "high_precision_autoencoder": false,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "is_bf16": true,
+    "note": "[Qwen Image Edit 2509](https://huggingface.co/Qwen/Qwen-Image-2509) is a state-of-the-art open-source image edit model excels at image edit tasks such as background alternation, style transfer, object removal etc. It is Apache 2.0-licensed and commercially friendly. The model is trained at multiple resolutions using a Flow Matching objective; trailing samplers yield the best results, with 30\u201350 sampling steps recommended. This is an update in Sep, 2025. The BF16 version is only compatible with macOS 15, iOS 18 and above."
+  },
+  {
+    "name": "Qwen Image Edit 2509 (Exact)",
+    "version": "qwen_image",
+    "autoencoder": "qwen_image_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 16,
+    "hires_fix_scale": 24,
+    "file": "qwen_image_edit_2509_f16.ckpt",
+    "upcast_attention": false,
+    "modifier": "qwenimage_edit_plus",
+    "text_encoder": "qwen_2.5_vl_7b_f16.ckpt",
+    "clip_encoder": "qwen_2.5_vl_7b_vit_f16.ckpt",
+    "high_precision_autoencoder": false,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "note": "[Qwen Image Edit 2509](https://huggingface.co/Qwen/Qwen-Image-2509) is a state-of-the-art open-source image edit model excels at image edit tasks such as background alternation, style transfer, object removal etc. It is Apache 2.0-licensed and commercially friendly. The model is trained at multiple resolutions using a Flow Matching objective; trailing samplers yield the best results, with 30\u201350 sampling steps recommended. This is an update in Sep, 2025."
+  },
+  {
+    "name": "FLUX.1 Kontext [dev]",
+    "version": "flux1",
+    "autoencoder": "flux_1_vae_f16.ckpt",
+    "prefix": "",
+    "modifier": "kontext",
+    "default_scale": 16,
+    "hires_fix_scale": 24,
+    "file": "flux_1_kontext_dev_q8p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "t5_xxl_encoder_q6p.ckpt",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "high_precision_autoencoder": true,
+    "guidance_embed": true,
+    "padded_text_encoding_length": 512,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "tea_cache_coefficients": [
+      498.651651,
+      -283.781631,
+      55.8554382,
+      -3.82021401,
+      0.264230861
+    ]
+  },
+  {
+    "name": "FLUX.1 Kontext [dev] (5-bit)",
+    "version": "flux1",
+    "autoencoder": "flux_1_vae_f16.ckpt",
+    "prefix": "",
+    "modifier": "kontext",
+    "default_scale": 16,
+    "hires_fix_scale": 24,
+    "file": "flux_1_kontext_dev_q5p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "t5_xxl_encoder_q6p.ckpt",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "high_precision_autoencoder": true,
+    "guidance_embed": true,
+    "padded_text_encoding_length": 512,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "tea_cache_coefficients": [
+      498.651651,
+      -283.781631,
+      55.8554382,
+      -3.82021401,
+      0.264230861
+    ]
+  },
+  {
+    "name": "FLUX.1 Kontext [dev] (Exact)",
+    "version": "flux1",
+    "autoencoder": "flux_1_vae_f16.ckpt",
+    "prefix": "",
+    "modifier": "kontext",
+    "default_scale": 16,
+    "hires_fix_scale": 24,
+    "file": "flux_1_kontext_dev_f16.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "t5_xxl_encoder_f16.ckpt",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "high_precision_autoencoder": true,
+    "guidance_embed": true,
+    "padded_text_encoding_length": 512,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "tea_cache_coefficients": [
+      498.651651,
+      -283.781631,
+      55.8554382,
+      -3.82021401,
+      0.264230861
+    ]
+  },
+  {
+    "name": "FLUX.1 Krea [dev]",
+    "version": "flux1",
+    "autoencoder": "flux_1_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 16,
+    "hires_fix_scale": 24,
+    "file": "flux_1_krea_dev_q8p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "t5_xxl_encoder_q6p.ckpt",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "high_precision_autoencoder": true,
+    "guidance_embed": true,
+    "padded_text_encoding_length": 512,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "tea_cache_coefficients": [
+      498.651651,
+      -283.781631,
+      55.8554382,
+      -3.82021401,
+      0.264230861
+    ]
+  },
+  {
+    "name": "FLUX.1 Krea [dev] (5-bit)",
+    "version": "flux1",
+    "autoencoder": "flux_1_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 16,
+    "hires_fix_scale": 24,
+    "file": "flux_1_krea_dev_q5p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "t5_xxl_encoder_q6p.ckpt",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "high_precision_autoencoder": true,
+    "guidance_embed": true,
+    "padded_text_encoding_length": 512,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "tea_cache_coefficients": [
+      498.651651,
+      -283.781631,
+      55.8554382,
+      -3.82021401,
+      0.264230861
+    ]
+  },
+  {
+    "name": "FLUX.1 [dev]",
+    "version": "flux1",
+    "autoencoder": "flux_1_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 16,
+    "hires_fix_scale": 24,
+    "file": "flux_1_dev_q8p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "t5_xxl_encoder_q6p.ckpt",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "high_precision_autoencoder": true,
+    "guidance_embed": true,
+    "padded_text_encoding_length": 512,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "tea_cache_coefficients": [
+      498.651651,
+      -283.781631,
+      55.8554382,
+      -3.82021401,
+      0.264230861
+    ]
+  },
+  {
+    "name": "FLUX.1 [dev] (5-bit)",
+    "version": "flux1",
+    "autoencoder": "flux_1_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 16,
+    "hires_fix_scale": 24,
+    "file": "flux_1_dev_q5p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "t5_xxl_encoder_q6p.ckpt",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "high_precision_autoencoder": true,
+    "guidance_embed": true,
+    "padded_text_encoding_length": 512,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "tea_cache_coefficients": [
+      498.651651,
+      -283.781631,
+      55.8554382,
+      -3.82021401,
+      0.264230861
+    ]
+  },
+  {
+    "name": "FLUX.1 Fill [dev]",
+    "version": "flux1",
+    "autoencoder": "flux_1_vae_f16.ckpt",
+    "prefix": "",
+    "modifier": "inpainting",
+    "default_scale": 16,
+    "hires_fix_scale": 24,
+    "file": "flux_1_fill_dev_q8p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "t5_xxl_encoder_q6p.ckpt",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "high_precision_autoencoder": true,
+    "guidance_embed": true,
+    "padded_text_encoding_length": 128,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    }
+  },
+  {
+    "name": "FLUX.1 Fill [dev] (5-bit)",
+    "version": "flux1",
+    "autoencoder": "flux_1_vae_f16.ckpt",
+    "prefix": "",
+    "modifier": "inpainting",
+    "default_scale": 16,
+    "hires_fix_scale": 24,
+    "file": "flux_1_fill_dev_q5p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "t5_xxl_encoder_q6p.ckpt",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "high_precision_autoencoder": true,
+    "guidance_embed": true,
+    "padded_text_encoding_length": 128,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    }
+  },
+  {
+    "name": "Wan v2.2 High Noise Expert T2V A14B Lightning 250928",
+    "version": "wan_v2.1_14b",
+    "autoencoder": "wan_v2.1_video_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 12,
+    "hires_fix_scale": 16,
+    "file": "wan_v2.2_a14b_hne_t2v_lightning_250928_q8p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "umt5_xxl_encoder_q8p.ckpt",
+    "high_precision_autoencoder": false,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "frames_per_second": 16,
+    "tea_cache_coefficients": [
+      -303318.725,
+      49053.7029,
+      -2655.30556,
+      58.7365115,
+      -0.315583525
+    ],
+    "note": "[Wan2.2 High Noise Expert T2V A14B Lightning 250928](https://huggingface.co/lightx2v/Wan2.2-Lightning/tree/main/Wan2.2-T2V-A14B-4steps-250928-dyno) is a fine-tune of Wan v2.2 High Noise Expert model. It can generate more dynamic motions with 4 steps and text guidance 1.0."
+  },
+  {
+    "name": "Wan v2.2 High Noise Expert T2V A14B Lightning 250928 (6-bit, SVDQuant)",
+    "version": "wan_v2.1_14b",
+    "autoencoder": "wan_v2.1_video_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 12,
+    "hires_fix_scale": 16,
+    "file": "wan_v2.2_a14b_hne_t2v_lightning_250928_q6p_svd.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "umt5_xxl_encoder_q8p.ckpt",
+    "high_precision_autoencoder": false,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "frames_per_second": 16,
+    "tea_cache_coefficients": [
+      -303318.725,
+      49053.7029,
+      -2655.30556,
+      58.7365115,
+      -0.315583525
+    ],
+    "note": "[Wan2.2 High Noise Expert T2V A14B Lightning 250928](https://huggingface.co/lightx2v/Wan2.2-Lightning/tree/main/Wan2.2-T2V-A14B-4steps-250928-dyno) is a fine-tune of Wan v2.2 High Noise Expert model. It can generate more dynamic motions with 4 steps and text guidance 1.0.",
+    "builtin_lora": true
+  },
+  {
+    "name": "HiDream I1 [dev] (Exact)",
+    "version": "hidream_i1",
+    "autoencoder": "flux_1_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 16,
+    "hires_fix_scale": 24,
+    "file": "hidream_i1_dev_f16.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "llama_3.1_8b_instruct_f16.ckpt",
+    "t5_encoder": "t5_xxl_encoder_f16.ckpt",
+    "clip_encoder": "long_clip_vit_l14_f16.ckpt",
+    "additional_clip_encoders": [
+      "long_open_clip_vit_bigg14_f16.ckpt"
+    ],
+    "high_precision_autoencoder": true,
+    "guidance_embed": true,
+    "padded_text_encoding_length": 128,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "note": "[HiDream-I1 [dev]](https://huggingface.co/HiDream-ai/HiDream-I1-Dev) is a state-of-the-art open-source image generation model known for its strong prompt adherence across diverse styles, including photorealistic, cartoon, and artistic. It is MIT-licensed and commercially friendly. The model is trained at multiple resolutions using a Flow Matching objective; trailing samplers yield the best results, with 20\u201330 sampling steps recommended. Text guidance is not effective for this model."
+  },
+  {
+    "name": "HiDream I1 [full] (Exact)",
+    "version": "hidream_i1",
+    "autoencoder": "flux_1_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 16,
+    "hires_fix_scale": 24,
+    "file": "hidream_i1_full_f16.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "llama_3.1_8b_instruct_f16.ckpt",
+    "t5_encoder": "t5_xxl_encoder_f16.ckpt",
+    "clip_encoder": "long_clip_vit_l14_f16.ckpt",
+    "additional_clip_encoders": [
+      "long_open_clip_vit_bigg14_f16.ckpt"
+    ],
+    "high_precision_autoencoder": true,
+    "padded_text_encoding_length": 128,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "note": "[HiDream-I1 [full]](https://huggingface.co/HiDream-ai/HiDream-I1-Full) is a state-of-the-art open-source image generation model known for its exceptional prompt adherence across a wide range of styles, including photorealistic, cartoon, and artistic. It is MIT-licensed and commercially friendly. The model is trained at multiple resolutions using a Flow Matching objective; trailing samplers yield the best results, with 30\u201350 sampling steps recommended."
+  },
+  {
+    "name": "HiDream I1 [fast] (Exact)",
+    "version": "hidream_i1",
+    "autoencoder": "flux_1_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 16,
+    "hires_fix_scale": 24,
+    "file": "hidream_i1_fast_f16.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "llama_3.1_8b_instruct_f16.ckpt",
+    "t5_encoder": "t5_xxl_encoder_f16.ckpt",
+    "clip_encoder": "long_clip_vit_l14_f16.ckpt",
+    "additional_clip_encoders": [
+      "long_open_clip_vit_bigg14_f16.ckpt"
+    ],
+    "high_precision_autoencoder": true,
+    "is_consistency_model": true,
+    "padded_text_encoding_length": 128,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "note": "[HiDream-I1 [fast]](https://huggingface.co/HiDream-ai/HiDream-I1-Fast) is a state-of-the-art open-source image generation model known for its strong prompt adherence across diverse styles, including photorealistic, cartoon, and artistic. It is MIT-licensed and commercially friendly. The model is trained at multiple resolutions using a Flow Matching objective; trailing samplers yield the best results, with 10\u201320 sampling steps recommended. Text guidance is not effective for this model."
+  },
+  {
+    "name": "HiDream E1-1 (Exact)",
+    "version": "hidream_i1",
+    "autoencoder": "flux_1_vae_f16.ckpt",
+    "modifier": "editing",
+    "prefix": "",
+    "default_scale": 16,
+    "hires_fix_scale": 24,
+    "file": "hidream_e1_1_f16.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "llama_3.1_8b_instruct_f16.ckpt",
+    "t5_encoder": "t5_xxl_encoder_f16.ckpt",
+    "clip_encoder": "long_clip_vit_l14_f16.ckpt",
+    "additional_clip_encoders": [
+      "long_open_clip_vit_bigg14_f16.ckpt"
+    ],
+    "high_precision_autoencoder": true,
+    "padded_text_encoding_length": 128,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "note": "[HiDream-E1-1](https://huggingface.co/HiDream-ai/HiDream-E1-1) is an image editing model built on HiDream-I1. It is MIT-licensed and commercially friendly. Trained at dynamic resolutions (around 1MP) using a Flow Matching objective, the model performs best with trailing samplers and 30\u201350 sampling steps."
+  },
+  {
+    "name": "FLUX.1 [dev] (Exact)",
+    "version": "flux1",
+    "autoencoder": "flux_1_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 16,
+    "hires_fix_scale": 24,
+    "file": "flux_1_dev_f16.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "t5_xxl_encoder_f16.ckpt",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "high_precision_autoencoder": true,
+    "guidance_embed": true,
+    "padded_text_encoding_length": 512,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "tea_cache_coefficients": [
+      498.651651,
+      -283.781631,
+      55.8554382,
+      -3.82021401,
+      0.264230861
+    ]
+  },
+  {
+    "name": "SD3 Large Turbo 3.5",
+    "version": "sd3_large",
+    "autoencoder": "sd3_vae_f16.ckpt",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "t5_encoder": "t5_xxl_encoder_q6p.ckpt",
+    "prefix": "",
+    "default_scale": 16,
+    "file": "sd3_large_turbo_3.5_q8p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "open_clip_vit_bigg14_f16.ckpt",
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "is_consistency_model": true
+  },
+  {
+    "name": "SD3 Large Turbo 3.5 (6-bit)",
+    "version": "sd3_large",
+    "autoencoder": "sd3_vae_f16.ckpt",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "t5_encoder": "t5_xxl_encoder_q6p.ckpt",
+    "prefix": "",
+    "default_scale": 16,
+    "file": "sd3_large_turbo_3.5_q6p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "open_clip_vit_bigg14_f16.ckpt",
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "is_consistency_model": true
+  },
+  {
+    "name": "SD3 Large 3.5",
+    "version": "sd3_large",
+    "autoencoder": "sd3_vae_f16.ckpt",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "t5_encoder": "t5_xxl_encoder_q6p.ckpt",
+    "prefix": "",
+    "default_scale": 16,
+    "file": "sd3_large_3.5_q8p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "open_clip_vit_bigg14_f16.ckpt",
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    }
+  },
+  {
+    "name": "SD3 Large 3.5 (6-bit)",
+    "version": "sd3_large",
+    "autoencoder": "sd3_vae_f16.ckpt",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "t5_encoder": "t5_xxl_encoder_q6p.ckpt",
+    "prefix": "",
+    "default_scale": 16,
+    "file": "sd3_large_3.5_q6p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "open_clip_vit_bigg14_f16.ckpt",
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    }
+  },
+  {
+    "name": "SD3 Large 3.5 (Exact)",
+    "version": "sd3_large",
+    "autoencoder": "sd3_vae_f16.ckpt",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "t5_encoder": "t5_xxl_encoder_q6p.ckpt",
+    "prefix": "",
+    "default_scale": 16,
+    "file": "sd3_large_3.5_f16.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "open_clip_vit_bigg14_f16.ckpt",
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    }
+  },
+  {
+    "name": "SD3 Medium 3.5",
+    "version": "sd3",
+    "autoencoder": "sd3_vae_f16.ckpt",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "t5_encoder": "t5_xxl_encoder_q6p.ckpt",
+    "prefix": "",
+    "default_scale": 16,
+    "hires_fix_scale": 32,
+    "file": "sd3_medium_3.5_f16.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "open_clip_vit_bigg14_f16.ckpt",
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "mmdit": {
+      "qk_norm": true,
+      "dual_attention_layers": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ]
+    }
+  },
+  {
+    "name": "SD3 Medium 3.5 (8-bit)",
+    "version": "sd3",
+    "autoencoder": "sd3_vae_f16.ckpt",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "t5_encoder": "t5_xxl_encoder_q6p.ckpt",
+    "prefix": "",
+    "default_scale": 16,
+    "hires_fix_scale": 32,
+    "file": "sd3_medium_3.5_q8p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "open_clip_vit_bigg14_f16.ckpt",
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "mmdit": {
+      "qk_norm": true,
+      "dual_attention_layers": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ]
+    }
+  },
+  {
+    "name": "Hunyuan Video T2V 720p",
+    "version": "hunyuan_video",
+    "autoencoder": "hunyuan_video_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 12,
+    "hires_fix_scale": 24,
+    "file": "hunyuan_video_t2v_720p_q8p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "llava_llama_3_8b_v1.1_q8p.ckpt",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "high_precision_autoencoder": false,
+    "guidance_embed": true,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "frames_per_second": 30,
+    "tea_cache_coefficients": [
+      733.226126,
+      -401.131952,
+      67.5869174,
+      -3.149878,
+      0.0961237896
+    ],
+    "note": "[Hunyuan Video](https://huggingface.co/tencent/HunyuanVideo) is a state-of-the-art text-to-video model developed by Tencent. It can generate video clips of up to 5 seconds in length. The recommended resolutions are 960\u00d7544 or 1280\u00d7720. The model supports up to 129 frames, with a recommended shift value of 7.0."
+  },
+  {
+    "name": "Hunyuan Video T2V 720p (5-bit, SVDQuant)",
+    "version": "hunyuan_video",
+    "autoencoder": "hunyuan_video_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 12,
+    "hires_fix_scale": 24,
+    "file": "hunyuan_video_t2v_720p_q5p_svd.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "llava_llama_3_8b_v1.1_q8p.ckpt",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "high_precision_autoencoder": false,
+    "guidance_embed": true,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "frames_per_second": 30,
+    "tea_cache_coefficients": [
+      733.226126,
+      -401.131952,
+      67.5869174,
+      -3.149878,
+      0.0961237896
+    ],
+    "note": "[Hunyuan Video](https://huggingface.co/tencent/HunyuanVideo) is a state-of-the-art text-to-video model developed by Tencent. It can generate video clips of up to 5 seconds in length. The recommended resolutions are 960\u00d7544 or 1280\u00d7720. The model supports up to 129 frames, with a recommended shift value of 7.0.",
+    "builtin_lora": true
+  },
+  {
+    "name": "Wan 2.1 14B T2V FusionX",
+    "version": "wan_v2.1_14b",
+    "autoencoder": "wan_v2.1_video_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 12,
+    "hires_fix_scale": 16,
+    "file": "wan_2.1_14b_t2v_fusionx_q8p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "umt5_xxl_encoder_q8p.ckpt",
+    "high_precision_autoencoder": false,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "frames_per_second": 16,
+    "tea_cache_coefficients": [
+      -303318.725,
+      49053.7029,
+      -2655.30556,
+      58.7365115,
+      -0.315583525
+    ],
+    "note": "[Wan2.1 14B FusionX](https://huggingface.co/vrgamedevgirl84/Wan14BT2VFusioniX) is a merged model of multiple quality and acceleration LoRAs."
+  },
+  {
+    "name": "Wan 2.1 14B T2V FusionX (6-bit, SVDQuant)",
+    "version": "wan_v2.1_14b",
+    "autoencoder": "wan_v2.1_video_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 12,
+    "hires_fix_scale": 16,
+    "file": "wan_2.1_14b_t2v_fusionx_q6p_svd.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "umt5_xxl_encoder_q8p.ckpt",
+    "high_precision_autoencoder": false,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "frames_per_second": 16,
+    "tea_cache_coefficients": [
+      -303318.725,
+      49053.7029,
+      -2655.30556,
+      58.7365115,
+      -0.315583525
+    ],
+    "note": "[Wan2.1 14B FusionX](https://huggingface.co/vrgamedevgirl84/Wan14BT2VFusioniX) is a merged model of multiple quality and acceleration LoRAs.",
+    "builtin_lora": true
+  },
+  {
+    "name": "Wan 2.1 14B I2V FusionX",
+    "version": "wan_v2.1_14b",
+    "modifier": "inpainting",
+    "autoencoder": "wan_v2.1_video_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 12,
+    "hires_fix_scale": 16,
+    "file": "wan_2.1_14b_i2v_fusionx_q8p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "umt5_xxl_encoder_q8p.ckpt",
+    "clip_encoder": "open_clip_xlm_roberta_large_vit_h14_f16.ckpt",
+    "high_precision_autoencoder": false,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "frames_per_second": 16,
+    "tea_cache_coefficients": [
+      8107.0546,
+      2133.93892,
+      -372.934672,
+      16.6203073,
+      -0.0417769401
+    ],
+    "note": "[Wan2.1 14B FusionX](https://huggingface.co/vrgamedevgirl84/Wan14BT2VFusioniX) is a merged model of multiple quality and acceleration LoRAs."
+  },
+  {
+    "name": "Wan 2.1 14B I2V FusionX (6-bit, SVDQuant)",
+    "version": "wan_v2.1_14b",
+    "modifier": "inpainting",
+    "autoencoder": "wan_v2.1_video_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 12,
+    "hires_fix_scale": 16,
+    "file": "wan_2.1_14b_i2v_fusionx_q6p_svd.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "umt5_xxl_encoder_q8p.ckpt",
+    "clip_encoder": "open_clip_xlm_roberta_large_vit_h14_f16.ckpt",
+    "high_precision_autoencoder": false,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "frames_per_second": 16,
+    "tea_cache_coefficients": [
+      8107.0546,
+      2133.93892,
+      -372.934672,
+      16.6203073,
+      -0.0417769401
+    ],
+    "note": "[Wan2.1 14B FusionX](https://huggingface.co/vrgamedevgirl84/Wan14BT2VFusioniX) is a merged model of multiple quality and acceleration LoRAs.",
+    "builtin_lora": true
+  },
+  {
+    "name": "Wan 2.1 14B v1.1 Fun InP",
+    "version": "wan_v2.1_14b",
+    "modifier": "inpainting",
+    "autoencoder": "wan_v2.1_video_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 12,
+    "hires_fix_scale": 16,
+    "file": "wan_2.1_14b_v1.1_fun_inp_q8p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "umt5_xxl_encoder_q8p.ckpt",
+    "clip_encoder": "open_clip_xlm_roberta_large_vit_h14_f16.ckpt",
+    "high_precision_autoencoder": false,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "frames_per_second": 16,
+    "tea_cache_coefficients": [
+      8107.0546,
+      2133.93892,
+      -372.934672,
+      16.6203073,
+      -0.0417769401
+    ],
+    "note": "[Wan2.1 14B v1.1 Fun InP](https://huggingface.co/alibaba-pai/Wan2.1-Fun-V1.1-14B-InP) is a state-of-the-art image-to-video model developed by Alibaba PAI. It can generate video clips of up to 4 seconds in length. The model is trained at multiple resolutions, supports up to 81 frames, with a recommended shift value of 5.0. Text Guidance should be somewhere between 3 to 7. Wan2.1 is trained with Flow Matching objective, Trailing samplers would give the best result."
+  },
+  {
+    "name": "Wan 2.1 14B v1.1 Fun InP (6-bit, SVDQuant)",
+    "version": "wan_v2.1_14b",
+    "modifier": "inpainting",
+    "autoencoder": "wan_v2.1_video_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 12,
+    "hires_fix_scale": 16,
+    "file": "wan_2.1_14b_v1.1_fun_inp_q6p_svd.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "umt5_xxl_encoder_q8p.ckpt",
+    "clip_encoder": "open_clip_xlm_roberta_large_vit_h14_f16.ckpt",
+    "high_precision_autoencoder": false,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "frames_per_second": 16,
+    "tea_cache_coefficients": [
+      8107.0546,
+      2133.93892,
+      -372.934672,
+      16.6203073,
+      -0.0417769401
+    ],
+    "note": "[Wan2.1 14B v1.1 Fun InP](https://huggingface.co/alibaba-pai/Wan2.1-Fun-V1.1-14B-InP) is a state-of-the-art image-to-video model developed by Alibaba PAI. It can generate video clips of up to 4 seconds in length. The model is trained at multiple resolutions, supports up to 81 frames, with a recommended shift value of 5.0. Text Guidance should be somewhere between 3 to 7. Wan2.1 is trained with Flow Matching objective, Trailing samplers would give the best result.",
+    "builtin_lora": true
+  },
+  {
+    "name": "Wan 2.1 1.3B v1.1 Fun InP",
+    "version": "wan_v2.1_1.3b",
+    "modifier": "inpainting",
+    "autoencoder": "wan_v2.1_video_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 8,
+    "hires_fix_scale": 12,
+    "file": "wan_2.1_1.3b_v1.1_fun_inp_f16.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "umt5_xxl_encoder_q8p.ckpt",
+    "clip_encoder": "open_clip_xlm_roberta_large_vit_h14_f16.ckpt",
+    "high_precision_autoencoder": false,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "frames_per_second": 16,
+    "tea_cache_coefficients": [
+      -52186.2437,
+      9230.41404,
+      -528.275948,
+      13.6987616,
+      -0.0499875664
+    ],
+    "note": "[Wan2.1 1.3B v1.1 Fun InP](https://huggingface.co/alibaba-pai/Wan2.1-Fun-V1.1-1.3B-InP) is a state-of-the-art image-to-video model developed by Alibaba PAI. It can generate video clips of up to 4 seconds in length. The model is trained at multiple resolutions, supports up to 81 frames, with a recommended shift value of 5.0. Text Guidance should be somewhere between 3 to 7. Wan2.1 is trained with Flow Matching objective, Trailing samplers would give the best result."
+  },
+  {
+    "name": "Wan 2.1 1.3B v1.1 Fun InP (8-bit)",
+    "version": "wan_v2.1_1.3b",
+    "modifier": "inpainting",
+    "autoencoder": "wan_v2.1_video_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 8,
+    "hires_fix_scale": 12,
+    "file": "wan_2.1_1.3b_v1.1_fun_inp_q8p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "umt5_xxl_encoder_q8p.ckpt",
+    "clip_encoder": "open_clip_xlm_roberta_large_vit_h14_f16.ckpt",
+    "high_precision_autoencoder": false,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "frames_per_second": 16,
+    "tea_cache_coefficients": [
+      -52186.2437,
+      9230.41404,
+      -528.275948,
+      13.6987616,
+      -0.0499875664
+    ],
+    "note": "[Wan2.1 1.3B v1.1 Fun InP](https://huggingface.co/alibaba-pai/Wan2.1-Fun-V1.1-1.3B-InP) is a state-of-the-art image-to-video model developed by Alibaba PAI. It can generate video clips of up to 4 seconds in length. The model is trained at multiple resolutions, supports up to 81 frames, with a recommended shift value of 5.0. Text Guidance should be somewhere between 3 to 7. Wan2.1 is trained with Flow Matching objective, Trailing samplers would give the best result."
+  },
+  {
+    "name": "AniSora v3.2 I2V Wan 2.2 A14B High Noise Expert",
+    "version": "wan_v2.1_14b",
+    "modifier": "inpainting",
+    "autoencoder": "wan_v2.1_video_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 12,
+    "hires_fix_scale": 16,
+    "file": "anisora_v3.2_i2v_wan_2.2_a14b_hne_q8p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "umt5_xxl_encoder_q8p.ckpt",
+    "high_precision_autoencoder": false,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "frames_per_second": 16,
+    "tea_cache_coefficients": [
+      257151.496,
+      -35422.9917,
+      1402.86849,
+      -13.5890334,
+      0.132517977
+    ],
+    "note": "[AniSora v3.2](https://huggingface.co/IndexTeam/Index-anisora) is a state-of-the-art image-to-video model fine-tuned by Bilibili for anime generation."
+  },
+  {
+    "name": "AniSora v3.2 I2V Wan 2.2 A14B High Noise Expert (6-bit, SVDQuant)",
+    "version": "wan_v2.1_14b",
+    "modifier": "inpainting",
+    "autoencoder": "wan_v2.1_video_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 12,
+    "hires_fix_scale": 16,
+    "file": "anisora_v3.2_i2v_wan_2.2_a14b_hne_q6p_svd.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "umt5_xxl_encoder_q8p.ckpt",
+    "high_precision_autoencoder": false,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "frames_per_second": 16,
+    "tea_cache_coefficients": [
+      257151.496,
+      -35422.9917,
+      1402.86849,
+      -13.5890334,
+      0.132517977
+    ],
+    "note": "[AniSora v3.2](https://huggingface.co/IndexTeam/Index-anisora) is a state-of-the-art image-to-video model fine-tuned by Bilibili for anime generation.",
+    "builtin_lora": true
+  },
+  {
+    "name": "AniSora v3.2 I2V Wan 2.2 A14B Low Noise Expert",
+    "version": "wan_v2.1_14b",
+    "modifier": "inpainting",
+    "autoencoder": "wan_v2.1_video_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 12,
+    "hires_fix_scale": 16,
+    "file": "anisora_v3.2_i2v_wan_2.2_a14b_lne_q8p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "umt5_xxl_encoder_q8p.ckpt",
+    "high_precision_autoencoder": false,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "frames_per_second": 16,
+    "tea_cache_coefficients": [
+      257151.496,
+      -35422.9917,
+      1402.86849,
+      -13.5890334,
+      0.132517977
+    ],
+    "note": "[AniSora v3.2](https://huggingface.co/IndexTeam/Index-anisora) is a state-of-the-art image-to-video model fine-tuned by Bilibili for anime generation."
+  },
+  {
+    "name": "AniSora v3.2 I2V Wan 2.2 A14B Low Noise Expert (6-bit, SVDQuant)",
+    "version": "wan_v2.1_14b",
+    "modifier": "inpainting",
+    "autoencoder": "wan_v2.1_video_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 12,
+    "hires_fix_scale": 16,
+    "file": "anisora_v3.2_i2v_wan_2.2_a14b_lne_q6p_svd.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "umt5_xxl_encoder_q8p.ckpt",
+    "high_precision_autoencoder": false,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "frames_per_second": 16,
+    "tea_cache_coefficients": [
+      257151.496,
+      -35422.9917,
+      1402.86849,
+      -13.5890334,
+      0.132517977
+    ],
+    "note": "[AniSora v3.2](https://huggingface.co/IndexTeam/Index-anisora) is a state-of-the-art image-to-video model fine-tuned by Bilibili for anime generation.",
+    "builtin_lora": true
+  },
+  {
+    "name": "ChronoEdit 14B",
+    "version": "wan_v2.1_14b",
+    "modifier": "inpainting",
+    "autoencoder": "wan_v2.1_video_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 15,
+    "hires_fix_scale": 16,
+    "file": "chronoedit_14b_q8p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "umt5_xxl_encoder_q8p.ckpt",
+    "clip_encoder": "open_clip_xlm_roberta_large_vit_h14_f16.ckpt",
+    "high_precision_autoencoder": false,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "frames_per_second": 16,
+    "tea_cache_coefficients": [
+      8107.0546,
+      2133.93892,
+      -372.934672,
+      16.6203073,
+      -0.0417769401
+    ],
+    "note": "[ChronoEdit 14B](https://research.nvidia.com/labs/toronto-ai/chronoedit/) is a image edit model fine-tuned from Wan 2.1 14B video model, that prefers 29-frame or 5-frame generation."
+  },
+  {
+    "name": "ChronoEdit 14B (6-bit, SVDQuant)",
+    "version": "wan_v2.1_14b",
+    "modifier": "inpainting",
+    "autoencoder": "wan_v2.1_video_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 15,
+    "hires_fix_scale": 16,
+    "file": "chronoedit_14b_q6p_svd.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "umt5_xxl_encoder_q8p.ckpt",
+    "clip_encoder": "open_clip_xlm_roberta_large_vit_h14_f16.ckpt",
+    "high_precision_autoencoder": false,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "frames_per_second": 16,
+    "tea_cache_coefficients": [
+      8107.0546,
+      2133.93892,
+      -372.934672,
+      16.6203073,
+      -0.0417769401
+    ],
+    "note": "[ChronoEdit 14B](https://research.nvidia.com/labs/toronto-ai/chronoedit/) is a image edit model fine-tuned from Wan 2.1 14B video model, that prefers 29-frame or 5-frame generation.",
+    "builtin_lora": true
+  },
+  {
+    "name": "SkyReels v2 I2V 1.3B 540p",
+    "version": "wan_v2.1_1.3b",
+    "modifier": "inpainting",
+    "autoencoder": "wan_v2.1_video_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 8,
+    "hires_fix_scale": 12,
+    "file": "skyreels_v2_i2v_1.3b_540p_f16.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "umt5_xxl_encoder_q8p.ckpt",
+    "clip_encoder": "open_clip_xlm_roberta_large_vit_h14_f16.ckpt",
+    "high_precision_autoencoder": false,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "frames_per_second": 24,
+    "tea_cache_coefficients": [
+      257151.496,
+      -35422.9917,
+      1402.86849,
+      -13.5890334,
+      0.132517977
+    ],
+    "note": "[SkyReels v2 I2V 1.3B 540p](https://huggingface.co/Skywork/SkyReels-V2-I2V-1.3B-540P) is a image-to-video model developed by Skywork AI. It can generate video clips of up to 4 seconds in length. The model is trained at 544x960, supports up to 97 frames, with a recommended shift value of 5.0. As a derivative of Wan 2.1 (1.3B), it performs best with similar generation settings."
+  },
+  {
+    "name": "SkyReels v2 I2V 1.3B 540p (8-bit)",
+    "version": "wan_v2.1_1.3b",
+    "modifier": "inpainting",
+    "autoencoder": "wan_v2.1_video_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 8,
+    "hires_fix_scale": 12,
+    "file": "skyreels_v2_i2v_1.3b_540p_q8p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "umt5_xxl_encoder_q8p.ckpt",
+    "clip_encoder": "open_clip_xlm_roberta_large_vit_h14_f16.ckpt",
+    "high_precision_autoencoder": false,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "frames_per_second": 24,
+    "tea_cache_coefficients": [
+      257151.496,
+      -35422.9917,
+      1402.86849,
+      -13.5890334,
+      0.132517977
+    ],
+    "note": "[SkyReels v2 I2V 1.3B 540p](https://huggingface.co/Skywork/SkyReels-V2-I2V-1.3B-540P) is a image-to-video model developed by Skywork AI. It can generate video clips of up to 4 seconds in length. The model is trained at 544x960, supports up to 97 frames, with a recommended shift value of 5.0. As a derivative of Wan 2.1 (1.3B), it performs best with similar generation settings."
+  },
+  {
+    "name": "SkyReels v2 I2V 14B 540p",
+    "version": "wan_v2.1_14b",
+    "modifier": "inpainting",
+    "autoencoder": "wan_v2.1_video_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 12,
+    "hires_fix_scale": 16,
+    "file": "skyreels_v2_i2v_14b_540p_q8p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "umt5_xxl_encoder_q8p.ckpt",
+    "clip_encoder": "open_clip_xlm_roberta_large_vit_h14_f16.ckpt",
+    "high_precision_autoencoder": false,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "frames_per_second": 24,
+    "tea_cache_coefficients": [
+      257151.496,
+      -35422.9917,
+      1402.86849,
+      -13.5890334,
+      0.132517977
+    ],
+    "note": "[SkyReels v2 I2V 14B 540p](https://huggingface.co/Skywork/SkyReels-V2-I2V-14B-540P) is a image-to-video model developed by Skywork AI. It can generate video clips of up to 4 seconds in length. The model is trained at 544x960, supports up to 97 frames, with a recommended shift value of 5.0. As a derivative of Wan 2.1 (14B), it performs best with similar generation settings."
+  },
+  {
+    "name": "SkyReels v2 I2V 14B 540p (6-bit, SVDQuant)",
+    "version": "wan_v2.1_14b",
+    "modifier": "inpainting",
+    "autoencoder": "wan_v2.1_video_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 12,
+    "hires_fix_scale": 16,
+    "file": "skyreels_v2_i2v_14b_540p_q6p_svd.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "umt5_xxl_encoder_q8p.ckpt",
+    "clip_encoder": "open_clip_xlm_roberta_large_vit_h14_f16.ckpt",
+    "high_precision_autoencoder": false,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "frames_per_second": 24,
+    "tea_cache_coefficients": [
+      257151.496,
+      -35422.9917,
+      1402.86849,
+      -13.5890334,
+      0.132517977
+    ],
+    "note": "[SkyReels v2 I2V 14B 540p](https://huggingface.co/Skywork/SkyReels-V2-I2V-14B-540P) is a image-to-video model developed by Skywork AI. It can generate video clips of up to 4 seconds in length. The model is trained at 544x960, supports up to 97 frames, with a recommended shift value of 5.0. As a derivative of Wan 2.1 (14B), it performs best with similar generation settings.",
+    "builtin_lora": true
+  },
+  {
+    "name": "SkyReels v2 I2V 14B 720p",
+    "version": "wan_v2.1_14b",
+    "modifier": "inpainting",
+    "autoencoder": "wan_v2.1_video_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 12,
+    "hires_fix_scale": 16,
+    "file": "skyreels_v2_i2v_14b_720p_q8p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "umt5_xxl_encoder_q8p.ckpt",
+    "clip_encoder": "open_clip_xlm_roberta_large_vit_h14_f16.ckpt",
+    "high_precision_autoencoder": false,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "frames_per_second": 24,
+    "tea_cache_coefficients": [
+      8107.0546,
+      2133.93892,
+      -372.934672,
+      16.6203073,
+      -0.0417769401
+    ],
+    "note": "[SkyReels v2 I2V 14B 720p](https://huggingface.co/Skywork/SkyReels-V2-I2V-14B-720P) is a image-to-video model developed by Skywork AI. It can generate video clips of up to 5 seconds in length. The model is trained at 720x1280, supports up to 121 frames, with a recommended shift value of 5.0. As a derivative of Wan 2.1 (14B), it performs best with similar generation settings."
+  },
+  {
+    "name": "SkyReels v2 I2V 14B 720p (6-bit, SVDQuant)",
+    "version": "wan_v2.1_14b",
+    "modifier": "inpainting",
+    "autoencoder": "wan_v2.1_video_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 12,
+    "hires_fix_scale": 16,
+    "file": "skyreels_v2_i2v_14b_720p_q6p_svd.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "umt5_xxl_encoder_q8p.ckpt",
+    "clip_encoder": "open_clip_xlm_roberta_large_vit_h14_f16.ckpt",
+    "high_precision_autoencoder": false,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "frames_per_second": 24,
+    "tea_cache_coefficients": [
+      8107.0546,
+      2133.93892,
+      -372.934672,
+      16.6203073,
+      -0.0417769401
+    ],
+    "note": "[SkyReels v2 I2V 14B 720p](https://huggingface.co/Skywork/SkyReels-V2-I2V-14B-720P) is a image-to-video model developed by Skywork AI. It can generate video clips of up to 5 seconds in length. The model is trained at 720x1280, supports up to 121 frames, with a recommended shift value of 5.0. As a derivative of Wan 2.1 (14B), it performs best with similar generation settings.",
+    "builtin_lora": true
+  },
+  {
+    "name": "SkyReels v2 T2V 14B 540p",
+    "version": "wan_v2.1_14b",
+    "autoencoder": "wan_v2.1_video_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 12,
+    "hires_fix_scale": 16,
+    "file": "skyreels_v2_t2v_14b_540p_q8p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "umt5_xxl_encoder_q8p.ckpt",
+    "high_precision_autoencoder": false,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "frames_per_second": 24,
+    "tea_cache_coefficients": [
+      -303318.725,
+      49053.7029,
+      -2655.30556,
+      58.7365115,
+      -0.315583525
+    ],
+    "note": "[SkyReels v2 T2V 14B 540p](https://huggingface.co/Skywork/SkyReels-V2-T2V-14B-540P) is a text-to-video model developed by Skywork AI. It can generate video clips of up to 4 seconds in length. The model is trained at 544x960, supports up to 97 frames, with a recommended shift value of 5.0. As a derivative of Wan 2.1 (14B), it performs best with similar generation settings."
+  },
+  {
+    "name": "SkyReels v2 T2V 14B 540p (6-bit, SVDQuant)",
+    "version": "wan_v2.1_14b",
+    "autoencoder": "wan_v2.1_video_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 12,
+    "hires_fix_scale": 16,
+    "file": "skyreels_v2_t2v_14b_540p_q6p_svd.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "umt5_xxl_encoder_q8p.ckpt",
+    "high_precision_autoencoder": false,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "frames_per_second": 24,
+    "tea_cache_coefficients": [
+      -303318.725,
+      49053.7029,
+      -2655.30556,
+      58.7365115,
+      -0.315583525
+    ],
+    "note": "[SkyReels v2 T2V 14B 540p](https://huggingface.co/Skywork/SkyReels-V2-T2V-14B-540P) is a text-to-video model developed by Skywork AI. It can generate video clips of up to 4 seconds in length. The model is trained at 544x960, supports up to 97 frames, with a recommended shift value of 5.0. As a derivative of Wan 2.1 (14B), it performs best with similar generation settings.",
+    "builtin_lora": true
+  },
+  {
+    "name": "SkyReels v2 T2V 14B 720p",
+    "version": "wan_v2.1_14b",
+    "autoencoder": "wan_v2.1_video_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 12,
+    "hires_fix_scale": 16,
+    "file": "skyreels_v2_t2v_14b_720p_q8p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "umt5_xxl_encoder_q8p.ckpt",
+    "high_precision_autoencoder": false,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "frames_per_second": 24,
+    "tea_cache_coefficients": [
+      -303318.725,
+      49053.7029,
+      -2655.30556,
+      58.7365115,
+      -0.315583525
+    ],
+    "note": "[SkyReels v2 T2V 14B 720p](https://huggingface.co/Skywork/SkyReels-V2-T2V-14B-720P) is a text-to-video model developed by Skywork AI. It can generate video clips of up to 5 seconds in length. The model is trained at 720x1280, supports up to 121 frames, with a recommended shift value of 5.0. As a derivative of Wan 2.1 (14B), it performs best with similar generation settings."
+  },
+  {
+    "name": "SkyReels v2 T2V 14B 720p (6-bit, SVDQuant)",
+    "version": "wan_v2.1_14b",
+    "autoencoder": "wan_v2.1_video_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 12,
+    "hires_fix_scale": 16,
+    "file": "skyreels_v2_t2v_14b_720p_q6p_svd.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "umt5_xxl_encoder_q8p.ckpt",
+    "high_precision_autoencoder": false,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "frames_per_second": 24,
+    "tea_cache_coefficients": [
+      -303318.725,
+      49053.7029,
+      -2655.30556,
+      58.7365115,
+      -0.315583525
+    ],
+    "note": "[SkyReels v2 T2V 14B 720p](https://huggingface.co/Skywork/SkyReels-V2-T2V-14B-720P) is a text-to-video model developed by Skywork AI. It can generate video clips of up to 5 seconds in length. The model is trained at 720x1280, supports up to 121 frames, with a recommended shift value of 5.0. As a derivative of Wan 2.1 (14B), it performs best with similar generation settings.",
+    "builtin_lora": true
+  },
+  {
+    "name": "Wan 2.1 14B Fun InP",
+    "version": "wan_v2.1_14b",
+    "modifier": "inpainting",
+    "autoencoder": "wan_v2.1_video_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 12,
+    "hires_fix_scale": 16,
+    "file": "wan_2.1_14b_fun_inp_q8p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "umt5_xxl_encoder_q8p.ckpt",
+    "clip_encoder": "open_clip_xlm_roberta_large_vit_h14_f16.ckpt",
+    "high_precision_autoencoder": false,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "frames_per_second": 16,
+    "tea_cache_coefficients": [
+      8107.0546,
+      2133.93892,
+      -372.934672,
+      16.6203073,
+      -0.0417769401
+    ],
+    "note": "[Wan2.1 14B Fun InP](https://huggingface.co/alibaba-pai/Wan2.1-Fun-14B-InP) is a state-of-the-art image-to-video model developed by Alibaba PAI. It can generate video clips of up to 4 seconds in length. The model is trained at multiple resolutions, supports up to 81 frames, with a recommended shift value of 5.0. Text Guidance should be somewhere between 3 to 7. Wan2.1 is trained with Flow Matching objective, Trailing samplers would give the best result."
+  },
+  {
+    "name": "Wan 2.1 14B Fun InP (6-bit, SVDQuant)",
+    "version": "wan_v2.1_14b",
+    "modifier": "inpainting",
+    "autoencoder": "wan_v2.1_video_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 12,
+    "hires_fix_scale": 16,
+    "file": "wan_2.1_14b_fun_inp_q6p_svd.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "umt5_xxl_encoder_q8p.ckpt",
+    "clip_encoder": "open_clip_xlm_roberta_large_vit_h14_f16.ckpt",
+    "high_precision_autoencoder": false,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "frames_per_second": 16,
+    "tea_cache_coefficients": [
+      8107.0546,
+      2133.93892,
+      -372.934672,
+      16.6203073,
+      -0.0417769401
+    ],
+    "note": "[Wan2.1 14B Fun InP](https://huggingface.co/alibaba-pai/Wan2.1-Fun-14B-InP) is a state-of-the-art image-to-video model developed by Alibaba PAI. It can generate video clips of up to 4 seconds in length. The model is trained at multiple resolutions, supports up to 81 frames, with a recommended shift value of 5.0. Text Guidance should be somewhere between 3 to 7. Wan2.1 is trained with Flow Matching objective, Trailing samplers would give the best result.",
+    "builtin_lora": true
+  },
+  {
+    "name": "Wan 2.1 1.3B Fun InP",
+    "version": "wan_v2.1_1.3b",
+    "modifier": "inpainting",
+    "autoencoder": "wan_v2.1_video_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 8,
+    "hires_fix_scale": 12,
+    "file": "wan_2.1_1.3b_fun_inp_f16.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "umt5_xxl_encoder_q8p.ckpt",
+    "clip_encoder": "open_clip_xlm_roberta_large_vit_h14_f16.ckpt",
+    "high_precision_autoencoder": false,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "frames_per_second": 16,
+    "tea_cache_coefficients": [
+      -52186.2437,
+      9230.41404,
+      -528.275948,
+      13.6987616,
+      -0.0499875664
+    ],
+    "note": "[Wan2.1 1.3B Fun InP](https://huggingface.co/alibaba-pai/Wan2.1-Fun-1.3B-InP) is a state-of-the-art image-to-video model developed by Alibaba PAI. It can generate video clips of up to 4 seconds in length. The model is trained at multiple resolutions, supports up to 81 frames, with a recommended shift value of 5.0. Text Guidance should be somewhere between 3 to 7. Wan2.1 is trained with Flow Matching objective, Trailing samplers would give the best result."
+  },
+  {
+    "name": "Wan 2.1 1.3B Fun InP (8-bit)",
+    "version": "wan_v2.1_1.3b",
+    "modifier": "inpainting",
+    "autoencoder": "wan_v2.1_video_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 8,
+    "hires_fix_scale": 12,
+    "file": "wan_2.1_1.3b_fun_inp_q8p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "umt5_xxl_encoder_q8p.ckpt",
+    "clip_encoder": "open_clip_xlm_roberta_large_vit_h14_f16.ckpt",
+    "high_precision_autoencoder": false,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "frames_per_second": 16,
+    "tea_cache_coefficients": [
+      -52186.2437,
+      9230.41404,
+      -528.275948,
+      13.6987616,
+      -0.0499875664
+    ],
+    "note": "[Wan2.1 1.3B Fun InP](https://huggingface.co/alibaba-pai/Wan2.1-Fun-1.3B-InP) is a state-of-the-art image-to-video model developed by Alibaba PAI. It can generate video clips of up to 4 seconds in length. The model is trained at multiple resolutions, supports up to 81 frames, with a recommended shift value of 5.0. Text Guidance should be somewhere between 3 to 7. Wan2.1 is trained with Flow Matching objective, Trailing samplers would give the best result."
+  },
+  {
+    "name": "Chroma1 HD",
+    "version": "flux1",
+    "autoencoder": "flux_1_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 16,
+    "hires_fix_scale": 24,
+    "file": "chroma_1_hd_r0.1_q8p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "t5_xxl_encoder_q6p.ckpt",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "high_precision_autoencoder": true,
+    "padded_text_encoding_length": 256,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "mmdit": {
+      "dual_attention_layers": [],
+      "distilled_guidance_layers": 5,
+      "qk_norm": true
+    },
+    "note": "See more about [Chroma1 HD](https://huggingface.co/lodestones/Chroma1-HD)."
+  },
+  {
+    "name": "Chroma1 HD (5-bit)",
+    "version": "flux1",
+    "autoencoder": "flux_1_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 16,
+    "hires_fix_scale": 24,
+    "file": "chroma_1_hd_r0.1_q5p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "t5_xxl_encoder_q6p.ckpt",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "high_precision_autoencoder": true,
+    "padded_text_encoding_length": 256,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "mmdit": {
+      "dual_attention_layers": [],
+      "distilled_guidance_layers": 5,
+      "qk_norm": true
+    },
+    "note": "See more about [Chroma1 HD](https://huggingface.co/lodestones/Chroma1-HD)."
+  },
+  {
+    "name": "Chroma v48 Detail Calibrated",
+    "version": "flux1",
+    "autoencoder": "flux_1_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 16,
+    "hires_fix_scale": 24,
+    "file": "chroma_v48_detail_calibrated_q8p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "t5_xxl_encoder_q6p.ckpt",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "high_precision_autoencoder": true,
+    "padded_text_encoding_length": 256,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "mmdit": {
+      "dual_attention_layers": [],
+      "distilled_guidance_layers": 5,
+      "qk_norm": true
+    },
+    "note": "See more about [Chroma](https://huggingface.co/lodestones/Chroma)."
+  },
+  {
+    "name": "Chroma v48 Detail Calibrated (5-bit)",
+    "version": "flux1",
+    "autoencoder": "flux_1_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 16,
+    "hires_fix_scale": 24,
+    "file": "chroma_v48_detail_calibrated_q5p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "t5_xxl_encoder_q6p.ckpt",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "high_precision_autoencoder": true,
+    "padded_text_encoding_length": 256,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "mmdit": {
+      "dual_attention_layers": [],
+      "distilled_guidance_layers": 5,
+      "qk_norm": true
+    },
+    "note": "See more about [Chroma](https://huggingface.co/lodestones/Chroma)."
+  },
+  {
+    "name": "Chroma v47 Detail Calibrated",
+    "version": "flux1",
+    "autoencoder": "flux_1_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 16,
+    "hires_fix_scale": 24,
+    "file": "chroma_v47_detail_calibrated_q8p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "t5_xxl_encoder_q6p.ckpt",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "high_precision_autoencoder": true,
+    "padded_text_encoding_length": 256,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "mmdit": {
+      "dual_attention_layers": [],
+      "distilled_guidance_layers": 5,
+      "qk_norm": true
+    },
+    "note": "See more about [Chroma](https://huggingface.co/lodestones/Chroma)."
+  },
+  {
+    "name": "Chroma v47 Detail Calibrated (5-bit)",
+    "version": "flux1",
+    "autoencoder": "flux_1_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 16,
+    "hires_fix_scale": 24,
+    "file": "chroma_v47_detail_calibrated_q5p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "t5_xxl_encoder_q6p.ckpt",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "high_precision_autoencoder": true,
+    "padded_text_encoding_length": 256,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "mmdit": {
+      "dual_attention_layers": [],
+      "distilled_guidance_layers": 5,
+      "qk_norm": true
+    },
+    "note": "See more about [Chroma](https://huggingface.co/lodestones/Chroma)."
+  },
+  {
+    "name": "PixelWave FLUX.1 Schnell 04",
+    "version": "flux1",
+    "autoencoder": "flux_1_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 16,
+    "hires_fix_scale": 24,
+    "file": "pixelwave_flux_1_schnell_04_q8p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "t5_xxl_encoder_q6p.ckpt",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "high_precision_autoencoder": true,
+    "is_consistency_model": true,
+    "padded_text_encoding_length": 256,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    }
+  },
+  {
+    "name": "PixelWave FLUX.1 Schnell 04 (5-bit, SVDQuant)",
+    "version": "flux1",
+    "autoencoder": "flux_1_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 16,
+    "hires_fix_scale": 24,
+    "file": "pixelwave_flux_1_schnell_04_q5p_svd.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "t5_xxl_encoder_q6p.ckpt",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "high_precision_autoencoder": true,
+    "is_consistency_model": true,
+    "padded_text_encoding_length": 256,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "builtin_lora": true
+  },
+  {
+    "name": "Shuttle v3.1 Aesthetic",
+    "version": "flux1",
+    "autoencoder": "flux_1_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 16,
+    "hires_fix_scale": 24,
+    "file": "shuttle_v3.1_aesthetic_q8p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "t5_xxl_encoder_q6p.ckpt",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "high_precision_autoencoder": true,
+    "is_consistency_model": true,
+    "padded_text_encoding_length": 256,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    }
+  },
+  {
+    "name": "Shuttle v3.1 Aesthetic (5-bit, SVDQuant)",
+    "version": "flux1",
+    "autoencoder": "flux_1_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 16,
+    "hires_fix_scale": 24,
+    "file": "shuttle_v3.1_aesthetic_q5p_svd.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "t5_xxl_encoder_q6p.ckpt",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "high_precision_autoencoder": true,
+    "is_consistency_model": true,
+    "padded_text_encoding_length": 256,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "builtin_lora": true
+  },
+  {
+    "name": "Shuttle Jaguar",
+    "version": "flux1",
+    "autoencoder": "flux_1_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 16,
+    "hires_fix_scale": 24,
+    "file": "shuttle_jaguar_q8p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "t5_xxl_encoder_q6p.ckpt",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "high_precision_autoencoder": true,
+    "is_consistency_model": true,
+    "padded_text_encoding_length": 256,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    }
+  },
+  {
+    "name": "Shuttle Jaguar (5-bit, SVDQuant)",
+    "version": "flux1",
+    "autoencoder": "flux_1_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 16,
+    "hires_fix_scale": 24,
+    "file": "shuttle_jaguar_q5p_svd.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "t5_xxl_encoder_q6p.ckpt",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "high_precision_autoencoder": true,
+    "is_consistency_model": true,
+    "padded_text_encoding_length": 256,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "builtin_lora": true
+  },
+  {
+    "name": "devMODE v0.3 Turbo",
+    "version": "flux1",
+    "autoencoder": "flux_1_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 16,
+    "hires_fix_scale": 24,
+    "file": "devmode_v0.3_turbo_q8p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "t5_xxl_encoder_q6p.ckpt",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "high_precision_autoencoder": true,
+    "is_consistency_model": true,
+    "padded_text_encoding_length": 256,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    }
+  },
+  {
+    "name": "devMODE v0.3 Turbo (5-bit, SVDQuant)",
+    "version": "flux1",
+    "autoencoder": "flux_1_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 16,
+    "hires_fix_scale": 24,
+    "file": "devmode_v0.3_turbo_q5p_svd.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "t5_xxl_encoder_q6p.ckpt",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "high_precision_autoencoder": true,
+    "is_consistency_model": true,
+    "padded_text_encoding_length": 256,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "builtin_lora": true
+  },
+  {
+    "name": "schnellMODE v3.3",
+    "version": "flux1",
+    "autoencoder": "flux_1_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 16,
+    "hires_fix_scale": 24,
+    "file": "schnellmode_v3.3_q8p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "t5_xxl_encoder_q6p.ckpt",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "high_precision_autoencoder": true,
+    "is_consistency_model": true,
+    "padded_text_encoding_length": 256,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    }
+  },
+  {
+    "name": "schnellMODE v3.3 (5-bit, SVDQuant)",
+    "version": "flux1",
+    "autoencoder": "flux_1_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 16,
+    "hires_fix_scale": 24,
+    "file": "schnellmode_v3.3_q5p_svd.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "t5_xxl_encoder_q6p.ckpt",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "high_precision_autoencoder": true,
+    "is_consistency_model": true,
+    "padded_text_encoding_length": 256,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "builtin_lora": true
+  },
+  {
+    "name": "Artsy Vibe v1",
+    "version": "flux1",
+    "autoencoder": "flux_1_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 16,
+    "hires_fix_scale": 24,
+    "file": "artsy_vibe_v1_q8p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "t5_xxl_encoder_q6p.ckpt",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "high_precision_autoencoder": true,
+    "guidance_embed": true,
+    "padded_text_encoding_length": 512,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    }
+  },
+  {
+    "name": "Artsy Vibe v1 (5-bit, SVDQuant)",
+    "version": "flux1",
+    "autoencoder": "flux_1_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 16,
+    "hires_fix_scale": 24,
+    "file": "artsy_vibe_v1_q5p_svd.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "t5_xxl_encoder_q6p.ckpt",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "high_precision_autoencoder": true,
+    "guidance_embed": true,
+    "padded_text_encoding_length": 512,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "builtin_lora": true
+  },
+  {
+    "name": "RayFLUX v3.0",
+    "version": "flux1",
+    "autoencoder": "flux_1_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 16,
+    "hires_fix_scale": 24,
+    "file": "rayflux_v3.0_aio_q8p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "t5_xxl_encoder_q6p.ckpt",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "high_precision_autoencoder": true,
+    "guidance_embed": true,
+    "padded_text_encoding_length": 512,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "tea_cache_coefficients": [
+      498.651651,
+      -283.781631,
+      55.8554382,
+      -3.82021401,
+      0.264230861
+    ]
+  },
+  {
+    "name": "RayFLUX v3.0 (5-bit)",
+    "version": "flux1",
+    "autoencoder": "flux_1_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 16,
+    "hires_fix_scale": 24,
+    "file": "rayflux_v3.0_aio_q5p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "t5_xxl_encoder_q6p.ckpt",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "high_precision_autoencoder": true,
+    "guidance_embed": true,
+    "padded_text_encoding_length": 512,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "tea_cache_coefficients": [
+      498.651651,
+      -283.781631,
+      55.8554382,
+      -3.82021401,
+      0.264230861
+    ]
+  },
+  {
+    "name": "SkyReels v1 Hunyuan T2V 544p",
+    "version": "hunyuan_video",
+    "autoencoder": "hunyuan_video_vae_f16.ckpt",
+    "prefix": "FPS-24, ",
+    "default_scale": 12,
+    "hires_fix_scale": 24,
+    "file": "skyreels_v1_hunyuan_t2v_q8p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "llava_llama_3_8b_v1.1_q8p.ckpt",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "high_precision_autoencoder": false,
+    "guidance_embed": true,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "frames_per_second": 24,
+    "tea_cache_coefficients": [
+      733.226126,
+      -401.131952,
+      67.5869174,
+      -3.149878,
+      0.0961237896
+    ],
+    "note": "[SkyReels v1](https://huggingface.co/collections/Skywork/skyreels-v1-67b34676ff65b4ec02d16307) is a significant fine-tune of Hunyuan Video, Tencent\u2019s state-of-the-art text-to-video model. It can generate video clips up to 4 seconds long at a recommended resolution of 960\u00d7544. The model supports up to 97 frames, with a recommended shift value of 7.0 or higher. For optimal results, disable \"Speedup w/ Guidance Embed\" by setting it to 1.0 and use a Text Guidance value of 6."
+  },
+  {
+    "name": "SkyReels v1 Hunyuan T2V 544p (5-bit, SVDQuant)",
+    "version": "hunyuan_video",
+    "autoencoder": "hunyuan_video_vae_f16.ckpt",
+    "prefix": "FPS-24, ",
+    "default_scale": 12,
+    "hires_fix_scale": 24,
+    "file": "skyreels_v1_hunyuan_t2v_q5p_svd.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "llava_llama_3_8b_v1.1_q8p.ckpt",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "high_precision_autoencoder": false,
+    "guidance_embed": true,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "frames_per_second": 24,
+    "tea_cache_coefficients": [
+      733.226126,
+      -401.131952,
+      67.5869174,
+      -3.149878,
+      0.0961237896
+    ],
+    "note": "[SkyReels v1](https://huggingface.co/collections/Skywork/skyreels-v1-67b34676ff65b4ec02d16307) is a significant fine-tune of Hunyuan Video, Tencent\u2019s state-of-the-art text-to-video model. It can generate video clips up to 4 seconds long at a recommended resolution of 960\u00d7544. The model supports up to 97 frames, with a recommended shift value of 7.0 or higher. For optimal results, disable \"Speedup w/ Guidance Embed\" by setting it to 1.0 and use a Text Guidance value of 6.",
+    "builtin_lora": true
+  },
+  {
+    "name": "SkyReels v1 Hunyuan I2V 544p",
+    "version": "hunyuan_video",
+    "autoencoder": "hunyuan_video_vae_f16.ckpt",
+    "prefix": "FPS-24, ",
+    "default_scale": 12,
+    "hires_fix_scale": 24,
+    "file": "skyreels_v1_hunyuan_i2v_q8p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "llava_llama_3_8b_v1.1_q8p.ckpt",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "high_precision_autoencoder": false,
+    "modifier": "inpainting",
+    "guidance_embed": true,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "frames_per_second": 24,
+    "tea_cache_coefficients": [
+      733.226126,
+      -401.131952,
+      67.5869174,
+      -3.149878,
+      0.0961237896
+    ],
+    "note": "[SkyReels v1](https://huggingface.co/collections/Skywork/skyreels-v1-67b34676ff65b4ec02d16307) is a significant fine-tune of Hunyuan Video, Tencent\u2019s state-of-the-art text-to-video model. SkyReels v1 I2V is an image-to-video (img2vid) fine-tune that generates video clips up to 4 seconds long from a single image. The model supports up to 97 frames, with a recommended shift value of 7.0 or higher. For optimal results, disable \"Speedup w/ Guidance Embed\" by setting it to 1.0 and use a Text Guidance value of 6."
+  },
+  {
+    "name": "SkyReels v1 Hunyuan I2V 544p (5-bit, SVDQuant)",
+    "version": "hunyuan_video",
+    "autoencoder": "hunyuan_video_vae_f16.ckpt",
+    "prefix": "FPS-24, ",
+    "default_scale": 12,
+    "hires_fix_scale": 24,
+    "file": "skyreels_v1_hunyuan_i2v_q5p_svd.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "llava_llama_3_8b_v1.1_q8p.ckpt",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "high_precision_autoencoder": false,
+    "modifier": "inpainting",
+    "guidance_embed": true,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "frames_per_second": 24,
+    "tea_cache_coefficients": [
+      733.226126,
+      -401.131952,
+      67.5869174,
+      -3.149878,
+      0.0961237896
+    ],
+    "note": "[SkyReels v1](https://huggingface.co/collections/Skywork/skyreels-v1-67b34676ff65b4ec02d16307) is a significant fine-tune of Hunyuan Video, Tencent\u2019s state-of-the-art text-to-video model. SkyReels v1 I2V is an image-to-video (img2vid) fine-tune that generates video clips up to 4 seconds long from a single image. The model supports up to 97 frames, with a recommended shift value of 7.0 or higher. For optimal results, disable \"Speedup w/ Guidance Embed\" by setting it to 1.0 and use a Text Guidance value of 6.",
+    "builtin_lora": true
+  },
+  {
+    "autoencoder": "sdxl_vae_v1.0_f16.ckpt",
+    "default_scale": 16,
+    "prefix": "",
+    "version": "sdxl_base_v0.9",
+    "upcast_attention": false,
+    "name": "Kwai Kolors 1.0",
+    "modifier": "none",
+    "file": "kwai_kolors_1.0_f16.ckpt",
+    "text_encoder": "chatglm3_6b_q6p_q8p.ckpt",
+    "text_encoder_version": "chatglm3_6b"
+  },
+  {
+    "autoencoder": "sdxl_vae_v1.0_f16.ckpt",
+    "default_scale": 16,
+    "prefix": "",
+    "version": "sdxl_base_v0.9",
+    "upcast_attention": false,
+    "name": "Kwai Kolors 1.0 (8-bit)",
+    "modifier": "none",
+    "file": "kwai_kolors_1.0_q6p_q8p.ckpt",
+    "text_encoder": "chatglm3_6b_q6p_q8p.ckpt",
+    "text_encoder_version": "chatglm3_6b"
+  },
+  {
+    "autoencoder": "sdxl_vae_v1.0_f16.ckpt",
+    "default_scale": 16,
+    "prefix": "",
+    "version": "sdxl_base_v0.9",
+    "upcast_attention": true,
+    "name": "Kwai Kolors Inpainting 1.0",
+    "modifier": "inpainting",
+    "file": "kwai_kolors_inpainting_1.0_f16.ckpt",
+    "text_encoder": "chatglm3_6b_q6p_q8p.ckpt",
+    "text_encoder_version": "chatglm3_6b"
+  },
+  {
+    "autoencoder": "sdxl_vae_v1.0_f16.ckpt",
+    "default_scale": 16,
+    "prefix": "",
+    "version": "sdxl_base_v0.9",
+    "upcast_attention": true,
+    "name": "Kwai Kolors Inpainting 1.0 (8-bit)",
+    "modifier": "inpainting",
+    "file": "kwai_kolors_inpainting_1.0_q6p_q8p.ckpt",
+    "text_encoder": "chatglm3_6b_q6p_q8p.ckpt",
+    "text_encoder_version": "chatglm3_6b"
+  },
+  {
+    "name": "FLUX.1 Depth [dev]",
+    "version": "flux1",
+    "autoencoder": "flux_1_vae_f16.ckpt",
+    "prefix": "",
+    "modifier": "depth",
+    "default_scale": 16,
+    "hires_fix_scale": 24,
+    "file": "flux_1_depth_dev_q8p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "t5_xxl_encoder_q6p.ckpt",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "high_precision_autoencoder": true,
+    "guidance_embed": true,
+    "padded_text_encoding_length": 512,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    }
+  },
+  {
+    "name": "FLUX.1 Depth [dev] (5-bit)",
+    "version": "flux1",
+    "autoencoder": "flux_1_vae_f16.ckpt",
+    "prefix": "",
+    "modifier": "depth",
+    "default_scale": 16,
+    "hires_fix_scale": 24,
+    "file": "flux_1_depth_dev_q5p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "t5_xxl_encoder_q6p.ckpt",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "high_precision_autoencoder": true,
+    "guidance_embed": true,
+    "padded_text_encoding_length": 512,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    }
+  },
+  {
+    "name": "FLUX.1 Canny [dev]",
+    "version": "flux1",
+    "autoencoder": "flux_1_vae_f16.ckpt",
+    "prefix": "",
+    "modifier": "canny",
+    "default_scale": 16,
+    "hires_fix_scale": 24,
+    "file": "flux_1_canny_dev_q8p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "t5_xxl_encoder_q6p.ckpt",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "high_precision_autoencoder": true,
+    "guidance_embed": true,
+    "padded_text_encoding_length": 512,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    }
+  },
+  {
+    "name": "FLUX.1 Canny [dev] (5-bit)",
+    "version": "flux1",
+    "autoencoder": "flux_1_vae_f16.ckpt",
+    "prefix": "",
+    "modifier": "canny",
+    "default_scale": 16,
+    "hires_fix_scale": 24,
+    "file": "flux_1_canny_dev_q5p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "t5_xxl_encoder_q6p.ckpt",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "high_precision_autoencoder": true,
+    "guidance_embed": true,
+    "padded_text_encoding_length": 512,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    }
+  },
+  {
+    "name": "FLUX.1 [dev] De-distill",
+    "version": "flux1",
+    "autoencoder": "flux_1_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 16,
+    "hires_fix_scale": 24,
+    "file": "flux_1_dev_de_distill_q8p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "t5_xxl_encoder_q6p.ckpt",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "high_precision_autoencoder": true,
+    "padded_text_encoding_length": 512,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "tea_cache_coefficients": [
+      498.651651,
+      -283.781631,
+      55.8554382,
+      -3.82021401,
+      0.264230861
+    ]
+  },
+  {
+    "name": "FLUX.1 [dev] De-distill (5-bit)",
+    "version": "flux1",
+    "autoencoder": "flux_1_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 16,
+    "hires_fix_scale": 24,
+    "file": "flux_1_dev_de_distill_q5p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "t5_xxl_encoder_q6p.ckpt",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "high_precision_autoencoder": true,
+    "padded_text_encoding_length": 512,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "tea_cache_coefficients": [
+      498.651651,
+      -283.781631,
+      55.8554382,
+      -3.82021401,
+      0.264230861
+    ]
+  },
+  {
+    "name": "Stable Cascade (W\u00fcrstchen v3.0)",
+    "stage_models": [
+      "wurstchen_3.0_stage_b_f16.ckpt"
+    ],
+    "version": "wurstchen_v3.0_stage_c",
+    "default_scale": 16,
+    "file": "wurstchen_3.0_stage_c_f32_f16.ckpt",
+    "text_encoder": "open_clip_vit_bigg14_f16.ckpt",
+    "autoencoder": "wurstchen_3.0_stage_a_hq_f16.ckpt",
+    "upcast_attention": false,
+    "prefix": ""
+  },
+  {
+    "name": "Stable Cascade (W\u00fcrstchen v3.0) (8-bit)",
+    "stage_models": [
+      "wurstchen_3.0_stage_b_q6p_q8p.ckpt"
+    ],
+    "version": "wurstchen_v3.0_stage_c",
+    "default_scale": 16,
+    "file": "wurstchen_3.0_stage_c_f32_q6p_q8p.ckpt",
+    "text_encoder": "open_clip_vit_bigg14_f16.ckpt",
+    "autoencoder": "wurstchen_3.0_stage_a_hq_f16.ckpt",
+    "upcast_attention": false,
+    "prefix": ""
+  },
+  {
+    "name": "SD3 Medium",
+    "version": "sd3",
+    "autoencoder": "sd3_vae_f16.ckpt",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "t5_encoder": "t5_xxl_encoder_q6p.ckpt",
+    "prefix": "",
+    "default_scale": 16,
+    "file": "sd3_medium_f16.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "open_clip_vit_bigg14_f16.ckpt",
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    }
+  },
+  {
+    "name": "SD3 Medium (8-bit)",
+    "version": "sd3",
+    "autoencoder": "sd3_vae_f16.ckpt",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "t5_encoder": "t5_xxl_encoder_q6p.ckpt",
+    "prefix": "",
+    "default_scale": 16,
+    "file": "sd3_medium_q8p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "open_clip_vit_bigg14_f16.ckpt",
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    }
+  },
+  {
+    "file": "svd_i2v_xt_1.1_f16.ckpt",
+    "version": "svd_i2v",
+    "conditioning": "noise",
+    "objective": {
+      "v": {}
+    },
+    "prefix": "",
+    "default_scale": 8,
+    "clip_encoder": "svd_i2v_xt_1.1_f16.ckpt",
+    "name": "Stable Video Diffusion I2V XT v1.1",
+    "text_encoder": "open_clip_vit_h14_vision_model_f16.ckpt",
+    "upcast_attention": false,
+    "modifier": "none",
+    "noise_discretization": {
+      "edm": {
+        "_0": {
+          "sigma_max": 700,
+          "sigma_data": 0.5,
+          "sigma_min": 0.002
+        }
+      }
+    }
+  },
+  {
+    "file": "svd_i2v_xt_1.1_q6p_q8p.ckpt",
+    "version": "svd_i2v",
+    "conditioning": "noise",
+    "objective": {
+      "v": {}
+    },
+    "prefix": "",
+    "default_scale": 8,
+    "clip_encoder": "svd_i2v_xt_1.1_q6p_q8p.ckpt",
+    "name": "Stable Video Diffusion I2V XT v1.1 (8-bit)",
+    "text_encoder": "open_clip_vit_h14_vision_model_f16.ckpt",
+    "upcast_attention": false,
+    "modifier": "none",
+    "noise_discretization": {
+      "edm": {
+        "_0": {
+          "sigma_max": 700,
+          "sigma_data": 0.5,
+          "sigma_min": 0.002
+        }
+      }
+    }
+  },
+  {
+    "conditioning": "noise",
+    "latents_std": [
+      8.4927,
+      5.9022,
+      6.5498,
+      5.2299
+    ],
+    "autoencoder": "sdxl_vae_v1.0_f16.ckpt",
+    "default_scale": 16,
+    "objective": {
+      "edm": {
+        "sigma_data": 0.5
+      }
+    },
+    "prefix": "",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "version": "sdxl_base_v0.9",
+    "upcast_attention": false,
+    "name": "Playground v2.5",
+    "file": "playground_v2.5_f16.ckpt",
+    "noise_discretization": {
+      "edm": {
+        "_0": {
+          "sigma_min": 0.002,
+          "sigma_data": 0.5,
+          "sigma_max": 80
+        }
+      }
+    },
+    "text_encoder": "open_clip_vit_bigg14_f16.ckpt",
+    "latents_mean": [
+      -1.6574,
+      1.886,
+      -1.383,
+      2.5155
+    ],
+    "latents_scaling_factor": 0.5
+  },
+  {
+    "conditioning": "noise",
+    "latents_std": [
+      8.4927,
+      5.9022,
+      6.5498,
+      5.2299
+    ],
+    "autoencoder": "sdxl_vae_v1.0_f16.ckpt",
+    "default_scale": 16,
+    "objective": {
+      "edm": {
+        "sigma_data": 0.5
+      }
+    },
+    "prefix": "",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "version": "sdxl_base_v0.9",
+    "upcast_attention": false,
+    "name": "Playground v2.5 (8-bit)",
+    "file": "playground_v2.5_q6p_q8p.ckpt",
+    "noise_discretization": {
+      "edm": {
+        "_0": {
+          "sigma_min": 0.002,
+          "sigma_data": 0.5,
+          "sigma_max": 80
+        }
+      }
+    },
+    "text_encoder": "open_clip_vit_bigg14_f16.ckpt",
+    "latents_mean": [
+      -1.6574,
+      1.886,
+      -1.383,
+      2.5155
+    ],
+    "latents_scaling_factor": 0.5
+  },
+  {
+    "autoencoder": "sdxl_vae_v1.0_f16.ckpt",
+    "default_scale": 16,
+    "prefix": "",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "version": "sdxl_base_v0.9",
+    "upcast_attention": false,
+    "name": "Playground v2",
+    "file": "playground_v2_f16.ckpt",
+    "text_encoder": "open_clip_vit_bigg14_f16.ckpt",
+    "modifier": "none"
+  },
+  {
+    "autoencoder": "sdxl_vae_v1.0_f16.ckpt",
+    "default_scale": 16,
+    "prefix": "",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "version": "sdxl_base_v0.9",
+    "upcast_attention": false,
+    "name": "Playground v2 (8-bit)",
+    "file": "playground_v2_q6p_q8p.ckpt",
+    "text_encoder": "open_clip_vit_bigg14_f16.ckpt",
+    "modifier": "none"
+  },
+  {
+    "name": "SDXL Turbo",
+    "prefix": "",
+    "default_scale": 8,
+    "autoencoder": "sdxl_vae_v1.0_f16.ckpt",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "text_encoder": "open_clip_vit_bigg14_f16.ckpt",
+    "file": "sd_xl_turbo_f16.ckpt",
+    "version": "sdxl_base_v0.9",
+    "upcast_attention": false,
+    "is_consistency_model": true
+  },
+  {
+    "name": "SDXL Turbo (8-bit)",
+    "prefix": "",
+    "default_scale": 8,
+    "autoencoder": "sdxl_vae_v1.0_f16.ckpt",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "text_encoder": "open_clip_vit_bigg14_f16.ckpt",
+    "file": "sd_xl_turbo_q6p_q8p.ckpt",
+    "version": "sdxl_base_v0.9",
+    "upcast_attention": false,
+    "is_consistency_model": true
+  },
+  {
+    "file": "svd_i2v_1.0_f16.ckpt",
+    "version": "svd_i2v",
+    "conditioning": "noise",
+    "objective": {
+      "v": {}
+    },
+    "prefix": "",
+    "default_scale": 8,
+    "clip_encoder": "svd_i2v_1.0_f16.ckpt",
+    "name": "Stable Video Diffusion I2V v1.0",
+    "text_encoder": "open_clip_vit_h14_vision_model_f16.ckpt",
+    "upcast_attention": false,
+    "modifier": "none",
+    "noise_discretization": {
+      "edm": {
+        "_0": {
+          "sigma_max": 700,
+          "sigma_data": 0.5,
+          "sigma_min": 0.002
+        }
+      }
+    }
+  },
+  {
+    "file": "svd_i2v_1.0_q6p_q8p.ckpt",
+    "version": "svd_i2v",
+    "conditioning": "noise",
+    "objective": {
+      "v": {}
+    },
+    "prefix": "",
+    "default_scale": 8,
+    "clip_encoder": "svd_i2v_1.0_q6p_q8p.ckpt",
+    "name": "Stable Video Diffusion I2V v1.0 (8-bit)",
+    "text_encoder": "open_clip_vit_h14_vision_model_f16.ckpt",
+    "upcast_attention": false,
+    "modifier": "none",
+    "noise_discretization": {
+      "edm": {
+        "_0": {
+          "sigma_max": 700,
+          "sigma_data": 0.5,
+          "sigma_min": 0.002
+        }
+      }
+    }
+  },
+  {
+    "text_encoder": "open_clip_vit_bigg14_f16.ckpt",
+    "prefix": "",
+    "file": "ssd_1b_f16.ckpt",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "version": "ssd_1b",
+    "autoencoder": "sdxl_vae_v1.0_f16.ckpt",
+    "upcast_attention": false,
+    "name": "SSD 1B (Segmind SDXL)",
+    "default_scale": 16
+  },
+  {
+    "text_encoder": "open_clip_vit_bigg14_f16.ckpt",
+    "prefix": "",
+    "file": "ssd_1b_q6p_q8p.ckpt",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "version": "ssd_1b",
+    "autoencoder": "sdxl_vae_v1.0_f16.ckpt",
+    "upcast_attention": false,
+    "name": "SSD 1B (Segmind SDXL) (8-bit)",
+    "default_scale": 16
+  },
+  {
+    "autoencoder": "sdxl_vae_v1.0_f16.ckpt",
+    "default_scale": 16,
+    "prefix": "",
+    "version": "sdxl_base_v0.9",
+    "upcast_attention": false,
+    "name": "Juggernaut XL Ragnarok",
+    "modifier": "none",
+    "text_encoder": "juggernaut_xl_ragnarok_open_clip_vit_bigg14_f16.ckpt",
+    "clip_encoder": "juggernaut_xl_ragnarok_clip_vit_l14_f16.ckpt",
+    "file": "juggernaut_xl_ragnarok_f16.ckpt"
+  },
+  {
+    "autoencoder": "sdxl_vae_v1.0_f16.ckpt",
+    "default_scale": 16,
+    "prefix": "",
+    "version": "sdxl_base_v0.9",
+    "upcast_attention": false,
+    "name": "Juggernaut XL Ragnarok (8-bit)",
+    "modifier": "none",
+    "text_encoder": "juggernaut_xl_ragnarok_open_clip_vit_bigg14_f16.ckpt",
+    "clip_encoder": "juggernaut_xl_ragnarok_clip_vit_l14_f16.ckpt",
+    "file": "juggernaut_xl_ragnarok_q6p_q8p.ckpt"
+  },
+  {
+    "autoencoder": "sdxl_vae_v1.0_f16.ckpt",
+    "default_scale": 16,
+    "prefix": "",
+    "version": "sdxl_base_v0.9",
+    "upcast_attention": false,
+    "name": "Juggernaut XL v9",
+    "modifier": "none",
+    "text_encoder": "juggernaut_xl_v9_open_clip_vit_bigg14_f16.ckpt",
+    "clip_encoder": "juggernaut_xl_v9_clip_vit_l14_f16.ckpt",
+    "file": "juggernaut_xl_v9_f16.ckpt"
+  },
+  {
+    "autoencoder": "sdxl_vae_v1.0_f16.ckpt",
+    "default_scale": 16,
+    "prefix": "",
+    "version": "sdxl_base_v0.9",
+    "upcast_attention": false,
+    "name": "Juggernaut XL v9 (8-bit)",
+    "modifier": "none",
+    "text_encoder": "juggernaut_xl_v9_open_clip_vit_bigg14_f16.ckpt",
+    "clip_encoder": "juggernaut_xl_v9_clip_vit_l14_f16.ckpt",
+    "file": "juggernaut_xl_v9_q6p_q8p.ckpt"
+  },
+  {
+    "autoencoder": "sdxl_vae_v1.0_f16.ckpt",
+    "default_scale": 16,
+    "prefix": "",
+    "version": "sdxl_base_v0.9",
+    "upcast_attention": false,
+    "name": "Animagine XL v3.1",
+    "modifier": "none",
+    "text_encoder": "animagine_xl_v3.1_open_clip_vit_bigg14_f16.ckpt",
+    "clip_encoder": "animagine_xl_v3.1_clip_vit_l14_f16.ckpt",
+    "file": "animagine_xl_v3.1_f16.ckpt"
+  },
+  {
+    "autoencoder": "sdxl_vae_v1.0_f16.ckpt",
+    "default_scale": 16,
+    "prefix": "",
+    "version": "sdxl_base_v0.9",
+    "upcast_attention": false,
+    "name": "Animagine XL v3.1 (8-bit)",
+    "modifier": "none",
+    "text_encoder": "animagine_xl_v3.1_open_clip_vit_bigg14_f16.ckpt",
+    "clip_encoder": "animagine_xl_v3.1_clip_vit_l14_f16.ckpt",
+    "file": "animagine_xl_v3.1_q6p_q8p.ckpt"
+  },
+  {
+    "autoencoder": "sdxl_vae_v1.0_f16.ckpt",
+    "default_scale": 16,
+    "prefix": "",
+    "version": "sdxl_base_v0.9",
+    "upcast_attention": false,
+    "name": "DreamShaper XL v2.1 Turbo",
+    "modifier": "none",
+    "clip_encoder": "dreamshaper_xl_v2.1_turbo_clip_vit_l14_f16.ckpt",
+    "file": "dreamshaper_xl_v2.1_turbo_f16.ckpt",
+    "text_encoder": "dreamshaper_xl_v2.1_turbo_open_clip_vit_bigg14_f16.ckpt"
+  },
+  {
+    "autoencoder": "sdxl_vae_v1.0_f16.ckpt",
+    "default_scale": 16,
+    "prefix": "",
+    "version": "sdxl_base_v0.9",
+    "upcast_attention": false,
+    "name": "DreamShaper XL v2.1 Turbo (8-bit)",
+    "modifier": "none",
+    "clip_encoder": "dreamshaper_xl_v2.1_turbo_clip_vit_l14_f16.ckpt",
+    "file": "dreamshaper_xl_v2.1_turbo_q6p_q8p.ckpt",
+    "text_encoder": "dreamshaper_xl_v2.1_turbo_open_clip_vit_bigg14_f16.ckpt"
+  },
+  {
+    "autoencoder": "sdxl_vae_v1.0_f16.ckpt",
+    "default_scale": 16,
+    "prefix": "",
+    "version": "sdxl_base_v0.9",
+    "upcast_attention": false,
+    "name": "Juggernaut XL v9 Lightning",
+    "modifier": "none",
+    "file": "juggernaut_xl_v9_lightning_f16.ckpt",
+    "text_encoder": "juggernaut_xl_v9_lightning_open_clip_vit_bigg14_f16.ckpt",
+    "clip_encoder": "juggernaut_xl_v9_lightning_clip_vit_l14_f16.ckpt"
+  },
+  {
+    "autoencoder": "sdxl_vae_v1.0_f16.ckpt",
+    "default_scale": 16,
+    "prefix": "",
+    "version": "sdxl_base_v0.9",
+    "upcast_attention": false,
+    "name": "Juggernaut XL v9 Lightning (8-bit)",
+    "modifier": "none",
+    "file": "juggernaut_xl_v9_lightning_q6p_q8p.ckpt",
+    "text_encoder": "juggernaut_xl_v9_lightning_open_clip_vit_bigg14_f16.ckpt",
+    "clip_encoder": "juggernaut_xl_v9_lightning_clip_vit_l14_f16.ckpt"
+  },
+  {
+    "autoencoder": "sdxl_vae_v1.0_f16.ckpt",
+    "default_scale": 16,
+    "prefix": "",
+    "version": "sdxl_base_v0.9",
+    "upcast_attention": false,
+    "name": "PixelWave v9",
+    "modifier": "none",
+    "text_encoder": "pixelwave_v9_open_clip_vit_bigg14_f16.ckpt",
+    "clip_encoder": "pixelwave_v9_clip_vit_l14_f16.ckpt",
+    "file": "pixelwave_v9_f16.ckpt"
+  },
+  {
+    "autoencoder": "sdxl_vae_v1.0_f16.ckpt",
+    "default_scale": 16,
+    "prefix": "",
+    "version": "sdxl_base_v0.9",
+    "upcast_attention": false,
+    "name": "PixelWave v9 (8-bit)",
+    "modifier": "none",
+    "text_encoder": "pixelwave_v9_open_clip_vit_bigg14_f16.ckpt",
+    "clip_encoder": "pixelwave_v9_clip_vit_l14_f16.ckpt",
+    "file": "pixelwave_v9_q6p_q8p.ckpt"
+  },
+  {
+    "autoencoder": "sdxl_vae_v1.0_f16.ckpt",
+    "default_scale": 16,
+    "prefix": "",
+    "version": "sdxl_base_v0.9",
+    "upcast_attention": false,
+    "name": "PixelWave 10",
+    "modifier": "none",
+    "file": "pixelwave_10_f16.ckpt",
+    "clip_encoder": "pixelwave_10_clip_vit_l14_f16.ckpt",
+    "text_encoder": "pixelwave_10_open_clip_vit_bigg14_f16.ckpt"
+  },
+  {
+    "autoencoder": "sdxl_vae_v1.0_f16.ckpt",
+    "default_scale": 16,
+    "prefix": "",
+    "version": "sdxl_base_v0.9",
+    "upcast_attention": false,
+    "name": "PixelWave 10 (8-bit)",
+    "modifier": "none",
+    "file": "pixelwave_10_q6p_q8p.ckpt",
+    "clip_encoder": "pixelwave_10_clip_vit_l14_f16.ckpt",
+    "text_encoder": "pixelwave_10_open_clip_vit_bigg14_f16.ckpt"
+  },
+  {
+    "autoencoder": "sdxl_vae_v1.0_f16.ckpt",
+    "default_scale": 16,
+    "prefix": "",
+    "version": "sdxl_base_v0.9",
+    "upcast_attention": false,
+    "name": "RealVisXL v4.0",
+    "modifier": "none",
+    "clip_encoder": "realvisxl_v4.0_clip_vit_l14_f16.ckpt",
+    "text_encoder": "realvisxl_v4.0_open_clip_vit_bigg14_f16.ckpt",
+    "file": "realvisxl_v4.0_f16.ckpt"
+  },
+  {
+    "autoencoder": "sdxl_vae_v1.0_f16.ckpt",
+    "default_scale": 16,
+    "prefix": "",
+    "version": "sdxl_base_v0.9",
+    "upcast_attention": false,
+    "name": "RealVisXL v4.0 (8-bit)",
+    "modifier": "none",
+    "clip_encoder": "realvisxl_v4.0_clip_vit_l14_f16.ckpt",
+    "text_encoder": "realvisxl_v4.0_open_clip_vit_bigg14_f16.ckpt",
+    "file": "realvisxl_v4.0_q6p_q8p.ckpt"
+  },
+  {
+    "autoencoder": "sdxl_vae_v1.0_f16.ckpt",
+    "default_scale": 16,
+    "prefix": "",
+    "version": "sdxl_base_v0.9",
+    "upcast_attention": false,
+    "name": "Juggernaut XL X",
+    "modifier": "none",
+    "text_encoder": "juggernaut_xl_x_open_clip_vit_bigg14_f16.ckpt",
+    "file": "juggernaut_xl_x_f16.ckpt",
+    "clip_encoder": "juggernaut_xl_x_clip_vit_l14_f16.ckpt"
+  },
+  {
+    "autoencoder": "sdxl_vae_v1.0_f16.ckpt",
+    "default_scale": 16,
+    "prefix": "",
+    "version": "sdxl_base_v0.9",
+    "upcast_attention": false,
+    "name": "Juggernaut XL X (8-bit)",
+    "modifier": "none",
+    "text_encoder": "juggernaut_xl_x_open_clip_vit_bigg14_f16.ckpt",
+    "file": "juggernaut_xl_x_q6p_q8p.ckpt",
+    "clip_encoder": "juggernaut_xl_x_clip_vit_l14_f16.ckpt"
+  },
+  {
+    "name": "iCatcher Realistic",
+    "file": "icatcher_realistic_f16.ckpt",
+    "prefix": "",
+    "modifier": "none",
+    "default_scale": 16,
+    "upcast_attention": false,
+    "autoencoder": "sdxl_vae_v1.0_f16.ckpt",
+    "text_encoder": "icatcher_realistic_open_clip_vit_bigg14_f16.ckpt",
+    "clip_encoder": "icatcher_realistic_clip_vit_l14_f16.ckpt",
+    "version": "sdxl_base_v0.9"
+  },
+  {
+    "name": "iCatcher Realistic (8-bit)",
+    "file": "icatcher_realistic_q6p_q8p.ckpt",
+    "prefix": "",
+    "modifier": "none",
+    "default_scale": 16,
+    "upcast_attention": false,
+    "autoencoder": "sdxl_vae_v1.0_f16.ckpt",
+    "text_encoder": "icatcher_realistic_open_clip_vit_bigg14_f16.ckpt",
+    "clip_encoder": "icatcher_realistic_clip_vit_l14_f16.ckpt",
+    "version": "sdxl_base_v0.9"
+  },
+  {
+    "name": "iCatcher Cartoon",
+    "file": "icatcher_cartoon_f16.ckpt",
+    "prefix": "",
+    "modifier": "none",
+    "default_scale": 16,
+    "upcast_attention": false,
+    "autoencoder": "sdxl_vae_v1.0_f16.ckpt",
+    "clip_encoder": "icatcher_cartoon_clip_vit_l14_f16.ckpt",
+    "version": "sdxl_base_v0.9",
+    "text_encoder": "icatcher_cartoon_open_clip_vit_bigg14_f16.ckpt"
+  },
+  {
+    "name": "iCatcher Cartoon (8-bit)",
+    "file": "icatcher_cartoon_q6p_q8p.ckpt",
+    "prefix": "",
+    "modifier": "none",
+    "default_scale": 16,
+    "upcast_attention": false,
+    "autoencoder": "sdxl_vae_v1.0_f16.ckpt",
+    "clip_encoder": "icatcher_cartoon_clip_vit_l14_f16.ckpt",
+    "version": "sdxl_base_v0.9",
+    "text_encoder": "icatcher_cartoon_open_clip_vit_bigg14_f16.ckpt"
+  },
+  {
+    "autoencoder": "sdxl_vae_v1.0_f16.ckpt",
+    "default_scale": 16,
+    "prefix": "",
+    "version": "sdxl_base_v0.9",
+    "upcast_attention": false,
+    "name": "ColorfulXL v6.0",
+    "modifier": "none",
+    "clip_encoder": "colorfulxl_v6.0_clip_vit_l14_f16.ckpt",
+    "file": "colorfulxl_v6.0_f16.ckpt",
+    "text_encoder": "colorfulxl_v6.0_open_clip_vit_bigg14_f16.ckpt"
+  },
+  {
+    "autoencoder": "sdxl_vae_v1.0_f16.ckpt",
+    "default_scale": 16,
+    "prefix": "",
+    "version": "sdxl_base_v0.9",
+    "upcast_attention": false,
+    "name": "ColorfulXL v6.0 (8-bit)",
+    "modifier": "none",
+    "clip_encoder": "colorfulxl_v6.0_clip_vit_l14_f16.ckpt",
+    "file": "colorfulxl_v6.0_q6p_q8p.ckpt",
+    "text_encoder": "colorfulxl_v6.0_open_clip_vit_bigg14_f16.ckpt"
+  },
+  {
+    "autoencoder": "sdxl_vae_v1.0_f16.ckpt",
+    "default_scale": 16,
+    "prefix": "",
+    "version": "sdxl_base_v0.9",
+    "upcast_attention": false,
+    "name": "Proteus v0.3",
+    "modifier": "none",
+    "clip_encoder": "proteus_v0.3_clip_vit_l14_f16.ckpt",
+    "file": "proteus_v0.3_f16.ckpt",
+    "text_encoder": "proteus_v0.3_open_clip_vit_bigg14_f16.ckpt"
+  },
+  {
+    "autoencoder": "sdxl_vae_v1.0_f16.ckpt",
+    "default_scale": 16,
+    "prefix": "",
+    "version": "sdxl_base_v0.9",
+    "upcast_attention": false,
+    "name": "Proteus v0.3 (8-bit)",
+    "modifier": "none",
+    "clip_encoder": "proteus_v0.3_clip_vit_l14_f16.ckpt",
+    "file": "proteus_v0.3_q6p_q8p.ckpt",
+    "text_encoder": "proteus_v0.3_open_clip_vit_bigg14_f16.ckpt"
+  },
+  {
+    "autoencoder": "vae_ft_mse_840000_f16.ckpt",
+    "default_scale": 16,
+    "prefix": "",
+    "version": "v1",
+    "upcast_attention": false,
+    "name": "Outfitting Fusion Virtual Try-on (Upper-Body)",
+    "modifier": "double",
+    "file": "ootd_vton_upper_body_1.0_f16.ckpt",
+    "text_encoder": "clip_vit_l14_f16.ckpt"
+  },
+  {
+    "autoencoder": "vae_ft_mse_840000_f16.ckpt",
+    "default_scale": 16,
+    "prefix": "",
+    "version": "v1",
+    "upcast_attention": false,
+    "name": "Outfitting Fusion Virtual Try-on (Full-Body)",
+    "modifier": "double",
+    "file": "ootd_vton_full_body_1.0_f16.ckpt",
+    "text_encoder": "clip_vit_l14_f16.ckpt"
+  },
+  {
+    "prefix": "",
+    "upcast_attention": false,
+    "clip_encoder": "open_clip_vit_h14_visual_proj_f16.ckpt",
+    "text_encoder": "open_clip_vit_h14_vision_model_f16.ckpt",
+    "conditioning": "noise",
+    "version": "svd_i2v",
+    "default_scale": 8,
+    "name": "AnimateLCM SVD XT v1.1",
+    "noise_discretization": {
+      "edm": {
+        "_0": {
+          "sigma_max": 700,
+          "sigma_data": 0.5,
+          "sigma_min": 0.002
+        }
+      }
+    },
+    "modifier": "none",
+    "objective": {
+      "v": {}
+    },
+    "file": "animatelcm_svd_xt_v1.1_f16.ckpt"
+  },
+  {
+    "prefix": "",
+    "upcast_attention": false,
+    "clip_encoder": "open_clip_vit_h14_visual_proj_f16.ckpt",
+    "text_encoder": "open_clip_vit_h14_vision_model_f16.ckpt",
+    "conditioning": "noise",
+    "version": "svd_i2v",
+    "default_scale": 8,
+    "name": "AnimateLCM SVD XT v1.1 (8-bit)",
+    "noise_discretization": {
+      "edm": {
+        "_0": {
+          "sigma_max": 700,
+          "sigma_data": 0.5,
+          "sigma_min": 0.002
+        }
+      }
+    },
+    "modifier": "none",
+    "objective": {
+      "v": {}
+    },
+    "file": "animatelcm_svd_xt_v1.1_q6p_q8p.ckpt"
+  },
+  {
+    "version": "v1",
+    "default_scale": 12,
+    "prefix": "",
+    "name": "Juggernaut Reborn",
+    "upcast_attention": false,
+    "file": "juggernaut_reborn_f16.ckpt",
+    "text_encoder": "juggernaut_reborn_clip_vit_l14_f16.ckpt",
+    "modifier": "none"
+  },
+  {
+    "version": "v1",
+    "default_scale": 12,
+    "prefix": "",
+    "name": "Juggernaut Reborn (8-bit)",
+    "upcast_attention": false,
+    "file": "juggernaut_reborn_q6p_q8p.ckpt",
+    "text_encoder": "juggernaut_reborn_clip_vit_l14_f16.ckpt",
+    "modifier": "none"
+  },
+  {
+    "default_scale": 8,
+    "text_encoder": "disney_pixar_cartoon_type_b_clip_vit_l14_f16.ckpt",
+    "upcast_attention": false,
+    "prefix": "",
+    "file": "disney_pixar_cartoon_type_b_q6p_q8p.ckpt",
+    "name": "Disney Pixar Cartoon Type B (8-bit)",
+    "version": "v1"
+  },
+  {
+    "version": "v1",
+    "default_scale": 12,
+    "prefix": "",
+    "name": "Realistic Vision v5.1",
+    "upcast_attention": false,
+    "text_encoder": "realistic_vision_v5.1_clip_vit_l14_f16.ckpt",
+    "file": "realistic_vision_v5.1_f16.ckpt",
+    "modifier": "none"
+  },
+  {
+    "version": "v1",
+    "default_scale": 12,
+    "prefix": "",
+    "name": "Realistic Vision v5.1 (8-bit)",
+    "upcast_attention": false,
+    "text_encoder": "realistic_vision_v5.1_clip_vit_l14_f16.ckpt",
+    "file": "realistic_vision_v5.1_q6p_q8p.ckpt",
+    "modifier": "none"
+  },
+  {
+    "version": "v1",
+    "default_scale": 12,
+    "prefix": "",
+    "name": "DreamShaper v8",
+    "upcast_attention": false,
+    "file": "dreamshaper_v8_f16.ckpt",
+    "text_encoder": "dreamshaper_v8_clip_vit_l14_f16.ckpt",
+    "modifier": "none"
+  },
+  {
+    "version": "v1",
+    "default_scale": 12,
+    "prefix": "",
+    "name": "DreamShaper v8 (8-bit)",
+    "upcast_attention": false,
+    "file": "dreamshaper_v8_q6p_q8p.ckpt",
+    "text_encoder": "dreamshaper_v8_clip_vit_l14_f16.ckpt",
+    "modifier": "none"
+  },
+  {
+    "version": "v1",
+    "default_scale": 8,
+    "prefix": "",
+    "name": "Counterfeit v3.0",
+    "upcast_attention": false,
+    "modifier": "none",
+    "file": "counterfeit_v3.0_f16.ckpt",
+    "text_encoder": "counterfeit_v3.0_clip_vit_l14_f16.ckpt"
+  },
+  {
+    "version": "v1",
+    "default_scale": 8,
+    "prefix": "",
+    "name": "Counterfeit v3.0 (8-bit)",
+    "upcast_attention": false,
+    "modifier": "none",
+    "file": "counterfeit_v3.0_q6p_q8p.ckpt",
+    "text_encoder": "counterfeit_v3.0_clip_vit_l14_f16.ckpt"
+  },
+  {
+    "version": "v1",
+    "default_scale": 8,
+    "prefix": "",
+    "name": "MajicMIX Realistic v7",
+    "upcast_attention": false,
+    "file": "majicmix_realistic_v7_f16.ckpt",
+    "text_encoder": "majicmix_realistic_v7_clip_vit_l14_f16.ckpt",
+    "modifier": "none"
+  },
+  {
+    "version": "v1",
+    "default_scale": 8,
+    "prefix": "",
+    "name": "MajicMIX Realistic v7 (8-bit)",
+    "upcast_attention": false,
+    "file": "majicmix_realistic_v7_q6p_q8p.ckpt",
+    "text_encoder": "majicmix_realistic_v7_clip_vit_l14_f16.ckpt",
+    "modifier": "none"
+  },
+  {
+    "version": "v1",
+    "default_scale": 8,
+    "prefix": "",
+    "name": "Rev Animated v1.22",
+    "upcast_attention": false,
+    "modifier": "none",
+    "text_encoder": "rev_animated_v1.22_clip_vit_l14_f16.ckpt",
+    "file": "rev_animated_v1.22_f16.ckpt"
+  },
+  {
+    "version": "v1",
+    "default_scale": 8,
+    "prefix": "",
+    "name": "Rev Animated v1.22 (8-bit)",
+    "upcast_attention": false,
+    "modifier": "none",
+    "text_encoder": "rev_animated_v1.22_clip_vit_l14_f16.ckpt",
+    "file": "rev_animated_v1.22_q6p_q8p.ckpt"
+  },
+  {
+    "upcast_attention": false,
+    "version": "v1",
+    "file": "wd_v1.3_f16.ckpt",
+    "prefix": "",
+    "name": "Anime (Waifu Diffusion v1.3)",
+    "default_scale": 8
+  },
+  {
+    "file": "nitro_v1_f16.ckpt",
+    "default_scale": 8,
+    "version": "v1",
+    "prefix": "",
+    "name": "Multi-Style (Nitro Diffusion v1)",
+    "upcast_attention": false,
+    "text_encoder": "nitro_v1_clip_vit_l14_f16.ckpt"
+  },
+  {
+    "prefix": "dgs illustration style ",
+    "file": "cyberpunk_anime_f16.ckpt",
+    "default_scale": 8,
+    "upcast_attention": false,
+    "version": "v1",
+    "name": "Cyberpunk Anime",
+    "text_encoder": "cyberpunk_anime_clip_vit_l14_f16.ckpt"
+  },
+  {
+    "version": "v1",
+    "prefix": "redshift style ",
+    "upcast_attention": false,
+    "default_scale": 8,
+    "file": "redshift_v1_f16.ckpt",
+    "text_encoder": "redshift_v1_clip_vit_l14_f16.ckpt",
+    "name": "3D Model (Redshift v1)"
+  },
+  {
+    "name": "3D Model 768 (Redshift 768)",
+    "objective": {
+      "v": {}
+    },
+    "file": "redshift_768_v_f16.ckpt",
+    "version": "v2",
+    "upcast_attention": false,
+    "prefix": "redshift style ",
+    "text_encoder": "redshift_768_v_open_clip_vit_h14_f16.ckpt",
+    "default_scale": 12
+  },
+  {
+    "version": "v1",
+    "file": "dnd_30000_f16.ckpt",
+    "prefix": "",
+    "default_scale": 8,
+    "upcast_attention": false,
+    "name": "Dungeons and Diffusion (30000)",
+    "text_encoder": "dnd_30000_clip_vit_l14_f16.ckpt"
+  },
+  {
+    "version": "v1",
+    "prefix": "trnlgcy style ",
+    "upcast_attention": false,
+    "default_scale": 8,
+    "text_encoder": "trnlgcy_clip_vit_l14_f16.ckpt",
+    "name": "Tron Legacy",
+    "file": "trnlgcy_f16.ckpt"
+  },
+  {
+    "text_encoder": "mdjrny_v4_clip_vit_l14_f16.ckpt",
+    "version": "v1",
+    "prefix": "mdjrny-v4 style ",
+    "upcast_attention": false,
+    "file": "mdjrny_v4_f16.ckpt",
+    "name": "Openjourney",
+    "default_scale": 8
+  },
+  {
+    "text_encoder": "anything_v3_clip_vit_l14_f16.ckpt",
+    "default_scale": 8,
+    "version": "v1",
+    "file": "anything_v3_f16.ckpt",
+    "prefix": "",
+    "autoencoder": "anything_v3_vae_f16.ckpt",
+    "name": "Anime (Anything v3)",
+    "upcast_attention": false
+  },
+  {
+    "text_encoder": "classicanim_v1_clip_vit_l14_f16.ckpt",
+    "default_scale": 8,
+    "version": "v1",
+    "file": "classicanim_v1_f16.ckpt",
+    "prefix": "classic disney style ",
+    "name": "Classic Animation (v1)",
+    "upcast_attention": false
+  },
+  {
+    "prefix": "modern disney style ",
+    "upcast_attention": false,
+    "version": "v1",
+    "file": "modi_v1_f16.ckpt",
+    "name": "Modern Disney (v1)",
+    "text_encoder": "modi_v1_clip_vit_l14_f16.ckpt",
+    "default_scale": 8
+  },
+  {
+    "file": "arcane_v3_f16.ckpt",
+    "text_encoder": "arcane_v3_clip_vit_l14_f16.ckpt",
+    "name": "Arcane (v3)",
+    "default_scale": 8,
+    "prefix": "arcane style ",
+    "upcast_attention": false,
+    "version": "v1"
+  },
+  {
+    "version": "v1",
+    "file": "hassanblend_v1.5.1.2_f16.ckpt",
+    "prefix": "",
+    "text_encoder": "hassanblend_v1.5.1.2_clip_vit_l14_f16.ckpt",
+    "upcast_attention": false,
+    "default_scale": 8,
+    "name": "Hassanblend (v1.5.1.2)"
+  },
+  {
+    "name": "Van Gogh Style (Lvngvncnt v2)",
+    "version": "v1",
+    "text_encoder": "lvngvncnt_v2_clip_vit_l14_f16.ckpt",
+    "upcast_attention": false,
+    "default_scale": 8,
+    "file": "lvngvncnt_v2_f16.ckpt",
+    "prefix": "lvngvncnt "
+  },
+  {
+    "name": "Spider-Verse (v1)",
+    "version": "v1",
+    "text_encoder": "spiderverse_v1_clip_vit_l14_f16.ckpt",
+    "upcast_attention": false,
+    "default_scale": 8,
+    "file": "spiderverse_v1_f16.ckpt",
+    "prefix": "spiderverse style "
+  },
+  {
+    "prefix": "elden ring style ",
+    "upcast_attention": false,
+    "name": "Elden Ring (v3)",
+    "file": "eldenring_v3_f16.ckpt",
+    "default_scale": 8,
+    "text_encoder": "eldenring_v3_clip_vit_l14_f16.ckpt",
+    "version": "v1"
+  },
+  {
+    "name": "Paper Cut (v1)",
+    "upcast_attention": false,
+    "version": "v1",
+    "file": "papercut_v1_f16.ckpt",
+    "prefix": "papercut ",
+    "default_scale": 8,
+    "text_encoder": "papercut_v1_clip_vit_l14_f16.ckpt"
+  },
+  {
+    "name": "VoxelArt (v1)",
+    "upcast_attention": false,
+    "version": "v1",
+    "file": "voxelart_v1_f16.ckpt",
+    "prefix": "voxelart ",
+    "default_scale": 8,
+    "text_encoder": "voxelart_v1_clip_vit_l14_f16.ckpt"
+  },
+  {
+    "name": "Balloon Art (v1)",
+    "upcast_attention": false,
+    "version": "v1",
+    "file": "balloonart_v1_f16.ckpt",
+    "prefix": "balloonart ",
+    "default_scale": 8,
+    "text_encoder": "balloonart_v1_clip_vit_l14_f16.ckpt"
+  },
+  {
+    "upcast_attention": false,
+    "version": "v1",
+    "name": "F222",
+    "file": "f222_f16.ckpt",
+    "prefix": "",
+    "default_scale": 8
+  },
+  {
+    "name": "Super Mario Nation (v2)",
+    "default_scale": 8,
+    "text_encoder": "supermarionation_v2_clip_vit_l14_f16.ckpt",
+    "file": "supermarionation_v2_f16.ckpt",
+    "prefix": "supermarionation ",
+    "version": "v1",
+    "upcast_attention": false
+  },
+  {
+    "version": "v1",
+    "file": "inkpunk_v2_f16.ckpt",
+    "name": "Inkpunk (v2)",
+    "upcast_attention": false,
+    "prefix": "nvinkpunk ",
+    "default_scale": 8,
+    "text_encoder": "inkpunk_v2_clip_vit_l14_f16.ckpt"
+  },
+  {
+    "version": "v1",
+    "name": "SamDoesArt (v3)",
+    "upcast_attention": false,
+    "text_encoder": "samdoesart_v3_clip_vit_l14_f16.ckpt",
+    "default_scale": 8,
+    "prefix": "samdoesart ",
+    "file": "samdoesart_v3_f16.ckpt"
+  },
+  {
+    "upcast_attention": false,
+    "prefix": "ghibli style ",
+    "text_encoder": "ghibli_v1_clip_vit_l14_f16.ckpt",
+    "default_scale": 8,
+    "file": "ghibli_v1_f16.ckpt",
+    "name": "Ghibli (v1)",
+    "version": "v1"
+  },
+  {
+    "name": "Analog (v1)",
+    "prefix": "analog style ",
+    "default_scale": 8,
+    "version": "v1",
+    "upcast_attention": false,
+    "file": "analog_v1_f16.ckpt",
+    "text_encoder": "analog_v1_clip_vit_l14_f16.ckpt"
+  },
+  {
+    "file": "dnd_classes_and_species_f16.ckpt",
+    "prefix": "",
+    "upcast_attention": false,
+    "default_scale": 8,
+    "version": "v1",
+    "text_encoder": "dnd_classes_and_species_clip_vit_l14_f16.ckpt",
+    "name": "DnD Classes and Species"
+  },
+  {
+    "upcast_attention": false,
+    "version": "v1",
+    "name": "AloeVera's SimpMaker 3K1",
+    "file": "aloeveras_simpmaker_3k1_f16.ckpt",
+    "prefix": "",
+    "default_scale": 8
+  },
+  {
+    "file": "hna_3dkx_1.1_f16.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "hna_3dkx_1.1_clip_vit_l14_f16.ckpt",
+    "default_scale": 8,
+    "version": "v1",
+    "name": "H&A's 3DKX 1.1",
+    "prefix": "a 3d render / cartoon of "
+  },
+  {
+    "text_encoder": "seek_art_mega_v1_clip_vit_l14_f16.ckpt",
+    "upcast_attention": false,
+    "name": "seek.art MEGA (v1)",
+    "version": "v1",
+    "file": "seek_art_mega_v1_f16.ckpt",
+    "default_scale": 10,
+    "prefix": ""
+  },
+  {
+    "version": "v1",
+    "name": "Deliberate v2.0 (8-bit)",
+    "file": "deliberate_v2_q6p_q8p.ckpt",
+    "prefix": "",
+    "text_encoder": "deliberate_v2_clip_vit_l14_f16.ckpt",
+    "default_scale": 8,
+    "upcast_attention": false
+  }
+]

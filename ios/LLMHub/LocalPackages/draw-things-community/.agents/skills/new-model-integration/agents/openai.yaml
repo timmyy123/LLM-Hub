@@ -1,0 +1,4 @@
+interface:
+  display_name: "New Model Integration"
+  short_description: "Integrate generative models into Draw Things"
+  default_prompt: "Use $new-model-integration to add a new generative model to the Draw Things app / CLI end to end."

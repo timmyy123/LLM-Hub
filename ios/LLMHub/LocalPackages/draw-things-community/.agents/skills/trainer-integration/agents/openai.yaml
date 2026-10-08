@@ -1,0 +1,4 @@
+interface:
+  display_name: "Trainer Integration"
+  short_description: "Add LoRA trainer support for app / CLI models"
+  default_prompt: "Use $trainer-integration to add LoRA training support for a generative model available in the Draw Things app / CLI."

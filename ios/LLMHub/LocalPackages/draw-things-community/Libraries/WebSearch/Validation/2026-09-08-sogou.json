@@ -1,0 +1,1353 @@
+{
+  "startedAtUTC": "2026-09-09T01:56:18.987485+00:00",
+  "platform": "macOS on the requesting computer",
+  "method": "Sequential CLI queries; persistent default WebKit data; no manual verification or result-page fetching; success requires parsed results or explicit no-results markup. Batch order is recorded; provider throttling and session state can affect later batches.",
+  "benchmarks": [
+    {
+      "transport": "http",
+      "batch": 1,
+      "metrics": {
+        "meanReciprocalRank": 0,
+        "meanResultCount": 6.2,
+        "networkBoundary": "sogou-only",
+        "p50SearchLatencySeconds": 0.7680490016937256,
+        "p95SearchLatencySeconds": 1.5398370027542114,
+        "queryCount": 10,
+        "results": [
+          {
+            "elapsedSeconds": 1.5398370027542114,
+            "emptySnippetCount": 0,
+            "emptyTitleCount": 0,
+            "expectedURLContains": "github.com/scinfu/SwiftSoup",
+            "fetchFailureCount": 0,
+            "fetchSuccessCount": 0,
+            "query": "SwiftSoup GitHub",
+            "resultCount": 10
+          },
+          {
+            "elapsedSeconds": 1.241671085357666,
+            "emptySnippetCount": 0,
+            "emptyTitleCount": 0,
+            "expectedURLContains": "drawthings.ai",
+            "fetchFailureCount": 0,
+            "fetchSuccessCount": 0,
+            "query": "Draw Things app",
+            "resultCount": 10
+          },
+          {
+            "elapsedSeconds": 1.1492549180984497,
+            "emptySnippetCount": 1,
+            "emptyTitleCount": 0,
+            "expectedURLContains": "platform.openai.com/docs",
+            "fetchFailureCount": 0,
+            "fetchSuccessCount": 0,
+            "query": "OpenAI API docs",
+            "resultCount": 10
+          },
+          {
+            "elapsedSeconds": 0.5769810676574707,
+            "emptySnippetCount": 0,
+            "emptyTitleCount": 0,
+            "expectedURLContains": "developer.apple.com",
+            "fetchFailureCount": 0,
+            "fetchSuccessCount": 0,
+            "query": "site:developer.apple.com URLSession Swift",
+            "resultCount": 0
+          },
+          {
+            "elapsedSeconds": 0.5561859607696533,
+            "emptySnippetCount": 0,
+            "emptyTitleCount": 0,
+            "expectedURLContains": "swift.org",
+            "fetchFailureCount": 0,
+            "fetchSuccessCount": 0,
+            "query": "site:swift.org PackageDescription",
+            "resultCount": 0
+          },
+          {
+            "elapsedSeconds": 0.837407112121582,
+            "emptySnippetCount": 0,
+            "emptyTitleCount": 0,
+            "expectedURLContains": "swift.org",
+            "fetchFailureCount": 0,
+            "fetchSuccessCount": 0,
+            "query": "latest Swift release",
+            "resultCount": 7
+          },
+          {
+            "elapsedSeconds": 0.7680490016937256,
+            "emptySnippetCount": 0,
+            "emptyTitleCount": 0,
+            "expectedURLContains": "duckduckgo.com",
+            "fetchFailureCount": 0,
+            "fetchSuccessCount": 0,
+            "query": "DuckDuckGo search syntax",
+            "resultCount": 9
+          },
+          {
+            "elapsedSeconds": 0.7268739938735962,
+            "emptySnippetCount": 0,
+            "emptyTitleCount": 0,
+            "expectedURLContains": "github.com",
+            "fetchFailureCount": 0,
+            "fetchSuccessCount": 0,
+            "query": "\"Swift ArgumentParser\" GitHub",
+            "resultCount": 9
+          },
+          {
+            "elapsedSeconds": 0.5405240058898926,
+            "emptySnippetCount": 0,
+            "emptyTitleCount": 0,
+            "fetchFailureCount": 0,
+            "fetchSuccessCount": 0,
+            "query": "filetype:pdf Swift concurrency",
+            "resultCount": 0
+          },
+          {
+            "elapsedSeconds": 0.7577400207519531,
+            "emptySnippetCount": 0,
+            "emptyTitleCount": 0,
+            "fetchFailureCount": 0,
+            "fetchSuccessCount": 0,
+            "query": "intitle:SwiftSoup selector",
+            "resultCount": 7
+          }
+        ],
+        "successfulQueryCount": 10,
+        "nonemptyQueryCount": 7,
+        "explicitEmptyQueryCount": 3
+      }
+    },
+    {
+      "transport": "browser",
+      "batch": 1,
+      "metrics": {
+        "meanReciprocalRank": 0,
+        "meanResultCount": 6.2,
+        "networkBoundary": "sogou-only",
+        "p50SearchLatencySeconds": 1.6472220420837402,
+        "p95SearchLatencySeconds": 2.4215139150619507,
+        "queryCount": 10,
+        "results": [
+          {
+            "elapsedSeconds": 2.4215139150619507,
+            "emptySnippetCount": 0,
+            "emptyTitleCount": 0,
+            "expectedURLContains": "github.com/scinfu/SwiftSoup",
+            "fetchFailureCount": 0,
+            "fetchSuccessCount": 0,
+            "query": "SwiftSoup GitHub",
+            "resultCount": 10
+          },
+          {
+            "elapsedSeconds": 1.6362559795379639,
+            "emptySnippetCount": 0,
+            "emptyTitleCount": 0,
+            "expectedURLContains": "drawthings.ai",
+            "fetchFailureCount": 0,
+            "fetchSuccessCount": 0,
+            "query": "Draw Things app",
+            "resultCount": 10
+          },
+          {
+            "elapsedSeconds": 1.918747067451477,
+            "emptySnippetCount": 1,
+            "emptyTitleCount": 0,
+            "expectedURLContains": "platform.openai.com/docs",
+            "fetchFailureCount": 0,
+            "fetchSuccessCount": 0,
+            "query": "OpenAI API docs",
+            "resultCount": 10
+          },
+          {
+            "elapsedSeconds": 0.8036839962005615,
+            "emptySnippetCount": 0,
+            "emptyTitleCount": 0,
+            "expectedURLContains": "developer.apple.com",
+            "fetchFailureCount": 0,
+            "fetchSuccessCount": 0,
+            "query": "site:developer.apple.com URLSession Swift",
+            "resultCount": 0
+          },
+          {
+            "elapsedSeconds": 1.0406919717788696,
+            "emptySnippetCount": 0,
+            "emptyTitleCount": 0,
+            "expectedURLContains": "swift.org",
+            "fetchFailureCount": 0,
+            "fetchSuccessCount": 0,
+            "query": "site:swift.org PackageDescription",
+            "resultCount": 0
+          },
+          {
+            "elapsedSeconds": 1.6472220420837402,
+            "emptySnippetCount": 0,
+            "emptyTitleCount": 0,
+            "expectedURLContains": "swift.org",
+            "fetchFailureCount": 0,
+            "fetchSuccessCount": 0,
+            "query": "latest Swift release",
+            "resultCount": 7
+          },
+          {
+            "elapsedSeconds": 1.6617130041122437,
+            "emptySnippetCount": 0,
+            "emptyTitleCount": 0,
+            "expectedURLContains": "duckduckgo.com",
+            "fetchFailureCount": 0,
+            "fetchSuccessCount": 0,
+            "query": "DuckDuckGo search syntax",
+            "resultCount": 9
+          },
+          {
+            "elapsedSeconds": 1.6567790508270264,
+            "emptySnippetCount": 0,
+            "emptyTitleCount": 0,
+            "expectedURLContains": "github.com",
+            "fetchFailureCount": 0,
+            "fetchSuccessCount": 0,
+            "query": "\"Swift ArgumentParser\" GitHub",
+            "resultCount": 9
+          },
+          {
+            "elapsedSeconds": 0.7986340522766113,
+            "emptySnippetCount": 0,
+            "emptyTitleCount": 0,
+            "fetchFailureCount": 0,
+            "fetchSuccessCount": 0,
+            "query": "filetype:pdf Swift concurrency",
+            "resultCount": 0
+          },
+          {
+            "elapsedSeconds": 1.5930010080337524,
+            "emptySnippetCount": 0,
+            "emptyTitleCount": 0,
+            "fetchFailureCount": 0,
+            "fetchSuccessCount": 0,
+            "query": "intitle:SwiftSoup selector",
+            "resultCount": 7
+          }
+        ],
+        "successfulQueryCount": 10,
+        "nonemptyQueryCount": 7,
+        "explicitEmptyQueryCount": 3
+      }
+    },
+    {
+      "transport": "automatic",
+      "batch": 1,
+      "metrics": {
+        "meanReciprocalRank": 0,
+        "meanResultCount": 6.2,
+        "networkBoundary": "sogou-only",
+        "p50SearchLatencySeconds": 0.7468839883804321,
+        "p95SearchLatencySeconds": 1.4104230403900146,
+        "queryCount": 10,
+        "results": [
+          {
+            "elapsedSeconds": 1.4104230403900146,
+            "emptySnippetCount": 0,
+            "emptyTitleCount": 0,
+            "expectedURLContains": "github.com/scinfu/SwiftSoup",
+            "fetchFailureCount": 0,
+            "fetchSuccessCount": 0,
+            "query": "SwiftSoup GitHub",
+            "resultCount": 10
+          },
+          {
+            "elapsedSeconds": 0.7468839883804321,
+            "emptySnippetCount": 0,
+            "emptyTitleCount": 0,
+            "expectedURLContains": "drawthings.ai",
+            "fetchFailureCount": 0,
+            "fetchSuccessCount": 0,
+            "query": "Draw Things app",
+            "resultCount": 10
+          },
+          {
+            "elapsedSeconds": 0.974128007888794,
+            "emptySnippetCount": 1,
+            "emptyTitleCount": 0,
+            "expectedURLContains": "platform.openai.com/docs",
+            "fetchFailureCount": 0,
+            "fetchSuccessCount": 0,
+            "query": "OpenAI API docs",
+            "resultCount": 10
+          },
+          {
+            "elapsedSeconds": 0.5258949995040894,
+            "emptySnippetCount": 0,
+            "emptyTitleCount": 0,
+            "expectedURLContains": "developer.apple.com",
+            "fetchFailureCount": 0,
+            "fetchSuccessCount": 0,
+            "query": "site:developer.apple.com URLSession Swift",
+            "resultCount": 0
+          },
+          {
+            "elapsedSeconds": 0.4308340549468994,
+            "emptySnippetCount": 0,
+            "emptyTitleCount": 0,
+            "expectedURLContains": "swift.org",
+            "fetchFailureCount": 0,
+            "fetchSuccessCount": 0,
+            "query": "site:swift.org PackageDescription",
+            "resultCount": 0
+          },
+          {
+            "elapsedSeconds": 0.7968889474868774,
+            "emptySnippetCount": 0,
+            "emptyTitleCount": 0,
+            "expectedURLContains": "swift.org",
+            "fetchFailureCount": 0,
+            "fetchSuccessCount": 0,
+            "query": "latest Swift release",
+            "resultCount": 7
+          },
+          {
+            "elapsedSeconds": 0.7869150638580322,
+            "emptySnippetCount": 0,
+            "emptyTitleCount": 0,
+            "expectedURLContains": "duckduckgo.com",
+            "fetchFailureCount": 0,
+            "fetchSuccessCount": 0,
+            "query": "DuckDuckGo search syntax",
+            "resultCount": 9
+          },
+          {
+            "elapsedSeconds": 0.7240170240402222,
+            "emptySnippetCount": 0,
+            "emptyTitleCount": 0,
+            "expectedURLContains": "github.com",
+            "fetchFailureCount": 0,
+            "fetchSuccessCount": 0,
+            "query": "\"Swift ArgumentParser\" GitHub",
+            "resultCount": 9
+          },
+          {
+            "elapsedSeconds": 0.5461699962615967,
+            "emptySnippetCount": 0,
+            "emptyTitleCount": 0,
+            "fetchFailureCount": 0,
+            "fetchSuccessCount": 0,
+            "query": "filetype:pdf Swift concurrency",
+            "resultCount": 0
+          },
+          {
+            "elapsedSeconds": 0.7145489454269409,
+            "emptySnippetCount": 0,
+            "emptyTitleCount": 0,
+            "fetchFailureCount": 0,
+            "fetchSuccessCount": 0,
+            "query": "intitle:SwiftSoup selector",
+            "resultCount": 7
+          }
+        ],
+        "successfulQueryCount": 10,
+        "nonemptyQueryCount": 7,
+        "explicitEmptyQueryCount": 3
+      }
+    },
+    {
+      "transport": "automatic",
+      "batch": 2,
+      "metrics": {
+        "meanReciprocalRank": 0,
+        "meanResultCount": 6.2,
+        "networkBoundary": "sogou-only",
+        "p50SearchLatencySeconds": 0.8181869983673096,
+        "p95SearchLatencySeconds": 1.3860950469970703,
+        "queryCount": 10,
+        "results": [
+          {
+            "elapsedSeconds": 1.3860950469970703,
+            "emptySnippetCount": 0,
+            "emptyTitleCount": 0,
+            "expectedURLContains": "github.com/scinfu/SwiftSoup",
+            "fetchFailureCount": 0,
+            "fetchSuccessCount": 0,
+            "query": "SwiftSoup GitHub",
+            "resultCount": 10
+          },
+          {
+            "elapsedSeconds": 0.7760100364685059,
+            "emptySnippetCount": 0,
+            "emptyTitleCount": 0,
+            "expectedURLContains": "drawthings.ai",
+            "fetchFailureCount": 0,
+            "fetchSuccessCount": 0,
+            "query": "Draw Things app",
+            "resultCount": 10
+          },
+          {
+            "elapsedSeconds": 0.9475430250167847,
+            "emptySnippetCount": 1,
+            "emptyTitleCount": 0,
+            "expectedURLContains": "platform.openai.com/docs",
+            "fetchFailureCount": 0,
+            "fetchSuccessCount": 0,
+            "query": "OpenAI API docs",
+            "resultCount": 10
+          },
+          {
+            "elapsedSeconds": 0.5154470205307007,
+            "emptySnippetCount": 0,
+            "emptyTitleCount": 0,
+            "expectedURLContains": "developer.apple.com",
+            "fetchFailureCount": 0,
+            "fetchSuccessCount": 0,
+            "query": "site:developer.apple.com URLSession Swift",
+            "resultCount": 0
+          },
+          {
+            "elapsedSeconds": 0.5694429874420166,
+            "emptySnippetCount": 0,
+            "emptyTitleCount": 0,
+            "expectedURLContains": "swift.org",
+            "fetchFailureCount": 0,
+            "fetchSuccessCount": 0,
+            "query": "site:swift.org PackageDescription",
+            "resultCount": 0
+          },
+          {
+            "elapsedSeconds": 0.8533110618591309,
+            "emptySnippetCount": 0,
+            "emptyTitleCount": 0,
+            "expectedURLContains": "swift.org",
+            "fetchFailureCount": 0,
+            "fetchSuccessCount": 0,
+            "query": "latest Swift release",
+            "resultCount": 7
+          },
+          {
+            "elapsedSeconds": 0.8181869983673096,
+            "emptySnippetCount": 0,
+            "emptyTitleCount": 0,
+            "expectedURLContains": "duckduckgo.com",
+            "fetchFailureCount": 0,
+            "fetchSuccessCount": 0,
+            "query": "DuckDuckGo search syntax",
+            "resultCount": 9
+          },
+          {
+            "elapsedSeconds": 0.8655850887298584,
+            "emptySnippetCount": 0,
+            "emptyTitleCount": 0,
+            "expectedURLContains": "github.com",
+            "fetchFailureCount": 0,
+            "fetchSuccessCount": 0,
+            "query": "\"Swift ArgumentParser\" GitHub",
+            "resultCount": 9
+          },
+          {
+            "elapsedSeconds": 0.520218014717102,
+            "emptySnippetCount": 0,
+            "emptyTitleCount": 0,
+            "fetchFailureCount": 0,
+            "fetchSuccessCount": 0,
+            "query": "filetype:pdf Swift concurrency",
+            "resultCount": 0
+          },
+          {
+            "elapsedSeconds": 0.7250839471817017,
+            "emptySnippetCount": 0,
+            "emptyTitleCount": 0,
+            "fetchFailureCount": 0,
+            "fetchSuccessCount": 0,
+            "query": "intitle:SwiftSoup selector",
+            "resultCount": 7
+          }
+        ],
+        "successfulQueryCount": 10,
+        "nonemptyQueryCount": 7,
+        "explicitEmptyQueryCount": 3
+      }
+    },
+    {
+      "transport": "automatic",
+      "batch": 3,
+      "metrics": {
+        "meanReciprocalRank": 0,
+        "meanResultCount": 6.2,
+        "networkBoundary": "sogou-only",
+        "p50SearchLatencySeconds": 0.8012090921401978,
+        "p95SearchLatencySeconds": 1.404513955116272,
+        "queryCount": 10,
+        "results": [
+          {
+            "elapsedSeconds": 1.404513955116272,
+            "emptySnippetCount": 0,
+            "emptyTitleCount": 0,
+            "expectedURLContains": "github.com/scinfu/SwiftSoup",
+            "fetchFailureCount": 0,
+            "fetchSuccessCount": 0,
+            "query": "SwiftSoup GitHub",
+            "resultCount": 10
+          },
+          {
+            "elapsedSeconds": 0.8012090921401978,
+            "emptySnippetCount": 0,
+            "emptyTitleCount": 0,
+            "expectedURLContains": "drawthings.ai",
+            "fetchFailureCount": 0,
+            "fetchSuccessCount": 0,
+            "query": "Draw Things app",
+            "resultCount": 10
+          },
+          {
+            "elapsedSeconds": 1.173538088798523,
+            "emptySnippetCount": 1,
+            "emptyTitleCount": 0,
+            "expectedURLContains": "platform.openai.com/docs",
+            "fetchFailureCount": 0,
+            "fetchSuccessCount": 0,
+            "query": "OpenAI API docs",
+            "resultCount": 10
+          },
+          {
+            "elapsedSeconds": 0.5683659315109253,
+            "emptySnippetCount": 0,
+            "emptyTitleCount": 0,
+            "expectedURLContains": "developer.apple.com",
+            "fetchFailureCount": 0,
+            "fetchSuccessCount": 0,
+            "query": "site:developer.apple.com URLSession Swift",
+            "resultCount": 0
+          },
+          {
+            "elapsedSeconds": 0.48246490955352783,
+            "emptySnippetCount": 0,
+            "emptyTitleCount": 0,
+            "expectedURLContains": "swift.org",
+            "fetchFailureCount": 0,
+            "fetchSuccessCount": 0,
+            "query": "site:swift.org PackageDescription",
+            "resultCount": 0
+          },
+          {
+            "elapsedSeconds": 0.8399050235748291,
+            "emptySnippetCount": 0,
+            "emptyTitleCount": 0,
+            "expectedURLContains": "swift.org",
+            "fetchFailureCount": 0,
+            "fetchSuccessCount": 0,
+            "query": "latest Swift release",
+            "resultCount": 7
+          },
+          {
+            "elapsedSeconds": 0.8054850101470947,
+            "emptySnippetCount": 0,
+            "emptyTitleCount": 0,
+            "expectedURLContains": "duckduckgo.com",
+            "fetchFailureCount": 0,
+            "fetchSuccessCount": 0,
+            "query": "DuckDuckGo search syntax",
+            "resultCount": 9
+          },
+          {
+            "elapsedSeconds": 0.7767519950866699,
+            "emptySnippetCount": 0,
+            "emptyTitleCount": 0,
+            "expectedURLContains": "github.com",
+            "fetchFailureCount": 0,
+            "fetchSuccessCount": 0,
+            "query": "\"Swift ArgumentParser\" GitHub",
+            "resultCount": 9
+          },
+          {
+            "elapsedSeconds": 0.617603063583374,
+            "emptySnippetCount": 0,
+            "emptyTitleCount": 0,
+            "fetchFailureCount": 0,
+            "fetchSuccessCount": 0,
+            "query": "filetype:pdf Swift concurrency",
+            "resultCount": 0
+          },
+          {
+            "elapsedSeconds": 0.7363790273666382,
+            "emptySnippetCount": 0,
+            "emptyTitleCount": 0,
+            "fetchFailureCount": 0,
+            "fetchSuccessCount": 0,
+            "query": "intitle:SwiftSoup selector",
+            "resultCount": 7
+          }
+        ],
+        "successfulQueryCount": 10,
+        "nonemptyQueryCount": 7,
+        "explicitEmptyQueryCount": 3
+      }
+    }
+  ],
+  "supplemental": [
+    {
+      "name": "chinese-official-site",
+      "query": "故宫博物院 官网",
+      "transport": "http",
+      "options": [],
+      "elapsedSeconds": 1.660157792037353,
+      "expectedURLContains": "dpm.org.cn",
+      "response": {
+        "metadata": {
+          "networkBoundary": "sogou-only",
+          "query": "故宫博物院 官网",
+          "resultCount": 10
+        },
+        "output": "1. [【故宫博物馆】清乾隆新年专用饮酒器之“金嵌宝金瓯永固杯”](http://mp.weixin.qq.com/count/oIWsFt-DXNOKVvjmewdfYBpNB8xs/2247523951/1&scene=6)\n故宫博物院珍藏的这件是1797年做的,当时乾隆已经禅位给嘉庆,宫廷外用嘉庆二年,而宫廷内是乾隆六十二年.这4个杯子目前只有一个在国内,就是北京故宫博物院‌里收藏的这一只“金瓯永固杯”.还有一只在中国台北故宫博物院‌,是一个乾隆五年的“金瓯永固杯”‌,这个也是金的....\n\n2. [故宫应聘经历 2020故宫博物馆招聘_知乎](https://zhuanlan.zhihu.com/p/129839183)\n47 作为应届毕业生,看到2020故宫的应聘消息,我就果断注册了,并且提交了个人信息.会持续更新 和大家分享的.如果你也是今年投递的,可以私信我哦,...\n\n3. [秋高气爽!大批外国游客游览北京故宫_故宫博物院_时节_来源](https://www.sohu.com/a/1073614884_99985316)\n2026年9月8日，初秋时节，北京秋高气爽，大批外国游客游览故宫博物院。来源：IC PHOTO 2026年9月8日，初秋时节，北京秋高气爽，大批外国游客游览故宫博...\n\n4. [遛娃攻略:必去的六家北京博物馆推荐_知乎](https://zhuanlan.zhihu.com/p/225062284)\n41 要说全国各地哪个城市的博物馆最多,恐怕非北京莫属了.陪孩子逛博物馆不... 五、故宫博物院这个大家一定知道了,故宫博物院前身是明清两代皇帝居住的...\n\n5. [北京有哪些值得一看的博物馆?_知乎](https://www.zhihu.com/question/20405263)\n150 推荐一个冷门的博物馆,智化寺.喜欢明代历史的人千万不能错过,因为这是明代大宦官王振的家庙.逛完这个庙子,你就会明白为什么明英宗是明代历史让...更多\n\n6. [福建民俗博物馆](http://minsu.fjsen.com/)\n福建闽越王城博物馆 福建省昙石山遗址博物馆 福建博物院 故宫博物院中国国家博物馆 福建省文物局 福建省文化和旅游厅\n\n7. [如何看待博物馆的文创产业?_知乎](https://www.zhihu.com/question/274911491)\n93 支持辞职或者转岗,博物馆文创走到了一个十字路口,遇到了政策阻碍,短时间内看不到突破天花板的希望.其中最终要的一点来自于分配制度,博物馆文创...更多\n\n8. [10岁孩子去北京旅游,有哪些必去的博物馆？|中国考古博物馆|故宫博...](https://k.sina.com.cn/article_7879849077_1d5acf47506801iw0i.html?from=cul)\n一、历史人文类：在文物中触摸京城文脉故宫博物院：这是北京乃至全国最重量级的博物馆，10岁孩子能直观感受皇家建筑群的恢弘气..._新浪网\n\n9. [故宫今天有演出吗？3个渠道查清+FAQ|故宫博物院|东城|小程序|艺术|...](https://k.sina.com.cn/article_7879776369_1d5abd87106801i2wg.html?from=cul)\n故宫没有每日固定演出，所有演艺活动均依托节庆、特展或品牌艺术季。想查当天是否有演出，唯一可靠路径是：出发前打开故宫博物院官网“展览与活动...\n\n10. [人工智能时代,文物保护如何“智”变_新浪财经_新浪网](https://finance.sina.com.cn/jjxw/2026-09-09/doc-inirehkk8994738.shtml)\n故宫博物院院长王旭东在主旨报告中进一步阐释了人工智能时代的变革图景。他认为，人工智能带来的变化不只是出现一种新的技术工具，而且是生态、平台、人...",
+        "title": "Web search: 故宫博物院 官网"
+      },
+      "uniqueURLCount": 10,
+      "firstExpectedRank": null
+    },
+    {
+      "name": "chinese-documentation",
+      "query": "Swift 中文教程",
+      "transport": "http",
+      "options": [],
+      "elapsedSeconds": 2.549421333009377,
+      "expectedURLContains": "swift",
+      "response": {
+        "metadata": {
+          "networkBoundary": "sogou-only",
+          "query": "Swift 中文教程",
+          "resultCount": 9
+        },
+        "output": "1. [惊喜!!Swift5.0官方文档中文版新鲜出炉](http://mp.weixin.qq.com/count/oIWsFt574cTgGj8rOGv6bpVFbQTY/2247487632/1&scene=6)\n这是一群热爱翻译并且热爱Swift的人,希望通过自己的努力让不懂英语的程序员也能第一时间学习到国外的先进技术.他们最近做了件十分重要但很难吸引眼球的事情——发布了Swift5.0官方文档中文版.很多读者肯定要问什么是...\n\n2. [针对 macOS 平台的 Swift 中文研发教学太少_知乎](https://zhuanlan.zhihu.com/p/26735808)\n23 我跑遍了王府井书店和西单图书大厦,连一本针对 macOS 平台的应用研发场合进行主讲的 Swift 教程都没有(ObjC 也是).纵使有书籍同时聊到了 iOS 和 ...\n\n3. [在Swift Playgrounds中如何安装第三方中文课程?_知乎](https://www.zhihu.com/question/50628410/answer/153036289)\n2017年3月21日已经更新支持中、日、法、德文了\n\n4. [汉字开发有编程语言吗 与 小编程项目开发 - 很牛教学网](https://www.hn81.cn/2026/09/226542/)\n中文汉语编程的基本想法 1、汉语编程的基本想法可以概括为以下几点：使用... 安卓的Java语言、苹果的Swift语言一直占据着统治地位，并拥有绝对的话语...\n\n5. [Swift 自学者手册_知乎](https://zhuanlan.zhihu.com/p/19778847)\n347 1. 基本语法Swift Programming Language 苹果官方的学习资料,有iBooks版本: iTunes - Books《The Swift Programming Language》中文版 虽然说官网的...\n\n6. [编程零基础如何学习 Swift?_知乎](https://www.zhihu.com/question/24004342)\n637 教程《The Swift Programming Language》:这是苹果官方出版的Swift学习教材,可以免费下载到iBooks中阅读.其中文版翻译项目也在 Github 上火热进行...更多\n\n7. [如何评价Kanye West与Taylor Swift的完整通话视频被黑客泄露这..._知乎](https://www.zhihu.com/question/381276813)\n2193 这件事Taylor实惨没得洗,Kanye有几段是当真有恶心到我,就是在Taylor有些焦虑地问“Is It Gonna Be Mean”的时候Kanye各种拐弯抹角,又是什么我老婆...更多\n\n8. [Swift语言的学习资料或教程大家都有哪些?_知乎](https://www.zhihu.com/question/24081106/answer/35195413)\n2 这儿是官方教程的中文翻译版,非常详尽、系统.自己也正在学习.关于 Swift | 《The Swift Programming Language》中文版\n\n9. [霉霉TaylorSwift的风,还是刮到了哈佛 - 知乎](https://zhuanlan.zhihu.com/p/676158498)\n的课程，名为《Taylor Swift and Her World》，通过剖析她的作品，以学习探究她的歌词、音乐与影响力。 该课程由英语系的讲师Stephanie Burt指导，课程...",
+        "title": "Web search: Swift 中文教程"
+      },
+      "uniqueURLCount": 9,
+      "firstExpectedRank": null
+    },
+    {
+      "name": "chinese-sogou",
+      "query": "搜狗输入法 官网",
+      "transport": "http",
+      "options": [],
+      "elapsedSeconds": 1.6218624170287512,
+      "expectedURLContains": "shurufa.sogou.com",
+      "response": {
+        "metadata": {
+          "networkBoundary": "sogou-only",
+          "query": "搜狗输入法 官网",
+          "resultCount": 10
+        },
+        "output": "1. [搜狗输入法为什么做得比其他的输入法好?_知乎](https://www.zhihu.com/question/19607537)\n163 1. 跨代的技术(利用搜索技术来解决词库问题)2. 足够的重视和资源投入(Google跟进的时候,就没有编辑进行词库审核,最后竟然偷用搜狗词库了,搜狗...更多\n\n2. [搜狗输入法怎么下载设置?从手机到电脑的全流程使用教程来了!](http://mp.weixin.qq.com/count/oIWsFt0rWi4_rE9IerCnKz1ZyMU0/2247484715/7&scene=6)\n搜“搜狗输入法官网”认准带“官方”标志的链接点进去首页大按钮写着“立即下载”点它就会弹出下载窗口选个保存位置(比如桌面)等文件下载完双击打开安装包按提示点“下一步”直到“完成”就行Mac用户同样进官网...\n\n3. [搜狗输入法功能科普二十三:为什么斗图表情发不了(安卓篇) - 知乎](https://zhuanlan.zhihu.com/p/356407687)\n现在很多小伙伴都非常喜欢在微信或QQ聊天的过程中发送斗图表情，但是在使用搜狗输入法发送斗图表情的时候可能会遇到斗图发不出去的情况，那么今...\n\n4. [搜狗输入法有哪些体验不好的地方?_知乎](https://www.zhihu.com/question/21355814)\n1772 我有一种.被玩弄了的感觉....就在刚刚,我想要输入女红于是好吧.我能理解.有些时候多音字对输入法来说是比较过分...那我强忍着别扭输入...更多\n\n5. [手机搜狗怎么换皮肤-手机搜狗怎么换皮肤手机版安装 - 伊秀娱乐](http://beauty.yxlady.com/yule/2339407266.html)\n手机搜狗怎么换皮肤？在当今数字化时代，个性化已成为人们追求的一种生活方式，对于使用手机搜狗输入法的用户来说，更换皮肤不仅能让输入体验更加愉悦，还能展现个人...\n\n6. [如何看待搜狗输入法的建议:在知乎,使用「」和『』代替引号?_知乎](https://www.zhihu.com/question/35516459)\n37 (搜狗微博回复我了见文末,可见不光是mac是win的搜狗输入法也这样)不得了啦!!!ヽ(≧Д≦)ノ知乎把我的输入法给改啦!!!(,,#ﾟДﾟ)输入文...更多\n\n7. [如何看待 QQ 拼音输入法由搜狗公司提供?_知乎](https://www.zhihu.com/question/22572907)\n19 我觉得有威胁.我个人来讲,从搜狗换到了百度,又换到了QQ.目前电脑上只留了QQ输入法.其实在电脑上来说,三者提供的输入体验相似.之所以从百度...更多\n\n8. [搜狗输入法简约而美的皮肤推荐_知乎](https://zhuanlan.zhihu.com/p/467648213)\n62 搜狗输入法简约而美的皮肤推荐前言给大家分享一个GitHub上面搜狗拼音输入法的几款极简风格皮肤推荐,符合对美有一定追求的用户.我的评价就是简约而...\n\n9. [【技术贴】改造我们的输入法——以搜狗为例 - 知乎](https://zhuanlan.zhihu.com/p/29230721)\n搜狗输入法（或其他商业输入法，本文以搜狗输入法为例。IOS的我没试过，不保证可行。） 使用工具： 1、国学大师部件查字（在线链接） ） 2、三选一：...\n\n10. [Windows平台除了搜狗输入法还有哪些好用的输入法呢?_知乎](https://www.zhihu.com/question/350718972)\n137 给你看一下我的输入法列表.一个是系统默认,也就是Win10下的微软拼音输... 至于一般的用户,呵呵.祝搜狗输入法这个垃圾早死早托生~~更多",
+        "title": "Web search: 搜狗输入法 官网"
+      },
+      "uniqueURLCount": 10,
+      "firstExpectedRank": null
+    },
+    {
+      "name": "literal-plus",
+      "query": "C++ 参考手册",
+      "transport": "http",
+      "options": [],
+      "elapsedSeconds": 1.7238658749847673,
+      "expectedURLContains": "cppreference.com",
+      "response": {
+        "metadata": {
+          "networkBoundary": "sogou-only",
+          "query": "C++ 参考手册",
+          "resultCount": 10
+        },
+        "output": "1. [C语言和C++有什么区别?_知乎](https://www.zhihu.com/question/54849492)\n17 C语言和C++的区别是一个老生常谈的问题了,建议题主也善用知乎或者外部的搜索,可以很多角度和很多观点给你带来信息.仅针对你问题描述的问题,是...更多\n\n2. [C++标准库:自学教程与参考手册(第2版) 为啥没人翻译啊?_知乎](https://www.zhihu.com/question/29464631/answer/52493353)\n3 C++标准库(第2版)\n\n3. [C++实用指南](http://mp.weixin.qq.com/count/oIWsFt54rGnX9iiAMYYHDOKRQM7M/2247495623/1&scene=6)\n核心指南检查器参考|微软文档介绍vcperf/timetrace,用于C++构建时间分析|C++团队博客C++CoreCheck中的新安全规则|C++团队博客——C++和Rust一样安全吗?或者查看我关于其他工具的文章:C++生态系统:编译器、IDE、工具、测试等https://www.cppstories.com/2019/10/cppecosystem/?...\n\n4. [2021年最新整理, C++ 学习资料,含C++ 11 / 14 / 17 ..._知乎](https://zhuanlan.zhihu.com/p/415102472)\n27 【重磅推荐收藏:C++ 参考手册】 - 11~20你想要查的,他都有 C++ 发展历程C++ 编程语言的历史可以追溯到 1979 年,当时 Bjarne Stroustrup 为博士学位论...\n\n5. [C++11、C++14、C++17、C++20新特性总结 - 知乎](https://zhuanlan.zhihu.com/p/688090551)\n《带注释的C++参考手册》一书，其一度被当做 C++ 开发的重要参考；Borland 发布了 Turbo C ++编译器，该编译器包含有大量的第三方 C++ 库，极大便利...\n\n6. [c开发指南qt编程 与 网络编程和java开发像不像 - 很牛教学网](https://www.hn81.cn/2026/09/232276/)\n推荐《Qt 9 C++开发指南》。以下是具体分析：适用人群匹配：根据描述，提问者为有两年工作经验的Qt程序员，需要一本能持续提供实用参考的书籍。而...\n\n7. [对于一个C++学习者和使用者而言,自己实现一个STL标准库,对..._知乎](https://www.zhihu.com/question/30581114/answer/889851323)\n40 意义非常大,能让你明白什么叫“知其然并知其所以然”,并且能让你体会到知其所以然以后整个人的心态变化,差别就是从寄人篱下到反客为主的差别....更多\n\n8. [机电OJ入门指南(C++)_知乎](https://zhuanlan.zhihu.com/p/431566925)\n参照之前的java版机电oj,下面给大家简单写一下c++如何在机电oj上运行首先还是输入输出问题,不同于java,c++如果要进行基本输入输出是需要导入函数库...\n\n9. [拿下大厂！最稳Linux C/C++学习路线~ - 知乎](https://zhuanlan.zhihu.com/p/445717462)\nC++ 的理解，可以参考下面的书籍，当然也是面试中的关键部分。 随后开始进阶内容的学习，比如函数模板、类模板， C++ 中对于异常的处理，对于继承...\n\n10. [stackoverflow上整理的C++各阶段学习书籍_知乎](https://zhuanlan.zhihu.com/p/371817214)\n9 如果觉得这些书籍对你有帮助,可以访问以下地址获取.初学者介绍性书籍,... 从编程范例到语言哲学的所有内容.C++ 标准库 —— 自学教程与参考手册(...",
+        "title": "Web search: C++ 参考手册"
+      },
+      "uniqueURLCount": 10,
+      "firstExpectedRank": null
+    },
+    {
+      "name": "pagination",
+      "query": "SwiftSoup GitHub",
+      "transport": "http",
+      "options": [
+        "--pages",
+        "3",
+        "--max-results",
+        "25"
+      ],
+      "elapsedSeconds": 3.007665541023016,
+      "expectedURLContains": "github.com/scinfu/SwiftSoup",
+      "response": {
+        "metadata": {
+          "networkBoundary": "sogou-only",
+          "query": "SwiftSoup GitHub",
+          "resultCount": 25
+        },
+        "output": "1. [SwiftBug清单已迁移至Github中](http://mp.weixin.qq.com/count/oIWsFtxX7Xq_NfVWOeLuE6AI92OA/2647771588/1&scene=6)\nSwift官方在上个月25号宣布将Swift的Bug清单迁移到Github问题清单中.目前,第一阶段,所有问题都被“克隆”到apple/swift存储库中.Swift官方正在努力将Github中的问题迁移到相应的Github仓库中.我们可以在...\n\n2. [github 上有哪些比较好的swift实践的项目?_知乎](https://www.zhihu.com/question/26916197/answer/51693472)\n7 谢邀.不过上面的人答得很丰富了.SwiftGuide也提到了.如果是初学者,不... github.com/YANGReal/Jok习题作业:1. 修复Swift语法到1.2或者2.0,使之能在...更多\n\n3. [GitHub上有哪些值得关注的翻译项目?_知乎](https://www.zhihu.com/question/50930457)\n2 谢邀.就说一个我知道的比较有影响力的一个翻译项目:GitHub - numbbbbb/the-swift-programming-language-in-chinese: 中文版 Apple 官方 Swift 教程《...更多\n\n4. [GitHub 上有哪些适合新手跟进的优质项目?_知乎](https://zhuanlan.zhihu.com/p/114192001)\n17 HelloGitHubgit:star:19kPython,Java,PHP,C++,go,swift等各种编程语言的项目都有,每月28号更新发布(持续更新中).这些开源项目大多都是非常容易上手...\n\n5. [这就是艺术「GitHub 热点速览 v.22.25」_知乎](https://zhuanlan.zhihu.com/p/531007380)\n45 不知道写了那么久代码的你,是否还记得“代码写诗”这个词,它是用来形容... 2. GitHub Trending 周榜 2.1 Swift 扩展:SwifterSwift本周 star 增长数:1,050+...\n\n6. [python简单爬虫:selenium webdriver (phantomjs) 和 ..._知乎](https://zhuanlan.zhihu.com/p/451168445)\n1. SeleniumSelenium 是一个JavaScript框架,调用 webdriver 模拟在浏览器内的操作,可以适用 Chrome、 Firefox 、IE 等浏览器.本文用的是 PhantomJS,...\n\n7. [如何轻松地寻找 GitHub 上超棒的项目和资源_知乎](https://zhuanlan.zhihu.com/p/33171277)\n141 在 GitHub 网站上每天都会新增上百个项目.由于 GitHub 上有成千上万的项目,要在上面搜索好的项目简直要累死人.好在,有那么一伙人已经创建了一些这...\n\n8. [Python爬虫库xPath, BeautifulSoup, re, selenium的详细..._知乎](https://zhuanlan.zhihu.com/p/402418448)\n1 项目代码展示项目部署方法, 已发GitHub, 项目地址github地址使用技术python正则匹配Beautifulsoup4库xpath解析一.正则匹配和JavaScript语言匹配方式类...\n\n9. [[稀土掘金日报] iOS不能错过的干货合集 - 知乎](https://zhuanlan.zhihu.com/p/20262518)\n另外的一个版本（JohnCoates/Async · GitHub）。 Swift 2.0 推出了很多新特性，最让人兴奋的莫过于协议扩展（protocol extensions） ，这篇文章介绍...\n\n10. [高仿喜马拉雅项目 - Swift5版本 - 知乎](https://zhuanlan.zhihu.com/p/65824876)\n有需要的同学可以到我的Github[喜马拉雅项目-Swift版本]（lb2281075105/LBXMLYFM-Swift）上面下载哦，喜欢的 希望得到您的star哦，谢谢您们！ #####...\n\n11. [Github上有哪些值得入门的swift项目?_知乎](https://www.zhihu.com/question/36050599)\n8 推荐一个 Swift 做的 Http Server,功能还是很简单的,但是我觉得入门刚刚好,也可以跟着深入的去理解一下 Socket.这里:izqui/Taylor · GitHub当然,如...更多\n\n12. [《HelloGitHub》第 14 期_知乎](https://zhuanlan.zhihu.com/p/51316468)\n兴趣是最好的老师,HelloGitHub 就是帮你找到兴趣!简介分享 GitHub 上有趣、入门级的开源项目.这是一个面向编程新手、热爱编程、对开源社区感兴趣 ...\n\n13. [请教如何修改github上仓库的项目语言?_知乎](https://www.zhihu.com/question/47249333/answer/129215637)\n27 遇到类似问题.问题原因: github 是根据项目里文件数目最多的文件类型,识别项目类型.这个够傻.解决办法:项目根目录添加 .gitattributes 文件, 内容如下 :...更多\n\n14. [python爬虫之mechanicalsoup:官方也有两个坑_知乎](https://zhuanlan.zhihu.com/p/29253204)\n2 Mechanize模块可以通过用户名和密码登录网页,但是只能在Python2.7版本中... 通过查阅github的mechanicalsoup主页,安装mechanicalsoup:pip install ...\n\n15. [GitHub 上都有哪些值得关注学习的 iOS 开源项目?_知乎](https://www.zhihu.com/question/22914651/answer/119064937)\n4 厚颜推荐一个自己的项目:LearnSwift,链接:github.com/cjiong/Learn这是受到30daysofswift启发做的,项目一共有50个swift小程序,学习swift的同学有兴趣...更多\n\n16. [Xcode 9 新功能_知乎](https://zhuanlan.zhihu.com/p/28880971)\n52 Swift 4Xcode 9 同时支持 Swift 3.2和 Swift 4.0,可以在 “Swift Language ... 导航栏,您可以轻松查看不同 tags 和 branch 的代码.Xcode 9 与 GitHub 结合....\n\n17. [请问swiftul会火起来吗…?_知乎](https://www.zhihu.com/question/327878567/answer/708145345)\nA. Swiftul 在 GitHub 及 Bing 上无法搜索到任何相关结果.B. 几乎无人回答此问题.C. 我不知道他是什么东西,但是以上两点.\n\n18. [Swift 开源项目精选导图_知乎](https://zhuanlan.zhihu.com/p/50329837)\n导图分类规则尽可能遵循苹果开发者文档(对应关系仅做参考),试图与官方... 对于 Swift 新手欢迎关注文档Swift 学习指引以及 GitHub: ipader/SwiftGuide(13k+...\n\n19. [不使用if else过滤,用BeautifulSoup怎么一次find符合两种特征的..._知乎](https://www.zhihu.com/question/27725555/answer/37839339)\n1 广告一下自己的轮子: XML Stream github.com/arrowrowe/xmimport xml_stream for node in xml_stream.XMLTree('...').process(selector='dd.string1, dd.string2'...更多\n\n20. [如何评价 SwiftUI?_知乎](https://www.zhihu.com/question/327763737/answer/706171218)\n90 刚刚结束的苹果 WWDC 推出了一个对于开发者非常重要的框架:SwiftUI.... 感受一下 SwiftUI 的代码风格Github 一个 repo 整理了在 WWDC 2019 发布的 ...更多\n\n21. [如何在github首页显示知乎点赞数_知乎](https://zhuanlan.zhihu.com/p/270269932)\n6 先看效果特点:页面展示 可以设置每分钟/每小时/每天更新一次原理GitHub 可以设置一个同名库,这个库的 `README.md` 会自动显示到首页上GitHub action...\n\n22. [开源月刊「HelloGitHub」第76期-知乎](https://zhuanlan.zhihu.com/p/546998977)\nPython、Java、Go、C/C++、Swift...让你在短时间内感受到开源的魅力，对... 和GitHub Action，实现提交代码时自动检测，通过告警和阻止 push 等方式，...\n\n23. [如何解决百度爬虫无法爬取搭建在Github上的个人博客的问题?_知乎](https://www.zhihu.com/question/30898326/answer/155853364)\n6 以前试了各种手段都无法推送,在百度后台看到爬虫被Github阻止,于是放弃.前段时间无意中发现百度居然收录了我博客的最新文章:以后可以继续使用脚...更多\n\n24. [GitHub 上有哪些优秀的 Python 爬虫项目?_知乎](https://www.zhihu.com/question/58151047/answer/1073284219)\n11 综述类项目与学习资料首先给大家介绍一些非常优秀的综述和学习类项目,方便大家快速索引找到所需要的资源.1.、Anti-Anti-Spider地址:github.com/...更多\n\n25. [来用SwiftUI编写真正的APP_知乎](https://zhuanlan.zhihu.com/p/446058472)\n2 SwiftUI 是一个声明式的基于组件的框架.你需要完全忘记曾经的 MVC 概念—... 我们将编写一个能够查找 Github repos 的 APP.它有一个界面,会拥有一个文...",
+        "title": "Web search: SwiftSoup GitHub"
+      },
+      "uniqueURLCount": 25,
+      "firstExpectedRank": null
+    },
+    {
+      "name": "freshness",
+      "query": "苹果 发布会",
+      "transport": "http",
+      "options": [
+        "--time",
+        "month"
+      ],
+      "elapsedSeconds": 2.258078166982159,
+      "expectedURLContains": "apple.com",
+      "response": {
+        "metadata": {
+          "networkBoundary": "sogou-only",
+          "query": "苹果 发布会",
+          "resultCount": 10
+        },
+        "output": "1. [下周关注丨8月CPI将公布,苹果发新品,限售股解禁超849亿|中国国际...](https://k.sina.com.cn/article_5953466437_162dab0450670bbkj6.html?from=finance)\n苹果将于9月9日在加州库比蒂诺总部举办秋季新品发布会，宣传标语为“Surprise and shine（亮新篇，来耀眼）”。分析师预计将推出新款iPhone 18 Pro/...\n\n2. [主打隐私保护:消息称苹果首款 AI 家用安防摄像头瞄准 2027 年发布_...](https://finance.sina.com.cn/tech/digi/2026-09-05/doc-iniqtnha0562901.shtml)\nIT之家 9 月5日消息，彭博社的马克 · 古尔曼（Mark Gurman）昨日（9 月4日）发布博文，爆料称苹果公司可能会在 2027 年推出家庭安防系统及配套监控...\n\n3. [苹果发布会前瞻:折叠屏iPhone来了,这一次真能带来惊喜吗?](http://mp.weixin.qq.com/count/oIWsFt09ZJ9eXVO90iHkxsjijcuc/2247485603/1&scene=6)\n科技值得了解北京时间9月10日凌晨2点,苹果新一年的秋季发布会将正式举行.苹果为这场发布会准备的主题是“Surpriseandshine”.从字面上看,它像是在暗示某种闪耀的新设计,也像是在主动抛出一个久违的关键词——惊喜....\n\n4. [苹果发布会在即 新CEO首秀携首款折叠iPhone将登场？-新闻中心-苹果...](https://news.cheaa.com/2026/0909/658417.shtml)\n本次发布会是新任CEO约翰·特努斯上任后的首场重磅活动，备受全球行业与消费者关注，其中苹果首款折叠屏iPhone成为最大核心看点。 作为苹果近年最重要的硬件...\n\n5. [苹果9月9日发布会iPhone系列产品曝光：iPhone 18 标准版确认延期](https://c.m.163.com/news/a/L64UTSRB0550A7YJ.html?spss=backflow-index-hotlist)\n助您预判苹果发布会亮点。 折叠屏 iPhone Ultra 或将问世 多年研发后，苹果折叠屏手机有望在今年以“iPhone Ultra”之名发布。泄露信息显示，该机采用类似三星 Galaxy Z ...\n\n6. [苹果即将发布三款新iPhone 但是预计价格全线大涨](https://c.m.163.com/news/a/L69FO6G2051191D6.html?spss=backflow-index-hotlist)\n【CNMO科技消息】据CNMO科技了解，苹果年度9月发布会将于本周三举行，届时将有三款新iPhone同时亮相，分别为iPhone 18 Pro、iPhone 18 Pro Max以及苹果旗下首款...\n\n7. [苹果发布会前瞻：折叠式iPhone起售价或2000美元 将成史上最贵_财经...](https://finance.stockstar.com/IG2026090800017565.shtml)\n苹果将于美国时间9月9日在库比蒂诺史蒂夫·乔布斯剧院举行秋季发布会，市场预期发布iPhone 18 Pro及折叠式iPhone，业界估算起售价约2000美元，或成史上最贵，华为、小米...\n\n8. [...三星|余承东|小米|旗舰新品发布会|智能手机|苹果公司|雷军_手机网易网](https://3g.163.com/news/article/L6BUA6NJ051188EA.html)\n苹果发布会是科技行业流量最集中的事件。从新CEO约翰·特努斯（John Ternus）上台那一刻起，全球科技媒体的头条就已经预定了位置，所有讨论都会围绕苹果...\n\n9. [iPhone 18 Pro 发布会前夕,苹果推送 140W USB-C 适配器固件更新 - ...](https://www.ithome.com/0/999/969.htm)\n在iPhone 18 Pro 系列发布会前夕，苹果向 140W USB-C 电源适配器（点此前往苹果官网选购，售价 729 元）推送固件更新，从v1.4.84 升级到 v1.4.90 版本。\n\n10. [赶在苹果发布会之前！华为小米同一天发布折叠手机,小米18 Fold售...](https://new.qq.com/rain/a/20260907V0CVCL00)\n赶在苹果发布会之前！华为小米同一天发布折叠手机，小米18 Fold售价10999起，华为最新三折叠售价19999元起，iPhone也即将发布首款折叠机，售价会...",
+        "title": "Web search: 苹果 发布会"
+      },
+      "uniqueURLCount": 10,
+      "firstExpectedRank": null
+    },
+    {
+      "name": "unlikely-query",
+      "query": "\"qzxvnonexistent178891sitecheck\"",
+      "transport": "http",
+      "options": [],
+      "elapsedSeconds": 1.8018595420289785,
+      "expectedURLContains": null,
+      "response": {
+        "metadata": {
+          "networkBoundary": "sogou-only",
+          "query": "\"qzxvnonexistent178891sitecheck\"",
+          "resultCount": 8
+        },
+        "output": "1. [ZClient出现Can't connect,check status on site怎么解决?_知乎](https://www.zhihu.com/question/529260355/answer/2452193857)\n封锁IP么换IP呀,科学上网还要教?\n\n2. [这可能是史上最详尽的 SEO 免费分析工具 - 知乎](https://zhuanlan.zhihu.com/p/37758668)\nSEO SiteCheckup 同样能一键导出 SEO 报告，方便与企业主共享和交流信息。透过可视化的数据，即便是小白用户，也能迅速掌握网站 SEO 的有效途径和...\n\n3. [SiteGuru: 找到受众的网站检查工具_知乎](https://zhuanlan.zhihu.com/p/87593576)\n1 SiteGuru独立:Rick van Haasteren开发者背景:,任职于当地一家网络营销... 起初他用Excel电子表格整理了检查列表,但是没人喜欢用.他便逐步把列表上...\n\n4. [某知名500强外企招聘RiskEngineer](http://mp.weixin.qq.com/count/oIWsFtykQJ3nFQctMNnLguVP2ZFY/2247487658/2&scene=6)\nSupporttenantsfit-outdrawingreviewandsitecheck.HandoversupportandfocusonFLS/Securitytrainingissue推荐全额奖金:3000元若您对该职位有兴趣,可通过邮件申请职位.(一步申请:发送CV到CV@jvhunting.com...\n\n5. [python Django 安装以后使用model_知乎](https://zhuanlan.zhihu.com/p/133755824)\nModel1,一个模型,是一个数据信息,包括字段和数据的行为.2,一个模型,是一个类3,一个模型,是一个子类,基类是django.db.models.Model4,模型...\n\n6. [实践过程分享 体验1小时入门AI工程师课程(课程学习..._知乎](https://zhuanlan.zhihu.com/p/393338212)\n转载地址:作者:千江有水千江月活动帖参考资料实践过程分享使用conda新... shuffle=True) File ＂D:\\Develop\\Anaconda3\\envs\\hwms-py37\\lib\\site-packages\\...\n\n7. [我是做日常用品批发的,怎么样提高我的销售量?_知乎](https://www.zhihu.com/question/346793944)\n2 网店还是实体店啊,网店就要多宣传,实体店可以发发传单搞搞活动什么的.\n\n8. [中国的新车车评为何不评三大件?_知乎](https://zhuanlan.zhihu.com/p/470106371)\n1.车辆最重要三大件型号为何很少分析?一上来就说外观内饰好不好看?您不知道审美观因人而异?2.一上车就用拳头比车顶.这都2120年,车评人还像驾校...",
+        "title": "Web search: \"qzxvnonexistent178891sitecheck\""
+      },
+      "uniqueURLCount": 8,
+      "firstExpectedRank": null
+    },
+    {
+      "name": "chinese-official-site",
+      "query": "故宫博物院 官网",
+      "transport": "browser",
+      "options": [],
+      "elapsedSeconds": 2.423595917003695,
+      "expectedURLContains": "dpm.org.cn",
+      "response": {
+        "metadata": {
+          "networkBoundary": "sogou-only",
+          "query": "故宫博物院 官网",
+          "resultCount": 10
+        },
+        "output": "1. [【故宫博物馆】清乾隆新年专用饮酒器之“金嵌宝金瓯永固杯”](http://mp.weixin.qq.com/count/oIWsFt-DXNOKVvjmewdfYBpNB8xs/2247523951/1&scene=6)\n故宫博物院珍藏的这件是1797年做的,当时乾隆已经禅位给嘉庆,宫廷外用嘉庆二年,而宫廷内是乾隆六十二年.这4个杯子目前只有一个在国内,就是北京故宫博物院‌里收藏的这一只“金瓯永固杯”.还有一只在中国台北故宫博物院‌,是一个乾隆五年的“金瓯永固杯”‌,这个也是金的....\n\n2. [故宫应聘经历 2020故宫博物馆招聘_知乎](https://zhuanlan.zhihu.com/p/129839183)\n47 作为应届毕业生,看到2020故宫的应聘消息,我就果断注册了,并且提交了个人信息.会持续更新 和大家分享的.如果你也是今年投递的,可以私信我哦,...\n\n3. [秋高气爽!大批外国游客游览北京故宫_故宫博物院_时节_来源](https://www.sohu.com/a/1073614884_99985316)\n2026年9月8日，初秋时节，北京秋高气爽，大批外国游客游览故宫博物院。来源：IC PHOTO 2026年9月8日，初秋时节，北京秋高气爽，大批外国游客游览故宫博...\n\n4. [遛娃攻略:必去的六家北京博物馆推荐_知乎](https://zhuanlan.zhihu.com/p/225062284)\n41 要说全国各地哪个城市的博物馆最多,恐怕非北京莫属了.陪孩子逛博物馆不... 五、故宫博物院这个大家一定知道了,故宫博物院前身是明清两代皇帝居住的...\n\n5. [北京有哪些值得一看的博物馆?_知乎](https://www.zhihu.com/question/20405263)\n150 推荐一个冷门的博物馆,智化寺.喜欢明代历史的人千万不能错过,因为这是明代大宦官王振的家庙.逛完这个庙子,你就会明白为什么明英宗是明代历史让...更多\n\n6. [福建民俗博物馆](http://minsu.fjsen.com/)\n福建闽越王城博物馆 福建省昙石山遗址博物馆 福建博物院 故宫博物院中国国家博物馆 福建省文物局 福建省文化和旅游厅\n\n7. [如何看待博物馆的文创产业?_知乎](https://www.zhihu.com/question/274911491)\n93 支持辞职或者转岗,博物馆文创走到了一个十字路口,遇到了政策阻碍,短时间内看不到突破天花板的希望.其中最终要的一点来自于分配制度,博物馆文创...更多\n\n8. [10岁孩子去北京旅游,有哪些必去的博物馆？|中国考古博物馆|故宫博...](https://k.sina.com.cn/article_7879849077_1d5acf47506801iw0i.html?from=cul)\n一、历史人文类：在文物中触摸京城文脉故宫博物院：这是北京乃至全国最重量级的博物馆，10岁孩子能直观感受皇家建筑群的恢弘气..._新浪网\n\n9. [故宫今天有演出吗？3个渠道查清+FAQ|故宫博物院|东城|小程序|艺术|...](https://k.sina.com.cn/article_7879776369_1d5abd87106801i2wg.html?from=cul)\n故宫没有每日固定演出，所有演艺活动均依托节庆、特展或品牌艺术季。想查当天是否有演出，唯一可靠路径是：出发前打开故宫博物院官网“展览与活动...\n\n10. [人工智能时代,文物保护如何“智”变_新浪财经_新浪网](https://finance.sina.com.cn/jjxw/2026-09-09/doc-inirehkk8994738.shtml)\n故宫博物院院长王旭东在主旨报告中进一步阐释了人工智能时代的变革图景。他认为，人工智能带来的变化不只是出现一种新的技术工具，而且是生态、平台、人...",
+        "title": "Web search: 故宫博物院 官网"
+      },
+      "uniqueURLCount": 10,
+      "firstExpectedRank": null
+    },
+    {
+      "name": "chinese-documentation",
+      "query": "Swift 中文教程",
+      "transport": "browser",
+      "options": [],
+      "elapsedSeconds": 2.4627945839893073,
+      "expectedURLContains": "swift",
+      "response": {
+        "metadata": {
+          "networkBoundary": "sogou-only",
+          "query": "Swift 中文教程",
+          "resultCount": 9
+        },
+        "output": "1. [惊喜!!Swift5.0官方文档中文版新鲜出炉](http://mp.weixin.qq.com/count/oIWsFt574cTgGj8rOGv6bpVFbQTY/2247487632/1&scene=6)\n这是一群热爱翻译并且热爱Swift的人,希望通过自己的努力让不懂英语的程序员也能第一时间学习到国外的先进技术.他们最近做了件十分重要但很难吸引眼球的事情——发布了Swift5.0官方文档中文版.很多读者肯定要问什么是...\n\n2. [针对 macOS 平台的 Swift 中文研发教学太少_知乎](https://zhuanlan.zhihu.com/p/26735808)\n23 我跑遍了王府井书店和西单图书大厦,连一本针对 macOS 平台的应用研发场合进行主讲的 Swift 教程都没有(ObjC 也是).纵使有书籍同时聊到了 iOS 和 ...\n\n3. [在Swift Playgrounds中如何安装第三方中文课程?_知乎](https://www.zhihu.com/question/50628410/answer/153036289)\n2017年3月21日已经更新支持中、日、法、德文了\n\n4. [汉字开发有编程语言吗 与 小编程项目开发 - 很牛教学网](https://www.hn81.cn/2026/09/226542/)\n中文汉语编程的基本想法 1、汉语编程的基本想法可以概括为以下几点：使用... 安卓的Java语言、苹果的Swift语言一直占据着统治地位，并拥有绝对的话语...\n\n5. [Swift 自学者手册_知乎](https://zhuanlan.zhihu.com/p/19778847)\n347 1. 基本语法Swift Programming Language 苹果官方的学习资料,有iBooks版本: iTunes - Books《The Swift Programming Language》中文版 虽然说官网的...\n\n6. [编程零基础如何学习 Swift?_知乎](https://www.zhihu.com/question/24004342)\n637 教程《The Swift Programming Language》:这是苹果官方出版的Swift学习教材,可以免费下载到iBooks中阅读.其中文版翻译项目也在 Github 上火热进行...更多\n\n7. [如何评价Kanye West与Taylor Swift的完整通话视频被黑客泄露这..._知乎](https://www.zhihu.com/question/381276813)\n2193 这件事Taylor实惨没得洗,Kanye有几段是当真有恶心到我,就是在Taylor有些焦虑地问“Is It Gonna Be Mean”的时候Kanye各种拐弯抹角,又是什么我老婆...更多\n\n8. [Swift语言的学习资料或教程大家都有哪些?_知乎](https://www.zhihu.com/question/24081106/answer/35195413)\n2 这儿是官方教程的中文翻译版,非常详尽、系统.自己也正在学习.关于 Swift | 《The Swift Programming Language》中文版\n\n9. [霉霉TaylorSwift的风,还是刮到了哈佛 - 知乎](https://zhuanlan.zhihu.com/p/676158498)\n的课程，名为《Taylor Swift and Her World》，通过剖析她的作品，以学习探究她的歌词、音乐与影响力。 该课程由英语系的讲师Stephanie Burt指导，课程...",
+        "title": "Web search: Swift 中文教程"
+      },
+      "uniqueURLCount": 9,
+      "firstExpectedRank": null
+    },
+    {
+      "name": "chinese-sogou",
+      "query": "搜狗输入法 官网",
+      "transport": "browser",
+      "options": [],
+      "elapsedSeconds": 3.507534582982771,
+      "expectedURLContains": "shurufa.sogou.com",
+      "response": {
+        "metadata": {
+          "networkBoundary": "sogou-only",
+          "query": "搜狗输入法 官网",
+          "resultCount": 10
+        },
+        "output": "1. [搜狗输入法为什么做得比其他的输入法好?_知乎](https://www.zhihu.com/question/19607537)\n163 1. 跨代的技术(利用搜索技术来解决词库问题)2. 足够的重视和资源投入(Google跟进的时候,就没有编辑进行词库审核,最后竟然偷用搜狗词库了,搜狗...更多\n\n2. [搜狗输入法怎么下载设置?从手机到电脑的全流程使用教程来了!](http://mp.weixin.qq.com/count/oIWsFt0rWi4_rE9IerCnKz1ZyMU0/2247484715/7&scene=6)\n搜“搜狗输入法官网”认准带“官方”标志的链接点进去首页大按钮写着“立即下载”点它就会弹出下载窗口选个保存位置(比如桌面)等文件下载完双击打开安装包按提示点“下一步”直到“完成”就行Mac用户同样进官网...\n\n3. [搜狗输入法功能科普二十三:为什么斗图表情发不了(安卓篇) - 知乎](https://zhuanlan.zhihu.com/p/356407687)\n现在很多小伙伴都非常喜欢在微信或QQ聊天的过程中发送斗图表情，但是在使用搜狗输入法发送斗图表情的时候可能会遇到斗图发不出去的情况，那么今...\n\n4. [搜狗输入法有哪些体验不好的地方?_知乎](https://www.zhihu.com/question/21355814)\n1772 我有一种.被玩弄了的感觉....就在刚刚,我想要输入女红于是好吧.我能理解.有些时候多音字对输入法来说是比较过分...那我强忍着别扭输入...更多\n\n5. [手机搜狗怎么换皮肤-手机搜狗怎么换皮肤手机版安装 - 伊秀娱乐](http://beauty.yxlady.com/yule/2339407266.html)\n手机搜狗怎么换皮肤？在当今数字化时代，个性化已成为人们追求的一种生活方式，对于使用手机搜狗输入法的用户来说，更换皮肤不仅能让输入体验更加愉悦，还能展现个人...\n\n6. [如何看待搜狗输入法的建议:在知乎,使用「」和『』代替引号?_知乎](https://www.zhihu.com/question/35516459)\n37 (搜狗微博回复我了见文末,可见不光是mac是win的搜狗输入法也这样)不得了啦!!!ヽ(≧Д≦)ノ知乎把我的输入法给改啦!!!(,,#ﾟДﾟ)输入文...更多\n\n7. [如何看待 QQ 拼音输入法由搜狗公司提供?_知乎](https://www.zhihu.com/question/22572907)\n19 我觉得有威胁.我个人来讲,从搜狗换到了百度,又换到了QQ.目前电脑上只留了QQ输入法.其实在电脑上来说,三者提供的输入体验相似.之所以从百度...更多\n\n8. [搜狗输入法简约而美的皮肤推荐_知乎](https://zhuanlan.zhihu.com/p/467648213)\n62 搜狗输入法简约而美的皮肤推荐前言给大家分享一个GitHub上面搜狗拼音输入法的几款极简风格皮肤推荐,符合对美有一定追求的用户.我的评价就是简约而...\n\n9. [【技术贴】改造我们的输入法——以搜狗为例 - 知乎](https://zhuanlan.zhihu.com/p/29230721)\n搜狗输入法（或其他商业输入法，本文以搜狗输入法为例。IOS的我没试过，不保证可行。） 使用工具： 1、国学大师部件查字（在线链接） ） 2、三选一：...\n\n10. [Windows平台除了搜狗输入法还有哪些好用的输入法呢?_知乎](https://www.zhihu.com/question/350718972)\n137 给你看一下我的输入法列表.一个是系统默认,也就是Win10下的微软拼音输... 至于一般的用户,呵呵.祝搜狗输入法这个垃圾早死早托生~~更多",
+        "title": "Web search: 搜狗输入法 官网"
+      },
+      "uniqueURLCount": 10,
+      "firstExpectedRank": null
+    },
+    {
+      "name": "literal-plus",
+      "query": "C++ 参考手册",
+      "transport": "browser",
+      "options": [],
+      "elapsedSeconds": 2.426868167007342,
+      "expectedURLContains": "cppreference.com",
+      "response": {
+        "metadata": {
+          "networkBoundary": "sogou-only",
+          "query": "C++ 参考手册",
+          "resultCount": 10
+        },
+        "output": "1. [C语言和C++有什么区别?_知乎](https://www.zhihu.com/question/54849492)\n17 C语言和C++的区别是一个老生常谈的问题了,建议题主也善用知乎或者外部的搜索,可以很多角度和很多观点给你带来信息.仅针对你问题描述的问题,是...更多\n\n2. [C++标准库:自学教程与参考手册(第2版) 为啥没人翻译啊?_知乎](https://www.zhihu.com/question/29464631/answer/52493353)\n3 C++标准库(第2版)\n\n3. [C++实用指南](http://mp.weixin.qq.com/count/oIWsFt54rGnX9iiAMYYHDOKRQM7M/2247495623/1&scene=6)\n核心指南检查器参考|微软文档介绍vcperf/timetrace,用于C++构建时间分析|C++团队博客C++CoreCheck中的新安全规则|C++团队博客——C++和Rust一样安全吗?或者查看我关于其他工具的文章:C++生态系统:编译器、IDE、工具、测试等https://www.cppstories.com/2019/10/cppecosystem/?...\n\n4. [2021年最新整理, C++ 学习资料,含C++ 11 / 14 / 17 ..._知乎](https://zhuanlan.zhihu.com/p/415102472)\n27 【重磅推荐收藏:C++ 参考手册】 - 11~20你想要查的,他都有 C++ 发展历程C++ 编程语言的历史可以追溯到 1979 年,当时 Bjarne Stroustrup 为博士学位论...\n\n5. [C++11、C++14、C++17、C++20新特性总结 - 知乎](https://zhuanlan.zhihu.com/p/688090551)\n《带注释的C++参考手册》一书，其一度被当做 C++ 开发的重要参考；Borland 发布了 Turbo C ++编译器，该编译器包含有大量的第三方 C++ 库，极大便利...\n\n6. [c开发指南qt编程 与 网络编程和java开发像不像 - 很牛教学网](https://www.hn81.cn/2026/09/232276/)\n推荐《Qt 9 C++开发指南》。以下是具体分析：适用人群匹配：根据描述，提问者为有两年工作经验的Qt程序员，需要一本能持续提供实用参考的书籍。而...\n\n7. [对于一个C++学习者和使用者而言,自己实现一个STL标准库,对..._知乎](https://www.zhihu.com/question/30581114/answer/889851323)\n40 意义非常大,能让你明白什么叫“知其然并知其所以然”,并且能让你体会到知其所以然以后整个人的心态变化,差别就是从寄人篱下到反客为主的差别....更多\n\n8. [机电OJ入门指南(C++)_知乎](https://zhuanlan.zhihu.com/p/431566925)\n参照之前的java版机电oj,下面给大家简单写一下c++如何在机电oj上运行首先还是输入输出问题,不同于java,c++如果要进行基本输入输出是需要导入函数库...\n\n9. [拿下大厂！最稳Linux C/C++学习路线~ - 知乎](https://zhuanlan.zhihu.com/p/445717462)\nC++ 的理解，可以参考下面的书籍，当然也是面试中的关键部分。 随后开始进阶内容的学习，比如函数模板、类模板， C++ 中对于异常的处理，对于继承...\n\n10. [stackoverflow上整理的C++各阶段学习书籍_知乎](https://zhuanlan.zhihu.com/p/371817214)\n9 如果觉得这些书籍对你有帮助,可以访问以下地址获取.初学者介绍性书籍,... 从编程范例到语言哲学的所有内容.C++ 标准库 —— 自学教程与参考手册(...",
+        "title": "Web search: C++ 参考手册"
+      },
+      "uniqueURLCount": 10,
+      "firstExpectedRank": null
+    },
+    {
+      "name": "pagination",
+      "query": "SwiftSoup GitHub",
+      "transport": "browser",
+      "options": [
+        "--pages",
+        "3",
+        "--max-results",
+        "25"
+      ],
+      "elapsedSeconds": 5.401226416986901,
+      "expectedURLContains": "github.com/scinfu/SwiftSoup",
+      "response": {
+        "metadata": {
+          "networkBoundary": "sogou-only",
+          "query": "SwiftSoup GitHub",
+          "resultCount": 25
+        },
+        "output": "1. [SwiftBug清单已迁移至Github中](http://mp.weixin.qq.com/count/oIWsFtxX7Xq_NfVWOeLuE6AI92OA/2647771588/1&scene=6)\nSwift官方在上个月25号宣布将Swift的Bug清单迁移到Github问题清单中.目前,第一阶段,所有问题都被“克隆”到apple/swift存储库中.Swift官方正在努力将Github中的问题迁移到相应的Github仓库中.我们可以在...\n\n2. [github 上有哪些比较好的swift实践的项目?_知乎](https://www.zhihu.com/question/26916197/answer/51693472)\n7 谢邀.不过上面的人答得很丰富了.SwiftGuide也提到了.如果是初学者,不... github.com/YANGReal/Jok习题作业:1. 修复Swift语法到1.2或者2.0,使之能在...更多\n\n3. [GitHub上有哪些值得关注的翻译项目?_知乎](https://www.zhihu.com/question/50930457)\n2 谢邀.就说一个我知道的比较有影响力的一个翻译项目:GitHub - numbbbbb/the-swift-programming-language-in-chinese: 中文版 Apple 官方 Swift 教程《...更多\n\n4. [GitHub 上有哪些适合新手跟进的优质项目?_知乎](https://zhuanlan.zhihu.com/p/114192001)\n17 HelloGitHubgit:star:19kPython,Java,PHP,C++,go,swift等各种编程语言的项目都有,每月28号更新发布(持续更新中).这些开源项目大多都是非常容易上手...\n\n5. [这就是艺术「GitHub 热点速览 v.22.25」_知乎](https://zhuanlan.zhihu.com/p/531007380)\n45 不知道写了那么久代码的你,是否还记得“代码写诗”这个词,它是用来形容... 2. GitHub Trending 周榜 2.1 Swift 扩展:SwifterSwift本周 star 增长数:1,050+...\n\n6. [python简单爬虫:selenium webdriver (phantomjs) 和 ..._知乎](https://zhuanlan.zhihu.com/p/451168445)\n1. SeleniumSelenium 是一个JavaScript框架,调用 webdriver 模拟在浏览器内的操作,可以适用 Chrome、 Firefox 、IE 等浏览器.本文用的是 PhantomJS,...\n\n7. [如何轻松地寻找 GitHub 上超棒的项目和资源_知乎](https://zhuanlan.zhihu.com/p/33171277)\n141 在 GitHub 网站上每天都会新增上百个项目.由于 GitHub 上有成千上万的项目,要在上面搜索好的项目简直要累死人.好在,有那么一伙人已经创建了一些这...\n\n8. [Python爬虫库xPath, BeautifulSoup, re, selenium的详细..._知乎](https://zhuanlan.zhihu.com/p/402418448)\n1 项目代码展示项目部署方法, 已发GitHub, 项目地址github地址使用技术python正则匹配Beautifulsoup4库xpath解析一.正则匹配和JavaScript语言匹配方式类...\n\n9. [[稀土掘金日报] iOS不能错过的干货合集 - 知乎](https://zhuanlan.zhihu.com/p/20262518)\n另外的一个版本（JohnCoates/Async · GitHub）。 Swift 2.0 推出了很多新特性，最让人兴奋的莫过于协议扩展（protocol extensions） ，这篇文章介绍...\n\n10. [高仿喜马拉雅项目 - Swift5版本 - 知乎](https://zhuanlan.zhihu.com/p/65824876)\n有需要的同学可以到我的Github[喜马拉雅项目-Swift版本]（lb2281075105/LBXMLYFM-Swift）上面下载哦，喜欢的 希望得到您的star哦，谢谢您们！ #####...\n\n11. [Github上有哪些值得入门的swift项目?_知乎](https://www.zhihu.com/question/36050599)\n8 推荐一个 Swift 做的 Http Server,功能还是很简单的,但是我觉得入门刚刚好,也可以跟着深入的去理解一下 Socket.这里:izqui/Taylor · GitHub当然,如...更多\n\n12. [《HelloGitHub》第 14 期_知乎](https://zhuanlan.zhihu.com/p/51316468)\n兴趣是最好的老师,HelloGitHub 就是帮你找到兴趣!简介分享 GitHub 上有趣、入门级的开源项目.这是一个面向编程新手、热爱编程、对开源社区感兴趣 ...\n\n13. [请教如何修改github上仓库的项目语言?_知乎](https://www.zhihu.com/question/47249333/answer/129215637)\n27 遇到类似问题.问题原因: github 是根据项目里文件数目最多的文件类型,识别项目类型.这个够傻.解决办法:项目根目录添加 .gitattributes 文件, 内容如下 :...更多\n\n14. [python爬虫之mechanicalsoup:官方也有两个坑_知乎](https://zhuanlan.zhihu.com/p/29253204)\n2 Mechanize模块可以通过用户名和密码登录网页,但是只能在Python2.7版本中... 通过查阅github的mechanicalsoup主页,安装mechanicalsoup:pip install ...\n\n15. [GitHub 上都有哪些值得关注学习的 iOS 开源项目?_知乎](https://www.zhihu.com/question/22914651/answer/119064937)\n4 厚颜推荐一个自己的项目:LearnSwift,链接:github.com/cjiong/Learn这是受到30daysofswift启发做的,项目一共有50个swift小程序,学习swift的同学有兴趣...更多\n\n16. [Xcode 9 新功能_知乎](https://zhuanlan.zhihu.com/p/28880971)\n52 Swift 4Xcode 9 同时支持 Swift 3.2和 Swift 4.0,可以在 “Swift Language ... 导航栏,您可以轻松查看不同 tags 和 branch 的代码.Xcode 9 与 GitHub 结合....\n\n17. [请问swiftul会火起来吗…?_知乎](https://www.zhihu.com/question/327878567/answer/708145345)\nA. Swiftul 在 GitHub 及 Bing 上无法搜索到任何相关结果.B. 几乎无人回答此问题.C. 我不知道他是什么东西,但是以上两点.\n\n18. [Swift 开源项目精选导图_知乎](https://zhuanlan.zhihu.com/p/50329837)\n导图分类规则尽可能遵循苹果开发者文档(对应关系仅做参考),试图与官方... 对于 Swift 新手欢迎关注文档Swift 学习指引以及 GitHub: ipader/SwiftGuide(13k+...\n\n19. [不使用if else过滤,用BeautifulSoup怎么一次find符合两种特征的..._知乎](https://www.zhihu.com/question/27725555/answer/37839339)\n1 广告一下自己的轮子: XML Stream github.com/arrowrowe/xmimport xml_stream for node in xml_stream.XMLTree('...').process(selector='dd.string1, dd.string2'...更多\n\n20. [如何评价 SwiftUI?_知乎](https://www.zhihu.com/question/327763737/answer/706171218)\n90 刚刚结束的苹果 WWDC 推出了一个对于开发者非常重要的框架:SwiftUI.... 感受一下 SwiftUI 的代码风格Github 一个 repo 整理了在 WWDC 2019 发布的 ...更多\n\n21. [如何在github首页显示知乎点赞数_知乎](https://zhuanlan.zhihu.com/p/270269932)\n6 先看效果特点:页面展示 可以设置每分钟/每小时/每天更新一次原理GitHub 可以设置一个同名库,这个库的 `README.md` 会自动显示到首页上GitHub action...\n\n22. [开源月刊「HelloGitHub」第76期-知乎](https://zhuanlan.zhihu.com/p/546998977)\nPython、Java、Go、C/C++、Swift...让你在短时间内感受到开源的魅力，对... 和GitHub Action，实现提交代码时自动检测，通过告警和阻止 push 等方式，...\n\n23. [如何解决百度爬虫无法爬取搭建在Github上的个人博客的问题?_知乎](https://www.zhihu.com/question/30898326/answer/155853364)\n6 以前试了各种手段都无法推送,在百度后台看到爬虫被Github阻止,于是放弃.前段时间无意中发现百度居然收录了我博客的最新文章:以后可以继续使用脚...更多\n\n24. [GitHub 上有哪些优秀的 Python 爬虫项目?_知乎](https://www.zhihu.com/question/58151047/answer/1073284219)\n11 综述类项目与学习资料首先给大家介绍一些非常优秀的综述和学习类项目,方便大家快速索引找到所需要的资源.1.、Anti-Anti-Spider地址:github.com/...更多\n\n25. [来用SwiftUI编写真正的APP_知乎](https://zhuanlan.zhihu.com/p/446058472)\n2 SwiftUI 是一个声明式的基于组件的框架.你需要完全忘记曾经的 MVC 概念—... 我们将编写一个能够查找 Github repos 的 APP.它有一个界面,会拥有一个文...",
+        "title": "Web search: SwiftSoup GitHub"
+      },
+      "uniqueURLCount": 25,
+      "firstExpectedRank": null
+    },
+    {
+      "name": "freshness",
+      "query": "苹果 发布会",
+      "transport": "browser",
+      "options": [
+        "--time",
+        "month"
+      ],
+      "elapsedSeconds": 2.4331442499533296,
+      "expectedURLContains": "apple.com",
+      "response": {
+        "metadata": {
+          "networkBoundary": "sogou-only",
+          "query": "苹果 发布会",
+          "resultCount": 10
+        },
+        "output": "1. [下周关注丨8月CPI将公布,苹果发新品,限售股解禁超849亿|中国国际...](https://k.sina.com.cn/article_5953466437_162dab0450670bbkj6.html?from=finance)\n苹果将于9月9日在加州库比蒂诺总部举办秋季新品发布会，宣传标语为“Surprise and shine（亮新篇，来耀眼）”。分析师预计将推出新款iPhone 18 Pro/...\n\n2. [主打隐私保护:消息称苹果首款 AI 家用安防摄像头瞄准 2027 年发布_...](https://finance.sina.com.cn/tech/digi/2026-09-05/doc-iniqtnha0562901.shtml)\nIT之家 9 月5日消息，彭博社的马克 · 古尔曼（Mark Gurman）昨日（9 月4日）发布博文，爆料称苹果公司可能会在 2027 年推出家庭安防系统及配套监控...\n\n3. [苹果发布会前瞻:折叠屏iPhone来了,这一次真能带来惊喜吗?](http://mp.weixin.qq.com/count/oIWsFt09ZJ9eXVO90iHkxsjijcuc/2247485603/1&scene=6)\n科技值得了解北京时间9月10日凌晨2点,苹果新一年的秋季发布会将正式举行.苹果为这场发布会准备的主题是“Surpriseandshine”.从字面上看,它像是在暗示某种闪耀的新设计,也像是在主动抛出一个久违的关键词——惊喜....\n\n4. [苹果发布会在即 新CEO首秀携首款折叠iPhone将登场？-新闻中心-苹果...](https://news.cheaa.com/2026/0909/658417.shtml)\n本次发布会是新任CEO约翰·特努斯上任后的首场重磅活动，备受全球行业与消费者关注，其中苹果首款折叠屏iPhone成为最大核心看点。 作为苹果近年最重要的硬件...\n\n5. [苹果9月9日发布会iPhone系列产品曝光：iPhone 18 标准版确认延期](https://c.m.163.com/news/a/L64UTSRB0550A7YJ.html?spss=backflow-index-hotlist)\n助您预判苹果发布会亮点。 折叠屏 iPhone Ultra 或将问世 多年研发后，苹果折叠屏手机有望在今年以“iPhone Ultra”之名发布。泄露信息显示，该机采用类似三星 Galaxy Z ...\n\n6. [苹果即将发布三款新iPhone 但是预计价格全线大涨](https://c.m.163.com/news/a/L69FO6G2051191D6.html?spss=backflow-index-hotlist)\n【CNMO科技消息】据CNMO科技了解，苹果年度9月发布会将于本周三举行，届时将有三款新iPhone同时亮相，分别为iPhone 18 Pro、iPhone 18 Pro Max以及苹果旗下首款...\n\n7. [苹果发布会前瞻：折叠式iPhone起售价或2000美元 将成史上最贵_财经...](https://finance.stockstar.com/IG2026090800017565.shtml)\n苹果将于美国时间9月9日在库比蒂诺史蒂夫·乔布斯剧院举行秋季发布会，市场预期发布iPhone 18 Pro及折叠式iPhone，业界估算起售价约2000美元，或成史上最贵，华为、小米...\n\n8. [...三星|余承东|小米|旗舰新品发布会|智能手机|苹果公司|雷军_手机网易网](https://3g.163.com/news/article/L6BUA6NJ051188EA.html)\n苹果发布会是科技行业流量最集中的事件。从新CEO约翰·特努斯（John Ternus）上台那一刻起，全球科技媒体的头条就已经预定了位置，所有讨论都会围绕苹果...\n\n9. [iPhone 18 Pro 发布会前夕,苹果推送 140W USB-C 适配器固件更新 - ...](https://www.ithome.com/0/999/969.htm)\n在iPhone 18 Pro 系列发布会前夕，苹果向 140W USB-C 电源适配器（点此前往苹果官网选购，售价 729 元）推送固件更新，从v1.4.84 升级到 v1.4.90 版本。\n\n10. [赶在苹果发布会之前！华为小米同一天发布折叠手机,小米18 Fold售...](https://new.qq.com/rain/a/20260907V0CVCL00)\n赶在苹果发布会之前！华为小米同一天发布折叠手机，小米18 Fold售价10999起，华为最新三折叠售价19999元起，iPhone也即将发布首款折叠机，售价会...",
+        "title": "Web search: 苹果 发布会"
+      },
+      "uniqueURLCount": 10,
+      "firstExpectedRank": null
+    },
+    {
+      "name": "unlikely-query",
+      "query": "\"qzxvnonexistent178891sitecheck\"",
+      "transport": "browser",
+      "options": [],
+      "elapsedSeconds": 2.68173970899079,
+      "expectedURLContains": null,
+      "response": {
+        "metadata": {
+          "networkBoundary": "sogou-only",
+          "query": "\"qzxvnonexistent178891sitecheck\"",
+          "resultCount": 8
+        },
+        "output": "1. [ZClient出现Can't connect,check status on site怎么解决?_知乎](https://www.zhihu.com/question/529260355/answer/2452193857)\n封锁IP么换IP呀,科学上网还要教?\n\n2. [这可能是史上最详尽的 SEO 免费分析工具 - 知乎](https://zhuanlan.zhihu.com/p/37758668)\nSEO SiteCheckup 同样能一键导出 SEO 报告，方便与企业主共享和交流信息。透过可视化的数据，即便是小白用户，也能迅速掌握网站 SEO 的有效途径和...\n\n3. [SiteGuru: 找到受众的网站检查工具_知乎](https://zhuanlan.zhihu.com/p/87593576)\n1 SiteGuru独立:Rick van Haasteren开发者背景:,任职于当地一家网络营销... 起初他用Excel电子表格整理了检查列表,但是没人喜欢用.他便逐步把列表上...\n\n4. [某知名500强外企招聘RiskEngineer](http://mp.weixin.qq.com/count/oIWsFtykQJ3nFQctMNnLguVP2ZFY/2247487658/2&scene=6)\nSupporttenantsfit-outdrawingreviewandsitecheck.HandoversupportandfocusonFLS/Securitytrainingissue推荐全额奖金:3000元若您对该职位有兴趣,可通过邮件申请职位.(一步申请:发送CV到CV@jvhunting.com...\n\n5. [python Django 安装以后使用model_知乎](https://zhuanlan.zhihu.com/p/133755824)\nModel1,一个模型,是一个数据信息,包括字段和数据的行为.2,一个模型,是一个类3,一个模型,是一个子类,基类是django.db.models.Model4,模型...\n\n6. [实践过程分享 体验1小时入门AI工程师课程(课程学习..._知乎](https://zhuanlan.zhihu.com/p/393338212)\n转载地址:作者:千江有水千江月活动帖参考资料实践过程分享使用conda新... shuffle=True) File ＂D:\\Develop\\Anaconda3\\envs\\hwms-py37\\lib\\site-packages\\...\n\n7. [我是做日常用品批发的,怎么样提高我的销售量?_知乎](https://www.zhihu.com/question/346793944)\n2 网店还是实体店啊,网店就要多宣传,实体店可以发发传单搞搞活动什么的.\n\n8. [中国的新车车评为何不评三大件?_知乎](https://zhuanlan.zhihu.com/p/470106371)\n1.车辆最重要三大件型号为何很少分析?一上来就说外观内饰好不好看?您不知道审美观因人而异?2.一上车就用拳头比车顶.这都2120年,车评人还像驾校...",
+        "title": "Web search: \"qzxvnonexistent178891sitecheck\""
+      },
+      "uniqueURLCount": 8,
+      "firstExpectedRank": null
+    },
+    {
+      "name": "chinese-official-site",
+      "query": "故宫博物院 官网",
+      "transport": "automatic",
+      "options": [],
+      "elapsedSeconds": 1.5402747089974582,
+      "expectedURLContains": "dpm.org.cn",
+      "response": {
+        "metadata": {
+          "networkBoundary": "sogou-only",
+          "query": "故宫博物院 官网",
+          "resultCount": 10
+        },
+        "output": "1. [【故宫博物馆】清乾隆新年专用饮酒器之“金嵌宝金瓯永固杯”](http://mp.weixin.qq.com/count/oIWsFt-DXNOKVvjmewdfYBpNB8xs/2247523951/1&scene=6)\n故宫博物院珍藏的这件是1797年做的,当时乾隆已经禅位给嘉庆,宫廷外用嘉庆二年,而宫廷内是乾隆六十二年.这4个杯子目前只有一个在国内,就是北京故宫博物院‌里收藏的这一只“金瓯永固杯”.还有一只在中国台北故宫博物院‌,是一个乾隆五年的“金瓯永固杯”‌,这个也是金的....\n\n2. [故宫应聘经历 2020故宫博物馆招聘_知乎](https://zhuanlan.zhihu.com/p/129839183)\n47 作为应届毕业生,看到2020故宫的应聘消息,我就果断注册了,并且提交了个人信息.会持续更新 和大家分享的.如果你也是今年投递的,可以私信我哦,...\n\n3. [秋高气爽!大批外国游客游览北京故宫_故宫博物院_时节_来源](https://www.sohu.com/a/1073614884_99985316)\n2026年9月8日，初秋时节，北京秋高气爽，大批外国游客游览故宫博物院。来源：IC PHOTO 2026年9月8日，初秋时节，北京秋高气爽，大批外国游客游览故宫博...\n\n4. [遛娃攻略:必去的六家北京博物馆推荐_知乎](https://zhuanlan.zhihu.com/p/225062284)\n41 要说全国各地哪个城市的博物馆最多,恐怕非北京莫属了.陪孩子逛博物馆不... 五、故宫博物院这个大家一定知道了,故宫博物院前身是明清两代皇帝居住的...\n\n5. [北京有哪些值得一看的博物馆?_知乎](https://www.zhihu.com/question/20405263)\n150 推荐一个冷门的博物馆,智化寺.喜欢明代历史的人千万不能错过,因为这是明代大宦官王振的家庙.逛完这个庙子,你就会明白为什么明英宗是明代历史让...更多\n\n6. [福建民俗博物馆](http://minsu.fjsen.com/)\n福建闽越王城博物馆 福建省昙石山遗址博物馆 福建博物院 故宫博物院中国国家博物馆 福建省文物局 福建省文化和旅游厅\n\n7. [如何看待博物馆的文创产业?_知乎](https://www.zhihu.com/question/274911491)\n93 支持辞职或者转岗,博物馆文创走到了一个十字路口,遇到了政策阻碍,短时间内看不到突破天花板的希望.其中最终要的一点来自于分配制度,博物馆文创...更多\n\n8. [10岁孩子去北京旅游,有哪些必去的博物馆？|中国考古博物馆|故宫博...](https://k.sina.com.cn/article_7879849077_1d5acf47506801iw0i.html?from=cul)\n一、历史人文类：在文物中触摸京城文脉故宫博物院：这是北京乃至全国最重量级的博物馆，10岁孩子能直观感受皇家建筑群的恢弘气..._新浪网\n\n9. [故宫今天有演出吗？3个渠道查清+FAQ|故宫博物院|东城|小程序|艺术|...](https://k.sina.com.cn/article_7879776369_1d5abd87106801i2wg.html?from=cul)\n故宫没有每日固定演出，所有演艺活动均依托节庆、特展或品牌艺术季。想查当天是否有演出，唯一可靠路径是：出发前打开故宫博物院官网“展览与活动...\n\n10. [人工智能时代,文物保护如何“智”变_新浪财经_新浪网](https://finance.sina.com.cn/jjxw/2026-09-09/doc-inirehkk8994738.shtml)\n故宫博物院院长王旭东在主旨报告中进一步阐释了人工智能时代的变革图景。他认为，人工智能带来的变化不只是出现一种新的技术工具，而且是生态、平台、人...",
+        "title": "Web search: 故宫博物院 官网"
+      },
+      "uniqueURLCount": 10,
+      "firstExpectedRank": null
+    },
+    {
+      "name": "chinese-documentation",
+      "query": "Swift 中文教程",
+      "transport": "automatic",
+      "options": [],
+      "elapsedSeconds": 1.4290163340047002,
+      "expectedURLContains": "swift",
+      "response": {
+        "metadata": {
+          "networkBoundary": "sogou-only",
+          "query": "Swift 中文教程",
+          "resultCount": 9
+        },
+        "output": "1. [惊喜!!Swift5.0官方文档中文版新鲜出炉](http://mp.weixin.qq.com/count/oIWsFt574cTgGj8rOGv6bpVFbQTY/2247487632/1&scene=6)\n这是一群热爱翻译并且热爱Swift的人,希望通过自己的努力让不懂英语的程序员也能第一时间学习到国外的先进技术.他们最近做了件十分重要但很难吸引眼球的事情——发布了Swift5.0官方文档中文版.很多读者肯定要问什么是...\n\n2. [针对 macOS 平台的 Swift 中文研发教学太少_知乎](https://zhuanlan.zhihu.com/p/26735808)\n23 我跑遍了王府井书店和西单图书大厦,连一本针对 macOS 平台的应用研发场合进行主讲的 Swift 教程都没有(ObjC 也是).纵使有书籍同时聊到了 iOS 和 ...\n\n3. [在Swift Playgrounds中如何安装第三方中文课程?_知乎](https://www.zhihu.com/question/50628410/answer/153036289)\n2017年3月21日已经更新支持中、日、法、德文了\n\n4. [汉字开发有编程语言吗 与 小编程项目开发 - 很牛教学网](https://www.hn81.cn/2026/09/226542/)\n中文汉语编程的基本想法 1、汉语编程的基本想法可以概括为以下几点：使用... 安卓的Java语言、苹果的Swift语言一直占据着统治地位，并拥有绝对的话语...\n\n5. [Swift 自学者手册_知乎](https://zhuanlan.zhihu.com/p/19778847)\n347 1. 基本语法Swift Programming Language 苹果官方的学习资料,有iBooks版本: iTunes - Books《The Swift Programming Language》中文版 虽然说官网的...\n\n6. [编程零基础如何学习 Swift?_知乎](https://www.zhihu.com/question/24004342)\n637 教程《The Swift Programming Language》:这是苹果官方出版的Swift学习教材,可以免费下载到iBooks中阅读.其中文版翻译项目也在 Github 上火热进行...更多\n\n7. [如何评价Kanye West与Taylor Swift的完整通话视频被黑客泄露这..._知乎](https://www.zhihu.com/question/381276813)\n2193 这件事Taylor实惨没得洗,Kanye有几段是当真有恶心到我,就是在Taylor有些焦虑地问“Is It Gonna Be Mean”的时候Kanye各种拐弯抹角,又是什么我老婆...更多\n\n8. [Swift语言的学习资料或教程大家都有哪些?_知乎](https://www.zhihu.com/question/24081106/answer/35195413)\n2 这儿是官方教程的中文翻译版,非常详尽、系统.自己也正在学习.关于 Swift | 《The Swift Programming Language》中文版\n\n9. [霉霉TaylorSwift的风,还是刮到了哈佛 - 知乎](https://zhuanlan.zhihu.com/p/676158498)\n的课程，名为《Taylor Swift and Her World》，通过剖析她的作品，以学习探究她的歌词、音乐与影响力。 该课程由英语系的讲师Stephanie Burt指导，课程...",
+        "title": "Web search: Swift 中文教程"
+      },
+      "uniqueURLCount": 9,
+      "firstExpectedRank": null
+    },
+    {
+      "name": "chinese-sogou",
+      "query": "搜狗输入法 官网",
+      "transport": "automatic",
+      "options": [],
+      "elapsedSeconds": 1.4327472919831052,
+      "expectedURLContains": "shurufa.sogou.com",
+      "response": {
+        "metadata": {
+          "networkBoundary": "sogou-only",
+          "query": "搜狗输入法 官网",
+          "resultCount": 10
+        },
+        "output": "1. [搜狗输入法为什么做得比其他的输入法好?_知乎](https://www.zhihu.com/question/19607537)\n163 1. 跨代的技术(利用搜索技术来解决词库问题)2. 足够的重视和资源投入(Google跟进的时候,就没有编辑进行词库审核,最后竟然偷用搜狗词库了,搜狗...更多\n\n2. [搜狗输入法怎么下载设置?从手机到电脑的全流程使用教程来了!](http://mp.weixin.qq.com/count/oIWsFt0rWi4_rE9IerCnKz1ZyMU0/2247484715/7&scene=6)\n搜“搜狗输入法官网”认准带“官方”标志的链接点进去首页大按钮写着“立即下载”点它就会弹出下载窗口选个保存位置(比如桌面)等文件下载完双击打开安装包按提示点“下一步”直到“完成”就行Mac用户同样进官网...\n\n3. [搜狗输入法功能科普二十三:为什么斗图表情发不了(安卓篇) - 知乎](https://zhuanlan.zhihu.com/p/356407687)\n现在很多小伙伴都非常喜欢在微信或QQ聊天的过程中发送斗图表情，但是在使用搜狗输入法发送斗图表情的时候可能会遇到斗图发不出去的情况，那么今...\n\n4. [搜狗输入法有哪些体验不好的地方?_知乎](https://www.zhihu.com/question/21355814)\n1772 我有一种.被玩弄了的感觉....就在刚刚,我想要输入女红于是好吧.我能理解.有些时候多音字对输入法来说是比较过分...那我强忍着别扭输入...更多\n\n5. [手机搜狗怎么换皮肤-手机搜狗怎么换皮肤手机版安装 - 伊秀娱乐](http://beauty.yxlady.com/yule/2339407266.html)\n手机搜狗怎么换皮肤？在当今数字化时代，个性化已成为人们追求的一种生活方式，对于使用手机搜狗输入法的用户来说，更换皮肤不仅能让输入体验更加愉悦，还能展现个人...\n\n6. [如何看待搜狗输入法的建议:在知乎,使用「」和『』代替引号?_知乎](https://www.zhihu.com/question/35516459)\n37 (搜狗微博回复我了见文末,可见不光是mac是win的搜狗输入法也这样)不得了啦!!!ヽ(≧Д≦)ノ知乎把我的输入法给改啦!!!(,,#ﾟДﾟ)输入文...更多\n\n7. [如何看待 QQ 拼音输入法由搜狗公司提供?_知乎](https://www.zhihu.com/question/22572907)\n19 我觉得有威胁.我个人来讲,从搜狗换到了百度,又换到了QQ.目前电脑上只留了QQ输入法.其实在电脑上来说,三者提供的输入体验相似.之所以从百度...更多\n\n8. [搜狗输入法简约而美的皮肤推荐_知乎](https://zhuanlan.zhihu.com/p/467648213)\n62 搜狗输入法简约而美的皮肤推荐前言给大家分享一个GitHub上面搜狗拼音输入法的几款极简风格皮肤推荐,符合对美有一定追求的用户.我的评价就是简约而...\n\n9. [【技术贴】改造我们的输入法——以搜狗为例 - 知乎](https://zhuanlan.zhihu.com/p/29230721)\n搜狗输入法（或其他商业输入法，本文以搜狗输入法为例。IOS的我没试过，不保证可行。） 使用工具： 1、国学大师部件查字（在线链接） ） 2、三选一：...\n\n10. [Windows平台除了搜狗输入法还有哪些好用的输入法呢?_知乎](https://www.zhihu.com/question/350718972)\n137 给你看一下我的输入法列表.一个是系统默认,也就是Win10下的微软拼音输... 至于一般的用户,呵呵.祝搜狗输入法这个垃圾早死早托生~~更多",
+        "title": "Web search: 搜狗输入法 官网"
+      },
+      "uniqueURLCount": 10,
+      "firstExpectedRank": null
+    },
+    {
+      "name": "literal-plus",
+      "query": "C++ 参考手册",
+      "transport": "automatic",
+      "options": [],
+      "elapsedSeconds": 1.5421807079692371,
+      "expectedURLContains": "cppreference.com",
+      "response": {
+        "metadata": {
+          "networkBoundary": "sogou-only",
+          "query": "C++ 参考手册",
+          "resultCount": 10
+        },
+        "output": "1. [C语言和C++有什么区别?_知乎](https://www.zhihu.com/question/54849492)\n17 C语言和C++的区别是一个老生常谈的问题了,建议题主也善用知乎或者外部的搜索,可以很多角度和很多观点给你带来信息.仅针对你问题描述的问题,是...更多\n\n2. [C++标准库:自学教程与参考手册(第2版) 为啥没人翻译啊?_知乎](https://www.zhihu.com/question/29464631/answer/52493353)\n3 C++标准库(第2版)\n\n3. [C++实用指南](http://mp.weixin.qq.com/count/oIWsFt54rGnX9iiAMYYHDOKRQM7M/2247495623/1&scene=6)\n核心指南检查器参考|微软文档介绍vcperf/timetrace,用于C++构建时间分析|C++团队博客C++CoreCheck中的新安全规则|C++团队博客——C++和Rust一样安全吗?或者查看我关于其他工具的文章:C++生态系统:编译器、IDE、工具、测试等https://www.cppstories.com/2019/10/cppecosystem/?...\n\n4. [2021年最新整理, C++ 学习资料,含C++ 11 / 14 / 17 ..._知乎](https://zhuanlan.zhihu.com/p/415102472)\n27 【重磅推荐收藏:C++ 参考手册】 - 11~20你想要查的,他都有 C++ 发展历程C++ 编程语言的历史可以追溯到 1979 年,当时 Bjarne Stroustrup 为博士学位论...\n\n5. [C++11、C++14、C++17、C++20新特性总结 - 知乎](https://zhuanlan.zhihu.com/p/688090551)\n《带注释的C++参考手册》一书，其一度被当做 C++ 开发的重要参考；Borland 发布了 Turbo C ++编译器，该编译器包含有大量的第三方 C++ 库，极大便利...\n\n6. [c开发指南qt编程 与 网络编程和java开发像不像 - 很牛教学网](https://www.hn81.cn/2026/09/232276/)\n推荐《Qt 9 C++开发指南》。以下是具体分析：适用人群匹配：根据描述，提问者为有两年工作经验的Qt程序员，需要一本能持续提供实用参考的书籍。而...\n\n7. [对于一个C++学习者和使用者而言,自己实现一个STL标准库,对..._知乎](https://www.zhihu.com/question/30581114/answer/889851323)\n40 意义非常大,能让你明白什么叫“知其然并知其所以然”,并且能让你体会到知其所以然以后整个人的心态变化,差别就是从寄人篱下到反客为主的差别....更多\n\n8. [机电OJ入门指南(C++)_知乎](https://zhuanlan.zhihu.com/p/431566925)\n参照之前的java版机电oj,下面给大家简单写一下c++如何在机电oj上运行首先还是输入输出问题,不同于java,c++如果要进行基本输入输出是需要导入函数库...\n\n9. [拿下大厂！最稳Linux C/C++学习路线~ - 知乎](https://zhuanlan.zhihu.com/p/445717462)\nC++ 的理解，可以参考下面的书籍，当然也是面试中的关键部分。 随后开始进阶内容的学习，比如函数模板、类模板， C++ 中对于异常的处理，对于继承...\n\n10. [stackoverflow上整理的C++各阶段学习书籍_知乎](https://zhuanlan.zhihu.com/p/371817214)\n9 如果觉得这些书籍对你有帮助,可以访问以下地址获取.初学者介绍性书籍,... 从编程范例到语言哲学的所有内容.C++ 标准库 —— 自学教程与参考手册(...",
+        "title": "Web search: C++ 参考手册"
+      },
+      "uniqueURLCount": 10,
+      "firstExpectedRank": null
+    },
+    {
+      "name": "pagination",
+      "query": "SwiftSoup GitHub",
+      "transport": "automatic",
+      "options": [
+        "--pages",
+        "3",
+        "--max-results",
+        "25"
+      ],
+      "elapsedSeconds": 4.812113874999341,
+      "expectedURLContains": "github.com/scinfu/SwiftSoup",
+      "response": {
+        "metadata": {
+          "networkBoundary": "sogou-only",
+          "query": "SwiftSoup GitHub",
+          "resultCount": 25
+        },
+        "output": "1. [SwiftBug清单已迁移至Github中](http://mp.weixin.qq.com/count/oIWsFtxX7Xq_NfVWOeLuE6AI92OA/2647771588/1&scene=6)\nSwift官方在上个月25号宣布将Swift的Bug清单迁移到Github问题清单中.目前,第一阶段,所有问题都被“克隆”到apple/swift存储库中.Swift官方正在努力将Github中的问题迁移到相应的Github仓库中.我们可以在...\n\n2. [github 上有哪些比较好的swift实践的项目?_知乎](https://www.zhihu.com/question/26916197/answer/51693472)\n7 谢邀.不过上面的人答得很丰富了.SwiftGuide也提到了.如果是初学者,不... github.com/YANGReal/Jok习题作业:1. 修复Swift语法到1.2或者2.0,使之能在...更多\n\n3. [GitHub上有哪些值得关注的翻译项目?_知乎](https://www.zhihu.com/question/50930457)\n2 谢邀.就说一个我知道的比较有影响力的一个翻译项目:GitHub - numbbbbb/the-swift-programming-language-in-chinese: 中文版 Apple 官方 Swift 教程《...更多\n\n4. [GitHub 上有哪些适合新手跟进的优质项目?_知乎](https://zhuanlan.zhihu.com/p/114192001)\n17 HelloGitHubgit:star:19kPython,Java,PHP,C++,go,swift等各种编程语言的项目都有,每月28号更新发布(持续更新中).这些开源项目大多都是非常容易上手...\n\n5. [这就是艺术「GitHub 热点速览 v.22.25」_知乎](https://zhuanlan.zhihu.com/p/531007380)\n45 不知道写了那么久代码的你,是否还记得“代码写诗”这个词,它是用来形容... 2. GitHub Trending 周榜 2.1 Swift 扩展:SwifterSwift本周 star 增长数:1,050+...\n\n6. [python简单爬虫:selenium webdriver (phantomjs) 和 ..._知乎](https://zhuanlan.zhihu.com/p/451168445)\n1. SeleniumSelenium 是一个JavaScript框架,调用 webdriver 模拟在浏览器内的操作,可以适用 Chrome、 Firefox 、IE 等浏览器.本文用的是 PhantomJS,...\n\n7. [如何轻松地寻找 GitHub 上超棒的项目和资源_知乎](https://zhuanlan.zhihu.com/p/33171277)\n141 在 GitHub 网站上每天都会新增上百个项目.由于 GitHub 上有成千上万的项目,要在上面搜索好的项目简直要累死人.好在,有那么一伙人已经创建了一些这...\n\n8. [Python爬虫库xPath, BeautifulSoup, re, selenium的详细..._知乎](https://zhuanlan.zhihu.com/p/402418448)\n1 项目代码展示项目部署方法, 已发GitHub, 项目地址github地址使用技术python正则匹配Beautifulsoup4库xpath解析一.正则匹配和JavaScript语言匹配方式类...\n\n9. [[稀土掘金日报] iOS不能错过的干货合集 - 知乎](https://zhuanlan.zhihu.com/p/20262518)\n另外的一个版本（JohnCoates/Async · GitHub）。 Swift 2.0 推出了很多新特性，最让人兴奋的莫过于协议扩展（protocol extensions） ，这篇文章介绍...\n\n10. [高仿喜马拉雅项目 - Swift5版本 - 知乎](https://zhuanlan.zhihu.com/p/65824876)\n有需要的同学可以到我的Github[喜马拉雅项目-Swift版本]（lb2281075105/LBXMLYFM-Swift）上面下载哦，喜欢的 希望得到您的star哦，谢谢您们！ #####...\n\n11. [Github上有哪些值得入门的swift项目?_知乎](https://www.zhihu.com/question/36050599)\n8 推荐一个 Swift 做的 Http Server,功能还是很简单的,但是我觉得入门刚刚好,也可以跟着深入的去理解一下 Socket.这里:izqui/Taylor · GitHub当然,如...更多\n\n12. [《HelloGitHub》第 14 期_知乎](https://zhuanlan.zhihu.com/p/51316468)\n兴趣是最好的老师,HelloGitHub 就是帮你找到兴趣!简介分享 GitHub 上有趣、入门级的开源项目.这是一个面向编程新手、热爱编程、对开源社区感兴趣 ...\n\n13. [请教如何修改github上仓库的项目语言?_知乎](https://www.zhihu.com/question/47249333/answer/129215637)\n27 遇到类似问题.问题原因: github 是根据项目里文件数目最多的文件类型,识别项目类型.这个够傻.解决办法:项目根目录添加 .gitattributes 文件, 内容如下 :...更多\n\n14. [python爬虫之mechanicalsoup:官方也有两个坑_知乎](https://zhuanlan.zhihu.com/p/29253204)\n2 Mechanize模块可以通过用户名和密码登录网页,但是只能在Python2.7版本中... 通过查阅github的mechanicalsoup主页,安装mechanicalsoup:pip install ...\n\n15. [GitHub 上都有哪些值得关注学习的 iOS 开源项目?_知乎](https://www.zhihu.com/question/22914651/answer/119064937)\n4 厚颜推荐一个自己的项目:LearnSwift,链接:github.com/cjiong/Learn这是受到30daysofswift启发做的,项目一共有50个swift小程序,学习swift的同学有兴趣...更多\n\n16. [Xcode 9 新功能_知乎](https://zhuanlan.zhihu.com/p/28880971)\n52 Swift 4Xcode 9 同时支持 Swift 3.2和 Swift 4.0,可以在 “Swift Language ... 导航栏,您可以轻松查看不同 tags 和 branch 的代码.Xcode 9 与 GitHub 结合....\n\n17. [请问swiftul会火起来吗…?_知乎](https://www.zhihu.com/question/327878567/answer/708145345)\nA. Swiftul 在 GitHub 及 Bing 上无法搜索到任何相关结果.B. 几乎无人回答此问题.C. 我不知道他是什么东西,但是以上两点.\n\n18. [Swift 开源项目精选导图_知乎](https://zhuanlan.zhihu.com/p/50329837)\n导图分类规则尽可能遵循苹果开发者文档(对应关系仅做参考),试图与官方... 对于 Swift 新手欢迎关注文档Swift 学习指引以及 GitHub: ipader/SwiftGuide(13k+...\n\n19. [不使用if else过滤,用BeautifulSoup怎么一次find符合两种特征的..._知乎](https://www.zhihu.com/question/27725555/answer/37839339)\n1 广告一下自己的轮子: XML Stream github.com/arrowrowe/xmimport xml_stream for node in xml_stream.XMLTree('...').process(selector='dd.string1, dd.string2'...更多\n\n20. [如何评价 SwiftUI?_知乎](https://www.zhihu.com/question/327763737/answer/706171218)\n90 刚刚结束的苹果 WWDC 推出了一个对于开发者非常重要的框架:SwiftUI.... 感受一下 SwiftUI 的代码风格Github 一个 repo 整理了在 WWDC 2019 发布的 ...更多\n\n21. [如何在github首页显示知乎点赞数_知乎](https://zhuanlan.zhihu.com/p/270269932)\n6 先看效果特点:页面展示 可以设置每分钟/每小时/每天更新一次原理GitHub 可以设置一个同名库,这个库的 `README.md` 会自动显示到首页上GitHub action...\n\n22. [开源月刊「HelloGitHub」第76期-知乎](https://zhuanlan.zhihu.com/p/546998977)\nPython、Java、Go、C/C++、Swift...让你在短时间内感受到开源的魅力，对... 和GitHub Action，实现提交代码时自动检测，通过告警和阻止 push 等方式，...\n\n23. [如何解决百度爬虫无法爬取搭建在Github上的个人博客的问题?_知乎](https://www.zhihu.com/question/30898326/answer/155853364)\n6 以前试了各种手段都无法推送,在百度后台看到爬虫被Github阻止,于是放弃.前段时间无意中发现百度居然收录了我博客的最新文章:以后可以继续使用脚...更多\n\n24. [GitHub 上有哪些优秀的 Python 爬虫项目?_知乎](https://www.zhihu.com/question/58151047/answer/1073284219)\n11 综述类项目与学习资料首先给大家介绍一些非常优秀的综述和学习类项目,方便大家快速索引找到所需要的资源.1.、Anti-Anti-Spider地址:github.com/...更多\n\n25. [来用SwiftUI编写真正的APP_知乎](https://zhuanlan.zhihu.com/p/446058472)\n2 SwiftUI 是一个声明式的基于组件的框架.你需要完全忘记曾经的 MVC 概念—... 我们将编写一个能够查找 Github repos 的 APP.它有一个界面,会拥有一个文...",
+        "title": "Web search: SwiftSoup GitHub"
+      },
+      "uniqueURLCount": 25,
+      "firstExpectedRank": null
+    },
+    {
+      "name": "freshness",
+      "query": "苹果 发布会",
+      "transport": "automatic",
+      "options": [
+        "--time",
+        "month"
+      ],
+      "elapsedSeconds": 1.4966517909779213,
+      "expectedURLContains": "apple.com",
+      "response": {
+        "metadata": {
+          "networkBoundary": "sogou-only",
+          "query": "苹果 发布会",
+          "resultCount": 10
+        },
+        "output": "1. [下周关注丨8月CPI将公布,苹果发新品,限售股解禁超849亿|中国国际...](https://k.sina.com.cn/article_5953466437_162dab0450670bbkj6.html?from=finance)\n苹果将于9月9日在加州库比蒂诺总部举办秋季新品发布会，宣传标语为“Surprise and shine（亮新篇，来耀眼）”。分析师预计将推出新款iPhone 18 Pro/...\n\n2. [主打隐私保护:消息称苹果首款 AI 家用安防摄像头瞄准 2027 年发布_...](https://finance.sina.com.cn/tech/digi/2026-09-05/doc-iniqtnha0562901.shtml)\nIT之家 9 月5日消息，彭博社的马克 · 古尔曼（Mark Gurman）昨日（9 月4日）发布博文，爆料称苹果公司可能会在 2027 年推出家庭安防系统及配套监控...\n\n3. [苹果发布会前瞻:折叠屏iPhone来了,这一次真能带来惊喜吗?](http://mp.weixin.qq.com/count/oIWsFt09ZJ9eXVO90iHkxsjijcuc/2247485603/1&scene=6)\n科技值得了解北京时间9月10日凌晨2点,苹果新一年的秋季发布会将正式举行.苹果为这场发布会准备的主题是“Surpriseandshine”.从字面上看,它像是在暗示某种闪耀的新设计,也像是在主动抛出一个久违的关键词——惊喜....\n\n4. [苹果发布会在即 新CEO首秀携首款折叠iPhone将登场？-新闻中心-苹果...](https://news.cheaa.com/2026/0909/658417.shtml)\n本次发布会是新任CEO约翰·特努斯上任后的首场重磅活动，备受全球行业与消费者关注，其中苹果首款折叠屏iPhone成为最大核心看点。 作为苹果近年最重要的硬件...\n\n5. [苹果9月9日发布会iPhone系列产品曝光：iPhone 18 标准版确认延期](https://c.m.163.com/news/a/L64UTSRB0550A7YJ.html?spss=backflow-index-hotlist)\n助您预判苹果发布会亮点。 折叠屏 iPhone Ultra 或将问世 多年研发后，苹果折叠屏手机有望在今年以“iPhone Ultra”之名发布。泄露信息显示，该机采用类似三星 Galaxy Z ...\n\n6. [苹果即将发布三款新iPhone 但是预计价格全线大涨](https://c.m.163.com/news/a/L69FO6G2051191D6.html?spss=backflow-index-hotlist)\n【CNMO科技消息】据CNMO科技了解，苹果年度9月发布会将于本周三举行，届时将有三款新iPhone同时亮相，分别为iPhone 18 Pro、iPhone 18 Pro Max以及苹果旗下首款...\n\n7. [苹果发布会前瞻：折叠式iPhone起售价或2000美元 将成史上最贵_财经...](https://finance.stockstar.com/IG2026090800017565.shtml)\n苹果将于美国时间9月9日在库比蒂诺史蒂夫·乔布斯剧院举行秋季发布会，市场预期发布iPhone 18 Pro及折叠式iPhone，业界估算起售价约2000美元，或成史上最贵，华为、小米...\n\n8. [...三星|余承东|小米|旗舰新品发布会|智能手机|苹果公司|雷军_手机网易网](https://3g.163.com/news/article/L6BUA6NJ051188EA.html)\n苹果发布会是科技行业流量最集中的事件。从新CEO约翰·特努斯（John Ternus）上台那一刻起，全球科技媒体的头条就已经预定了位置，所有讨论都会围绕苹果...\n\n9. [iPhone 18 Pro 发布会前夕,苹果推送 140W USB-C 适配器固件更新 - ...](https://www.ithome.com/0/999/969.htm)\n在iPhone 18 Pro 系列发布会前夕，苹果向 140W USB-C 电源适配器（点此前往苹果官网选购，售价 729 元）推送固件更新，从v1.4.84 升级到 v1.4.90 版本。\n\n10. [赶在苹果发布会之前！华为小米同一天发布折叠手机,小米18 Fold售...](https://new.qq.com/rain/a/20260907V0CVCL00)\n赶在苹果发布会之前！华为小米同一天发布折叠手机，小米18 Fold售价10999起，华为最新三折叠售价19999元起，iPhone也即将发布首款折叠机，售价会...",
+        "title": "Web search: 苹果 发布会"
+      },
+      "uniqueURLCount": 10,
+      "firstExpectedRank": null
+    },
+    {
+      "name": "unlikely-query",
+      "query": "\"qzxvnonexistent178891sitecheck\"",
+      "transport": "automatic",
+      "options": [],
+      "elapsedSeconds": 1.3676575839635916,
+      "expectedURLContains": null,
+      "response": {
+        "metadata": {
+          "networkBoundary": "sogou-only",
+          "query": "\"qzxvnonexistent178891sitecheck\"",
+          "resultCount": 8
+        },
+        "output": "1. [ZClient出现Can't connect,check status on site怎么解决?_知乎](https://www.zhihu.com/question/529260355/answer/2452193857)\n封锁IP么换IP呀,科学上网还要教?\n\n2. [这可能是史上最详尽的 SEO 免费分析工具 - 知乎](https://zhuanlan.zhihu.com/p/37758668)\nSEO SiteCheckup 同样能一键导出 SEO 报告，方便与企业主共享和交流信息。透过可视化的数据，即便是小白用户，也能迅速掌握网站 SEO 的有效途径和...\n\n3. [SiteGuru: 找到受众的网站检查工具_知乎](https://zhuanlan.zhihu.com/p/87593576)\n1 SiteGuru独立:Rick van Haasteren开发者背景:,任职于当地一家网络营销... 起初他用Excel电子表格整理了检查列表,但是没人喜欢用.他便逐步把列表上...\n\n4. [某知名500强外企招聘RiskEngineer](http://mp.weixin.qq.com/count/oIWsFtykQJ3nFQctMNnLguVP2ZFY/2247487658/2&scene=6)\nSupporttenantsfit-outdrawingreviewandsitecheck.HandoversupportandfocusonFLS/Securitytrainingissue推荐全额奖金:3000元若您对该职位有兴趣,可通过邮件申请职位.(一步申请:发送CV到CV@jvhunting.com...\n\n5. [python Django 安装以后使用model_知乎](https://zhuanlan.zhihu.com/p/133755824)\nModel1,一个模型,是一个数据信息,包括字段和数据的行为.2,一个模型,是一个类3,一个模型,是一个子类,基类是django.db.models.Model4,模型...\n\n6. [实践过程分享 体验1小时入门AI工程师课程(课程学习..._知乎](https://zhuanlan.zhihu.com/p/393338212)\n转载地址:作者:千江有水千江月活动帖参考资料实践过程分享使用conda新... shuffle=True) File ＂D:\\Develop\\Anaconda3\\envs\\hwms-py37\\lib\\site-packages\\...\n\n7. [我是做日常用品批发的,怎么样提高我的销售量?_知乎](https://www.zhihu.com/question/346793944)\n2 网店还是实体店啊,网店就要多宣传,实体店可以发发传单搞搞活动什么的.\n\n8. [中国的新车车评为何不评三大件?_知乎](https://zhuanlan.zhihu.com/p/470106371)\n1.车辆最重要三大件型号为何很少分析?一上来就说外观内饰好不好看?您不知道审美观因人而异?2.一上车就用拳头比车顶.这都2120年,车评人还像驾校...",
+        "title": "Web search: \"qzxvnonexistent178891sitecheck\""
+      },
+      "uniqueURLCount": 8,
+      "firstExpectedRank": null
+    }
+  ],
+  "finishedAtUTC": "2026-09-09T01:57:56.373252+00:00",
+  "originalImplementationBaseline": {
+    "meanReciprocalRank": 0,
+    "meanResultCount": 0,
+    "networkBoundary": "sogou-only",
+    "p50SearchLatencySeconds": 0.6218069791793823,
+    "p95SearchLatencySeconds": 1.1381990909576416,
+    "queryCount": 10,
+    "results": [
+      {
+        "elapsedSeconds": 1.1381990909576416,
+        "emptySnippetCount": 0,
+        "emptyTitleCount": 0,
+        "expectedURLContains": "github.com/scinfu/SwiftSoup",
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "query": "SwiftSoup GitHub",
+        "resultCount": 0
+      },
+      {
+        "elapsedSeconds": 0.612733006477356,
+        "emptySnippetCount": 0,
+        "emptyTitleCount": 0,
+        "expectedURLContains": "drawthings.ai",
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "query": "Draw Things app",
+        "resultCount": 0
+      },
+      {
+        "elapsedSeconds": 0.6157369613647461,
+        "emptySnippetCount": 0,
+        "emptyTitleCount": 0,
+        "expectedURLContains": "platform.openai.com/docs",
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "query": "OpenAI API docs",
+        "resultCount": 0
+      },
+      {
+        "elapsedSeconds": 0.6244330406188965,
+        "emptySnippetCount": 0,
+        "emptyTitleCount": 0,
+        "expectedURLContains": "developer.apple.com",
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "query": "site:developer.apple.com URLSession Swift",
+        "resultCount": 0
+      },
+      {
+        "elapsedSeconds": 0.6176990270614624,
+        "emptySnippetCount": 0,
+        "emptyTitleCount": 0,
+        "expectedURLContains": "swift.org",
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "query": "site:swift.org PackageDescription",
+        "resultCount": 0
+      },
+      {
+        "elapsedSeconds": 0.6233299970626831,
+        "emptySnippetCount": 0,
+        "emptyTitleCount": 0,
+        "expectedURLContains": "swift.org",
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "query": "latest Swift release",
+        "resultCount": 0
+      },
+      {
+        "elapsedSeconds": 0.6218069791793823,
+        "emptySnippetCount": 0,
+        "emptyTitleCount": 0,
+        "expectedURLContains": "duckduckgo.com",
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "query": "DuckDuckGo search syntax",
+        "resultCount": 0
+      },
+      {
+        "elapsedSeconds": 0.6869950294494629,
+        "emptySnippetCount": 0,
+        "emptyTitleCount": 0,
+        "expectedURLContains": "github.com",
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "query": "\"Swift ArgumentParser\" GitHub",
+        "resultCount": 0
+      },
+      {
+        "elapsedSeconds": 0.6210860013961792,
+        "emptySnippetCount": 0,
+        "emptyTitleCount": 0,
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "query": "filetype:pdf Swift concurrency",
+        "resultCount": 0
+      },
+      {
+        "elapsedSeconds": 0.6113510131835938,
+        "emptySnippetCount": 0,
+        "emptyTitleCount": 0,
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "query": "intitle:SwiftSoup selector",
+        "resultCount": 0
+      }
+    ],
+    "successfulQueryCount": 10
+  },
+  "originalImplementationBaselineNote": "The original implementation reported 10 successful empty responses without validating no-results markup. A separately inspected response was a seccodeForm verification page. These 10 responses must not be counted as validated empty searches.",
+  "earlierCorrectedHTTPBaseline": {
+    "meanReciprocalRank": 0,
+    "meanResultCount": 3,
+    "networkBoundary": "sogou-only",
+    "p50SearchLatencySeconds": 1.4664530754089355,
+    "p95SearchLatencySeconds": 1.6658300161361694,
+    "queryCount": 10,
+    "results": [
+      {
+        "elapsedSeconds": 1.4664530754089355,
+        "emptySnippetCount": 0,
+        "emptyTitleCount": 0,
+        "expectedURLContains": "github.com/scinfu/SwiftSoup",
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "query": "SwiftSoup GitHub",
+        "resultCount": 10
+      },
+      {
+        "elapsedSeconds": 1.1579699516296387,
+        "emptySnippetCount": 0,
+        "emptyTitleCount": 0,
+        "expectedURLContains": "drawthings.ai",
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "query": "Draw Things app",
+        "resultCount": 10
+      },
+      {
+        "elapsedSeconds": 1.6658300161361694,
+        "emptySnippetCount": 1,
+        "emptyTitleCount": 0,
+        "expectedURLContains": "platform.openai.com/docs",
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "query": "OpenAI API docs",
+        "resultCount": 10
+      },
+      {
+        "elapsedSeconds": 0.7657760381698608,
+        "emptySnippetCount": 0,
+        "emptyTitleCount": 0,
+        "error": "Sogou returned an access challenge instead of search results. from https://www.sogou.com/antispider/[parameters omitted]",
+        "expectedURLContains": "developer.apple.com",
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "query": "site:developer.apple.com URLSession Swift",
+        "resultCount": 0
+      },
+      {
+        "elapsedSeconds": 0.6106530427932739,
+        "emptySnippetCount": 0,
+        "emptyTitleCount": 0,
+        "error": "Sogou returned an access challenge instead of search results. from https://www.sogou.com/antispider/[parameters omitted]",
+        "expectedURLContains": "swift.org",
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "query": "site:swift.org PackageDescription",
+        "resultCount": 0
+      },
+      {
+        "elapsedSeconds": 0.6056790351867676,
+        "emptySnippetCount": 0,
+        "emptyTitleCount": 0,
+        "error": "Sogou returned an access challenge instead of search results. from https://www.sogou.com/antispider/[parameters omitted]",
+        "expectedURLContains": "swift.org",
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "query": "latest Swift release",
+        "resultCount": 0
+      },
+      {
+        "elapsedSeconds": 0.6268270015716553,
+        "emptySnippetCount": 0,
+        "emptyTitleCount": 0,
+        "error": "Sogou returned an access challenge instead of search results. from https://www.sogou.com/antispider/[parameters omitted]",
+        "expectedURLContains": "duckduckgo.com",
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "query": "DuckDuckGo search syntax",
+        "resultCount": 0
+      },
+      {
+        "elapsedSeconds": 0.5930969715118408,
+        "emptySnippetCount": 0,
+        "emptyTitleCount": 0,
+        "error": "Sogou returned an access challenge instead of search results. from https://www.sogou.com/antispider/[parameters omitted]",
+        "expectedURLContains": "github.com",
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "query": "\"Swift ArgumentParser\" GitHub",
+        "resultCount": 0
+      },
+      {
+        "elapsedSeconds": 0.621351957321167,
+        "emptySnippetCount": 0,
+        "emptyTitleCount": 0,
+        "error": "Sogou returned an access challenge instead of search results. from https://www.sogou.com/antispider/[parameters omitted]",
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "query": "filetype:pdf Swift concurrency",
+        "resultCount": 0
+      },
+      {
+        "elapsedSeconds": 0.611515998840332,
+        "emptySnippetCount": 0,
+        "emptyTitleCount": 0,
+        "error": "Sogou returned an access challenge instead of search results. from https://www.sogou.com/antispider/[parameters omitted]",
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "query": "intitle:SwiftSoup selector",
+        "resultCount": 0
+      }
+    ],
+    "successfulQueryCount": 3
+  },
+  "earlierCorrectedHTTPBaselineNote": "Before the final batches, corrected HTTP returned 3 nonempty searches and 7 explicit challenges. Observations were sequential at different times, not randomized; do not infer a guaranteed fallback improvement from differences between batches.",
+  "browserVerificationBeforeFinalBatches": {
+    "meanReciprocalRank": 0,
+    "meanResultCount": 6.2,
+    "networkBoundary": "sogou-only",
+    "p50SearchLatencySeconds": 1.8421980142593384,
+    "p95SearchLatencySeconds": 2.406172037124634,
+    "queryCount": 10,
+    "results": [
+      {
+        "elapsedSeconds": 2.406172037124634,
+        "emptySnippetCount": 0,
+        "emptyTitleCount": 0,
+        "expectedURLContains": "github.com/scinfu/SwiftSoup",
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "query": "SwiftSoup GitHub",
+        "resultCount": 10
+      },
+      {
+        "elapsedSeconds": 1.62260103225708,
+        "emptySnippetCount": 0,
+        "emptyTitleCount": 0,
+        "expectedURLContains": "drawthings.ai",
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "query": "Draw Things app",
+        "resultCount": 10
+      },
+      {
+        "elapsedSeconds": 2.1596769094467163,
+        "emptySnippetCount": 1,
+        "emptyTitleCount": 0,
+        "expectedURLContains": "platform.openai.com/docs",
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "query": "OpenAI API docs",
+        "resultCount": 10
+      },
+      {
+        "elapsedSeconds": 0.8003950119018555,
+        "emptySnippetCount": 0,
+        "emptyTitleCount": 0,
+        "expectedURLContains": "developer.apple.com",
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "query": "site:developer.apple.com URLSession Swift",
+        "resultCount": 0
+      },
+      {
+        "elapsedSeconds": 0.7899370193481445,
+        "emptySnippetCount": 0,
+        "emptyTitleCount": 0,
+        "expectedURLContains": "swift.org",
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "query": "site:swift.org PackageDescription",
+        "resultCount": 0
+      },
+      {
+        "elapsedSeconds": 2.3878719806671143,
+        "emptySnippetCount": 0,
+        "emptyTitleCount": 0,
+        "expectedURLContains": "swift.org",
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "query": "latest Swift release",
+        "resultCount": 7
+      },
+      {
+        "elapsedSeconds": 1.9017839431762695,
+        "emptySnippetCount": 0,
+        "emptyTitleCount": 0,
+        "expectedURLContains": "duckduckgo.com",
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "query": "DuckDuckGo search syntax",
+        "resultCount": 9
+      },
+      {
+        "elapsedSeconds": 1.6531959772109985,
+        "emptySnippetCount": 0,
+        "emptyTitleCount": 0,
+        "expectedURLContains": "github.com",
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "query": "\"Swift ArgumentParser\" GitHub",
+        "resultCount": 9
+      },
+      {
+        "elapsedSeconds": 1.0504339933395386,
+        "emptySnippetCount": 0,
+        "emptyTitleCount": 0,
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "query": "filetype:pdf Swift concurrency",
+        "resultCount": 0
+      },
+      {
+        "elapsedSeconds": 1.8421980142593384,
+        "emptySnippetCount": 0,
+        "emptyTitleCount": 0,
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "query": "intitle:SwiftSoup selector",
+        "resultCount": 7
+      }
+    ],
+    "successfulQueryCount": 10
+  },
+  "observations": [
+    "The final built-in corpus produced 10 valid responses and 7 nonempty responses for every transport/batch. All eight expected-site queries missed their expected URL in the returned results (MRR 0).",
+    "The site:developer.apple.com, site:swift.org, and filetype:pdf queries returned explicit no-results responses in the final batches.",
+    "All 21 supplemental requests returned results; pagination returned 25 unique URLs for each transport. Literal-plus and freshness options produced results, but freshness correctness was not independently verified.",
+    "The quoted unlikely query returned eight unrelated results for every transport, so it is not a valid no-results control.",
+    "No supplemental query hit its expected URL substring. DOM inspection of the Palace Museum query found ten vrwrap title blocks matching the returned results, so that observed official-site miss was not caused by skipping another result-container class.",
+    "Manual challenge completion and persistence after successful verification were not exercised live; same-view challenge handling, dismissal, cancellation, timeout, and restart are tested with deterministic WebKit doubles.",
+    "The CLI has no challenge presenter. Persistent verification yields searchBlocked rather than empty success. The Local Code app presents its live web view."
+  ]
+}

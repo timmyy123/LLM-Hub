@@ -1,0 +1,57 @@
+enum LoRATrainableLayer: byte (codable) {
+  LatentsEmbedder,
+  ContextEmbedder,
+  ProjectOut,
+  Qkv,
+  QkvContext,
+  Out,
+  OutContext,
+  FeedForward,
+  FeedForwardContext,
+}
+
+table LoRATrainingConfiguration (codable) {
+  id: long (primary);
+  name: string;
+  start_width: ushort;
+  start_height: ushort;
+  seed: uint;
+  training_steps: uint;
+  base_model: string;
+  network_dim: ushort;
+  network_scale: float;
+  unet_learning_rate: float;
+  save_every_n_steps: uint;
+  warmup_steps: uint;
+  gradient_accumulation_steps: uint;
+  cotrain_text_model: bool;
+  text_model_learning_rate: float;
+  clip_skip: uint = 1;
+  noise_offset: float;
+  denoising_start: float;
+  denoising_end: float;
+  trigger_word: string;
+  auto_fill_prompt: string;
+  auto_captioning: bool;
+  cotrain_custom_embedding: bool;
+  custom_embedding_learning_rate: float = 0.05;
+  custom_embedding_length: uint = 4;
+  stop_embedding_training_at_step: uint = 500;
+  trainable_layers: [LoRATrainableLayer];
+  layer_indices: [uint];
+  shift: float = 1.0;
+  resolution_dependent_shift: bool;
+  guidance_embed_lower_bound: float = 3.0;
+  guidance_embed_upper_bound: float = 4.0;
+  unet_learning_rate_lower_bound: float = 0;
+  steps_between_restarts: uint = 200;
+  caption_dropout_rate: float = 0;
+  orthonormal_lora_down: bool = false;
+  max_text_length: uint = 512;
+  use_image_aspect_ratio: bool = false;
+  additional_scales: [ushort];
+  power_ema_lower_bound: float = 0;
+  power_ema_upper_bound: float = 0;
+}
+
+root_type LoRATrainingConfiguration;

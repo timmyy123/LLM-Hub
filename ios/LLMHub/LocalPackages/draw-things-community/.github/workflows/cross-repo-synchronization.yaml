@@ -1,0 +1,38 @@
+name: cross-repo-synchronization
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          path: main
+
+      - name: Checkout Private
+        uses: actions/checkout@v4
+        with:
+          repository: drawthingsai/draw-things
+          token: ${{ secrets.GHA_BOT_ORG_ACCESS_TOKEN }}
+          path: app
+
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+
+      - name: Generate patch file.
+        run: |
+          cd "${GITHUB_WORKSPACE}/main"
+          python3 Scripts/commit/commit.py
+          if [[ -f custom_patch_with_metadata.patch ]]; then
+            cat custom_patch_with_metadata.patch
+            mv custom_patch_with_metadata.patch ../app
+            cd "${GITHUB_WORKSPACE}/app"
+            python3 ../main/Scripts/commit/apply.py
+            git push
+          fi

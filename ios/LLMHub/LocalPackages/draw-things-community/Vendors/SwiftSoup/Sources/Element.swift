@@ -1,0 +1,3590 @@
+//
+//  Element.swift
+//  SwifSoup
+//
+//  Created by Nabil Chatbi on 29/09/16.
+//
+
+import Foundation
+
+// Selector result cache:
+// - Segmented LRU (probationary/protected) to favor items reused at least twice.
+// - Admission control via a "doorkeeper" (TinyLFU-style) so first-seen items
+//   don't immediately enter the cache and churn it. See Einziger & Friedman 2015.
+@usableFromInline
+final class SelectorResultCache {
+  @usableFromInline
+  final class LRUNode {
+    let key: String
+    var value: Elements
+    var prev: LRUNode?
+    var next: LRUNode?
+
+    init(key: String, value: Elements) {
+      self.key = key
+      self.value = value
+    }
+  }
+
+  @usableFromInline
+  final class LRUMap {
+    let capacity: Int
+    private var nodes: [String: LRUNode] = [:]
+    private var head: LRUNode?
+    private var tail: LRUNode?
+
+    init(capacity: Int) {
+      self.capacity = max(1, capacity)
+    }
+
+    @inline(__always)
+    func contains(_ key: String) -> Bool {
+      return nodes[key] != nil
+    }
+
+    @inline(__always)
+    func get(_ key: String) -> Elements? {
+      guard let node = nodes[key] else { return nil }
+      moveToHead(node)
+      return node.value
+    }
+
+    @inline(__always)
+    func set(_ key: String, _ value: Elements) -> LRUNode? {
+      if let node = nodes[key] {
+        node.value = value
+        moveToHead(node)
+        return nil
+      }
+      let node = LRUNode(key: key, value: value)
+      nodes[key] = node
+      insertAtHead(node)
+      if nodes.count > capacity {
+        return popTail()
+      }
+      return nil
+    }
+
+    @inline(__always)
+    func remove(_ key: String) -> Elements? {
+      guard let node = nodes.removeValue(forKey: key) else { return nil }
+      removeNode(node)
+      return node.value
+    }
+
+    @inline(__always)
+    func popTail() -> LRUNode? {
+      guard let tail else { return nil }
+      removeNode(tail)
+      nodes.removeValue(forKey: tail.key)
+      return tail
+    }
+
+    @inline(__always)
+    func clear() {
+      nodes.removeAll(keepingCapacity: true)
+      head = nil
+      tail = nil
+    }
+
+    @inline(__always)
+    private func insertAtHead(_ node: LRUNode) {
+      node.prev = nil
+      node.next = head
+      if let head {
+        head.prev = node
+      } else {
+        tail = node
+      }
+      head = node
+    }
+
+    @inline(__always)
+    private func moveToHead(_ node: LRUNode) {
+      guard head !== node else { return }
+      removeNode(node)
+      insertAtHead(node)
+    }
+
+    @inline(__always)
+    private func removeNode(_ node: LRUNode) {
+      let prev = node.prev
+      let next = node.next
+      if let prev {
+        prev.next = next
+      } else {
+        head = next
+      }
+      if let next {
+        next.prev = prev
+      } else {
+        tail = prev
+      }
+      node.prev = nil
+      node.next = nil
+    }
+  }
+
+  @usableFromInline
+  let probationary: LRUMap
+  @usableFromInline
+  let protected: LRUMap
+  private let doorkeeperCapacity: Int
+  private var doorkeeper: Set<String> = []
+  private var doorkeeperOrder: [String] = []
+
+  init(capacity: Int) {
+    let protectedCap = max(1, (capacity * 3) / 4)
+    let probationaryCap = max(1, capacity - protectedCap)
+    probationary = LRUMap(capacity: probationaryCap)
+    protected = LRUMap(capacity: protectedCap)
+    doorkeeperCapacity = max(1, capacity)
+    doorkeeper.reserveCapacity(doorkeeperCapacity)
+    doorkeeperOrder.reserveCapacity(doorkeeperCapacity)
+  }
+
+  @inline(__always)
+  func get(_ key: String) -> Elements? {
+    if let value = protected.get(key) {
+      return value
+    }
+    if let value = probationary.remove(key) {
+      if let evicted = protected.set(key, value) {
+        _ = probationary.set(evicted.key, evicted.value)
+      }
+      return value
+    }
+    return nil
+  }
+
+  @inline(__always)
+  func put(_ key: String, _ value: Elements) {
+    if protected.contains(key) {
+      _ = protected.set(key, value)
+      return
+    }
+    if probationary.contains(key) {
+      _ = probationary.set(key, value)
+      return
+    }
+    if doorkeeper.contains(key) {
+      doorkeeper.remove(key)
+      if let idx = doorkeeperOrder.firstIndex(of: key) {
+        doorkeeperOrder.remove(at: idx)
+      }
+      _ = probationary.set(key, value)
+      return
+    }
+    doorkeeper.insert(key)
+    doorkeeperOrder.append(key)
+    if doorkeeperOrder.count > doorkeeperCapacity {
+      let removed = doorkeeperOrder.removeFirst()
+      doorkeeper.remove(removed)
+    }
+  }
+
+  @inline(__always)
+  func clear() {
+    probationary.clear()
+    protected.clear()
+    doorkeeper.removeAll(keepingCapacity: true)
+    doorkeeperOrder.removeAll(keepingCapacity: true)
+  }
+}
+
+// Tracks query-stream locality to detect scan-heavy workloads and bypass caching
+// when unique queries overwhelm the cache and hit rate stays low.
+@usableFromInline
+final class SelectorQueryStats {
+  let windowSize: Int
+  private var queries: [String]
+  private var hits: [UInt8]
+  private var index: Int = 0
+  private var filled: Bool = false
+  private var uniqueCounts: [String: Int] = [:]
+  private var hitCount: Int = 0
+
+  init(windowSize: Int) {
+    self.windowSize = max(1, windowSize)
+    self.queries = Array(repeating: "", count: self.windowSize)
+    self.hits = Array(repeating: 0, count: self.windowSize)
+    self.uniqueCounts.reserveCapacity(self.windowSize)
+  }
+
+  @inline(__always)
+  func record(_ query: String, hit: Bool) {
+    if filled {
+      let oldQuery = queries[index]
+      let oldHit = hits[index]
+      if oldHit != 0 {
+        hitCount &-= 1
+      }
+      if let count = uniqueCounts[oldQuery] {
+        if count <= 1 {
+          uniqueCounts.removeValue(forKey: oldQuery)
+        } else {
+          uniqueCounts[oldQuery] = count - 1
+        }
+      }
+    }
+    queries[index] = query
+    let hitByte: UInt8 = hit ? 1 : 0
+    hits[index] = hitByte
+    if hitByte != 0 {
+      hitCount &+= 1
+    }
+    uniqueCounts[query, default: 0] &+= 1
+    index &+= 1
+    if index >= windowSize {
+      index = 0
+      filled = true
+    }
+  }
+
+  @inline(__always)
+  func totalCount() -> Int {
+    return filled ? windowSize : index
+  }
+
+  @inline(__always)
+  func uniqueCount() -> Int {
+    return uniqueCounts.count
+  }
+
+  @inline(__always)
+  func hitsInWindow() -> Int {
+    return hitCount
+  }
+
+  @inline(__always)
+  func reset() {
+    uniqueCounts.removeAll(keepingCapacity: true)
+    hitCount = 0
+    index = 0
+    filled = false
+  }
+}
+
+open class Element: Node {
+  var _tag: Tag
+
+  @usableFromInline
+  internal static let classString = "class".utf8Array
+  private static let emptyString = "".utf8Array
+  @usableFromInline
+  internal static let idString = "id".utf8Array
+  private static let rootString = "#root".utf8Array
+  /// Build per-key attribute value indexes on-demand to accelerate repeated attribute selectors.
+  @usableFromInline
+  internal static let dynamicAttributeValueIndexMaxKeys: Int = 8
+  @usableFromInline
+  internal static let hotAttributeIndexKeys: Set<ByteSlice> = Set(
+    [
+      "href".utf8Array,
+      "src".utf8Array,
+      "srcset".utf8Array,
+      "data-src".utf8Array,
+      "data-srcset".utf8Array,
+      "data-original".utf8Array,
+      "data-lazy-src".utf8Array,
+      "data-lazy-srcset".utf8Array,
+      "rel".utf8Array,
+      "itemtype".utf8Array,
+      "itemprop".utf8Array,
+      "property".utf8Array,
+      "name".utf8Array,
+      "content".utf8Array,
+      "role".utf8Array,
+      "aria-hidden".utf8Array,
+      "type".utf8Array,
+      "charset".utf8Array,
+    ].map { ByteSlice.fromArray($0.lowercased()) })
+
+  /// Lazily-built tag → elements index (normalized lowercase UTF‑8 keys), invalidated on mutations.
+  /// Optimizes hot tag selectors while preserving document order.
+  @usableFromInline
+  internal var normalizedTagNameIndex: [ByteSlice: [Weak<Element>]]? = nil
+  @usableFromInline
+  internal var isTagQueryIndexDirty: Bool = false
+
+  /// Lazily-built class → elements index (normalized lowercase UTF‑8 keys).
+  /// Rebuilt on class/DOM mutations to avoid stale results.
+  @usableFromInline
+  internal var normalizedClassNameIndex: [ByteSlice: [Weak<Element>]]? = nil
+  @usableFromInline
+  internal var isClassQueryIndexDirty: Bool = false
+
+  /// Lazily-built id → elements index (id is case‑insensitive per HTML matching).
+  /// Multiple matches are preserved for non‑unique IDs; order is document order.
+  @usableFromInline
+  internal var normalizedIdIndex: [ByteSlice: [Weak<Element>]]? = nil
+  @usableFromInline
+  internal var isIdQueryIndexDirty: Bool = false
+
+  /// Lazily-built attribute-name → elements index (normalized lowercase UTF‑8 keys).
+  /// Keeps full scan out of attribute‑heavy selectors like [href], [data-*].
+  @usableFromInline
+  internal var normalizedAttributeNameIndex: [ByteSlice: [Weak<Element>]]? = nil
+  @usableFromInline
+  internal var isAttributeQueryIndexDirty: Bool = false
+
+  /// Lazily-built attribute-name → (value → elements) index for a curated hot list.
+  /// Focused to avoid index build cost dwarfing selector savings.
+  @usableFromInline
+  internal var normalizedAttributeValueIndex: [ByteSlice: [ByteSlice: [Weak<Element>]]]? = nil
+  @usableFromInline
+  internal var isAttributeValueQueryIndexDirty: Bool = false
+  /// Tracks dynamically indexed attribute keys (in insertion order) for bounded caching.
+  @usableFromInline
+  internal var dynamicAttributeValueIndexKeySet: Set<ByteSlice>? = nil
+  @usableFromInline
+  internal var dynamicAttributeValueIndexKeyOrder: [ByteSlice]? = nil
+  @usableFromInline
+  internal var suppressQueryIndexDirty: Bool = false
+
+  /// Small SLRU cache for selector results on this root, invalidated on mutations.
+  @usableFromInline
+  internal static let selectorResultCacheCapacity: Int = 256
+  @usableFromInline
+  internal static let selectorResultCacheScanWindowMultiplier: Int = 2
+  @usableFromInline
+  internal static let selectorResultCacheScanUniqueThresholdNumerator: Int = 3
+  @usableFromInline
+  internal static let selectorResultCacheScanUniqueThresholdDenominator: Int = 2
+  @usableFromInline
+  internal static let selectorResultCacheScanHitRatePermille: Int = 20  // 2%
+  @usableFromInline
+  internal var selectorResultCache: SelectorResultCache? = nil
+  @usableFromInline
+  internal var selectorResultTextVersion: Int = 0
+  @usableFromInline
+  internal var selectorCacheBypassRemaining: Int = 0
+  @usableFromInline
+  internal var selectorQueryStats: SelectorQueryStats? = nil
+  @usableFromInline
+  internal weak var selectorResultCacheRoot: Node? = nil
+
+  /// Cached normalized text (UTF‑8) for trim+normalize path.
+  /// NOTE: Removed text cache; keep no per-node cache state here.
+
+  /**
+     Create a new, standalone Element. (Standalone in that is has no parent.)
+
+     - parameter tag: tag of this element
+     - parameter baseUri: the base URI
+     - parameter attributes: initial attributes
+     - parameter skipChildReserve: Whether to skip reserving space for children in advance.
+     - seealso: ``appendChild(_:)``, ``appendElement(_:)``
+     */
+  public convenience init(
+    _ tag: Tag, _ baseUri: String, _ attributes: Attributes, skipChildReserve: Bool = false
+  ) {
+    self.init(tag, baseUri.utf8Array, attributes, skipChildReserve: skipChildReserve)
+    attributes.ownerElement = self
+  }
+
+  public init(
+    _ tag: Tag, _ baseUri: [UInt8], _ attributes: Attributes, skipChildReserve: Bool = false
+  ) {
+    self._tag = tag
+    super.init(baseUri, attributes: attributes, skipChildReserve: skipChildReserve)
+    attributes.ownerElement = self
+  }
+  /**
+     Create a new Element from a tag and a base URI.
+
+     - parameter tag: element tag
+     - parameter baseUri: the base URI of this element. It is acceptable for the base URI to be an empty
+       string, but not `nil`.
+     - parameter skipChildReserve: Whether to skip reserving space for children in advance.
+     - seealso: ``Tag/valueOf(_:_:)-(String,ParseSettings)``
+     */
+  public convenience init(_ tag: Tag, _ baseUri: String, skipChildReserve: Bool = false) {
+    self.init(tag, baseUri.utf8Array, skipChildReserve: skipChildReserve)
+    attributes?.ownerElement = self
+  }
+
+  public init(_ tag: Tag, _ baseUri: [UInt8], skipChildReserve: Bool = false) {
+    self._tag = tag
+    super.init(baseUri, attributes: nil, skipChildReserve: skipChildReserve)
+  }
+
+  public override func nodeNameUTF8() -> [UInt8] {
+    return _tag.getNameUTF8()
+  }
+
+  public override func nodeName() -> String {
+    return _tag.getName()
+  }
+  /**
+     Get the name of the tag for this element. E.g. `div`.
+
+     - returns: the tag name
+     */
+  open func tagNameUTF8() -> [UInt8] {
+    return _tag.getNameUTF8()
+  }
+  open func tagNameNormalUTF8() -> [UInt8] {
+    return _tag.getNameNormalUTF8()
+  }
+  open func tagName() -> String {
+    return _tag.getName()
+  }
+  open func tagNameNormal() -> String {
+    return _tag.getNameNormal()
+  }
+
+  @usableFromInline
+  @inline(__always)
+  internal func tagNameNormalSlice() -> ByteSlice {
+    return _tag.getNameNormalSlice()
+  }
+
+  /**
+     Change the tag of this element. For example, convert a `<span>` to a `<div>` with
+     `el.tagName("div")`.
+
+     - parameter tagName: new tag name for this element
+     - returns: this element, for chaining
+     */
+  @discardableResult
+  public func tagName(_ tagName: [UInt8]) throws -> Element {
+    try Validate.notEmpty(string: tagName, msg: "Tag name must not be empty.")
+    _tag = try Tag.valueOf(tagName, ParseSettings.preserveCase)  // preserve the requested tag case
+    markTagQueryIndexDirty()
+    bumpTextMutationVersion()
+    markSourceDirty()
+    return self
+  }
+
+  @discardableResult
+  public func tagName(_ tagName: String) throws -> Element {
+    return try self.tagName(tagName.utf8Array)
+  }
+
+  /**
+     Get the Tag for this element.
+
+     - returns: the tag object
+     */
+  open func tag() -> Tag {
+    return _tag
+  }
+
+  /**
+     Test if this element is a block-level element. (E.g. `<div> == true` or an inline element
+     `<p> == false`).
+
+     - returns: true if block, false if not (and thus inline)
+     */
+  open func isBlock() -> Bool {
+    return _tag.isBlock()
+  }
+
+  /// Test if this element has child nodes.
+  open func isEmpty() -> Bool {
+    return childNodes.isEmpty
+  }
+
+  /**
+     Get the `id` attribute of this element.
+
+     - returns: The id attribute, if present, or an empty string if not.
+     */
+  open func id() -> String {
+    guard let attributes else { return "" }
+    do {
+      return try String(
+        decoding: attributes.getIgnoreCaseSlice(key: Element.idString), as: UTF8.self)
+    } catch {}
+    return ""
+  }
+
+  @inline(__always)
+  open func idUTF8() -> [UInt8] {
+    guard let attributes else { return [] }
+    do {
+      return try attributes.getIgnoreCaseSlice(key: Element.idString).toArray()
+    } catch {}
+    return []
+  }
+
+  // attribute fiddling. create on first access.
+  @inline(__always)
+  private func ensureAttributes() -> Attributes {
+    if let attributes {
+      return attributes
+    }
+    let created = Attributes()
+    created.ownerElement = self
+    attributes = created
+    return created
+  }
+
+  @inline(__always)
+  open override func getAttributes() -> Attributes? {
+    return ensureAttributes()
+  }
+
+  @inline(__always)
+  open override func attr(_ attributeKey: [UInt8]) throws -> [UInt8] {
+    guard attributes != nil else {
+      if Element.isAbsAttributeKey(attributeKey) {
+        return try absUrl(attributeKey.substring(UTF8Arrays.absPrefix.count))
+      }
+      return []
+    }
+    return try super.attr(attributeKey)
+  }
+
+  @inline(__always)
+  internal func attrSlice(_ attributeKey: [UInt8]) -> ByteSlice? {
+    guard let attributes else { return nil }
+    if Element.isAbsAttributeKey(attributeKey) {
+      return nil
+    }
+    return attributes.valueSliceCaseSensitive(attributeKey)
+  }
+
+  @usableFromInline
+  @inline(__always)
+  static func isAbsAttributeKey(_ attributeKey: [UInt8]) -> Bool {
+    if attributeKey.count < UTF8Arrays.absPrefix.count {
+      return false
+    }
+    @inline(__always)
+    func lowerAscii(_ b: UInt8) -> UInt8 {
+      return (b >= 65 && b <= 90) ? (b &+ 32) : b
+    }
+    return lowerAscii(attributeKey[0]) == UTF8Arrays.absPrefix[0]
+      && lowerAscii(attributeKey[1]) == UTF8Arrays.absPrefix[1]
+      && lowerAscii(attributeKey[2]) == UTF8Arrays.absPrefix[2]
+      && attributeKey[3] == UTF8Arrays.absPrefix[3]
+  }
+
+  @inline(__always)
+  open override func attr(_ attributeKey: String) throws -> String {
+    if let lookup = UTF8Arrays.attributeLookup[attributeKey] {
+      return try String(decoding: attr(lookup), as: UTF8.self)
+    }
+    return try String(decoding: attr(attributeKey.utf8Array), as: UTF8.self)
+  }
+
+  /**
+     Set an attribute value on this element. If this element already has an attribute with the
+     key, its value is updated; otherwise, a new attribute is added.
+
+     - returns: this element
+     */
+  @discardableResult
+  @inline(__always)
+  open override func attr(_ attributeKey: [UInt8], _ attributeValue: [UInt8]) throws -> Element {
+    _ = ensureAttributes()
+    try super.attr(attributeKey, attributeValue)
+    return self
+  }
+
+  /**
+     Set an attribute value on this element. If this element already has an attribute with the
+     key, its value is updated; otherwise, a new attribute is added.
+
+     - returns: this element
+     */
+  @discardableResult
+  @inline(__always)
+  open override func attr(_ attributeKey: String, _ attributeValue: String) throws -> Element {
+    _ = ensureAttributes()
+    if let lookup = UTF8Arrays.attributeLookup[attributeKey] {
+      try super.attr(lookup, attributeValue.utf8Array)
+      return self
+    }
+    try super.attr(attributeKey.utf8Array, attributeValue.utf8Array)
+    return self
+  }
+
+  /**
+     Set a boolean attribute value on this element. Setting to `e` sets the attribute value to "" and
+     marks the attribute as boolean so no value is written out. Setting to `e` removes the attribute
+     with the same key if it exists.
+
+     - parameter attributeKey: the attribute key
+     - parameter attributeValue: the attribute value
+
+     - returns: this element
+     */
+  @discardableResult
+  @inline(__always)
+  open func attr(_ attributeKey: [UInt8], _ attributeValue: Bool) throws -> Element {
+    _ = ensureAttributes()
+    try attributes?.put(attributeKey, attributeValue)
+    markSourceDirty()
+    return self
+  }
+
+  /**
+     Set a boolean attribute value on this element. Setting to `e` sets the attribute value to "" and
+     marks the attribute as boolean so no value is written out. Setting to `e` removes the attribute
+     with the same key if it exists.
+
+     - parameter attributeKey: the attribute key
+     - parameter attributeValue: the attribute value
+
+     - returns: this element
+     */
+  @discardableResult
+  @inline(__always)
+  open func attr(_ attributeKey: String, _ attributeValue: Bool) throws -> Element {
+    _ = ensureAttributes()
+    if let lookup = UTF8Arrays.attributeLookup[attributeKey] {
+      try attributes?.put(lookup, attributeValue)
+      markSourceDirty()
+      return self
+    }
+    try attributes?.put(attributeKey.utf8Array, attributeValue)
+    markSourceDirty()
+    return self
+  }
+
+  /**
+     Get this element's HTML5 custom data attributes. Each attribute in the element that has a key
+     starting with "data-" is included the dataset.
+
+     E.g., the element `<div data-package="SwiftSoup" data-language="Java" class="group">...` has the dataset
+     `package=SwiftSoup, language=java`.
+
+     This map is a filtered view of the element's attribute map. Changes to one map (add, remove, update) are reflected
+     in the other map.
+
+     You can find elements that have data attributes using the `[^data-]` attribute key prefix selector.
+
+     - returns: a map of `key=value` custom data attributes.
+     */
+  @inline(__always)
+  open func dataset() -> [String: String] {
+    return ensureAttributes().dataset()
+  }
+
+  @inline(__always)
+  open override func parent() -> Element? {
+    return parentNode as? Element
+  }
+
+  /**
+     Get this element's parent and ancestors, up to the document root.
+     - returns: this element's stack of parents, closest first.
+     */
+  @inline(__always)
+  open func parents() -> Elements {
+    let parents: Elements = Elements()
+    Element.accumulateParents(self, parents)
+    return parents
+  }
+
+  @inline(__always)
+  private static func accumulateParents(_ el: Element, _ parents: Elements) {
+    let parent: Element? = el.parent()
+    if parent != nil && !(parent!.tagNameUTF8() == Element.rootString) {
+      parents.add(parent!)
+      accumulateParents(parent!, parents)
+    }
+  }
+
+  /**
+     Get a child element of this element, by its 0-based index number.
+
+     Note that an element can have both mixed Nodes and Elements as children. This method inspects
+     a filtered list of children that are elements, and the index is based on that filtered list.
+
+     - parameter index: the index number of the element to retrieve
+     - returns: the child element
+     - seealso: ``Node/childNode(_:)``
+     - warning: Crashes if the index is out of bounds!
+     */
+  @inline(__always)
+  open func child(_ index: Int) -> Element {
+    return children().get(index)
+  }
+
+  /**
+     Get this element's child elements.
+
+     This is effectively a filter on `childNodes` to get Element nodes.
+
+     - returns: child elements. If this element has no children, returns an
+       empty list.
+     */
+  @inline(__always)
+  open func children() -> Elements {
+    // create on the fly rather than maintaining two lists. if gets slow, memoize, and mark dirty on change
+    return Elements(childNodes.lazy.compactMap { $0 as? Element })
+  }
+
+  /**
+     Get this element's child text nodes. The list is unmodifiable but the text nodes may be manipulated.
+
+     This is effectively a filter on `childNodes` to get Text nodes.
+
+     For example, with the input HTML: `<p>One <span>Two</span> Three <br> Four</p>` with the `p` element selected:
+     * `p.text()` = `"One Two Three Four"`
+     * `p.ownText()` = `"One Three Four"`
+     * `p.children()` = `Elements[<span>, <br>]`
+     * `p.childNodes()` = `List<Node>["One ", <span>, " Three ", <br>, " Four"]`
+     * `p.textNodes()` = `List<TextNode>["One ", " Three ", " Four"]`
+
+     - returns: child text nodes. If this element has no text nodes, returns an
+       empty list.
+     */
+  @inline(__always)
+  open func textNodes() -> [TextNode] {
+    return childNodes.compactMap { $0 as? TextNode }
+  }
+
+  /**
+     Get this element's child data nodes. The list is unmodifiable but the data nodes may be manipulated.
+
+     This is effectively a filter on `childNodes` to get Data nodes.
+
+     - returns: child data nodes. If this element has no data nodes, returns an
+       empty list.
+     - seealso: ``data()``
+     */
+  @inline(__always)
+  open func dataNodes() -> [DataNode] {
+    return childNodes.compactMap { $0 as? DataNode }
+  }
+
+  /**
+     Find elements that match the ``CssSelector`` CSS query, with this element as the starting context. Matched elements
+     may include this element, or any of its children.
+
+     This method is generally more powerful to use than the DOM-type `getElementBy*` methods, because
+     multiple filters can be combined, e.g.:
+
+     * `el.select("a[href]")` - finds links (`a` tags with `href` attributes)
+     * `el.select("a[href*=example.com]")` - finds links pointing to example.com (loosely)
+
+     See the query syntax documentation in ``CssSelector``.
+
+     - parameter cssQuery: a ``CssSelector`` CSS-like query
+     - returns: elements that match the query (empty if none match)
+     - throws ``Exception`` with ``ExceptionType/SelectorParseException`` (unchecked) on an invalid CSS query.
+     */
+  @inline(__always)
+  public func select(_ cssQuery: String) throws -> Elements {
+    return try CssSelector.select(cssQuery, self)
+  }
+
+  /**
+     Find elements that match the ``Evaluator`` with a ``CssSelector`` query, with this element as the starting context.
+     Matched elements may include this element, or any of its children.
+
+     This method is more efficient for repeated queries since it avoids repeated query parsing.
+
+     - parameter evaluator: a ``Evaluator`` to use for the query
+     - returns: elements that match the query (empty if none match)
+     - seealso: ``QueryParser``
+     */
+  @inline(__always)
+  public func select(_ evaluator: Evaluator) throws -> Elements {
+    return try CssSelector.select(evaluator, self)
+  }
+
+  /**
+     Check if this element matches the given ``CssSelector`` CSS query.
+     - parameter cssQuery: a ``CssSelector`` CSS query
+     - returns: if this element matches the query
+     */
+  @inline(__always)
+  public func iS(_ cssQuery: String) throws -> Bool {
+    return try iS(QueryParser.parse(cssQuery))
+  }
+
+  /**
+     Check if this element matches the given ``Evaluator``.
+     - parameter evaluator: a query evaluator
+     - returns: if this element matches the query
+     - seealso: ``QueryParser``
+     */
+  @inline(__always)
+  public func iS(_ evaluator: Evaluator) throws -> Bool {
+    guard let od = self.ownerDocument() else {
+      return false
+    }
+    return try evaluator.matches(od, self)
+  }
+
+  /**
+     Add a node child node to this element.
+
+     - parameter child: node to add.
+     - returns: this element, so that you can add more child nodes or elements.
+     */
+  @discardableResult
+  @inline(__always)
+  public func appendChild(_ child: Node) throws -> Element {
+    // was - Node#addChildren(child). short-circuits an array create and a loop.
+    let isBulkBuilding = treeBuilder?.isBulkBuilding == true
+    if isBulkBuilding, child.parentNode == nil {
+      // Fast path for parser-owned nodes during bulk build.
+      child.treeBuilder = treeBuilder
+      child.parentNode = self
+    } else {
+      try reparentChild(child)
+    }
+    childNodes.append(child)
+    child.setSiblingIndex(childNodes.count - 1)
+    if !isBulkBuilding {
+      child.markSourceDirty()
+      markSourceDirty()
+    }
+    return self
+  }
+
+  /**
+     Add a node to the start of this element's children.
+
+     - parameter child: node to add.
+     - returns: this element, so that you can add more child nodes or elements.
+     */
+  @discardableResult
+  @inline(__always)
+  public func prependChild(_ child: Node) throws -> Element {
+    try addChildren(0, child)
+    return self
+  }
+
+  /**
+     Inserts the given child nodes into this element at the specified index. Current nodes will be shifted to the
+     right. The inserted nodes will be moved from their current parent. To prevent moving, copy the nodes first.
+
+     - parameter index: 0-based index to insert children at. Specify `0` to insert at the start, `-1` at the
+       end
+     - parameter children: child nodes to insert
+     - returns: this element, for chaining.
+     */
+  @discardableResult
+  @inline(__always)
+  public func insertChildren(_ index: Int, _ children: [Node]) throws -> Element {
+    //Validate.notNull(children, "Children collection to be inserted must not be null.")
+    var index = index
+    let currentSize: Int = childNodeSize()
+    if index < 0 { index += currentSize + 1 }  // roll around
+    try Validate.isTrue(
+      val: index >= 0 && index <= currentSize, msg: "Insert position out of bounds.")
+
+    try addChildren(index, children)
+    return self
+  }
+
+  /**
+     Create a new element by tag name, and add it as the last child.
+
+     - parameter tagName: the name of the tag (e.g. `div`).
+     - returns: the new element, to allow you to add content to it, e.g.:
+       `parent.appendElement("h1").attr("id", "header").text("Welcome")`
+     */
+  @discardableResult
+  @inline(__always)
+  public func appendElement(_ tagName: String) throws -> Element {
+    return try appendElement(tagName.utf8Array)
+  }
+
+  @discardableResult
+  @inline(__always)
+  internal func appendElement(_ tagName: [UInt8]) throws -> Element {
+    let child: Element = Element(try Tag.valueOf(tagName), getBaseUriUTF8())
+    if let treeBuilder {
+      child.treeBuilder = treeBuilder
+    }
+    try appendChild(child)
+    return child
+  }
+
+  /**
+     Create a new element by tag name, and add it as the first child.
+
+     - parameter tagName: the name of the tag (e.g. `div`).
+     - returns: the new element, to allow you to add content to it, e.g.:
+       `parent.prependElement("h1").attr("id", "header").text("Welcome")`
+     */
+  @discardableResult
+  @inline(__always)
+  public func prependElement(_ tagName: String) throws -> Element {
+    return try prependElement(tagName.utf8Array)
+  }
+
+  @discardableResult
+  @inline(__always)
+  internal func prependElement(_ tagName: [UInt8]) throws -> Element {
+    let child: Element = Element(try Tag.valueOf(tagName), getBaseUriUTF8())
+    if let treeBuilder {
+      child.treeBuilder = treeBuilder
+    }
+    try prependChild(child)
+    return child
+  }
+
+  /**
+     Create and append a new TextNode to this element.
+
+     - parameter text: the unencoded text to add
+     - returns: this element
+     */
+  @discardableResult
+  @inline(__always)
+  public func appendText(_ text: String) throws -> Element {
+    let node: TextNode = TextNode(text.utf8Array, getBaseUriUTF8())
+    try appendChild(node)
+    return self
+  }
+
+  /**
+     Create and prepend a new TextNode to this element.
+
+     - parameter text: the unencoded text to add
+     - returns: this element
+     */
+  @discardableResult
+  public func prependText(_ text: String) throws -> Element {
+    let node: TextNode = TextNode(text.utf8Array, getBaseUriUTF8())
+    try prependChild(node)
+    return self
+  }
+
+  /**
+     Add inner HTML to this element. The supplied HTML will be parsed, and each node appended to the end of the children.
+     - parameter html: HTML to add inside this element, after the existing HTML
+     - returns: this element
+     - seealso: ``html(_:)-(String)``
+     */
+  @discardableResult
+  @inline(__always)
+  public func append(_ html: String) throws -> Element {
+    let nodes: [Node] = try Parser.parseFragment(html.utf8Array, self, getBaseUriUTF8())
+    try addChildren(nodes)
+    return self
+  }
+
+  /**
+     Add inner HTML into this element. The supplied HTML will be parsed, and each node prepended to the start of the element's children.
+     - parameter html: HTML to add inside this element, before the existing HTML
+     - returns: this element
+     - seealso: ``html(_:)-(String)``
+     */
+  @discardableResult
+  @inline(__always)
+  public func prepend(_ html: String) throws -> Element {
+    let nodes: [Node] = try Parser.parseFragment(html.utf8Array, self, getBaseUriUTF8())
+    try addChildren(0, nodes)
+    return self
+  }
+
+  /**
+     Insert the specified HTML into the DOM before this element (as a preceding sibling).
+
+     - parameter html: HTML to add before this element
+     - returns: this element, for chaining
+     - seealso: ``after(_:)-(String)``
+     */
+  @discardableResult
+  @inline(__always)
+  open override func before(_ html: String) throws -> Element {
+    return try super.before(html) as! Element
+  }
+
+  /**
+     Insert the specified node into the DOM before this node (as a preceding sibling).
+     - parameter node: to add before this element
+     - returns: this Element, for chaining
+     - seealso: ``after(_:)-(Node)``
+     */
+  @discardableResult
+  @inline(__always)
+  open override func before(_ node: Node) throws -> Element {
+    return try super.before(node) as! Element
+  }
+
+  /**
+     Insert the specified HTML into the DOM after this element (as a following sibling).
+
+     - parameter html: HTML to add after this element
+     - returns: this element, for chaining
+     - seealso: ``before(_:)-(String)``
+     */
+  @discardableResult
+  @inline(__always)
+  open override func after(_ html: String) throws -> Element {
+    return try super.after(html) as! Element
+  }
+
+  /**
+     Insert the specified node into the DOM after this node (as a following sibling).
+     - parameter node: to add after this element
+     - returns: this element, for chaining
+     - seealso: ``before(_:)-(Node)``
+     */
+  @inline(__always)
+  open override func after(_ node: Node) throws -> Element {
+    return try super.after(node) as! Element
+  }
+
+  /**
+     Remove all of the element's child nodes. Any attributes are left as-is.
+     - returns: this element
+     */
+  @discardableResult
+  @inline(__always)
+  public func empty() -> Element {
+    markQueryIndexesDirty()
+    childNodes.removeAll()
+    bumpTextMutationVersion()
+    markSourceDirty()
+    return self
+  }
+
+  /**
+     Wrap the supplied HTML around this element.
+
+     - parameter html: HTML to wrap around this element, e.g. `<div class="head"></div>`. Can be arbitrarily deep.
+     - returns: this element, for chaining.
+     */
+  @discardableResult
+  @inline(__always)
+  open override func wrap(_ html: String) throws -> Element {
+    return try super.wrap(html) as! Element
+  }
+
+  /**
+     Get a CSS selector that will uniquely select this element.
+
+     If the element has an ID, returns #id;
+     otherwise returns the parent (if any) CSS selector, followed by `>`,
+     followed by a unique selector for the element (tag.class.class:nth-child(n)).
+
+     - returns: the CSS Path that can be used to retrieve the element in a selector.
+     */
+  public func cssSelector() throws -> String {
+    let elementId = id()
+    if !elementId.isEmpty {
+      return "#" + Element.cssEscapeIdentifier(elementId)
+    }
+
+    // Translate HTML namespace ns:tag to CSS namespace syntax ns|tag
+    let tagName: String = self.tagName().replacingOccurrences(of: ":", with: "|")
+    var selector: String = tagName
+    let cl = try classNames()
+    let classes: String = cl.map(Element.cssEscapeIdentifier).joined(separator: ".")
+    if !classes.isEmpty {
+      selector.append(".")
+      selector.append(classes)
+    }
+
+    if parent() == nil || ((parent() as? Document) != nil)  // don't add Document to selector, as will always have a html node
+    {
+      return selector
+    }
+
+    selector.insert(contentsOf: " > ", at: selector.startIndex)
+    if try parent()!.select(selector).array().count > 1 {
+      selector.append(":nth-child(\(try elementSiblingIndex() + 1))")
+    }
+
+    return try parent()!.cssSelector() + (selector)
+  }
+
+  private static func cssEscapeIdentifier(_ identifier: String) -> String {
+    var escaped = ""
+    escaped.reserveCapacity(identifier.count)
+
+    for character in identifier {
+      if Character.isLetterOrDigit(character) || character == "-" || character == "_" {
+        escaped.append(character)
+      } else {
+        escaped.append("\\")
+        escaped.append(character)
+      }
+    }
+
+    return escaped
+  }
+
+  /**
+     Get sibling elements. If the element has no sibling elements, returns an empty list. An element is not a sibling
+     of itself, so will not be included in the returned list.
+     - returns: sibling elements
+     */
+  public func siblingElements() -> Elements {
+    if parentNode == nil { return Elements() }
+
+    let elements: [Element]? = parent()?.children().array()
+    let siblings: Elements = Elements()
+    if let elements = elements {
+      for el: Element in elements {
+        if el != self {
+          siblings.add(el)
+        }
+      }
+    }
+    return siblings
+  }
+
+  /**
+     Gets the next sibling element of this element. E.g., if a `div` contains two `p`s,
+     the `nextElementSibling` of the first `p` is the second `p`.
+
+     This is similar to ``Node/nextSibling()``, but specifically finds only Elements.
+
+     - returns: the next element, or `nil` if there is no next element
+     - seealso: ``previousElementSibling()``
+     */
+  public func nextElementSibling() throws -> Element? {
+    if parentNode == nil { return nil }
+    let siblings: [Element]? = parent()?.children().array()
+    let index: Int? = try Element.indexInList(self, siblings)
+    try Validate.notNull(obj: index)
+    if let siblings = siblings {
+      if siblings.count > index! + 1 {
+        return siblings[index! + 1]
+      } else {
+        return nil
+      }
+    }
+    return nil
+  }
+
+  /**
+     Gets the previous element sibling of this element.
+     - returns: the previous element, or `nil` if there is no previous element
+     - seealso: ``nextElementSibling()``
+     */
+  public func previousElementSibling() throws -> Element? {
+    if parentNode == nil { return nil }
+    let siblings: [Element]? = parent()?.children().array()
+    let index: Int? = try Element.indexInList(self, siblings)
+    try Validate.notNull(obj: index)
+    if index! > 0 {
+      return siblings?[index! - 1]
+    } else {
+      return nil
+    }
+  }
+
+  /**
+     Gets the first element sibling of this element.
+     - returns: the first sibling that is an element (aka the parent's first element child)
+     */
+  public func firstElementSibling() -> Element? {
+    // todo: should firstSibling() exclude this?
+    let siblings: [Element]? = parent()?.children().array()
+    return (siblings != nil && siblings!.count > 1) ? siblings![0] : nil
+  }
+
+  /**
+     Get the list index of this element in its element sibling list. I.e. if this is the first element
+     sibling, returns 0.
+
+     - returns: position in element sibling list
+     */
+  public func elementSiblingIndex() throws -> Int {
+    if parent() == nil { return 0 }
+    let x = try Element.indexInList(self, parent()?.children().array())
+    return x == nil ? 0 : x!
+  }
+
+  /**
+     Gets the last element sibling of this element
+     - returns: the last sibling that is an element (aka the parent's last element child)
+     */
+  @inline(__always)
+  public func lastElementSibling() -> Element? {
+    let siblings: [Element]? = parent()?.children().array()
+    return (siblings != nil && siblings!.count > 1) ? siblings![siblings!.count - 1] : nil
+  }
+
+  private static func indexInList(_ search: Element, _ elements: [Element]?) throws -> Int? {
+    try Validate.notNull(obj: elements)
+    return elements?.firstIndex(of: search)
+  }
+
+  // MARK: DOM type methods
+
+  /**
+     Finds elements, including and recursively under this element, with the specified tag name.
+     - parameter tagName: The tag name to search for (case insensitively).
+     - returns: a matching unmodifiable list of elements. Will be empty if this element and none of its children match.
+     */
+  @inline(__always)
+  public func getElementsByTag(_ tagName: String) throws -> Elements {
+    if let lookup = UTF8Arrays.tagLookup[tagName] {
+      return try getElementsByTagNormalized(lookup)
+    }
+    let tagBytes = tagName.utf8Array
+    if Attributes.containsAsciiUppercase(tagBytes) {
+      let lowered = tagName.lowercased()
+      if let lookup = UTF8Arrays.tagLookup[lowered] {
+        return try getElementsByTagNormalized(lookup)
+      }
+    }
+    return try getElementsByTag(tagBytes)
+  }
+
+  /**
+     Finds elements, including and recursively under this element, with the specified tag name.
+     - parameter tagName: The tag name to search for (case insensitively).
+     - returns: a matching unmodifiable list of elements. Will be empty if this element and none of its children match.
+     */
+  @inline(__always)
+  public func getElementsByTag(_ tagName: [UInt8]) throws -> Elements {
+    try Validate.notEmpty(string: tagName)
+    let trimmed = tagName.trim()
+    if trimmed.isEmpty {
+      return Elements()
+    }
+    let trimmedSlice = ByteSlice.fromArray(trimmed)
+    let key = Attributes.containsAsciiUppercase(trimmed) ? trimmedSlice.lowercased() : trimmedSlice
+    let weakElements = tagQueryIndexForKey(key)
+    return Elements(weakElements.compactMap { $0.value })
+  }
+
+  /**
+     Finds elements by a normalized (trimmed, lowercase) tag name.
+     - parameter normalizedTagName: The already-normalized tag name.
+     - returns: a matching unmodifiable list of elements.
+     */
+  @inline(__always)
+  public func getElementsByTagNormalized(_ normalizedTagName: [UInt8]) throws -> Elements {
+    try Validate.notEmpty(string: normalizedTagName)
+    let needsTrim =
+      (normalizedTagName.first?.isWhitespace ?? false)
+      || (normalizedTagName.last?.isWhitespace ?? false)
+    let keySlice = ByteSlice.fromArray(normalizedTagName)
+    let key = needsTrim ? keySlice.trim() : keySlice
+    if key.isEmpty {
+      return Elements()
+    }
+    let weakElements = tagQueryIndexForKey(key)
+    return Elements(weakElements.compactMap { $0.value })
+  }
+
+  /**
+     Find elements by ID, including or under this element.
+
+     - parameter id: The ID to search for.
+     - returns: Elements matching the ID, empty if none.
+     */
+  @usableFromInline
+  func getElementsById(_ id: [UInt8]) -> Elements {
+    let needsTrim = (id.first?.isWhitespace ?? false) || (id.last?.isWhitespace ?? false)
+    let keySlice = ByteSlice.fromArray(id)
+    let key = needsTrim ? keySlice.trim() : keySlice
+    if key.isEmpty {
+      return Elements()
+    }
+    if isIdQueryIndexDirty || normalizedIdIndex == nil {
+      rebuildQueryIndexesForAllIds()
+      isIdQueryIndexDirty = false
+    }
+
+    let results = normalizedIdIndex?[key]?.compactMap { $0.value } ?? []
+    return Elements(results)
+  }
+
+  /**
+     Find an element by ID, including or under this element.
+
+     Note that this finds the first matching ID, starting with this element. If you search down from a different
+     starting point, it is possible to find a different element by ID. For unique element by ID within a Document,
+     use ``Element/getElementById(_:)`` on a ``Document``.
+     - parameter id: The ID to search for.
+     - returns: The first matching element by ID, starting with this element, or `nil` if none found.
+     */
+  @inline(__always)
+  public func getElementById(_ id: String) throws -> Element? {
+    let idBytes = id.utf8Array
+    try Validate.notEmpty(string: idBytes)
+    let needsTrim = (idBytes.first?.isWhitespace ?? false) || (idBytes.last?.isWhitespace ?? false)
+    let keySlice = ByteSlice.fromArray(idBytes)
+    let key = needsTrim ? keySlice.trim() : keySlice
+    if key.isEmpty {
+      return nil
+    }
+    if isIdQueryIndexDirty || normalizedIdIndex == nil {
+      rebuildQueryIndexesForAllIds()
+      isIdQueryIndexDirty = false
+    }
+
+    if let weakElements = normalizedIdIndex?[key] {
+      for weak in weakElements {
+        if let element = weak.value {
+          return element
+        }
+      }
+    }
+    return nil
+  }
+
+  /**
+     * Find elements that have this class, including or under this element. Case insensitive.
+     *
+     * Elements can have multiple classes (e.g. `<div class="header round first">`. This method
+     * checks each class, so you can find the above with `el.getElementsByClass("header")`.
+     *
+     * - parameter className: the name of the class to search for.
+     * - returns: elements with the supplied class name, empty if none
+     * - seealso: ``hasClass(_:)-(String)``, ``classNames()``
+     */
+  @inline(__always)
+  public func getElementsByClass(_ className: String) throws -> Elements {
+    DebugTrace.log("Element.getElementsByClass: \(className)")
+    let key = className.utf8Array
+    if isClassQueryIndexDirty || normalizedClassNameIndex == nil {
+      DebugTrace.log("Element.getElementsByClass: rebuilding class index")
+      rebuildQueryIndexesForAllClasses()
+      isClassQueryIndexDirty = false
+    }
+    let keySlice = ByteSlice.fromArray(key)
+    let normalizedKey = Attributes.containsAsciiUppercase(key) ? keySlice.lowercased() : keySlice
+    let results = normalizedClassNameIndex?[normalizedKey]?.compactMap { $0.value } ?? []
+    return Elements(results)
+  }
+
+  @inline(__always)
+  @usableFromInline
+  internal func getElementsByClassNormalizedBytes(_ normalizedClassName: [UInt8]) -> Elements {
+    if normalizedClassName.isEmpty {
+      return Elements()
+    }
+    if isClassQueryIndexDirty || normalizedClassNameIndex == nil {
+      rebuildQueryIndexesForAllClasses()
+      isClassQueryIndexDirty = false
+    }
+    let normalizedSlice = ByteSlice.fromArray(normalizedClassName)
+    let results = normalizedClassNameIndex?[normalizedSlice]?.compactMap { $0.value } ?? []
+    return Elements(results)
+  }
+
+  /**
+     Find elements that have a named attribute set. Case insensitive.
+
+     - parameter key: name of the attribute, e.g. `href`
+     - returns: elements that have this attribute, empty if none
+     */
+  @inline(__always)
+  public func getElementsByAttribute(_ key: String) throws -> Elements {
+    try Validate.notEmpty(string: key.utf8Array)
+    let keyBytes = key.utf8Array
+    @inline(__always)
+    func hasAbsPrefix(_ bytes: [UInt8]) -> Bool {
+      if bytes.count < UTF8Arrays.absPrefix.count { return false }
+      @inline(__always)
+      func lowerAscii(_ b: UInt8) -> UInt8 {
+        return (b >= 65 && b <= 90) ? b &+ 32 : b
+      }
+      return lowerAscii(bytes[0]) == UTF8Arrays.absPrefix[0]
+        && lowerAscii(bytes[1]) == UTF8Arrays.absPrefix[1]
+        && lowerAscii(bytes[2]) == UTF8Arrays.absPrefix[2] && bytes[3] == UTF8Arrays.absPrefix[3]
+    }
+    let needsTrim =
+      (keyBytes.first?.isWhitespace ?? false) || (keyBytes.last?.isWhitespace ?? false)
+    let keyForPrefix = needsTrim ? keyBytes.trim() : keyBytes
+    if hasAbsPrefix(keyForPrefix) {
+      return try Collector.collect(Evaluator.Attribute(key), self)
+    }
+    let keySlice = ByteSlice.fromArray(keyBytes)
+    let trimmedSlice = needsTrim ? keySlice.trim() : keySlice
+    let normalizedKey =
+      Attributes.containsAsciiUppercase(trimmedSlice) ? trimmedSlice.lowercased() : trimmedSlice
+    if isAttributeQueryIndexDirty || normalizedAttributeNameIndex == nil {
+      rebuildQueryIndexesForAllAttributes()
+      isAttributeQueryIndexDirty = false
+    }
+
+    let results = normalizedAttributeNameIndex?[normalizedKey]?.compactMap { $0.value } ?? []
+    return Elements(results)
+  }
+
+  /**
+     Find elements that have a named attribute set with a normalized (trimmed, lowercase) key.
+     - parameter normalizedKey: The already-normalized attribute key.
+     - returns: elements that have this attribute, empty if none
+     */
+  @inline(__always)
+  public func getElementsByAttributeNormalized(_ normalizedKey: [UInt8]) -> Elements {
+    let needsTrim =
+      (normalizedKey.first?.isWhitespace ?? false) || (normalizedKey.last?.isWhitespace ?? false)
+    let key = needsTrim ? normalizedKey.trim() : normalizedKey
+    if key.isEmpty {
+      return Elements()
+    }
+    if isAttributeQueryIndexDirty || normalizedAttributeNameIndex == nil {
+      rebuildQueryIndexesForAllAttributes()
+      isAttributeQueryIndexDirty = false
+    }
+    let keySlice = ByteSlice.fromArray(key)
+    let results = normalizedAttributeNameIndex?[keySlice]?.compactMap { $0.value } ?? []
+    return Elements(results)
+  }
+
+  /**
+     Find elements that have an attribute name starting with the supplied prefix. Use `data-` to find elements
+     that have HTML5 datasets.
+     - parameter keyPrefix: name prefix of the attribute e.g. `data-`
+     - returns: elements that have attribute names that start with with the prefix, empty if none.
+     */
+  @inline(__always)
+  public func getElementsByAttributeStarting(_ keyPrefix: String) throws -> Elements {
+    try Validate.notEmpty(string: keyPrefix.utf8Array)
+    let keyPrefix = keyPrefix.trim()
+    return try Collector.collect(Evaluator.AttributeStarting(keyPrefix.utf8Array), self)
+  }
+
+  /**
+     Find elements that have an attribute with the specific value. Case insensitive.
+
+     - parameter key: name of the attribute
+     - parameter value: value of the attribute
+     - returns: elements that have this attribute with this value, empty if none
+     */
+  @inline(__always)
+  public func getElementsByAttributeValue(_ key: String, _ value: String) throws -> Elements {
+    let keyBytes = key.utf8Array
+    @inline(__always)
+    func hasAbsPrefix(_ bytes: [UInt8]) -> Bool {
+      if bytes.count < UTF8Arrays.absPrefix.count { return false }
+      @inline(__always)
+      func lowerAscii(_ b: UInt8) -> UInt8 {
+        return (b >= 65 && b <= 90) ? b &+ 32 : b
+      }
+      return lowerAscii(bytes[0]) == UTF8Arrays.absPrefix[0]
+        && lowerAscii(bytes[1]) == UTF8Arrays.absPrefix[1]
+        && lowerAscii(bytes[2]) == UTF8Arrays.absPrefix[2] && bytes[3] == UTF8Arrays.absPrefix[3]
+    }
+    if hasAbsPrefix(keyBytes) {
+      return try Collector.collect(Evaluator.AttributeWithValue(key, value), self)
+    }
+    let needsTrim =
+      (keyBytes.first?.isWhitespace ?? false) || (keyBytes.last?.isWhitespace ?? false)
+    let keySlice = ByteSlice.fromArray(keyBytes)
+    let trimmedKeySlice = needsTrim ? keySlice.trim() : keySlice
+    let normalizedKey =
+      Attributes.containsAsciiUppercase(trimmedKeySlice)
+      ? trimmedKeySlice.lowercased() : trimmedKeySlice
+    let isHotKey = Element.isHotAttributeKey(normalizedKey)
+    if Element.dynamicAttributeValueIndexMaxKeys > 0,
+      !isHotKey
+    {
+      ensureDynamicAttributeValueIndexKey(normalizedKey)
+    }
+    if isHotKey || (dynamicAttributeValueIndexKeySet?.contains(normalizedKey) ?? false) {
+      if isAttributeValueQueryIndexDirty || normalizedAttributeValueIndex == nil {
+        rebuildQueryIndexesForHotAttributes()
+        isAttributeValueQueryIndexDirty = false
+      }
+      let normalizedValue = ByteSlice.fromArray(value.utf8Array).trim().lowercased()
+      let results =
+        normalizedAttributeValueIndex?[normalizedKey]?[normalizedValue]?.compactMap { $0.value }
+        ?? []
+      return Elements(results)
+    }
+    return try Collector.collect(Evaluator.AttributeWithValue(key, value), self)
+  }
+
+  @inline(__always)
+  func getElementsByAttributeValueNormalized(
+    _ keyBytes: [UInt8],
+    _ valueBytes: [UInt8],
+    _ key: String,
+    _ value: String
+  ) throws -> Elements {
+    if keyBytes.starts(with: UTF8Arrays.absPrefix) {
+      return try Collector.collect(Evaluator.AttributeWithValue(key, value), self)
+    }
+    let keySlice = ByteSlice.fromArray(keyBytes)
+    let valueSlice = ByteSlice.fromArray(valueBytes)
+    let isHotKey = Element.isHotAttributeKey(keySlice)
+    if Element.dynamicAttributeValueIndexMaxKeys > 0,
+      !isHotKey
+    {
+      ensureDynamicAttributeValueIndexKey(keySlice)
+    }
+    if isHotKey || (dynamicAttributeValueIndexKeySet?.contains(keySlice) ?? false) {
+      if isAttributeValueQueryIndexDirty || normalizedAttributeValueIndex == nil {
+        rebuildQueryIndexesForHotAttributes()
+        isAttributeValueQueryIndexDirty = false
+      }
+      let results =
+        normalizedAttributeValueIndex?[keySlice]?[valueSlice]?.compactMap { $0.value } ?? []
+      return Elements(results)
+    }
+    return try Collector.collect(Evaluator.AttributeWithValue(key, value), self)
+  }
+
+  /**
+     Find elements that either do not have this attribute, or have it with a different value. Case insensitive.
+
+     - parameter key: name of the attribute
+     - parameter value: value of the attribute
+     - returns: elements that do not have a matching attribute
+     */
+  @inline(__always)
+  public func getElementsByAttributeValueNot(_ key: String, _ value: String) throws -> Elements {
+    return try Collector.collect(Evaluator.AttributeWithValueNot(key, value), self)
+  }
+
+  /**
+     Find elements that have attributes that start with the value prefix. Case insensitive.
+
+     - parameter key: name of the attribute
+     - parameter valuePrefix: start of attribute value
+     - returns: elements that have attributes that start with the value prefix
+     */
+  @inline(__always)
+  public func getElementsByAttributeValueStarting(_ key: String, _ valuePrefix: String) throws
+    -> Elements
+  {
+    return try Collector.collect(Evaluator.AttributeWithValueStarting(key, valuePrefix), self)
+  }
+
+  /**
+     Find elements that have attributes that end with the value suffix. Case insensitive.
+
+     - parameter key: name of the attribute
+     - parameter valueSuffix: end of the attribute value
+     - returns: elements that have attributes that end with the value suffix
+     */
+  @inline(__always)
+  public func getElementsByAttributeValueEnding(_ key: String, _ valueSuffix: String) throws
+    -> Elements
+  {
+    return try Collector.collect(Evaluator.AttributeWithValueEnding(key, valueSuffix), self)
+  }
+
+  /**
+     Find elements that have attributes whose value contains the match string. Case insensitive.
+
+     - parameter key: name of the attribute
+     - parameter match: substring of value to search for
+     - returns: elements that have attributes containing this text
+     */
+  @inline(__always)
+  public func getElementsByAttributeValueContaining(_ key: String, _ match: String) throws
+    -> Elements
+  {
+    return try Collector.collect(Evaluator.AttributeWithValueContaining(key, match), self)
+  }
+
+  /**
+     Find elements that have attributes whose values match the supplied regular expression.
+     - parameter key: name of the attribute
+     - parameter pattern: compiled regular expression to match against attribute values
+     - returns: elements that have attributes matching this regular expression
+     */
+  public func getElementsByAttributeValueMatching(_ key: String, _ pattern: Pattern) throws
+    -> Elements
+  {
+    return try Collector.collect(Evaluator.AttributeWithValueMatching(key, pattern), self)
+
+  }
+
+  /**
+     Find elements that have attributes whose values match the supplied regular expression.
+     - parameter key: name of the attribute
+     - parameter regex: regular expression to match against attribute values. You can use [embedded flags](https://developer.apple.com/documentation/foundation/nsregularexpression#Flag-Options) (such as `(?i)` and `(?m)`) to control regex options.
+     - returns: elements that have attributes matching this regular expression
+     */
+  public func getElementsByAttributeValueMatching(_ key: String, _ regex: String) throws -> Elements
+  {
+    var pattern: Pattern
+    do {
+      pattern = Pattern.compile(regex)
+      try pattern.validate()
+    } catch {
+      throw Exception.Error(
+        type: ExceptionType.IllegalArgumentException, Message: "Pattern syntax error: \(regex)")
+    }
+    return try getElementsByAttributeValueMatching(key, pattern)
+  }
+
+  /**
+     Find elements whose sibling index is less than the supplied index.
+     - parameter index: 0-based index
+     - returns: elements less than index
+     */
+  public func getElementsByIndexLessThan(_ index: Int) throws -> Elements {
+    return try Collector.collect(Evaluator.IndexLessThan(index), self)
+  }
+
+  /**
+     Find elements whose sibling index is greater than the supplied index.
+     - parameter index: 0-based index
+     - returns: elements greater than index
+     */
+  public func getElementsByIndexGreaterThan(_ index: Int) throws -> Elements {
+    return try Collector.collect(Evaluator.IndexGreaterThan(index), self)
+  }
+
+  /**
+     Find elements whose sibling index is equal to the supplied index.
+     - parameter index: 0-based index
+     - returns: elements equal to index
+     */
+  public func getElementsByIndexEquals(_ index: Int) throws -> Elements {
+    return try Collector.collect(Evaluator.IndexEquals(index), self)
+  }
+
+  /**
+     Find elements that contain the specified string. The search is case insensitive. The text may appear directly
+     in the element, or in any of its descendants.
+     - parameter searchText: to look for in the element's text
+     - returns: elements that contain the string, case insensitive.
+     - seealso: ``text(_:)``
+     */
+  public func getElementsContainingText(_ searchText: String) throws -> Elements {
+    return try Collector.collect(Evaluator.ContainsText(searchText), self)
+  }
+
+  /**
+     Find elements that directly contain the specified string. The search is case insensitive. The text must appear directly
+     in the element, not in any of its descendants.
+     - parameter searchText: to look for in the element's own text
+     - returns: elements that contain the string, case insensitive.
+     - seealso: ``ownText()``
+     */
+  public func getElementsContainingOwnText(_ searchText: String) throws -> Elements {
+    return try Collector.collect(Evaluator.ContainsOwnText(searchText), self)
+  }
+
+  /**
+     Find elements whose text matches the supplied regular expression.
+     - parameter pattern: regular expression to match text against
+     - returns: elements matching the supplied regular expression.
+     - seealso: ``text(_:)``
+     */
+  public func getElementsMatchingText(_ pattern: Pattern) throws -> Elements {
+    return try Collector.collect(Evaluator.Matches(pattern), self)
+  }
+
+  /**
+     Find elements whose text matches the supplied regular expression.
+     - parameter regex: regular expression to match text against. You can use [embedded flags](https://developer.apple.com/documentation/foundation/nsregularexpression#Flag-Options) (such as `(?i)` and `(?m)`) to control regex options.
+     - returns: elements matching the supplied regular expression.
+     - seealso: ``text(_:)``
+     */
+  public func getElementsMatchingText(_ regex: String) throws -> Elements {
+    let pattern: Pattern
+    do {
+      pattern = Pattern.compile(regex)
+      try pattern.validate()
+    } catch {
+      throw Exception.Error(
+        type: ExceptionType.IllegalArgumentException, Message: "Pattern syntax error: \(regex)")
+    }
+    return try getElementsMatchingText(pattern)
+  }
+
+  /**
+     Find elements whose own text matches the supplied regular expression.
+     - parameter pattern: regular expression to match text against
+     - returns: elements matching the supplied regular expression.
+     - seealso: ``ownText()``
+     */
+  public func getElementsMatchingOwnText(_ pattern: Pattern) throws -> Elements {
+    return try Collector.collect(Evaluator.MatchesOwn(pattern), self)
+  }
+
+  /**
+     Find elements whose text matches the supplied regular expression.
+     - parameter regex: regular expression to match text against. You can use [embedded flags](https://developer.apple.com/documentation/foundation/nsregularexpression#Flag-Options) (such as `(?i)` and `(?m)`) to control regex options.
+     - returns: elements matching the supplied regular expression.
+     - seealso: ``ownText()``
+     */
+  public func getElementsMatchingOwnText(_ regex: String) throws -> Elements {
+    let pattern: Pattern
+    do {
+      pattern = Pattern.compile(regex)
+      try pattern.validate()
+    } catch {
+      throw Exception.Error(
+        type: ExceptionType.IllegalArgumentException, Message: "Pattern syntax error: \(regex)")
+    }
+    return try getElementsMatchingOwnText(pattern)
+  }
+
+  /**
+     Find all elements under this element (including self, and children of children).
+
+     - returns: all elements
+     */
+  public func getAllElements() throws -> Elements {
+    return try Collector.collect(Evaluator.AllElements(), self)
+  }
+
+  /**
+     Gets the combined text of this element and all its children. Whitespace is normalized and trimmed.
+
+     For example, given HTML `<p>Hello  <b>there</b> now! </p>`, `p.text()` returns `"Hello there now!"`
+
+     - returns: unencoded text, or empty string if none.
+     - seealso: ``ownText()``, ``textNodes()``
+     */
+  class TextNodeVisitor: NodeVisitor {
+    let accum: StringBuilder
+    let trimAndNormaliseWhitespace: Bool
+    init(_ accum: StringBuilder, trimAndNormaliseWhitespace: Bool) {
+      self.accum = accum
+      self.trimAndNormaliseWhitespace = trimAndNormaliseWhitespace
+    }
+    public func head(_ node: Node, _ depth: Int) {
+      if let textNode = (node as? TextNode) {
+        if trimAndNormaliseWhitespace {
+          Element.appendNormalisedText(accum, textNode)
+        } else {
+          accum.append(textNode.getWholeTextUTF8())
+        }
+      } else if let element = (node as? Element) {
+        if !accum.isEmpty && (element.isBlock() || element._tag.getNameUTF8() == UTF8Arrays.br)
+          && !TextNode.lastCharIsWhitespace(accum)
+        {
+          accum.append(UTF8Arrays.whitespace)
+        }
+      }
+    }
+
+    public func tail(_ node: Node, _ depth: Int) {
+    }
+  }
+
+  @inline(__always)
+  private func collectTextFast(_ accum: StringBuilder, trimAndNormaliseWhitespace: Bool) {
+    var stack: ContiguousArray<Node> = []
+    stack.reserveCapacity(childNodes.count + 1)
+    stack.append(self)
+    var lastWasWhite = false
+    while let node = stack.popLast() {
+      if let textNode = node as? TextNode {
+        if trimAndNormaliseWhitespace {
+          Element.appendNormalisedTextTracking(accum, textNode, lastWasWhite: &lastWasWhite)
+        } else {
+          let slice = textNode.wholeTextSlice()
+          accum.append(slice)
+          if let last = slice.last {
+            lastWasWhite = (last == TokeniserStateVars.spaceByte)
+          }
+        }
+        continue
+      }
+      if let element = node as? Element {
+        if !accum.isEmpty && (element.isBlock() || Tag.isBr(element._tag)) && !lastWasWhite {
+          accum.append(UTF8Arrays.whitespace)
+          lastWasWhite = true
+        }
+      }
+      let children = node.childNodes
+      if !children.isEmpty {
+        var i = children.count - 1
+        while i >= 0 {
+          stack.append(children[i])
+          i -= 1
+        }
+      }
+    }
+  }
+
+  @inline(__always)
+  private func collectTextFastTrimmed(_ accum: StringBuilder) -> (Bool, Bool) {
+    var stack: ContiguousArray<Node> = []
+    stack.reserveCapacity(childNodes.count + 1)
+    stack.append(self)
+    var lastWasWhite = false
+    var sawWhitespace = false
+    while let node = stack.popLast() {
+      if let textNode = node as? TextNode {
+        Element.appendNormalisedTextTracking(
+          accum,
+          textNode,
+          lastWasWhite: &lastWasWhite,
+          sawWhitespace: &sawWhitespace
+        )
+        continue
+      }
+      if let element = node as? Element {
+        if !accum.isEmpty && (element.isBlock() || Tag.isBr(element._tag)) && !lastWasWhite {
+          accum.append(UTF8Arrays.whitespace)
+          lastWasWhite = true
+          sawWhitespace = true
+        }
+      }
+      let children = node.childNodes
+      if !children.isEmpty {
+        var i = children.count - 1
+        while i >= 0 {
+          stack.append(children[i])
+          i -= 1
+        }
+      }
+    }
+    return (lastWasWhite, sawWhitespace)
+  }
+
+  @inline(__always)
+  private func collectTextFastRaw(_ accum: StringBuilder) {
+    var stack: ContiguousArray<Node> = []
+    stack.reserveCapacity(childNodes.count + 1)
+    stack.append(self)
+    var lastWasWhite = false
+    while let node = stack.popLast() {
+      if let textNode = node as? TextNode {
+        let slice = textNode.wholeTextSlice()
+        accum.append(slice)
+        if let last = slice.last {
+          lastWasWhite = (last == TokeniserStateVars.spaceByte)
+        }
+        continue
+      }
+      if let element = node as? Element {
+        if !accum.isEmpty && (element.isBlock() || Tag.isBr(element._tag)) && !lastWasWhite {
+          accum.append(UTF8Arrays.whitespace)
+          lastWasWhite = true
+        }
+      }
+      let children = node.childNodes
+      if !children.isEmpty {
+        var i = children.count - 1
+        while i >= 0 {
+          stack.append(children[i])
+          i -= 1
+        }
+      }
+    }
+  }
+
+  public func text(trimAndNormaliseWhitespace: Bool = true) throws -> String {
+    if trimAndNormaliseWhitespace {
+      if let slice = singleTextNoWhitespaceSlice() {
+        return String(decoding: slice, as: UTF8.self)
+      }
+      if childNodes.count == 1, let textNode = childNodes.first as? TextNode {
+        let accum = StringBuilder()
+        Element.appendNormalisedText(accum, textNode)
+        if let first = accum.buffer.first, first.isWhitespace {
+          let trimmed = accum.buffer.trim()
+          return String(decoding: trimmed, as: UTF8.self)
+        }
+        accum.trimTrailingWhitespace()
+        let text = String(decoding: accum.buffer, as: UTF8.self)
+        return text
+      }
+      let accum: StringBuilder = StringBuilder(max(64, childNodes.count * 8))
+      let (lastWasWhite, sawWhitespace) = collectTextFastTrimmed(accum)
+      if sawWhitespace, let first = accum.buffer.first, first.isWhitespace {
+        let trimmed = accum.buffer.trim()
+        return String(decoding: trimmed, as: UTF8.self)
+      }
+      if sawWhitespace, lastWasWhite {
+        accum.trimTrailingWhitespace()
+      }
+      return String(decoding: accum.buffer, as: UTF8.self)
+    }
+    if childNodes.count == 1, let textNode = childNodes.first as? TextNode {
+      return String(decoding: textNode.wholeTextSlice(), as: UTF8.self)
+    }
+    let accum: StringBuilder = StringBuilder(max(64, childNodes.count * 8))
+    collectTextFastRaw(accum)
+    return accum.toString()
+  }
+
+  public func textUTF8(trimAndNormaliseWhitespace: Bool = true) throws -> [UInt8] {
+    if trimAndNormaliseWhitespace, let slice = singleTextNoWhitespaceSlice() {
+      return Array(slice)
+    }
+    let accum: StringBuilder = StringBuilder(max(64, childNodes.count * 8))
+    if trimAndNormaliseWhitespace {
+      let (lastWasWhite, sawWhitespace) = collectTextFastTrimmed(accum)
+      if sawWhitespace, let first = accum.buffer.first, first.isWhitespace {
+        return Array(accum.buffer.trim())
+      }
+      if sawWhitespace, lastWasWhite {
+        accum.trimTrailingWhitespace()
+      }
+      return Array(accum.buffer)
+    }
+    collectTextFastRaw(accum)
+    return Array(accum.buffer)
+  }
+
+  public func textUTF8Slice(trimAndNormaliseWhitespace: Bool = true) throws -> ArraySlice<UInt8> {
+    if trimAndNormaliseWhitespace, let slice = singleTextNoWhitespaceSlice() {
+      return slice.toArraySlice()
+    }
+    let accum: StringBuilder = StringBuilder(max(64, childNodes.count * 8))
+    if trimAndNormaliseWhitespace {
+      let (lastWasWhite, sawWhitespace) = collectTextFastTrimmed(accum)
+      if sawWhitespace, let first = accum.buffer.first, first.isWhitespace {
+        return accum.buffer.trim()
+      }
+      if sawWhitespace, lastWasWhite {
+        accum.trimTrailingWhitespace()
+      }
+      return accum.buffer
+    }
+    collectTextFastRaw(accum)
+    return accum.buffer
+  }
+
+  @inline(__always)
+  internal func textUTF8ByteSlice(trimAndNormaliseWhitespace: Bool = true) -> ByteSlice? {
+    if trimAndNormaliseWhitespace, let slice = singleTextNoWhitespaceSlice() {
+      return slice
+    }
+    return nil
+  }
+
+  @inline(__always)
+  private func singleTextNoWhitespaceSlice() -> ByteSlice? {
+    guard childNodes.count == 1, let textNode = childNodes.first as? TextNode else {
+      return nil
+    }
+    let slice = textNode.wholeTextSlice()
+    if slice.isEmpty {
+      return slice
+    }
+    for b in slice {
+      if StringUtil.isAsciiWhitespaceByte(b) || b == StringUtil.utf8NBSPLead
+        || b == StringUtil.utf8NBSPTrail
+      {
+        return nil
+      }
+    }
+    return slice
+  }
+
+  /**
+     Gets the text owned by this element only; does not get the combined text of all children.
+
+     For example, given HTML `<p>Hello <b>there</b> now!</p>`, `p.ownText()` returns `"Hello now!"`,
+     whereas `p.text()` returns `"Hello there now!"`.
+     Note that the text within the `b` element is not returned, as it is not a direct child of the `p` element.
+
+     - returns: unencoded text, or empty string if none.
+     - seealso: ``text(_:)``, ``textNodes()``
+     */
+  public func ownText() -> String {
+    let sb: StringBuilder = StringBuilder()
+    ownText(sb)
+    return sb.toString().trim()
+  }
+
+  /**
+     Gets the text owned by this element only; does not get the combined text of all children.
+
+     For example, given HTML `<p>Hello <b>there</b> now!</p>`, `p.ownText()` returns `"Hello now!"`,
+     whereas `p.text()` returns `"Hello there now!"`.
+     Note that the text within the `b` element is not returned, as it is not a direct child of the `p` element.
+
+     - returns: unencoded text, or empty string if none.
+     - seealso: ``text(_:)``, ``textNodes()``
+     */
+  public func ownTextUTF8() -> [UInt8] {
+    let sb: StringBuilder = StringBuilder()
+    ownText(sb)
+    if let first = sb.buffer.first, first.isWhitespace {
+      return Array(sb.buffer.trim())
+    }
+    sb.trimTrailingWhitespace()
+    return Array(sb.buffer)
+  }
+
+  private func ownText(_ accum: StringBuilder) {
+    for child: Node in childNodes {
+      if let textNode = (child as? TextNode) {
+        Element.appendNormalisedText(accum, textNode)
+      } else if let child = (child as? Element) {
+        Element.appendWhitespaceIfBr(child, accum)
+      }
+    }
+  }
+
+  private static func appendNormalisedText(_ accum: StringBuilder, _ textNode: TextNode) {
+    let text = textNode.wholeTextSlice()
+    if Element.preserveWhitespace(textNode.parentNode) {
+      accum.append(text)
+      return
+    }
+    StringUtil.appendNormalisedWhitespace(
+      accum,
+      string: text,
+      stripLeading: accum.isEmpty || TextNode.lastCharIsWhitespace(accum)
+    )
+  }
+
+  @inline(__always)
+  private static func appendNormalisedTextTracking(
+    _ accum: StringBuilder,
+    _ textNode: TextNode,
+    lastWasWhite: inout Bool
+  ) {
+    let text = textNode.wholeTextSlice()
+    if Element.preserveWhitespace(textNode.parentNode) {
+      accum.append(text)
+      if let last = text.last {
+        lastWasWhite = (last == TokeniserStateVars.spaceByte)
+      }
+      return
+    }
+    StringUtil.appendNormalisedWhitespace(
+      accum,
+      string: text,
+      stripLeading: accum.isEmpty || lastWasWhite,
+      lastWasWhite: &lastWasWhite
+    )
+  }
+
+  @inline(__always)
+  private static func appendNormalisedTextTracking(
+    _ accum: StringBuilder,
+    _ textNode: TextNode,
+    lastWasWhite: inout Bool,
+    sawWhitespace: inout Bool
+  ) {
+    let text = textNode.wholeTextSlice()
+    if Element.preserveWhitespace(textNode.parentNode) {
+      accum.append(text)
+      if let last = text.last {
+        lastWasWhite = (last == TokeniserStateVars.spaceByte)
+      }
+      sawWhitespace = true
+      return
+    }
+    StringUtil.appendNormalisedWhitespace(
+      accum,
+      string: text,
+      stripLeading: accum.isEmpty || lastWasWhite,
+      lastWasWhite: &lastWasWhite,
+      sawWhitespace: &sawWhitespace
+    )
+  }
+
+  @inline(__always)
+  private static func lowerAscii(_ byte: UInt8) -> UInt8 {
+    if byte >= 65 && byte <= 90 {
+      return byte &+ 32
+    }
+    return byte
+  }
+
+  private struct AsciiKMPMatcher {
+    let needle: [UInt8]
+    let lps: [Int]
+    var j: Int = 0
+
+    init(_ needle: [UInt8]) {
+      self.needle = needle
+      var lps = [Int](repeating: 0, count: needle.count)
+      var length = 0
+      var i = 1
+      while i < needle.count {
+        if needle[i] == needle[length] {
+          length += 1
+          lps[i] = length
+          i += 1
+        } else if length != 0 {
+          length = lps[length - 1]
+        } else {
+          lps[i] = 0
+          i += 1
+        }
+      }
+      self.lps = lps
+    }
+
+    @inline(__always)
+    mutating func feed(_ byte: UInt8) -> Bool {
+      let c = Element.lowerAscii(byte)
+      while j > 0 && c != needle[j] {
+        j = lps[j - 1]
+      }
+      if c == needle[j] {
+        j += 1
+        if j == needle.count {
+          return true
+        }
+      }
+      return false
+    }
+  }
+
+  @inline(__always)
+  private static func emitNormalizedSlice(
+    _ slice: ArraySlice<UInt8>,
+    stripLeading: Bool,
+    emittedAny: inout Bool,
+    lastWasWhite: inout Bool,
+    matcher: inout AsciiKMPMatcher
+  ) -> Bool {
+    var reachedNonWhite = false
+    var i = slice.startIndex
+    let end = slice.endIndex
+    while i < end {
+      let firstByte = slice[i]
+      if firstByte < TokeniserStateVars.asciiUpperLimitByte {
+        if StringUtil.isAsciiWhitespaceByte(firstByte) {
+          if (stripLeading && !reachedNonWhite) || lastWasWhite {
+            i = slice.index(after: i)
+            continue
+          }
+          if matcher.feed(TokeniserStateVars.spaceByte) { return true }
+          lastWasWhite = true
+          emittedAny = true
+          i = slice.index(after: i)
+          continue
+        }
+        var j = i
+        while j < end {
+          let b = slice[j]
+          if b >= TokeniserStateVars.asciiUpperLimitByte || StringUtil.isAsciiWhitespaceByte(b) {
+            break
+          }
+          if matcher.feed(b) { return true }
+          j = slice.index(after: j)
+        }
+        if i != j {
+          emittedAny = true
+          lastWasWhite = false
+          reachedNonWhite = true
+          i = j
+          continue
+        }
+        i = slice.index(after: i)
+        continue
+      }
+      if firstByte == StringUtil.utf8NBSPLead {
+        let next = slice.index(after: i)
+        if next < end, slice[next] == StringUtil.utf8NBSPTrail {
+          if (stripLeading && !reachedNonWhite) || lastWasWhite {
+            i = slice.index(after: next)
+            continue
+          }
+          if matcher.feed(TokeniserStateVars.spaceByte) { return true }
+          lastWasWhite = true
+          emittedAny = true
+          reachedNonWhite = true
+          i = slice.index(after: next)
+          continue
+        }
+      }
+      let scalarByteCount: Int
+      if firstByte < StringUtil.utf8Lead3Min {
+        scalarByteCount = 2
+      } else if firstByte < StringUtil.utf8Lead4Min {
+        scalarByteCount = 3
+      } else {
+        scalarByteCount = 4
+      }
+      var next = i
+      for _ in 0..<scalarByteCount {
+        if next == end { return false }
+        let b = slice[next]
+        if matcher.feed(b) { return true }
+        next = slice.index(after: next)
+      }
+      emittedAny = true
+      lastWasWhite = false
+      reachedNonWhite = true
+      i = next
+    }
+    return false
+  }
+
+  @inline(__always)
+  private static func emitNormalizedSlice(
+    _ slice: ByteSlice,
+    stripLeading: Bool,
+    emittedAny: inout Bool,
+    lastWasWhite: inout Bool,
+    matcher: inout AsciiKMPMatcher
+  ) -> Bool {
+    var reachedNonWhite = false
+    var i = 0
+    let end = slice.count
+    while i < end {
+      let firstByte = slice[i]
+      if firstByte < TokeniserStateVars.asciiUpperLimitByte {
+        if StringUtil.isAsciiWhitespaceByte(firstByte) {
+          if (stripLeading && !reachedNonWhite) || lastWasWhite {
+            i &+= 1
+            continue
+          }
+          if matcher.feed(TokeniserStateVars.spaceByte) { return true }
+          lastWasWhite = true
+          emittedAny = true
+          i &+= 1
+          continue
+        }
+        var j = i
+        while j < end {
+          let b = slice[j]
+          if b >= TokeniserStateVars.asciiUpperLimitByte || StringUtil.isAsciiWhitespaceByte(b) {
+            break
+          }
+          if matcher.feed(b) { return true }
+          j &+= 1
+        }
+        if i != j {
+          emittedAny = true
+          lastWasWhite = false
+          reachedNonWhite = true
+          i = j
+          continue
+        }
+        i &+= 1
+        continue
+      }
+      if firstByte == StringUtil.utf8NBSPLead {
+        let next = i &+ 1
+        if next < end, slice[next] == StringUtil.utf8NBSPTrail {
+          if (stripLeading && !reachedNonWhite) || lastWasWhite {
+            i = next &+ 1
+            continue
+          }
+          if matcher.feed(TokeniserStateVars.spaceByte) { return true }
+          lastWasWhite = true
+          emittedAny = true
+          reachedNonWhite = true
+          i = next &+ 1
+          continue
+        }
+      }
+      let scalarByteCount: Int
+      if firstByte < StringUtil.utf8Lead3Min {
+        scalarByteCount = 2
+      } else if firstByte < StringUtil.utf8Lead4Min {
+        scalarByteCount = 3
+      } else {
+        scalarByteCount = 4
+      }
+      var next = i
+      for _ in 0..<scalarByteCount {
+        if next == end { return false }
+        let b = slice[next]
+        if matcher.feed(b) { return true }
+        next &+= 1
+      }
+      emittedAny = true
+      lastWasWhite = false
+      reachedNonWhite = true
+      i = next
+    }
+    return false
+  }
+
+  @inline(__always)
+  internal func containsNormalizedTextASCII(_ needleLower: [UInt8]) -> Bool {
+    if needleLower.isEmpty {
+      return true
+    }
+    var matcher = AsciiKMPMatcher(needleLower)
+    var stack: ContiguousArray<Node> = []
+    stack.reserveCapacity(childNodes.count + 1)
+    stack.append(self)
+    var lastWasWhite = false
+    var emittedAny = false
+    while let node = stack.popLast() {
+      if let textNode = node as? TextNode {
+        let slice = textNode.wholeTextSlice()
+        let stripLeading = !emittedAny || lastWasWhite
+        if Element.emitNormalizedSlice(
+          slice,
+          stripLeading: stripLeading,
+          emittedAny: &emittedAny,
+          lastWasWhite: &lastWasWhite,
+          matcher: &matcher)
+        {
+          return true
+        }
+        continue
+      }
+      if let element = node as? Element {
+        if emittedAny,
+          element.isBlock() || Tag.isBr(element._tag),
+          !lastWasWhite
+        {
+          if matcher.feed(TokeniserStateVars.spaceByte) { return true }
+          emittedAny = true
+          lastWasWhite = true
+        }
+      }
+      let children = node.childNodes
+      if !children.isEmpty {
+        var i = children.count - 1
+        while i >= 0 {
+          stack.append(children[i])
+          i -= 1
+        }
+      }
+    }
+    return false
+  }
+
+  @inline(__always)
+  internal func containsOwnTextASCII(_ needleLower: [UInt8]) -> Bool {
+    if needleLower.isEmpty {
+      return true
+    }
+    var matcher = AsciiKMPMatcher(needleLower)
+    var lastWasWhite = false
+    var emittedAny = false
+    let children = childNodes
+    for child in children {
+      if let textNode = child as? TextNode {
+        let slice = textNode.wholeTextSlice()
+        let stripLeading = !emittedAny || lastWasWhite
+        if Element.emitNormalizedSlice(
+          slice,
+          stripLeading: stripLeading,
+          emittedAny: &emittedAny,
+          lastWasWhite: &lastWasWhite,
+          matcher: &matcher)
+        {
+          return true
+        }
+      } else if let element = child as? Element {
+        if emittedAny, Tag.isBr(element._tag), !lastWasWhite {
+          if matcher.feed(TokeniserStateVars.spaceByte) { return true }
+          emittedAny = true
+          lastWasWhite = true
+        }
+      }
+    }
+    return false
+  }
+
+  private static func appendWhitespaceIfBr(_ element: Element, _ accum: StringBuilder) {
+    if Tag.isBr(element._tag) && !TextNode.lastCharIsWhitespace(accum) {
+      accum.append(UTF8Arrays.whitespace)
+    }
+  }
+
+  static func preserveWhitespace(_ node: Node?) -> Bool {
+    // looks only at this element and one level up, to prevent recursion & needless stack searches
+    if let element = (node as? Element) {
+      return element._tag.preserveWhitespace()
+        || element.parent() != nil && element.parent()!._tag.preserveWhitespace()
+    }
+    return false
+  }
+
+  /**
+     Set the text of this element. Any existing contents (text or elements) will be cleared
+     - parameter text: unencoded text
+     - returns: this element
+     */
+  @discardableResult
+  @inline(__always)
+  public func text(_ text: String) throws -> Element {
+    empty()
+    let textNode: TextNode = TextNode(text.utf8Array, baseUri)
+    try appendChild(textNode)
+    return self
+  }
+
+  /**
+     Test if this element has any text content (that is not just whitespace).
+     - returns: true if element has non-blank text content.
+     */
+  public func hasText() -> Bool {
+    for child: Node in childNodes {
+      if let textNode = (child as? TextNode) {
+        if !textNode.isBlank() {
+          return true
+        }
+      } else if let el = (child as? Element) {
+        if el.hasText() {
+          return true
+        }
+      }
+    }
+    return false
+  }
+
+  /**
+     Get the combined data of this element. Data is e.g. the inside of a `script` tag.
+     - returns: the data, or empty string if none
+     - seealso: ``dataNodes()``
+     */
+  public func data() -> String {
+    let sb: StringBuilder = StringBuilder()
+
+    for childNode: Node in childNodes {
+      if let data = (childNode as? DataNode) {
+        sb.append(data.getWholeDataUTF8())
+      } else if let element = (childNode as? Element) {
+        let elementData: String = element.data()
+        sb.append(elementData)
+      }
+    }
+    return sb.toString()
+  }
+
+  /**
+     Gets the literal value of this element's "class" attribute, which may include multiple class names, space
+     separated. (E.g. on `;` returns, "`y`")
+     - returns: The literal class attribute, or an empty string if no class attribute set.
+     */
+  public func className() throws -> String {
+    guard let attributes else { return "" }
+    let slice = try attributes.getIgnoreCaseSlice(key: Element.classString).trim()
+    return String(decoding: slice, as: UTF8.self)
+  }
+
+  /**
+     Gets the literal value of this element's "class" attribute, which may include multiple class names, space
+     separated. (E.g. on `;` returns, "`y`")
+     - returns: The literal class attribute, or an empty array if no class attribute set.
+     */
+  public func classNameUTF8() throws -> [UInt8] {
+    guard let attributes else { return [] }
+    return try attributes.getIgnoreCaseSlice(key: Element.classString).trim().toArray()
+  }
+
+  /**
+     Get all of the element's class names. E.g. on element `<div class="header gray">`,
+     returns a set of two elements `"header", "gray"`. Note that modifications to this set are not pushed to
+     the backing `class` attribute; use the ``classNames(_:)`` method to persist them.
+     - returns: set of classnames, empty if no class attribute
+     */
+  @inlinable
+  public func unorderedClassNamesUTF8() throws -> [ArraySlice<UInt8>] {
+    guard let attributes else { return [] }
+    let input = try attributes.getIgnoreCaseSlice(key: Element.classString)
+    var result: [ArraySlice<UInt8>] = []
+    result.reserveCapacity(Int(ceil(CGFloat(input.underestimatedCount) / 10)))
+    var i = 0
+    let len = input.count
+
+    while i < len {
+      // Skip any leading whitespace
+      while i < len && input[i].isWhitespace {
+        i += 1
+      }
+      let start = i
+
+      // Find the end of the class name
+      while i < len && !input[i].isWhitespace {
+        i += 1
+      }
+
+      if start < i {
+        let token = input[start..<i].toArray()
+        result.append(ArraySlice(token))
+      }
+    }
+
+    return result
+  }
+
+  /**
+     Get all of the element's class names. E.g. on element `<div class="header gray">`,
+     returns a set of two elements `"header", "gray"`. Note that modifications to this set are not pushed to
+     the backing `class` attribute; use the ``classNames(_:)`` method to persist them.
+     - returns: set of classnames, empty if no class attribute
+     */
+  @inlinable
+  public func classNamesUTF8() throws -> OrderedSet<[UInt8]> {
+    guard let attributes else { return OrderedSet<[UInt8]>() }
+    let input = try attributes.getIgnoreCaseSlice(key: Element.classString)
+    let set = OrderedSet<[UInt8]>()
+    var i = 0
+    let len = input.count
+
+    while i < len {
+      // Skip any leading whitespace
+      while i < len && input[i].isWhitespace {
+        i += 1
+      }
+      let start = i
+
+      // Find the end of the class name
+      while i < len && !input[i].isWhitespace {
+        i += 1
+      }
+
+      if start < i {
+        set.append(input[start..<i].toArray())
+      }
+    }
+
+    return set
+  }
+
+  /**
+     Get all of the element's class names. E.g. on element `<div class="header gray">`,
+     returns a set of two elements `"header", "gray"`. Note that modifications to this set are not pushed to
+     the backing `class` attribute; use the ``classNames(_:)`` method to persist them.
+     - returns: set of classnames, empty if no class attribute
+     */
+  public func classNames() throws -> OrderedSet<String> {
+    guard let attributes else { return OrderedSet<String>() }
+    let utf8ClassName = try attributes.getIgnoreCaseSlice(key: Element.classString)
+    let classNames = OrderedSet<String>()
+    let len = utf8ClassName.count
+    var i = 0
+    while i < len {
+      while i < len && utf8ClassName[i].isWhitespace {
+        i += 1
+      }
+      let start = i
+      while i < len && !utf8ClassName[i].isWhitespace {
+        i += 1
+      }
+      if start < i {
+        classNames.append(String(decoding: utf8ClassName[start..<i], as: UTF8.self))
+      }
+    }
+
+    return classNames
+  }
+
+  /**
+     Set the element's `class` attribute to the supplied class names.
+     - parameter classNames: set of classes
+     - returns: this element, for chaining
+     */
+  @discardableResult
+  public func classNames(_ classNames: OrderedSet<String>) throws -> Element {
+    _ = ensureAttributes()
+    try attributes?.put(Element.classString, StringUtil.join(classNames, sep: " ").utf8Array)
+    return self
+  }
+
+  /**
+     Tests if this element has a class. Case insensitive.
+     - parameter className: name of class to check for
+     - returns: true if it does, false if not
+     */
+  // performance sensitive
+  @inline(__always)
+  public func hasClass(_ className: String) -> Bool {
+    hasClass(className.utf8Array)
+  }
+
+  /**
+     Tests if this element has a class. Case insensitive.
+     - parameter className: name of class to check for
+     - returns: true if it does, false if not
+     */
+  // performance sensitive
+  public func hasClass(_ className: [UInt8]) -> Bool {
+    DebugTrace.log("Element.hasClass(bytes): \(String(decoding: className, as: UTF8.self))")
+    guard let attributes,
+      let classAttr = try? attributes.getIgnoreCaseSlice(key: Element.classString),
+      !classAttr.isEmpty
+    else {
+      DebugTrace.log("Element.hasClass: no class attr")
+      return false
+    }
+    let len = classAttr.count
+    let wantLen = className.count
+    if len == 0 || len < wantLen || wantLen == 0 {
+      DebugTrace.log("Element.hasClass: len mismatch")
+      return false
+    }
+    if len == wantLen {
+      return StringUtil.equalsIgnoreCase(className, classAttr)
+    }
+
+    @inline(__always)
+    func equalsIgnoreCaseSlice(_ bytes: ByteSlice, _ start: Int, _ length: Int, _ other: [UInt8])
+      -> Bool
+    {
+      if length != other.count { return false }
+      var i = 0
+      while i < length {
+        let b = bytes[start + i]
+        let o = other[i]
+        let lowerB = (b >= 65 && b <= 90) ? (b &+ 32) : b
+        let lowerO = (o >= 65 && o <= 90) ? (o &+ 32) : o
+        if lowerB != lowerO {
+          return false
+        }
+        i &+= 1
+      }
+      return true
+    }
+
+    var i = 0
+    var tokenStart = 0
+    var inToken = false
+    while i < len {
+      let b = classAttr[i]
+      if b.isWhitespace {
+        if inToken {
+          let tokenLen = i - tokenStart
+          if tokenLen == wantLen
+            && equalsIgnoreCaseSlice(classAttr, tokenStart, tokenLen, className)
+          {
+            return true
+          }
+          inToken = false
+        }
+      } else if !inToken {
+        inToken = true
+        tokenStart = i
+      }
+      i &+= 1
+    }
+    if inToken {
+      let tokenLen = len - tokenStart
+      if tokenLen == wantLen && equalsIgnoreCaseSlice(classAttr, tokenStart, tokenLen, className) {
+        return true
+      }
+    }
+    return false
+  }
+
+  /**
+     Add a class name to this element's `class` attribute.
+     - parameter className: class name to add
+     - returns: this element
+     */
+  @discardableResult
+  @inline(__always)
+  public func addClass(_ className: String) throws -> Element {
+    let classes: OrderedSet<String> = try classNames()
+    classes.append(className)
+    try classNames(classes)
+    return self
+  }
+
+  /**
+     Remove a class name from this element's `class` attribute.
+     - parameter className: class name to remove
+     - returns: this element
+     */
+  @discardableResult
+  @inline(__always)
+  public func removeClass(_ className: String) throws -> Element {
+    let classes: OrderedSet<String> = try classNames()
+    classes.remove(className)
+    try classNames(classes)
+    return self
+  }
+
+  /**
+     Toggle a class name on this element's `class` attribute: if present, remove it; otherwise add it.
+     - parameter className: class name to toggle
+     - returns: this element
+     */
+  @discardableResult
+  @inline(__always)
+  public func toggleClass(_ className: String) throws -> Element {
+    let classes: OrderedSet<String> = try classNames()
+    if classes.contains(className) {
+      classes.remove(className)
+    } else {
+      classes.append(className)
+    }
+    try classNames(classes)
+
+    return self
+  }
+
+  /**
+     Get the value of a form element (input, textarea, etc).
+     - returns: the value of the form element, or empty string if not set.
+     */
+  @inline(__always)
+  public func val() throws -> String {
+    if tagName() == "textarea" {
+      return try text()
+    } else {
+      return try attr("value")
+    }
+  }
+
+  /**
+     Set the value of a form element (input, textarea, etc).
+     - parameter value: value to set
+     - returns: this element (for chaining)
+     */
+  @discardableResult
+  @inline(__always)
+  public func val(_ value: String) throws -> Element {
+    if tagName() == "textarea" {
+      try text(value)
+    } else {
+      try attr("value", value)
+    }
+    return self
+  }
+
+  @inline(__always)
+  override func outerHtmlHead(_ accum: StringBuilder, _ depth: Int, _ out: OutputSettings) throws {
+    if out.prettyPrint()
+      && (_tag.formatAsBlock() || (parent() != nil && parent()!.tag().formatAsBlock())
+        || out.outline())
+    {
+      if !accum.isEmpty {
+        indent(accum, depth, out)
+      }
+    }
+    accum
+      .append(UTF8Arrays.tagStart)
+      .append(tagNameUTF8())
+    try attributes?.html(accum: accum, out: out)
+
+    // selfclosing includes unknown tags, isEmpty defines tags that are always empty
+    if childNodes.isEmpty && _tag.isSelfClosing() {
+      if out.syntax() == OutputSettings.Syntax.html && _tag.isEmpty() {
+        accum.append(UTF8Arrays.selfClosingTagEnd)  // <img /> for "always empty" tags. selfclosing is ignored but retained for xml/xhtml compatibility
+      } else {
+        accum.append(UTF8Arrays.selfClosingTagEnd)  // <img /> in xml
+      }
+    } else {
+      accum.append(UTF8Arrays.tagEnd)
+    }
+  }
+
+  @inline(__always)
+  override func outerHtmlTail(_ accum: StringBuilder, _ depth: Int, _ out: OutputSettings) {
+    if !(childNodes.isEmpty && _tag.isSelfClosing()) {
+      if out.prettyPrint()
+        && (!childNodes.isEmpty
+          && (_tag.formatAsBlock()
+            || (out.outline()
+              && (childNodes.count > 1
+                || (childNodes.count == 1 && !(((childNodes[0] as? TextNode) != nil)))))))
+      {
+        indent(accum, depth, out)
+      }
+      accum.append(UTF8Arrays.endTagStart).append(tagNameUTF8()).append(UTF8Arrays.tagEnd)
+    }
+  }
+
+  /**
+     Retrieves the element's inner HTML. E.g. on a `<div>` with one empty `<p>`, would return
+     `<p></p>`. (Whereas ``Node/outerHtml()`` would return `<div><p></p></div>`.)
+
+     - returns: String of HTML.
+     - seealso: ``Node/outerHtml()``
+     */
+  @inline(__always)
+  public func html() throws -> String {
+    let accum = StringBuilder.acquire(estimatedOuterHtmlCapacity())
+    defer { StringBuilder.release(accum) }
+    try html2(accum)
+    let out = getOutputSettings()
+    if out.prettyPrint() {
+      return String(decoding: accum.buffer.trim(), as: UTF8.self)
+    }
+    return String(decoding: accum.buffer, as: UTF8.self)
+  }
+
+  /// Retrieves this element's inner HTML as UTF-8 bytes.
+  ///
+  /// This is the recommended UTF-8 serializer for almost all callers. It uses
+  /// SwiftSoup's normal source-reuse behavior and rebuilds modified nodes as needed.
+  /// For a `<div>` containing one empty `<p>`, this returns `<p></p>`.
+  @inline(__always)
+  public func htmlUTF8() throws -> [UInt8] {
+    let accum = StringBuilder.acquire(estimatedOuterHtmlCapacity())
+    defer { StringBuilder.release(accum) }
+    try html2(accum)
+    return Array(getOutputSettings().prettyPrint() ? accum.buffer.trim() : accum.buffer)
+  }
+
+  // MARK: - Advanced serialization performance tuning
+
+  /// Serializes this element's children without reusing parsed source text.
+  ///
+  /// This is an advanced performance-tuning API. Most callers should use
+  /// ``htmlUTF8()``; disable source reuse only after benchmarking a workload
+  /// with dense mutations.
+  @inline(__always)
+  public func htmlUTF8WithoutSourceReuse() throws -> [UInt8] {
+    let accum = StringBuilder.acquire(estimatedOuterHtmlCapacity())
+    defer { StringBuilder.release(accum) }
+    let outputSettings = getOutputSettings()
+    for node in childNodes {
+      try node.outerHtmlFastWithoutSourceReuse(accum, 0, outputSettings)
+    }
+    return Array(outputSettings.prettyPrint() ? accum.buffer.trim() : accum.buffer)
+  }
+
+  @inline(__always)
+  private func html2(_ accum: StringBuilder) throws {
+    for node in childNodes {
+      try node.outerHtml(accum)
+    }
+  }
+
+  @inline(__always)
+  open override func html(_ appendable: StringBuilder) throws -> StringBuilder {
+    for node in childNodes {
+      try node.outerHtml(appendable)
+    }
+    return appendable
+  }
+
+  /**
+     * Set this element's inner HTML. Clears the existing HTML first.
+     * - parameter html: HTML to parse and set into this element
+     * - returns: this element
+     * - seealso: ``append(_:)``
+     */
+  @discardableResult
+  @inline(__always)
+  public func html(_ html: String) throws -> Element {
+    empty()
+    try append(html)
+    return self
+  }
+
+  @inline(__always)
+  public override func copy(with zone: NSZone? = nil) -> Any {
+    let clone = Element(_tag, baseUri!, skipChildReserve: true)
+    if let treeBuilder {
+      clone.treeBuilder = treeBuilder
+    }
+    return copy(clone: clone)
+  }
+
+  @inline(__always)
+  public override func copy(parent: Node?) -> Node {
+    let clone = Element(_tag, baseUri!, skipChildReserve: true)
+    if let treeBuilder {
+      clone.treeBuilder = treeBuilder
+    }
+    return copy(clone: clone, parent: parent)
+  }
+
+  @inline(__always)
+  override func copyForDeepClone(parent: Node?) -> Node {
+    let clone = Element(_tag, baseUri!, skipChildReserve: true)
+    if let treeBuilder {
+      clone.treeBuilder = treeBuilder
+    }
+    return copy(
+      clone: clone,
+      parent: parent,
+      copyChildren: false,
+      rebuildIndexes: false,
+      suppressQueryIndexDirty: true
+    )
+  }
+
+  @inline(__always)
+  public override func copy(clone: Node, parent: Node?) -> Node {
+    return super.copy(clone: clone, parent: parent)
+  }
+
+  public static func == (lhs: Element, rhs: Element) -> Bool {
+    guard lhs as Node == rhs as Node else {
+      return false
+    }
+
+    return lhs._tag == rhs._tag
+  }
+
+  override public func hash(into hasher: inout Hasher) {
+    super.hash(into: &hasher)
+    hasher.combine(_tag)
+  }
+}
+
+extension Element {
+  final class IndexBuilderVisitor: NodeVisitor {
+    private let handler: (Element) -> Void
+
+    init(_ handler: @escaping (Element) -> Void) {
+      self.handler = handler
+    }
+
+    func head(_ node: Node, _ depth: Int) {
+      if let element = node as? Element {
+        handler(element)
+      }
+    }
+
+    func tail(_ node: Node, _ depth: Int) {
+      // void
+    }
+  }
+
+  @usableFromInline
+  @inline(__always)
+  func markQueryIndexesDirty() {
+    guard !(treeBuilder?.isBulkBuilding ?? false) else { return }
+    var current: Node? = self
+    while let node = current {
+      if let el = node as? Element {
+        el.isTagQueryIndexDirty = true
+        el.isClassQueryIndexDirty = true
+        el.isIdQueryIndexDirty = true
+        el.isAttributeQueryIndexDirty = true
+        el.isAttributeValueQueryIndexDirty = true
+        el.invalidateSelectorResultCache()
+      }
+      current = node.parentNode
+    }
+  }
+
+  @usableFromInline
+  @inline(__always)
+  func markTagQueryIndexDirty() {
+    guard !(treeBuilder?.isBulkBuilding ?? false) else { return }
+    var current: Node? = self
+    while let node = current {
+      if let el = node as? Element {
+        el.isTagQueryIndexDirty = true
+        el.invalidateSelectorResultCache()
+      }
+      current = node.parentNode
+    }
+  }
+
+  @usableFromInline
+  @inline(__always)
+  func markClassQueryIndexDirty() {
+    guard !(treeBuilder?.isBulkBuilding ?? false) else { return }
+    var current: Node? = self
+    while let node = current {
+      if let el = node as? Element {
+        el.isClassQueryIndexDirty = true
+        el.invalidateSelectorResultCache()
+      }
+      current = node.parentNode
+    }
+  }
+
+  @usableFromInline
+  @inline(__always)
+  func markIdQueryIndexDirty() {
+    guard !(treeBuilder?.isBulkBuilding ?? false) else { return }
+    var current: Node? = self
+    while let node = current {
+      if let el = node as? Element {
+        el.isIdQueryIndexDirty = true
+        el.invalidateSelectorResultCache()
+      }
+      current = node.parentNode
+    }
+  }
+
+  @usableFromInline
+  @inline(__always)
+  func markAttributeQueryIndexDirty() {
+    guard !(treeBuilder?.isBulkBuilding ?? false) else { return }
+    var current: Node? = self
+    while let node = current {
+      if let el = node as? Element {
+        el.isAttributeQueryIndexDirty = true
+        el.invalidateSelectorResultCache()
+      }
+      current = node.parentNode
+    }
+  }
+
+  @usableFromInline
+  @inline(__always)
+  func markAttributeValueQueryIndexDirty() {
+    guard !(treeBuilder?.isBulkBuilding ?? false) else { return }
+    var current: Node? = self
+    while let node = current {
+      if let el = node as? Element {
+        el.isAttributeValueQueryIndexDirty = true
+        el.invalidateSelectorResultCache()
+      }
+      current = node.parentNode
+    }
+  }
+
+  @usableFromInline
+  @inline(__always)
+  func markAttributeValueQueryIndexDirty(for key: [UInt8]) {
+    let normalizedKey = key.lowercased()
+    if Element.isHotAttributeKey(normalizedKey) {
+      markAttributeValueQueryIndexDirty()
+    }
+  }
+
+  @usableFromInline
+  @inline(__always)
+  func cachedSelectorResult(_ query: String) -> Elements? {
+    guard let cache = selectorResultCache else { return nil }
+    let root: Node
+    if let cachedRoot = selectorResultCacheRoot, cachedRoot.parentNode == nil {
+      root = cachedRoot
+    } else {
+      root = textMutationRoot()
+      selectorResultCacheRoot = root
+    }
+    let currentTextVersion = root.textMutationVersion
+    if currentTextVersion != selectorResultTextVersion {
+      invalidateSelectorResultCache()
+      selectorResultTextVersion = currentTextVersion
+      return nil
+    }
+    if let result = cache.get(query) {
+      recordSelectorQuery(query, hit: true)
+      return result
+    }
+    recordSelectorQuery(query, hit: false)
+    return nil
+  }
+
+  @usableFromInline
+  @inline(__always)
+  func storeSelectorResult(_ query: String, _ result: Elements) {
+    let hadCache = selectorResultCache != nil
+    if selectorResultCache == nil {
+      selectorResultCache = SelectorResultCache(capacity: Element.selectorResultCacheCapacity)
+      selectorQueryStats = SelectorQueryStats(
+        windowSize: Element.selectorResultCacheCapacity
+          * Element.selectorResultCacheScanWindowMultiplier
+      )
+    }
+    if !hadCache {
+      recordSelectorQuery(query, hit: false)
+    }
+    if selectorResultCacheRoot == nil || selectorResultCacheRoot?.parentNode != nil {
+      selectorResultCacheRoot = textMutationRoot()
+    }
+    if let root = selectorResultCacheRoot {
+      selectorResultTextVersion = root.textMutationVersion
+    } else {
+      selectorResultTextVersion = textMutationVersionToken()
+    }
+    if selectorCacheBypassRemaining > 0 {
+      selectorCacheBypassRemaining &-= 1
+      return
+    }
+    selectorResultCache?.put(query, result)
+  }
+
+  @usableFromInline
+  @inline(__always)
+  func invalidateSelectorResultCache() {
+    if selectorResultCache != nil {
+      selectorResultCache?.clear()
+      selectorResultCache = nil
+      selectorResultCacheRoot = nil
+      selectorCacheBypassRemaining = 0
+      selectorQueryStats = nil
+    }
+  }
+
+  @inline(__always)
+  private func recordSelectorQuery(_ query: String, hit: Bool) {
+    guard let stats = selectorQueryStats else { return }
+    stats.record(query, hit: hit)
+    guard selectorCacheBypassRemaining == 0 else { return }
+    let total = stats.totalCount()
+    if total < stats.windowSize { return }
+    let uniqueCount = stats.uniqueCount()
+    let uniqueThreshold =
+      (Element.selectorResultCacheCapacity
+        * Element.selectorResultCacheScanUniqueThresholdNumerator)
+      / Element.selectorResultCacheScanUniqueThresholdDenominator
+    if uniqueCount >= uniqueThreshold {
+      let hits = stats.hitsInWindow()
+      if hits * 1000 < total * Element.selectorResultCacheScanHitRatePermille {
+        selectorCacheBypassRemaining = stats.windowSize
+        stats.reset()
+      }
+    }
+  }
+
+  @usableFromInline
+  @inline(__always)
+  static func isHotAttributeKey(_ normalizedKey: ByteSlice) -> Bool {
+    return hotAttributeIndexKeys.contains(normalizedKey)
+  }
+
+  @usableFromInline
+  @inline(__always)
+  static func isHotAttributeKey(_ normalizedKey: [UInt8]) -> Bool {
+    return isHotAttributeKey(ByteSlice.fromArray(normalizedKey))
+  }
+
+  @inline(__always)
+  private func traverseElementsDepthFirst(_ visitor: (Element) -> Void) {
+    var stack: [Element] = []
+    stack.reserveCapacity(childNodes.count + 1)
+    stack.append(self)
+    while let element = stack.popLast() {
+      visitor(element)
+      let children = element.childNodes
+      if !children.isEmpty {
+        for child in children.reversed() {
+          if let childElement = child as? Element {
+            stack.append(childElement)
+          }
+        }
+      }
+    }
+  }
+
+  @usableFromInline
+  @inline(__always)
+  func materializeAttributesRecursively() {
+    traverseElementsDepthFirst { element in
+      element.attributes?.ensureMaterialized()
+    }
+  }
+
+  @inline(__always)
+  private static func forEachClassName(in bytes: [UInt8], _ visitor: (ArraySlice<UInt8>) -> Void) {
+    var i = 0
+    let len = bytes.count
+    while i < len {
+      while i < len && bytes[i].isWhitespace {
+        i &+= 1
+      }
+      let start = i
+      while i < len && !bytes[i].isWhitespace {
+        i &+= 1
+      }
+      if start < i {
+        visitor(bytes[start..<i])
+      }
+    }
+  }
+
+  @inline(__always)
+  private static func forEachClassNameWithUppercase(
+    in bytes: [UInt8], _ visitor: (ArraySlice<UInt8>, Bool) -> Void
+  ) {
+    var i = 0
+    let len = bytes.count
+    while i < len {
+      while i < len && bytes[i].isWhitespace {
+        i &+= 1
+      }
+      let start = i
+      var hasUppercase = false
+      while i < len && !bytes[i].isWhitespace {
+        let b = bytes[i]
+        if !hasUppercase && b >= 65 && b <= 90 {
+          hasUppercase = true
+        }
+        i &+= 1
+      }
+      if start < i {
+        visitor(bytes[start..<i], hasUppercase)
+      }
+    }
+  }
+
+  @inline(__always)
+  private static func forEachClassNameWithUppercase(
+    in bytes: ByteSlice, _ visitor: (ByteSlice, Bool) -> Void
+  ) {
+    var i = 0
+    let len = bytes.count
+    while i < len {
+      while i < len && bytes[i].isWhitespace {
+        i &+= 1
+      }
+      let start = i
+      var hasUppercase = false
+      while i < len && !bytes[i].isWhitespace {
+        let b = bytes[i]
+        if !hasUppercase && b >= 65 && b <= 90 {
+          hasUppercase = true
+        }
+        i &+= 1
+      }
+      if start < i {
+        visitor(bytes[start..<i], hasUppercase)
+      }
+    }
+  }
+
+  @inline(__always)
+  private func ensureDynamicAttributeValueIndexKey(_ key: ByteSlice) {
+    guard Element.dynamicAttributeValueIndexMaxKeys > 0,
+      !Element.isHotAttributeKey(key)
+    else {
+      return
+    }
+    if dynamicAttributeValueIndexKeySet?.contains(key) == true {
+      return
+    }
+    if dynamicAttributeValueIndexKeySet == nil {
+      dynamicAttributeValueIndexKeySet = Set<ByteSlice>()
+      dynamicAttributeValueIndexKeyOrder = []
+    }
+    dynamicAttributeValueIndexKeySet?.insert(key)
+    dynamicAttributeValueIndexKeyOrder?.append(key)
+    if let maxKeys = dynamicAttributeValueIndexKeyOrder?.count,
+      maxKeys > Element.dynamicAttributeValueIndexMaxKeys
+    {
+      let overflow = maxKeys - Element.dynamicAttributeValueIndexMaxKeys
+      if overflow > 0 {
+        for _ in 0..<overflow {
+          if let removed = dynamicAttributeValueIndexKeyOrder?.removeFirst() {
+            dynamicAttributeValueIndexKeySet?.remove(removed)
+            normalizedAttributeValueIndex?.removeValue(forKey: removed)
+          }
+        }
+      }
+    }
+    isAttributeValueQueryIndexDirty = true
+  }
+
+  @inline(__always)
+  private func rebuildQueryIndexesCombined(
+    needsTags: Bool,
+    needsClasses: Bool,
+    needsIds: Bool,
+    needsAttributes: Bool,
+    needsHotAttributes: Bool
+  ) {
+    DebugTrace.log(
+      "Element.rebuildQueryIndexesCombined: tags=\(needsTags) classes=\(needsClasses) ids=\(needsIds) attrs=\(needsAttributes) hot=\(needsHotAttributes)"
+    )
+    var tagIndex: [ByteSlice: [Weak<Element>]] = [:]
+    var classIndex: [ByteSlice: [Weak<Element>]] = [:]
+    var idIndex: [ByteSlice: [Weak<Element>]] = [:]
+    var attributeIndex: [ByteSlice: [Weak<Element>]] = [:]
+    var hotAttributeIndex: [ByteSlice: [ByteSlice: [Weak<Element>]]] = [:]
+    let dynamicKeys = dynamicAttributeValueIndexKeySet
+
+    let childNodeCount = childNodeSize()
+    if needsTags {
+      tagIndex.reserveCapacity(childNodeCount * 4)
+    }
+    if needsClasses {
+      classIndex.reserveCapacity(childNodeCount * 4)
+    }
+    if needsIds {
+      idIndex.reserveCapacity(childNodeCount)
+    }
+    if needsAttributes {
+      attributeIndex.reserveCapacity(childNodeCount * 4)
+    }
+    if needsHotAttributes {
+      hotAttributeIndex.reserveCapacity(
+        Element.hotAttributeIndexKeys.count + (dynamicKeys?.count ?? 0))
+    }
+
+    traverseElementsDepthFirst { element in
+      DebugTrace.log("rebuildQueryIndexesCombined: visiting \(element.tagName())")
+      if needsTags {
+        let key = element.tagNameNormalSlice()
+        tagIndex[key, default: []].append(Weak(element))
+      }
+      if needsClasses {
+        DebugTrace.log("rebuildQueryIndexesCombined: classes for \(element.tagName())")
+        if let attrs = element.attributes,
+          let classValue = try? attrs.getIgnoreCaseSlice(key: Element.classString),
+          !classValue.isEmpty
+        {
+          let trimmed = classValue.trim()
+          if !trimmed.isEmpty {
+            Element.forEachClassNameWithUppercase(in: trimmed) { className, hasUppercase in
+              let key = hasUppercase ? className.lowercased() : className
+              classIndex[key, default: []].append(Weak(element))
+            }
+          }
+        }
+      }
+      if needsIds {
+        DebugTrace.log("rebuildQueryIndexesCombined: ids for \(element.tagName())")
+        if let attrs = element.attributes,
+          let idValue = try? attrs.getIgnoreCaseSlice(key: Element.idString),
+          !idValue.isEmpty
+        {
+          idIndex[idValue, default: []].append(Weak(element))
+        }
+      }
+      if needsAttributes || needsHotAttributes {
+        DebugTrace.log("rebuildQueryIndexesCombined: attrs for \(element.tagName())")
+        if let attrs = element.attributes {
+          attrs.ensureMaterialized()
+          let lowerKeys = attrs.hasUppercaseKeys
+          for attr in attrs.attributes {
+            DebugTrace.log(
+              "rebuildQueryIndexesCombined: attr key \(String(decoding: attr.getKeyUTF8(), as: UTF8.self))"
+            )
+            let keySlice = attr.keySlice
+            let key = lowerKeys ? attr.lowerKeySlice() : keySlice
+            if needsAttributes {
+              attributeIndex[key, default: []].append(Weak(element))
+            }
+            if needsHotAttributes,
+              Element.isHotAttributeKey(key) || (dynamicKeys?.contains(key) ?? false)
+            {
+              let value = attr.lowerTrimmedValueSlice()
+              var valueIndex = hotAttributeIndex[key] ?? [:]
+              valueIndex[value, default: []].append(Weak(element))
+              hotAttributeIndex[key] = valueIndex
+            }
+          }
+        }
+      }
+    }
+
+    if needsTags {
+      normalizedTagNameIndex = tagIndex
+      isTagQueryIndexDirty = false
+    }
+    if needsClasses {
+      normalizedClassNameIndex = classIndex
+      isClassQueryIndexDirty = false
+    }
+    if needsIds {
+      normalizedIdIndex = idIndex
+      isIdQueryIndexDirty = false
+    }
+    if needsAttributes {
+      normalizedAttributeNameIndex = attributeIndex
+      isAttributeQueryIndexDirty = false
+    }
+    if needsHotAttributes {
+      normalizedAttributeValueIndex = hotAttributeIndex
+      isAttributeValueQueryIndexDirty = false
+    }
+  }
+
+  @usableFromInline
+  @inline(__always)
+  func rebuildQueryIndexesForAllTags() {
+    let needsClasses = isClassQueryIndexDirty || normalizedClassNameIndex == nil
+    let needsIds = isIdQueryIndexDirty || normalizedIdIndex == nil
+    let needsAttributes = isAttributeQueryIndexDirty || normalizedAttributeNameIndex == nil
+    let needsHotAttributes = isAttributeValueQueryIndexDirty || normalizedAttributeValueIndex == nil
+    let combinedCount =
+      1 + (needsClasses ? 1 : 0) + (needsIds ? 1 : 0) + (needsAttributes ? 1 : 0)
+      + (needsHotAttributes ? 1 : 0)
+    if combinedCount > 1 {
+      rebuildQueryIndexesCombined(
+        needsTags: true,
+        needsClasses: needsClasses,
+        needsIds: needsIds,
+        needsAttributes: needsAttributes,
+        needsHotAttributes: needsHotAttributes
+      )
+      return
+    }
+    /// Index build is depth‑first to preserve document order.
+    var newIndex: [ByteSlice: [Weak<Element>]] = [:]
+
+    let childNodeCount = childNodeSize()
+    newIndex.reserveCapacity(childNodeCount * 4)
+
+    traverseElementsDepthFirst { element in
+      let key = element.tagNameNormalSlice()
+      newIndex[key, default: []].append(Weak(element))
+    }
+
+    normalizedTagNameIndex = newIndex
+    isTagQueryIndexDirty = false
+  }
+
+  @usableFromInline
+  @inline(__always)
+  func tagQueryIndexForKey(_ key: ByteSlice) -> [Weak<Element>] {
+    if isTagQueryIndexDirty {
+      normalizedTagNameIndex = nil
+      isTagQueryIndexDirty = false
+    }
+    if normalizedTagNameIndex == nil {
+      normalizedTagNameIndex = [:]
+    }
+    if let existing = normalizedTagNameIndex?[key] {
+      return existing
+    }
+    var matches: [Weak<Element>] = []
+    let childNodeCount = childNodeSize()
+    matches.reserveCapacity(max(4, childNodeCount / 8))
+    traverseElementsDepthFirst { element in
+      if element.tagNameNormalSlice() == key {
+        matches.append(Weak(element))
+      }
+    }
+    normalizedTagNameIndex?[key] = matches
+    return matches
+  }
+
+  @inline(__always)
+  func tagQueryIndexForKey(_ key: [UInt8]) -> [Weak<Element>] {
+    return tagQueryIndexForKey(ByteSlice.fromArray(key))
+  }
+
+  @usableFromInline
+  @inline(__always)
+  func rebuildQueryIndexesForAllClasses() {
+    let needsIds = isIdQueryIndexDirty || normalizedIdIndex == nil
+    let needsAttributes = isAttributeQueryIndexDirty || normalizedAttributeNameIndex == nil
+    let needsHotAttributes = isAttributeValueQueryIndexDirty || normalizedAttributeValueIndex == nil
+    let combinedCount =
+      1 + (needsIds ? 1 : 0) + (needsAttributes ? 1 : 0) + (needsHotAttributes ? 1 : 0)
+    if combinedCount > 1 {
+      DebugTrace.log("Element.rebuildQueryIndexesForAllClasses: combined rebuild")
+      rebuildQueryIndexesCombined(
+        needsTags: false,
+        needsClasses: true,
+        needsIds: needsIds,
+        needsAttributes: needsAttributes,
+        needsHotAttributes: needsHotAttributes
+      )
+      return
+    }
+    DebugTrace.log("Element.rebuildQueryIndexesForAllClasses: solo rebuild")
+    /// Index build is depth‑first to preserve document order.
+    var newIndex: [ByteSlice: [Weak<Element>]] = [:]
+    let childNodeCount = childNodeSize()
+    newIndex.reserveCapacity(childNodeCount * 4)
+
+    traverseElementsDepthFirst { element in
+      if let attrs = element.attributes,
+        let classValue = try? attrs.getIgnoreCaseSlice(key: Element.classString),
+        !classValue.isEmpty
+      {
+        let trimmed = classValue.trim()
+        if !trimmed.isEmpty {
+          Element.forEachClassNameWithUppercase(in: trimmed) { className, hasUppercase in
+            let key = hasUppercase ? className.lowercased() : className
+            newIndex[key, default: []].append(Weak(element))
+          }
+        }
+      }
+    }
+    normalizedClassNameIndex = newIndex
+    isClassQueryIndexDirty = false
+  }
+
+  @usableFromInline
+  @inline(__always)
+  func rebuildQueryIndexesForAllIds() {
+    let needsClasses = isClassQueryIndexDirty || normalizedClassNameIndex == nil
+    let needsAttributes = isAttributeQueryIndexDirty || normalizedAttributeNameIndex == nil
+    let needsHotAttributes = isAttributeValueQueryIndexDirty || normalizedAttributeValueIndex == nil
+    let combinedCount =
+      1 + (needsClasses ? 1 : 0) + (needsAttributes ? 1 : 0) + (needsHotAttributes ? 1 : 0)
+    if combinedCount > 1 {
+      rebuildQueryIndexesCombined(
+        needsTags: false,
+        needsClasses: needsClasses,
+        needsIds: true,
+        needsAttributes: needsAttributes,
+        needsHotAttributes: needsHotAttributes
+      )
+      return
+    }
+    /// Index build is depth‑first to preserve document order.
+    var newIndex: [ByteSlice: [Weak<Element>]] = [:]
+
+    let childNodeCount = childNodeSize()
+    newIndex.reserveCapacity(childNodeCount)
+
+    traverseElementsDepthFirst { element in
+      if let attrs = element.attributes {
+        if let idValue = try? attrs.getIgnoreCaseSlice(key: Element.idString), !idValue.isEmpty {
+          newIndex[idValue, default: []].append(Weak(element))
+        }
+      }
+    }
+
+    normalizedIdIndex = newIndex
+    isIdQueryIndexDirty = false
+  }
+
+  @usableFromInline
+  @inline(__always)
+  func rebuildQueryIndexesForAllAttributes() {
+    let needsClasses = isClassQueryIndexDirty || normalizedClassNameIndex == nil
+    let needsIds = isIdQueryIndexDirty || normalizedIdIndex == nil
+    let needsHotAttributes = isAttributeValueQueryIndexDirty || normalizedAttributeValueIndex == nil
+    let combinedCount =
+      1 + (needsClasses ? 1 : 0) + (needsIds ? 1 : 0) + (needsHotAttributes ? 1 : 0)
+    if combinedCount > 1 {
+      rebuildQueryIndexesCombined(
+        needsTags: false,
+        needsClasses: needsClasses,
+        needsIds: needsIds,
+        needsAttributes: true,
+        needsHotAttributes: needsHotAttributes
+      )
+      return
+    }
+    /// Index build is depth‑first to preserve document order.
+    var newIndex: [ByteSlice: [Weak<Element>]] = [:]
+
+    let childNodeCount = childNodeSize()
+    newIndex.reserveCapacity(childNodeCount * 4)
+
+    traverseElementsDepthFirst { element in
+      if let attrs = element.attributes {
+        attrs.ensureMaterialized()
+        let lowerKeys = attrs.hasUppercaseKeys
+        for attr in attrs.attributes {
+          let keySlice = attr.keySlice
+          let key = lowerKeys ? attr.lowerKeySlice() : keySlice
+          newIndex[key, default: []].append(Weak(element))
+        }
+      }
+    }
+
+    normalizedAttributeNameIndex = newIndex
+    isAttributeQueryIndexDirty = false
+  }
+
+  @usableFromInline
+  @inline(__always)
+  func rebuildQueryIndexesForHotAttributes() {
+    let needsClasses = isClassQueryIndexDirty || normalizedClassNameIndex == nil
+    let needsIds = isIdQueryIndexDirty || normalizedIdIndex == nil
+    let needsAttributes = isAttributeQueryIndexDirty || normalizedAttributeNameIndex == nil
+    let combinedCount = 1 + (needsClasses ? 1 : 0) + (needsIds ? 1 : 0) + (needsAttributes ? 1 : 0)
+    if combinedCount > 1 {
+      rebuildQueryIndexesCombined(
+        needsTags: false,
+        needsClasses: needsClasses,
+        needsIds: needsIds,
+        needsAttributes: needsAttributes,
+        needsHotAttributes: true
+      )
+      return
+    }
+    /// Index build is depth‑first to preserve document order for stable selector results.
+    var newIndex: [ByteSlice: [ByteSlice: [Weak<Element>]]] = [:]
+    let dynamicKeys = dynamicAttributeValueIndexKeySet
+    newIndex.reserveCapacity(Element.hotAttributeIndexKeys.count + (dynamicKeys?.count ?? 0))
+    traverseElementsDepthFirst { element in
+      if let attrs = element.getAttributes() {
+        attrs.ensureMaterialized()
+        let lowerKeys = attrs.hasUppercaseKeys
+        for attr in attrs.attributes {
+          let keySlice = attr.keySlice
+          let key = lowerKeys ? attr.lowerKeySlice() : keySlice
+          guard Element.isHotAttributeKey(key) || (dynamicKeys?.contains(key) ?? false) else {
+            continue
+          }
+          let value = attr.lowerTrimmedValueSlice()
+          var valueIndex = newIndex[key] ?? [:]
+          valueIndex[value, default: []].append(Weak(element))
+          newIndex[key] = valueIndex
+        }
+      }
+    }
+
+    normalizedAttributeValueIndex = newIndex
+    isAttributeValueQueryIndexDirty = false
+  }
+
+  @inlinable
+  func rebuildQueryIndexesForThisNodeOnly() {
+    normalizedTagNameIndex = nil
+    normalizedClassNameIndex = nil
+    normalizedIdIndex = nil
+    normalizedAttributeNameIndex = nil
+    normalizedAttributeValueIndex = nil
+    markTagQueryIndexDirty()
+    markClassQueryIndexDirty()
+    markIdQueryIndexDirty()
+    markAttributeQueryIndexDirty()
+    markAttributeValueQueryIndexDirty()
+  }
+}

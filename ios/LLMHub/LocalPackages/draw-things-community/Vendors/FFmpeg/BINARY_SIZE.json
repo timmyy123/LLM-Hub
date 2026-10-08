@@ -1,0 +1,95 @@
+{
+  "measured_on": "2026-09-27",
+  "ffmpeg": "9.0.2",
+  "toolchain": "Xcode 27.0; Apple clang 21.0.0 (clang-2100.3.34.2); ld-classic from Xcode 26.6",
+  "configurations": {
+    "baseline": {
+      "archive_bytes": 25838048,
+      "linked_bytes": 21052864,
+      "gzip_bytes": 9907126,
+      "arch": "arm64",
+      "sdk": "iphoneos",
+      "minimum_os": "15.4"
+    },
+    "gpl": {
+      "archive_bytes": 26220856,
+      "linked_bytes": 21381008,
+      "gzip_bytes": 10051853,
+      "arch": "arm64",
+      "sdk": "iphoneos",
+      "minimum_os": "15.4"
+    },
+    "svt_av1": {
+      "archive_bytes": 30211568,
+      "linked_bytes": 24648576,
+      "gzip_bytes": 11534756,
+      "arch": "arm64",
+      "sdk": "iphoneos",
+      "minimum_os": "15.4"
+    },
+    "dav1d": {
+      "archive_bytes": 27093728,
+      "linked_bytes": 22104304,
+      "gzip_bytes": 10395757,
+      "arch": "arm64",
+      "sdk": "iphoneos",
+      "minimum_os": "15.4"
+    },
+    "opus": {
+      "archive_bytes": 26658416,
+      "linked_bytes": 21742088,
+      "gzip_bytes": 10275788,
+      "arch": "arm64",
+      "sdk": "iphoneos",
+      "minimum_os": "15.4"
+    },
+    "lame": {
+      "archive_bytes": 26491128,
+      "linked_bytes": 21578624,
+      "gzip_bytes": 10161204,
+      "arch": "arm64",
+      "sdk": "iphoneos",
+      "minimum_os": "15.4"
+    },
+    "libvmaf": {
+      "archive_bytes": 27236704,
+      "linked_bytes": 22322464,
+      "gzip_bytes": 10302088,
+      "arch": "arm64",
+      "sdk": "iphoneos",
+      "minimum_os": "15.4"
+    },
+    "x264": {
+      "archive_bytes": 27734176,
+      "linked_bytes": 22629440,
+      "gzip_bytes": 10667643,
+      "arch": "arm64",
+      "sdk": "iphoneos",
+      "minimum_os": "15.4"
+    },
+    "x265": {
+      "archive_bytes": 35576768,
+      "linked_bytes": 29917912,
+      "gzip_bytes": 13061155,
+      "arch": "arm64",
+      "sdk": "iphoneos",
+      "minimum_os": "15.4"
+    },
+    "libvpx": {
+      "archive_bytes": 28068352,
+      "linked_bytes": 22795056,
+      "gzip_bytes": 10767507,
+      "arch": "arm64",
+      "sdk": "iphoneos",
+      "minimum_os": "15.4"
+    },
+    "all": {
+      "archive_bytes": 45519056,
+      "linked_bytes": 38086296,
+      "gzip_bytes": 16792298,
+      "arch": "arm64",
+      "sdk": "iphoneos",
+      "minimum_os": "15.4"
+    }
+  }
+}

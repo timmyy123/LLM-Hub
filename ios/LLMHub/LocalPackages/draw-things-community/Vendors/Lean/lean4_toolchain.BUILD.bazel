@@ -1,0 +1,40 @@
+package(default_visibility = ["//visibility:public"])
+
+exports_files(["bin/lean", "lib/lean/Init.olean"])
+
+filegroup(
+    name = "LeanCompilerRuntime",
+    srcs = glob([
+        "lib/lean/*.dylib",
+    ]),
+)
+
+filegroup(
+    name = "LeanRuntimeArtifacts",
+    srcs = glob([
+        "lib/lean/Init.olean",
+        "lib/lean/Init.ir",
+        "lib/lean/Init.ir.sig",
+        "lib/lean/Init/**/*.olean",
+        "lib/lean/Init/**/*.ir",
+        "lib/lean/Init/**/*.ir.sig",
+        "lib/lean/Lean.olean",
+        "lib/lean/Lean.ir",
+        "lib/lean/Lean.ir.sig",
+        "lib/lean/Lean/**/*.olean",
+        "lib/lean/Lean/**/*.ir",
+        "lib/lean/Lean/**/*.ir.sig",
+        "lib/lean/Lake.olean",
+        "lib/lean/Lake.ir",
+        "lib/lean/Lake.ir.sig",
+        "lib/lean/Lake/**/*.olean",
+        "lib/lean/Lake/**/*.ir",
+        "lib/lean/Lake/**/*.ir.sig",
+        "lib/lean/Std.olean",
+        "lib/lean/Std.ir",
+        "lib/lean/Std.ir.sig",
+        "lib/lean/Std/**/*.olean",
+        "lib/lean/Std/**/*.ir",
+        "lib/lean/Std/**/*.ir.sig",
+    ]),
+)

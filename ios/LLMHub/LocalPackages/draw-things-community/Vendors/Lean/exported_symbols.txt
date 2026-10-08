@@ -1,0 +1,19 @@
+# Public C ABI looked up by Lean's interpreter: generated functions/constants,
+# native externs, and the three module-initialization phases. Match these only
+# against the Lean archives, never against the whole application/dependencies.
+_l_*
+_lean_*
+_initialize_Init*
+_initialize_Lean*
+_initialize_Std*
+_meta_initialize_Init*
+_meta_initialize_Lean*
+_meta_initialize_Std*
+_runtime_initialize_Init*
+_runtime_initialize_Lean*
+_runtime_initialize_Std*
+# Upstream @[export]/@[extern] names outside the usual Lean prefixes.
+_lake_environment_add
+_llvm_count_params
+_llvm_get_param
+_llvm_is_declaration

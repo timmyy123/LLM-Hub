@@ -1,0 +1,599 @@
+diff --git a/crates/core/flags/config.rs b/crates/core/flags/config.rs
+index 1a8f79d..3755e8a 100644
+--- a/crates/core/flags/config.rs
++++ b/crates/core/flags/config.rs
+@@ -14,7 +14,7 @@ use bstr::{io::BufReadExt, ByteSlice};
+ 
+ /// Return a sequence of arguments derived from ripgrep rc configuration files.
+ pub fn args() -> Vec<OsString> {
+-    let config_path = match std::env::var_os("RIPGREP_CONFIG_PATH") {
++    let config_path = match crate::system_io::var_os("RIPGREP_CONFIG_PATH") {
+         None => return vec![],
+         Some(config_path) => {
+             if config_path.is_empty() {
+diff --git a/crates/core/flags/hiargs.rs b/crates/core/flags/hiargs.rs
+index 1d793cb..8ea4c9a 100644
+--- a/crates/core/flags/hiargs.rs
++++ b/crates/core/flags/hiargs.rs
+@@ -326,8 +326,8 @@ impl HiArgs {
+     /// complete, a buffer can be given to the buffer writer to write to
+     /// stdout.
+-    pub(crate) fn buffer_writer(&self) -> termcolor::BufferWriter {
++    pub(crate) fn buffer_writer(&self) -> crate::system_io::BufferWriter {
+         let mut wtr =
+-            termcolor::BufferWriter::stdout(self.color.to_termcolor());
++            crate::system_io::BufferWriter::stdout(self.color.to_termcolor());
+         wtr.separator(self.file_separator.clone());
+         wtr
+     }
+@@ -822,7 +822,7 @@ impl HiArgs {
+     /// The writer returned is also configured to do either line or block
+     /// buffering, based on either explicit configuration from the user via CLI
+     /// flags, or automatically based on whether stdout is connected to a tty.
+-    pub(crate) fn stdout(&self) -> grep::cli::StandardStream {
++    pub(crate) fn stdout(&self) -> crate::system_io::StandardStream {
+         let color = self.color.to_termcolor();
+         match self.buffer {
+             BufferMode::Auto => {
+@@ -830,9 +830,9 @@ impl HiArgs {
+-                    grep::cli::stdout_buffered_line(color)
++                    crate::system_io::stdout(color)
+                 } else {
+-                    grep::cli::stdout_buffered_block(color)
++                    crate::system_io::stdout(color)
+                 }
+             }
+-            BufferMode::Line => grep::cli::stdout_buffered_line(color),
+-            BufferMode::Block => grep::cli::stdout_buffered_block(color),
++            BufferMode::Line => crate::system_io::stdout(color),
++            BufferMode::Block => crate::system_io::stdout(color),
+         }
+     }
+@@ -944,12 +944,10 @@ impl State {
+     /// Initialize state to some sensible defaults.
+     ///
+     /// Note that the state values may change throughout the lifetime of
+     /// argument parsing.
+     fn new() -> anyhow::Result<State> {
+-        use std::io::IsTerminal;
+-
+         Ok(State {
+-            is_terminal_stdout: std::io::stdout().is_terminal(),
++            is_terminal_stdout: crate::system_io::is_terminal_stdout(),
+             stdin_consumed: false,
+             cwd: current_dir()?,
+         })
+@@ -1023,6 +1021,8 @@ impl Patterns {
+                              has already been consumed"
+                         );
+-                        for pat in grep::cli::patterns_from_stdin()? {
++                        for pat in grep::cli::patterns_from_reader(
++                            crate::system_io::stdin(),
++                        )? {
+                             add(pat);
+                         }
+                         state.stdin_consumed = true;
+@@ -1101,7 +1101,7 @@ impl Paths {
+         // mode, but there really is no good way to mitigate it. It's just a
+         // consequence of letting the user type 'rg foo' and "guessing" that
+         // they meant to search the CWD.
+-        let is_readable_stdin = grep::cli::is_readable_stdin();
++        let is_readable_stdin = crate::system_io::is_readable_stdin();
+         let use_cwd = !is_readable_stdin
+             || state.stdin_consumed
+             || !matches!(low.mode, Mode::Search(_));
+@@ -1290,9 +1290,9 @@ fn current_dir() -> anyhow::Result<PathBuf> {
+-    let err = match std::env::current_dir() {
+-        Err(err) => err,
+-        Ok(cwd) => return Ok(cwd),
+-    };
+-    if let Some(cwd) = std::env::var_os("PWD") {
++    if let Some(cwd) = crate::system_io::var_os("PWD") {
+         if !cwd.is_empty() {
+             return Ok(PathBuf::from(cwd));
+         }
+     }
++    let err = match std::env::current_dir() {
++        Err(err) => err,
++        Ok(cwd) => return Ok(cwd),
++    };
+diff --git a/crates/core/flags/parse.rs b/crates/core/flags/parse.rs
+index f4b0d69..fa64e17 100644
+--- a/crates/core/flags/parse.rs
++++ b/crates/core/flags/parse.rs
+@@ -44,8 +44,8 @@ impl<T> ParseResult<T> {
+ }
+ 
+ /// Parse CLI arguments and convert then to their high level representation.
+-pub(crate) fn parse() -> ParseResult<HiArgs> {
+-    parse_low().and_then(|low| match HiArgs::from_low_args(low) {
++pub(crate) fn parse(rawargs: Vec<std::ffi::OsString>) -> ParseResult<HiArgs> {
++    parse_low(&rawargs).and_then(|low| match HiArgs::from_low_args(low) {
+         Ok(hi) => ParseResult::Ok(hi),
+         Err(err) => ParseResult::Err(err),
+     })
+@@ -60,14 +60,11 @@ pub(crate) fn parse() -> ParseResult<HiArgs> {
+ ///
+ /// This will also set one-time global state flags, such as the log level and
+ /// whether messages should be printed.
+-fn parse_low() -> ParseResult<LowArgs> {
+-    if let Err(err) = crate::logger::Logger::init() {
+-        let err = anyhow::anyhow!("failed to initialize logger: {err}");
+-        return ParseResult::Err(err);
+-    }
++fn parse_low(rawargs: &[std::ffi::OsString]) -> ParseResult<LowArgs> {
++    crate::logger::Logger::init();
+ 
+     let parser = Parser::new();
+     let mut low = LowArgs::default();
+-    if let Err(err) = parser.parse(std::env::args_os().skip(1), &mut low) {
++    if let Err(err) = parser.parse(rawargs.iter().cloned(), &mut low) {
+         return ParseResult::Err(err);
+     }
+@@ -100,7 +97,7 @@ fn parse_low() -> ParseResult<LowArgs> {
+     // The final arguments are just the arguments from the CLI appending to
+     // the end of the config arguments.
+     let mut final_args = config_args;
+-    final_args.extend(std::env::args_os().skip(1));
++    final_args.extend(rawargs.iter().cloned());
+ 
+     // Now do the CLI parsing dance again.
+     let mut low = LowArgs::default();
+diff --git a/crates/core/logger.rs b/crates/core/logger.rs
+index 6b31595..12b9de4 100644
+--- a/crates/core/logger.rs
++++ b/crates/core/logger.rs
+@@ -21,8 +21,10 @@ const LOGGER: &'static Logger = &Logger(());
+ impl Logger {
+     /// Create a new logger that logs to stderr and initialize it as the
+-    /// global logger. If there was a problem setting the logger, then an
+-    /// error is returned.
+-    pub(crate) fn init() -> Result<(), log::SetLoggerError> {
+-        log::set_logger(LOGGER)
++    /// global logger. Repeated in-process rg invocations share it.
++    pub(crate) fn init() {
++        static INIT: std::sync::Once = std::sync::Once::new();
++        INIT.call_once(|| {
++            let _ = log::set_logger(LOGGER);
++        });
+     }
+ }
+diff --git a/crates/core/main.rs b/crates/core/main.rs
+index 34f714d..cb2fa2d 100644
+--- a/crates/core/main.rs
++++ b/crates/core/main.rs
+@@ -2,7 +2,12 @@
+ The main entry point into ripgrep.
+ */
+ 
+-use std::{io::Write, process::ExitCode};
++use std::{
++    ffi::{c_char, c_int, CStr, OsString},
++    io::Write,
++    os::unix::ffi::OsStringExt,
++    process::ExitCode,
++};
+ 
+ use ignore::WalkState;
+ 
+@@ -14,6 +19,7 @@ mod flags;
+ mod haystack;
+ mod logger;
+ mod search;
++mod system_io;
+ 
+ // Since Rust no longer uses jemalloc by default, ripgrep will, by default,
+ // use the system allocator. On Linux, this would normally be glibc's
+@@ -42,7 +48,52 @@ static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
+ 
+ /// Then, as it was, then again it will be.
++#[allow(dead_code)]
+ fn main() -> ExitCode {
+-    match run(flags::parse()) {
++    execute(std::env::args_os().skip(1).collect())
++}
++
++/// Embedded entry point shared by Local Code and ios_system. Each invocation
++/// is serialized because ripgrep has process-global logger and message state.
++/// Search workers remain parallel.
++#[no_mangle]
++pub unsafe extern "C" fn rg_main(
++    argc: c_int,
++    argv: *mut *mut c_char,
++) -> c_int {
++    let _invocation = system_io::Invocation::begin();
++    if argc < 1 || argv.is_null() {
++        system_io::write_error(format_args!("invalid argument vector"));
++        return 2;
++    }
++    let mut rawargs = Vec::with_capacity((argc - 1) as usize);
++    for index in 1..argc {
++        let argument = *argv.add(index as usize);
++        if argument.is_null() {
++            system_io::write_error(format_args!("invalid null argument"));
++            return 2;
++        }
++        let bytes = CStr::from_ptr(argument).to_bytes();
++        rawargs.push(OsString::from_vec(bytes.to_vec()));
++    }
++    let code = match std::panic::catch_unwind(|| execute(rawargs)) {
++        Ok(code) => code,
++        Err(_) => {
++            system_io::write_error(format_args!("internal panic"));
++            return 2;
++        }
++    };
++    if code == ExitCode::SUCCESS {
++        0
++    } else if code == ExitCode::from(1) {
++        1
++    } else {
++        2
++    }
++}
++
++fn execute(rawargs: Vec<OsString>) -> ExitCode {
++    messages::reset();
++    match run(flags::parse(rawargs)) {
+         Ok(code) => code,
+         Err(err) => {
+             // Look for a broken pipe error. In this case, we generally want
+@@ -364,6 +415,7 @@ fn generate(mode: crate::flags::GenerateMode) -> anyhow::Result<ExitCode> {
+             flags::generate_complete_powershell()
+         }
+     };
+-    writeln!(std::io::stdout(), "{}", output.trim_end())?;
++    let mut stdout = system_io::stdout(termcolor::ColorChoice::Never);
++    writeln!(stdout, "{}", output.trim_end())?;
+     Ok(ExitCode::from(0))
+ }
+@@ -399,6 +451,7 @@ fn special(mode: crate::flags::SpecialMode) -> anyhow::Result<ExitCode> {
+             output
+         }
+     };
+-    writeln!(std::io::stdout(), "{}", output.trim_end())?;
++    let mut stdout = system_io::stdout(termcolor::ColorChoice::Never);
++    writeln!(stdout, "{}", output.trim_end())?;
+     Ok(exit)
+ }
+diff --git a/crates/core/messages.rs b/crates/core/messages.rs
+index fe567e3..4a6a1a1 100644
+--- a/crates/core/messages.rs
++++ b/crates/core/messages.rs
+@@ -31,36 +31,6 @@ static ERRORED: AtomicBool = AtomicBool::new(false);
+ #[macro_export]
+ macro_rules! eprintln_locked {
+     ($($tt:tt)*) => {{
+-        {
+-            use std::io::Write;
+-
+-            // This is a bit of an abstraction violation because we explicitly
+-            // lock stdout before printing to stderr. This avoids interleaving
+-            // lines within ripgrep because `search_parallel` uses `termcolor`,
+-            // which accesses the same stdout lock when writing lines.
+-            let stdout = std::io::stdout().lock();
+-            let mut stderr = std::io::stderr().lock();
+-            // We specifically ignore any errors here. One plausible error we
+-            // can get in some cases is a broken pipe error. And when that
+-            // occurs, we should exit gracefully. Otherwise, just abort with
+-            // an error code because there isn't much else we can do.
+-            //
+-            // See: https://github.com/BurntSushi/ripgrep/issues/1966
+-            if let Err(err) = write!(stderr, "rg: ") {
+-                if err.kind() == std::io::ErrorKind::BrokenPipe {
+-                    std::process::exit(0);
+-                } else {
+-                    std::process::exit(2);
+-                }
+-            }
+-            if let Err(err) = writeln!(stderr, $($tt)*) {
+-                if err.kind() == std::io::ErrorKind::BrokenPipe {
+-                    std::process::exit(0);
+-                } else {
+-                    std::process::exit(2);
+-                }
+-            }
+-            drop(stdout);
+-        }
++        crate::system_io::write_error(format_args!($($tt)*));
+     }}
+ }
+@@ -137,2 +107,9 @@ pub(crate) fn set_errored() {
+     ERRORED.store(true, Ordering::SeqCst);
+ }
++
++/// Reset state that ripgrep normally initializes once per process.
++pub(crate) fn reset() {
++    MESSAGES.store(false, Ordering::SeqCst);
++    IGNORE_MESSAGES.store(false, Ordering::SeqCst);
++    ERRORED.store(false, Ordering::SeqCst);
++}
+diff --git a/crates/core/search.rs b/crates/core/search.rs
+index e10a1a5..49c40ee 100644
+--- a/crates/core/search.rs
++++ b/crates/core/search.rs
+@@ -254,8 +254,8 @@ impl<W: WriteColor> SearchWorker<W> {
+         log::trace!("{}: binary detection: {:?}", path.display(), bin);
+ 
+         self.searcher.set_binary_detection(bin);
+         if haystack.is_stdin() {
+-            self.search_reader(path, &mut io::stdin().lock())
++            self.search_reader(path, &mut crate::system_io::stdin())
+         } else if self.should_preprocess(path) {
+             self.search_preprocessor(path)
+         } else if self.should_decompress(path) {
+diff --git a/crates/core/system_io.rs b/crates/core/system_io.rs
+new file mode 100644
+index 0000000..80988bb
+--- /dev/null
++++ b/crates/core/system_io.rs
+@@ -0,0 +1,269 @@
++use std::{
++    ffi::{c_char, c_int, c_void, CString, OsString},
++    fmt,
++    io::{self, Read, Write},
++    os::unix::ffi::OsStringExt,
++    sync::{
++        atomic::{AtomicBool, AtomicI32, Ordering},
++        Mutex, MutexGuard,
++    },
++};
++
++use termcolor::{Ansi, Buffer, ColorChoice, NoColor, WriteColor};
++
++extern "C" {
++    fn ios_getenv(name: *const c_char) -> *mut c_char;
++    fn ios_getstdin() -> c_int;
++    fn ios_getstdout() -> c_int;
++    fn ios_getstderr() -> c_int;
++    fn ios_isatty(fd: c_int) -> c_int;
++    #[link_name = "read"]
++    fn system_read(fd: c_int, buffer: *mut c_void, count: usize) -> isize;
++    #[link_name = "write"]
++    fn system_write(fd: c_int, buffer: *const c_void, count: usize) -> isize;
++}
++
++static INVOCATION_LOCK: Mutex<()> = Mutex::new(());
++static STDIN_FD: AtomicI32 = AtomicI32::new(0);
++static STDOUT_FD: AtomicI32 = AtomicI32::new(1);
++static STDERR_FD: AtomicI32 = AtomicI32::new(2);
++static STDERR_LOCK: Mutex<()> = Mutex::new(());
++
++/// Holds process-global state for one embedded ripgrep invocation.
++pub(crate) struct Invocation {
++    _guard: MutexGuard<'static, ()>,
++}
++
++impl Invocation {
++    pub(crate) fn begin() -> Invocation {
++        let guard =
++            INVOCATION_LOCK.lock().unwrap_or_else(|error| error.into_inner());
++        STDIN_FD.store(valid_fd(unsafe { ios_getstdin() }, 0), Ordering::SeqCst);
++        STDOUT_FD.store(
++            valid_fd(unsafe { ios_getstdout() }, 1),
++            Ordering::SeqCst,
++        );
++        STDERR_FD.store(
++            valid_fd(unsafe { ios_getstderr() }, 2),
++            Ordering::SeqCst,
++        );
++        Invocation { _guard: guard }
++    }
++}
++
++fn valid_fd(fd: c_int, fallback: c_int) -> c_int {
++    if fd < 0 { fallback } else { fd }
++}
++
++#[derive(Clone, Copy, Debug)]
++struct RawReader {
++    fd: c_int,
++}
++
++impl Read for RawReader {
++    fn read(&mut self, buffer: &mut [u8]) -> io::Result<usize> {
++        loop {
++            let result = unsafe {
++                system_read(
++                    self.fd,
++                    buffer.as_mut_ptr().cast::<c_void>(),
++                    buffer.len(),
++                )
++            };
++            if result >= 0 {
++                return Ok(result as usize);
++            }
++            let error = io::Error::last_os_error();
++            if error.kind() != io::ErrorKind::Interrupted {
++                return Err(error);
++            }
++        }
++    }
++}
++
++#[derive(Clone, Copy, Debug)]
++pub(crate) struct RawWriter {
++    fd: c_int,
++}
++
++impl RawWriter {
++    fn stdout() -> RawWriter {
++        RawWriter { fd: STDOUT_FD.load(Ordering::SeqCst) }
++    }
++
++    fn stderr() -> RawWriter {
++        RawWriter { fd: STDERR_FD.load(Ordering::SeqCst) }
++    }
++}
++
++impl Write for RawWriter {
++    fn write(&mut self, buffer: &[u8]) -> io::Result<usize> {
++        loop {
++            let result = unsafe {
++                system_write(
++                    self.fd,
++                    buffer.as_ptr().cast::<c_void>(),
++                    buffer.len(),
++                )
++            };
++            if result >= 0 {
++                return Ok(result as usize);
++            }
++            let error = io::Error::last_os_error();
++            if error.kind() != io::ErrorKind::Interrupted {
++                return Err(error);
++            }
++        }
++    }
++
++    fn flush(&mut self) -> io::Result<()> {
++        Ok(())
++    }
++}
++
++#[derive(Debug)]
++pub(crate) enum StandardStream {
++    NoColor(NoColor<RawWriter>),
++    Ansi(Ansi<RawWriter>),
++}
++
++impl Write for StandardStream {
++    fn write(&mut self, buffer: &[u8]) -> io::Result<usize> {
++        match self {
++            StandardStream::NoColor(writer) => writer.write(buffer),
++            StandardStream::Ansi(writer) => writer.write(buffer),
++        }
++    }
++
++    fn flush(&mut self) -> io::Result<()> {
++        match self {
++            StandardStream::NoColor(writer) => writer.flush(),
++            StandardStream::Ansi(writer) => writer.flush(),
++        }
++    }
++}
++
++impl WriteColor for StandardStream {
++    fn supports_color(&self) -> bool {
++        matches!(self, StandardStream::Ansi(_))
++    }
++
++    fn supports_hyperlinks(&self) -> bool {
++        matches!(self, StandardStream::Ansi(_))
++    }
++
++    fn set_color(&mut self, spec: &termcolor::ColorSpec) -> io::Result<()> {
++        match self {
++            StandardStream::NoColor(writer) => writer.set_color(spec),
++            StandardStream::Ansi(writer) => writer.set_color(spec),
++        }
++    }
++
++    fn set_hyperlink(
++        &mut self,
++        link: &termcolor::HyperlinkSpec,
++    ) -> io::Result<()> {
++        match self {
++            StandardStream::NoColor(writer) => writer.set_hyperlink(link),
++            StandardStream::Ansi(writer) => writer.set_hyperlink(link),
++        }
++    }
++
++    fn reset(&mut self) -> io::Result<()> {
++        match self {
++            StandardStream::NoColor(writer) => writer.reset(),
++            StandardStream::Ansi(writer) => writer.reset(),
++        }
++    }
++}
++
++pub(crate) fn stdout(choice: ColorChoice) -> StandardStream {
++    if uses_color(choice) {
++        StandardStream::Ansi(Ansi::new(RawWriter::stdout()))
++    } else {
++        StandardStream::NoColor(NoColor::new(RawWriter::stdout()))
++    }
++}
++
++fn uses_color(choice: ColorChoice) -> bool {
++    match choice {
++        ColorChoice::Always | ColorChoice::AlwaysAnsi => true,
++        ColorChoice::Auto => is_terminal_stdout(),
++        ColorChoice::Never => false,
++    }
++}
++
++#[derive(Debug)]
++pub(crate) struct BufferWriter {
++    color: bool,
++    printed: AtomicBool,
++    separator: Option<Vec<u8>>,
++    lock: Mutex<()>,
++}
++
++impl BufferWriter {
++    pub(crate) fn stdout(choice: ColorChoice) -> BufferWriter {
++        BufferWriter {
++            color: uses_color(choice),
++            printed: AtomicBool::new(false),
++            separator: None,
++            lock: Mutex::new(()),
++        }
++    }
++
++    pub(crate) fn separator(&mut self, separator: Option<Vec<u8>>) {
++        self.separator = separator;
++    }
++
++    pub(crate) fn buffer(&self) -> Buffer {
++        if self.color { Buffer::ansi() } else { Buffer::no_color() }
++    }
++
++    pub(crate) fn print(&self, buffer: &Buffer) -> io::Result<()> {
++        if buffer.is_empty() {
++            return Ok(());
++        }
++        let _guard = self.lock.lock().unwrap_or_else(|error| error.into_inner());
++        let mut writer = RawWriter::stdout();
++        if let Some(separator) = self.separator.as_ref() {
++            if self.printed.load(Ordering::Relaxed) {
++                writer.write_all(separator)?;
++                writer.write_all(b"\n")?;
++            }
++        }
++        writer.write_all(buffer.as_slice())?;
++        self.printed.store(true, Ordering::Relaxed);
++        Ok(())
++    }
++}
++
++pub(crate) fn stdin() -> impl Read {
++    RawReader { fd: STDIN_FD.load(Ordering::SeqCst) }
++}
++
++pub(crate) fn is_terminal_stdout() -> bool {
++    unsafe { ios_isatty(STDOUT_FD.load(Ordering::SeqCst)) != 0 }
++}
++
++pub(crate) fn is_readable_stdin() -> bool {
++    unsafe { ios_isatty(STDIN_FD.load(Ordering::SeqCst)) == 0 }
++}
++
++pub(crate) fn var_os(name: &str) -> Option<OsString> {
++    let name = CString::new(name).ok()?;
++    let value = unsafe { ios_getenv(name.as_ptr()) };
++    if value.is_null() {
++        return None;
++    }
++    let bytes = unsafe { std::ffi::CStr::from_ptr(value) }.to_bytes();
++    Some(OsString::from_vec(bytes.to_vec()))
++}
++
++pub(crate) fn write_error(arguments: fmt::Arguments<'_>) {
++    let _guard =
++        STDERR_LOCK.lock().unwrap_or_else(|error| error.into_inner());
++    let mut writer = RawWriter::stderr();
++    let _ = writer.write_all(b"rg: ");
++    let _ = writer.write_fmt(arguments);
++    let _ = writer.write_all(b"\n");
++}

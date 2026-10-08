@@ -1,0 +1,14 @@
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "gmp",
+    srcs = ["mini-gmp/mini-gmp.c"],
+    hdrs = ["mini-gmp/mini-gmp.h"],
+    copts = [
+        "-O3",
+        "-Wno-sign-compare",
+        "-Wno-unused-function",
+    ],
+    includes = ["mini-gmp"],
+    linkstatic = True,
+)

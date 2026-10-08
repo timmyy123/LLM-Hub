@@ -1,0 +1,9 @@
+# List of files to copy to remote server (~/GPUScripts)
+# One file per line, relative to the script directory
+# Lines starting with # are comments
+
+verify_gpu_setup.sh
+LaunchGPU
+UpdateModels
+README.md
+

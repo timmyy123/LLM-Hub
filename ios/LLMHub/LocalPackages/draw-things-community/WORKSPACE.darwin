@@ -1,0 +1,447 @@
+load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository", "new_git_repository")
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
+# Keep this ahead of swift_rules_dependencies() so its fallback protobuf pin does not win.
+http_archive(
+    name = "com_google_protobuf",
+    sha256 = "3ad017543e502ffaa9cd1f4bd4fe96cf117ce7175970f191705fa0518aff80cd",
+    strip_prefix = "protobuf-32.0",
+    urls = [
+        "https://github.com/protocolbuffers/protobuf/archive/refs/tags/v32.0.tar.gz",
+    ],
+)
+
+http_archive(
+    name = "rules_rust",
+    integrity = "sha256-X/2f8fby8U8gV7fLqpGl5qzZpMve1ayB2tm+s2hZYB4=",
+    urls = ["https://github.com/bazelbuild/rules_rust/releases/download/0.70.0/rules_rust-0.70.0.tar.gz"],
+)
+
+# rules_rust 0.70.0 needs the uefi constraint introduced in platforms 1.0.0.
+http_archive(
+    name = "platforms",
+    sha256 = "3384eb1c30762704fbe38e440204e114154086c8fc8a8c2e3e28441028c019a8",
+    urls = [
+        "https://mirror.bazel.build/github.com/bazelbuild/platforms/releases/download/1.0.0/platforms-1.0.0.tar.gz",
+        "https://github.com/bazelbuild/platforms/releases/download/1.0.0/platforms-1.0.0.tar.gz",
+    ],
+)
+
+http_archive(
+    name = "rules_python",
+    sha256 = "2cc26bbd53854ceb76dd42a834b1002cd4ba7f8df35440cf03482e045affc244",
+    strip_prefix = "rules_python-1.3.0",
+    url = "https://github.com/bazel-contrib/rules_python/releases/download/1.3.0/rules_python-1.3.0.tar.gz",
+)
+
+load("@rules_python//python:repositories.bzl", "py_repositories")
+
+py_repositories()
+
+http_archive(
+    name = "bazel_features",
+    sha256 = "06a9691becc357c1e4af011b9fb3239097503ce00607d9eb6b11ea0fac304039",
+    strip_prefix = "bazel_features-1.35.0",
+    url = "https://github.com/bazel-contrib/bazel_features/releases/download/v1.35.0/bazel_features-v1.35.0.tar.gz",
+)
+
+load("@bazel_features//:deps.bzl", "bazel_features_deps")
+
+bazel_features_deps()
+
+http_archive(
+    name = "build_bazel_rules_apple",
+    sha256 = "ef8a5744b2ffff49f47647226f69f0f06522ca2e8a6fa1aaf5d65d5314813c34",
+    url = "https://github.com/bazelbuild/rules_apple/releases/download/4.2.0/rules_apple.4.2.0.tar.gz",
+)
+
+http_archive(
+    name = "build_bazel_rules_swift",
+    sha256 = "5eff717c18bb513285b499add68f2331509cd4e411ff085e96a86b3342c1e5aa",
+    url = "https://github.com/bazelbuild/rules_swift/releases/download/3.1.2/rules_swift.3.1.2.tar.gz",
+)
+
+git_repository(
+    name = "rules_xcodeproj",
+    commit = "b5265cf4c360a7607d82ab89e109d20f2a66188b",
+    remote = "https://github.com/MobileNativeFoundation/rules_xcodeproj.git",
+    shallow_since = "1753830850 -0500",
+)
+
+load(
+    "@rules_xcodeproj//xcodeproj:repositories.bzl",
+    "xcodeproj_rules_dependencies",
+)
+
+xcodeproj_rules_dependencies()
+
+load("@build_bazel_rules_apple//apple:repositories.bzl", "apple_rules_dependencies")
+
+apple_rules_dependencies()
+
+load("@build_bazel_rules_swift//swift:repositories.bzl", "swift_rules_dependencies")
+
+swift_rules_dependencies()
+
+load("@build_bazel_rules_swift//swift:extras.bzl", "swift_rules_extra_dependencies")
+
+swift_rules_extra_dependencies()
+
+load("@build_bazel_apple_support//lib:repositories.bzl", "apple_support_dependencies")
+
+apple_support_dependencies()
+
+load("//Vendors/Z3:repositories.bzl", "z3_repositories")
+
+z3_repositories()
+
+load("//Vendors/FFmpeg:repositories.bzl", "ffmpeg_repositories")
+
+ffmpeg_repositories()
+
+load("//Vendors/Lean:repositories.bzl", "lean_repositories")
+
+lean_repositories()
+
+load("//Vendors/Ripgrep:repositories.bzl", "ripgrep_repositories")
+
+ripgrep_repositories()
+
+load("@ripgrep_crates//:defs.bzl", "crate_repositories")
+
+crate_repositories()
+
+git_repository(
+    name = "dflat",
+    commit = "73925e51e4f44add842177a229f9990cb13711ff",
+    remote = "https://github.com/liuliu/dflat.git",
+    shallow_since = "1757626017 -0400",
+)
+
+load("@dflat//:deps.bzl", "dflat_deps")
+
+dflat_deps()
+
+git_repository(
+    name = "s4nnc",
+    commit = "e2926609354a093395a4c3c30bcb627b9c1787aa",
+    remote = "https://github.com/liuliu/s4nnc.git",
+    shallow_since = "1790562167 -0400",
+)
+
+load("@s4nnc//:deps.bzl", "s4nnc_deps", "s4nnc_extra_deps")
+
+s4nnc_deps()
+
+load("@ccv//config:ccv.bzl", "ccv_deps", "ccv_setting")
+
+ccv_deps()
+
+load("@build_bazel_rules_cuda//gpus:cuda_configure.bzl", "cuda_configure")
+load("@build_bazel_rules_cuda//nccl:nccl_configure.bzl", "nccl_configure")
+
+cuda_configure(name = "local_config_cuda")
+
+nccl_configure(name = "local_config_nccl")
+
+ccv_setting(
+    name = "local_config_ccv",
+    have_accelerate_framework = True,
+    have_pthread = True,
+)
+
+git_repository(
+    name = "swift-fickling",
+    commit = "f86bc6b694b3167e6e5be0cb6f16e5c5ba85be63",
+    remote = "https://github.com/liuliu/swift-fickling.git",
+    shallow_since = "1738984072 -0500",
+)
+
+load("@swift-fickling//:deps.bzl", "swift_fickling_deps")
+
+swift_fickling_deps()
+
+git_repository(
+    name = "swift-sentencepiece",
+    commit = "4c8baf1b03569428ab38dda7fdecf27886a16c1f",
+    remote = "https://github.com/liuliu/swift-sentencepiece.git",
+    shallow_since = "1785202705 -0400",
+)
+
+load("@swift-sentencepiece//:deps.bzl", "swift_sentencepiece_deps")
+
+swift_sentencepiece_deps()
+
+new_git_repository(
+    name = "SwiftNumerics",
+    build_file = "swift-numerics.BUILD",
+    commit = "1e5cbc4e2142677d6695036a748344c8edb83e5c",
+    remote = "https://github.com/apple/swift-numerics.git",
+    shallow_since = "1630424082 -0400",
+)
+
+new_git_repository(
+    name = "SwiftAlgorithms",
+    build_file = "swift-algorithms.BUILD",
+    commit = "195e0316d7ba71e134d0f6c677f64b4db6160c46",
+    remote = "https://github.com/apple/swift-algorithms.git",
+    shallow_since = "1645643239 -0600",
+)
+
+new_git_repository(
+    name = "SwiftPNG",
+    build_file = "swift-png.BUILD",
+    commit = "075dfb248ae327822635370e9d4f94a5d3fe93b2",
+    remote = "https://github.com/kelvin13/swift-png",
+    shallow_since = "1645648674 -0600",
+)
+
+# Note that swift-fickling can actually determine what version of SwiftCollections we use
+new_git_repository(
+    name = "SwiftCollections",
+    build_file = "swift-collections.BUILD",
+    commit = "9bf03ff58ce34478e66aaee630e491823326fd06",
+    remote = "https://github.com/apple/swift-collections.git",
+    shallow_since = "1724118356 -0700",
+)
+
+new_git_repository(
+    name = "SwiftArgumentParser",
+    build_file = "swift-argument-parser.BUILD",
+    commit = "46989693916f56d1186bd59ac15124caef896560",
+    remote = "https://github.com/apple/swift-argument-parser.git",
+    shallow_since = "1710612947 -0700",
+)
+
+new_git_repository(
+    name = "SwiftSystem",
+    build_file = "swift-system.BUILD",
+    commit = "fbd61a676d79cbde05cd4fda3cc46e94d6b8f0eb",
+    remote = "https://github.com/apple/swift-system.git",
+    shallow_since = "1729316385 -0700",
+)
+
+new_git_repository(
+    name = "SwiftProtobuf",
+    build_file = "swift-protobuf.BUILD",
+    commit = "d57a5aecf24a25b32ec4a74be2f5d0a995a47c4b",
+    remote = "https://github.com/apple/swift-protobuf.git",
+    shallow_since = "1720448759 -0400",
+)
+
+new_git_repository(
+    name = "SwiftLog",
+    build_file = "swift-log.BUILD",
+    commit = "6fe203dc33195667ce1759bf0182975e4653ba1c",
+    remote = "https://github.com/apple/swift-log.git",
+)
+
+new_git_repository(
+    name = "SwiftCrypto",
+    build_file = "swift-crypto.BUILD",
+    commit = "81bee98e706aee68d39ed5996db069ef2b313d62",
+    remote = "https://github.com/apple/swift-crypto.git",
+)
+
+new_git_repository(
+    name = "OpenSSH",
+    build_file = "openssh-portable.BUILD",
+    commit = "e8dd756725e8800fcd0b3fd71ee6b4382d1e8fab",
+    patch_args = ["-p1"],
+    patches = ["//Vendors/OpenSSH:ios.patch"],
+    remote = "https://github.com/openssh/openssh-portable.git",
+)
+
+new_git_repository(
+    name = "SwiftNIO",
+    build_file = "swift-nio.BUILD",
+    commit = "a16e2f54a25b2af217044e5168997009a505930f",
+    remote = "https://github.com/apple/swift-nio.git",
+)
+
+new_git_repository(
+    name = "SwiftNIOExtras",
+    build_file = "swift-nio-extras.BUILD",
+    commit = "b4dbfacff47fb8d0f9e0a422d8d37935a9f10570",
+    remote = "https://github.com/apple/swift-nio-extras.git",
+)
+
+new_git_repository(
+    name = "SwiftNIOHTTP2",
+    build_file = "swift-nio-http2.BUILD",
+    commit = "6d021a48483dbb273a9be43f65234bdc9185b364",
+    remote = "https://github.com/apple/swift-nio-http2.git",
+)
+
+new_git_repository(
+    name = "SwiftNIOSSL",
+    build_file = "swift-nio-ssl.BUILD",
+    commit = "9d0d5d8798a576fbf674a823734e65e15ca5f2ec",
+    remote = "https://github.com/apple/swift-nio-ssl.git",
+)
+
+new_git_repository(
+    name = "SwiftNIOTransportService",
+    build_file = "swift-nio-transport-services.BUILD",
+    commit = "c0d9a144cfaec8d3d596aadde3039286a266c15c",
+    remote = "https://github.com/apple/swift-nio-transport-services.git",
+)
+
+new_git_repository(
+    name = "grpc-swift",
+    build_file = "grpc-swift.BUILD",
+    commit = "4ab02e1ae5b4dfdd723773e955b62f35ccbaa7c7",
+    remote = "https://github.com/grpc/grpc-swift.git",
+)
+
+new_git_repository(
+    name = "SwiftToolsSupportCore",
+    build_file = "swift-tools-support-core.BUILD",
+    commit = "930e82e5ae2432c71fe05f440b5d778285270bdb",
+    remote = "https://github.com/apple/swift-tools-support-core.git",
+    shallow_since = "1708729686 -0800",
+)
+
+new_git_repository(
+    name = "SwiftSyntax",
+    build_file = "swift-syntax.BUILD",
+    commit = "fa8f95c2d536d6620cc2f504ebe8a6167c9fc2dd",
+    remote = "https://github.com/apple/swift-syntax.git",
+    shallow_since = "1709941517 -0800",
+)
+
+new_git_repository(
+    name = "SwiftCMark",
+    build_file = "swift-cmark.BUILD",
+    commit = "3bc2f3e25df0cecc5dc269f7ccae65d0f386f06a",
+    remote = "https://github.com/apple/swift-cmark.git",
+    shallow_since = "1690895253 +0200",
+)
+
+new_git_repository(
+    name = "SwiftMarkdown",
+    build_file = "swift-markdown.BUILD",
+    commit = "907674c2ae2d24c32fba50101821b1a7fdd291e2",
+    remote = "https://github.com/apple/swift-markdown.git",
+    shallow_since = "1708535643 -0800",
+)
+
+new_git_repository(
+    name = "SwiftFormat",
+    build_file = "swift-format.BUILD",
+    commit = "3191b8f3109730af449c6332d0b1ca6653b857a0",
+    remote = "https://github.com/apple/swift-format.git",
+    shallow_since = "1710847777 +0100",
+)
+
+new_git_repository(
+    name = "SwiftGuaka",
+    build_file = "swift-guaka.BUILD",
+    commit = "e52eb523b152e04fa5dff56bed01e805062ce0ff",
+    remote = "https://github.com/nsomar/Guaka",
+    shallow_since = "1570439330 +0900",
+)
+
+new_git_repository(
+    name = "SwiftStringScanner",
+    build_file = "swift-string-scanner.BUILD",
+    commit = "de1685ad202cb586d626ed52d6de904dd34189f3",
+    remote = "https://github.com/getGuaka/StringScanner",
+    shallow_since = "1558131110 +0900",
+)
+
+new_git_repository(
+    name = "cpp-httplib",
+    build_file = "cpp-httplib.BUILD",
+    commit = "bd9612b81e6f39ab24a4be52fcda93658c0ca2dc",
+    remote = "https://github.com/yhirose/cpp-httplib",
+    shallow_since = "1686982714 -0400",
+)
+
+new_git_repository(
+    name = "swift-log-datadog",
+    build_file = "swift-log-datadog.BUILD",
+    commit = "e47aa092908764bdd625bb18d72e4db5bf9d7c4e",
+    remote = "https://github.com/jagreenwood/swift-log-datadog",
+    shallow_since = "1643657017 -0500",
+)
+
+s4nnc_extra_deps()
+
+new_git_repository(
+    name = "Lottie",
+    build_file = "lottie.BUILD",
+    commit = "a004050748dc197c56256a14dca49a035d74726c",
+    remote = "https://github.com/airbnb/lottie-ios.git",
+    shallow_since = "1748373972 -0700",
+)
+
+new_git_repository(
+    name = "Yams",
+    build_file = "yams.BUILD",
+    commit = "948991e19e795cdd7bd310756a97b5fbda559535",
+    remote = "https://github.com/jpsim/Yams.git",
+    shallow_since = "1682361496 -0400",
+)
+
+new_git_repository(
+    name = "SwiftJMESPath",
+    build_file = "swift-JMESPath.BUILD",
+    commit = "c722898bdfc72cdeb4a8431812fdeec0b56e8e1d",
+    remote = "https://github.com/adam-fowler/jmespath.swift.git",
+    shallow_since = "1734034260 +0000",
+)
+
+http_archive(
+    name = "oils_for_unix",
+    build_file = "//Vendors/OSH:BUILD.oils",
+    patch_args = ["-p1"],
+    patches = ["//Vendors/OSH:osh-ios.patch"],
+    sha256 = "f4d41d20a0523dbcfbd4ba231f82edf25b08d4965d65bc71fcb56666d6743000",
+    strip_prefix = "oils-for-unix-0.37.0",
+    urls = ["https://oils.pub/download/oils-for-unix-0.37.0.tar.gz"],
+)
+
+# The following buildifier-related dependencies must come at the top of the file or buildifier can break
+http_archive(
+    name = "io_bazel_rules_go",
+    sha256 = "86d3dc8f59d253524f933aaf2f3c05896cb0b605fc35b460c0b4b039996124c6",
+    urls = [
+        "https://github.com/bazel-contrib/rules_go/releases/download/v0.60.0/rules_go-v0.60.0.zip",
+    ],
+)
+
+load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
+
+go_rules_dependencies()
+
+go_register_toolchains(version = "1.25.5")
+
+http_archive(
+    name = "bazel_gazelle",
+    sha256 = "675114d8b433d0a9f54d81171833be96ebc4113115664b791e6f204d58e93446",
+    urls = [
+        "https://github.com/bazel-contrib/bazel-gazelle/releases/download/v0.47.0/bazel-gazelle-v0.47.0.tar.gz",
+    ],
+)
+
+load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies", "go_repository")
+
+gazelle_dependencies()
+
+load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
+
+protobuf_deps()
+
+load("@rules_java//java:rules_java_deps.bzl", "rules_java_dependencies")
+
+rules_java_dependencies()
+
+http_archive(
+    name = "com_github_bazelbuild_buildtools",
+    sha256 = "53119397bbce1cd7e4c590e117dcda343c2086199de62932106c80733526c261",
+    strip_prefix = "buildtools-8.2.1",
+    urls = [
+        "https://github.com/bazelbuild/buildtools/archive/refs/tags/v8.2.1.tar.gz",
+    ],
+)

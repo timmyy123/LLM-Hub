@@ -1,0 +1,30 @@
+enum ModelMixingMode: byte {
+  WeightedSum,
+  AddDifference,
+  Freeform
+}
+
+table ModelMixingItem {
+  name: string;
+  weight: float;
+}
+
+table ModelMixingLoRA {
+  file: string;
+  weight: float = 0.6;
+}
+
+table ModelMixingMetadata {
+  name: string (primary);
+  trigger_word: string;
+  v_prediction: bool;
+  upcast_attention: bool;
+  mode: ModelMixingMode;
+  items: [ModelMixingItem];
+  note: string;
+  encoder: string;
+  decoder: string;
+  loras: [ModelMixingLoRA];
+}
+
+root_type ModelMixingMetadata;

@@ -1,0 +1,6 @@
+table ThumbnailHistoryHalfNode {
+  id: long (primary);
+  data: [ubyte];
+}
+
+root_type ThumbnailHistoryHalfNode;

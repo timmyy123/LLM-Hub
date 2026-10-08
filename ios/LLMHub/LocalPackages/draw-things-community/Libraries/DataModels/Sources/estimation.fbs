@@ -1,0 +1,13 @@
+
+table GenerationEstimation {
+  text_encoded: float;
+  image_encoded: float;
+  sampling_step: float;
+  image_decoded: float;
+  second_pass_image_encoded: float;
+  second_pass_sampling_step: float;
+  second_pass_image_decoded: float;
+  image_upscaled: float;
+  face_restored: float;
+}
+

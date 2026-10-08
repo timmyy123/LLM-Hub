@@ -1,0 +1,4 @@
+interface:
+  display_name: "Train LoRA"
+  short_description: "Validate Draw Things LoRA training"
+  default_prompt: "Use $train-lora to validate a Draw Things LoRA training run end to end."

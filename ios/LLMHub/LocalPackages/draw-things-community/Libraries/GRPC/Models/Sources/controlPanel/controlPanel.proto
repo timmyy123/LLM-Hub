@@ -1,0 +1,86 @@
+syntax = "proto3";
+
+service ControlPanelService {
+  rpc ManageGPUServer(GPUServerRequest) returns (GPUServerResponse);
+  rpc UpdateThrottlingConfig(ThrottlingRequest) returns (ThrottlingResponse);
+  rpc UpdatePem(UpdatePemRequest) returns (UpdatePemResponse);
+  rpc UpdateModelList(UpdateModelListRequest) returns (UpdateModelListResponse);
+  rpc UpdateSharedSecret(UpdateSharedSecretRequest) returns (UpdateSharedSecretResponse);
+  rpc UpdatePrivateKey(UpdatePrivateKeyRequest) returns (UpdatePrivateKeyResponse);
+  rpc UpdateComputeUnit(UpdateComputeUnitRequest) returns (UpdateComputeUnitResponse);
+
+}
+
+message GPUServerRequest {
+  // Operation type to perform
+  enum Operation {
+    UNSPECIFIED = 0;
+    ADD = 1;
+    REMOVE = 2;
+    CLEAR_ECHO_HOLD = 3;
+  }
+
+  // Server configuration details
+  message ServerConfig {
+    string address = 1;
+    int32 port = 2;
+    bool isHighPriority = 3;
+  }
+
+  Operation operation = 1;
+  ServerConfig server_config = 2;
+}
+
+message GPUServerResponse {
+  string message = 1;
+}
+
+message ThrottlingRequest {
+    map<string, int32> limit_config = 1;  // e.g. {"request_in_5min": 10, "request_in_10min": 20}
+}
+
+message ThrottlingResponse {
+  string message = 1;
+}
+
+message UpdatePemRequest {
+    string message = 1;
+}
+
+message UpdatePemResponse {
+  string message = 1;
+}
+
+message UpdateModelListRequest {
+    string message = 1;
+    repeated string files = 2;
+}
+
+message UpdateModelListResponse {
+  string message = 1;
+}
+
+message UpdateSharedSecretRequest {
+    string message = 1;
+}
+
+message UpdateSharedSecretResponse {
+  string message = 1;
+}
+
+message UpdatePrivateKeyRequest {
+    string message = 1;
+}
+
+message UpdatePrivateKeyResponse {
+  string message = 1;
+}
+
+message UpdateComputeUnitRequest {
+    map<string, int32> cu_config = 1;  // e.g. {"community": 10000, "plus": 40000}
+    int64 expiration_timestamp = 2;  // Unix timestamp in seconds
+}
+
+message UpdateComputeUnitResponse {
+  string message = 1;
+}

@@ -1,0 +1,131 @@
+package(default_visibility = ["//visibility:public"])
+
+_EXCLUDED = [
+    "src/api/dotnet/**",
+    "src/api/java/**",
+    "src/api/julia/**",
+    "src/api/ml/**",
+    "src/api/python/**",
+    "src/test/**",
+]
+
+_SOURCES = glob(["src/**/*.cpp"], exclude = _EXCLUDED)
+_HEADERS = glob(["src/**/*.h", "src/**/*.hpp"], exclude = _EXCLUDED)
+_SHELL_SOURCES = glob(["src/shell/*.cpp"])
+
+genrule(
+    name = "embedded_sources",
+    srcs = _SOURCES + _HEADERS + ["scripts/VERSION.txt"],
+    outs = ["embedded/" + path for path in _SOURCES + _HEADERS],
+    cmd = "python3 $(execpath @//Vendors/Z3:embed.py) " +
+          "--source-root $$(dirname $$(dirname $(execpath scripts/VERSION.txt))) " +
+          "--output-root $(RULEDIR)/embedded " + " ".join(_SOURCES + _HEADERS),
+    tools = ["@//Vendors/Z3:embed.py"],
+)
+
+_GENERATED_HEADERS = [
+    "generated/src/ackermannization/ackermannization_params.hpp",
+    "generated/src/ackermannization/ackermannize_bv_tactic_params.hpp",
+    "generated/src/ast/normal_forms/nnf_params.hpp",
+    "generated/src/ast/pattern/database.h",
+    "generated/src/ast/pp_params.hpp",
+    "generated/src/math/lp/lp_params_helper.hpp",
+    "generated/src/math/polynomial/algebraic_params.hpp",
+    "generated/src/math/realclosure/rcf_params.hpp",
+    "generated/src/model/model_evaluator_params.hpp",
+    "generated/src/model/model_params.hpp",
+    "generated/src/muz/base/fp_params.hpp",
+    "generated/src/nlsat/nlsat_params.hpp",
+    "generated/src/opt/opt_params.hpp",
+    "generated/src/params/arith_rewriter_params.hpp",
+    "generated/src/params/array_rewriter_params.hpp",
+    "generated/src/params/bool_rewriter_params.hpp",
+    "generated/src/params/bv_rewriter_params.hpp",
+    "generated/src/params/fpa2bv_rewriter_params.hpp",
+    "generated/src/params/fpa_rewriter_params.hpp",
+    "generated/src/params/pattern_inference_params_helper.hpp",
+    "generated/src/params/poly_rewriter_params.hpp",
+    "generated/src/params/rewriter_params.hpp",
+    "generated/src/params/sat_params.hpp",
+    "generated/src/params/seq_rewriter_params.hpp",
+    "generated/src/params/sls_params.hpp",
+    "generated/src/params/smt_params_helper.hpp",
+    "generated/src/params/solver_params.hpp",
+    "generated/src/params/tactic_params.hpp",
+    "generated/src/parsers/util/parser_params.hpp",
+    "generated/src/sat/sat_asymm_branch_params.hpp",
+    "generated/src/sat/sat_scc_params.hpp",
+    "generated/src/sat/sat_simplifier_params.hpp",
+    "generated/src/solver/combined_solver_params.hpp",
+    "generated/src/solver/parallel_params.hpp",
+    "generated/src/tactic/smtlogics/qfufbv_tactic_params.hpp",
+    "generated/src/util/z3_version.h",
+    "generated/src/api/api_log_macros.h",
+]
+
+_GENERATED_SOURCES = [
+    "generated/src/api/api_commands.cpp",
+    "generated/src/api/api_log_macros.cpp",
+    "generated/src/api/dll/gparams_register_modules.cpp",
+    "generated/src/api/dll/install_tactic.cpp",
+    "generated/src/api/dll/mem_initializer.cpp",
+]
+
+genrule(
+    name = "generate_sources",
+    srcs = glob([
+        "scripts/*.py",
+        "scripts/VERSION.txt",
+        "src/**/*.h",
+        "src/**/*.hpp",
+        "src/**/*.pyg",
+    ]) + ["src/ast/pattern/database.smt2"],
+    outs = _GENERATED_HEADERS + _GENERATED_SOURCES,
+    cmd = "python3 $(execpath @//Vendors/Z3:generate.py) " +
+          "--version-file $(execpath scripts/VERSION.txt) " +
+          "--output-root $(RULEDIR)/generated",
+    tools = ["@//Vendors/Z3:generate.py"],
+)
+
+cc_library(
+    name = "generated_headers",
+    hdrs = _GENERATED_HEADERS,
+    strip_include_prefix = "generated/src",
+)
+
+cc_library(
+    name = "z3",
+    srcs = ["embedded/" + path for path in _SOURCES if path not in _SHELL_SOURCES] + _GENERATED_SOURCES,
+    hdrs = ["embedded/" + path for path in _HEADERS] + glob(["src/**/*.def"]),
+    copts = [
+        "-std=c++20",
+        "-fvisibility=hidden",
+        "-fvisibility-inlines-hidden",
+        "-Wno-unknown-pragmas",
+        "-Wno-overloaded-virtual",
+        "-Wno-unused-value",
+    ],
+    defines = [
+        "NDEBUG",
+        "_EXTERNAL_RELEASE",
+        "_MP_INTERNAL",
+    ],
+    includes = [
+        "embedded/src",
+        "embedded/src/api",
+        "embedded/src/api/c++",
+        "src",
+    ],
+    linkstatic = True,
+    deps = [
+        ":generated_headers",
+        "@//Vendors/Z3:embedded_support",
+    ],
+)
+
+cc_library(
+    name = "shell",
+    srcs = ["embedded/" + path for path in _SHELL_SOURCES],
+    copts = ["-std=c++20", "-Wno-unused-value"],
+    deps = [":z3"],
+)

@@ -1,0 +1,30 @@
+load("@rules_rust//rust:defs.bzl", "rust_static_library")
+
+package(default_visibility = ["//visibility:public"])
+
+rust_static_library(
+    name = "rg",
+    srcs = glob(["crates/core/**/*.rs"]),
+    compile_data = glob(
+        ["crates/core/**"],
+        exclude = ["crates/core/**/*.rs"],
+    ),
+    crate_name = "rg",
+    crate_root = "crates/core/main.rs",
+    edition = "2021",
+    rustc_env = {
+        "CARGO_PKG_VERSION": "14.1.1",
+        "RIPGREP_BUILD_GIT_HASH": "14.1.1",
+    },
+    deps = [
+        "@ripgrep_crates//:anyhow",
+        "@ripgrep_crates//:bstr",
+        "@ripgrep_crates//:grep",
+        "@ripgrep_crates//:ignore",
+        "@ripgrep_crates//:lexopt",
+        "@ripgrep_crates//:log",
+        "@ripgrep_crates//:serde_json",
+        "@ripgrep_crates//:termcolor",
+        "@ripgrep_crates//:textwrap",
+    ],
+)

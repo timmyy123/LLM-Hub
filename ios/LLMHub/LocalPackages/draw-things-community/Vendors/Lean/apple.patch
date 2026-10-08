@@ -1,0 +1,32 @@
+diff --git a/src/runtime/debug.cpp b/src/runtime/debug.cpp
+index 22898d0f5..d2dd30b16 100644
+--- a/src/runtime/debug.cpp
++++ b/src/runtime/debug.cpp
+@@ -114,6 +114,6 @@ void invoke_debugger() {
+             // force seg fault...
+             debuggable_exit();
+-#if !defined(LEAN_WINDOWS)
++#if !defined(LEAN_WINDOWS) && !defined(__APPLE__)
+         case 'G':
+         case 'g': {
+             std::cerr << "INVOKING GDB...\n";
+diff --git a/src/runtime/uv/event_loop.cpp b/src/runtime/uv/event_loop.cpp
+--- a/src/runtime/uv/event_loop.cpp
++++ b/src/runtime/uv/event_loop.cpp
+@@ -23,1 +23,4 @@ using namespace std;
+ event_loop_t global_ev;
++// The embedded runtime and its worker live for the process lifetime. Keep its
++// loop storage private rather than taking ownership of libuv's default loop.
++static uv_loop_t lean_owned_loop;
+@@ -58,1 +61,2 @@ void event_loop_init(event_loop_t * event_loop) {
+-    event_loop->loop = uv_default_loop();
++    event_loop->loop = &lean_owned_loop;
++    check_uv(uv_loop_init(event_loop->loop), "Failed to initialize loop");
+diff --git a/src/runtime/object.cpp b/src/runtime/object.cpp
+--- a/src/runtime/object.cpp
++++ b/src/runtime/object.cpp
+@@ -38,2 +38,3 @@
+-extern "C" __attribute__((weak)) lean_obj_res lean_demangle_bt_line_cstr(lean_obj_arg s) {
++// Match the generated replacement's visibility during the relocatable link.
++extern "C" LEAN_EXPORT __attribute__((weak)) lean_obj_res lean_demangle_bt_line_cstr(lean_obj_arg s) {
+     lean_dec(s);

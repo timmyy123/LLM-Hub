@@ -1,0 +1,24 @@
+--- a/source/common/aarch64/intrapred-prim.cpp
++++ b/source/common/aarch64/intrapred-prim.cpp
+@@ -25,7 +25,9 @@
+         for(int i = 0; i < tuSize2 + tuSize2; i+=8)
+          {
+             uint16x8_t sample1 = vmovl_u8(vld1_u8(&samples[i]));
+-            uint16x8_t sample2 = vmovl_u8(vld1_u8(&samples[i-1]));
++            // Lane zero is replaced below; do not read samples[-1].
++            uint16x8_t sample2 = i ? vmovl_u8(vld1_u8(&samples[i-1]))
++                                 : vextq_u16(vdupq_n_u16(samples[0]), sample1, 7);
+             uint16x8_t sample3 = vmovl_u8(vld1_u8(&samples[i+1]));
+
+             uint16x8_t result1 = vaddq_u16(vshlq_n_u16(sample1,1), sample2 );
+@@ -39,7 +41,9 @@
+         for(int i = 0; i < tuSize2 + tuSize2; i+=8)
+         {
+             uint16x8_t sample1 = vld1q_u16(&samples[i]);
+-            uint16x8_t sample2 = vld1q_u16(&samples[i-1]);
++            // Lane zero is replaced below; do not read samples[-1].
++            uint16x8_t sample2 = i ? vld1q_u16(&samples[i-1])
++                                 : vextq_u16(vdupq_n_u16(samples[0]), sample1, 7);
+             uint16x8_t sample3 = vld1q_u16(&samples[i+1]);
+
+             uint16x8_t result1 = vaddq_u16(vshlq_n_u16(sample1,1), sample2 );

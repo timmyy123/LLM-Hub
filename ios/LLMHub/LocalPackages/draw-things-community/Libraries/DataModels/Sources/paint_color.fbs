@@ -1,0 +1,11 @@
+
+table PaintColor (v: "1") {
+  index: long (primary);
+
+  r: float;
+  g: float;
+  b: float;
+  a: float;
+}
+
+root_type PaintColor;

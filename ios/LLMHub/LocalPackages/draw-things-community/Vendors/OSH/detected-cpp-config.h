@@ -1,0 +1,6 @@
+/* #undef HAVE_SYSTEMTAP_SDT */
+
+#define HAVE_FNM_EXTMATCH 0
+#define HAVE_GLOB_PERIOD 0
+#define GLOB_PERIOD 0
+#define HAVE_PWENT 1

@@ -1,0 +1,26 @@
+struct TextRange {
+  location: int;
+  length: int;
+}
+
+enum TextType: byte {
+  PositiveText,
+  NegativeText
+}
+
+table TextModification {
+  type: TextType;
+  range: TextRange;
+  text: string;
+}
+
+table TextHistoryNode {
+  lineage: long (primary);
+  logical_time: long (primary);
+  start_edits: long;
+  start_positive_text: string;
+  start_negative_text: string;
+  modifications: [TextModification];
+}
+
+root_type TextHistoryNode;

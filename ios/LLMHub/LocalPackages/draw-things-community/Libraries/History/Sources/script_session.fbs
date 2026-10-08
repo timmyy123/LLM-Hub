@@ -1,0 +1,10 @@
+table ScriptSession {
+  id: ulong (primary);
+  execution_group_id: ulong;
+  file: string (indexed);
+  models: [string];
+  loras: [string];
+  controls: [string];
+}
+
+root_type ScriptSession;

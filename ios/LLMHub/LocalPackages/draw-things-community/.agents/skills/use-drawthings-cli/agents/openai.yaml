@@ -1,0 +1,4 @@
+interface:
+  display_name: "Use Draw Things CLI"
+  short_description: "Generate safely with Draw Things CLI"
+  default_prompt: "Use $use-drawthings-cli to generate and verify an image with my installed Draw Things CLI."

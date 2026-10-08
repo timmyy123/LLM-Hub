@@ -1,0 +1,10 @@
+table Clip {
+  clip_id: long (primary);
+  count: int;
+  frames_per_second: double;
+  width: int;
+  height: int;
+  audio_id: long (indexed);
+}
+
+root_type Clip;

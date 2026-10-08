@@ -1,0 +1,4 @@
+interface:
+  display_name: "UIKit UI Common Setup"
+  short_description: "Repo UIKit workflow and layout rules."
+  default_prompt: "Use $uikit-ui-common-setup to follow this repo's UIKit UI conventions."

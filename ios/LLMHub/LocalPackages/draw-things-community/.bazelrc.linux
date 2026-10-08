@@ -1,0 +1,23 @@
+common --enable_bzlmod=false
+
+common:cuda --crosstool_top=@local_config_cuda//crosstool:toolchain
+common:cuda --define=using_cuda=true --define=using_cuda_nvcc=true
+
+common:cuda_clang --crosstool_top=@local_config_cuda//crosstool:toolchain
+common:cuda_clang --define=using_cuda=true --define=using_cuda_clang=true
+
+common:win-cuda --define=using_cuda=true --define=using_cuda_nvcc=true
+
+common:mps --define=enable_mps=true
+
+common --disk_cache=.cache
+
+build --cxxopt='-std=c++17'
+build --host_linkopt="-lm"
+build --host_cxxopt=-Wno-deprecated-declarations
+build --incompatible_enable_cc_toolchain_resolution=false
+
+common:release --compilation_mode=opt
+
+try-import %workspace%/clang.bazelrc
+try-import %workspace%/.bazelrc.local

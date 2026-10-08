@@ -1,0 +1,15 @@
+# GPU Server Configuration
+# Format: remote_host, models_path, utils_path, lora_models_path, [--tmpfs-list <filename>]
+#
+# If the --tmpfs-list field is omitted, the tmpfs overlay is skipped and
+# the models path is mounted directly.
+#
+# Lines starting with # are comments
+# Empty lines are ignored
+
+root@dt-thpc-001, /mnt/models/official-models, /root/utils/LaunchGPU, /mnt/loraModels, --tmpfs-list tmpfs_thpc.ls
+root@dt-thpc-002, /mnt/models/official-models, /root/utils/LaunchGPU, /mnt/loraModels, --tmpfs-list tmpfs_thpc.ls
+root@dfw-100-007, /mnt/official-models, /root/utils/LaunchGPU, /mnt/loraModels, --tmpfs-list tmpfs_4090.ls
+root@dfw-049-008, /mnt/official-models, /root/utils/LaunchGPU, /mnt/loraModels, --tmpfs-list tmpfs_4090.ls
+root@dfw-242-009, /mnt/official-models, /root/utils/LaunchGPU, /mnt/loraModels, --tmpfs-list tmpfs_4090.ls
+root@dfw-243-010, /mnt/official-models, /root/utils/LaunchGPU, /mnt/loraModels, --tmpfs-list tmpfs_4090.ls

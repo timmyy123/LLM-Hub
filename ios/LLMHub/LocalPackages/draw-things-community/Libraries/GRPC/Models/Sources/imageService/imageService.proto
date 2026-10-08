@@ -1,0 +1,190 @@
+syntax = "proto3";
+
+service ImageGenerationService {
+  rpc GenerateImage(ImageGenerationRequest) returns (stream ImageGenerationResponse);
+  rpc FilesExist(FileListRequest) returns (FileExistenceResponse);
+  rpc UploadFile(stream FileUploadRequest) returns (stream UploadResponse);
+  rpc Echo(EchoRequest) returns (EchoReply);
+  rpc Pubkey(PubkeyRequest) returns (PubkeyResponse);
+  rpc Hours(HoursRequest) returns (HoursResponse);
+
+}
+
+message EchoRequest {
+  string name = 1;
+  optional string sharedSecret = 2; // The secret use to authenticate if needed.
+}
+
+message ComputeUnitThreshold {
+  double community = 1;
+  double plus = 2;
+  int64 expireAt = 3;
+}
+
+message EchoReply {
+  string message = 1;
+  repeated string files = 2;
+  optional MetadataOverride override = 3;
+  bool sharedSecretMissing = 4; // If this is true, sharedSecret is required.
+  optional ComputeUnitThreshold thresholds = 5; // The thresholds currently imposed by the server.
+  uint64 serverIdentifier = 6; // A 64-bit server identifier for system to distinguish whether this is a remote server or the same server from the app.
+}
+
+message FileListRequest {
+  repeated string files = 1;
+  repeated string filesWithHash = 2;
+  optional string sharedSecret = 3; // The secret use to authenticate if needed.
+}
+
+message FileExistenceResponse {
+  repeated string files = 1;
+  repeated bool existences = 2;
+  repeated bytes hashes = 3;
+}
+
+message MetadataOverride {
+  bytes models = 1;
+  bytes loras = 2;
+  bytes controlNets = 3;
+  bytes textualInversions = 4;
+  bytes upscalers = 5;
+}
+
+enum DeviceType {
+  PHONE = 0;
+  TABLET = 1;
+  LAPTOP = 2;
+}
+
+// parameters in this Request is exactly same as generate function in ImageGenerator
+message ImageGenerationRequest {
+  optional bytes image = 1;      // Image data as sha256 content.
+  int32 scaleFactor = 2; 	 	
+  optional bytes mask = 3;       // Optional  Mask data as sha256 content.
+  repeated HintProto hints = 4; 	 // List of hints
+  string prompt = 5;             // Optional prompt string
+  string negativePrompt = 6;     // Optional negative prompt string
+  bytes configuration = 7;       // Configuration data as bytes (FlatBuffer)
+  MetadataOverride override = 8; // Override the existing metadata on various Zoo objects.
+  repeated string keywords = 9; // Keywords send to the ImageGenerator, not useful for local generation.
+  string user = 10; // The name of the client.
+  DeviceType device = 11; // The type of the device uses.
+  repeated bytes contents = 12; // The image data as array of bytes. It is addressed by its sha256 content. This is modeled as content-addressable storage.
+  optional string sharedSecret = 13; // The secret use to authenticate if needed.
+  bool chunked = 14; // Whether we can accept chunked response.
+}
+
+message HintProto {
+  string hintType = 1;           	  // hintType enum (key)
+  repeated TensorAndWeight tensors = 2;   // Repeated list of tensors with associated float
+}
+
+// Message to store each tensor and its associated float score
+message TensorAndWeight {
+  bytes tensor = 1;                       // Tensor data as sha256 to the content.
+  float weight = 2;                        // Associated float score for the tensor
+}
+
+message ImageGenerationSignpostProto {
+  message TextEncoded {
+  }
+  message ImageEncoded {
+  }
+  message Sampling {
+    int32 step = 1;
+  }
+  message ImageDecoded {
+  }
+  message SecondPassImageEncoded {
+  }
+  message SecondPassSampling {
+    int32 step = 1;
+  }
+  message SecondPassImageDecoded {
+  }
+  message FaceRestored {
+  }
+  message ImageUpscaled {
+  }
+  oneof signpost {
+    TextEncoded textEncoded = 1;
+	ImageEncoded imageEncoded = 2;
+	Sampling sampling = 3;
+	ImageDecoded imageDecoded = 4;
+	SecondPassImageEncoded secondPassImageEncoded = 5;
+	SecondPassSampling secondPassSampling = 6;
+	SecondPassImageDecoded secondPassImageDecoded = 7;
+	FaceRestored faceRestored = 8;
+	ImageUpscaled imageUpscaled = 9;
+  }
+}
+
+enum ChunkState {
+  LAST_CHUNK = 0;
+  MORE_CHUNKS = 1;
+}
+
+message RemoteDownloadResponse {
+  int64 bytesReceived = 1;
+  int64 bytesExpected = 2;
+  int32 item = 3;
+  int32 itemsExpected = 4;
+  string tag = 5;
+}
+
+message ImageGenerationResponse {
+  repeated bytes generatedImages = 1;      // Generated image data as bytes.
+  optional ImageGenerationSignpostProto currentSignpost = 2; // Single current signpost.
+  repeated ImageGenerationSignpostProto signposts = 3; // Collection of signposts.
+  optional bytes previewImage = 4;      // preview generating image data as bytes.
+  optional int32 scaleFactor = 5; // The scale factor of the image.
+  repeated string tags = 6; // Tags to track which server responded to the generation request.
+  optional int64 downloadSize = 7; // The size of final image will be sent in the next payload.
+  ChunkState chunkState = 8; // What's this chunk is, it helps to compose the chunks together.
+  optional RemoteDownloadResponse remoteDownload = 9; // If the remote needs to download something, which are they.
+  repeated bytes generatedAudio = 10;      // Generated audio data as bytes.
+}
+
+message FileChunk {
+  bytes content = 1;
+  string filename = 2;
+  int64 offset = 3;
+}
+
+message InitUploadRequest {
+  string filename = 1;  // Name of the file to be uploaded.
+  bytes sha256 = 2;     // SHA-256 hash of the file.
+  int64 totalSize = 3;  // Total size of the file in bytes.
+}
+
+message UploadResponse {
+  bool chunkUploadSuccess = 1;
+  int64 receivedOffset = 2;
+  string message = 3;
+  string filename = 4;
+}
+
+// Union type for either an InitUploadRequest or FileChunk.
+message FileUploadRequest {
+  oneof request {
+    InitUploadRequest initRequest = 1;  // Initial upload request to sync SHA and filename.
+    FileChunk chunk = 2;                // File chunk data.
+  }
+  optional string sharedSecret = 3; // The secret use to authenticate if needed.
+}
+
+message PubkeyRequest {
+  string name = 1;
+}
+
+message PubkeyResponse {
+  string message = 1;
+  string pubkey = 2;
+}
+
+message HoursRequest {
+}
+
+message HoursResponse {
+  ComputeUnitThreshold thresholds = 1; // The thresholds currently imposed by the server.
+}

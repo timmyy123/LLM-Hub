@@ -1,0 +1,27 @@
+load("@build_bazel_rules_swift//swift:swift.bzl", "swift_interop_hint", "swift_library")
+
+cc_library(
+    name = "C_zlib",
+    hdrs = ["Sources/CZLib/shim.h"],
+    aspect_hints = [":CZlib_swift_interop"],
+    defines = ["_GNU_SOURCE"],
+    linkopts = ["-lz"],
+    tags = ["swift_module=CZlib"],
+)
+
+swift_interop_hint(
+    name = "CZlib_swift_interop",
+    module_name = "CZlib",
+)
+
+swift_library(
+    name = "ZIPFoundation",
+    srcs = glob([
+        "Sources/ZIPFoundation/**/*.swift",
+    ]),
+    module_name = "ZIPFoundation",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":C_zlib",
+    ],
+)

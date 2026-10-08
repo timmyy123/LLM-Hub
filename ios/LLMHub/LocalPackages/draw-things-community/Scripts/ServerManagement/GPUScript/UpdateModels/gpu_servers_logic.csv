@@ -1,0 +1,15 @@
+# GPU Server Configuration
+# Lines starting with # are comments
+# Empty lines are ignored
+#
+# using /mnt/official-models for model verification, since /mnt/official-models is the logic model path (merge of models_path_1 and models_path_2)
+#
+# Add your GPU servers below:
+
+root@dt-thpc-001, /mnt/models/official-models
+root@dt-thpc-002, /mnt/models/official-models
+root@dfw-100-007, /mnt/official-models
+root@dfw-049-008, /mnt/official-models
+root@dfw-242-009, /mnt/official-models
+root@dfw-243-010, /mnt/official-models
+

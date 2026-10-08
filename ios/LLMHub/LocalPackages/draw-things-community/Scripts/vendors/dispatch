@@ -1,0 +1,186 @@
+#!/bin/sh
+
+#
+# a modular git hooks dispatcher
+#
+# Copyright 2014 Michael F. Lamb <http://datagrok.org>
+#
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# License: GPLv3 http://www.gnu.org/licenses/gpl.html
+#
+
+# This runs several scripts per git hook instead of one. This lets us organize
+# our git hooks into small, discrete, language-agnostic executables. It
+# somewhat apes Debian's 'run-parts' in its operation, but does not employ it
+# directly.
+
+# Variable names used in this script:
+#
+# null_commit 	- (exported) a magic sha hash value meaningful to git
+# empty_tree 	- (exported) a magic sha hash value meaningful to git
+# head_hash 	- (exported) a sha hash useful to hooks, see details below.
+# bad_suffixes 	- a space-separated list of hook filename suffixes that will make us ignore that hook
+# exit_status	- the last-encountered failing exit status of a dispatched hook, or 0.
+# hook			- the filename of the current hook being processed relative to $GIT_DIR/hooks, like 'pre-commit.d/run_linter.sh.optional'
+# hook_short	- $hook as above, minus any '.optional' suffix, like 'pre-commit.d/run_linter.sh'
+# hook_type 	- the hook name called by git, like 'update', 'pre-commit', 'post-receive', etc.
+# run_default	- whether the current hook should run, if no configuration mentions it.
+# tempfile 		- filename of a temporary file created to hold standard input to 'pre-push', 'pre-receive', and 'post-receive' hooks.
+
+# To avoid copypasta this single script checks its own name to see how it is
+# being called; the expectation is that each of the git hooks will exist simply
+# as a symlink to this script.
+hook_type="$(basename $0)"
+GIT_DIR="$(git rev-parse --git-dir)"
+if [ "$hook_type" = "dispatch" ]; then
+	echo >&2 "'$hook_type' should not be executed directly; instead, symlink a githook to it and let git invoke it."
+	exit 1
+fi
+
+# if there's no hooks directory for us to dispatch into, we may trivially exit.
+[ -d "$GIT_DIR/hooks/${hook_type}.d" ] || exit 0
+
+# some magic values used internally by git.
+export null_commit="0000000000000000000000000000000000000000"
+export empty_tree="4b825dc642cb6eb9a060e54bf8d69288fbee4904"
+
+# never run hook scripts with these suffixes even if they're marked executable:
+# redhat skips these
+bad_suffixes=".rpmsave .rpmorig .rpmnew .swp ,v ~ ,"
+# debian skips these when using --lsbsysinit
+bad_suffixes="$bad_suffixes .dpkg-old .dpkg-dist .dpkg-new .dpkg-tmp"
+# git skips these
+bad_suffixes="$bad_suffixes .sample"
+
+# Hook scripts are called with the same arguments and data on standard input
+# that are passed by git to its githook.
+
+# In the pre-commit hook one frequently compares (git diff-index) the changes
+# marked for commit (--cached) against the most recent commit (HEAD). However,
+# there is an edge-case: if this is the first commit on the branch, the HEAD
+# reference will not yet exist, so we have to diff against the "secret"
+# empty-tree reference. Figure out whether to use HEAD or the secret ref and
+# keep that in a variable. Everybody likes to call this variable $AGAINST; I
+# think $head_hash is more intuitive.
+head_hash=$(git rev-parse --quiet --verify HEAD) || head_hash="$empty_tree"
+export head_hash
+
+# FIXME DEPRECATED bugfix issue #5: previously, this script examined
+# "hook.enable" not "hook.enabled", contrary to what it says in the
+# documentation.
+git config --local --bool --get-regexp '^hook\..*\.enable$' | while read key val; do
+	if
+		git config --local --unset "${key}"
+	then
+		if
+			git config --local "${key}d" >/dev/null
+		then
+			echo >&2 "Removed deprecated configuration: ${key} = ${val}"
+		else
+			git config --local "${key}d" "${val}"
+			echo >&2 "Renamed deprecated configuration: ${key} -> ${key}d"
+		fi
+	else
+		cat >&2 <<-EOF
+		$0: Warning: this repository contains the deprecated configuration
+		${key}. Could not automatically migrate the configuration for this
+		repository. You will have to run these commands yourself to configure
+		hooks properly:
+
+		git config --local --bool ${key}d ${val};
+		git config --local --unset ${key}
+		EOF
+		break
+	fi
+done
+
+case "$hook_type" in
+	pre-push|pre-receive|post-receive|post-rewrite)
+		# These hooks are unique in that they are provided by git with data on
+		# standard input. Dump this data into a temporary file, and replay it
+		# as standard input to each of the hooks.
+		tempfile="$(mktemp "${TMPDIR:-/tmp}"/tmp.XXXXXXXXXX)"
+		trap 'rm -f "$tempfile"' EXIT
+		cat > "$tempfile"
+		;;
+esac
+
+# loop over all hooks of our $hook_type
+exit_status=0
+for hook in "$GIT_DIR/hooks/${hook_type}.d"/*; do
+	# skip non-executable and non-files
+	[ -f "$hook" -a -x "$hook" ] || continue
+	# skip bad suffixes
+	for ext in $bad_suffixes; do
+		[ "${hook%$ext}" = "${hook}" ] || continue 2
+	done
+
+	# now we have a viable candidate. check git config to see if it should be
+	# run. hooks named .optional default to no, otherwise yes.
+	hook_short="${hook%.optional}"
+	if [ "${hook_short}" = "${hook}" ]
+	then run_default="true" # hook does not end in ".optional"
+	else run_default="false" # hook ends in ".optional"
+	fi
+	hook_short="${hook_short#"$GIT_DIR/hooks/"}"
+
+	# determine if this hook is enabled
+	# FIXME "hook.*.enable" is deprecated; remove in next release.
+	[ "$(
+		git config --bool hook.${hook_short}.enabled ||
+		git config --bool hook.${hook_short##*/}.enabled ||
+		git config --bool hook.${hook_short}.enable ||
+		git config --bool hook.${hook_short##*/}.enable ||
+		echo $run_default)" = "true" ] || continue
+
+	# run the hook with the args git gave us and if $tempfile exists, provide
+	# it on standard input.
+	if [ "$tempfile" ]; then
+		"$hook" "$@" <"$tempfile"
+	else
+		"$hook" "$@"
+	fi || {
+		exit_status=$?
+		echo >&2 "$0: $hook_short exited with return code $exit_status"
+	}
+done
+
+# all the hooks have run; perform some cleanup.
+case "$hook_type" in
+	post-update)
+		if [ "$exit_status" -ne 0 ]; then
+			cat >&2 <<- EOF
+
+				Warning: there was a problem running $hook_type githooks.
+				(However, this has no negative effect on the action you just
+				attempted.)
+			EOF
+		fi
+		;;
+	pre-commit|commit-msg)
+		if [ $exit_status -ne 0 ]; then
+			cat >&2 <<- EOF
+
+				Aborting commit from $hook_type due to previous errors. If you
+				want to override these checks, pass the --no-verify option to
+				'git commit'.
+
+				Note: these checks are performed against the contents of your
+				index (staging area.) If you don't see the problem being
+				reported, ensure that you've run 'git add' on the fixed lines.
+			EOF
+		fi
+		;;
+	update)
+		if [ $exit_status -ne 0 ]; then
+			echo >&2 "ERROR: aborting update to $1 due to previous errors."
+		fi
+esac
+
+# exit with an appropriate success code.
+exit $exit_status
+

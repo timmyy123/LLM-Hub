@@ -1,0 +1,733 @@
+{
+  "date": "2026-09-08",
+  "platform": "macOS on the requesting computer",
+  "method": "Sequential queries through the actual HTTP and browser transports; responses counted as valid only for parsed results or an explicit provider no-results page. No provider switching or CAPTCHA solving.",
+  "httpBaseline": {
+    "meanReciprocalRank": 0.3125,
+    "meanResultCount": 4,
+    "networkBoundary": "duckduckgo-only",
+    "p50SearchLatencySeconds": 0.6446490287780762,
+    "p95SearchLatencySeconds": 0.7152529954910278,
+    "queryCount": 10,
+    "results": [
+      {
+        "elapsedSeconds": 0.7152529954910278,
+        "emptySnippetCount": 0,
+        "emptyTitleCount": 0,
+        "expectedURLContains": "github.com/scinfu/SwiftSoup",
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "firstExpectedRank": 1,
+        "query": "SwiftSoup GitHub",
+        "resultCount": 10
+      },
+      {
+        "elapsedSeconds": 0.6418299674987793,
+        "emptySnippetCount": 0,
+        "emptyTitleCount": 0,
+        "expectedURLContains": "drawthings.ai",
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "firstExpectedRank": 1,
+        "query": "Draw Things app",
+        "resultCount": 10
+      },
+      {
+        "elapsedSeconds": 0.6114950180053711,
+        "emptySnippetCount": 0,
+        "emptyTitleCount": 0,
+        "expectedURLContains": "platform.openai.com/docs",
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "query": "OpenAI API docs",
+        "resultCount": 10
+      },
+      {
+        "elapsedSeconds": 0.06090700626373291,
+        "emptySnippetCount": 0,
+        "emptyTitleCount": 0,
+        "error": "DuckDuckGo returned an access challenge instead of search results. from https://html.duckduckgo.com/html/?q=site:developer.apple.com%20URLSession%20Swift&kl=us-en&kp=-1",
+        "expectedURLContains": "developer.apple.com",
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "query": "site:developer.apple.com URLSession Swift",
+        "resultCount": 0
+      },
+      {
+        "elapsedSeconds": 0.060603976249694824,
+        "emptySnippetCount": 0,
+        "emptyTitleCount": 0,
+        "error": "DuckDuckGo returned an access challenge instead of search results. from https://html.duckduckgo.com/html/?q=site:swift.org%20PackageDescription&kl=us-en&kp=-1",
+        "expectedURLContains": "swift.org",
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "query": "site:swift.org PackageDescription",
+        "resultCount": 0
+      },
+      {
+        "elapsedSeconds": 0.6446490287780762,
+        "emptySnippetCount": 0,
+        "emptyTitleCount": 0,
+        "expectedURLContains": "swift.org",
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "firstExpectedRank": 2,
+        "query": "latest Swift release",
+        "resultCount": 10
+      },
+      {
+        "elapsedSeconds": 0.06999707221984863,
+        "emptySnippetCount": 0,
+        "emptyTitleCount": 0,
+        "error": "DuckDuckGo returned an access challenge instead of search results. from https://html.duckduckgo.com/html/?q=DuckDuckGo%20search%20syntax&kl=us-en&kp=-1",
+        "expectedURLContains": "duckduckgo.com",
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "query": "DuckDuckGo search syntax",
+        "resultCount": 0
+      },
+      {
+        "elapsedSeconds": 0.07835793495178223,
+        "emptySnippetCount": 0,
+        "emptyTitleCount": 0,
+        "error": "DuckDuckGo returned an access challenge instead of search results. from https://html.duckduckgo.com/html/?q=%22Swift%20ArgumentParser%22%20GitHub&kl=us-en&kp=-1",
+        "expectedURLContains": "github.com",
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "query": "\"Swift ArgumentParser\" GitHub",
+        "resultCount": 0
+      },
+      {
+        "elapsedSeconds": 0.08832502365112305,
+        "emptySnippetCount": 0,
+        "emptyTitleCount": 0,
+        "error": "DuckDuckGo returned an access challenge instead of search results. from https://html.duckduckgo.com/html/?q=filetype:pdf%20Swift%20concurrency&kl=us-en&kp=-1",
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "query": "filetype:pdf Swift concurrency",
+        "resultCount": 0
+      },
+      {
+        "elapsedSeconds": 0.0684119462966919,
+        "emptySnippetCount": 0,
+        "emptyTitleCount": 0,
+        "error": "DuckDuckGo returned an access challenge instead of search results. from https://html.duckduckgo.com/html/?q=intitle:SwiftSoup%20selector&kl=us-en&kp=-1",
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "query": "intitle:SwiftSoup selector",
+        "resultCount": 0
+      }
+    ],
+    "successfulQueryCount": 4
+  },
+  "browser": {
+    "meanReciprocalRank": 0.6666666666666666,
+    "meanResultCount": 9,
+    "networkBoundary": "duckduckgo-only",
+    "p50SearchLatencySeconds": 1.381216049194336,
+    "p95SearchLatencySeconds": 1.6921379566192627,
+    "queryCount": 10,
+    "results": [
+      {
+        "elapsedSeconds": 1.6921379566192627,
+        "emptySnippetCount": 0,
+        "emptyTitleCount": 0,
+        "expectedURLContains": "github.com/scinfu/SwiftSoup",
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "firstExpectedRank": 1,
+        "query": "SwiftSoup GitHub",
+        "resultCount": 10
+      },
+      {
+        "elapsedSeconds": 1.3964509963989258,
+        "emptySnippetCount": 0,
+        "emptyTitleCount": 0,
+        "expectedURLContains": "drawthings.ai",
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "firstExpectedRank": 1,
+        "query": "Draw Things app",
+        "resultCount": 10
+      },
+      {
+        "elapsedSeconds": 1.3773289918899536,
+        "emptySnippetCount": 0,
+        "emptyTitleCount": 0,
+        "expectedURLContains": "platform.openai.com/docs",
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "query": "OpenAI API docs",
+        "resultCount": 10
+      },
+      {
+        "elapsedSeconds": 1.3667351007461548,
+        "emptySnippetCount": 0,
+        "emptyTitleCount": 0,
+        "expectedURLContains": "developer.apple.com",
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "firstExpectedRank": 1,
+        "query": "site:developer.apple.com URLSession Swift",
+        "resultCount": 10
+      },
+      {
+        "elapsedSeconds": 1.3706459999084473,
+        "emptySnippetCount": 0,
+        "emptyTitleCount": 0,
+        "expectedURLContains": "swift.org",
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "firstExpectedRank": 1,
+        "query": "site:swift.org PackageDescription",
+        "resultCount": 10
+      },
+      {
+        "elapsedSeconds": 1.6401430368423462,
+        "emptySnippetCount": 0,
+        "emptyTitleCount": 0,
+        "expectedURLContains": "swift.org",
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "firstExpectedRank": 3,
+        "query": "latest Swift release",
+        "resultCount": 10
+      },
+      {
+        "elapsedSeconds": 1.372025966644287,
+        "emptySnippetCount": 0,
+        "emptyTitleCount": 0,
+        "expectedURLContains": "duckduckgo.com",
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "firstExpectedRank": 1,
+        "query": "DuckDuckGo search syntax",
+        "resultCount": 10
+      },
+      {
+        "elapsedSeconds": 0.8029429912567139,
+        "emptySnippetCount": 0,
+        "emptyTitleCount": 0,
+        "expectedURLContains": "github.com",
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "query": "\"Swift ArgumentParser\" GitHub",
+        "resultCount": 0
+      },
+      {
+        "elapsedSeconds": 1.6259790658950806,
+        "emptySnippetCount": 0,
+        "emptyTitleCount": 0,
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "query": "filetype:pdf Swift concurrency",
+        "resultCount": 10
+      },
+      {
+        "elapsedSeconds": 1.381216049194336,
+        "emptySnippetCount": 0,
+        "emptyTitleCount": 0,
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "query": "intitle:SwiftSoup selector",
+        "resultCount": 10
+      }
+    ],
+    "successfulQueryCount": 10
+  },
+  "automaticBatches": [
+    {
+      "meanReciprocalRank": 0.6666666666666666,
+      "meanResultCount": 9,
+      "networkBoundary": "duckduckgo-only",
+      "p50SearchLatencySeconds": 1.458860993385315,
+      "p95SearchLatencySeconds": 1.7815660238265991,
+      "queryCount": 10,
+      "results": [
+        {
+          "elapsedSeconds": 0.6905930042266846,
+          "emptySnippetCount": 0,
+          "emptyTitleCount": 0,
+          "expectedURLContains": "github.com/scinfu/SwiftSoup",
+          "fetchFailureCount": 0,
+          "fetchSuccessCount": 0,
+          "firstExpectedRank": 1,
+          "query": "SwiftSoup GitHub",
+          "resultCount": 10
+        },
+        {
+          "elapsedSeconds": 0.5897539854049683,
+          "emptySnippetCount": 0,
+          "emptyTitleCount": 0,
+          "expectedURLContains": "drawthings.ai",
+          "fetchFailureCount": 0,
+          "fetchSuccessCount": 0,
+          "firstExpectedRank": 1,
+          "query": "Draw Things app",
+          "resultCount": 10
+        },
+        {
+          "elapsedSeconds": 0.6197370290756226,
+          "emptySnippetCount": 0,
+          "emptyTitleCount": 0,
+          "expectedURLContains": "platform.openai.com/docs",
+          "fetchFailureCount": 0,
+          "fetchSuccessCount": 0,
+          "query": "OpenAI API docs",
+          "resultCount": 10
+        },
+        {
+          "elapsedSeconds": 1.7815660238265991,
+          "emptySnippetCount": 0,
+          "emptyTitleCount": 0,
+          "expectedURLContains": "developer.apple.com",
+          "fetchFailureCount": 0,
+          "fetchSuccessCount": 0,
+          "firstExpectedRank": 1,
+          "query": "site:developer.apple.com URLSession Swift",
+          "resultCount": 10
+        },
+        {
+          "elapsedSeconds": 1.458860993385315,
+          "emptySnippetCount": 0,
+          "emptyTitleCount": 0,
+          "expectedURLContains": "swift.org",
+          "fetchFailureCount": 0,
+          "fetchSuccessCount": 0,
+          "firstExpectedRank": 1,
+          "query": "site:swift.org PackageDescription",
+          "resultCount": 10
+        },
+        {
+          "elapsedSeconds": 1.4861549139022827,
+          "emptySnippetCount": 0,
+          "emptyTitleCount": 0,
+          "expectedURLContains": "swift.org",
+          "fetchFailureCount": 0,
+          "fetchSuccessCount": 0,
+          "firstExpectedRank": 3,
+          "query": "latest Swift release",
+          "resultCount": 10
+        },
+        {
+          "elapsedSeconds": 1.4615570306777954,
+          "emptySnippetCount": 0,
+          "emptyTitleCount": 0,
+          "expectedURLContains": "duckduckgo.com",
+          "fetchFailureCount": 0,
+          "fetchSuccessCount": 0,
+          "firstExpectedRank": 1,
+          "query": "DuckDuckGo search syntax",
+          "resultCount": 10
+        },
+        {
+          "elapsedSeconds": 0.8968780040740967,
+          "emptySnippetCount": 0,
+          "emptyTitleCount": 0,
+          "expectedURLContains": "github.com",
+          "fetchFailureCount": 0,
+          "fetchSuccessCount": 0,
+          "query": "\"Swift ArgumentParser\" GitHub",
+          "resultCount": 0
+        },
+        {
+          "elapsedSeconds": 1.4689639806747437,
+          "emptySnippetCount": 0,
+          "emptyTitleCount": 0,
+          "fetchFailureCount": 0,
+          "fetchSuccessCount": 0,
+          "query": "filetype:pdf Swift concurrency",
+          "resultCount": 10
+        },
+        {
+          "elapsedSeconds": 0.5585030317306519,
+          "emptySnippetCount": 0,
+          "emptyTitleCount": 0,
+          "fetchFailureCount": 0,
+          "fetchSuccessCount": 0,
+          "query": "intitle:SwiftSoup selector",
+          "resultCount": 10
+        }
+      ],
+      "successfulQueryCount": 10
+    },
+    {
+      "meanReciprocalRank": 0.6666666666666666,
+      "meanResultCount": 9,
+      "networkBoundary": "duckduckgo-only",
+      "p50SearchLatencySeconds": 1.1768319606781006,
+      "p95SearchLatencySeconds": 1.7552460432052612,
+      "queryCount": 10,
+      "results": [
+        {
+          "elapsedSeconds": 0.7213770151138306,
+          "emptySnippetCount": 0,
+          "emptyTitleCount": 0,
+          "expectedURLContains": "github.com/scinfu/SwiftSoup",
+          "fetchFailureCount": 0,
+          "fetchSuccessCount": 0,
+          "firstExpectedRank": 1,
+          "query": "SwiftSoup GitHub",
+          "resultCount": 10
+        },
+        {
+          "elapsedSeconds": 0.6953179836273193,
+          "emptySnippetCount": 0,
+          "emptyTitleCount": 0,
+          "expectedURLContains": "drawthings.ai",
+          "fetchFailureCount": 0,
+          "fetchSuccessCount": 0,
+          "firstExpectedRank": 1,
+          "query": "Draw Things app",
+          "resultCount": 10
+        },
+        {
+          "elapsedSeconds": 0.6150610446929932,
+          "emptySnippetCount": 0,
+          "emptyTitleCount": 0,
+          "expectedURLContains": "platform.openai.com/docs",
+          "fetchFailureCount": 0,
+          "fetchSuccessCount": 0,
+          "query": "OpenAI API docs",
+          "resultCount": 10
+        },
+        {
+          "elapsedSeconds": 1.7552460432052612,
+          "emptySnippetCount": 0,
+          "emptyTitleCount": 0,
+          "expectedURLContains": "developer.apple.com",
+          "fetchFailureCount": 0,
+          "fetchSuccessCount": 0,
+          "firstExpectedRank": 1,
+          "query": "site:developer.apple.com URLSession Swift",
+          "resultCount": 10
+        },
+        {
+          "elapsedSeconds": 1.504349946975708,
+          "emptySnippetCount": 0,
+          "emptyTitleCount": 0,
+          "expectedURLContains": "swift.org",
+          "fetchFailureCount": 0,
+          "fetchSuccessCount": 0,
+          "firstExpectedRank": 1,
+          "query": "site:swift.org PackageDescription",
+          "resultCount": 10
+        },
+        {
+          "elapsedSeconds": 1.4867030382156372,
+          "emptySnippetCount": 0,
+          "emptyTitleCount": 0,
+          "expectedURLContains": "swift.org",
+          "fetchFailureCount": 0,
+          "fetchSuccessCount": 0,
+          "firstExpectedRank": 3,
+          "query": "latest Swift release",
+          "resultCount": 10
+        },
+        {
+          "elapsedSeconds": 1.4651309251785278,
+          "emptySnippetCount": 0,
+          "emptyTitleCount": 0,
+          "expectedURLContains": "duckduckgo.com",
+          "fetchFailureCount": 0,
+          "fetchSuccessCount": 0,
+          "firstExpectedRank": 1,
+          "query": "DuckDuckGo search syntax",
+          "resultCount": 10
+        },
+        {
+          "elapsedSeconds": 1.1768319606781006,
+          "emptySnippetCount": 0,
+          "emptyTitleCount": 0,
+          "expectedURLContains": "github.com",
+          "fetchFailureCount": 0,
+          "fetchSuccessCount": 0,
+          "query": "\"Swift ArgumentParser\" GitHub",
+          "resultCount": 0
+        },
+        {
+          "elapsedSeconds": 0.7148009538650513,
+          "emptySnippetCount": 0,
+          "emptyTitleCount": 0,
+          "fetchFailureCount": 0,
+          "fetchSuccessCount": 0,
+          "query": "filetype:pdf Swift concurrency",
+          "resultCount": 10
+        },
+        {
+          "elapsedSeconds": 0.601357102394104,
+          "emptySnippetCount": 0,
+          "emptyTitleCount": 0,
+          "fetchFailureCount": 0,
+          "fetchSuccessCount": 0,
+          "query": "intitle:SwiftSoup selector",
+          "resultCount": 10
+        }
+      ],
+      "successfulQueryCount": 10
+    },
+    {
+      "meanReciprocalRank": 0.6666666666666666,
+      "meanResultCount": 9,
+      "networkBoundary": "duckduckgo-only",
+      "p50SearchLatencySeconds": 1.4660331010818481,
+      "p95SearchLatencySeconds": 1.7747149467468262,
+      "queryCount": 10,
+      "results": [
+        {
+          "elapsedSeconds": 0.6336430311203003,
+          "emptySnippetCount": 0,
+          "emptyTitleCount": 0,
+          "expectedURLContains": "github.com/scinfu/SwiftSoup",
+          "fetchFailureCount": 0,
+          "fetchSuccessCount": 0,
+          "firstExpectedRank": 1,
+          "query": "SwiftSoup GitHub",
+          "resultCount": 10
+        },
+        {
+          "elapsedSeconds": 0.6017279624938965,
+          "emptySnippetCount": 0,
+          "emptyTitleCount": 0,
+          "expectedURLContains": "drawthings.ai",
+          "fetchFailureCount": 0,
+          "fetchSuccessCount": 0,
+          "firstExpectedRank": 1,
+          "query": "Draw Things app",
+          "resultCount": 10
+        },
+        {
+          "elapsedSeconds": 1.7747149467468262,
+          "emptySnippetCount": 0,
+          "emptyTitleCount": 0,
+          "expectedURLContains": "platform.openai.com/docs",
+          "fetchFailureCount": 0,
+          "fetchSuccessCount": 0,
+          "query": "OpenAI API docs",
+          "resultCount": 10
+        },
+        {
+          "elapsedSeconds": 1.4660331010818481,
+          "emptySnippetCount": 0,
+          "emptyTitleCount": 0,
+          "expectedURLContains": "developer.apple.com",
+          "fetchFailureCount": 0,
+          "fetchSuccessCount": 0,
+          "firstExpectedRank": 1,
+          "query": "site:developer.apple.com URLSession Swift",
+          "resultCount": 10
+        },
+        {
+          "elapsedSeconds": 1.473026990890503,
+          "emptySnippetCount": 0,
+          "emptyTitleCount": 0,
+          "expectedURLContains": "swift.org",
+          "fetchFailureCount": 0,
+          "fetchSuccessCount": 0,
+          "firstExpectedRank": 1,
+          "query": "site:swift.org PackageDescription",
+          "resultCount": 10
+        },
+        {
+          "elapsedSeconds": 1.482079029083252,
+          "emptySnippetCount": 0,
+          "emptyTitleCount": 0,
+          "expectedURLContains": "swift.org",
+          "fetchFailureCount": 0,
+          "fetchSuccessCount": 0,
+          "firstExpectedRank": 3,
+          "query": "latest Swift release",
+          "resultCount": 10
+        },
+        {
+          "elapsedSeconds": 1.5027309656143188,
+          "emptySnippetCount": 0,
+          "emptyTitleCount": 0,
+          "expectedURLContains": "duckduckgo.com",
+          "fetchFailureCount": 0,
+          "fetchSuccessCount": 0,
+          "firstExpectedRank": 1,
+          "query": "DuckDuckGo search syntax",
+          "resultCount": 10
+        },
+        {
+          "elapsedSeconds": 0.5828580856323242,
+          "emptySnippetCount": 0,
+          "emptyTitleCount": 0,
+          "expectedURLContains": "github.com",
+          "fetchFailureCount": 0,
+          "fetchSuccessCount": 0,
+          "query": "\"Swift ArgumentParser\" GitHub",
+          "resultCount": 0
+        },
+        {
+          "elapsedSeconds": 0.6078048944473267,
+          "emptySnippetCount": 0,
+          "emptyTitleCount": 0,
+          "fetchFailureCount": 0,
+          "fetchSuccessCount": 0,
+          "query": "filetype:pdf Swift concurrency",
+          "resultCount": 10
+        },
+        {
+          "elapsedSeconds": 1.4489660263061523,
+          "emptySnippetCount": 0,
+          "emptyTitleCount": 0,
+          "fetchFailureCount": 0,
+          "fetchSuccessCount": 0,
+          "query": "intitle:SwiftSoup selector",
+          "resultCount": 10
+        }
+      ],
+      "successfulQueryCount": 10
+    }
+  ],
+  "additionalSearches": {
+    "pagination": {
+      "networkBoundary": "duckduckgo-only",
+      "query": "SwiftSoup GitHub",
+      "resultCount": 25
+    },
+    "plus": {
+      "networkBoundary": "duckduckgo-only",
+      "query": "C++ reference",
+      "resultCount": 5
+    },
+    "unicode": {
+      "networkBoundary": "duckduckgo-only",
+      "query": "Swift 并发",
+      "resultCount": 5
+    },
+    "filtered": {
+      "networkBoundary": "duckduckgo-only",
+      "query": "site:swift.org Swift release",
+      "resultCount": 5
+    }
+  },
+  "automaticFinalBatch": {
+    "meanReciprocalRank": 0.6666666666666666,
+    "meanResultCount": 9,
+    "networkBoundary": "duckduckgo-only",
+    "p50SearchLatencySeconds": 1.4555059671401978,
+    "p95SearchLatencySeconds": 1.7639029026031494,
+    "queryCount": 10,
+    "results": [
+      {
+        "elapsedSeconds": 0.6991590261459351,
+        "emptySnippetCount": 0,
+        "emptyTitleCount": 0,
+        "expectedURLContains": "github.com/scinfu/SwiftSoup",
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "firstExpectedRank": 1,
+        "query": "SwiftSoup GitHub",
+        "resultCount": 10
+      },
+      {
+        "elapsedSeconds": 0.575998067855835,
+        "emptySnippetCount": 0,
+        "emptyTitleCount": 0,
+        "expectedURLContains": "drawthings.ai",
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "firstExpectedRank": 1,
+        "query": "Draw Things app",
+        "resultCount": 10
+      },
+      {
+        "elapsedSeconds": 0.5715830326080322,
+        "emptySnippetCount": 0,
+        "emptyTitleCount": 0,
+        "expectedURLContains": "platform.openai.com/docs",
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "query": "OpenAI API docs",
+        "resultCount": 10
+      },
+      {
+        "elapsedSeconds": 1.496932029724121,
+        "emptySnippetCount": 0,
+        "emptyTitleCount": 0,
+        "expectedURLContains": "developer.apple.com",
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "firstExpectedRank": 1,
+        "query": "site:developer.apple.com URLSession Swift",
+        "resultCount": 10
+      },
+      {
+        "elapsedSeconds": 1.4555059671401978,
+        "emptySnippetCount": 0,
+        "emptyTitleCount": 0,
+        "expectedURLContains": "swift.org",
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "firstExpectedRank": 1,
+        "query": "site:swift.org PackageDescription",
+        "resultCount": 10
+      },
+      {
+        "elapsedSeconds": 1.7639029026031494,
+        "emptySnippetCount": 0,
+        "emptyTitleCount": 0,
+        "expectedURLContains": "swift.org",
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "firstExpectedRank": 3,
+        "query": "latest Swift release",
+        "resultCount": 10
+      },
+      {
+        "elapsedSeconds": 1.4953819513320923,
+        "emptySnippetCount": 0,
+        "emptyTitleCount": 0,
+        "expectedURLContains": "duckduckgo.com",
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "firstExpectedRank": 1,
+        "query": "DuckDuckGo search syntax",
+        "resultCount": 10
+      },
+      {
+        "elapsedSeconds": 0.8931180238723755,
+        "emptySnippetCount": 0,
+        "emptyTitleCount": 0,
+        "expectedURLContains": "github.com",
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "query": "\"Swift ArgumentParser\" GitHub",
+        "resultCount": 0
+      },
+      {
+        "elapsedSeconds": 1.4641989469528198,
+        "emptySnippetCount": 0,
+        "emptyTitleCount": 0,
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "query": "filetype:pdf Swift concurrency",
+        "resultCount": 10
+      },
+      {
+        "elapsedSeconds": 0.5387330055236816,
+        "emptySnippetCount": 0,
+        "emptyTitleCount": 0,
+        "fetchFailureCount": 0,
+        "fetchSuccessCount": 0,
+        "query": "intitle:SwiftSoup selector",
+        "resultCount": 10
+      }
+    ],
+    "successfulQueryCount": 10
+  },
+  "checks": {
+    "webSearchTests": {
+      "passed": 35,
+      "skipped": 1,
+      "failures": 0,
+      "skipReason": "Optional live Kagi test requires KAGI_API_KEY"
+    },
+    "webSearchCLI": "built",
+    "localCodeLibraryIOS": "built",
+    "fullLocalCodeApp": "blocked by Git LFS pointers for NodeMobile and Python iOS binary archives"
+  }
+}

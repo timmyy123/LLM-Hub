@@ -1,0 +1,731 @@
+{
+  "date": "2026-09-16",
+  "platform": "Native macOS WKWebView on the requesting Mac",
+  "method": "Sequential navigations with native WebKit user agent, JavaScript enabled, and WKWebsiteDataStore.default(); no API key, manual verification, or result-page fetching. Poll the DOM every 0.25 seconds, requiring stable nonempty result URLs across four polls; wait up to 20 seconds for each request.",
+  "selectors": {
+    "result": ".snippet[data-type=\"web\"]",
+    "title": ".title",
+    "url": "closest ancestor a of .title",
+    "snippet": ".generic-snippet .content"
+  },
+  "initial": [
+    {
+      "elapsedSeconds": 1.5111199617385864,
+      "offset": 0,
+      "query": "SwiftSoup GitHub",
+      "results": [
+        {
+          "snippet": "SwiftSoup is a pure Swift library designed for seamless HTML parsing and manipulation across multiple platforms, including macOS, iOS, tvOS, watchOS, and Linux. It offers an intuitive API that leverages the best aspects of DOM traversal, CSS ...",
+          "title": "GitHub - scinfu/SwiftSoup: SwiftSoup: Pure Swift HTML Parser, with best of DOM, CSS, and jquery (Supports Linux, iOS, Mac, tvOS, watchOS) · GitHub",
+          "url": "https://github.com/scinfu/SwiftSoup"
+        },
+        {
+          "snippet": "SwiftSoup: Pure Swift HTML Parser, with best of DOM, CSS, and jquery (Supports Linux, iOS, Mac, tvOS, watchOS) - Releases · scinfu/SwiftSoup",
+          "title": "Releases · scinfu/SwiftSoup",
+          "url": "https://github.com/scinfu/SwiftSoup/releases"
+        },
+        {
+          "snippet": "SwiftSoup: Pure Swift HTML Parser, with best of DOM, CSS, and jquery (Supports Linux, iOS, Mac, tvOS, watchOS) - scottandrew/SwiftSoup",
+          "title": "GitHub - scottandrew/SwiftSoup: SwiftSoup: Pure Swift HTML Parser, with best of DOM, CSS, and jquery (Supports Linux, iOS, Mac, tvOS, watchOS) · GitHub",
+          "url": "https://github.com/scottandrew/SwiftSoup"
+        },
+        {
+          "snippet": "SwiftSoup: Pure Swift HTML Parser, with best of DOM, CSS, and jquery (Supports Linux, iOS, Mac, tvOS, watchOS)",
+          "title": "swiftsoup · GitHub Topics · GitHub",
+          "url": "https://github.com/topics/swiftsoup"
+        },
+        {
+          "snippet": "Extract attributes, text, and HTML from elements in ios swift with SwiftSoup · This file contains hidden or bidirectional Unicode text that may be interpreted or compiled differently than what appears below. To review, open the file in an editor that reveals hidden Unicode characters.",
+          "title": "Extract attributes, text, and HTML from elements in ios swift with SwiftSoup · GitHub",
+          "url": "https://gist.github.com/scinfu/d456ca7cf3b9fee5b3cefad4afbeee49"
+        },
+        {
+          "snippet": "SwiftSoup: Pure Swift HTML Parser, with best of DOM, CSS, and jquery (Supports Linux, iOS, Mac, tvOS, watchOS) - lake-of-fire/SwiftSoup",
+          "title": "GitHub - lake-of-fire/SwiftSoup: SwiftSoup: Pure Swift HTML Parser, with best of DOM, CSS, and jquery (Supports Linux, iOS, Mac, tvOS, watchOS) · GitHub",
+          "url": "https://github.com/lake-of-fire/SwiftSoup"
+        },
+        {
+          "snippet": "SwiftSoup: Pure Swift HTML Parser, with best of DOM, CSS, and jquery (Supports Linux, iOS, Mac, tvOS, watchOS) - Infomaniak/SwiftSoup",
+          "title": "GitHub - Infomaniak/SwiftSoup: SwiftSoup: Pure Swift HTML Parser, with best of DOM, CSS, and jquery (Supports Linux, iOS, Mac, tvOS, watchOS) · GitHub",
+          "url": "https://github.com/Infomaniak/SwiftSoup"
+        },
+        {
+          "snippet": "SwiftSoup: Pure Swift HTML Parser, with best of DOM, CSS, and jquery (Supports Linux, iOS, Mac, tvOS, watchOS)",
+          "title": "SwiftSoup | SwiftSoup: Pure Swift HTML Parser, with best of DOM, CSS, and jquery (Supports Linux, iOS, Mac, tvOS, watchOS)",
+          "url": "https://scinfu.github.io/SwiftSoup/"
+        },
+        {
+          "snippet": "SwiftSoup: Pure Swift HTML Parser, with best of DOM, CSS, and jquery (Supports Linux, iOS, Mac, tvOS, watchOS) - dylanpulver/SwiftSoup",
+          "title": "GitHub - dylanpulver/SwiftSoup: SwiftSoup: Pure Swift HTML Parser, with best of DOM, CSS, and jquery (Supports Linux, iOS, Mac, tvOS, watchOS) · GitHub",
+          "url": "https://github.com/dylanpulver/SwiftSoup"
+        },
+        {
+          "snippet": "To install it, simply add the following line to your Cartfile: github \"scinfu/SwiftSoup\" SwiftSoup is also available through Swift Package Manager. To install it, simply add the dependency to your Package.Swift file: ...",
+          "title": "SwiftSoup on CocoaPods.org",
+          "url": "https://cocoapods.org/pods/SwiftSoup"
+        },
+        {
+          "snippet": "SwiftSoup is a popular library for working with HTML and XML documents in Swift - mutugileo/SwiftSoup",
+          "title": "GitHub - mutugileo/SwiftSoup: SwiftSoup is a popular library for working with HTML and XML documents in Swift · GitHub",
+          "url": "https://github.com/mutugileo/SwiftSoup"
+        },
+        {
+          "snippet": "SwiftSoup: Pure Swift HTML Parser, with best of DOM, CSS, and jquery (Supports Linux, iOS, Mac, tvOS, watchOS) - scinfu/SwiftSoup",
+          "title": "SwiftSoup/Sources/SwiftSoup.swift at master · scinfu/SwiftSoup",
+          "url": "https://github.com/scinfu/SwiftSoup/blob/master/Sources/SwiftSoup.swift"
+        },
+        {
+          "snippet": "Alamofire extension for serialize SwiftSoup HTML documents' - aporat/AlamofireSwiftSoup",
+          "title": "GitHub - aporat/AlamofireSwiftSoup: Alamofire extension for serialize SwiftSoup HTML documents'",
+          "url": "https://github.com/aporat/AlamofireSwiftSoup"
+        },
+        {
+          "snippet": "SwiftSoup: Pure Swift HTML Parser, with best of DOM, CSS, and jquery (Supports Linux, iOS, Mac, tvOS, watchOS) - scinfu/SwiftSoup",
+          "title": "SwiftSoup/SwiftSoup.podspec at master · scinfu/SwiftSoup",
+          "url": "https://github.com/scinfu/SwiftSoup/blob/master/SwiftSoup.podspec"
+        },
+        {
+          "snippet": "SwiftSoup: Pure Swift HTML Parser, with best of DOM, CSS, and jquery (Supports Linux, iOS, Mac, tvOS, watchOS) - SwiftSoup/Sources at master · scinfu/SwiftSoup",
+          "title": "SwiftSoup/Sources at master · scinfu/SwiftSoup",
+          "url": "https://github.com/scinfu/SwiftSoup/tree/master/Sources"
+        },
+        {
+          "snippet": "SwiftSoup: Pure Swift HTML Parser, with best of DOM, CSS, and jquery (Supports Linux, iOS, Mac, tvOS, watchOS) - SwiftSoup/Sources/Document.swift at master · scinfu/SwiftSoup",
+          "title": "SwiftSoup/Sources/Document.swift at master · scinfu/SwiftSoup",
+          "url": "https://github.com/scinfu/SwiftSoup/blob/master/Sources/Document.swift"
+        },
+        {
+          "snippet": "September 8, 2025 - Install the SwiftSoup package in your projects. Add this line to the dependencies array in Package.swift: .package(url: \"https://github.com/scinfu/SwiftSoup.git\", from: \"2.6.0\"), And this line to the dependencies array in targets: .product(name: \"SwiftSoup\", package: \"SwiftSoup\"), Your Package.swift file will now contain: import PackageDescription let package = Package( name: \"ScrapingScript\", dependencies: [ .package(url: \"https://github.com/scinfu/SwiftSoup.git\", from: \"2.6.0\"), ], targets: [ .executableTarget( name: \"ScrapingScript\", dependencies: [ .product(name: \"SwiftSoup\", package: \"SwiftSoup\"), ] ), ] ) Import SwiftSoup in main.swift: import SwiftSoup ·",
+          "title": "Swift Web Scraping: Tutorial 2026 · Zenrows",
+          "url": "https://www.zenrows.com/blog/swift-web-scraping"
+        },
+        {
+          "snippet": "SwiftSoup: Pure Swift HTML Parser, with best of DOM, CSS, and jquery (Supports Linux, iOS, Mac, tvOS, watchOS) - Branches · scinfu/SwiftSoup",
+          "title": "Branches · scinfu/SwiftSoup",
+          "url": "https://github.com/scinfu/SwiftSoup/branches"
+        },
+        {
+          "snippet": "SwiftSoup: Pure Swift HTML Parser, with best of DOM, CSS, and jquery (Supports Linux, iOS, Mac, tvOS, watchOS) - SwiftSoup/Package.swift at master · scinfu/SwiftSoup",
+          "title": "SwiftSoup/Package.swift at master · scinfu/SwiftSoup",
+          "url": "https://github.com/scinfu/SwiftSoup/blob/master/Package.swift"
+        },
+        {
+          "snippet": "December 29, 2020 - import Foundation import SwiftSoup let url = URL(string:\"https://en.wikipedia.org/wiki/Aglaonema\")! let html = try String(contentsOf: url) let document = try SwiftSoup.parse(html) let descriptionSpan = try document.select(\"#Description\").first()! let h2 = descriptionSpan.parent()!",
+          "title": "Web Scraping with SwiftSoup · Grammer​Jack",
+          "url": "https://jackpal.github.io/2020/12/29/Web_Scraping-with-Swift-Soup.html"
+        }
+      ],
+      "status": 200,
+      "timedOut": false,
+      "title": "SwiftSoup GitHub - Brave Search"
+    },
+    {
+      "elapsedSeconds": 1.2665059566497803,
+      "offset": 0,
+      "query": "Draw Things app",
+      "results": [
+        {
+          "snippet": "Seamless image enhancement: Prototype apparel, craft detailed character concepts, and more. Train LoRAs locally: Keep creative control and privacy by training LoRAs entirely on-device. ... Pick an edition of Draw Things that fits your workflow for quick, private, offline image creation.",
+          "title": "Draw Things: AI-assisted Image Generation",
+          "url": "https://drawthings.ai/"
+        },
+        {
+          "snippet": "Just in: MiniMax H3, Krea 2, LTX-2.3, ... in AI creation! Unleash your imagination with Draw Things, the powerful offline AI creation tool for your iPhone or iPad....",
+          "title": "Draw Things: Offline AI Art App - App Store",
+          "url": "https://apps.apple.com/us/app/draw-things-offline-ai-art/id6444050820"
+        },
+        {
+          "snippet": "",
+          "title": "r/drawthingsapp on Reddit: What do you like about Draw Things?",
+          "url": "https://www.reddit.com/r/drawthingsapp/comments/1g9zm9x/what_do_you_like_about_draw_things/"
+        },
+        {
+          "snippet": "Draw Things is an AI image and video generator that runs locally on your Mac, iPhone, and iPad. Create images from text descriptions, animate them into video, and train your own LoRAs on-device with state-of-the-art models — no internet required.",
+          "title": "Draw Things for Mac: Offline AI Image Generator",
+          "url": "https://www.macaiapps.com/apps/draw-things/"
+        },
+        {
+          "snippet": "We require a Contributor License Agreement to make this more manageable. If you prefer not to sign the CLA, you're still welcome to fork this repository and contribute in your own way. The Draw Things app is managed through a private mono-repository.",
+          "title": "GitHub - drawthingsai/draw-things-community: The community repository for the Draw Things app. · GitHub",
+          "url": "https://github.com/drawthingsai/draw-things-community"
+        },
+        {
+          "snippet": "July 17, 2026 - Fix a crash upon app start. ... Support Qwen Image Edit model. Further improve Qwen Image series models speed on repeated runs. Support brush size selector for eraser / paintbrush tool. ... Add Privacy Pass for Draw Things+.",
+          "title": "Downloads",
+          "url": "https://drawthings.ai/downloads/"
+        },
+        {
+          "snippet": "December 25, 2022 - When beginners encounter this phenomenon, they likely have no idea what has happened. Therefore, I believe everyone would appreciate a feature that automatically fits the image to the original reference without locking the aspect ratio. 3 Must-Have Krea 2 LoRAs to Boost Speed & Quality in Draw Things!",
+          "title": "Draw Things",
+          "url": "https://www.reddit.com/r/drawthingsapp/"
+        },
+        {
+          "snippet": "November 5, 2022 - Achieve High-Fidelity Pose Transfer with These Two LoRAs! Step 1: Convert any pose you like into a Mannequin Pose using the Mannequin LoRA. Step 2: Keep the generated Mannequin Pose on the Draw Things Canvas, then place any reference image you want into the Moodboard.Show more",
+          "title": "Draw Things (@drawthingsapp) / X",
+          "url": "https://x.com/drawthingsapp?lang=en"
+        },
+        {
+          "snippet": "We cannot provide a description for this page right now",
+          "title": "Draw Things | Documentation",
+          "url": "https://docs.drawthings.ai/"
+        },
+        {
+          "snippet": "May 6, 2026 - See App Comparison. Download Draw Things from the Apple App Store or official Draw Things website and start today!",
+          "title": "Draw Things WIKI",
+          "url": "https://wiki.drawthings.ai/wiki/Main_Page"
+        },
+        {
+          "snippet": "The community repository for the Draw Things app.",
+          "title": "Draw Things · GitHub",
+          "url": "https://github.com/drawthingsai"
+        },
+        {
+          "snippet": "January 13, 2024 - https://apps.apple.com/us/app/draw-things-ai-generation/id64 · Hell, i'd pay for something like this on Desktop (tho i'm on Linux (NixOS))",
+          "title": "How does this compare to Draw Things? | Hacker News",
+          "url": "https://news.ycombinator.com/item?id=38969212"
+        },
+        {
+          "snippet": "",
+          "title": "r/StableDiffusion on Reddit: Draw Things, Stable Diffusion in your pocket, 100% offline and free",
+          "url": "https://www.reddit.com/r/StableDiffusion/comments/yqknyp/draw_things_stable_diffusion_in_your_pocket_100/"
+        },
+        {
+          "snippet": "This developer takes away all of the pain, frustration, and limitations for you. Draw Things eliminates the need to go into terminal, fire up a browser, fake like you have a PC GPU, etc.",
+          "title": "Draw Things: Offline AI Art - Ratings & Reviews - App Store",
+          "url": "https://apps.apple.com/us/app/draw-things-offline-ai-art/id6444050820?see-all=reviews&platform=mac"
+        },
+        {
+          "snippet": "April 20, 2025 - Get started with Draw Things, a free AI art app for iPhone, iPad, and Mac.",
+          "title": "Install Draw Things - Draw Things WIKI",
+          "url": "https://wiki.drawthings.ai/wiki/Install_Draw_Things"
+        },
+        {
+          "snippet": "",
+          "title": "DRAW THINGS: Full Tour - YouTube",
+          "url": "https://www.youtube.com/watch?v=uJoGQA5oXRU"
+        },
+        {
+          "snippet": "",
+          "title": "r/drawthingsapp on Reddit: How To Use Draw Things: A Tutorial and Walkthrough Tour for Beginners",
+          "url": "https://www.reddit.com/r/drawthingsapp/comments/1cl91rb/how_to_use_draw_things_a_tutorial_and_walkthrough/"
+        },
+        {
+          "snippet": "May 17, 2025 - ... Draw Things is a free AI art generator for iPhone, iPad, and Mac, using Stable Diffusion to create images and videos offline. It supports text-to-image, image-to-image, video generation, inpainting, and ControlNet.",
+          "title": "FAQ - Draw Things WIKI",
+          "url": "https://wiki.drawthings.ai/wiki/FAQ"
+        },
+        {
+          "snippet": "November 28, 2025 - Hey community! I saw several apps inspired by Nothing design, made for Nothing users. So I thought to make something cool app for you all. So I am working...",
+          "title": "Presenting 'Nothing Drawing App'",
+          "url": "https://nothing.community/d/41026-presenting-nothing-drawing-app"
+        },
+        {
+          "snippet": "March 15, 2025 - Strengths: Free, offline private capability, cloud render capability, native Mac/iOS, quality-focused, simple UI, built-in ControlNet (Images and Layers). Limitations: Limited to Apple devices and Linux, less workflow flexibility ...",
+          "title": "App Comparison - Draw Things WIKI",
+          "url": "https://wiki.drawthings.ai/wiki/App_Comparison"
+        }
+      ],
+      "status": 200,
+      "timedOut": false,
+      "title": "Draw Things app - Brave Search"
+    },
+    {
+      "elapsedSeconds": 2.26065993309021,
+      "offset": 0,
+      "query": "site:developer.apple.com URLSession",
+      "results": [
+        {
+          "snippet": "An object that coordinates a group of related, network data transfer tasks.",
+          "title": "URLSession | Apple Developer Documentation",
+          "url": "https://developer.apple.com/documentation/foundation/urlsession"
+        },
+        {
+          "snippet": "A URL session task that communicates over the WebSockets protocol standard.",
+          "title": "URLSessionWebSocketTask | Apple Developer Documentation",
+          "url": "https://developer.apple.com/documentation/foundation/urlsessionwebsockettask"
+        },
+        {
+          "snippet": "Tells the delegate that the remote server requested an HTTP redirect.",
+          "title": "urlSession(_:task:willPerformHTTPRedirection:newRequest:completionHandler:) | Apple Developer Documentation",
+          "url": "https://developer.apple.com/documentation/foundation/urlsessiontaskdelegate/urlsession(_:task:willperformhttpredirection:newrequest:completionhandler:)"
+        },
+        {
+          "snippet": "Tells the delegate that the task is waiting until suitable connectivity is available before beginning the network load.",
+          "title": "urlSession(_:taskIsWaitingForConnectivity:) | Apple Developer Documentation",
+          "url": "https://developer.apple.com/documentation/Foundation/URLSessionTaskDelegate/urlSession(_:taskIsWaitingForConnectivity:)"
+        },
+        {
+          "snippet": "A configuration object that defines behavior and policies for a URL session.",
+          "title": "URLSessionConfiguration | Apple Developer Documentation",
+          "url": "https://developer.apple.com/documentation/foundation/urlsessionconfiguration"
+        },
+        {
+          "snippet": "The shared singleton session object.",
+          "title": "shared | Apple Developer Documentation",
+          "url": "https://developer.apple.com/documentation/foundation/urlsession/shared"
+        },
+        {
+          "snippet": "A protocol that defines methods that URL session instances call on their delegates to handle session-level events, like session life cycle changes.",
+          "title": "URLSessionDelegate | Apple Developer Documentation",
+          "url": "https://developer.apple.com/documentation/foundation/urlsessiondelegate"
+        },
+        {
+          "snippet": "Requests credentials from the delegate in response to a session-level authentication request from the remote server.",
+          "title": "urlSession(_:didReceive:completionHandler:) | Apple Developer Documentation",
+          "url": "https://developer.apple.com/documentation/foundation/urlsessiondelegate/urlsession(_:didreceive:completionhandler:)?language=objc"
+        },
+        {
+          "snippet": "Periodically informs the delegate about the download’s progress.",
+          "title": "urlSession(_:downloadTask:didWriteData:totalBytesWritten:totalBytesExpectedToWrite:) | Apple Developer Documentation",
+          "url": "https://developer.apple.com/documentation/foundation/urlsessiondownloaddelegate/urlsession(_:downloadtask:didwritedata:totalbyteswritten:totalbytesexpectedtowrite:)"
+        },
+        {
+          "snippet": "Tells the delegate that the data task has received some of the expected data.",
+          "title": "urlSession(_:dataTask:didReceive:) | Apple Developer Documentation",
+          "url": "https://developer.apple.com/documentation/foundation/urlsessiondatadelegate/1411528-urlsession"
+        },
+        {
+          "snippet": "A URL session task that uploads data to the network in a request body.",
+          "title": "URLSessionUploadTask | Apple Developer Documentation",
+          "url": "https://developer.apple.com/documentation/foundation/urlsessionuploadtask"
+        },
+        {
+          "snippet": "Tells the delegate that the task finished transferring data.",
+          "title": "urlSession(_:task:didCompleteWithError:) | Apple Developer Documentation",
+          "url": "https://developer.apple.com/documentation/foundation/urlsessiontaskdelegate/urlsession(_:task:didcompletewitherror:)?language=objc"
+        },
+        {
+          "snippet": "Periodically informs the delegate of the progress of sending body content to the server.",
+          "title": "urlSession(_:task:didSendBodyData:totalBytesSent:totalBytesExpectedToSend:) | Apple Developer Documentation",
+          "url": "https://developer.apple.com/documentation/foundation/urlsessiontaskdelegate/urlsession(_:task:didsendbodydata:totalbytessent:totalbytesexpectedtosend:)"
+        },
+        {
+          "snippet": "Tells the delegate that the data task received the initial reply (headers) from the server.",
+          "title": "urlSession(_:dataTask:didReceive:completionHandler:) | Apple Developer Documentation",
+          "url": "https://developer.apple.com/documentation/foundation/urlsessiondatadelegate/urlsession(_:datatask:didreceive:completionhandler:)"
+        },
+        {
+          "snippet": "Asks the delegate whether the data (or upload) task should store the response in the cache.",
+          "title": "urlSession(_:dataTask:willCacheResponse:completionHandler:) | Apple Developer Documentation",
+          "url": "https://developer.apple.com/documentation/foundation/urlsessiondatadelegate/1411612-urlsession"
+        },
+        {
+          "snippet": "Tells the delegate that a delayed URL session task will now begin loading.",
+          "title": "urlSession(_:task:willBeginDelayedRequest:completionHandler:) | Apple Developer Documentation",
+          "url": "https://developer.apple.com/documentation/foundation/urlsessiontaskdelegate/urlsession(_:task:willbegindelayedrequest:completionhandler:)"
+        },
+        {
+          "snippet": "Discover how you can adopt Swift concurrency in URLSession using async/await and AsyncSequence, and how you can apply Swift concurrency...",
+          "title": "Use async/await with URLSession - WWDC21 - Videos - Apple Developer",
+          "url": "https://developer.apple.com/videos/play/wwdc2021/10095/"
+        },
+        {
+          "snippet": "A URL session task that returns downloaded data directly to the app in memory.",
+          "title": "URLSessionDataTask | Apple Developer Documentation",
+          "url": "https://developer.apple.com/documentation/foundation/urlsessiondatatask"
+        },
+        {
+          "snippet": "Convenience method to load data using a URL, creates and resumes a URLSessionDataTask internally.",
+          "title": "data(from:) | Apple Developer Documentation",
+          "url": "https://developer.apple.com/documentation/foundation/urlsession/data(from:)"
+        },
+        {
+          "snippet": "Tells the delegate the final location of the asset when the download completes.",
+          "title": "urlSession(_:aggregateAssetDownloadTask:willDownloadTo:) | Apple Developer Documentation",
+          "url": "https://developer.apple.com/documentation/avfoundation/avassetdownloaddelegate/urlsession(_:aggregateassetdownloadtask:willdownloadto:)"
+        }
+      ],
+      "status": 200,
+      "timedOut": false,
+      "title": "site:developer.apple.com URLSession - Brave Search"
+    },
+    {
+      "elapsedSeconds": 2.2608940601348877,
+      "offset": 0,
+      "query": "Swift programming",
+      "results": [
+        {
+          "snippet": "Swift is a general-purpose programming language built using a modern approach to safety, performance, and software design patterns.",
+          "title": "Swift Programming Language",
+          "url": "https://www.swift.org/"
+        },
+        {
+          "snippet": "Swift is a powerful and intuitive programming language for iOS, iPadOS, macOS, tvOS, and watchOS. Writing Swift code is interactive and fun, the syntax is concise yet expressive, and Swift includes modern features developers love.",
+          "title": "Swift - Apple Developer",
+          "url": "https://developer.apple.com/swift/"
+        },
+        {
+          "snippet": "June 14, 2026 - Swift is a high-level general-purpose, multi-paradigm, compiled programming language created by Chris Lattner in 2010 for Apple Inc. and maintained by the open-source community. Swift compiles to machine code and uses an LLVM-based compiler. Swift was first released in June 2014 and the Swift ...",
+          "title": "Swift (programming language) - Wikipedia",
+          "url": "https://en.wikipedia.org/wiki/Swift_(programming_language)"
+        },
+        {
+          "snippet": "The Swift tutorial covers the basics of Swift programming, including syntax, types, control flow, collections, functions, OOP, protocols, generics, concurrency, and iOS app patterns.",
+          "title": "Swift Tutorial",
+          "url": "https://www.w3schools.com/swift/"
+        },
+        {
+          "snippet": "Copyright © 2026 Apple Inc. and the Swift project authors. All rights reserved · Swift and the Swift logo are trademarks of Apple Inc",
+          "title": "Documentation",
+          "url": "https://docs.swift.org/swift-book/documentation/the-swift-programming-language/thebasics/"
+        },
+        {
+          "snippet": "July 1, 2026 - As a complete and independent language, Swift packages core features like flow control, data structures, and functions, with high-level constructs like objects, protocols, closures, and generics.",
+          "title": "GitHub - swiftlang/swift: The Swift Programming Language · GitHub",
+          "url": "https://github.com/swiftlang/swift"
+        },
+        {
+          "snippet": "Swift is a modern programming language developed by Apple. This general-purpose programming language is fast and powerful without sacrificing safety or readability.",
+          "title": "Swift Courses & Tutorials | Codecademy",
+          "url": "https://www.codecademy.com/catalog/language/swift"
+        },
+        {
+          "snippet": "This content has moved; redirecting to the new location · This page requires JavaScript. Please turn on JavaScript and refresh the page",
+          "title": "The Swift Programming Language: Redirect",
+          "url": "https://docs.swift.org/swift-book/LanguageGuide/TheBasics.html"
+        },
+        {
+          "snippet": "This expansion into more and more ... users. Overall, Swift has become a powerful and flexible programming language that developers can use to create modern apps for Apple platforms and beyond....",
+          "title": "Get Started - Swift - Apple Developer",
+          "url": "https://developer.apple.com/swift/get-started/"
+        },
+        {
+          "snippet": "March 6, 2026 - Swift is a general purpose, compiled programming language which was started by Chris Lattner and team in 2010 and further developed by Apple Inc.",
+          "title": "Home - Swift (programming language) - Research Guides at University of Cincinnati",
+          "url": "https://guides.libraries.uc.edu/swift"
+        },
+        {
+          "snippet": "... Average based on combined completion rates — individual pacing in lessons, projects, and quizzes may vary ... Swift is a powerful and intuitive programming language for building apps across iOS, macOS, watchOS, and more.",
+          "title": "Learn Swift Programming Language | Codecademy",
+          "url": "https://www.codecademy.com/learn/learn-swift"
+        },
+        {
+          "snippet": "Start out with pure Swift then move onto iOS app development using daily guides, videos, challenges, and more.",
+          "title": "Learn Swift with free tutorials",
+          "url": "https://www.hackingwithswift.com/learn"
+        },
+        {
+          "snippet": "July 23, 2025 - Swift is a powerful general-purpose programming language developed by Apple to create iOS applications such as for iOS, macOS, watchOS, and so on. Swift code is easier to understand and write.",
+          "title": "Swift Tutorial - GeeksforGeeks",
+          "url": "https://www.geeksforgeeks.org/swift/swift-tutorial/"
+        },
+        {
+          "snippet": "Swift is a robust and intuitive programming language created by Apple for building apps for iOS, Mac, Apple TV, and Apple Watch. It’s designed to give developers more freedom than ever.",
+          "title": "Swift - Apple",
+          "url": "https://www.apple.com/lae/swift/"
+        },
+        {
+          "snippet": "PRO SWIFT Watch advanced videos that will level up your Swift knowledge: functional programming, protocol-oriented programming, value types, closures, operator overloading, and more.",
+          "title": "Hacking with Swift – learn to code iPhone and iPad apps with free Swift tutorials",
+          "url": "https://www.hackingwithswift.com/"
+        },
+        {
+          "snippet": "Swift is a general-purpose programming language built using a modern approach to safety, performance, and software design patterns.",
+          "title": "Getting Started | Swift.org",
+          "url": "https://www.swift.org/getting-started/"
+        },
+        {
+          "snippet": "Follow this free Swift tutorial to learn Swift programming from absolute zero, with 30-minute lessons, runnable code, challenges, and AI prompts.",
+          "title": "Swift Tutorial 2026: Learn Swift From Absolute Zero : CodeWithChris",
+          "url": "https://codewithchris.com/learn-swift/"
+        },
+        {
+          "snippet": "Swift is the modern programming language in the world, widely used in fields such as iOS app development, macOS development, and server-side programming.",
+          "title": "Learn Swift Programming",
+          "url": "https://www.programiz.com/swift-programming"
+        },
+        {
+          "snippet": "",
+          "title": "r/swift on Reddit: What's the best way to learn Swift for people who have programmed before?",
+          "url": "https://www.reddit.com/r/swift/comments/12mi3fl/whats_the_best_way_to_learn_swift_for_people_who/"
+        },
+        {
+          "snippet": "Find downloads, documentation, and sample code for writing Swift code.",
+          "title": "Resources - Swift - Apple Developer",
+          "url": "https://developer.apple.com/swift/resources/"
+        }
+      ],
+      "status": 200,
+      "timedOut": false,
+      "title": "Swift programming - Brave Search"
+    },
+    {
+      "elapsedSeconds": 1.261788010597229,
+      "offset": 1,
+      "query": "Swift programming",
+      "results": [
+        {
+          "snippet": "HTML CSS JAVASCRIPT SQL PYTHON JAVA PHP C C++ C# AWS W3.CSS HOW TO BOOTSTRAP REACT MYSQL JQUERY EXCEL XML DJANGO NUMPY PANDAS NODEJS DSA TYPESCRIPT ANGULAR ANGULARJS GIT POSTGRESQL MONGODB ASP AI R GO KOTLIN SWIFT SASS VUE GEN AI SCIPY CYBERSECURITY DATA SCIENCE INTRO TO PROGRAMMING INTRO TO ...",
+          "title": "Swift Tutorial",
+          "url": "https://www.w3schools.com/swift/default.asp"
+        },
+        {
+          "snippet": "The Swift Programming Language has 78 repositories available. Follow their code on GitHub.",
+          "title": "The Swift Programming Language · GitHub",
+          "url": "https://github.com/swiftlang"
+        },
+        {
+          "snippet": "Learn Swift from scratch with interactive lessons and coding challenges. Build iOS apps, earn a professional certificate, and advance your career.",
+          "title": "Learn Swift Programming | Master iOS & macOS Development",
+          "url": "https://mimo.org/courses/learn-swift-programming"
+        },
+        {
+          "snippet": "June 10, 2026 - The Swift programming language was developed for Apple products. Learn more about how it's used and create your first iPhone app.",
+          "title": "What Is Swift Programming? (+An iPhone App Tutorial for Beginners)",
+          "url": "https://learn.g2.com/swift-programming"
+        },
+        {
+          "snippet": "September 13, 2021 - What is Swift programming language and why use it? Review the main pros and cons of Swift for iOS native development and check out which tools are used with it.",
+          "title": "The Good and the Bad of Swift Programming Language | AltexSo",
+          "url": "https://www.altexsoft.com/blog/the-good-and-the-bad-of-swift-programming-language/"
+        },
+        {
+          "snippet": "This document is made available under a Creative Commons Attribution 4.0 International (CC BY 4.0) License · Swift and the Swift logo are trademarks of Apple Inc",
+          "title": "The Swift Programming Language (6.4 beta) | Documentation",
+          "url": "https://docs.swift.org/swift-book/documentation/the-swift-programming-language/"
+        },
+        {
+          "snippet": "September 19, 2023 - Your All-in-One Learning Portal. It contains well written, well thought and well explained computer science and programming articles, quizzes and practice/competitive programming/company interview Questions.",
+          "title": "Swift Programming Language - GeeksforGeeks",
+          "url": "https://www.geeksforgeeks.org/swift/swift-programming-language/"
+        },
+        {
+          "snippet": "Swift is a new programming language developed by Apple Inc. for iOS and OS X development. It adopts the best of C and Objective-C, without the constraints of C compatibility. It uses the same runtime as the existing Obj-C system on Mac OS and iOS,",
+          "title": "Swift Tutorial",
+          "url": "https://www.tutorialspoint.com/swift/index.htm"
+        },
+        {
+          "snippet": "",
+          "title": "How to code in Swift | Swift Basics #1 - YouTube",
+          "url": "https://www.youtube.com/watch?v=xfvdxQJj7Vw"
+        },
+        {
+          "snippet": "January 31, 2026 - There are many advantages to programming in Swift, ...",
+          "title": "Programming in Swift: Benefits of This Popular Coding Language | Coursera",
+          "url": "https://www.coursera.org/articles/programming-in-swift"
+        },
+        {
+          "snippet": "November 29, 2015 - Offered by University of Toronto. Introduction to Swift Programming is the first course in a four part specialization series that will ... Enroll for free.",
+          "title": "Introduction To Swift Programming | Coursera",
+          "url": "https://www.coursera.org/learn/swift-programming"
+        },
+        {
+          "snippet": "July 12, 2025 - Your All-in-One Learning Portal. It contains well written, well thought and well explained computer science and programming articles, quizzes and practice/competitive programming/company interview Questions.",
+          "title": "Introduction to Swift Programming - GeeksforGeeks",
+          "url": "https://www.geeksforgeeks.org/swift/introduction-to-swift-programming/"
+        },
+        {
+          "snippet": "August 6, 2024 - Swift is popular programming language that is often used for creating iOS apps. We just released a full course on the freeCodeCamp.org YouTube channel that will teach you the Swift programming language. Vandad Nahavandipoor teaches this course. He c...",
+          "title": "Learn the Swift Programming Language",
+          "url": "https://www.freecodecamp.org/news/learn-the-swift-programming-language/"
+        },
+        {
+          "snippet": "In Swift Playground, a single line of code can make amazing things happen. You’ll start with small programs called “playgrounds” to learn the basics. Interactive lessons teach key coding concepts, and additional challenges encourage you to explore code in exciting new ways.",
+          "title": "Swift Playground - Apple Developer",
+          "url": "https://developer.apple.com/swift-playground/"
+        },
+        {
+          "snippet": "November 19, 2024 - Swift is Apple's programming language for iOS, macOS, watchOS, and tvOS. Learn its basic features, mechanics, and why it’s great for app development.",
+          "title": "What is Swift and Why Should You Learn It? | Medium",
+          "url": "https://medium.com/@AlexanderObregon/what-is-swift-and-why-should-you-learn-it-4a01158f39b9"
+        },
+        {
+          "snippet": "December 26, 2023 - Discover the incredible potential of Swift programming and learn how to leverage its capabilities to create high-performance mobile applications. Dive into the world of Swift programming and unleash your creativity with this comprehensive guide.",
+          "title": "Swift Programming: Unlocking the Power of Modern Mobile Development - Apple Coding Academy",
+          "url": "https://applecodingacademy.com/swift-programming-unlocking-the-power-of-modern-mobile-development/"
+        },
+        {
+          "snippet": "December 3, 2015 - Swift is a general-purpose programming language built using a modern approach to safety, performance, and software design patterns.",
+          "title": "About Swift | Swift.org",
+          "url": "https://www.swift.org/about/"
+        },
+        {
+          "snippet": "The Swift Programming Language",
+          "title": "Swift Programming",
+          "url": "https://medium.com/swift-programming"
+        },
+        {
+          "snippet": "September 24, 2025 - In this guide, you'll discover how Swift empowers creators to build scalable, reliable, and visually engaging apps for Apple devices and beyond.",
+          "title": "Swift programming language | Sonar",
+          "url": "https://www.sonarsource.com/resources/library/swift-programming-language/"
+        },
+        {
+          "snippet": "November 23, 2013 - Swift is a general-purpose programming language built using a modern approach to safety, performance, and software design patterns.",
+          "title": "The Swift Programming Language",
+          "url": "https://www.reddit.com/r/swift/"
+        }
+      ],
+      "status": 200,
+      "timedOut": false,
+      "title": "Swift programming - Brave Search"
+    },
+    {
+      "elapsedSeconds": 20.012382984161377,
+      "offset": 0,
+      "query": "C++ 参考手册",
+      "results": [],
+      "status": 429,
+      "text": "\nVerifying you're not a bot\nQuick check before you continue searching.\n\nVerify\nSwitch to traditional CAPTCHA\nWhy am I seeing this?\n",
+      "timedOut": true,
+      "title": "Brave Search"
+    },
+    {
+      "elapsedSeconds": 20.013731956481934,
+      "offset": 0,
+      "query": "\"qzxvnonexistentbrave178959sitecheck\"",
+      "results": [],
+      "status": 429,
+      "text": "\nVerifying you're not a bot\nQuick check before you continue searching.\n\nVerify\nSwitch to traditional CAPTCHA\nWhy am I seeing this?\n",
+      "timedOut": true,
+      "title": "Brave Search"
+    }
+  ],
+  "followup": [
+    {
+      "elapsedSeconds": 1.5149880647659302,
+      "offset": 0,
+      "query": "SwiftSoup GitHub",
+      "results": [
+        {
+          "snippet": "SwiftSoup is a pure Swift library designed for seamless HTML parsing and manipulation across multiple platforms, including macOS, iOS, tvOS, watchOS, and Linux. It offers an intuitive API that leverages the best aspects of DOM traversal, CSS ...",
+          "title": "GitHub - scinfu/SwiftSoup: SwiftSoup: Pure Swift HTML Parser, with best of DOM, CSS, and jquery (Supports Linux, iOS, Mac, tvOS, watchOS) · GitHub",
+          "url": "https://github.com/scinfu/SwiftSoup"
+        },
+        {
+          "snippet": "SwiftSoup: Pure Swift HTML Parser, with best of DOM, CSS, and jquery (Supports Linux, iOS, Mac, tvOS, watchOS) - Releases · scinfu/SwiftSoup",
+          "title": "Releases · scinfu/SwiftSoup",
+          "url": "https://github.com/scinfu/SwiftSoup/releases"
+        },
+        {
+          "snippet": "SwiftSoup: Pure Swift HTML Parser, with best of DOM, CSS, and jquery (Supports Linux, iOS, Mac, tvOS, watchOS) - scottandrew/SwiftSoup",
+          "title": "GitHub - scottandrew/SwiftSoup: SwiftSoup: Pure Swift HTML Parser, with best of DOM, CSS, and jquery (Supports Linux, iOS, Mac, tvOS, watchOS) · GitHub",
+          "url": "https://github.com/scottandrew/SwiftSoup"
+        },
+        {
+          "snippet": "SwiftSoup: Pure Swift HTML Parser, with best of DOM, CSS, and jquery (Supports Linux, iOS, Mac, tvOS, watchOS)",
+          "title": "swiftsoup · GitHub Topics · GitHub",
+          "url": "https://github.com/topics/swiftsoup"
+        },
+        {
+          "snippet": "Extract attributes, text, and HTML from elements in ios swift with SwiftSoup · This file contains hidden or bidirectional Unicode text that may be interpreted or compiled differently than what appears below. To review, open the file in an editor that reveals hidden Unicode characters.",
+          "title": "Extract attributes, text, and HTML from elements in ios swift with SwiftSoup · GitHub",
+          "url": "https://gist.github.com/scinfu/d456ca7cf3b9fee5b3cefad4afbeee49"
+        },
+        {
+          "snippet": "SwiftSoup is a pure Swift library designed for seamless HTML parsing and manipulation across multiple platforms, including macOS, iOS, tvOS, watchOS, and Linux. It offers an intuitive API that leverages the best aspects of DOM traversal, CSS ...",
+          "title": "GitHub - lake-of-fire/SwiftSoup: SwiftSoup: Pure Swift HTML Parser, with best of DOM, CSS, and jquery (Supports Linux, iOS, Mac, tvOS, watchOS) · GitHub",
+          "url": "https://github.com/lake-of-fire/SwiftSoup"
+        },
+        {
+          "snippet": "SwiftSoup: Pure Swift HTML Parser, with best of DOM, CSS, and jquery (Supports Linux, iOS, Mac, tvOS, watchOS) - Infomaniak/SwiftSoup",
+          "title": "GitHub - Infomaniak/SwiftSoup: SwiftSoup: Pure Swift HTML Parser, with best of DOM, CSS, and jquery (Supports Linux, iOS, Mac, tvOS, watchOS) · GitHub",
+          "url": "https://github.com/Infomaniak/SwiftSoup"
+        },
+        {
+          "snippet": "SwiftSoup: Pure Swift HTML Parser, with best of DOM, CSS, and jquery (Supports Linux, iOS, Mac, tvOS, watchOS)",
+          "title": "SwiftSoup | SwiftSoup: Pure Swift HTML Parser, with best of DOM, CSS, and jquery (Supports Linux, iOS, Mac, tvOS, watchOS)",
+          "url": "https://scinfu.github.io/SwiftSoup/"
+        },
+        {
+          "snippet": "SwiftSoup: Pure Swift HTML Parser, with best of DOM, CSS, and jquery (Supports Linux, iOS, Mac, tvOS, watchOS) - dylanpulver/SwiftSoup",
+          "title": "GitHub - dylanpulver/SwiftSoup: SwiftSoup: Pure Swift HTML Parser, with best of DOM, CSS, and jquery (Supports Linux, iOS, Mac, tvOS, watchOS) · GitHub",
+          "url": "https://github.com/dylanpulver/SwiftSoup"
+        },
+        {
+          "snippet": "To install it, simply add the following line to your Cartfile: github \"scinfu/SwiftSoup\" SwiftSoup is also available through Swift Package Manager. To install it, simply add the dependency to your Package.Swift file: ...",
+          "title": "SwiftSoup on CocoaPods.org",
+          "url": "https://cocoapods.org/pods/SwiftSoup"
+        },
+        {
+          "snippet": "SwiftSoup is a popular library for working with HTML and XML documents in Swift - mutugileo/SwiftSoup",
+          "title": "GitHub - mutugileo/SwiftSoup: SwiftSoup is a popular library for working with HTML and XML documents in Swift · GitHub",
+          "url": "https://github.com/mutugileo/SwiftSoup"
+        },
+        {
+          "snippet": "SwiftSoup: Pure Swift HTML Parser, with best of DOM, CSS, and jquery (Supports Linux, iOS, Mac, tvOS, watchOS) - scinfu/SwiftSoup",
+          "title": "SwiftSoup/Sources/SwiftSoup.swift at master · scinfu/SwiftSoup",
+          "url": "https://github.com/scinfu/SwiftSoup/blob/master/Sources/SwiftSoup.swift"
+        },
+        {
+          "snippet": "Alamofire extension for serialize SwiftSoup HTML documents' - aporat/AlamofireSwiftSoup",
+          "title": "GitHub - aporat/AlamofireSwiftSoup: Alamofire extension for serialize SwiftSoup HTML documents'",
+          "url": "https://github.com/aporat/AlamofireSwiftSoup"
+        },
+        {
+          "snippet": "SwiftSoup: Pure Swift HTML Parser, with best of DOM, CSS, and jquery (Supports Linux, iOS, Mac, tvOS, watchOS) - scinfu/SwiftSoup",
+          "title": "SwiftSoup/SwiftSoup.podspec at master · scinfu/SwiftSoup",
+          "url": "https://github.com/scinfu/SwiftSoup/blob/master/SwiftSoup.podspec"
+        },
+        {
+          "snippet": "SwiftSoup: Pure Swift HTML Parser, with best of DOM, CSS, and jquery (Supports Linux, iOS, Mac, tvOS, watchOS) - SwiftSoup/Sources at master · scinfu/SwiftSoup",
+          "title": "SwiftSoup/Sources at master · scinfu/SwiftSoup",
+          "url": "https://github.com/scinfu/SwiftSoup/tree/master/Sources"
+        },
+        {
+          "snippet": "SwiftSoup: Pure Swift HTML Parser, with best of DOM, CSS, and jquery (Supports Linux, iOS, Mac, tvOS, watchOS) - SwiftSoup/Sources/Document.swift at master · scinfu/SwiftSoup",
+          "title": "SwiftSoup/Sources/Document.swift at master · scinfu/SwiftSoup",
+          "url": "https://github.com/scinfu/SwiftSoup/blob/master/Sources/Document.swift"
+        },
+        {
+          "snippet": "September 8, 2025 - Install the SwiftSoup package in your projects. Add this line to the dependencies array in Package.swift: .package(url: \"https://github.com/scinfu/SwiftSoup.git\", from: \"2.6.0\"), And this line to the dependencies array in targets: .product(name: \"SwiftSoup\", package: \"SwiftSoup\"), Your Package.swift file will now contain: import PackageDescription let package = Package( name: \"ScrapingScript\", dependencies: [ .package(url: \"https://github.com/scinfu/SwiftSoup.git\", from: \"2.6.0\"), ], targets: [ .executableTarget( name: \"ScrapingScript\", dependencies: [ .product(name: \"SwiftSoup\", package: \"SwiftSoup\"), ] ), ] ) Import SwiftSoup in main.swift: import SwiftSoup ·",
+          "title": "Swift Web Scraping: Tutorial 2026 · Zenrows",
+          "url": "https://www.zenrows.com/blog/swift-web-scraping"
+        },
+        {
+          "snippet": "SwiftSoup: Pure Swift HTML Parser, with best of DOM, CSS, and jquery (Supports Linux, iOS, Mac, tvOS, watchOS) - Branches · scinfu/SwiftSoup",
+          "title": "Branches · scinfu/SwiftSoup",
+          "url": "https://github.com/scinfu/SwiftSoup/branches"
+        },
+        {
+          "snippet": "SwiftSoup: Pure Swift HTML Parser, with best of DOM, CSS, and jquery (Supports Linux, iOS, Mac, tvOS, watchOS) - SwiftSoup/Package.swift at master · scinfu/SwiftSoup",
+          "title": "SwiftSoup/Package.swift at master · scinfu/SwiftSoup",
+          "url": "https://github.com/scinfu/SwiftSoup/blob/master/Package.swift"
+        },
+        {
+          "snippet": "December 29, 2020 - import Foundation import SwiftSoup let url = URL(string:\"https://en.wikipedia.org/wiki/Aglaonema\")! let html = try String(contentsOf: url) let document = try SwiftSoup.parse(html) let descriptionSpan = try document.select(\"#Description\").first()! let h2 = descriptionSpan.parent()!",
+          "title": "Web Scraping with SwiftSoup · Grammer​Jack",
+          "url": "https://jackpal.github.io/2020/12/29/Web_Scraping-with-Swift-Soup.html"
+        }
+      ],
+      "status": 200,
+      "timedOut": false,
+      "title": "SwiftSoup GitHub - Brave Search"
+    }
+  ],
+  "pagination": {
+    "query": "Swift programming",
+    "offsets": [
+      0,
+      1
+    ],
+    "uniqueURLs": 40,
+    "overlap": 0
+  },
+  "apiChecks": [
+    {
+      "query": "Draw Things app",
+      "maxResults": 1,
+      "pages": 1,
+      "resultCount": 1,
+      "validation": "Live Bazel smoke test passed"
+    },
+    {
+      "elapsedSeconds": 1.4672640562057495,
+      "maxResults": 25,
+      "pages": 2,
+      "query": "Swift programming",
+      "timeFilter": "none",
+      "uniqueURLs": 25,
+      "resultCount": 25
+    },
+    {
+      "elapsedSeconds": 0.3655489683151245,
+      "maxResults": 3,
+      "pages": 1,
+      "query": "C++ programming",
+      "timeFilter": "week",
+      "uniqueURLs": 3,
+      "resultCount": 3
+    }
+  ]
+}

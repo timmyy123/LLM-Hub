@@ -1,0 +1,19 @@
+[package]
+name = "ripgrep-ios-dependencies"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[lib]
+path = "fake.rs"
+
+[dependencies]
+anyhow = "=1.0.87"
+bstr = "=1.10.0"
+grep = "=0.3.2"
+ignore = "=0.4.23"
+lexopt = "=0.3.0"
+log = "=0.4.22"
+serde_json = "=1.0.128"
+termcolor = "=1.4.1"
+textwrap = { version = "=0.16.1", default-features = false }
