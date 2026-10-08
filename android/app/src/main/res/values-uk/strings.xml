@@ -1050,4 +1050,10 @@
     <string name="audio_search_permission_denied">Для аналізу аудіо пристрою потрібен доступ до аудіо.</string>
     <string name="audio_search_count">Проаналізовано %1$d з %2$d файлів</string>
     <string name="audio_search_moment">Відтворити %1$s</string>
+
+    <!-- Supertonic 3 -->
+    <string name="supertonic_language">Мова озвучення</string>
+    <string name="supertonic_voice_download_failed">Не вдалося завантажити голос. Спробуйте ще раз.</string>
+    <string name="supertonic_model_unavailable">Supertonic 3 недоступний. Завершіть завантаження моделі або виберіть інший рушій озвучення в Налаштуваннях.</string>
+    <string name="supertonic_speech_failed">Помилка озвучення. Перевірте вибраний голос і виберіть підтримувану мову в Налаштуваннях.</string>
 </resources>

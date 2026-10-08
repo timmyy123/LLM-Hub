@@ -1050,4 +1050,10 @@
     <string name="audio_search_permission_denied">برای تحلیل صداهای دستگاه به دسترسی صدا نیاز است.</string>
     <string name="audio_search_count">%1$d از %2$d فایل تحلیل شد</string>
     <string name="audio_search_moment">پخش %1$s</string>
+
+    <!-- Supertonic 3 -->
+    <string name="supertonic_language">زبان گفتار</string>
+    <string name="supertonic_voice_download_failed">بارگیری صدا ناموفق بود. دوباره تلاش کنید.</string>
+    <string name="supertonic_model_unavailable">Supertonic 3 در دسترس نیست. بارگیری مدل را کامل کنید یا در تنظیمات موتور گفتار دیگری انتخاب کنید.</string>
+    <string name="supertonic_speech_failed">تولید گفتار ناموفق بود. صدای انتخابی را بررسی کنید و در تنظیمات زبان پشتیبانی‌شده‌ای انتخاب کنید.</string>
 </resources>

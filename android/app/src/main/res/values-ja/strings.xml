@@ -1047,4 +1047,10 @@
     <string name="audio_search_permission_denied">デバイスの音声を分析するには音声へのアクセスが必要です。</string>
     <string name="audio_search_count">%2$d 件中 %1$d 件のファイルを分析済み</string>
     <string name="audio_search_moment">%1$s を再生</string>
+
+    <!-- Supertonic 3 -->
+    <string name="supertonic_language">読み上げ言語</string>
+    <string name="supertonic_voice_download_failed">音声をダウンロードできませんでした。再試行してください。</string>
+    <string name="supertonic_model_unavailable">Supertonic 3を利用できません。モデルのダウンロードを完了するか、設定で別の読み上げエンジンを選択してください。</string>
+    <string name="supertonic_speech_failed">読み上げに失敗しました。選択した音声を確認し、設定で対応する言語を選択してください。</string>
 </resources>

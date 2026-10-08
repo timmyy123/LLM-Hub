@@ -1018,4 +1018,10 @@ Du forsøger at sende et billede, men den nuværende model er **kun-tekst**:
     <string name="audio_search_permission_denied">Der kræves adgang til lyd for at analysere lyd på enheden.</string>
     <string name="audio_search_count">%1$d af %2$d filer analyseret</string>
     <string name="audio_search_moment">Afspil %1$s</string>
+
+    <!-- Supertonic 3 -->
+    <string name="supertonic_language">Talesprog</string>
+    <string name="supertonic_voice_download_failed">Stemmen kunne ikke hentes. Prøv igen.</string>
+    <string name="supertonic_model_unavailable">Supertonic 3 er ikke tilgængelig. Færdiggør modeldownloaden, eller vælg en anden talemotor i Indstillinger.</string>
+    <string name="supertonic_speech_failed">Tale mislykkedes. Kontrollér den valgte stemme, og vælg et understøttet sprog i Indstillinger.</string>
 </resources>

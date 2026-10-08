@@ -2059,8 +2059,8 @@ fun ScamDetectorScreen(
     }
     val isGgufScam by remember(selectedModel) { derivedStateOf { selectedModel?.modelFormat == "gguf" } }
     
-    // TTS Service — always use system TTS (Kokoro is English-only)
-    val ttsService = remember { com.llmhub.llmhub.ui.components.TtsService(context, isTranslationFeature = true) }
+    // Use the app-wide TTS model for scam analysis readout.
+    val ttsService = remember { com.llmhub.llmhub.ui.components.TtsService(context) }
     val isTtsSpeaking by ttsService.isSpeaking.collectAsState()
 
     // Scroll state for auto-scrolling

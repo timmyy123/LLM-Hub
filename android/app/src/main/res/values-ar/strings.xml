@@ -1050,4 +1050,10 @@
     <string name="audio_search_permission_denied">يلزم الوصول إلى الصوت لتحليل الصوت على الجهاز.</string>
     <string name="audio_search_count">تم تحليل %1$d من %2$d ملف</string>
     <string name="audio_search_moment">تشغيل %1$s</string>
+
+    <!-- Supertonic 3 -->
+    <string name="supertonic_language">لغة النطق</string>
+    <string name="supertonic_voice_download_failed">تعذر تنزيل الصوت. حاول مرة أخرى.</string>
+    <string name="supertonic_model_unavailable">Supertonic 3 غير متاح. أكمل تنزيل النموذج أو اختر محرك نطق آخر في الإعدادات.</string>
+    <string name="supertonic_speech_failed">فشل النطق. تحقق من الصوت المحدد واختر لغة مدعومة في الإعدادات.</string>
 </resources>

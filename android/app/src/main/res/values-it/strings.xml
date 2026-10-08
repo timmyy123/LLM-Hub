@@ -1044,4 +1044,10 @@
     <string name="audio_search_permission_denied">Serve l\'accesso all\'audio per analizzare l\'audio del dispositivo.</string>
     <string name="audio_search_count">%1$d di %2$d file analizzati</string>
     <string name="audio_search_moment">Riproduci %1$s</string>
+
+    <!-- Supertonic 3 -->
+    <string name="supertonic_language">Lingua della voce</string>
+    <string name="supertonic_voice_download_failed">Download della voce non riuscito. Riprova.</string>
+    <string name="supertonic_model_unavailable">Supertonic 3 non è disponibile. Completa il download del modello o scegli un altro motore vocale nelle Impostazioni.</string>
+    <string name="supertonic_speech_failed">Sintesi vocale non riuscita. Controlla la voce selezionata e scegli una lingua supportata nelle Impostazioni.</string>
 </resources>

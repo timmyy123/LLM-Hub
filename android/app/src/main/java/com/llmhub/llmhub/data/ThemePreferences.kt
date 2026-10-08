@@ -30,6 +30,8 @@ class ThemePreferences(private val context: Context) {
         private val AUTO_READOUT_ENABLED_KEY = booleanPreferencesKey("auto_readout_enabled")
         private val IS_PREMIUM_KEY = booleanPreferencesKey("is_premium")
         private val GITHUB_STARS_KEY = androidx.datastore.preferences.core.intPreferencesKey("github_stars")
+        private val SUPERTONIC_VOICE_KEY = stringPreferencesKey("supertonic_voice")
+        private val SUPERTONIC_LANGUAGE_KEY = stringPreferencesKey("supertonic_language")
         private val SELECTED_TTS_MODEL_KEY = stringPreferencesKey("selected_tts_model")
         private val SELECTED_TTS_DEVICE_KEY = stringPreferencesKey("selected_tts_device")
         private val SELECTED_TTS_VOICE_KEY = stringPreferencesKey("selected_tts_voice")
@@ -171,6 +173,17 @@ class ThemePreferences(private val context: Context) {
         context.dataStore.edit { preferences ->
             preferences[GITHUB_STARS_KEY] = stars
         }
+    }
+
+    val supertonicVoice: Flow<String> = context.dataStore.data.map { it[SUPERTONIC_VOICE_KEY]?.takeIf(SupertonicModel.voices::containsKey) ?: "M1" }
+    val supertonicLanguage: Flow<String> = context.dataStore.data.map { it[SUPERTONIC_LANGUAGE_KEY] ?: "" }
+    suspend fun setSupertonicVoice(voice: String) {
+        require(voice in SupertonicModel.voices)
+        context.dataStore.edit { it[SUPERTONIC_VOICE_KEY] = voice }
+    }
+    suspend fun setSupertonicLanguage(language: String) {
+        require(language.isEmpty() || language in SupertonicModel.languages)
+        context.dataStore.edit { it[SUPERTONIC_LANGUAGE_KEY] = language }
     }
 
     val selectedTtsModel: Flow<String?> = context.dataStore.data

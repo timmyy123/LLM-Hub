@@ -334,7 +334,8 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
                         android.util.Log.d("ModelDownloadViewModel", "[loadModels:onnx] dir=${onnxModelDir.absolutePath} fileCount=$fileCount totalDownloaded=$totalDownloaded expectedFileCount=$expectedFileCount")
                         
                         // Check if we have all expected files AND if the size is close to expected
-                        val completeEnough = fileCount >= expectedFileCount && (model.sizeBytes <= 0 || totalDownloaded >= (model.sizeBytes * 0.98).toLong())
+                        val completeEnough = if (model.name == com.llmhub.llmhub.data.SupertonicModel.NAME) model.hasCompleteDownloadedBundle(context)
+                        else fileCount >= expectedFileCount && (model.sizeBytes <= 0 || totalDownloaded >= (model.sizeBytes * 0.98).toLong())
                         
                         if (completeEnough) {
                             model.copy(
@@ -765,7 +766,8 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
                             val expectedFileCount = 1 + model.additionalFiles.size
                             
                             val expectedTotal = if (latestStatus != null && latestStatus!!.totalBytes > 0) latestStatus!!.totalBytes else model.sizeBytes
-                            val completeEnough = fileCount >= expectedFileCount && (expectedTotal <= 0 || totalDownloaded >= (expectedTotal * 0.98).toLong())
+                            val completeEnough = if (model.name == com.llmhub.llmhub.data.SupertonicModel.NAME) model.hasCompleteDownloadedBundle(context)
+                            else fileCount >= expectedFileCount && (expectedTotal <= 0 || totalDownloaded >= (expectedTotal * 0.98).toLong())
                             
                             if (completeEnough && cause == null) {
                                 android.util.Log.i("ModelDownloadViewModel", "ONNX/WhisperKit model download completed: ${model.name}, files: $fileCount/$expectedFileCount, size: $totalDownloaded")

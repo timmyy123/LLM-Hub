@@ -1052,4 +1052,10 @@
     <string name="audio_search_permission_denied">Akses audio diperlukan untuk menganalisis audio perangkat.</string>
     <string name="audio_search_count">%1$d dari %2$d file dianalisis</string>
     <string name="audio_search_moment">Putar %1$s</string>
+
+    <!-- Supertonic 3 -->
+    <string name="supertonic_language">Bahasa ucapan</string>
+    <string name="supertonic_voice_download_failed">Unduhan suara gagal. Coba lagi.</string>
+    <string name="supertonic_model_unavailable">Supertonic 3 tidak tersedia. Selesaikan unduhan model atau pilih mesin ucapan lain di Setelan.</string>
+    <string name="supertonic_speech_failed">Ucapan gagal. Periksa suara yang dipilih dan pilih bahasa yang didukung di Setelan.</string>
 </resources>

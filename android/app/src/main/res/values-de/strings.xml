@@ -1016,4 +1016,10 @@
     <string name="audio_search_permission_denied">Zum Analysieren des Geräte-Audios wird Audiozugriff benötigt.</string>
     <string name="audio_search_count">%1$d von %2$d Dateien analysiert</string>
     <string name="audio_search_moment">%1$s abspielen</string>
+
+    <!-- Supertonic 3 -->
+    <string name="supertonic_language">Sprache der Sprachausgabe</string>
+    <string name="supertonic_voice_download_failed">Stimme konnte nicht heruntergeladen werden. Bitte erneut versuchen.</string>
+    <string name="supertonic_model_unavailable">Supertonic 3 ist nicht verfügbar. Lade das Modell vollständig herunter oder wähle in den Einstellungen eine andere Sprachausgabe.</string>
+    <string name="supertonic_speech_failed">Sprachausgabe fehlgeschlagen. Prüfe die gewählte Stimme und wähle in den Einstellungen eine unterstützte Sprache.</string>
 </resources>

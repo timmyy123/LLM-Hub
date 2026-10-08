@@ -2,6 +2,7 @@ package com.llmhub.llmhub.data
 
 import io.ktor.client.* // kept for potential future use but NOT used for large downloads
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
@@ -474,6 +475,40 @@ class ModelDownloader(
     }.flowOn(Dispatchers.IO)
 
     fun downloadVoiceFile(model: LLMModel, voiceKey: String): Flow<DownloadStatus> = flow {
+        if (model.name == SupertonicModel.NAME) {
+            require(voiceKey in SupertonicModel.voices)
+            val expected = SupertonicModel.voices.getValue(voiceKey)
+            val dir = getOnnxModelDir(model)
+            val target = File(dir, "$voiceKey.json")
+            val partial = File(dir, "$voiceKey.json.part")
+            val connection = openConnectionWithAuthRedirects("${SupertonicModel.BASE_URL}/voice_styles/$voiceKey.json")
+            try {
+                check(connection.responseCode == 200) { "HTTP ${connection.responseCode}" }
+                var downloaded = 0L
+                connection.inputStream.use { input ->
+                    partial.outputStream().use { output ->
+                        val buffer = ByteArray(8192)
+                        while (true) {
+                            val count = input.read(buffer)
+                            if (count < 0) break
+                            kotlinx.coroutines.currentCoroutineContext().ensureActive()
+                            downloaded += count
+                            require(downloaded <= expected)
+                            output.write(buffer, 0, count)
+                            emit(DownloadStatus(downloaded, expected, 0))
+                        }
+                    }
+                }
+                check(downloaded == expected)
+                SupertonicModel.parseVoice(partial.readText())
+                check(partial.renameTo(target))
+                emit(DownloadStatus(expected, expected, 0))
+            } finally {
+                connection.disconnect()
+                partial.delete()
+            }
+            return@flow
+        }
         require(model.modelFormat == "onnx") { "Voice downloads are only supported for ONNX TTS models" }
 
         val modelDir = getOnnxModelDir(model)
@@ -883,7 +918,13 @@ class ModelDownloader(
             currentFileIndex++
             val targetFile = File(modelDir, fileName)
 
+            val expected = if (model.name == SupertonicModel.NAME) SupertonicModel.coreFiles[fileName] else null
+            if (expected != null && targetFile.length() > expected) {
+                totalDownloaded -= targetFile.length()
+                targetFile.delete()
+            }
             val existingBytes = if (targetFile.exists()) targetFile.length() else 0L
+            if (expected != null && existingBytes == expected) continue
 
             Log.d(TAG, "Downloading ($currentFileIndex/${allFiles.size}): $fileName from $fileUrl -> target: ${targetFile.absolutePath}")
 
@@ -943,6 +984,7 @@ class ModelDownloader(
             }
         }
 
+        if (model.name == SupertonicModel.NAME) check(SupertonicModel.isComplete(context)) { "Incomplete Supertonic bundle" }
         // Final emit - use authoritative total if we have it
         val authoritativeFinal = if (totalSize > 0) totalSize else totalDownloaded
         emit(DownloadStatus(totalDownloaded, authoritativeFinal, 0))

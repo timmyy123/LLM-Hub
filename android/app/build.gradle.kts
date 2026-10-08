@@ -420,6 +420,7 @@ dependencies {
 
 
     testImplementation(libs.junit)
+    testImplementation("org.json:json:20250107")
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))

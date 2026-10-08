@@ -1048,4 +1048,10 @@
     <string name="audio_search_permission_denied">Cihazdaki sesleri analiz etmek için ses erişimi gerekiyor.</string>
     <string name="audio_search_count">%2$d dosyadan %1$d tanesi analiz edildi</string>
     <string name="audio_search_moment">%1$s oynat</string>
+
+    <!-- Supertonic 3 -->
+    <string name="supertonic_language">Konuşma dili</string>
+    <string name="supertonic_voice_download_failed">Ses indirilemedi. Lütfen tekrar deneyin.</string>
+    <string name="supertonic_model_unavailable">Supertonic 3 kullanılamıyor. Model indirmesini tamamlayın veya Ayarlar’dan başka bir konuşma motoru seçin.</string>
+    <string name="supertonic_speech_failed">Konuşma oluşturulamadı. Seçili sesi kontrol edin ve Ayarlar’dan desteklenen bir dil seçin.</string>
 </resources>

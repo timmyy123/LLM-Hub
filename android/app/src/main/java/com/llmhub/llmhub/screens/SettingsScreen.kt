@@ -52,6 +52,8 @@ import com.llmhub.llmhub.utils.FileUtils
 import com.llmhub.llmhub.R
 import java.io.File
 import com.llmhub.llmhub.BuildConfig
+import com.llmhub.llmhub.data.SupertonicModel
+import com.llmhub.llmhub.data.hasCompleteDownloadedBundle
 import com.llmhub.llmhub.data.ModelData
 import com.llmhub.llmhub.data.ModelDownloader
 import com.llmhub.llmhub.data.ThemeMode
@@ -1148,7 +1150,7 @@ private fun SettingsSection(
 }
 
 @Composable
-private fun SettingsItem(
+internal fun SettingsItem(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     title: String,
     subtitle: String,
@@ -1272,7 +1274,7 @@ private fun EmbeddingModelSelector(themeViewModel: ThemeViewModel) {
             .filter { model ->
                 val modelsDir = File(context.filesDir, "models")
                 val modelFile = File(modelsDir, model.localFileName())
-                modelFile.exists() && modelFile.length() > 0
+                model.hasCompleteDownloadedBundle(context)
             }
             .map { it.name }
     }
@@ -1642,7 +1644,7 @@ private fun TtsModelSelector(themeViewModel: ThemeViewModel) {
 @Composable
 private fun TtsDeviceSelector(themeViewModel: ThemeViewModel) {
     val selectedTtsModel by themeViewModel.selectedTtsModel.collectAsState()
-    if (selectedTtsModel == null) return
+    if (selectedTtsModel == null || selectedTtsModel == SupertonicModel.NAME) return
 
     val selectedTtsDevice by themeViewModel.selectedTtsDevice.collectAsState()
     var showTtsDeviceDialog by remember { mutableStateOf(false) }
@@ -1726,6 +1728,10 @@ private fun TtsVoiceSelector(themeViewModel: ThemeViewModel) {
     val coroutineScope = rememberCoroutineScope()
     val selectedTtsModel by themeViewModel.selectedTtsModel.collectAsState()
     if (selectedTtsModel == null) return
+    if (selectedTtsModel == SupertonicModel.NAME) {
+        SupertonicVoiceSettings()
+        return
+    }
 
     val selectedTtsVoice by themeViewModel.selectedTtsVoice.collectAsState()
     var showTtsVoiceDialog by remember { mutableStateOf(false) }

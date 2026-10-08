@@ -1022,4 +1022,10 @@
     <string name="audio_search_permission_denied">Для анализа аудио устройства нужен доступ к аудио.</string>
     <string name="audio_search_count">Проанализировано %1$d из %2$d файлов</string>
     <string name="audio_search_moment">Воспроизвести %1$s</string>
+
+    <!-- Supertonic 3 -->
+    <string name="supertonic_language">Язык речи</string>
+    <string name="supertonic_voice_download_failed">Не удалось скачать голос. Повторите попытку.</string>
+    <string name="supertonic_model_unavailable">Supertonic 3 недоступен. Завершите загрузку модели или выберите другой движок речи в настройках.</string>
+    <string name="supertonic_speech_failed">Ошибка синтеза речи. Проверьте выбранный голос и выберите поддерживаемый язык в настройках.</string>
 </resources>

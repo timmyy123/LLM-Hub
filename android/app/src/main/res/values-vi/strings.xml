@@ -957,4 +957,10 @@
     <string name="audio_search_permission_denied">Cần quyền truy cập âm thanh để phân tích âm thanh trên thiết bị.</string>
     <string name="audio_search_count">Đã phân tích %1$d/%2$d tệp</string>
     <string name="audio_search_moment">Phát %1$s</string>
+
+    <!-- Supertonic 3 -->
+    <string name="supertonic_language">Ngôn ngữ giọng nói</string>
+    <string name="supertonic_voice_download_failed">Tải giọng thất bại. Vui lòng thử lại.</string>
+    <string name="supertonic_model_unavailable">Supertonic 3 không khả dụng. Hoàn tất tải mô hình hoặc chọn công cụ giọng nói khác trong Cài đặt.</string>
+    <string name="supertonic_speech_failed">Tạo giọng nói thất bại. Kiểm tra giọng đã chọn và chọn ngôn ngữ được hỗ trợ trong Cài đặt.</string>
 </resources>

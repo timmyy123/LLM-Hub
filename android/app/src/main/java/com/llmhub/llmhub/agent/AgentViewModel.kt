@@ -4,7 +4,7 @@ import android.app.Application
 import android.content.Context
 import android.util.Log
 import com.llmhub.llmhub.utils.AudioConversionUtils
-import android.speech.tts.TextToSpeech
+import com.llmhub.llmhub.ui.components.TtsService
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.llmhub.llmhub.R
@@ -115,7 +115,7 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
     val toolSet = AgentToolSet(application.applicationContext)
     private val inferenceService: InferenceService = UnifiedInferenceService(application.applicationContext)
 
-    private var tts: TextToSpeech? = null
+    private var tts: TtsService? = null
     private var isTtsReady = false
 
     private val _pendingConfirmation = MutableStateFlow<Pair<String, () -> Unit>?>(null)
@@ -281,18 +281,14 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
 
     fun initTts(context: Context) {
         if (tts == null) {
-            tts = TextToSpeech(context) { status ->
-                if (status == TextToSpeech.SUCCESS) {
-                    tts?.language = Locale.getDefault()
-                    isTtsReady = true
-                }
-            }
+            tts = TtsService(context.applicationContext)
+            isTtsReady = true
         }
     }
 
     fun speak(text: String) {
         if (isTtsReady) {
-            tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "AgentTTS")
+            tts?.speak(text)
         }
     }
 

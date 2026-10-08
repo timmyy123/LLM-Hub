@@ -957,4 +957,10 @@
     <string name="audio_search_permission_denied">ต้องได้รับสิทธิ์เข้าถึงเสียงเพื่อวิเคราะห์เสียงในอุปกรณ์</string>
     <string name="audio_search_count">วิเคราะห์ไฟล์แล้ว %1$d จาก %2$d</string>
     <string name="audio_search_moment">เล่น %1$s</string>
+
+    <!-- Supertonic 3 -->
+    <string name="supertonic_language">ภาษาพูด</string>
+    <string name="supertonic_voice_download_failed">ดาวน์โหลดเสียงไม่สำเร็จ โปรดลองอีกครั้ง</string>
+    <string name="supertonic_model_unavailable">Supertonic 3 ไม่พร้อมใช้งาน โปรดดาวน์โหลดโมเดลให้เสร็จหรือเลือกเอนจินเสียงอื่นในการตั้งค่า</string>
+    <string name="supertonic_speech_failed">สร้างเสียงพูดไม่สำเร็จ โปรดตรวจสอบเสียงที่เลือกและเลือกภาษาที่รองรับในการตั้งค่า</string>
 </resources>

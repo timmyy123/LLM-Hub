@@ -1049,4 +1049,10 @@
     <string name="audio_search_permission_denied">נדרשת גישה לשמע כדי לנתח את השמע במכשיר.</string>
     <string name="audio_search_count">נותחו %1$d מתוך %2$d קבצים</string>
     <string name="audio_search_moment">ניגון %1$s</string>
+
+    <!-- Supertonic 3 -->
+    <string name="supertonic_language">שפת הדיבור</string>
+    <string name="supertonic_voice_download_failed">הורדת הקול נכשלה. נסו שוב.</string>
+    <string name="supertonic_model_unavailable">Supertonic 3 אינו זמין. השלימו את הורדת המודל או בחרו מנוע דיבור אחר בהגדרות.</string>
+    <string name="supertonic_speech_failed">יצירת הדיבור נכשלה. בדקו את הקול שנבחר ובחרו שפה נתמכת בהגדרות.</string>
 </resources>

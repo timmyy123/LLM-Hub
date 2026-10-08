@@ -1076,4 +1076,10 @@
     <string name="audio_search_permission_denied">डिवाइस ऑडियो के विश्लेषण के लिए ऑडियो की अनुमति चाहिए।</string>
     <string name="audio_search_count">%2$d में से %1$d फ़ाइलों का विश्लेषण हुआ</string>
     <string name="audio_search_moment">%1$s चलाएँ</string>
+
+    <!-- Supertonic 3 -->
+    <string name="supertonic_language">वाणी की भाषा</string>
+    <string name="supertonic_voice_download_failed">आवाज़ डाउनलोड नहीं हुई। फिर से कोशिश करें।</string>
+    <string name="supertonic_model_unavailable">Supertonic 3 उपलब्ध नहीं है। मॉडल डाउनलोड पूरा करें या सेटिंग में कोई दूसरा वाणी इंजन चुनें।</string>
+    <string name="supertonic_speech_failed">वाणी बनाना विफल रहा। चुनी गई आवाज़ जाँचें और सेटिंग में समर्थित भाषा चुनें।</string>
 </resources>

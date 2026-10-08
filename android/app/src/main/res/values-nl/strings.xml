@@ -957,4 +957,10 @@
     <string name="audio_search_permission_denied">Toegang tot audio is nodig om audio op het apparaat te analyseren.</string>
     <string name="audio_search_count">%1$d van %2$d bestanden geanalyseerd</string>
     <string name="audio_search_moment">%1$s afspelen</string>
+
+    <!-- Supertonic 3 -->
+    <string name="supertonic_language">Spraaktaal</string>
+    <string name="supertonic_voice_download_failed">Stem downloaden mislukt. Probeer het opnieuw.</string>
+    <string name="supertonic_model_unavailable">Supertonic 3 is niet beschikbaar. Voltooi de modeldownload of kies een andere spraakengine in Instellingen.</string>
+    <string name="supertonic_speech_failed">Spraaksynthese mislukt. Controleer de gekozen stem en kies een ondersteunde taal in Instellingen.</string>
 </resources>

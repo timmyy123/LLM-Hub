@@ -925,6 +925,21 @@ object ModelData {
 
     val ttsModels = listOf(
         LLMModel(
+            name = SupertonicModel.NAME,
+            description = "Supertonic 3: offline speech in 31 languages. Download preset voices in Settings.",
+            url = "${SupertonicModel.BASE_URL}/onnx/duration_predictor.onnx",
+            category = "tts",
+            sizeBytes = SupertonicModel.coreFiles.values.sum(),
+            source = "Supertone · OpenRAIL-M",
+            supportsVision = false,
+            supportsAudio = true,
+            supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 2, recommendedRamGB = 4),
+            contextWindowSize = 0,
+            modelFormat = "onnx",
+            additionalFiles = SupertonicModel.coreFiles.keys.drop(1).map { "${SupertonicModel.BASE_URL}/onnx/$it" }
+        ),
+        LLMModel(
             name = "Kokoro-82M (ONNX Quantized)",
             description = "8-bit integer quantized Kokoro-82M ONNX model. Good balance of speed and size. ~92 MB download.",
             url = "https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX/resolve/468588286ebb2dd77c25b9771e5d165896538cce/onnx/model_quantized.onnx",

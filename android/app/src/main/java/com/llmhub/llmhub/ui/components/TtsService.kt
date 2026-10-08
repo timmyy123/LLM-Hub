@@ -11,6 +11,12 @@ import ai.onnxruntime.OnnxTensor
 import ai.onnxruntime.OrtEnvironment
 import ai.onnxruntime.OrtSession
 import com.llmhub.llmhub.data.ThemePreferences
+import com.llmhub.llmhub.data.SupertonicModel
+import com.llmhub.llmhub.R
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.cancel
 import com.llmhub.llmhub.data.ModelData
 import com.llmhub.llmhub.data.localFileName
 import kotlinx.coroutines.CoroutineScope
@@ -49,6 +55,12 @@ class TtsService(private val context: Context, private val isTranslationFeature:
     private var tts: TextToSpeech? = null
     private var ortEnvironment: OrtEnvironment? = null
     private var ortSession: OrtSession? = null
+    private var supertonicEngine: SupertonicEngine? = null
+    private var speechLocale = Locale.getDefault()
+    private val configurationScope = CoroutineScope(Dispatchers.Main + kotlinx.coroutines.SupervisorJob())
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error.asStateFlow()
+
 
     private var isInitialized = false
     private var isCustomTts = false
@@ -137,114 +149,162 @@ class TtsService(private val context: Context, private val isTranslationFeature:
 
     init {
         clearTempTtsFiles()
-        initializeTts()
+        configurationScope.launch {
+            error.collectLatest { message ->
+                if (message != null) android.widget.Toast.makeText(context, message, android.widget.Toast.LENGTH_LONG).show()
+            }
+        }
+        configurationScope.launch {
+            if (isTranslationFeature) {
+                initializeTts(null, "cpu")
+            } else {
+                combine(themePreferences.selectedTtsModel, themePreferences.selectedTtsDevice,
+                    themePreferences.selectedTtsVoice) { model, device, voice ->
+                    if (model == SupertonicModel.NAME) listOf(model, "cpu", "")
+                    else listOf(model, device, voice)
+                }.distinctUntilChanged().collectLatest { settings ->
+                    isInitialized = false
+                    isCustomTts = false
+                    _error.value = null
+                    stopAudioTrack()
+                    activeJobsCount.set(0)
+                    _isSpeaking.value = false
+                    tts?.shutdown()
+                    tts = null
+                    withContext(Dispatchers.IO) {
+                        supertonicEngine?.close()
+                        supertonicEngine = null
+                        ortSession?.close()
+                        ortSession = null
+                    }
+                    initializeTts(settings[0], settings[1] ?: "cpu")
+                }
+            }
+        }
     }
 
-    private fun initializeTts() {
-        Log.d(TAG, "initializeTts() started")
-        CoroutineScope(Dispatchers.Main).launch {
-            val selectedModel = if (isTranslationFeature) null else themePreferences.selectedTtsModel.first()
-            val selectedDevice = themePreferences.selectedTtsDevice.first()
-            Log.d(TAG, "initializeTts: selectedModel = $selectedModel, selectedDevice = $selectedDevice")
-            if (selectedModel != null) {
-                val model = ModelData.models.find { it.name == selectedModel }
-                val modelDirName = model?.name?.replace(" ", "_")?.replace(Regex("[^a-zA-Z0-9_.-]"), "")
-                val localName = model?.localFileName()
-                val modelDir = if (modelDirName != null) File(File(context.filesDir, "models"), modelDirName) else null
-                val modelFile = if (modelDir != null && localName != null) File(modelDir, localName) else null
+    private suspend fun initializeTts(selectedModel: String?, selectedDevice: String) {
+        Log.d(TAG, "initializeTts: selectedModel = $selectedModel, selectedDevice = $selectedDevice")
+        if (selectedModel == SupertonicModel.NAME) {
+            try {
+                check(SupertonicModel.isComplete(context))
+                // Assign inside the IO block so cancellation cannot orphan native sessions.
+                withContext(Dispatchers.IO) {
+                    supertonicEngine = SupertonicEngine(SupertonicModel.directory(context))
+                }
+                isCustomTts = true
+                isInitialized = true
+                currentModelDir = SupertonicModel.directory(context)
+                startAudioTrackPlayback()
+                startSynthesisWorker()
+                flushPendingQueue()
+            } catch (e: kotlinx.coroutines.CancellationException) { throw e
+            } catch (e: Exception) {
+                Log.e(TAG, "Supertonic initialization failed", e)
+                _error.value = context.getString(R.string.supertonic_model_unavailable)
+                // Keep the chosen engine explicit: user can finish its download or choose System TTS.
+                isInitialized = true
+            }
+            return
+        }
+        if (selectedModel != null) {
+            val model = ModelData.models.find { it.name == selectedModel }
+            val modelDirName = model?.name?.replace(" ", "_")?.replace(Regex("[^a-zA-Z0-9_.-]"), "")
+            val localName = model?.localFileName()
+            val modelDir = if (modelDirName != null) File(File(context.filesDir, "models"), modelDirName) else null
+            val modelFile = if (modelDir != null && localName != null) File(modelDir, localName) else null
 
-                Log.d(TAG, "initializeTts: modelFile = ${modelFile?.absolutePath}, exists = ${modelFile?.exists()}, length = ${modelFile?.length()}")
-                if (modelFile != null && modelFile.exists() && modelFile.length() > 0) {
+            Log.d(TAG, "initializeTts: modelFile = ${modelFile?.absolutePath}, exists = ${modelFile?.exists()}, length = ${modelFile?.length()}")
+            if (modelFile != null && modelFile.exists() && modelFile.length() > 0) {
+                try {
                     try {
-                        try {
-                            System.loadLibrary("onnxruntime")
-                        } catch (t: Throwable) {
-                            Log.w(TAG, "ONNX Runtime library load failed: ${t.message}. Might already be loaded.")
+                        System.loadLibrary("onnxruntime")
+                    } catch (t: Throwable) {
+                        Log.w(TAG, "ONNX Runtime library load failed: ${t.message}. Might already be loaded.")
+                    }
+
+                    withContext(Dispatchers.IO) {
+                        val env = OrtEnvironment.getEnvironment()
+                        val cpuCount = Runtime.getRuntime().availableProcessors()
+                        val useGpu = selectedDevice.lowercase() == "gpu"
+
+                        val opts = if (useGpu) {
+                            try {
+                                OrtSession.SessionOptions().apply {
+                                    setOptimizationLevel(OrtSession.SessionOptions.OptLevel.ALL_OPT)
+                                    setIntraOpNumThreads(cpuCount)
+                                    try { addConfigEntry("ep.nnapi.partitioning_stop_ops", "") } catch (_: Exception) { }
+                                    addConfigEntry("session.disable_cpu_ep_fallback", "1")
+                                    addNnapi(EnumSet.of(NNAPIFlags.USE_FP16, NNAPIFlags.CPU_DISABLED))
+                                }
+                            } catch (e: Exception) {
+                                Log.w(TAG, "TTS NNAPI-only options build failed: $e, falling back to NNAPI+CPU")
+                                OrtSession.SessionOptions().apply {
+                                    setOptimizationLevel(OrtSession.SessionOptions.OptLevel.ALL_OPT)
+                                    setIntraOpNumThreads(cpuCount)
+                                    try { addConfigEntry("ep.nnapi.partitioning_stop_ops", "") } catch (_: Exception) { }
+                                    addNnapi(EnumSet.of(NNAPIFlags.USE_FP16, NNAPIFlags.CPU_DISABLED))
+                                    addCPU(true)
+                                }
+                            }
+                        } else {
+                            OrtSession.SessionOptions().apply {
+                                setOptimizationLevel(OrtSession.SessionOptions.OptLevel.ALL_OPT)
+                                setIntraOpNumThreads(cpuCount)
+                                setInterOpNumThreads(cpuCount)
+                            }
                         }
 
-                        withContext(Dispatchers.IO) {
-                            val env = OrtEnvironment.getEnvironment()
-                            val cpuCount = Runtime.getRuntime().availableProcessors()
-                            val useGpu = selectedDevice.lowercase() == "gpu"
-                            
-                            val opts = if (useGpu) {
-                                try {
-                                    OrtSession.SessionOptions().apply {
-                                        setOptimizationLevel(OrtSession.SessionOptions.OptLevel.ALL_OPT)
-                                        setIntraOpNumThreads(cpuCount)
-                                        try { addConfigEntry("ep.nnapi.partitioning_stop_ops", "") } catch (_: Exception) { }
-                                        addConfigEntry("session.disable_cpu_ep_fallback", "1")
-                                        addNnapi(EnumSet.of(NNAPIFlags.USE_FP16, NNAPIFlags.CPU_DISABLED))
-                                    }
-                                } catch (e: Exception) {
-                                    Log.w(TAG, "TTS NNAPI-only options build failed: $e, falling back to NNAPI+CPU")
-                                    OrtSession.SessionOptions().apply {
-                                        setOptimizationLevel(OrtSession.SessionOptions.OptLevel.ALL_OPT)
-                                        setIntraOpNumThreads(cpuCount)
-                                        try { addConfigEntry("ep.nnapi.partitioning_stop_ops", "") } catch (_: Exception) { }
-                                        addNnapi(EnumSet.of(NNAPIFlags.USE_FP16, NNAPIFlags.CPU_DISABLED))
-                                        addCPU(true)
-                                    }
-                                }
-                            } else {
-                                OrtSession.SessionOptions().apply {
+                        ortEnvironment = env
+                        var session: OrtSession? = null
+                        try {
+                            session = env.createSession(modelFile.absolutePath, opts)
+                            Log.i(TAG, "ONNX TTS session created successfully (useGpu=$useGpu)")
+                        } catch (e: Exception) {
+                            if (useGpu) {
+                                Log.w(TAG, "Failed to create NNAPI session, falling back to CPU session: ${e.message}")
+                                val cpuOpts = OrtSession.SessionOptions().apply {
                                     setOptimizationLevel(OrtSession.SessionOptions.OptLevel.ALL_OPT)
                                     setIntraOpNumThreads(cpuCount)
                                     setInterOpNumThreads(cpuCount)
                                 }
-                            }
-
-                            ortEnvironment = env
-                            var session: OrtSession? = null
-                            try {
-                                session = env.createSession(modelFile.absolutePath, opts)
-                                Log.i(TAG, "ONNX TTS session created successfully (useGpu=$useGpu)")
-                            } catch (e: Exception) {
-                                if (useGpu) {
-                                    Log.w(TAG, "Failed to create NNAPI session, falling back to CPU session: ${e.message}")
-                                    val cpuOpts = OrtSession.SessionOptions().apply {
-                                        setOptimizationLevel(OrtSession.SessionOptions.OptLevel.ALL_OPT)
-                                        setIntraOpNumThreads(cpuCount)
-                                        setInterOpNumThreads(cpuCount)
-                                    }
-                                    session = env.createSession(modelFile.absolutePath, cpuOpts)
-                                    Log.i(TAG, "ONNX TTS session created successfully with CPU fallback")
-                                } else {
-                                    throw e
-                                }
-                            }
-                            ortSession = session
-                            Log.d(TAG, "Model inputs: ${session.inputNames.toList()}")
-                            Log.d(TAG, "Model outputs: ${session.outputNames.toList()}")
-                            for (name in session.inputNames) {
-                                val info = session.inputInfo[name]
-                                Log.d(TAG, "  input '$name': ${info?.info}")
-                            }
-                            for (name in session.outputNames) {
-                                val info = session.outputInfo[name]
-                                Log.d(TAG, "  output '$name': ${info?.info}")
+                                session = env.createSession(modelFile.absolutePath, cpuOpts)
+                                Log.i(TAG, "ONNX TTS session created successfully with CPU fallback")
+                            } else {
+                                throw e
                             }
                         }
-
-                        isCustomTts = true
-                        isInitialized = true
-                        currentModelDir = modelDir
-                        initializeSystemTts()
-                        startAudioTrackPlayback()
-                        startSynthesisWorker()
-                        flushPendingQueue()
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Error building custom ONNX TTS wrapper: ${e.message}", e)
-                        initializeSystemTts()
+                        ortSession = session
+                        Log.d(TAG, "Model inputs: ${session.inputNames.toList()}")
+                        Log.d(TAG, "Model outputs: ${session.outputNames.toList()}")
+                        for (name in session.inputNames) {
+                            val info = session.inputInfo[name]
+                            Log.d(TAG, "  input '$name': ${info?.info}")
+                        }
+                        for (name in session.outputNames) {
+                            val info = session.outputInfo[name]
+                            Log.d(TAG, "  output '$name': ${info?.info}")
+                        }
                     }
-                } else {
-                    Log.w(TAG, "Custom TTS model file not found or empty, falling back to system default")
+
+                    isCustomTts = true
+                    isInitialized = true
+                    currentModelDir = modelDir
+                    initializeSystemTts()
+                    startAudioTrackPlayback()
+                    startSynthesisWorker()
+                    flushPendingQueue()
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error building custom ONNX TTS wrapper: ${e.message}", e)
                     initializeSystemTts()
                 }
             } else {
-                Log.d(TAG, "selectedModel is null, initializing system default TTS")
+                Log.w(TAG, "Custom TTS model file not found or empty, falling back to system default")
                 initializeSystemTts()
             }
+        } else {
+            Log.d(TAG, "selectedModel is null, initializing system default TTS")
+            initializeSystemTts()
         }
     }
 
@@ -293,10 +353,14 @@ class TtsService(private val context: Context, private val isTranslationFeature:
     fun speak(text: String) {
         Log.d(TAG, "speak() called with text: '$text'")
         if (!isInitialized) {
-            Log.w(TAG, "TTS not initialized")
+            synchronized(pendingSpeakQueue) { pendingSpeakQueue.add(text) }
             return
         }
 
+        if (!isTranslationFeature && !isCustomTts && tts == null && _error.value != null) {
+            android.widget.Toast.makeText(context, _error.value, android.widget.Toast.LENGTH_LONG).show()
+            return
+        }
         if (text.isBlank()) {
             Log.w(TAG, "Cannot speak empty text")
             return
@@ -367,7 +431,7 @@ class TtsService(private val context: Context, private val isTranslationFeature:
     }
 
     private fun startAudioTrackPlayback() {
-        val sampleRate = 24000
+        val sampleRate = supertonicEngine?.sampleRate ?: 24000
         val minBuf = AudioTrack.getMinBufferSize(sampleRate, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT)
         // AudioTrack's default start threshold is its buffer capacity. A four-second
         // buffer therefore never starts for short Kokoro output (for example, a
@@ -494,6 +558,44 @@ class TtsService(private val context: Context, private val isTranslationFeature:
     private fun startSynthesisWorker() {
         synthesisWorkerJob?.cancel()
         synthesisWorkerJob = synthesisScope.launch {
+            val supertonic = supertonicEngine
+            if (supertonic != null) {
+                for (sentence in sentenceChannel) {
+                    var unqueuedChunks = 1
+                    try {
+                        val key = themePreferences.supertonicVoice.first()
+                        val voiceFile = SupertonicModel.voiceFile(context, key)
+                        if (voiceFile == null) {
+                            _error.value = context.getString(R.string.tts_please_download_voice)
+                            val rem = activeJobsCount.decrementAndGet().coerceAtLeast(0)
+                            if (rem == 0) _isSpeaking.value = false
+                            continue
+                        }
+                        val style = SupertonicModel.parseVoice(voiceFile.readText())
+                        val chosenLanguage = themePreferences.supertonicLanguage.first()
+                        val language = chosenLanguage.ifEmpty { speechLocale.language.let { if (it == "in") "id" else it } }
+                        require(language in SupertonicModel.languages)
+                        val chunks = SupertonicEngine.chunks(sentence, if (language in listOf("ko", "ja")) 120 else 300)
+                        activeJobsCount.addAndGet(chunks.size - 1)
+                        unqueuedChunks = chunks.size
+                        for (chunk in chunks) {
+                            val worker = coroutineContext
+                            val audio = supertonic.synthesize(chunk, language, style, currentSpeechRate) { !worker.isActive }
+                            if (!worker.isActive) throw kotlinx.coroutines.CancellationException()
+                            pcmQueue.put(ShortArray(audio.size) { (audio[it].coerceIn(-1f, 1f) * 32767f).toInt().toShort() })
+                            unqueuedChunks--
+                        }
+                    } catch (e: kotlinx.coroutines.CancellationException) { throw e
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Supertonic synthesis failed", e)
+                        _error.value = context.getString(R.string.supertonic_speech_failed)
+                        // Playback owns queued chunks; remove only work that failed before enqueueing.
+                        val remaining = activeJobsCount.addAndGet(-unqueuedChunks).coerceAtLeast(0)
+                        if (remaining == 0) _isSpeaking.value = false
+                    }
+                }
+                return@launch
+            }
             val voice = themePreferences.selectedTtsVoice.first()
             val modelDir = currentModelDir ?: return@launch
 
@@ -657,11 +759,6 @@ class TtsService(private val context: Context, private val isTranslationFeature:
     }
 
     fun addStreamingText(partialText: String) {
-        if (!isInitialized) {
-            Log.d(TAG, "addStreamingText ignored: TTS not initialized yet. text: $partialText")
-            return
-        }
-
         val filtered = filterThinkBlocks(partialText)
         if (filtered.isEmpty()) return
 
@@ -749,11 +846,6 @@ class TtsService(private val context: Context, private val isTranslationFeature:
     }
 
     fun flushStreamingBuffer() {
-        if (!isInitialized) {
-            Log.d(TAG, "flushStreamingBuffer ignored: TTS not initialized yet")
-            return
-        }
-
         val remaining = textBuffer.toString().trim()
         Log.d(TAG, "flushStreamingBuffer: remaining = '$remaining'")
         if (remaining.isNotBlank()) {
@@ -808,6 +900,7 @@ class TtsService(private val context: Context, private val isTranslationFeature:
     }
 
     fun setLanguage(locale: Locale) {
+        speechLocale = locale
         tts?.setLanguage(locale)
     }
 
@@ -1635,15 +1728,23 @@ class TtsService(private val context: Context, private val isTranslationFeature:
     }
 
     fun shutdown() {
+        val configurationJob = configurationScope.coroutineContext[Job]
+        configurationScope.cancel()
         synchronized(pendingSpeakQueue) { pendingSpeakQueue.clear() }
         synthesisScope.coroutineContext[Job]?.cancel()
         stopAudioTrack()
         tts?.shutdown()
         tts = null
-        try { ortSession?.close() } catch (_: Exception) {}
-        try { ortEnvironment?.close() } catch (_: Exception) {}
-        ortSession = null
-        ortEnvironment = null
+        CoroutineScope(Dispatchers.IO).launch {
+            // Initialization can still be returning from a native session creation.
+            configurationJob?.join()
+            supertonicEngine?.close()
+            supertonicEngine = null
+            try { ortSession?.close() } catch (_: Exception) {}
+            ortSession = null
+            ortEnvironment = null
+        }
+        // OrtEnvironment is process-wide; other ONNX services can still be using it.
         isInitialized = false
         cmuDict = null
         voiceStyleCache.clear()
