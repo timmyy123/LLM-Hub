@@ -1081,4 +1081,8 @@
     <string name="pocket_record_failed">录音或克隆失败。请用至少3秒的清晰语音重试。</string>
     <string name="pocket_microphone_required">请允许访问麦克风以录制声音。</string>
     <string name="pocket_recorded_voice">录音 %1$s</string>
+
+    <!-- Supertonic custom voice file import -->
+    <string name="supertonic_import_voice">导入声音JSON</string>
+    <string name="supertonic_import_failed">无法导入此声音。请选择Supertonic 3声音风格JSON文件（最大2 MB）。</string>
 </resources>

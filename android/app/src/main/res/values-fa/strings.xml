@@ -1073,4 +1073,8 @@
     <string name="pocket_record_failed">ضبط یا شبیه‌سازی ناموفق بود. با حداقل ۳ ثانیه گفتار واضح دوباره تلاش کنید.</string>
     <string name="pocket_microphone_required">برای ضبط صدا، دسترسی به میکروفون را مجاز کنید.</string>
     <string name="pocket_recorded_voice">ضبط %1$s</string>
+
+    <!-- Supertonic custom voice file import -->
+    <string name="supertonic_import_voice">وارد کردن فایل JSON صدا</string>
+    <string name="supertonic_import_failed">وارد کردن صدا ممکن نشد. یک فایل JSON سبک صدای Supertonic 3 انتخاب کنید (حداکثر ۲ مگابایت).</string>
 </resources>

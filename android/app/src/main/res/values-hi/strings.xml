@@ -1099,4 +1099,8 @@
     <string name="pocket_record_failed">रिकॉर्डिंग या क्लोनिंग विफल रही। कम से कम 3 सेकंड की स्पष्ट स्पीच के साथ फिर कोशिश करें।</string>
     <string name="pocket_microphone_required">आवाज़ रिकॉर्ड करने के लिए माइक्रोफ़ोन की अनुमति दें।</string>
     <string name="pocket_recorded_voice">रिकॉर्डिंग %1$s</string>
+
+    <!-- Supertonic custom voice file import -->
+    <string name="supertonic_import_voice">आवाज़ JSON आयात करें</string>
+    <string name="supertonic_import_failed">आवाज़ आयात नहीं हो सकी। Supertonic 3 की वॉइस-स्टाइल JSON फ़ाइल चुनें (अधिकतम 2 MB)।</string>
 </resources>

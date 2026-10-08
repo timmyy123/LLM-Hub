@@ -1,6 +1,6 @@
 # On-device voice cloning candidates for Android
 
-Research checked 2026-10-08. **Implemented choice: PocketTTS.cpp**, as requested. See [the Android integration and validation](pocket-tts.md). The remaining alternatives below are research notes, not additional installed engines. Supertonic 3 remains preset-only: its public release does not include a reference-audio encoder. The external Voice Builder and custom JSON import flow have been removed.
+Research checked 2026-10-08. **Implemented choice: PocketTTS.cpp**, as requested. See [the Android integration and validation](pocket-tts.md). The remaining alternatives below are research notes, not additional installed engines. Supertonic 3 supports presets and local import of existing compatible voice-style JSON files; its public release does not include a reference-audio encoder. The external Voice Builder flow remains removed. See [Supertonic usage](supertonic-3.md).
 
 ## Alternative: sherpa-onnx with Pocket TTS
 

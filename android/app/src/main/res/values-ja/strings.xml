@@ -1070,4 +1070,8 @@
     <string name="pocket_record_failed">録音またはクローン作成に失敗しました。3秒以上の明瞭な音声でもう一度お試しください。</string>
     <string name="pocket_microphone_required">録音するにはマイクへのアクセスを許可してください。</string>
     <string name="pocket_recorded_voice">録音 %1$s</string>
+
+    <!-- Supertonic custom voice file import -->
+    <string name="supertonic_import_voice">音声JSONを読み込む</string>
+    <string name="supertonic_import_failed">音声を読み込めませんでした。Supertonic 3の音声スタイルJSONファイル（最大2 MB）を選択してください。</string>
 </resources>

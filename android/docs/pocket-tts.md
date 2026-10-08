@@ -1,6 +1,6 @@
 # PocketTTS.cpp on Android
 
-The Android app uses [VolgaGerm/PocketTTS.cpp](https://github.com/VolgaGerm/PocketTTS.cpp) for fully local voice cloning and English speech. Supertonic 3 remains a separate multilingual preset-voice engine. No iOS files are changed.
+The Android app uses [VolgaGerm/PocketTTS.cpp](https://github.com/VolgaGerm/PocketTTS.cpp) for fully local voice cloning and English speech. Supertonic 3 remains a separate multilingual engine with presets and compatible voice JSON import. No iOS files are changed.
 
 ## Usage
 

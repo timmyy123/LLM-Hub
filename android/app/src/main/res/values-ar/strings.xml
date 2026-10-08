@@ -1073,4 +1073,8 @@
     <string name="pocket_record_failed">فشل التسجيل أو الاستنساخ. حاول مجددًا بكلام واضح لمدة 3 ثوانٍ على الأقل.</string>
     <string name="pocket_microphone_required">اسمح بالوصول إلى الميكروفون لتسجيل صوت.</string>
     <string name="pocket_recorded_voice">تسجيل %1$s</string>
+
+    <!-- Supertonic custom voice file import -->
+    <string name="supertonic_import_voice">استيراد ملف صوت JSON</string>
+    <string name="supertonic_import_failed">تعذّر استيراد الصوت. اختر ملف نمط صوت Supertonic 3 بصيغة JSON (بحد أقصى 2 ميغابايت).</string>
 </resources>

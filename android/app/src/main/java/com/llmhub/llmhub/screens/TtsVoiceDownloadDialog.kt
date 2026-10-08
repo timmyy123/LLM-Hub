@@ -26,7 +26,10 @@ internal fun TtsVoiceDownloadDialog(
     onSelect: (String) -> Unit,
     onDelete: (String) -> Unit,
     onDownload: (String) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    importLabel: String? = null,
+    importing: Boolean = false,
+    onImport: (() -> Unit)? = null
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -46,11 +49,11 @@ internal fun TtsVoiceDownloadDialog(
                     val downloading = downloadingVoice == key
                     Row(
                         modifier = Modifier.fillMaxWidth().height(56.dp)
-                            .clickable(enabled = downloaded && !downloading) { onSelect(key) },
+                            .clickable(enabled = downloaded && !downloading && !importing) { onSelect(key) },
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         RadioButton(selected = selectedVoice == key, onClick = {
-                            if (downloaded && !downloading) onSelect(key)
+                            if (downloaded && !downloading && !importing) onSelect(key)
                         })
                         Spacer(Modifier.width(8.dp))
                         Text(
@@ -66,6 +69,7 @@ internal fun TtsVoiceDownloadDialog(
                         if (downloaded) {
                             OutlinedButton(
                                 onClick = { onDelete(key) },
+                                enabled = !importing,
                                 colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
                                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.error),
                                 modifier = buttonModifier,
@@ -78,7 +82,7 @@ internal fun TtsVoiceDownloadDialog(
                         } else {
                             Button(
                                 onClick = { if (downloadingVoice == null) onDownload(key) },
-                                enabled = downloadingVoice == null,
+                                enabled = downloadingVoice == null && !importing,
                                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                                 modifier = buttonModifier,
                                 contentPadding = buttonPadding
@@ -93,6 +97,12 @@ internal fun TtsVoiceDownloadDialog(
                         }
                     }
                 }
+            }
+        },
+        dismissButton = {
+            if (onImport != null && importLabel != null) TextButton(enabled = !importing && downloadingVoice == null, onClick = onImport) {
+                if (importing) CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
+                else Text(importLabel)
             }
         },
         confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } }

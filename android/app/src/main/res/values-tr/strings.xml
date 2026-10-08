@@ -1071,4 +1071,8 @@
     <string name="pocket_record_failed">Kayıt veya klonlama başarısız. En az 3 saniyelik net konuşmayla tekrar deneyin.</string>
     <string name="pocket_microphone_required">Ses kaydetmek için mikrofon erişimine izin verin.</string>
     <string name="pocket_recorded_voice">Kayıt %1$s</string>
+
+    <!-- Supertonic custom voice file import -->
+    <string name="supertonic_import_voice">Ses JSON dosyası içe aktar</string>
+    <string name="supertonic_import_failed">Ses içe aktarılamadı. Supertonic 3 ses stili JSON dosyası seçin (en fazla 2 MB).</string>
 </resources>

@@ -980,4 +980,8 @@
     <string name="pocket_record_failed">Opnemen of klonen mislukt. Probeer opnieuw met minstens 3 seconden duidelijke spraak.</string>
     <string name="pocket_microphone_required">Sta microfoontoegang toe om een stem op te nemen.</string>
     <string name="pocket_recorded_voice">Opname %1$s</string>
+
+    <!-- Supertonic custom voice file import -->
+    <string name="supertonic_import_voice">Stem-JSON importeren</string>
+    <string name="supertonic_import_failed">Deze stem kon niet worden geïmporteerd. Kies een Supertonic 3-stemstijlbestand in JSON (maximaal 2 MB).</string>
 </resources>

@@ -1077,4 +1077,8 @@
     <string name="pocket_record_failed">Nagrywanie lub klonowanie nie powiodło się. Spróbuj ponownie z co najmniej 3 sekundami wyraźnej mowy.</string>
     <string name="pocket_microphone_required">Zezwól na dostęp do mikrofonu, aby nagrać głos.</string>
     <string name="pocket_recorded_voice">Nagranie %1$s</string>
+
+    <!-- Supertonic custom voice file import -->
+    <string name="supertonic_import_voice">Importuj głos JSON</string>
+    <string name="supertonic_import_failed">Nie udało się zaimportować głosu. Wybierz plik JSON stylu głosu Supertonic 3 (maksymalnie 2 MB).</string>
 </resources>

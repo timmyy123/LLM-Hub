@@ -1073,4 +1073,8 @@
     <string name="pocket_record_failed">ההקלטה או השכפול נכשלו. נסו שוב עם לפחות 3 שניות של דיבור ברור.</string>
     <string name="pocket_microphone_required">יש לאפשר גישה למיקרופון כדי להקליט קול.</string>
     <string name="pocket_recorded_voice">הקלטה %1$s</string>
+
+    <!-- Supertonic custom voice file import -->
+    <string name="supertonic_import_voice">ייבוא קול JSON</string>
+    <string name="supertonic_import_failed">לא ניתן לייבא את הקול. בחרו קובץ JSON של סגנון קול Supertonic 3 (עד 2 MB).</string>
 </resources>

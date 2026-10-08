@@ -1059,4 +1059,8 @@
     <string name="pocket_record_failed">Échec de l’enregistrement ou du clonage. Réessayez avec au moins 3 secondes de parole claire.</string>
     <string name="pocket_microphone_required">Autorisez le microphone pour enregistrer une voix.</string>
     <string name="pocket_recorded_voice">Enregistrement %1$s</string>
+
+    <!-- Supertonic custom voice file import -->
+    <string name="supertonic_import_voice">Importer une voix JSON</string>
+    <string name="supertonic_import_failed">Impossible d’importer cette voix. Choisissez un fichier JSON de style vocal Supertonic 3 (2 Mo maximum).</string>
 </resources>

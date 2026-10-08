@@ -980,4 +980,8 @@
     <string name="pocket_record_failed">บันทึกหรือโคลนไม่สำเร็จ ลองอีกครั้งด้วยเสียงพูดที่ชัดเจนอย่างน้อย 3 วินาที</string>
     <string name="pocket_microphone_required">อนุญาตให้เข้าถึงไมโครโฟนเพื่อบันทึกเสียง</string>
     <string name="pocket_recorded_voice">เสียงบันทึก %1$s</string>
+
+    <!-- Supertonic custom voice file import -->
+    <string name="supertonic_import_voice">นำเข้าเสียง JSON</string>
+    <string name="supertonic_import_failed">ไม่สามารถนำเข้าเสียงนี้ได้ เลือกไฟล์ JSON รูปแบบเสียง Supertonic 3 (สูงสุด 2 MB)</string>
 </resources>

@@ -1041,4 +1041,8 @@ Du forsøger at sende et billede, men den nuværende model er **kun-tekst**:
     <string name="pocket_record_failed">Optagelse eller kloning mislykkedes. Prøv igen med mindst 3 sekunders tydelig tale.</string>
     <string name="pocket_microphone_required">Tillad mikrofonadgang for at optage en stemme.</string>
     <string name="pocket_recorded_voice">Optagelse %1$s</string>
+
+    <!-- Supertonic custom voice file import -->
+    <string name="supertonic_import_voice">Importér stemme-JSON</string>
+    <string name="supertonic_import_failed">Stemmen kunne ikke importeres. Vælg en Supertonic 3-stemmestil som JSON-fil (højst 2 MB).</string>
 </resources>

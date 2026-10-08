@@ -178,10 +178,10 @@ class ThemePreferences(private val context: Context) {
 
     val pocketVoice: Flow<String> = context.dataStore.data.map { it[POCKET_VOICE_KEY] ?: "" }
     suspend fun setPocketVoice(voice: String) { context.dataStore.edit { it[POCKET_VOICE_KEY] = voice } }
-    val supertonicVoice: Flow<String> = context.dataStore.data.map { it[SUPERTONIC_VOICE_KEY]?.takeIf(SupertonicModel.voices::containsKey) ?: "M1" }
+    val supertonicVoice: Flow<String> = context.dataStore.data.map { it[SUPERTONIC_VOICE_KEY]?.takeIf { key -> SupertonicModel.isVoiceKey(key) && (key in SupertonicModel.voices || SupertonicModel.voiceFile(context, key) != null) } ?: "M1" }
     val supertonicLanguage: Flow<String> = context.dataStore.data.map { it[SUPERTONIC_LANGUAGE_KEY] ?: "" }
     suspend fun setSupertonicVoice(voice: String) {
-        require(voice in SupertonicModel.voices)
+        require(SupertonicModel.isVoiceKey(voice))
         context.dataStore.edit { it[SUPERTONIC_VOICE_KEY] = voice }
     }
     suspend fun setSupertonicLanguage(language: String) {

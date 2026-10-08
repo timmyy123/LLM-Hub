@@ -35,10 +35,10 @@ Model: OpenRAIL-M. Runtime implementation adapted from Supertone’s MIT sample 
 
 1. Download **Supertonic 3 (ONNX)** under Text-to-Speech models.
 2. Select it as the TTS model in Settings. Preset voices and language selection appear there; this CPU-only engine does not expose the Kokoro GPU selector.
-3. Download and select a preset voice in Settings. Supertonic and Kokoro use the same shared voice-download dialog: 56 dp rows, labelled filled Download buttons, red outlined Delete buttons, progress indicators and the empty-state download hint.
+3. Download and select a preset voice in Settings, or choose **Import voice JSON** in that same dialog to import a Supertonic 3-compatible voice-style JSON (up to 2 MiB). Imported voices are validated for tensor dimensions, counts and finite numeric values before publication, stored privately outside the model bundle, and support selection/deletion using the shared rows. Supertonic and Kokoro use the same shared voice-download dialog: 56 dp rows, labelled filled Download buttons, red outlined Delete buttons, progress indicators and the empty-state download hint.
 4. The selected voice applies to Chat, Agent, Writing Aid, Scam Analysis, VibeVoice readout, and Text-to-Speech. Translator continues using system TTS.
 
-Previously stored custom voice selections fall back to M1. The app no longer imports, lists, or synthesizes custom Supertonic voices. Existing user files are left untouched.
+Imported JSON voices use app-generated IDs and display the source filename as their label. The selected custom voice is persisted and used by the same Supertonic synthesis path as presets. Deletion removes its JSON and label and resets a selected voice to M1. Unknown legacy voice IDs fall back to M1. This imports existing compatible voice profiles; raw recordings and Pocket TTS voice states cannot be converted by this importer.
 
 ## Validation
 
@@ -49,6 +49,6 @@ Previously stored custom voice selections fall back to M1. The app no longer imp
 - The actual Kotlin engine synthesized non-silent, finite audio from the pinned assets with M1 in English (100,092 samples), Japanese (66,677), and French (81,831), at 44,100 Hz. Cancellation passed. This was a macOS JVM smoke test using desktop ONNX Runtime 1.24.2 (1.24.1's desktop JAR lacks macOS natives); the Android app retains ONNX Runtime Android 1.24.1.
 - Android device playback and visual UI testing have not been performed.
 
-## Removal verification
+## Earlier external cloning removal
 
-After removing the external cloning UI, JSON import handling, custom-voice resolution, and cloning strings from all locales, Android Kotlin compilation and resource processing passed. See [on-device cloning research](on-device-voice-cloning.md) for replacement candidates.
+The external voice-building link and conversion flow remain removed. At the user’s subsequent request, local JSON profile import was restored in Settings without adding a separate panel. Two new import strings are translated across all 24 Android locale sets. The import tests cover successful publication, unsafe source filenames, bounded oversized input, and malformed profiles leaving no files. PocketTTS.cpp remains the engine for recording-based local cloning; see [its integration](pocket-tts.md).

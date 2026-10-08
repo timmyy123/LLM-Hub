@@ -6,6 +6,10 @@ import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Assert.*
 import org.junit.Test
+import org.junit.Rule
+import org.junit.rules.TemporaryFolder
+import java.io.ByteArrayInputStream
+import java.io.File
 
 class SupertonicTest {
     private fun voice(): JSONObject = JSONObject().apply {
@@ -45,6 +49,42 @@ class SupertonicTest {
         val json = voice()
         json.getJSONObject("style_dp").getJSONArray("data").put(0, "0.5")
         SupertonicModel.parseVoice(json.toString())
+    }
+
+    @get:Rule val temporary = TemporaryFolder()
+
+    @Test fun importedVoiceIsPublishedPrivatelyWithoutUsingItsSourceNameAsAPath() {
+        val directory = temporary.newFolder()
+        val json = voice().toString()
+        val label = "../../M1"
+        val key = SupertonicModel.importVoice(directory, ByteArrayInputStream(json.toByteArray()), label)
+        assertTrue(SupertonicModel.isVoiceKey(key))
+        assertEquals(json, File(directory, "$key.json").readText())
+        assertEquals(label, File(directory, "$key.txt").readText())
+        assertEquals(2, directory.listFiles()!!.size)
+        assertFalse(File(directory, "M1.json").exists())
+        assertFalse(SupertonicModel.isVoiceKey("../../M1"))
+    }
+
+    @Test fun rejectsOversizeImportWithoutReadingTheWholeStreamOrPublishingFiles() {
+        val directory = temporary.newFolder()
+        val input = ByteArrayInputStream(ByteArray(SupertonicModel.MAX_VOICE_BYTES + 100))
+        try {
+            SupertonicModel.importVoice(directory, input, "invalid")
+            fail("Oversize voice accepted")
+        } catch (_: IllegalArgumentException) { }
+        assertEquals(99, input.available())
+        assertTrue(directory.listFiles()!!.isEmpty())
+    }
+
+    @Test fun malformedImportLeavesNoPublishedVoiceOrLabel() {
+        val directory = temporary.newFolder()
+        val json = voice().apply { getJSONObject("style_dp").put("data", JSONArray(listOf(0.5))) }
+        try {
+            SupertonicModel.importVoice(directory, ByteArrayInputStream(json.toString().toByteArray()), "invalid")
+            fail("Malformed voice accepted")
+        } catch (_: IllegalArgumentException) { }
+        assertTrue(directory.listFiles()!!.isEmpty())
     }
 
     @Test fun normalizesTextAndAppliesLanguageTags() {

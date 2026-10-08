@@ -1073,4 +1073,8 @@
     <string name="pocket_record_failed">Не вдалося записати або клонувати голос. Повторіть із чітким мовленням тривалістю щонайменше 3 секунди.</string>
     <string name="pocket_microphone_required">Дозвольте доступ до мікрофона для запису голосу.</string>
     <string name="pocket_recorded_voice">Запис %1$s</string>
+
+    <!-- Supertonic custom voice file import -->
+    <string name="supertonic_import_voice">Імпортувати голос JSON</string>
+    <string name="supertonic_import_failed">Не вдалося імпортувати голос. Виберіть JSON-файл стилю голосу Supertonic 3 (до 2 МБ).</string>
 </resources>

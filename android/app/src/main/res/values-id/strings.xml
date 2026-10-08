@@ -1075,4 +1075,8 @@
     <string name="pocket_record_failed">Perekaman atau kloning gagal. Coba lagi dengan ucapan jernih minimal 3 detik.</string>
     <string name="pocket_microphone_required">Izinkan akses mikrofon untuk merekam suara.</string>
     <string name="pocket_recorded_voice">Rekaman %1$s</string>
+
+    <!-- Supertonic custom voice file import -->
+    <string name="supertonic_import_voice">Impor JSON suara</string>
+    <string name="supertonic_import_failed">Tidak dapat mengimpor suara. Pilih file JSON gaya suara Supertonic 3 (maksimal 2 MB).</string>
 </resources>

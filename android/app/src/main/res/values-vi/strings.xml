@@ -980,4 +980,8 @@
     <string name="pocket_record_failed">Ghi âm hoặc nhân bản thất bại. Thử lại với ít nhất 3 giây giọng nói rõ ràng.</string>
     <string name="pocket_microphone_required">Cho phép truy cập micrô để ghi âm giọng nói.</string>
     <string name="pocket_recorded_voice">Bản ghi %1$s</string>
+
+    <!-- Supertonic custom voice file import -->
+    <string name="supertonic_import_voice">Nhập giọng JSON</string>
+    <string name="supertonic_import_failed">Không thể nhập giọng này. Chọn tệp JSON kiểu giọng Supertonic 3 (tối đa 2 MB).</string>
 </resources>
