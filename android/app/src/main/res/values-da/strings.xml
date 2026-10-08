@@ -1045,4 +1045,28 @@ Du forsøger at sende et billede, men den nuværende model er **kun-tekst**:
     <!-- Supertonic custom voice file import -->
     <string name="supertonic_import_voice">Importér stemme-JSON</string>
     <string name="supertonic_import_failed">Stemmen kunne ikke importeres. Vælg en Supertonic 3-stemmestil som JSON-fil (højst 2 MB).</string>
+
+    <!-- Vibecode local Codex agent -->
+    <string name="vibe_codex_mode">Codex-tilstand</string>
+    <string name="vibe_codex_description">Bruger din valgte lokale model uden login. Kommandoer køres med Termux-tilladelser.</string>
+    <string name="vibe_codex_install">Installer Codex i Termux</string>
+    <string name="vibe_codex_install_help">Aktivér kommandoer fra eksterne apps i Termux, og installer Codex før start.</string>
+    <string name="vibe_codex_installing">Installerer Codex i Termux…</string>
+    <string name="vibe_codex_installed">Codex er installeret. Din valgte lokale model er klar til brug.</string>
+    <string name="vibe_codex_requirements">Kræver Android 10 eller nyere og en ARM64-enhed.</string>
+    <string name="vibe_codex_connection_error">Kunne ikke oprette forbindelse til Codex i Termux.</string>
+    <string name="vibe_codex_model_error">Den lokale model returnerede ikke et gyldigt værktøjssvar. Prøv en kodemodel eller en større kontekst.</string>
+    <string name="vibe_codex_conflict">Projektet blev ændret uden for Vibecode. Genererede ændringer findes stadig i Termux-arbejdsområdet.</string>
+    <string name="vibe_codex_failed">Codex mislykkedes. Kontrollér Termux-opsætningen, den lokale model og appens logfiler.</string>
+    <string name="vibe_codex_folder_required">Åbn en arbejdsområdemappe, før du bruger Codex.</string>
+    <string name="vibe_codex_approval">Codex anmoder om godkendelse</string>
+
+    <string name="vibe_codex_terminal">Terminal</string>
+    <string name="vibe_codex_running">Kører</string>
+    <string name="vibe_codex_stopped">Stoppet</string>
+    <string name="vibe_codex_starting">Starter Codex…</string>
+    <string name="vibe_codex_connecting">Opretter forbindelse til Codex…</string>
+    <string name="vibe_codex_staging">Forbereder projektfiler…</string>
+    <string name="vibe_codex_generating">Den lokale model arbejder…</string>
+    <string name="vibe_codex_syncing">Anvender projektændringer…</string>
 </resources>

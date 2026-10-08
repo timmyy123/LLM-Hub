@@ -1075,4 +1075,28 @@
     <!-- Supertonic custom voice file import -->
     <string name="supertonic_import_voice">Ses JSON dosyası içe aktar</string>
     <string name="supertonic_import_failed">Ses içe aktarılamadı. Supertonic 3 ses stili JSON dosyası seçin (en fazla 2 MB).</string>
+
+    <!-- Vibecode local Codex agent -->
+    <string name="vibe_codex_mode">Codex modu</string>
+    <string name="vibe_codex_description">Oturum açmadan seçtiğiniz yerel modeli kullanır. Komutlar Termux izinleriyle çalışır.</string>
+    <string name="vibe_codex_install">Codex’i Termux’a yükle</string>
+    <string name="vibe_codex_install_help">Termux’ta harici uygulama komutlarını etkinleştirin ve başlamadan önce Codex’i yükleyin.</string>
+    <string name="vibe_codex_installing">Codex Termux’a yükleniyor…</string>
+    <string name="vibe_codex_installed">Codex yüklendi. Seçtiğiniz yerel model kullanıma hazır.</string>
+    <string name="vibe_codex_requirements">Android 10 veya üstü ve ARM64 cihaz gerektirir.</string>
+    <string name="vibe_codex_connection_error">Termux’taki Codex’e bağlanılamadı.</string>
+    <string name="vibe_codex_model_error">Yerel model geçerli bir araç yanıtı döndürmedi. Bir kodlama modeli veya daha büyük bağlam deneyin.</string>
+    <string name="vibe_codex_conflict">Proje Vibecode dışında değişti. Oluşturulan düzenlemeler Termux çalışma alanında duruyor.</string>
+    <string name="vibe_codex_failed">Codex başarısız oldu. Termux kurulumunu, yerel modeli ve uygulama günlüklerini kontrol edin.</string>
+    <string name="vibe_codex_folder_required">Codex’i kullanmadan önce bir çalışma alanı klasörü açın.</string>
+    <string name="vibe_codex_approval">Codex onay istiyor</string>
+
+    <string name="vibe_codex_terminal">Terminal</string>
+    <string name="vibe_codex_running">Çalışıyor</string>
+    <string name="vibe_codex_stopped">Durduruldu</string>
+    <string name="vibe_codex_starting">Codex başlatılıyor…</string>
+    <string name="vibe_codex_connecting">Codex’e bağlanılıyor…</string>
+    <string name="vibe_codex_staging">Proje dosyaları hazırlanıyor…</string>
+    <string name="vibe_codex_generating">Yerel model çalışıyor…</string>
+    <string name="vibe_codex_syncing">Proje değişiklikleri uygulanıyor…</string>
 </resources>

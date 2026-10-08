@@ -66,6 +66,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -133,6 +136,31 @@ fun VibeCoderScreen(
     val isModelLoaded by viewModel.isModelLoaded.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val isProcessing by viewModel.isProcessing.collectAsState()
+    val codexEnabled by viewModel.codexEnabled.collectAsState()
+    val codexApproval by viewModel.codexApproval.collectAsState()
+    val workspaceRevision by viewModel.workspaceRevision.collectAsState()
+    var installAfterPermission by remember { mutableStateOf(false) }
+    val termuxPermission = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            viewModel.setCodexEnabled(true)
+            if (installAfterPermission) viewModel.installCodex()
+        } else viewModel.setError(context.getString(R.string.agent_mcp_termux_permission_required))
+        installAfterPermission = false
+    }
+    fun enableCodex(install: Boolean = false) {
+        if (!com.llmhub.llmhub.agent.isTermuxRunCommandAvailable(context)) {
+            viewModel.setError(context.getString(R.string.agent_mcp_termux_run_command_unavailable))
+        } else if (androidx.core.content.ContextCompat.checkSelfPermission(context,
+                com.llmhub.llmhub.agent.TERMUX_RUN_COMMAND_PERMISSION) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            installAfterPermission = install
+            termuxPermission.launch(com.llmhub.llmhub.agent.TERMUX_RUN_COMMAND_PERMISSION)
+        } else {
+            viewModel.setCodexEnabled(true)
+            if (install) viewModel.installCodex()
+        }
+    }
     val generatedCode by viewModel.generatedCode.collectAsState()
     val chatMessages by viewModel.chatMessages.collectAsState()
     val chatSessions by viewModel.chatSessions.collectAsState()
@@ -376,7 +404,7 @@ fun VibeCoderScreen(
         }
     }
 
-    LaunchedEffect(currentFolderUri) {
+    LaunchedEffect(currentFolderUri, workspaceRevision) {
         refreshFolderFiles(currentFolderUri)
     }
 
@@ -392,7 +420,8 @@ fun VibeCoderScreen(
         }
     }
 
-    LaunchedEffect(generatedCode, isDirty, currentFileUri, currentFileName) {
+    LaunchedEffect(generatedCode, isDirty, currentFileUri, currentFileName, isProcessing) {
+        if (codexEnabled && isProcessing) return@LaunchedEffect
         if (!isDirty) return@LaunchedEffect
         val uri = currentFileUri ?: return@LaunchedEffect
         delay(500)
@@ -540,7 +569,7 @@ fun VibeCoderScreen(
                                 onCodeChange = { viewModel.updateGeneratedCode(it) },
                                 isProcessing = isProcessing,
                                 codeLanguage = codeLanguage,
-                                canDiscardLastAiEdit = editCheckpoints.isNotEmpty(),
+                                canDiscardLastAiEdit = !codexEnabled && editCheckpoints.isNotEmpty(),
                                 onDiscardLastAiEdit = { viewModel.revertLastCheckpoint() },
                                 currentFileName = currentFileName,
                                 hasFileSession = currentFileName != null,
@@ -583,10 +612,11 @@ fun VibeCoderScreen(
                                     input = chatInput,
                                     onInputChange = { chatInput = it },
                                     isProcessing = isProcessing,
-                                    hasFileSession = currentFileName != null,
+                                    hasFileSession = codexEnabled || currentFileName != null,
                                     contextUsage = contextUsage,
                                     contextLabel = contextLabel,
-                                    showContextPercent = true,
+                                    showContextPercent = !codexEnabled,
+                                    allowPromptEditing = !codexEnabled,
                                     showHideButton = true,
                                     onHidePanel = { chatPaneVisible = false },
                                     onNewChat = { viewModel.createNewChatSession() },
@@ -596,7 +626,7 @@ fun VibeCoderScreen(
                                     onStopGeneration = { viewModel.cancelGeneration() },
                                     onSend = {
                                         val p = chatInput.trim()
-                                        if (p.isNotEmpty() && currentFileName != null) {
+                                        if (p.isNotEmpty() && (codexEnabled || currentFileName != null)) {
                                             chatInput = ""
                                             viewModel.generateCode(p)
                                         }
@@ -624,10 +654,11 @@ fun VibeCoderScreen(
                             input = chatInput,
                             onInputChange = { chatInput = it },
                             isProcessing = isProcessing,
-                            hasFileSession = currentFileName != null,
+                            hasFileSession = codexEnabled || currentFileName != null,
                             contextUsage = contextUsage,
                             contextLabel = contextLabel,
-                            showContextPercent = true,
+                            showContextPercent = !codexEnabled,
+                            allowPromptEditing = !codexEnabled,
                             showHideButton = false,
                             onHidePanel = null,
                             onNewChat = { viewModel.createNewChatSession() },
@@ -637,7 +668,7 @@ fun VibeCoderScreen(
                             onStopGeneration = { viewModel.cancelGeneration() },
                             onSend = {
                                 val p = chatInput.trim()
-                                if (p.isNotEmpty() && currentFileName != null) {
+                                if (p.isNotEmpty() && (codexEnabled || currentFileName != null)) {
                                     chatInput = ""
                                     viewModel.generateCode(p)
                                 }
@@ -650,7 +681,7 @@ fun VibeCoderScreen(
                             onCodeChange = { viewModel.updateGeneratedCode(it) },
                             isProcessing = isProcessing,
                             codeLanguage = codeLanguage,
-                            canDiscardLastAiEdit = editCheckpoints.isNotEmpty(),
+                            canDiscardLastAiEdit = !codexEnabled && editCheckpoints.isNotEmpty(),
                             onDiscardLastAiEdit = { viewModel.revertLastCheckpoint() },
                             currentFileName = currentFileName,
                             hasFileSession = currentFileName != null,
@@ -686,19 +717,50 @@ fun VibeCoderScreen(
             initialMaxTokens = selectedMaxTokens,
             currentlyLoadedModel = if (isModelLoaded) selectedModel else null,
             isLoadingModel = isLoading,
-            onModelSelected = { viewModel.selectModel(it) },
-            onBackendSelected = { backend, deviceId -> viewModel.selectBackend(backend, deviceId) },
-            onMaxTokensChanged = { viewModel.setMaxTokens(it) },
+            onModelSelected = { if (!isProcessing) viewModel.selectModel(it) },
+            onBackendSelected = { backend, deviceId -> if (!isProcessing) viewModel.selectBackend(backend, deviceId) },
+            onMaxTokensChanged = { if (!isProcessing) viewModel.setMaxTokens(it) },
             onLoadModel = { model, maxTokens, backend, deviceId, nGpuLayers, isThinkingEnabled ->
-                viewModel.selectModel(model)
-                viewModel.setMaxTokens(maxTokens)
-                if (backend != null) viewModel.selectBackend(backend, deviceId)
-                viewModel.setNGpuLayers(nGpuLayers)
-                viewModel.setEnableThinking(isThinkingEnabled)
-                viewModel.loadModel()
+                if (!isProcessing) {
+                    viewModel.selectModel(model)
+                    viewModel.setMaxTokens(maxTokens)
+                    if (backend != null) viewModel.selectBackend(backend, deviceId)
+                    viewModel.setNGpuLayers(nGpuLayers)
+                    viewModel.setEnableThinking(isThinkingEnabled)
+                    viewModel.loadModel()
+                }
             },
             onUnloadModel = { viewModel.unloadModel() },
-            onDismiss = { showSettingsSheet = false }
+            onDismiss = { showSettingsSheet = false },
+            extraModelConfigsContent = {
+                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text(stringResource(R.string.vibe_codex_mode), modifier = Modifier.weight(1f))
+                    Switch(checked = codexEnabled, enabled = !isProcessing,
+                        onCheckedChange = { if (it) enableCodex() else viewModel.setCodexEnabled(false) })
+                }
+                if (codexEnabled) {
+                    Text(stringResource(R.string.vibe_codex_description), style = MaterialTheme.typography.bodySmall)
+                    Text(stringResource(R.string.agent_termux_guide_desc), style = MaterialTheme.typography.bodySmall)
+                    androidx.compose.foundation.text.selection.SelectionContainer {
+                        Text("mkdir -p ~/.termux && echo \"allow-external-apps = true\" >> ~/.termux/termux.properties",
+                            style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace))
+                    }
+                    Text(stringResource(R.string.vibe_codex_install_help), style = MaterialTheme.typography.bodySmall)
+                    OutlinedButton(onClick = { enableCodex(install = true) }, enabled = !isProcessing) {
+                        Text(stringResource(R.string.vibe_codex_install))
+                    }
+                }
+            }
+        )
+    }
+
+    codexApproval?.let { approval ->
+        AlertDialog(
+            onDismissRequest = { viewModel.answerCodexApproval(false) },
+            title = { Text(stringResource(R.string.vibe_codex_approval)) },
+            text = { Text(approval.detail, modifier = Modifier.verticalScroll(rememberScrollState()).heightIn(max = 360.dp)) },
+            confirmButton = { TextButton(onClick = { viewModel.answerCodexApproval(true) }) { Text(stringResource(R.string.agent_mcp_allow)) } },
+            dismissButton = { TextButton(onClick = { viewModel.answerCodexApproval(false) }) { Text(stringResource(R.string.agent_mcp_deny)) } }
         )
     }
 
@@ -790,6 +852,7 @@ private fun ChatPane(
     contextUsage: Float,
     contextLabel: String,
     showContextPercent: Boolean,
+    allowPromptEditing: Boolean,
     showHideButton: Boolean,
     onHidePanel: (() -> Unit)?,
     onNewChat: () -> Unit,
@@ -938,7 +1001,7 @@ private fun ChatPane(
                 state = chatListState,
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(messages) { msg ->
+                items(messages, key = { it.id }) { msg ->
                     val isUser = msg.role == "user"
                     Surface(
                         shape = RoundedCornerShape(10.dp),
@@ -951,12 +1014,28 @@ private fun ChatPane(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = if (isUser) stringResource(R.string.vibe_coder_message_you) else stringResource(R.string.vibe_coder_message_ai),
+                                    text = when (msg.role) {
+                                        "user" -> stringResource(R.string.vibe_coder_message_you)
+                                        "terminal" -> stringResource(R.string.vibe_codex_terminal)
+                                        else -> stringResource(R.string.vibe_coder_message_ai)
+                                    },
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 Spacer(modifier = Modifier.weight(1f))
-                                if (isUser) {
+                                msg.activityState?.let { state ->
+                                    if (state == "running") {
+                                        CircularProgressIndicator(modifier = Modifier.size(12.dp), strokeWidth = 2.dp)
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                    }
+                                    Text(stringResource(when (state) {
+                                        "running" -> R.string.vibe_codex_running
+                                        "failed" -> R.string.agent_tool_failed
+                                        "stopped" -> R.string.vibe_codex_stopped
+                                        else -> R.string.agent_tool_success
+                                    }), style = MaterialTheme.typography.labelSmall)
+                                }
+                                if (isUser && allowPromptEditing) {
                                     IconButton(
                                         onClick = {
                                             editingPromptId = msg.id
@@ -1000,7 +1079,9 @@ private fun ChatPane(
                                         modifier = Modifier.weight(1f)
                                     ) { Text(stringResource(R.string.vibe_coder_resend)) }
                                 }
-                            } else if (isUser) {
+                            } else if (msg.role == "terminal") {
+                                VibeTerminalOutput(msg.text)
+                            } else if (isUser || msg.role == "status") {
                                 Text(text = msg.text, style = MaterialTheme.typography.bodyMedium)
                             } else {
                                 ThinkingAwareResultContent(
@@ -1058,6 +1139,18 @@ private fun ChatPane(
                  }
             )
         }
+    }
+}
+
+@Composable
+private fun VibeTerminalOutput(text: String) {
+    val scroll = rememberScrollState()
+    LaunchedEffect(text) {
+        if (!scroll.isScrollInProgress) scroll.scrollTo(scroll.maxValue)
+    }
+    androidx.compose.foundation.text.selection.SelectionContainer {
+        Text(text = text, style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+            modifier = Modifier.fillMaxWidth().heightIn(max = 260.dp).verticalScroll(scroll))
     }
 }
 
@@ -1127,13 +1220,13 @@ private fun EditorPane(
                     }
                 }
                 Spacer(modifier = Modifier.weight(1f))
-                IconButton(onClick = onOpenFolder) {
+                IconButton(onClick = onOpenFolder, enabled = !isProcessing) {
                     Icon(Icons.Default.FolderOpen, contentDescription = stringResource(R.string.vibe_coder_open_folder))
                 }
-                IconButton(onClick = onNewFile) {
+                IconButton(onClick = onNewFile, enabled = !isProcessing) {
                     Icon(Icons.Default.Add, contentDescription = stringResource(R.string.vibe_coder_new_file))
                 }
-                IconButton(onClick = onSaveFile) {
+                IconButton(onClick = onSaveFile, enabled = !isProcessing) {
                     Icon(Icons.Default.Save, contentDescription = stringResource(R.string.vibe_coder_save_file))
                 }
                 IconButton(onClick = onCopy, enabled = shownCode.isNotBlank()) {
@@ -1165,6 +1258,7 @@ private fun EditorPane(
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Button(
                                     onClick = { onSelectFolderFile(item.first) },
+                                    enabled = !isProcessing,
                                     modifier = Modifier.height(30.dp),
                                     shape = RoundedCornerShape(16.dp),
                                     colors = ButtonDefaults.buttonColors(
@@ -1180,6 +1274,7 @@ private fun EditorPane(
                                 }
                                 IconButton(
                                     onClick = { onDeleteFolderFile(item.first, item.second) },
+                                    enabled = !isProcessing,
                                     modifier = Modifier.size(24.dp)
                                 ) {
                                     Icon(
@@ -1208,9 +1303,9 @@ private fun EditorPane(
             ) {
                 BasicTextField(
                     value = shownCode,
-                    onValueChange = { if (hasFileSession) onCodeChange(it) },
+                    onValueChange = { if (hasFileSession && !isProcessing) onCodeChange(it) },
                     modifier = Modifier.fillMaxWidth(),
-                    readOnly = !hasFileSession,
+                    readOnly = !hasFileSession || isProcessing,
                     textStyle = MaterialTheme.typography.bodySmall.copy(
                         fontFamily = FontFamily.Monospace,
                         color = MaterialTheme.colorScheme.onSurface

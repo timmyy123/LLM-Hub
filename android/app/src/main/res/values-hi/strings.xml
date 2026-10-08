@@ -1103,4 +1103,28 @@
     <!-- Supertonic custom voice file import -->
     <string name="supertonic_import_voice">आवाज़ JSON आयात करें</string>
     <string name="supertonic_import_failed">आवाज़ आयात नहीं हो सकी। Supertonic 3 की वॉइस-स्टाइल JSON फ़ाइल चुनें (अधिकतम 2 MB)।</string>
+
+    <!-- Vibecode local Codex agent -->
+    <string name="vibe_codex_mode">Codex मोड</string>
+    <string name="vibe_codex_description">बिना लॉगिन आपके चुने हुए स्थानीय मॉडल का उपयोग करता है। कमांड Termux की अनुमतियों के साथ चलते हैं।</string>
+    <string name="vibe_codex_install">Termux में Codex इंस्टॉल करें</string>
+    <string name="vibe_codex_install_help">Termux में बाहरी ऐप के कमांड सक्षम करें, फिर शुरू करने से पहले Codex इंस्टॉल करें।</string>
+    <string name="vibe_codex_installing">Termux में Codex इंस्टॉल हो रहा है…</string>
+    <string name="vibe_codex_installed">Codex इंस्टॉल हो गया है। आपका चुना हुआ स्थानीय मॉडल तैयार है।</string>
+    <string name="vibe_codex_requirements">Android 10 या नया और ARM64 डिवाइस आवश्यक है।</string>
+    <string name="vibe_codex_connection_error">Termux में Codex से कनेक्ट नहीं हो सका।</string>
+    <string name="vibe_codex_model_error">स्थानीय मॉडल ने मान्य टूल प्रतिक्रिया नहीं दी। कोडिंग मॉडल या बड़ा संदर्भ आज़माएँ।</string>
+    <string name="vibe_codex_conflict">प्रोजेक्ट Vibecode के बाहर बदल गया। बनाए गए बदलाव Termux कार्यक्षेत्र में सुरक्षित हैं।</string>
+    <string name="vibe_codex_failed">Codex विफल हुआ। Termux सेटअप, स्थानीय मॉडल और ऐप लॉग जाँचें।</string>
+    <string name="vibe_codex_folder_required">Codex का उपयोग करने से पहले कार्यक्षेत्र फ़ोल्डर खोलें।</string>
+    <string name="vibe_codex_approval">Codex अनुमति माँग रहा है</string>
+
+    <string name="vibe_codex_terminal">टर्मिनल</string>
+    <string name="vibe_codex_running">चल रहा है</string>
+    <string name="vibe_codex_stopped">रोक दिया गया</string>
+    <string name="vibe_codex_starting">Codex शुरू हो रहा है…</string>
+    <string name="vibe_codex_connecting">Codex से कनेक्ट हो रहा है…</string>
+    <string name="vibe_codex_staging">प्रोजेक्ट फ़ाइलें तैयार हो रही हैं…</string>
+    <string name="vibe_codex_generating">स्थानीय मॉडल काम कर रहा है…</string>
+    <string name="vibe_codex_syncing">प्रोजेक्ट में बदलाव लागू हो रहे हैं…</string>
 </resources>

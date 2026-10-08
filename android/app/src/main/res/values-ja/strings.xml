@@ -1074,4 +1074,28 @@
     <!-- Supertonic custom voice file import -->
     <string name="supertonic_import_voice">音声JSONを読み込む</string>
     <string name="supertonic_import_failed">音声を読み込めませんでした。Supertonic 3の音声スタイルJSONファイル（最大2 MB）を選択してください。</string>
+
+    <!-- Vibecode local Codex agent -->
+    <string name="vibe_codex_mode">Codexモード</string>
+    <string name="vibe_codex_description">ログインせずに選択したローカルモデルを使用します。コマンドはTermuxの権限で実行されます。</string>
+    <string name="vibe_codex_install">TermuxにCodexをインストール</string>
+    <string name="vibe_codex_install_help">Termuxで外部アプリのコマンドを有効にし、開始前にCodexをインストールしてください。</string>
+    <string name="vibe_codex_installing">TermuxにCodexをインストール中…</string>
+    <string name="vibe_codex_installed">Codexをインストールしました。選択したローカルモデルを使用できます。</string>
+    <string name="vibe_codex_requirements">Android 10以降とARM64デバイスが必要です。</string>
+    <string name="vibe_codex_connection_error">TermuxのCodexに接続できませんでした。</string>
+    <string name="vibe_codex_model_error">ローカルモデルが有効なツール応答を返しませんでした。コーディングモデルか、より大きなコンテキストをお試しください。</string>
+    <string name="vibe_codex_conflict">Vibecodeの外でプロジェクトが変更されました。生成した編集はTermuxの作業フォルダに残っています。</string>
+    <string name="vibe_codex_failed">Codexに失敗しました。Termuxの設定、ローカルモデル、アプリのログを確認してください。</string>
+    <string name="vibe_codex_folder_required">Codexを使う前に作業フォルダを開いてください。</string>
+    <string name="vibe_codex_approval">Codexが承認を求めています</string>
+
+    <string name="vibe_codex_terminal">ターミナル</string>
+    <string name="vibe_codex_running">実行中</string>
+    <string name="vibe_codex_stopped">停止</string>
+    <string name="vibe_codex_starting">Codexを起動中…</string>
+    <string name="vibe_codex_connecting">Codexに接続中…</string>
+    <string name="vibe_codex_staging">プロジェクトファイルを準備中…</string>
+    <string name="vibe_codex_generating">ローカルモデルが処理中…</string>
+    <string name="vibe_codex_syncing">プロジェクトの変更を適用中…</string>
 </resources>

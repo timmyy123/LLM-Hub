@@ -1085,4 +1085,28 @@
     <!-- Supertonic custom voice file import -->
     <string name="supertonic_import_voice">导入声音JSON</string>
     <string name="supertonic_import_failed">无法导入此声音。请选择Supertonic 3声音风格JSON文件（最大2 MB）。</string>
+
+    <!-- Vibecode local Codex agent -->
+    <string name="vibe_codex_mode">Codex 模式</string>
+    <string name="vibe_codex_description">无需登录，使用你选择的本地模型。命令以 Termux 的权限运行。</string>
+    <string name="vibe_codex_install">在 Termux 中安装 Codex</string>
+    <string name="vibe_codex_install_help">在 Termux 中启用外部应用命令，并在开始前安装 Codex。</string>
+    <string name="vibe_codex_installing">正在 Termux 中安装 Codex…</string>
+    <string name="vibe_codex_installed">Codex 已安装。你选择的本地模型已可使用。</string>
+    <string name="vibe_codex_requirements">需要 Android 10 或更高版本以及 ARM64 设备。</string>
+    <string name="vibe_codex_connection_error">无法连接到 Termux 中的 Codex。</string>
+    <string name="vibe_codex_model_error">本地模型未返回有效的工具响应。请尝试编程模型或更大的上下文。</string>
+    <string name="vibe_codex_conflict">项目在 Vibecode 外发生了更改。生成的修改仍保留在 Termux 工作区中。</string>
+    <string name="vibe_codex_failed">Codex 运行失败。请检查 Termux 设置、本地模型和应用日志。</string>
+    <string name="vibe_codex_folder_required">使用 Codex 前请打开工作区文件夹。</string>
+    <string name="vibe_codex_approval">Codex 请求批准</string>
+
+    <string name="vibe_codex_terminal">终端</string>
+    <string name="vibe_codex_running">运行中</string>
+    <string name="vibe_codex_stopped">已停止</string>
+    <string name="vibe_codex_starting">正在启动 Codex…</string>
+    <string name="vibe_codex_connecting">正在连接 Codex…</string>
+    <string name="vibe_codex_staging">正在准备项目文件…</string>
+    <string name="vibe_codex_generating">本地模型正在工作…</string>
+    <string name="vibe_codex_syncing">正在应用项目更改…</string>
 </resources>

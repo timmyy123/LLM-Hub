@@ -3,6 +3,16 @@ package com.llmhub.llmhub.viewmodels
 import android.app.Application
 import android.content.Context
 import android.util.Log
+import com.llmhub.llmhub.R
+import com.llmhub.llmhub.vibecode.CodexAgent
+import com.llmhub.llmhub.vibecode.CodexActivity
+import com.llmhub.llmhub.agent.TerminalOutputBuffer
+import com.llmhub.llmhub.agent.TermuxStreamingCommand
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.llmhub.llmhub.data.LLMModel
@@ -68,10 +78,13 @@ enum class ProgrammingLanguage {
     KOTLIN
 }
 
+data class VibeCodexApproval(val detail: String, val answer: CompletableDeferred<Boolean>)
+
 data class VibeChatMessage(
     val id: String = UUID.randomUUID().toString(),
     val role: String,
-    val text: String
+    val text: String,
+    val activityState: String? = null
 )
 
 data class CodeProposal(
@@ -105,6 +118,161 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
     private val inferenceService = (application as com.llmhub.llmhub.LlmHubApplication).inferenceService
     private val prefs = application.getSharedPreferences("vibe_coder_prefs", Context.MODE_PRIVATE)
     private val modelPrefs = ModelPreferences(application)
+
+    private val _codexEnabled = MutableStateFlow(prefs.getBoolean("codex_enabled", false))
+    val codexEnabled = _codexEnabled.asStateFlow()
+    private val _codexApproval = MutableStateFlow<VibeCodexApproval?>(null)
+    val codexApproval = _codexApproval.asStateFlow()
+    private val _workspaceRevision = MutableStateFlow(0)
+    val workspaceRevision = _workspaceRevision.asStateFlow()
+    private val codexInferenceLock = Mutex()
+
+    fun setCodexEnabled(enabled: Boolean) {
+        if (_isProcessing.value) return
+        _codexEnabled.value = enabled
+        prefs.edit().putBoolean("codex_enabled", enabled).apply()
+    }
+
+    fun answerCodexApproval(allow: Boolean) {
+        _codexApproval.value?.answer?.complete(allow)
+        _codexApproval.value = null
+    }
+
+    private fun codexMessageUpdater(): (CodexActivity) -> Unit {
+        val ids = java.util.concurrent.ConcurrentHashMap<String, String>()
+        return { activity ->
+            val id = ids.getOrPut(activity.key) { UUID.randomUUID().toString() }
+            _chatMessages.update { messages ->
+                val message = VibeChatMessage(id, activity.role, activity.text, activity.state)
+                if (messages.any { it.id == id }) messages.map { if (it.id == id) message else it }
+                else messages + message
+            }
+        }
+    }
+
+    private fun finishCodexActivities(state: String) {
+        _chatMessages.update { messages -> messages.map {
+            if (it.activityState == "running") it.copy(activityState = state) else it
+        } }
+    }
+
+    fun installCodex() {
+        if (_isProcessing.value) return
+        _isProcessing.value = true
+        _errorMessage.value = null
+        val update = codexMessageUpdater()
+        processingJob = viewModelScope.launch {
+            val output = TerminalOutputBuffer()
+            var state = "failed"
+            try {
+                appendChat("assistant", getApplication<Application>().getString(R.string.vibe_codex_installing))
+                update(CodexActivity("install", "$ ${CodexAgent.INSTALL}\n", "terminal", "running"))
+                TermuxStreamingCommand.run(getApplication(), CodexAgent.INSTALL, 10 * 60_000L) { chunk ->
+                    update(CodexActivity("install", "$ ${CodexAgent.INSTALL}\n" + output.append(chunk), "terminal", "running"))
+                }
+                state = "succeeded"
+                appendChat("assistant", getApplication<Application>().getString(R.string.vibe_codex_installed))
+            } catch (e: CancellationException) { state = "stopped"; throw e }
+            catch (e: Exception) { reportCodexError(e) }
+            finally {
+                finishCodexActivities(state)
+                _isProcessing.value = false
+                persistActiveSession()
+            }
+        }
+    }
+
+    private fun reportCodexError(error: Exception) {
+        Log.e("VibeCoderVM", "Codex mode failed", error)
+        val app = getApplication<Application>()
+        _errorMessage.value = when (error.message) {
+            "termux_permission_required" -> app.getString(R.string.agent_mcp_termux_permission_required)
+            "termux_run_command_unavailable" -> app.getString(R.string.agent_mcp_termux_run_command_unavailable)
+            "workspace_conflict" -> app.getString(R.string.vibe_codex_conflict)
+            app.getString(R.string.vibe_codex_requirements) -> app.getString(R.string.vibe_codex_requirements)
+            app.getString(R.string.vibe_codex_connection_error) -> app.getString(R.string.vibe_codex_connection_error)
+            else -> if (error.message?.contains(app.getString(R.string.vibe_codex_model_error)) == true)
+                app.getString(R.string.vibe_codex_model_error) else app.getString(R.string.vibe_codex_failed)
+        }
+        appendChat("assistant", _errorMessage.value.orEmpty())
+        error.message?.takeIf { it != _errorMessage.value }?.let {
+            _chatMessages.update { messages -> messages + VibeChatMessage(role = "terminal", text = it.takeLast(8000), activityState = "failed") }
+        }
+    }
+
+    private fun generateWithCodex(prompt: String) {
+        if (_isProcessing.value) return
+        val model = _selectedModel.value ?: return
+        val app = getApplication<Application>()
+        val folder = _currentFolderUri.value
+        if (folder.isNullOrBlank()) {
+            _errorMessage.value = app.getString(R.string.vibe_codex_folder_required)
+            return
+        }
+        if (android.os.Build.VERSION.SDK_INT < 29) {
+            _errorMessage.value = app.getString(R.string.vibe_codex_requirements)
+            return
+        }
+        val chatId = _activeChatSessionId.value ?: return
+        val session = UUID.nameUUIDFromBytes("$chatId|$folder|${model.name}".toByteArray()).toString()
+        val editorUri = _currentFileUri.value
+        val editorName = _currentFileName.value
+        val editorCode = _generatedCode.value
+        appendChat("user", prompt.trim())
+        _lastUserPrompt.value = prompt.trim()
+        _isProcessing.value = true
+        _errorMessage.value = null
+        processingJob = viewModelScope.launch {
+            val update = codexMessageUpdater()
+            var finalState = "failed"
+            try {
+                loadModelInternal()
+                check(_isModelLoaded.value) { "local_model_unavailable" }
+                applyGenerationParametersToService(maxTokens = _selectedMaxTokens.value, topK = 40, topP = 0.95f, temperature = 0.2f)
+                val published = withContext(Dispatchers.IO) {
+                    CodexAgent(app).run(prompt.trim(), folder, session, prefs.getString("codex_thread_$session", null),
+                        editorUri, editorName, editorCode, _selectedMaxTokens.value,
+                        infer = { request, onDelta ->
+                            codexInferenceLock.withLock {
+                                val output = StringBuilder()
+                                inferenceService.generateResponseStream(request, model).collect { output.append(it); onDelta(it) }
+                                output.toString()
+                            }
+                        },
+                        onThread = { prefs.edit().putString("codex_thread_$session", it).apply() },
+                        onMessage = update,
+                        approve = { _, detail ->
+                            val answer = CompletableDeferred<Boolean>()
+                            _codexApproval.value = VibeCodexApproval(detail, answer)
+                            try { answer.await() } finally { _codexApproval.value = null }
+                        })
+                }
+                val activeUri = published.values.firstOrNull { it.toString() == editorUri }
+                    ?: published[editorName]
+                if (activeUri != null) {
+                    val content = withContext(Dispatchers.IO) {
+                        app.contentResolver.openInputStream(activeUri)?.bufferedReader()?.use { it.readText() }
+                    }
+                    _currentFileUri.value = activeUri.toString()
+                    _generatedCode.value = content.orEmpty()
+                    _isDirty.value = false
+                } else if (editorUri != null) {
+                    _currentFileUri.value = null; _currentFileName.value = null; _generatedCode.value = ""
+                    _isDirty.value = false
+                }
+                _workspaceRevision.value++
+                finalState = "succeeded"
+            } catch (e: CancellationException) { finalState = "stopped"; throw e }
+            catch (e: Exception) { reportCodexError(e) }
+            finally {
+                finishCodexActivities(finalState)
+                _codexApproval.value = null
+                _isProcessing.value = false
+                persistActiveSession()
+                saveSettings()
+            }
+        }
+    }
 
     private var lastAppliedModelName: String? = null
     private var lastAppliedConfig: ModelConfig? = null
@@ -309,6 +477,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
                 mo.put("id", m.id)
                 mo.put("role", m.role)
                 mo.put("text", m.text)
+                mo.put("activityState", m.activityState ?: JSONObject.NULL)
                 mArr.put(mo)
             }
             obj.put("messages", mArr)
@@ -350,7 +519,9 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
                             VibeChatMessage(
                                 id = mo.optString("id", UUID.randomUUID().toString()),
                                 role = mo.optString("role", "assistant"),
-                                text = mo.optString("text", "")
+                                text = mo.optString("text", ""),
+                                activityState = mo.optString("activityState").takeIf { it.isNotBlank() && it != "null" }
+                                    ?.let { if (it == "running") "stopped" else it }
                             )
                         )
                     }
@@ -394,6 +565,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun createNewChatSession() {
+        if (_codexEnabled.value && _isProcessing.value) return
         val index = chatSessionStore.size + 1
         val id = UUID.randomUUID().toString()
         chatSessionStore[id] = SessionPayload(id, "Chat $index", "vibe-coder-$id", mutableListOf(), mutableListOf(), null)
@@ -403,6 +575,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun selectChatSession(sessionId: String) {
+        if (_codexEnabled.value && _isProcessing.value) return
         val s = chatSessionStore[sessionId] ?: return
         _activeChatSessionId.value = sessionId
         _chatMessages.value = s.messages.toList()
@@ -417,6 +590,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun deleteChatSession(sessionId: String) {
+        if (_codexEnabled.value && _isProcessing.value) return
         if (!chatSessionStore.containsKey(sessionId)) return
         if (chatSessionStore.size <= 1) {
             // Keep at least one session available.
@@ -464,6 +638,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
      * Select a different model for code generation
      */
     fun selectModel(model: LLMModel) {
+        if (_codexEnabled.value && _isProcessing.value) return
         if (_isModelLoaded.value) {
             unloadModel()
         }
@@ -519,6 +694,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun openEditorFile(fileUri: String, fileName: String, content: String) {
+        if (_codexEnabled.value && _isProcessing.value) return
         _currentFileUri.value = fileUri
         _currentFileName.value = fileName
         _generatedCode.value = content
@@ -531,6 +707,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun openFolder(folderUri: String) {
+        if (_codexEnabled.value && _isProcessing.value) return
         _currentFolderUri.value = folderUri
         saveSettings()
         appendChat("assistant", "Opened folder workspace")
@@ -602,6 +779,9 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun clearChatSession() {
+        if (_codexEnabled.value && _isProcessing.value) return
+        val session = UUID.nameUUIDFromBytes("${_activeChatSessionId.value}|${_currentFolderUri.value}|${_selectedModel.value?.name}".toByteArray()).toString()
+        prefs.edit().remove("codex_thread_$session").apply()
         _chatMessages.value = emptyList()
         _pendingProposal.value = null
         streamingAssistantMessageId = null
@@ -884,6 +1064,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
      * Unload the current model from memory
      */
     fun unloadModel() {
+        if (_codexEnabled.value && _isProcessing.value) return
         viewModelScope.launch {
             try {
                 cancelGenerationInternal()
@@ -909,6 +1090,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
      */
     fun generateCode(prompt: String) {
         if (prompt.isBlank()) return
+        if (_codexEnabled.value) { generateWithCodex(prompt); return }
         val model = _selectedModel.value ?: return
         
         if (_currentFileName.value.isNullOrBlank()) {
@@ -1274,6 +1456,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     private suspend fun cancelGenerationInternal() {
+        answerCodexApproval(false)
         val activeJob = processingJob
         if (activeJob != null) {
             activeJob.cancel()

@@ -984,4 +984,28 @@
     <!-- Supertonic custom voice file import -->
     <string name="supertonic_import_voice">Stem-JSON importeren</string>
     <string name="supertonic_import_failed">Deze stem kon niet worden geïmporteerd. Kies een Supertonic 3-stemstijlbestand in JSON (maximaal 2 MB).</string>
+
+    <!-- Vibecode local Codex agent -->
+    <string name="vibe_codex_mode">Codex-modus</string>
+    <string name="vibe_codex_description">Gebruikt je geselecteerde lokale model zonder inloggen. Opdrachten worden uitgevoerd met Termux-rechten.</string>
+    <string name="vibe_codex_install">Codex installeren in Termux</string>
+    <string name="vibe_codex_install_help">Schakel opdrachten van externe apps in Termux in en installeer Codex voordat je begint.</string>
+    <string name="vibe_codex_installing">Codex wordt geïnstalleerd in Termux…</string>
+    <string name="vibe_codex_installed">Codex is geïnstalleerd. Je geselecteerde lokale model is klaar voor gebruik.</string>
+    <string name="vibe_codex_requirements">Vereist Android 10 of hoger en een ARM64-apparaat.</string>
+    <string name="vibe_codex_connection_error">Kan geen verbinding maken met Codex in Termux.</string>
+    <string name="vibe_codex_model_error">Het lokale model gaf geen geldig antwoord voor het hulpmiddel. Probeer een programmeermodel of een grotere context.</string>
+    <string name="vibe_codex_conflict">Het project is buiten Vibecode gewijzigd. Gegenereerde wijzigingen blijven in de Termux-werkruimte.</string>
+    <string name="vibe_codex_failed">Codex is mislukt. Controleer de Termux-instellingen, het lokale model en de app-logboeken.</string>
+    <string name="vibe_codex_folder_required">Open een werkruimtemap voordat je Codex gebruikt.</string>
+    <string name="vibe_codex_approval">Codex vraagt om goedkeuring</string>
+
+    <string name="vibe_codex_terminal">Terminal</string>
+    <string name="vibe_codex_running">Bezig</string>
+    <string name="vibe_codex_stopped">Gestopt</string>
+    <string name="vibe_codex_starting">Codex starten…</string>
+    <string name="vibe_codex_connecting">Verbinding maken met Codex…</string>
+    <string name="vibe_codex_staging">Projectbestanden voorbereiden…</string>
+    <string name="vibe_codex_generating">Het lokale model is bezig…</string>
+    <string name="vibe_codex_syncing">Projectwijzigingen toepassen…</string>
 </resources>

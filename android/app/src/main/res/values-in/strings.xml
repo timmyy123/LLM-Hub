@@ -1079,4 +1079,28 @@
     <!-- Supertonic custom voice file import -->
     <string name="supertonic_import_voice">Impor JSON suara</string>
     <string name="supertonic_import_failed">Tidak dapat mengimpor suara. Pilih file JSON gaya suara Supertonic 3 (maksimal 2 MB).</string>
+
+    <!-- Vibecode local Codex agent -->
+    <string name="vibe_codex_mode">Mode Codex</string>
+    <string name="vibe_codex_description">Menggunakan model lokal pilihan Anda tanpa login. Perintah berjalan dengan izin Termux.</string>
+    <string name="vibe_codex_install">Instal Codex di Termux</string>
+    <string name="vibe_codex_install_help">Aktifkan perintah aplikasi eksternal di Termux, lalu instal Codex sebelum memulai.</string>
+    <string name="vibe_codex_installing">Menginstal Codex di Termux…</string>
+    <string name="vibe_codex_installed">Codex sudah terinstal. Model lokal pilihan Anda siap digunakan.</string>
+    <string name="vibe_codex_requirements">Memerlukan Android 10 atau lebih baru dan perangkat ARM64.</string>
+    <string name="vibe_codex_connection_error">Tidak dapat terhubung ke Codex di Termux.</string>
+    <string name="vibe_codex_model_error">Model lokal tidak memberikan respons alat yang valid. Coba model pemrograman atau konteks yang lebih besar.</string>
+    <string name="vibe_codex_conflict">Proyek berubah di luar Vibecode. Perubahan yang dihasilkan tetap ada di ruang kerja Termux.</string>
+    <string name="vibe_codex_failed">Codex gagal. Periksa pengaturan Termux, model lokal, dan log aplikasi.</string>
+    <string name="vibe_codex_folder_required">Buka folder ruang kerja sebelum menggunakan Codex.</string>
+    <string name="vibe_codex_approval">Codex meminta persetujuan</string>
+
+    <string name="vibe_codex_terminal">Terminal</string>
+    <string name="vibe_codex_running">Berjalan</string>
+    <string name="vibe_codex_stopped">Dihentikan</string>
+    <string name="vibe_codex_starting">Memulai Codex…</string>
+    <string name="vibe_codex_connecting">Menghubungkan ke Codex…</string>
+    <string name="vibe_codex_staging">Menyiapkan berkas proyek…</string>
+    <string name="vibe_codex_generating">Model lokal sedang bekerja…</string>
+    <string name="vibe_codex_syncing">Menerapkan perubahan proyek…</string>
 </resources>

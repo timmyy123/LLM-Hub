@@ -1077,4 +1077,28 @@
     <!-- Supertonic custom voice file import -->
     <string name="supertonic_import_voice">ייבוא קול JSON</string>
     <string name="supertonic_import_failed">לא ניתן לייבא את הקול. בחרו קובץ JSON של סגנון קול Supertonic 3 (עד 2 MB).</string>
+
+    <!-- Vibecode local Codex agent -->
+    <string name="vibe_codex_mode">מצב Codex</string>
+    <string name="vibe_codex_description">משתמש במודל המקומי שבחרת ללא התחברות. פקודות מופעלות עם הרשאות Termux.</string>
+    <string name="vibe_codex_install">התקנת Codex ב-Termux</string>
+    <string name="vibe_codex_install_help">יש להפעיל פקודות מיישומים חיצוניים ב-Termux ולהתקין את Codex לפני ההתחלה.</string>
+    <string name="vibe_codex_installing">מתקין את Codex ב-Termux…</string>
+    <string name="vibe_codex_installed">Codex מותקן. המודל המקומי שבחרת מוכן לשימוש.</string>
+    <string name="vibe_codex_requirements">נדרשים Android 10 ואילך ומכשיר ARM64.</string>
+    <string name="vibe_codex_connection_error">לא ניתן להתחבר ל-Codex ב-Termux.</string>
+    <string name="vibe_codex_model_error">המודל המקומי לא החזיר תגובת כלי תקינה. נסה מודל תכנות או הקשר גדול יותר.</string>
+    <string name="vibe_codex_conflict">הפרויקט השתנה מחוץ ל-Vibecode. השינויים שנוצרו נשארים בסביבת העבודה של Termux.</string>
+    <string name="vibe_codex_failed">Codex נכשל. בדוק את הגדרות Termux, המודל המקומי ויומני היישום.</string>
+    <string name="vibe_codex_folder_required">יש לפתוח תיקיית עבודה לפני השימוש ב-Codex.</string>
+    <string name="vibe_codex_approval">Codex מבקש אישור</string>
+
+    <string name="vibe_codex_terminal">מסוף</string>
+    <string name="vibe_codex_running">פועל</string>
+    <string name="vibe_codex_stopped">נעצר</string>
+    <string name="vibe_codex_starting">מפעיל את Codex…</string>
+    <string name="vibe_codex_connecting">מתחבר ל-Codex…</string>
+    <string name="vibe_codex_staging">מכין את קובצי הפרויקט…</string>
+    <string name="vibe_codex_generating">המודל המקומי עובד…</string>
+    <string name="vibe_codex_syncing">מחיל שינויים בפרויקט…</string>
 </resources>

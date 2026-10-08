@@ -984,4 +984,28 @@
     <!-- Supertonic custom voice file import -->
     <string name="supertonic_import_voice">นำเข้าเสียง JSON</string>
     <string name="supertonic_import_failed">ไม่สามารถนำเข้าเสียงนี้ได้ เลือกไฟล์ JSON รูปแบบเสียง Supertonic 3 (สูงสุด 2 MB)</string>
+
+    <!-- Vibecode local Codex agent -->
+    <string name="vibe_codex_mode">โหมด Codex</string>
+    <string name="vibe_codex_description">ใช้โมเดลในเครื่องที่คุณเลือกโดยไม่ต้องเข้าสู่ระบบ คำสั่งทำงานด้วยสิทธิ์ของ Termux</string>
+    <string name="vibe_codex_install">ติดตั้ง Codex ใน Termux</string>
+    <string name="vibe_codex_install_help">เปิดใช้คำสั่งจากแอปภายนอกใน Termux แล้วติดตั้ง Codex ก่อนเริ่มต้น</string>
+    <string name="vibe_codex_installing">กำลังติดตั้ง Codex ใน Termux…</string>
+    <string name="vibe_codex_installed">ติดตั้ง Codex แล้ว โมเดลในเครื่องที่คุณเลือกพร้อมใช้งาน</string>
+    <string name="vibe_codex_requirements">ต้องใช้ Android 10 ขึ้นไปและอุปกรณ์ ARM64</string>
+    <string name="vibe_codex_connection_error">เชื่อมต่อกับ Codex ใน Termux ไม่ได้</string>
+    <string name="vibe_codex_model_error">โมเดลในเครื่องไม่ได้ส่งการตอบกลับเครื่องมือที่ถูกต้อง ลองใช้โมเดลเขียนโค้ดหรือบริบทที่ใหญ่ขึ้น</string>
+    <string name="vibe_codex_conflict">โปรเจ็กต์ถูกเปลี่ยนแปลงภายนอก Vibecode การแก้ไขที่สร้างขึ้นยังอยู่ในพื้นที่ทำงาน Termux</string>
+    <string name="vibe_codex_failed">Codex ทำงานไม่สำเร็จ ตรวจสอบการตั้งค่า Termux โมเดลในเครื่อง และบันทึกของแอป</string>
+    <string name="vibe_codex_folder_required">เปิดโฟลเดอร์พื้นที่ทำงานก่อนใช้ Codex</string>
+    <string name="vibe_codex_approval">Codex ขอการอนุมัติ</string>
+
+    <string name="vibe_codex_terminal">เทอร์มินัล</string>
+    <string name="vibe_codex_running">กำลังทำงาน</string>
+    <string name="vibe_codex_stopped">หยุดแล้ว</string>
+    <string name="vibe_codex_starting">กำลังเริ่ม Codex…</string>
+    <string name="vibe_codex_connecting">กำลังเชื่อมต่อกับ Codex…</string>
+    <string name="vibe_codex_staging">กำลังเตรียมไฟล์โปรเจ็กต์…</string>
+    <string name="vibe_codex_generating">โมเดลในเครื่องกำลังทำงาน…</string>
+    <string name="vibe_codex_syncing">กำลังนำการเปลี่ยนแปลงไปใช้กับโปรเจ็กต์…</string>
 </resources>

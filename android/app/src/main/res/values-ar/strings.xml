@@ -1077,4 +1077,28 @@
     <!-- Supertonic custom voice file import -->
     <string name="supertonic_import_voice">استيراد ملف صوت JSON</string>
     <string name="supertonic_import_failed">تعذّر استيراد الصوت. اختر ملف نمط صوت Supertonic 3 بصيغة JSON (بحد أقصى 2 ميغابايت).</string>
+
+    <!-- Vibecode local Codex agent -->
+    <string name="vibe_codex_mode">وضع Codex</string>
+    <string name="vibe_codex_description">يستخدم نموذجك المحلي المحدد دون تسجيل الدخول. تُنفذ الأوامر بأذونات Termux.</string>
+    <string name="vibe_codex_install">تثبيت Codex في Termux</string>
+    <string name="vibe_codex_install_help">فعّل أوامر التطبيقات الخارجية في Termux، ثم ثبّت Codex قبل البدء.</string>
+    <string name="vibe_codex_installing">جارٍ تثبيت Codex في Termux…</string>
+    <string name="vibe_codex_installed">تم تثبيت Codex. نموذجك المحلي المحدد جاهز للاستخدام.</string>
+    <string name="vibe_codex_requirements">يتطلب Android 10 أو أحدث وجهاز ARM64.</string>
+    <string name="vibe_codex_connection_error">تعذر الاتصال بـ Codex في Termux.</string>
+    <string name="vibe_codex_model_error">لم يُرجع النموذج المحلي استجابة صالحة للأداة. جرّب نموذج برمجة أو سياقًا أكبر.</string>
+    <string name="vibe_codex_conflict">تغير المشروع خارج Vibecode. تبقى التعديلات المُنشأة في مساحة عمل Termux.</string>
+    <string name="vibe_codex_failed">فشل Codex. تحقق من إعداد Termux والنموذج المحلي وسجلات التطبيق.</string>
+    <string name="vibe_codex_folder_required">افتح مجلد مساحة عمل قبل استخدام Codex.</string>
+    <string name="vibe_codex_approval">يطلب Codex الموافقة</string>
+
+    <string name="vibe_codex_terminal">الطرفية</string>
+    <string name="vibe_codex_running">قيد التشغيل</string>
+    <string name="vibe_codex_stopped">متوقف</string>
+    <string name="vibe_codex_starting">جارٍ بدء Codex…</string>
+    <string name="vibe_codex_connecting">جارٍ الاتصال بـ Codex…</string>
+    <string name="vibe_codex_staging">جارٍ تجهيز ملفات المشروع…</string>
+    <string name="vibe_codex_generating">النموذج المحلي يعمل…</string>
+    <string name="vibe_codex_syncing">جارٍ تطبيق تغييرات المشروع…</string>
 </resources>

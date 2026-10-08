@@ -1077,4 +1077,28 @@
     <!-- Supertonic custom voice file import -->
     <string name="supertonic_import_voice">وارد کردن فایل JSON صدا</string>
     <string name="supertonic_import_failed">وارد کردن صدا ممکن نشد. یک فایل JSON سبک صدای Supertonic 3 انتخاب کنید (حداکثر ۲ مگابایت).</string>
+
+    <!-- Vibecode local Codex agent -->
+    <string name="vibe_codex_mode">حالت Codex</string>
+    <string name="vibe_codex_description">از مدل محلی انتخابی شما بدون ورود استفاده می‌کند. فرمان‌ها با مجوزهای Termux اجرا می‌شوند.</string>
+    <string name="vibe_codex_install">نصب Codex در Termux</string>
+    <string name="vibe_codex_install_help">فرمان‌های برنامه‌های خارجی را در Termux فعال کنید و پیش از شروع Codex را نصب کنید.</string>
+    <string name="vibe_codex_installing">در حال نصب Codex در Termux…</string>
+    <string name="vibe_codex_installed">Codex نصب شد. مدل محلی انتخابی شما آماده استفاده است.</string>
+    <string name="vibe_codex_requirements">به Android 10 یا جدیدتر و دستگاه ARM64 نیاز دارد.</string>
+    <string name="vibe_codex_connection_error">اتصال به Codex در Termux ممکن نشد.</string>
+    <string name="vibe_codex_model_error">مدل محلی پاسخ ابزار معتبری نداد. یک مدل برنامه‌نویسی یا زمینه بزرگ‌تر را امتحان کنید.</string>
+    <string name="vibe_codex_conflict">پروژه خارج از Vibecode تغییر کرده است. ویرایش‌های تولیدشده در فضای کاری Termux باقی می‌مانند.</string>
+    <string name="vibe_codex_failed">Codex ناموفق بود. تنظیمات Termux، مدل محلی و گزارش‌های برنامه را بررسی کنید.</string>
+    <string name="vibe_codex_folder_required">پیش از استفاده از Codex یک پوشه کاری باز کنید.</string>
+    <string name="vibe_codex_approval">Codex درخواست تأیید دارد</string>
+
+    <string name="vibe_codex_terminal">پایانه</string>
+    <string name="vibe_codex_running">در حال اجرا</string>
+    <string name="vibe_codex_stopped">متوقف شد</string>
+    <string name="vibe_codex_starting">در حال راه‌اندازی Codex…</string>
+    <string name="vibe_codex_connecting">در حال اتصال به Codex…</string>
+    <string name="vibe_codex_staging">در حال آماده‌سازی فایل‌های پروژه…</string>
+    <string name="vibe_codex_generating">مدل محلی در حال کار است…</string>
+    <string name="vibe_codex_syncing">در حال اعمال تغییرات پروژه…</string>
 </resources>

@@ -1081,4 +1081,28 @@
     <!-- Supertonic custom voice file import -->
     <string name="supertonic_import_voice">Importuj głos JSON</string>
     <string name="supertonic_import_failed">Nie udało się zaimportować głosu. Wybierz plik JSON stylu głosu Supertonic 3 (maksymalnie 2 MB).</string>
+
+    <!-- Vibecode local Codex agent -->
+    <string name="vibe_codex_mode">Tryb Codex</string>
+    <string name="vibe_codex_description">Używa wybranego modelu lokalnego bez logowania. Polecenia działają z uprawnieniami Termux.</string>
+    <string name="vibe_codex_install">Zainstaluj Codex w Termux</string>
+    <string name="vibe_codex_install_help">Włącz polecenia aplikacji zewnętrznych w Termux, a następnie zainstaluj Codex przed rozpoczęciem.</string>
+    <string name="vibe_codex_installing">Instalowanie Codex w Termux…</string>
+    <string name="vibe_codex_installed">Codex jest zainstalowany. Wybrany model lokalny jest gotowy do użycia.</string>
+    <string name="vibe_codex_requirements">Wymaga Androida 10 lub nowszego i urządzenia ARM64.</string>
+    <string name="vibe_codex_connection_error">Nie można połączyć się z Codex w Termux.</string>
+    <string name="vibe_codex_model_error">Model lokalny nie zwrócił prawidłowej odpowiedzi narzędzia. Wypróbuj model do programowania lub większy kontekst.</string>
+    <string name="vibe_codex_conflict">Projekt zmienił się poza Vibecode. Wygenerowane zmiany pozostają w obszarze roboczym Termux.</string>
+    <string name="vibe_codex_failed">Codex nie powiódł się. Sprawdź konfigurację Termux, model lokalny i dzienniki aplikacji.</string>
+    <string name="vibe_codex_folder_required">Otwórz folder roboczy przed użyciem Codex.</string>
+    <string name="vibe_codex_approval">Codex prosi o zatwierdzenie</string>
+
+    <string name="vibe_codex_terminal">Terminal</string>
+    <string name="vibe_codex_running">W trakcie</string>
+    <string name="vibe_codex_stopped">Zatrzymano</string>
+    <string name="vibe_codex_starting">Uruchamianie Codex…</string>
+    <string name="vibe_codex_connecting">Łączenie z Codex…</string>
+    <string name="vibe_codex_staging">Przygotowywanie plików projektu…</string>
+    <string name="vibe_codex_generating">Model lokalny pracuje…</string>
+    <string name="vibe_codex_syncing">Wprowadzanie zmian w projekcie…</string>
 </resources>

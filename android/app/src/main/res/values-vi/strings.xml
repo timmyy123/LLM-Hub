@@ -984,4 +984,28 @@
     <!-- Supertonic custom voice file import -->
     <string name="supertonic_import_voice">Nhập giọng JSON</string>
     <string name="supertonic_import_failed">Không thể nhập giọng này. Chọn tệp JSON kiểu giọng Supertonic 3 (tối đa 2 MB).</string>
+
+    <!-- Vibecode local Codex agent -->
+    <string name="vibe_codex_mode">Chế độ Codex</string>
+    <string name="vibe_codex_description">Dùng mô hình cục bộ đã chọn mà không cần đăng nhập. Lệnh chạy với quyền của Termux.</string>
+    <string name="vibe_codex_install">Cài Codex trong Termux</string>
+    <string name="vibe_codex_install_help">Bật lệnh từ ứng dụng bên ngoài trong Termux rồi cài Codex trước khi bắt đầu.</string>
+    <string name="vibe_codex_installing">Đang cài Codex trong Termux…</string>
+    <string name="vibe_codex_installed">Đã cài Codex. Mô hình cục bộ đã chọn đã sẵn sàng.</string>
+    <string name="vibe_codex_requirements">Yêu cầu Android 10 trở lên và thiết bị ARM64.</string>
+    <string name="vibe_codex_connection_error">Không thể kết nối với Codex trong Termux.</string>
+    <string name="vibe_codex_model_error">Mô hình cục bộ không trả về phản hồi công cụ hợp lệ. Hãy thử mô hình lập trình hoặc ngữ cảnh lớn hơn.</string>
+    <string name="vibe_codex_conflict">Dự án đã thay đổi bên ngoài Vibecode. Các chỉnh sửa được tạo vẫn nằm trong không gian làm việc Termux.</string>
+    <string name="vibe_codex_failed">Codex thất bại. Kiểm tra thiết lập Termux, mô hình cục bộ và nhật ký ứng dụng.</string>
+    <string name="vibe_codex_folder_required">Mở thư mục làm việc trước khi dùng Codex.</string>
+    <string name="vibe_codex_approval">Codex yêu cầu phê duyệt</string>
+
+    <string name="vibe_codex_terminal">Thiết bị đầu cuối</string>
+    <string name="vibe_codex_running">Đang chạy</string>
+    <string name="vibe_codex_stopped">Đã dừng</string>
+    <string name="vibe_codex_starting">Đang khởi động Codex…</string>
+    <string name="vibe_codex_connecting">Đang kết nối với Codex…</string>
+    <string name="vibe_codex_staging">Đang chuẩn bị tệp dự án…</string>
+    <string name="vibe_codex_generating">Mô hình cục bộ đang làm việc…</string>
+    <string name="vibe_codex_syncing">Đang áp dụng thay đổi cho dự án…</string>
 </resources>

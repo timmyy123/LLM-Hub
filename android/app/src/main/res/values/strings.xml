@@ -1095,4 +1095,28 @@
     <!-- Supertonic custom voice file import -->
     <string name="supertonic_import_voice">Import voice JSON</string>
     <string name="supertonic_import_failed">Could not import this voice. Choose a Supertonic 3 voice-style JSON file (maximum 2 MB).</string>
+
+    <!-- Vibecode local Codex agent -->
+    <string name="vibe_codex_mode">Codex mode</string>
+    <string name="vibe_codex_description">Uses your selected local model without login. Commands run with Termux permissions.</string>
+    <string name="vibe_codex_install">Install Codex in Termux</string>
+    <string name="vibe_codex_install_help">Enable external app commands in Termux, then install Codex before starting.</string>
+    <string name="vibe_codex_installing">Installing Codex in Termux…</string>
+    <string name="vibe_codex_installed">Codex is installed. Your selected local model is ready to use.</string>
+    <string name="vibe_codex_requirements">Requires Android 10 or later and an ARM64 device.</string>
+    <string name="vibe_codex_connection_error">Could not connect to Codex in Termux.</string>
+    <string name="vibe_codex_model_error">The local model did not return a valid tool response. Try a coding model or a larger context.</string>
+    <string name="vibe_codex_conflict">The project changed outside Vibecode. Generated edits remain in the Termux workspace.</string>
+    <string name="vibe_codex_failed">Codex failed. Check Termux setup, the local model, and the app logs.</string>
+    <string name="vibe_codex_folder_required">Open a workspace folder before using Codex.</string>
+    <string name="vibe_codex_approval">Codex requests approval</string>
+
+    <string name="vibe_codex_terminal">Terminal</string>
+    <string name="vibe_codex_running">Running</string>
+    <string name="vibe_codex_stopped">Stopped</string>
+    <string name="vibe_codex_starting">Starting Codex…</string>
+    <string name="vibe_codex_connecting">Connecting to Codex…</string>
+    <string name="vibe_codex_staging">Preparing project files…</string>
+    <string name="vibe_codex_generating">Local model is working…</string>
+    <string name="vibe_codex_syncing">Applying project changes…</string>
 </resources>
