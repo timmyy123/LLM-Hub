@@ -1007,4 +1007,14 @@
     <string name="gguf_vulkan_setting">מנוע GPU של GGUF</string>
     <string name="crash_recovery_title">האפליקציה נסגרה באופן בלתי צפוי</string>
     <string name="crash_recovery_message">אפשר לנסות לטעון מודל קטן יותר או להשתמש במעבד.</string>
+    <string name="memory_multimodal_hint">מודל ההטמעה הזה מבין גם תמונות ושמע. טקסט בתיבה למעלה נשמר כהערה יחד עם המדיה.</string>
+    <string name="memory_upload_image">העלאת תמונה</string>
+    <string name="memory_upload_audio">העלאת שמע</string>
+    <string name="memory_record_audio">הקלטת שמע</string>
+    <string name="memory_stop_recording">עצירה</string>
+    <string name="memory_media_saved">נשמר בזיכרון הגלובלי</string>
+    <string name="memory_media_failed">לא ניתן להוסיף את הקובץ לזיכרון</string>
+    <string name="memory_mic_permission_denied">נדרשת הרשאת מיקרופון כדי להקליט</string>
+    <string name="memory_type_image">זיכרון תמונה</string>
+    <string name="memory_type_audio">זיכרון שמע</string>
 </resources>

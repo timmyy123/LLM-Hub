@@ -4135,6 +4135,27 @@ public static let models: [AIModel] = [
             "https://huggingface.co/litert-community/embeddinggemma-300m/resolve/29888fcee3216acadc7e844906e5fe0d79a61875/sentencepiece.model?download=true"
         ]
     ),
+
+    // MARK: - EmbeddingGemma 2 740M LiteRT-LM — Multimodal Embedding Model
+
+    AIModel(
+        id: "embeddinggemma-2-740m-litertlm",
+        name: "EmbeddingGemma 2 740M",
+        description: "Google EmbeddingGemma 2 multimodal embedding model (LiteRT-LM). Maps text, images and audio into one space, so memory can store and search recorded or uploaded audio and images alongside text. (485 MB)",
+        url: "https://huggingface.co/litert-community/embeddinggemma-2-740m-litert-lm/resolve/24d962e906c7d332c6428e71c9676855024569e2/embeddinggemma-2-740m.litertlm?download=true",
+        category: .embedding,
+        sizeBytes: 484_622_336,
+        source: "Google / LiteRT Community",
+        supportsVision: true,
+        supportsAudio: true,
+        supportsThinking: false,
+        supportsGpu: true,
+        supportsMtp: false,
+        requirements: ModelRequirements(minRamGB: 3, recommendedRamGB: 4),
+        contextWindowSize: 8192,
+        modelFormat: .litertlm,
+        additionalFiles: []
+    ),
     AIModel(
         id: "svd_i2v_xt_1.0_q6p_q8p.ckpt",
         name: "Stable Video Diffusion (XT)",

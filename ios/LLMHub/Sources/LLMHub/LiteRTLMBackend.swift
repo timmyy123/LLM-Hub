@@ -70,8 +70,7 @@ final class LiteRTLMBackend {
         ExperimentalFlags.enableSpeculativeDecoding = supportsMtp
         ExperimentalFlags.enableBenchmark = true
 
-        let caps = Capabilities(modelPath: path)
-        let fileHasMtp = caps?.hasSpeculativeDecodingSupport() ?? false
+        let fileHasMtp = ModelInfo(modelPath: path)?.llm?.hasSpeculativeDecodingSupport() ?? false
         print("ℹ️ [LiteRTLMBackend] loadModel path=\(path) vision=\(supportsVision) audio=\(supportsAudio) maxTokens=\(String(describing: maxTokens)) supportsMtp=\(supportsMtp) fileHasMtp=\(fileHasMtp) is12B=\(isGemma4_12B)")
 
         let config = try EngineConfig(

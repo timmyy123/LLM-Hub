@@ -15,11 +15,21 @@ import com.google.ai.edge.localagents.rag.models.EmbedData
 import com.google.common.collect.ImmutableList
 
 interface EmbeddingService {
-    suspend fun generateEmbedding(text: String): FloatArray?
+    /** [isQuery] selects the retrieval-query vs. document task prefix on models that use them. */
+    suspend fun generateEmbedding(text: String, isQuery: Boolean = true): FloatArray?
     suspend fun isInitialized(): Boolean
     suspend fun initialize(): Boolean
     fun cleanup()
     fun getCurrentModelName(): String?
+
+    val supportsImageEmbedding: Boolean get() = false
+    val supportsAudioEmbedding: Boolean get() = false
+
+    /**
+     * Embed an image or audio clip (WAV bytes), optionally together with a text [note],
+     * into the same vector space as text. Returns null on models without multimodal support.
+     */
+    suspend fun generateMediaEmbedding(image: ByteArray? = null, audio: ByteArray? = null, note: String? = null): FloatArray? = null
 }
 
 /**
@@ -144,7 +154,7 @@ class MediaPipeEmbeddingService(
         // Fallback to any available downloaded Gecko model (exclude tokenizer)
         if (modelsDir.exists()) {
             embeddingModels
-                .filter { !it.name.contains("Tokenizer") && !it.name.contains("SentencePiece") }
+                .filter { it.modelFormat == "tflite" && !it.name.contains("Tokenizer") && !it.name.contains("SentencePiece") }
                 .forEach { model ->
                     val modelFile = File(modelsDir, model.localFileName())
                     if (modelFile.exists()) {
@@ -158,7 +168,7 @@ class MediaPipeEmbeddingService(
         return Pair(null, null)
     }
     
-    override suspend fun generateEmbedding(text: String): FloatArray? = withContext(Dispatchers.IO) {
+    override suspend fun generateEmbedding(text: String, isQuery: Boolean): FloatArray? = withContext(Dispatchers.IO) {
         if (!isInitialized) {
             Log.w(TAG, "Gecko embedder not initialized, attempting to initialize...")
             if (!initialize()) {

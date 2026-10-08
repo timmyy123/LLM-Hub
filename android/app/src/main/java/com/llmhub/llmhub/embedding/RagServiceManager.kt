@@ -29,6 +29,7 @@ class RagServiceManager(
     private var embeddingService: EmbeddingService? = null
     private var ragService: RagService? = null
     private var isInitialized = false
+    private var initializedModelName: String? = null
     private val initMutex = Mutex()
     private val TAG = "RagServiceManager"
     private var initializationJob: Job? = null
@@ -57,11 +58,21 @@ class RagServiceManager(
         initializationJob = CoroutineScope(Dispatchers.IO).launch {
             try {
                 initMutex.withLock {
-                    if (isInitialized) return@withLock
-                    
                     // Get selected embedding model from user preferences
                     val themePreferences = ThemePreferences(context)
                     val selectedEmbeddingModel = themePreferences.selectedEmbeddingModel.first()
+
+                    if (isInitialized && selectedEmbeddingModel == initializedModelName) return@withLock
+                    if (isInitialized) {
+                        Log.i(TAG, "Embedding model changed from $initializedModelName to $selectedEmbeddingModel - reloading")
+                        embeddingService?.cleanup()
+                        embeddingService = null
+                        ragService = null
+                        isInitialized = false
+                        initializedModelName = null
+                        synchronized(populatedChats) { populatedChats.clear() }
+                        synchronized(searchCacheLock) { searchCache.clear() }
+                    }
                     
                     Log.d(TAG, "Initializing RAG service with embedding model: ${selectedEmbeddingModel ?: "disabled"}")
                     
@@ -75,11 +86,19 @@ class RagServiceManager(
                     
                     // Initialize embedding service with selected model
                     Log.i(TAG, "🔧 Initializing RAG service with embedding model: $selectedEmbeddingModel")
-                    val embeddingService = MediaPipeEmbeddingService(context, selectedEmbeddingModel)
+                    val selectedModel = com.llmhub.llmhub.data.ModelData.models.find {
+                        it.category == "embedding" && it.name == selectedEmbeddingModel
+                    }
+                    val embeddingService: EmbeddingService = if (selectedModel?.modelFormat == "litertlm") {
+                        LiteRtLmEmbeddingService(context, selectedModel)
+                    } else {
+                        MediaPipeEmbeddingService(context, selectedEmbeddingModel)
+                    }
                     if (embeddingService.initialize()) {
                         this@RagServiceManager.embeddingService = embeddingService
                         this@RagServiceManager.ragService = InMemoryRagService(embeddingService)
                         isInitialized = true
+                        initializedModelName = selectedEmbeddingModel
                         Log.i(TAG, "✅ RAG service initialized successfully with embedding model: $selectedEmbeddingModel")
                         Log.i(TAG, "🔍 Document uploads will now use embeddings for semantic search")
                     } else {
@@ -107,17 +126,34 @@ class RagServiceManager(
      * Generate an embedding for the given text using the initialized embedding service.
      * Returns null if the embedding service is not available.
      */
-    suspend fun generateEmbedding(text: String): FloatArray? {
+    suspend fun generateEmbedding(text: String, isQuery: Boolean = true): FloatArray? {
         initMutex.withLock {
             val svc = embeddingService ?: return null
             return try {
-                svc.generateEmbedding(text)
+                svc.generateEmbedding(text, isQuery)
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to generate embedding via manager: ${e.message}")
                 null
             }
         }
     }
+
+    /** Embed an image (JPEG/PNG) or audio clip (WAV) with an optional note; null if unsupported. */
+    suspend fun generateMediaEmbedding(image: ByteArray? = null, audio: ByteArray? = null, note: String? = null): FloatArray? {
+        initMutex.withLock {
+            val svc = embeddingService ?: return null
+            return try {
+                svc.generateMediaEmbedding(image, audio, note)
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to generate media embedding via manager: ${e.message}")
+                null
+            }
+        }
+    }
+
+    suspend fun supportsImageEmbedding(): Boolean = initMutex.withLock { embeddingService?.supportsImageEmbedding == true }
+
+    suspend fun supportsAudioEmbedding(): Boolean = initMutex.withLock { embeddingService?.supportsAudioEmbedding == true }
     
     /**
      * Check if RAG service is ready to use
@@ -461,6 +497,7 @@ class RagServiceManager(
             embeddingService = null
             ragService = null
             isInitialized = false
+            initializedModelName = null
             Log.d(TAG, "RAG service cleaned up")
         } catch (e: Exception) {
             Log.e(TAG, "Error during cleanup", e)

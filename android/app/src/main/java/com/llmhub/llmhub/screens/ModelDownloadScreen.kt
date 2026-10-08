@@ -45,6 +45,7 @@ import androidx.compose.ui.res.stringResource
 import com.llmhub.llmhub.R
 import com.llmhub.llmhub.data.ModelRequirements
 import com.llmhub.llmhub.data.DeviceInfo
+import com.llmhub.llmhub.data.ModelData
 import com.llmhub.llmhub.LlmHubApplication
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -92,6 +93,7 @@ private fun shouldShowNpuBadge(model: LLMModel): Boolean {
         "gguf" -> is8Gen4Device()
         // QNN models (listed + imported) on 8 Gen 1/2/3/4-class devices
         "qnn_npu" -> is8GenFamilyDeviceForQnn()
+        "litertlm" -> ModelData.isEmbeddingGemma2NpuModel(model)
         else -> false
     }
 }

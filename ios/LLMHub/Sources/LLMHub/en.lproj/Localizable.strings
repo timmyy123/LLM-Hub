@@ -936,3 +936,15 @@
 "prompt_template" = "Prompt Template";
 "edit_prompt_template" = "Edit Prompt Template";
 "prompt_template_none" = "None (Default)";
+
+/* Multimodal memory */
+"memory_multimodal_hint" = "This embedding model also understands images and audio. Any text in the box above is saved as a note with the media.";
+"memory_upload_image" = "Upload image";
+"memory_upload_audio" = "Upload audio";
+"memory_record_audio" = "Record audio";
+"memory_stop_recording" = "Stop";
+"memory_media_saved" = "Saved to global memory";
+"memory_media_failed" = "Couldn't add this file to memory";
+"memory_mic_permission_denied" = "Microphone permission is required to record audio";
+"memory_type_image" = "Image memory";
+"memory_type_audio" = "Audio memory";

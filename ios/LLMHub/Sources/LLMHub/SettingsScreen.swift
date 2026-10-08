@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import PhotosUI
 
 // MARK: - Settings Screen (mirroring Android SettingsScreen.kt)
 struct SettingsScreen: View {
@@ -359,8 +360,14 @@ struct MemoryManagerSheet: View {
     @State private var isSaving = false
     @State private var showChatImport = false
     @State private var editingDocument: MemoryDocument? = nil
+    @State private var photoItem: PhotosPickerItem? = nil
+    @State private var showAudioImporter = false
+    @State private var recordingURL: URL? = nil
     @StateObject private var memoryStore = MemoryStore.shared
     @StateObject private var ragManager = RagServiceManager.shared
+    @StateObject private var memoryRecorder = AudioRecorder()
+
+    private static let maxRecordingSeconds: UInt64 = 60
 
     var body: some View {
         NavigationView {
@@ -453,6 +460,10 @@ struct MemoryManagerSheet: View {
                                 .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.white.opacity(0.16), lineWidth: 1))
                         }
                         .padding(.horizontal)
+
+                        if ragManager.supportsImageMemory || ragManager.supportsAudioMemory {
+                            mediaMemorySection
+                        }
 
                         // Status
                         if let msg = statusMessage {
@@ -563,8 +574,157 @@ struct MemoryManagerSheet: View {
                 EditMemorySheet(document: doc, onDismiss: { editingDocument = nil })
                     .environmentObject(settings)
             }
+            .onChange(of: photoItem) { _, item in
+                guard let item else { return }
+                photoItem = nil
+                Task {
+                    guard let raw = try? await item.loadTransferable(type: Data.self),
+                          let jpeg = jpegForEmbedding(raw) else {
+                        statusMessage = settings.localized("memory_media_failed")
+                        return
+                    }
+                    saveMedia(type: MemoryMedia.typeImage, data: jpeg, fileName: "image_\(Int(Date().timeIntervalSince1970)).jpg")
+                }
+            }
+            .onDisappear { memoryRecorder.cancelRecording() }
         }
     }
+
+    // MARK: - Image / audio memories (multimodal embedding models)
+
+    private var mediaMemorySection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(settings.localized("memory_multimodal_hint"))
+                .font(.caption).foregroundColor(.white.opacity(0.7))
+            HStack(spacing: 12) {
+                if ragManager.supportsImageMemory {
+                    let imageTitle = settings.localized("memory_upload_image")
+                    PhotosPicker(selection: $photoItem, matching: .images) {
+                        MemoryMediaButtonLabel(title: imageTitle, systemImage: "photo")
+                    }
+                    .disabled(isSaving || memoryRecorder.isRecording)
+                }
+                if ragManager.supportsAudioMemory {
+                    Button { showAudioImporter = true } label: {
+                        MemoryMediaButtonLabel(title: settings.localized("memory_upload_audio"), systemImage: "waveform")
+                    }
+                    .disabled(isSaving || memoryRecorder.isRecording)
+                    .fileImporter(isPresented: $showAudioImporter, allowedContentTypes: [.audio], allowsMultipleSelection: false) { result in
+                        guard case .success(let urls) = result, let url = urls.first else { return }
+                        importAudio(from: url, fileName: url.lastPathComponent)
+                    }
+                }
+            }
+            if ragManager.supportsAudioMemory {
+                Button { toggleRecording() } label: {
+                    Label(
+                        settings.localized(memoryRecorder.isRecording ? "memory_stop_recording" : "memory_record_audio"),
+                        systemImage: memoryRecorder.isRecording ? "stop.fill" : "mic.fill"
+                    )
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(memoryRecorder.isRecording ? Color.red.opacity(0.8) : ApolloPalette.accentStrong)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+                .disabled(isSaving || memoryRecorder.isPreparing)
+            }
+        }
+        .padding(.horizontal)
+    }
+
+    private func toggleRecording() {
+        if memoryRecorder.isRecording {
+            _ = memoryRecorder.stopRecording()
+            return
+        }
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("memory_recording_\(UUID().uuidString).wav")
+        recordingURL = url
+        Task {
+            let started = await memoryRecorder.startRecording(outputURL: url, autoStopAfterSilence: false, isFloat32Wav: true) { finishedURL in
+                Task { @MainActor in
+                    let fileName = "recording_\(Int(Date().timeIntervalSince1970)).wav"
+                    if let data = try? Data(contentsOf: finishedURL) {
+                        saveMedia(type: MemoryMedia.typeAudio, data: MemoryMedia.trimWav(data), fileName: fileName)
+                    } else {
+                        statusMessage = settings.localized("memory_media_failed")
+                    }
+                    try? FileManager.default.removeItem(at: finishedURL)
+                }
+            }
+            guard started else {
+                statusMessage = settings.localized("memory_mic_permission_denied")
+                return
+            }
+            try? await Task.sleep(nanoseconds: Self.maxRecordingSeconds * 1_000_000_000)
+            if memoryRecorder.isRecording, recordingURL == url {
+                _ = memoryRecorder.stopRecording()
+            }
+        }
+    }
+
+    private func importAudio(from url: URL, fileName: String) {
+        isSaving = true
+        Task {
+            let wavURL = await Task.detached(priority: .userInitiated) {
+                prepareGemmaAudioInput(from: url, destinationDirectory: FileManager.default.temporaryDirectory, filePrefix: "memory_audio")
+            }.value
+            guard let wavURL, let data = try? Data(contentsOf: wavURL) else {
+                isSaving = false
+                statusMessage = settings.localized("memory_media_failed")
+                return
+            }
+            try? FileManager.default.removeItem(at: wavURL)
+            isSaving = false
+            saveMedia(type: MemoryMedia.typeAudio, data: MemoryMedia.trimWav(data), fileName: fileName)
+        }
+    }
+
+    private func saveMedia(type: String, data: Data, fileName: String) {
+        isSaving = true
+        let note = pasteText
+        Task {
+            let ok = await RagServiceManager.shared.addGlobalMediaMemory(type: type, data: data, fileName: fileName, note: note)
+            isSaving = false
+            if ok {
+                statusMessage = settings.localized("memory_media_saved")
+                pasteText = ""
+            } else {
+                statusMessage = RagServiceManager.shared.embeddingNotReadyReason ?? settings.localized("memory_media_failed")
+            }
+        }
+    }
+}
+
+private struct MemoryMediaButtonLabel: View {
+    let title: String
+    let systemImage: String
+
+    var body: some View {
+        Label(title, systemImage: systemImage)
+            .foregroundColor(.white)
+            .lineLimit(1)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 10)
+            .background(.ultraThinMaterial)
+            .clipShape(Capsule())
+            .overlay(Capsule().stroke(Color.white.opacity(0.16), lineWidth: 1))
+    }
+}
+
+/// Decode any UIImage-supported format (HEIC, PNG, ...) and re-encode as a bounded JPEG,
+/// one of the two image formats LiteRT-LM accepts.
+private func jpegForEmbedding(_ data: Data, maxEdge: CGFloat = 1024) -> Data? {
+    guard let image = UIImage(data: data) else { return nil }
+    let scale = min(1, maxEdge / max(image.size.width, image.size.height))
+    let target = CGSize(width: (image.size.width * scale).rounded(), height: (image.size.height * scale).rounded())
+    let format = UIGraphicsImageRendererFormat.default()
+    format.scale = 1
+    let resized = UIGraphicsImageRenderer(size: target, format: format).image { _ in
+        image.draw(in: CGRect(origin: .zero, size: target))
+    }
+    return resized.jpegData(compressionQuality: 0.9)
 }
 
 // MARK: - MemoryDocumentRow
@@ -616,6 +776,8 @@ private struct MemoryDocumentRow: View {
         case "uploaded":    return settings.localized("global_memory_uploaded_by")
         case "pasted":      return settings.localized("global_memory_pasted_by")
         case "chat_import": return settings.localized("chat_imported_to_memory")
+        case MemoryMedia.typeImage: return settings.localized("memory_type_image")
+        case MemoryMedia.typeAudio: return settings.localized("memory_type_audio")
         default:            return doc.metadata
         }
     }

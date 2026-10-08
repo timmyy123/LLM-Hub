@@ -931,3 +931,15 @@
 "prompt_template" = "เทมเพลตพรอมต์";
 "edit_prompt_template" = "แก้ไขเทมเพลตพรอมต์";
 "prompt_template_none" = "ไม่มี (ค่าเริ่มต้น)";
+
+/* Multimodal memory */
+"memory_multimodal_hint" = "โมเดลเอ็มเบดดิงนี้เข้าใจรูปภาพและเสียงด้วย ข้อความในช่องด้านบนจะถูกบันทึกเป็นโน้ตพร้อมสื่อ";
+"memory_upload_image" = "อัปโหลดรูปภาพ";
+"memory_upload_audio" = "อัปโหลดเสียง";
+"memory_record_audio" = "บันทึกเสียง";
+"memory_stop_recording" = "หยุด";
+"memory_media_saved" = "บันทึกลงหน่วยความจำส่วนกลางแล้ว";
+"memory_media_failed" = "ไม่สามารถเพิ่มไฟล์นี้ลงในหน่วยความจำ";
+"memory_mic_permission_denied" = "ต้องได้รับอนุญาตใช้ไมโครโฟนเพื่อบันทึกเสียง";
+"memory_type_image" = "ความจำรูปภาพ";
+"memory_type_audio" = "ความจำเสียง";

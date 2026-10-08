@@ -924,3 +924,15 @@
 "prompt_template" = "Шаблон промпту";
 "edit_prompt_template" = "Редагувати шаблон промпту";
 "prompt_template_none" = "Немає (за замовчуванням)";
+
+/* Multimodal memory */
+"memory_multimodal_hint" = "Ця модель ембедингів розуміє також зображення та аудіо. Текст у полі вище збережеться як нотатка до файлу.";
+"memory_upload_image" = "Завантажити зображення";
+"memory_upload_audio" = "Завантажити аудіо";
+"memory_record_audio" = "Записати аудіо";
+"memory_stop_recording" = "Стоп";
+"memory_media_saved" = "Збережено в глобальній пам'яті";
+"memory_media_failed" = "Не вдалося додати файл до пам'яті";
+"memory_mic_permission_denied" = "Для запису потрібен доступ до мікрофона";
+"memory_type_image" = "Зображення в пам'яті";
+"memory_type_audio" = "Аудіо в пам'яті";

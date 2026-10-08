@@ -1355,7 +1355,7 @@ private struct IOS26TranscriberScreen: View {
                 visionAvailableCheck: nil,
                 writingMode: nil,
                 modelFilter: {
-                    ($0.modelFormat == .litertlm && $0.supportsAudio) || $0.isWhisperModel
+                    ($0.modelFormat == .litertlm && $0.supportsAudio && $0.isLanguageModel) || $0.isWhisperModel
                 },
                 onLoad: {
                     isModelLoading = true

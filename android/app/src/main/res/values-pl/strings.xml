@@ -1011,4 +1011,14 @@
     <string name="gguf_vulkan_setting">Silnik GPU GGUF</string>
     <string name="crash_recovery_title">Aplikacja została nieoczekiwanie zamknięta</string>
     <string name="crash_recovery_message">Spróbuj wczytać mniejszy model lub użyć procesora CPU.</string>
+    <string name="memory_multimodal_hint">Ten model embeddingów rozumie też obrazy i dźwięk. Tekst z pola powyżej zostanie zapisany jako notatka do pliku.</string>
+    <string name="memory_upload_image">Prześlij obraz</string>
+    <string name="memory_upload_audio">Prześlij audio</string>
+    <string name="memory_record_audio">Nagraj audio</string>
+    <string name="memory_stop_recording">Zatrzymaj</string>
+    <string name="memory_media_saved">Zapisano w pamięci globalnej</string>
+    <string name="memory_media_failed">Nie udało się dodać pliku do pamięci</string>
+    <string name="memory_mic_permission_denied">Do nagrywania wymagane jest uprawnienie mikrofonu</string>
+    <string name="memory_type_image">Wspomnienie obrazu</string>
+    <string name="memory_type_audio">Wspomnienie audio</string>
 </resources>

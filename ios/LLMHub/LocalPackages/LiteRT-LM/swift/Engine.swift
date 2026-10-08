@@ -79,7 +79,8 @@ public actor Engine {
       engineConfig.modelPath, backendStr, visionBackendStr, audioBackendStr)
 
     guard let settings else {
-      throw LiteRTLMError.engine(.failedToCreateSettings)
+      let errorMsg = LiteRTLMError.consumeLastError() ?? ""
+      throw LiteRTLMError.engine(.failedToCreateSettings(errorMsg))
     }
 
     defer { litert_lm_engine_settings_delete(settings) }
@@ -90,13 +91,28 @@ public actor Engine {
     if let cacheDir = engineConfig.cacheDir {
       litert_lm_engine_settings_set_cache_dir(settings, cacheDir)
     }
+    if let activationDataType = engineConfig.activationDataType {
+      let cActivationDataType: LiteRtLmActivationDataType
+      switch activationDataType {
+      case .float32:
+        cActivationDataType = kLiteRtLmActivationDataTypeFloat32
+      case .float16:
+        cActivationDataType = kLiteRtLmActivationDataTypeFloat16
+      case .int16:
+        cActivationDataType = kLiteRtLmActivationDataTypeInt16
+      case .int8:
+        cActivationDataType = kLiteRtLmActivationDataTypeInt8
+      }
+      litert_lm_engine_settings_set_activation_data_type(settings, cActivationDataType)
+    }
     if let loraRank = engineConfig.loraRank {
       litert_lm_engine_settings_set_lora_rank(settings, Int32(loraRank))
       if loraRank > 0 {
         var ranks = [Int32(loraRank)]
         let status = litert_lm_engine_settings_set_supported_lora_ranks(settings, &ranks, 1)
         guard status == 0 else {
-          throw LiteRTLMError.engine(.failedToSetSupportedLoraRanks)
+          let errorMsg = LiteRTLMError.consumeLastError() ?? ""
+          throw LiteRTLMError.engine(.failedToSetSupportedLoraRanks(errorMsg))
         }
       }
     }
@@ -106,7 +122,8 @@ public actor Engine {
         var ranks = [Int32(audioLoraRank)]
         let status = litert_lm_engine_settings_set_supported_audio_lora_ranks(settings, &ranks, 1)
         guard status == 0 else {
-          throw LiteRTLMError.engine(.failedToSetSupportedAudioLoraRanks)
+          let errorMsg = LiteRTLMError.consumeLastError() ?? ""
+          throw LiteRTLMError.engine(.failedToSetSupportedAudioLoraRanks(errorMsg))
         }
       }
     }
@@ -129,7 +146,8 @@ public actor Engine {
     }
 
     guard let engine = litert_lm_engine_create(settings) else {
-      throw LiteRTLMError.engine(.failedToCreateEngine)
+      let errorMsg = LiteRTLMError.consumeLastError() ?? ""
+      throw LiteRTLMError.engine(.failedToCreateEngine(errorMsg))
     }
 
     self.handle = engine
@@ -182,13 +200,15 @@ public actor Engine {
 
     let cSessionConfig = litert_lm_session_config_create()
     guard let cSessionConfig else {
-      throw LiteRTLMError.engine(.failedToCreateSessionConfig)
+      let errorMsg = LiteRTLMError.consumeLastError() ?? ""
+      throw LiteRTLMError.engine(.failedToCreateSessionConfig(errorMsg))
     }
     defer { litert_lm_session_config_delete(cSessionConfig) }
 
     if let samplerParams = conversationConfig.samplerConfig {
       guard let cSamplerParams = litert_lm_sampler_params_create(kLiteRtLmSamplerTypeTopP) else {
-        throw LiteRTLMError.engine(.failedToCreateSessionConfig)
+        let errorMsg = LiteRTLMError.consumeLastError() ?? ""
+        throw LiteRTLMError.engine(.failedToCreateSessionConfig(errorMsg))
       }
       defer { litert_lm_sampler_params_delete(cSamplerParams) }
 
@@ -203,19 +223,29 @@ public actor Engine {
     if let loraPath = conversationConfig.loraPath {
       let status = litert_lm_session_config_set_lora_path(cSessionConfig, loraPath)
       guard status == 0 else {
-        throw LiteRTLMError.engine(.failedToSetLoraPath)
+        let errorMsg = LiteRTLMError.consumeLastError() ?? ""
+        throw LiteRTLMError.engine(.failedToSetLoraPath(errorMsg))
       }
     }
 
     if let audioLoraPath = conversationConfig.audioLoraPath {
       let status = litert_lm_session_config_set_audio_lora_path(cSessionConfig, audioLoraPath)
       guard status == 0 else {
-        throw LiteRTLMError.engine(.failedToSetAudioLoraPath)
+        let errorMsg = LiteRTLMError.consumeLastError() ?? ""
+        throw LiteRTLMError.engine(.failedToSetAudioLoraPath(errorMsg))
       }
     }
 
+    if let enableSpeculativeDecoding =
+      conversationConfig.enableSpeculativeDecoding
+    {
+      litert_lm_session_config_set_enable_speculative_decoding(
+        cSessionConfig, enableSpeculativeDecoding)
+    }
+
     guard let cConversationConfig = litert_lm_conversation_config_create() else {
-      throw LiteRTLMError.engine(.failedToCreateConversationConfig)
+      let errorMsg = LiteRTLMError.consumeLastError() ?? ""
+      throw LiteRTLMError.engine(.failedToCreateConversationConfig(errorMsg))
     }
     defer { litert_lm_conversation_config_delete(cConversationConfig) }
 
@@ -228,6 +258,9 @@ public actor Engine {
     }
     if !messagesJsonStr.isEmpty {
       litert_lm_conversation_config_set_messages(cConversationConfig, messagesJsonStr)
+    }
+    if let chatTemplate = conversationConfig.chatTemplate {
+      litert_lm_conversation_config_set_prompt_template(cConversationConfig, chatTemplate)
     }
     if conversationConfig.enableResponseFormat {
       var providerType = kLiteRtLmConstraintProviderTypeLlGuidance
@@ -249,7 +282,8 @@ public actor Engine {
 
     if let thinkingConfig = conversationConfig.thinkingConfig {
       guard let cThinkingConfig = litert_lm_thinking_config_create() else {
-        throw LiteRTLMError.engine(.failedToCreateConversationConfig)
+        let errorMsg = LiteRTLMError.consumeLastError() ?? ""
+        throw LiteRTLMError.engine(.failedToCreateConversationConfig(errorMsg))
       }
       defer { litert_lm_thinking_config_delete(cThinkingConfig) }
       litert_lm_thinking_config_set_enable_thinking(cThinkingConfig, thinkingConfig.enableThinking)
@@ -262,7 +296,8 @@ public actor Engine {
       let conversationHandle = litert_lm_conversation_create(
         engineHandle, cConversationConfig)
     else {
-      throw LiteRTLMError.engine(.failedToCreateConversation)
+      let errorMsg = LiteRTLMError.consumeLastError() ?? ""
+      throw LiteRTLMError.engine(.failedToCreateConversation(errorMsg))
     }
 
     return Conversation(
@@ -294,7 +329,8 @@ public actor Engine {
       litert_lm_experimental_engine_update_gpu_enable_metal_residency_set(
         handle, enable)
     guard status == 0 else {
-      throw LiteRTLMError.engine(.failedToUpdateGPUEnableMetalResidencySet)
+      let errorMsg = LiteRTLMError.consumeLastError() ?? ""
+      throw LiteRTLMError.engine(.failedToUpdateGPUEnableMetalResidencySet(errorMsg))
     }
   }
 

@@ -924,3 +924,15 @@
 "prompt_template" = "الگوی پرامپت";
 "edit_prompt_template" = "ویرایش الگوی پرامپت";
 "prompt_template_none" = "هیچ‌کدام (پیش‌فرض)";
+
+/* Multimodal memory */
+"memory_multimodal_hint" = "این مدل امبدینگ تصویر و صدا را هم درک می‌کند. متن کادر بالا به‌عنوان یادداشت همراه رسانه ذخیره می‌شود.";
+"memory_upload_image" = "بارگذاری تصویر";
+"memory_upload_audio" = "بارگذاری صدا";
+"memory_record_audio" = "ضبط صدا";
+"memory_stop_recording" = "توقف";
+"memory_media_saved" = "در حافظه سراسری ذخیره شد";
+"memory_media_failed" = "افزودن این فایل به حافظه ممکن نشد";
+"memory_mic_permission_denied" = "برای ضبط صدا اجازه میکروفون لازم است";
+"memory_type_image" = "حافظه تصویری";
+"memory_type_audio" = "حافظه صوتی";

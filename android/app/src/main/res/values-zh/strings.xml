@@ -1015,4 +1015,14 @@
     <string name="gguf_vulkan_setting">GGUF GPU 后端</string>
     <string name="crash_recovery_title">应用意外关闭</string>
     <string name="crash_recovery_message">请尝试加载更小的模型或使用 CPU。</string>
+    <string name="memory_multimodal_hint">此嵌入模型也能理解图片和音频。上方输入框中的文字会作为备注与媒体一起保存。</string>
+    <string name="memory_upload_image">上传图片</string>
+    <string name="memory_upload_audio">上传音频</string>
+    <string name="memory_record_audio">录制音频</string>
+    <string name="memory_stop_recording">停止</string>
+    <string name="memory_media_saved">已保存到全局记忆</string>
+    <string name="memory_media_failed">无法将此文件添加到记忆</string>
+    <string name="memory_mic_permission_denied">录音需要麦克风权限</string>
+    <string name="memory_type_image">图片记忆</string>
+    <string name="memory_type_audio">音频记忆</string>
 </resources>

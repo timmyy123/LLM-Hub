@@ -1007,4 +1007,14 @@
     <string name="gguf_vulkan_setting">GGUF GPU 백엔드</string>
     <string name="crash_recovery_title">앱이 예기치 않게 종료되었습니다</string>
     <string name="crash_recovery_message">더 작은 모델을 로드하거나 CPU를 사용해 보세요.</string>
+    <string name="memory_multimodal_hint">이 임베딩 모델은 이미지와 오디오도 이해합니다. 위 입력란의 텍스트는 미디어와 함께 메모로 저장됩니다.</string>
+    <string name="memory_upload_image">이미지 업로드</string>
+    <string name="memory_upload_audio">오디오 업로드</string>
+    <string name="memory_record_audio">오디오 녹음</string>
+    <string name="memory_stop_recording">중지</string>
+    <string name="memory_media_saved">전역 메모리에 저장됨</string>
+    <string name="memory_media_failed">이 파일을 메모리에 추가할 수 없습니다</string>
+    <string name="memory_mic_permission_denied">오디오를 녹음하려면 마이크 권한이 필요합니다</string>
+    <string name="memory_type_image">이미지 메모리</string>
+    <string name="memory_type_audio">오디오 메모리</string>
 </resources>

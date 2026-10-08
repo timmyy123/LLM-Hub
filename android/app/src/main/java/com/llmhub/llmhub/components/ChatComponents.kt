@@ -16,6 +16,10 @@ import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.ui.input.pointer.changedToUp
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -1059,6 +1063,14 @@ fun MessageBubble(
                         !message.content.contains("---\n\n📄 **File Content**")) {
                         Spacer(modifier = Modifier.height(8.dp))
                     }
+                }
+
+                val memoryMedia = remember(message.referencedMedia) {
+                    com.llmhub.llmhub.data.MemoryMedia.decodeReferences(message.referencedMedia)
+                }
+                if (memoryMedia.isNotEmpty()) {
+                    ReferencedMemoryMediaList(memoryMedia)
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
                 
                 // Display text content - plain text without background (parse thinking/answer for LFM Thinking)
@@ -3057,6 +3069,245 @@ fun AudioMessageCard(
                 }
             }
         }
+    }
+}
+
+/**
+ * Image / audio global memories that were retrieved for an assistant reply.
+ */
+@Composable
+fun ReferencedMemoryMediaList(references: List<com.llmhub.llmhub.data.MemoryMedia.MediaReference>) {
+    val context = LocalContext.current
+    var fullScreenImage by remember { mutableStateOf<Uri?>(null) }
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+        references.forEach { ref ->
+            val file = com.llmhub.llmhub.data.MemoryMedia.mediaFile(context, ref.docId)
+            if (!file.exists()) return@forEach
+            when (ref.type) {
+                com.llmhub.llmhub.data.MemoryMedia.TYPE_IMAGE -> AsyncImage(
+                    model = ImageRequest.Builder(context).data(file).crossfade(true).build(),
+                    contentDescription = ref.fileName,
+                    modifier = Modifier
+                        .widthIn(max = 260.dp)
+                        .heightIn(max = 220.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable { fullScreenImage = Uri.fromFile(file) },
+                    contentScale = ContentScale.Fit
+                )
+                com.llmhub.llmhub.data.MemoryMedia.TYPE_AUDIO -> WaveformAudioPlayer(file = file, title = ref.fileName)
+            }
+        }
+    }
+    fullScreenImage?.let { uri ->
+        FullScreenImageViewer(imageUri = uri, onDismiss = { fullScreenImage = null })
+    }
+}
+
+/**
+ * Play/pause, real waveform with tap/drag-to-seek playhead, and position / duration.
+ */
+@Composable
+fun WaveformAudioPlayer(file: java.io.File, title: String? = null) {
+    var mediaPlayer by remember(file) { mutableStateOf<android.media.MediaPlayer?>(null) }
+    var isPlaying by remember(file) { mutableStateOf(false) }
+    var positionMs by remember(file) { mutableStateOf(0) }
+    var durationMs by remember(file) { mutableStateOf(0) }
+    var bars by remember(file) { mutableStateOf(List(48) { 0.25f }) }
+
+    LaunchedEffect(file) {
+        bars = withContext(kotlinx.coroutines.Dispatchers.IO) { extractFloatWavWaveform(file, 48) }
+        durationMs = withContext(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                android.media.MediaMetadataRetriever().run {
+                    setDataSource(file.absolutePath)
+                    val d = extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_DURATION)?.toIntOrNull() ?: 0
+                    release()
+                    d
+                }
+            } catch (_: Exception) { 0 }
+        }
+    }
+    DisposableEffect(file) {
+        onDispose {
+            mediaPlayer?.release()
+            mediaPlayer = null
+        }
+    }
+    LaunchedEffect(isPlaying) {
+        while (isPlaying) {
+            positionMs = mediaPlayer?.currentPosition ?: positionMs
+            kotlinx.coroutines.delay(50)
+        }
+    }
+
+    fun ensurePlayer(): android.media.MediaPlayer? {
+        mediaPlayer?.let { return it }
+        return try {
+            android.media.MediaPlayer().apply {
+                setDataSource(file.absolutePath)
+                prepare()
+                setOnCompletionListener {
+                    isPlaying = false
+                    positionMs = 0
+                    seekTo(0)
+                }
+            }.also {
+                mediaPlayer = it
+                if (it.duration > 0) durationMs = it.duration
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("WaveformAudioPlayer", "Failed to prepare ${file.name}: ${e.message}")
+            null
+        }
+    }
+
+    fun seekToFraction(fraction: Float) {
+        val player = ensurePlayer() ?: return
+        val target = (fraction.coerceIn(0f, 1f) * durationMs).toInt()
+        player.seekTo(target)
+        positionMs = target
+    }
+
+    Surface(
+        modifier = Modifier.widthIn(max = 360.dp),
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+    ) {
+        Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)) {
+            if (title != null) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(start = 8.dp, top = 2.dp)
+                )
+            }
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                IconButton(
+                    onClick = {
+                        val player = ensurePlayer() ?: return@IconButton
+                        if (isPlaying) {
+                            player.pause()
+                            isPlaying = false
+                        } else {
+                            player.start()
+                            isPlaying = true
+                        }
+                    },
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Icon(
+                        imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                        contentDescription = if (isPlaying) "Pause" else "Play",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+
+                val waveformColor = MaterialTheme.colorScheme.primary
+                val progress = if (durationMs > 0) (positionMs.toFloat() / durationMs).coerceIn(0f, 1f) else 0f
+                Canvas(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(40.dp)
+                        .pointerInput(file) {
+                            awaitEachGesture {
+                                val down = awaitFirstDown(requireUnconsumed = false)
+                                seekToFraction(down.position.x / size.width.toFloat())
+                                while (true) {
+                                    val event = awaitPointerEvent()
+                                    val change = event.changes.firstOrNull() ?: break
+                                    if (change.changedToUp()) {
+                                        change.consume()
+                                        break
+                                    }
+                                    if (change.pressed) {
+                                        change.consume()
+                                        seekToFraction(change.position.x / size.width.toFloat())
+                                    }
+                                }
+                            }
+                        }
+                ) {
+                    val barCount = bars.size
+                    val spacingPx = 3f
+                    val barWidth = ((size.width - spacingPx * (barCount - 1)) / barCount).coerceAtLeast(1f)
+                    val progressBars = progress * barCount
+                    for (i in 0 until barCount) {
+                        val height = (bars[i] * size.height).coerceIn(4f, size.height)
+                        drawRoundRect(
+                            color = if (i < progressBars) waveformColor else waveformColor.copy(alpha = 0.35f),
+                            topLeft = androidx.compose.ui.geometry.Offset(i * (barWidth + spacingPx), (size.height - height) / 2f),
+                            size = androidx.compose.ui.geometry.Size(barWidth, height),
+                            cornerRadius = androidx.compose.ui.geometry.CornerRadius(barWidth / 2f)
+                        )
+                    }
+                    if (progress > 0f) {
+                        val x = (progress * size.width).coerceIn(0f, size.width)
+                        drawLine(
+                            color = waveformColor,
+                            start = androidx.compose.ui.geometry.Offset(x, 0f),
+                            end = androidx.compose.ui.geometry.Offset(x, size.height),
+                            strokeWidth = 2.dp.toPx()
+                        )
+                    }
+                }
+
+                Text(
+                    text = "${formatTime(positionMs)} / ${formatTime(durationMs)}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+/** Peak amplitude per bar from a WAV file (float32 or PCM16), normalised to 0.12..1. */
+private fun extractFloatWavWaveform(file: java.io.File, barCount: Int): List<Float> {
+    val flat = List(barCount) { 0.25f }
+    return try {
+        val bytes = file.readBytes()
+        if (bytes.size <= 44) return flat
+        val buf = java.nio.ByteBuffer.wrap(bytes).order(java.nio.ByteOrder.LITTLE_ENDIAN)
+        val audioFormat = buf.getShort(20).toInt()
+        val bitsPerSample = buf.getShort(34).toInt()
+        var offset = 12
+        var dataStart = -1
+        var dataSize = 0
+        while (offset + 8 <= bytes.size) {
+            val id = String(bytes, offset, 4, Charsets.US_ASCII)
+            val size = buf.getInt(offset + 4)
+            if (id == "data") {
+                dataStart = offset + 8
+                dataSize = minOf(size, bytes.size - dataStart)
+                break
+            }
+            offset += 8 + size + (size and 1)
+        }
+        if (dataStart < 0 || dataSize <= 0) return flat
+        val isFloat = audioFormat == 3 || (audioFormat == -2 && bitsPerSample == 32)
+        val bytesPerSample = if (isFloat) 4 else 2
+        val samples = dataSize / bytesPerSample
+        if (samples <= 0) return flat
+        val perBar = (samples / barCount).coerceAtLeast(1)
+        val peaks = FloatArray(barCount)
+        for (i in 0 until samples) {
+            val pos = dataStart + i * bytesPerSample
+            val v = if (isFloat) kotlin.math.abs(buf.getFloat(pos)) else kotlin.math.abs(buf.getShort(pos) / 32768f)
+            val bar = (i / perBar).coerceAtMost(barCount - 1)
+            if (v > peaks[bar]) peaks[bar] = v
+        }
+        val max = peaks.maxOrNull() ?: 0f
+        if (max <= 0f) flat else peaks.map { (it / max * 0.88f + 0.12f).coerceIn(0.12f, 1f) }
+    } catch (e: Exception) {
+        flat
     }
 }
 

@@ -924,3 +924,15 @@
 "prompt_template" = "プロンプトテンプレート";
 "edit_prompt_template" = "プロンプトテンプレートを編集";
 "prompt_template_none" = "なし（デフォルト）";
+
+/* Multimodal memory */
+"memory_multimodal_hint" = "この埋め込みモデルは画像と音声も理解します。上の欄のテキストはメディアのメモとして保存されます。";
+"memory_upload_image" = "画像をアップロード";
+"memory_upload_audio" = "音声をアップロード";
+"memory_record_audio" = "音声を録音";
+"memory_stop_recording" = "停止";
+"memory_media_saved" = "グローバルメモリに保存しました";
+"memory_media_failed" = "このファイルをメモリに追加できませんでした";
+"memory_mic_permission_denied" = "録音にはマイクの許可が必要です";
+"memory_type_image" = "画像メモリ";
+"memory_type_audio" = "音声メモリ";

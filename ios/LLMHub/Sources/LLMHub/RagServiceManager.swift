@@ -18,6 +18,9 @@ final class RagServiceManager: ObservableObject {
     @Published private(set) var isReady: Bool = false
     @Published private(set) var statusMessage: String = ""
     @Published private(set) var isReembedding: Bool = false
+    /// True when the loaded embedding model can embed image / audio memories (EmbeddingGemma 2).
+    @Published private(set) var supportsImageMemory: Bool = false
+    @Published private(set) var supportsAudioMemory: Bool = false
 
     /// RAG is configured when an embedding model is selected (no separate toggle).
     var isConfigured: Bool {
@@ -52,6 +55,8 @@ final class RagServiceManager: ObservableObject {
             await embeddingService.cleanup()
             isReady = false
             initializedModelName = nil
+            supportsImageMemory = false
+            supportsAudioMemory = false
             statusMessage = AppSettings.shared.localized("embedding_disabled")
             return
         }
@@ -79,8 +84,39 @@ final class RagServiceManager: ObservableObject {
             return
         }
 
+        let modelFiles = (try? FileManager.default.contentsOfDirectory(at: modelDir, includingPropertiesForKeys: nil)) ?? []
+
+        if model.modelFormat == .litertlm {
+            guard let bundleURL = modelFiles.first(where: { $0.pathExtension.lowercased() == "litertlm" }) else {
+                print("❌ [RAG] initialize — no .litertlm file in \(modelDir.path)")
+                statusMessage = "Embedding model not downloaded."
+                return
+            }
+            do {
+                try await embeddingService.initializeLiteRTLM(
+                    modelID: modelId,
+                    modelPath: bundleURL.path,
+                    modelName: model.name,
+                    cacheDir: modelDir.path,
+                    supportsImage: model.supportsVision,
+                    supportsAudio: model.supportsAudio
+                )
+                initializedModelName = modelId
+                supportsImageMemory = model.supportsVision
+                supportsAudioMemory = model.supportsAudio
+                isReady = true
+                statusMessage = AppSettings.shared.localized("embedding_enabled")
+                await restoreGlobalMemory()
+            } catch {
+                isReady = false
+                statusMessage = "Failed to load embedding model: \(error.localizedDescription)"
+                print("❌ [RAG] initialize — LiteRT-LM FAILED: \(error.localizedDescription)")
+            }
+            return
+        }
+
         let tfliteURL: URL
-        if let found = (try? FileManager.default.contentsOfDirectory(at: modelDir, includingPropertiesForKeys: nil))?.first(where: { $0.pathExtension.lowercased() == "tflite" }) {
+        if let found = modelFiles.first(where: { $0.pathExtension.lowercased() == "tflite" }) {
             tfliteURL = found
         } else {
             print("❌ [RAG] initialize — no .tflite file in \(modelDir.path)")
@@ -96,6 +132,8 @@ final class RagServiceManager: ObservableObject {
             print("ℹ️ [RAG] initialize — calling embeddingService.initialize at \(tfliteURL.lastPathComponent)")
             try await embeddingService.initialize(modelID: modelId, modelPath: tfliteURL.path, modelName: model.name)
             initializedModelName = modelId
+            supportsImageMemory = false
+            supportsAudioMemory = false
             isReady = true
             statusMessage = AppSettings.shared.localized("embedding_enabled")
             print("✅ [RAG] initialize — SUCCESS, isReady=true")
@@ -192,6 +230,35 @@ final class RagServiceManager: ObservableObject {
         return true
     }
 
+    /// Save an image (JPEG/PNG) or 16 kHz mono WAV as a global memory, embedded directly by a
+    /// multimodal embedding model. `note` is stored with it and injected into prompts on retrieval.
+    func addGlobalMediaMemory(type: String, data: Data, fileName: String, note: String) async -> Bool {
+        guard isReady else {
+            print("⚠️ [Memory] addGlobalMediaMemory — BLOCKED (embedding model not ready)")
+            return false
+        }
+        let docId = "mem_\(UUID().uuidString)"
+        let url = MemoryMedia.fileURL(docId: docId)
+        do {
+            try data.write(to: url, options: .atomic)
+        } catch {
+            print("❌ [Memory] addGlobalMediaMemory — failed writing media: \(error.localizedDescription)")
+            return false
+        }
+        let doc = MemoryDocument(
+            id: docId,
+            fileName: fileName,
+            content: MemoryMedia.buildContent(type: type, fileName: fileName, note: note),
+            metadata: type
+        )
+        await ragService.addMediaDocument(chatId: globalMemoryChatId, content: doc.content, fileName: fileName, mediaType: type, mediaURL: url)
+        await ragService.embedAllPending(chatId: globalMemoryChatId, service: embeddingService)
+        memoryStore.appendDocument(doc)
+        populatedChatIds.removeAll()
+        print("✅ [Memory] addGlobalMediaMemory — \(type) \(fileName) (\(data.count) bytes)")
+        return true
+    }
+
     func clearGlobalMemory() async {
         print("ℹ️ [Memory] clearGlobalMemory — clearing all documents")
         await ragService.clear(chatId: globalMemoryChatId)
@@ -249,7 +316,7 @@ final class RagServiceManager: ObservableObject {
 
         for doc in memoryStore.documents {
             print("🔍 [Memory] reembedGlobalMemory — chunking doc: \(doc.fileName) (len=\(doc.content.count))")
-            await ragService.addRawDocument(chatId: globalMemoryChatId, content: doc.content, fileName: doc.fileName)
+            await addToGlobalPool(doc)
         }
         await ragService.embedAllPending(chatId: globalMemoryChatId, service: embeddingService)
         print("✅ [Memory] reembedGlobalMemory — DONE, all \(memoryStore.documents.count) documents re-embedded")
@@ -260,8 +327,11 @@ final class RagServiceManager: ObservableObject {
     private func restoreGlobalMemory() async {
         let docs = memoryStore.documents
         print("ℹ️ [Memory] restoreGlobalMemory — restoring \(docs.count) documents into RAG")
+        // Rebuild from scratch so a model switch never mixes vectors from two embedding spaces.
+        await ragService.clear(chatId: globalMemoryChatId)
+        populatedChatIds.removeAll()
         for doc in docs {
-            await ragService.addRawDocument(chatId: globalMemoryChatId, content: doc.content, fileName: doc.fileName)
+            await addToGlobalPool(doc)
         }
         if isReady {
             await ragService.embedAllPending(chatId: globalMemoryChatId, service: embeddingService)
@@ -269,6 +339,20 @@ final class RagServiceManager: ObservableObject {
             print("✅ [Memory] restoreGlobalMemory — embedded, total chunks=\(chunkCount)")
         } else {
             print("⚠️ [Memory] restoreGlobalMemory — chunked but NOT embedded (isReady=false)")
+        }
+    }
+
+    private func addToGlobalPool(_ doc: MemoryDocument) async {
+        if doc.isMedia {
+            await ragService.addMediaDocument(
+                chatId: globalMemoryChatId,
+                content: doc.content,
+                fileName: doc.fileName,
+                mediaType: doc.metadata,
+                mediaURL: MemoryMedia.fileURL(docId: doc.id)
+            )
+        } else {
+            await ragService.addRawDocument(chatId: globalMemoryChatId, content: doc.content, fileName: doc.fileName)
         }
     }
 

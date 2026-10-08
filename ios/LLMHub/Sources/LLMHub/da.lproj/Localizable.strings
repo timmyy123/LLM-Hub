@@ -931,3 +931,15 @@
 "prompt_template" = "Prompt-skabelon";
 "edit_prompt_template" = "Rediger prompt-skabelon";
 "prompt_template_none" = "Ingen (standard)";
+
+/* Multimodal memory */
+"memory_multimodal_hint" = "Denne embedding-model forstår også billeder og lyd. Tekst i feltet ovenfor gemmes som en note sammen med mediet.";
+"memory_upload_image" = "Upload billede";
+"memory_upload_audio" = "Upload lyd";
+"memory_record_audio" = "Optag lyd";
+"memory_stop_recording" = "Stop";
+"memory_media_saved" = "Gemt i global hukommelse";
+"memory_media_failed" = "Kunne ikke føje filen til hukommelsen";
+"memory_mic_permission_denied" = "Mikrofontilladelse kræves for at optage lyd";
+"memory_type_image" = "Billedminde";
+"memory_type_audio" = "Lydminde";

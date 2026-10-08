@@ -896,3 +896,15 @@
 "prompt_template" = "Prompt-Vorlage";
 "edit_prompt_template" = "Prompt-Vorlage bearbeiten";
 "prompt_template_none" = "Keine (Standard)";
+
+/* Multimodal memory */
+"memory_multimodal_hint" = "Dieses Embedding-Modell versteht auch Bilder und Audio. Text im Feld oben wird als Notiz zum Medium gespeichert.";
+"memory_upload_image" = "Bild hochladen";
+"memory_upload_audio" = "Audio hochladen";
+"memory_record_audio" = "Audio aufnehmen";
+"memory_stop_recording" = "Stopp";
+"memory_media_saved" = "Im globalen Speicher gesichert";
+"memory_media_failed" = "Diese Datei konnte nicht zum Speicher hinzugefügt werden";
+"memory_mic_permission_denied" = "Für Audioaufnahmen ist die Mikrofonberechtigung erforderlich";
+"memory_type_image" = "Bild-Erinnerung";
+"memory_type_audio" = "Audio-Erinnerung";

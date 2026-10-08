@@ -975,4 +975,14 @@ Du forsøger at sende et billede, men den nuværende model er **kun-tekst**:
     <string name="gguf_vulkan_setting">GGUF GPU-backend</string>
     <string name="crash_recovery_title">Appen lukkede uventet</string>
     <string name="crash_recovery_message">Prøv at indlæse en mindre model eller bruge CPU.</string>
+    <string name="memory_multimodal_hint">Denne embedding-model forstår også billeder og lyd. Tekst i feltet ovenfor gemmes som en note sammen med mediet.</string>
+    <string name="memory_upload_image">Upload billede</string>
+    <string name="memory_upload_audio">Upload lyd</string>
+    <string name="memory_record_audio">Optag lyd</string>
+    <string name="memory_stop_recording">Stop</string>
+    <string name="memory_media_saved">Gemt i global hukommelse</string>
+    <string name="memory_media_failed">Kunne ikke føje filen til hukommelsen</string>
+    <string name="memory_mic_permission_denied">Mikrofontilladelse kræves for at optage lyd</string>
+    <string name="memory_type_image">Billedminde</string>
+    <string name="memory_type_audio">Lydminde</string>
 </resources>

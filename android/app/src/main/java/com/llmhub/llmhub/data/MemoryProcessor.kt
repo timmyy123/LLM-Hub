@@ -162,6 +162,25 @@ class MemoryProcessor(private val context: Context, private val db: LlmHubDataba
         val processing = MutableStateFlow(false)
     }
 
+    /** Embed the stored image/audio; text-only embedding models fall back to the label + note. */
+    private suspend fun embedMedia(mgr: RagServiceManager, doc: MemoryDocument): FloatArray? {
+        val file = MemoryMedia.mediaFile(context, doc.id)
+        val canEmbedMedia = file.exists() && when (doc.metadata) {
+            MemoryMedia.TYPE_IMAGE -> mgr.supportsImageEmbedding()
+            MemoryMedia.TYPE_AUDIO -> mgr.supportsAudioEmbedding()
+            else -> false
+        }
+        if (!canEmbedMedia) return mgr.generateEmbedding(doc.content, isQuery = false)
+
+        val bytes = withContext(Dispatchers.IO) { file.readBytes() }
+        val note = MemoryMedia.noteFromContent(doc.content)
+        return if (doc.metadata == MemoryMedia.TYPE_IMAGE) {
+            mgr.generateMediaEmbedding(image = bytes, note = note)
+        } else {
+            mgr.generateMediaEmbedding(audio = bytes, note = note)
+        }
+    }
+
     fun processPending() {
         CoroutineScope(Dispatchers.IO).launch {
             // mark processor as running
@@ -182,8 +201,9 @@ class MemoryProcessor(private val context: Context, private val db: LlmHubDataba
                         // Ensure RAG/embedding initialized
                         val mgr = com.llmhub.llmhub.embedding.RagServiceManager.getInstance(context)
                         
-                        // Use the same smart chunking as chat documents for consistency
-                        val chunks = createSmartChunks(doc.content, maxChunkSize = 800, overlapSize = 100)
+                        val isMedia = MemoryMedia.isMediaType(doc.metadata)
+                        // Media memories are a single chunk: the label + note that chat prompts receive.
+                        val chunks = if (isMedia) listOf(doc.content) else createSmartChunks(doc.content, maxChunkSize = 800, overlapSize = 100)
                         val initJob = mgr.initializeAsync()
                         initJob.join()
 
@@ -197,7 +217,7 @@ class MemoryProcessor(private val context: Context, private val db: LlmHubDataba
                                             Log.w(TAG, "Skipping processing for deleted doc ${doc.id}")
                                             break
                                         }
-                                val emb = mgr.generateEmbedding(chunkText)
+                                val emb = if (isMedia) embedMedia(mgr, doc) else mgr.generateEmbedding(chunkText, isQuery = false)
                                 if (emb == null) {
                                     Log.w(TAG, "Failed to generate embedding for chunk $index of doc ${doc.id}")
                                     embeddingFailures++

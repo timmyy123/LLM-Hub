@@ -924,3 +924,15 @@
 "prompt_template" = "프롬프트 템플릿";
 "edit_prompt_template" = "프롬프트 템플릿 편집";
 "prompt_template_none" = "없음(기본값)";
+
+/* Multimodal memory */
+"memory_multimodal_hint" = "이 임베딩 모델은 이미지와 오디오도 이해합니다. 위 입력란의 텍스트는 미디어와 함께 메모로 저장됩니다.";
+"memory_upload_image" = "이미지 업로드";
+"memory_upload_audio" = "오디오 업로드";
+"memory_record_audio" = "오디오 녹음";
+"memory_stop_recording" = "중지";
+"memory_media_saved" = "전역 메모리에 저장됨";
+"memory_media_failed" = "이 파일을 메모리에 추가할 수 없습니다";
+"memory_mic_permission_denied" = "오디오를 녹음하려면 마이크 권한이 필요합니다";
+"memory_type_image" = "이미지 메모리";
+"memory_type_audio" = "오디오 메모리";

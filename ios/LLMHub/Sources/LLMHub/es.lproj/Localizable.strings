@@ -894,3 +894,15 @@
 "prompt_template" = "Plantilla de Prompt";
 "edit_prompt_template" = "Editar plantilla de prompt";
 "prompt_template_none" = "Ninguna (predeterminada)";
+
+/* Multimodal memory */
+"memory_multimodal_hint" = "Este modelo de embeddings también entiende imágenes y audio. El texto del cuadro de arriba se guarda como nota junto al archivo.";
+"memory_upload_image" = "Subir imagen";
+"memory_upload_audio" = "Subir audio";
+"memory_record_audio" = "Grabar audio";
+"memory_stop_recording" = "Detener";
+"memory_media_saved" = "Guardado en la memoria global";
+"memory_media_failed" = "No se pudo añadir este archivo a la memoria";
+"memory_mic_permission_denied" = "Se necesita permiso del micrófono para grabar audio";
+"memory_type_image" = "Memoria de imagen";
+"memory_type_audio" = "Memoria de audio";

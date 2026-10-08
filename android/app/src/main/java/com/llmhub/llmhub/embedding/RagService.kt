@@ -79,7 +79,7 @@ class InMemoryRagService(private val embeddingService: EmbeddingService) : RagSe
                     Log.d(TAG, "Skipping very short chunk $index of '$fileName' (len=${trimmedChunk.length})")
                     continue
                 }
-                val embedding = embeddingService.generateEmbedding(chunk)
+                val embedding = embeddingService.generateEmbedding(chunk, isQuery = false)
                 if (embedding != null) {
                     // Defensive copy: ensure we store our own copy of the embedding so
                     // downstream calls can't be affected if the embedder reuses internal buffers.
@@ -227,7 +227,10 @@ class InMemoryRagService(private val embeddingService: EmbeddingService) : RagSe
         }
         
         // Acceptance logic - MUST MATCH ChatViewModel criteria exactly
-        fun shouldAccept(similarity: Float, overlap: Double): Boolean {
+        fun shouldAccept(similarity: Float, overlap: Double, content: String): Boolean {
+            if (com.llmhub.llmhub.data.MemoryMedia.isMediaContent(content)) {
+                return similarity > com.llmhub.llmhub.data.MemoryMedia.MEDIA_SIMILARITY_THRESHOLD
+            }
             return if (isEmbeddingGemma) {
                 // EmbeddingGemma: trust semantic similarity more, need less lexical overlap
                 (similarity > 0.65f) ||  // High semantic alone
@@ -252,7 +255,7 @@ class InMemoryRagService(private val embeddingService: EmbeddingService) : RagSe
             val similarity = candidate.similarity
             val overlap = wordJaccard(query, candidate.content)
             
-            if (shouldAccept(similarity, overlap)) {
+            if (shouldAccept(similarity, overlap, candidate.content)) {
                 filtered.add(candidate)
             }
         }

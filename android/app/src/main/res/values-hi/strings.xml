@@ -1033,4 +1033,14 @@
     <string name="gguf_vulkan_setting">GGUF GPU बैकएंड</string>
     <string name="crash_recovery_title">ऐप अचानक बंद हो गया</string>
     <string name="crash_recovery_message">छोटा मॉडल लोड करें या CPU का इस्तेमाल करें।</string>
+    <string name="memory_multimodal_hint">यह एम्बेडिंग मॉडल चित्र और ऑडियो भी समझता है। ऊपर बॉक्स का टेक्स्ट मीडिया के साथ नोट के रूप में सहेजा जाता है।</string>
+    <string name="memory_upload_image">चित्र अपलोड करें</string>
+    <string name="memory_upload_audio">ऑडियो अपलोड करें</string>
+    <string name="memory_record_audio">ऑडियो रिकॉर्ड करें</string>
+    <string name="memory_stop_recording">रोकें</string>
+    <string name="memory_media_saved">ग्लोबल मेमोरी में सहेजा गया</string>
+    <string name="memory_media_failed">यह फ़ाइल मेमोरी में नहीं जोड़ी जा सकी</string>
+    <string name="memory_mic_permission_denied">ऑडियो रिकॉर्ड करने के लिए माइक्रोफ़ोन अनुमति आवश्यक है</string>
+    <string name="memory_type_image">चित्र मेमोरी</string>
+    <string name="memory_type_audio">ऑडियो मेमोरी</string>
 </resources>

@@ -1005,4 +1005,14 @@
     <string name="gguf_vulkan_setting">GGUF GPU altyapısı</string>
     <string name="crash_recovery_title">Uygulama beklenmedik şekilde kapandı</string>
     <string name="crash_recovery_message">Daha küçük bir model yüklemeyi veya CPU kullanmayı deneyin.</string>
+    <string name="memory_multimodal_hint">Bu embedding modeli görselleri ve sesi de anlar. Yukarıdaki kutudaki metin, medyayla birlikte not olarak kaydedilir.</string>
+    <string name="memory_upload_image">Görsel yükle</string>
+    <string name="memory_upload_audio">Ses yükle</string>
+    <string name="memory_record_audio">Ses kaydet</string>
+    <string name="memory_stop_recording">Durdur</string>
+    <string name="memory_media_saved">Genel belleğe kaydedildi</string>
+    <string name="memory_media_failed">Bu dosya belleğe eklenemedi</string>
+    <string name="memory_mic_permission_denied">Ses kaydı için mikrofon izni gerekli</string>
+    <string name="memory_type_image">Görsel anısı</string>
+    <string name="memory_type_audio">Ses anısı</string>
 </resources>

@@ -1022,4 +1022,14 @@
     <string name="gguf_vulkan_setting">GGUF GPU backend</string>
     <string name="crash_recovery_title">App closed unexpectedly</string>
     <string name="crash_recovery_message">Try loading a smaller model or using CPU.</string>
+    <string name="memory_multimodal_hint">This embedding model also understands images and audio. Any text in the box above is saved as a note with the media.</string>
+    <string name="memory_upload_image">Upload image</string>
+    <string name="memory_upload_audio">Upload audio</string>
+    <string name="memory_record_audio">Record audio</string>
+    <string name="memory_stop_recording">Stop</string>
+    <string name="memory_media_saved">Saved to global memory</string>
+    <string name="memory_media_failed">Couldn\'t add this file to memory</string>
+    <string name="memory_mic_permission_denied">Microphone permission is required to record audio</string>
+    <string name="memory_type_image">Image memory</string>
+    <string name="memory_type_audio">Audio memory</string>
 </resources>

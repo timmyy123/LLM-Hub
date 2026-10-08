@@ -1321,6 +1321,7 @@ class ChatViewModel(
                                         }
                                         try {
                                             val contextParts = mutableListOf<String>()
+                                            val injectedChunkContents = mutableListOf<String>()
 
                                             val memoryEnabledPref = themePreferences.memoryEnabled.first()
                                             val recentManualReset = System.currentTimeMillis() - lastSessionResetAt < 10000 // 10s
@@ -1358,6 +1359,7 @@ class ChatViewModel(
                                                         contextParts.addAll(globalChunks.take(3).map { chunk ->
                                                             chunk.content.trim()
                                                         })
+                                                        injectedChunkContents.addAll(globalChunks.take(3).map { it.content })
                                                         forcedInjectedGlobal = true
                                                     } else {
                                                         Log.d("ChatViewModel", "🔍 Forced injection: no global chunks available to inject")
@@ -1410,7 +1412,11 @@ class ChatViewModel(
                                                     val modelName = ragServiceManager.getCurrentEmbeddingModelName() ?: "Gecko"
                                                     val isEmbeddingGemma = modelName.contains("EmbeddingGemma", ignoreCase = true)
                                                     
-                                                    val shouldInject = if (isEmbeddingGemma) {
+                                                    val hasRelevantMedia = relevantChunks.any { chunk ->
+                                                        com.llmhub.llmhub.data.MemoryMedia.isMediaContent(chunk.content) &&
+                                                            chunk.similarity > com.llmhub.llmhub.data.MemoryMedia.MEDIA_SIMILARITY_THRESHOLD
+                                                    }
+                                                    val shouldInject = hasRelevantMedia || if (isEmbeddingGemma) {
                                                         // EmbeddingGemma: trust semantic similarity more, need less lexical overlap
                                                         // Match RagService primary=0.65, fallback=0.30, lexical=0.02
                                                         (topSimilarity > 0.65f ) ||  // High semantic alone
@@ -1427,6 +1433,7 @@ class ChatViewModel(
                                                         contextParts.addAll(relevantChunks.map { chunk ->
                                                             "📄 **${chunk.fileName}**:\n${chunk.content}"
                                                         })
+                                                        injectedChunkContents.addAll(relevantChunks.map { it.content })
                                                     } else {
                                                         Log.d("ChatViewModel", "ℹ️ Skipping document injection: similarity=${"%.3f".format(topSimilarity)}, overlap=${"%.3f".format(topOverlap)}, model=$modelName (below thresholds)")
                                                     }
@@ -1434,6 +1441,17 @@ class ChatViewModel(
                                             } else {
                                                 Log.d("ChatViewModel", "ℹ️ No documents available in chat $chatId for context search")
                                             }
+
+                                            val mediaRefs = withContext(Dispatchers.IO) {
+                                                com.llmhub.llmhub.data.MemoryMedia.referencesForChunks(
+                                                    com.llmhub.llmhub.data.LlmHubDatabase.getDatabase(context),
+                                                    injectedChunkContents
+                                                )
+                                            }
+                                            repository.updateMessageReferencedMedia(
+                                                placeholderId,
+                                                com.llmhub.llmhub.data.MemoryMedia.encodeReferences(mediaRefs)
+                                            )
 
                                             if (contextParts.isNotEmpty()) {
                                                 // Strong instruction: treat the following lines as confirmed user facts.

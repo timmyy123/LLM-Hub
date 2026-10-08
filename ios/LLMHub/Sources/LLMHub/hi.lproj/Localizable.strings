@@ -936,3 +936,15 @@
 "prompt_template" = "प्रॉम्प्ट टेम्पलेट";
 "edit_prompt_template" = "प्रॉम्प्ट टेम्पलेट संपादित करें";
 "prompt_template_none" = "कोई नहीं (डिफ़ॉल्ट)";
+
+/* Multimodal memory */
+"memory_multimodal_hint" = "यह एम्बेडिंग मॉडल चित्र और ऑडियो भी समझता है। ऊपर बॉक्स का टेक्स्ट मीडिया के साथ नोट के रूप में सहेजा जाता है।";
+"memory_upload_image" = "चित्र अपलोड करें";
+"memory_upload_audio" = "ऑडियो अपलोड करें";
+"memory_record_audio" = "ऑडियो रिकॉर्ड करें";
+"memory_stop_recording" = "रोकें";
+"memory_media_saved" = "ग्लोबल मेमोरी में सहेजा गया";
+"memory_media_failed" = "यह फ़ाइल मेमोरी में नहीं जोड़ी जा सकी";
+"memory_mic_permission_denied" = "ऑडियो रिकॉर्ड करने के लिए माइक्रोफ़ोन अनुमति आवश्यक है";
+"memory_type_image" = "चित्र मेमोरी";
+"memory_type_audio" = "ऑडियो मेमोरी";

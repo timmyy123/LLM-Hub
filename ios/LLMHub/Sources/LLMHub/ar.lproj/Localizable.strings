@@ -924,3 +924,15 @@
 "prompt_template" = "قالب التوجيه";
 "edit_prompt_template" = "تعديل قالب التوجيه";
 "prompt_template_none" = "بلا (افتراضي)";
+
+/* Multimodal memory */
+"memory_multimodal_hint" = "يفهم نموذج التضمين هذا الصور والصوت أيضًا. يُحفظ أي نص في المربع أعلاه كملاحظة مع الوسائط.";
+"memory_upload_image" = "رفع صورة";
+"memory_upload_audio" = "رفع صوت";
+"memory_record_audio" = "تسجيل صوت";
+"memory_stop_recording" = "إيقاف";
+"memory_media_saved" = "تم الحفظ في الذاكرة العامة";
+"memory_media_failed" = "تعذّرت إضافة هذا الملف إلى الذاكرة";
+"memory_mic_permission_denied" = "يلزم إذن الميكروفون لتسجيل الصوت";
+"memory_type_image" = "ذاكرة صورة";
+"memory_type_audio" = "ذاكرة صوت";

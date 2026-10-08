@@ -1010,4 +1010,14 @@
     <string name="gguf_vulkan_setting">Motor GPU de GGUF</string>
     <string name="crash_recovery_title">La app se cerró inesperadamente</string>
     <string name="crash_recovery_message">Prueba a cargar un modelo más pequeño o a usar la CPU.</string>
+    <string name="memory_multimodal_hint">Este modelo de embeddings también entiende imágenes y audio. El texto del cuadro de arriba se guarda como nota junto al archivo.</string>
+    <string name="memory_upload_image">Subir imagen</string>
+    <string name="memory_upload_audio">Subir audio</string>
+    <string name="memory_record_audio">Grabar audio</string>
+    <string name="memory_stop_recording">Detener</string>
+    <string name="memory_media_saved">Guardado en la memoria global</string>
+    <string name="memory_media_failed">No se pudo añadir este archivo a la memoria</string>
+    <string name="memory_mic_permission_denied">Se necesita permiso del micrófono para grabar audio</string>
+    <string name="memory_type_image">Memoria de imagen</string>
+    <string name="memory_type_audio">Memoria de audio</string>
 </resources>

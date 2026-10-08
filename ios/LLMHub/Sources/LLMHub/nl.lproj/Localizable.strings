@@ -931,3 +931,15 @@
 "prompt_template" = "Prompt-sjabloon";
 "edit_prompt_template" = "Prompt-sjabloon bewerken";
 "prompt_template_none" = "Geen (standaard)";
+
+/* Multimodal memory */
+"memory_multimodal_hint" = "Dit embeddingmodel begrijpt ook afbeeldingen en audio. Tekst in het vak hierboven wordt als notitie bij de media opgeslagen.";
+"memory_upload_image" = "Afbeelding uploaden";
+"memory_upload_audio" = "Audio uploaden";
+"memory_record_audio" = "Audio opnemen";
+"memory_stop_recording" = "Stoppen";
+"memory_media_saved" = "Opgeslagen in globaal geheugen";
+"memory_media_failed" = "Kon dit bestand niet aan het geheugen toevoegen";
+"memory_mic_permission_denied" = "Microfoontoestemming is nodig om audio op te nemen";
+"memory_type_image" = "Afbeeldingsherinnering";
+"memory_type_audio" = "Audioherinnering";

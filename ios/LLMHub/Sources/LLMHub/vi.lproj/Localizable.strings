@@ -931,3 +931,15 @@
 "prompt_template" = "Mẫu Prompt";
 "edit_prompt_template" = "Chỉnh sửa mẫu prompt";
 "prompt_template_none" = "Không có (Mặc định)";
+
+/* Multimodal memory */
+"memory_multimodal_hint" = "Mô hình embedding này cũng hiểu hình ảnh và âm thanh. Văn bản trong ô phía trên được lưu làm ghi chú kèm tệp.";
+"memory_upload_image" = "Tải ảnh lên";
+"memory_upload_audio" = "Tải âm thanh lên";
+"memory_record_audio" = "Ghi âm";
+"memory_stop_recording" = "Dừng";
+"memory_media_saved" = "Đã lưu vào bộ nhớ chung";
+"memory_media_failed" = "Không thể thêm tệp này vào bộ nhớ";
+"memory_mic_permission_denied" = "Cần quyền micrô để ghi âm";
+"memory_type_image" = "Bộ nhớ hình ảnh";
+"memory_type_audio" = "Bộ nhớ âm thanh";

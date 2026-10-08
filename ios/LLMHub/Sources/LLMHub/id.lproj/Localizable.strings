@@ -924,3 +924,15 @@
 "prompt_template" = "Template Prompt";
 "edit_prompt_template" = "Edit Template Prompt";
 "prompt_template_none" = "Tidak ada (Default)";
+
+/* Multimodal memory */
+"memory_multimodal_hint" = "Model embedding ini juga memahami gambar dan audio. Teks di kotak atas disimpan sebagai catatan bersama media.";
+"memory_upload_image" = "Unggah gambar";
+"memory_upload_audio" = "Unggah audio";
+"memory_record_audio" = "Rekam audio";
+"memory_stop_recording" = "Berhenti";
+"memory_media_saved" = "Disimpan ke memori global";
+"memory_media_failed" = "Tidak dapat menambahkan file ini ke memori";
+"memory_mic_permission_denied" = "Izin mikrofon diperlukan untuk merekam audio";
+"memory_type_image" = "Memori gambar";
+"memory_type_audio" = "Memori audio";

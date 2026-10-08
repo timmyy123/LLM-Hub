@@ -129,6 +129,12 @@ class ChatRepository(
     messageDao.updateMessage(msg.copy(content = safeContent))
     }
     
+    suspend fun updateMessageReferencedMedia(messageId: String, referencedMedia: String?) {
+        val msg = messageDao.getMessageById(messageId) ?: return
+        if (msg.referencedMedia == referencedMedia) return
+        messageDao.updateMessage(msg.copy(referencedMedia = referencedMedia))
+    }
+
     suspend fun updateMessageStats(messageId: String, tokenCount: Int, tokensPerSecond: Double) {
         val msg = messageDao.getMessageById(messageId) ?: return
         messageDao.updateMessage(msg.copy(tokenCount = tokenCount, tokensPerSecond = tokensPerSecond))

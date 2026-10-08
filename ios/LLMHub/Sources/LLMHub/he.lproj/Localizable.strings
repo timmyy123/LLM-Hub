@@ -924,3 +924,15 @@
 "prompt_template" = "תבנית הנחיה";
 "edit_prompt_template" = "עריכת תבנית הנחיה";
 "prompt_template_none" = "ללא (ברירת מחדל)";
+
+/* Multimodal memory */
+"memory_multimodal_hint" = "מודל ההטמעה הזה מבין גם תמונות ושמע. טקסט בתיבה למעלה נשמר כהערה יחד עם המדיה.";
+"memory_upload_image" = "העלאת תמונה";
+"memory_upload_audio" = "העלאת שמע";
+"memory_record_audio" = "הקלטת שמע";
+"memory_stop_recording" = "עצירה";
+"memory_media_saved" = "נשמר בזיכרון הגלובלי";
+"memory_media_failed" = "לא ניתן להוסיף את הקובץ לזיכרון";
+"memory_mic_permission_denied" = "נדרשת הרשאת מיקרופון כדי להקליט";
+"memory_type_image" = "זיכרון תמונה";
+"memory_type_audio" = "זיכרון שמע";

@@ -932,3 +932,15 @@
 "prompt_template" = "提示詞模板";
 "edit_prompt_template" = "編輯提示詞模板";
 "prompt_template_none" = "無（預設）";
+
+/* Multimodal memory */
+"memory_multimodal_hint" = "此嵌入模型也能理解圖片和音訊。上方輸入框中的文字會作為備註與媒體一起儲存。";
+"memory_upload_image" = "上傳圖片";
+"memory_upload_audio" = "上傳音訊";
+"memory_record_audio" = "錄製音訊";
+"memory_stop_recording" = "停止";
+"memory_media_saved" = "已儲存到全域記憶";
+"memory_media_failed" = "無法將此檔案加入記憶";
+"memory_mic_permission_denied" = "錄音需要麥克風權限";
+"memory_type_image" = "圖片記憶";
+"memory_type_audio" = "音訊記憶";

@@ -896,3 +896,15 @@
 "prompt_template" = "Шаблон промпта";
 "edit_prompt_template" = "Редактировать шаблон промпта";
 "prompt_template_none" = "Нет (по умолчанию)";
+
+/* Multimodal memory */
+"memory_multimodal_hint" = "Эта модель эмбеддингов понимает также изображения и аудио. Текст в поле выше сохранится как заметка к файлу.";
+"memory_upload_image" = "Загрузить изображение";
+"memory_upload_audio" = "Загрузить аудио";
+"memory_record_audio" = "Записать аудио";
+"memory_stop_recording" = "Стоп";
+"memory_media_saved" = "Сохранено в глобальной памяти";
+"memory_media_failed" = "Не удалось добавить файл в память";
+"memory_mic_permission_denied" = "Для записи нужен доступ к микрофону";
+"memory_type_image" = "Изображение в памяти";
+"memory_type_audio" = "Аудио в памяти";

@@ -1,6 +1,22 @@
 import Foundation
 
 // MARK: - Data Models
+
+/// An image/audio global memory that was retrieved for an assistant reply; shown under the reply.
+public struct ReferencedMemoryMedia: Identifiable, Equatable, Hashable, Sendable, Codable {
+    public let docId: String
+    public let type: String       // MemoryMedia.typeImage | MemoryMedia.typeAudio
+    public let fileName: String
+
+    public var id: String { docId }
+
+    public init(docId: String, type: String, fileName: String) {
+        self.docId = docId
+        self.type = type
+        self.fileName = fileName
+    }
+}
+
 public struct ChatMessage: Identifiable, Equatable, Sendable, Codable {
     public let id: UUID
     public var content: String
@@ -12,6 +28,7 @@ public struct ChatMessage: Identifiable, Equatable, Sendable, Codable {
     public var attachmentImagePath: String?
     public var attachmentAudioPath: String?
     public var attachmentDocumentName: String?   // display name of attached text document
+    public var referencedMedia: [ReferencedMemoryMedia]?
 
     public init(
         id: UUID = UUID(),

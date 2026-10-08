@@ -924,3 +924,15 @@
 "prompt_template" = "Prompt Şablonu";
 "edit_prompt_template" = "Prompt Şablonunu Düzenle";
 "prompt_template_none" = "Yok (Varsayılan)";
+
+/* Multimodal memory */
+"memory_multimodal_hint" = "Bu embedding modeli görselleri ve sesi de anlar. Yukarıdaki kutudaki metin, medyayla birlikte not olarak kaydedilir.";
+"memory_upload_image" = "Görsel yükle";
+"memory_upload_audio" = "Ses yükle";
+"memory_record_audio" = "Ses kaydet";
+"memory_stop_recording" = "Durdur";
+"memory_media_saved" = "Genel belleğe kaydedildi";
+"memory_media_failed" = "Bu dosya belleğe eklenemedi";
+"memory_mic_permission_denied" = "Ses kaydı için mikrofon izni gerekli";
+"memory_type_image" = "Görsel anısı";
+"memory_type_audio" = "Ses anısı";

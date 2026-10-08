@@ -979,4 +979,14 @@
     <string name="gguf_vulkan_setting">GPU-движок GGUF</string>
     <string name="crash_recovery_title">Приложение неожиданно закрылось</string>
     <string name="crash_recovery_message">Попробуйте загрузить модель меньшего размера или использовать ЦП.</string>
+    <string name="memory_multimodal_hint">Эта модель эмбеддингов понимает также изображения и аудио. Текст в поле выше сохранится как заметка к файлу.</string>
+    <string name="memory_upload_image">Загрузить изображение</string>
+    <string name="memory_upload_audio">Загрузить аудио</string>
+    <string name="memory_record_audio">Записать аудио</string>
+    <string name="memory_stop_recording">Стоп</string>
+    <string name="memory_media_saved">Сохранено в глобальной памяти</string>
+    <string name="memory_media_failed">Не удалось добавить файл в память</string>
+    <string name="memory_mic_permission_denied">Для записи нужен доступ к микрофону</string>
+    <string name="memory_type_image">Изображение в памяти</string>
+    <string name="memory_type_audio">Аудио в памяти</string>
 </resources>
