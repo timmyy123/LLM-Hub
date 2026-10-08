@@ -196,8 +196,6 @@ actor MediaSearchEngine {
         loadedModelId = nil
     }
 
-    var backendLabel: String? { get async { await service.activeBackendLabel } }
-
     func embedQuery(_ text: String) async -> [Float]? {
         let v = try? await service.embed(text, isQuery: true)
         return (v?.isEmpty ?? true) ? nil : v

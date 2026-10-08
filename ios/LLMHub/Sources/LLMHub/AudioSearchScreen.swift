@@ -37,7 +37,6 @@ final class AudioSearchModel: ObservableObject {
     @Published private(set) var isSearching = false
     @Published private(set) var isLoadingModel = false
     @Published private(set) var modelError = false
-    @Published private(set) var backendLabel: String? = nil
 
     private let engine = MediaSearchEngine()
     private let store = MediaIndexStore(name: "audio")
@@ -179,7 +178,6 @@ final class AudioSearchModel: ObservableObject {
         modelError = false
         do {
             try await engine.load(model: currentModel)
-            backendLabel = await engine.backendLabel
         } catch {
             modelError = true
         }
@@ -389,7 +387,6 @@ struct AudioSearchScreen: View {
             MediaSearchSettingsSheet(
                 selectedModelId: Binding(get: { selectedModel?.id ?? "" }, set: { selectedModelId = $0 }),
                 availableModels: downloadedModels,
-                backendLabel: model.backendLabel,
                 countText: String(format: settings.localized("audio_search_count"), model.progress.processed, model.items.count),
                 onClearAll: {
                     player.stop()
@@ -400,9 +397,11 @@ struct AudioSearchScreen: View {
                     showSettings = false
                     showImporter = true
                 } label: {
-                    Label(settings.localized("audio_search_import"), systemImage: "square.and.arrow.down")
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                    Text(settings.localized("audio_search_import"))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 50)
                 }
+                .liquidGlassPrimaryButton(cornerRadius: 12)
             }
             .environmentObject(settings)
         }

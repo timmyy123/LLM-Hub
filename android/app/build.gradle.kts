@@ -97,6 +97,13 @@ android {
         compose = true
         buildConfig = true
     }
+    sourceSets {
+        getByName("main") {
+            // QAIRT 2.50 libs extracted by extractLitertQnnLibs. Kept out of jniLibs because
+            // packaging excludes libQnn*.so (those names are also shipped, older, via assets).
+            assets.srcDir(layout.buildDirectory.dir("generated/qnnlibs_litert_assets").get().asFile)
+        }
+    }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.0"
     }
@@ -359,6 +366,8 @@ dependencies {
     implementation("com.google.ai.edge.litertlm:litertlm-android:0.18.0")
 
     // LiteRT NPU dispatch libraries for the SoC-specific EmbeddingGemma 2 .litertlm files.
+    // Qualcomm also needs QAIRT 2.50 (QNN system API 1.14). The libs in assets/qnnlibs are
+    // the older SD runtime (system API 1.5) and are extracted separately, not used here.
     implementation("com.google.ai.edge.litert:litert-npu-runtime-qualcomm:2.3.0")
     implementation("com.google.ai.edge.litert:litert-npu-runtime-mediatek:2.3.0")
     implementation("com.google.ai.edge.litert:litert-npu-runtime-google-tensor:2.3.0")
@@ -504,6 +513,44 @@ tasks.register("ensureAssetsForApk") {
             logger.lifecycle("Restoring cvtbase for APK build")
             cvtbaseHiddenDir.renameTo(cvtbaseDir)
         }
+    }
+}
+
+// QAIRT 2.50 for EmbeddingGemma 2 Qualcomm NPU models. LiteRT 2.3's dispatch requires QNN
+// system API 1.14.0, which this runtime reports. The older libs in assets/qnnlibs stay
+// for Stable Diffusion and are not used here.
+val litertQnnRuntime: Configuration by configurations.creating {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+    isTransitive = false
+}
+dependencies {
+    add("litertQnnRuntime", "com.qualcomm.qti:qnn-runtime:2.50.0")
+}
+val extractLitertQnnLibs = tasks.register<Copy>("extractLitertQnnLibs") {
+    from({ zipTree(litertQnnRuntime.singleFile) }) {
+        include(
+            "jni/arm64-v8a/libQnnSystem.so",
+            "jni/arm64-v8a/libQnnHtp.so",
+            "jni/arm64-v8a/libQnnHtpV73Skel.so",
+            "jni/arm64-v8a/libQnnHtpV73Stub.so",
+            "jni/arm64-v8a/libQnnHtpV75Skel.so",
+            "jni/arm64-v8a/libQnnHtpV75Stub.so",
+            "jni/arm64-v8a/libQnnHtpV79Skel.so",
+            "jni/arm64-v8a/libQnnHtpV79Stub.so",
+            "jni/arm64-v8a/libQnnHtpV81Skel.so",
+            "jni/arm64-v8a/libQnnHtpV81Stub.so"
+        )
+        eachFile {
+            path = name
+        }
+        includeEmptyDirs = false
+    }
+    into(layout.buildDirectory.dir("generated/qnnlibs_litert_assets/qnnlibs_litert"))
+}
+tasks.configureEach {
+    if (name.startsWith("merge") && name.contains("Assets")) {
+        dependsOn(extractLitertQnnLibs)
     }
 }
 

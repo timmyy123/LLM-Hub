@@ -7,7 +7,6 @@ import com.google.ai.edge.litertlm.EmbeddingEngine
 import com.google.ai.edge.litertlm.EmbeddingEngineConfig
 import com.google.ai.edge.litertlm.EmbeddingOptions
 import com.google.ai.edge.litertlm.InputData
-import com.google.android.play.core.assetpacks.AssetPackManagerFactory
 import com.llmhub.llmhub.data.DeviceInfo
 import com.llmhub.llmhub.data.LLMModel
 import com.llmhub.llmhub.data.ModelData
@@ -108,8 +107,10 @@ class LiteRtLmEmbeddingService(
     }
 
     /**
-     * Qualcomm dispatch loads the QNN HTP libraries from the directory it is given, but those
-     * libraries ship in the qnn_pack asset pack rather than the APK, so stage both together.
+     * Qualcomm dispatch loads QNN from the directory that contains libLiteRtDispatch_Qualcomm.so.
+     * LiteRT 2.3 requires QNN system API 1.14, which is QAIRT 2.50 in assets/qnnlibs_litert.
+     * The Stable Diffusion pack (assets/qnnlibs, system API 1.5) is a different runtime and
+     * must not be copied into this directory.
      */
     private fun prepareNpuLibraryDir(): String {
         val nativeDir = context.applicationInfo.nativeLibraryDir
@@ -118,24 +119,24 @@ class LiteRtLmEmbeddingService(
         val dispatchLib = File(nativeDir, "libLiteRtDispatch_Qualcomm.so")
         if (!dispatchLib.exists()) return nativeDir
         return try {
-            val dir = File(context.filesDir, "litert_npu_qnn").apply { mkdirs() }
+            val dir = File(context.filesDir, "litert_npu_qnn_250").apply { mkdirs() }
             copyIfChanged(dispatchLib, File(dir, dispatchLib.name))
-
-            val packAssets = AssetPackManagerFactory.getInstance(context)
-                .packLocations["qnn_pack"]?.assetsPath()?.let { File(it, "qnnlibs") }
-            if (packAssets?.isDirectory == true) {
-                packAssets.listFiles()?.forEach { copyIfChanged(it, File(dir, it.name)) }
+            val names = context.assets.list("qnnlibs_litert").orEmpty()
+            if (names.isEmpty()) {
+                Log.e(TAG, "QAIRT 2.50 libraries missing from assets/qnnlibs_litert")
+                nativeDir
             } else {
-                context.assets.list("qnnlibs")?.forEach { name ->
+                for (name in names) {
                     val target = File(dir, name)
-                    if (!target.exists()) {
-                        context.assets.open("qnnlibs/$name").use { input ->
-                            target.outputStream().use { input.copyTo(it) }
-                        }
+                    if (target.exists() && target.length() > 0L) continue
+                    context.assets.open("qnnlibs_litert/$name").use { input ->
+                        target.outputStream().use { input.copyTo(it) }
                     }
+                    target.setReadable(true, false)
+                    target.setExecutable(true, false)
                 }
+                dir.absolutePath
             }
-            dir.absolutePath
         } catch (e: Exception) {
             Log.w(TAG, "Failed to stage QNN libraries: ${e.message}")
             nativeDir

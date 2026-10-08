@@ -1,5 +1,6 @@
 package com.llmhub.llmhub.mediasearch
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -225,12 +226,15 @@ internal fun MediaSearchSettingsSheet(
                     Text(stringResource(R.string.media_search_library), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                     Text(libraryCountText, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     libraryActions()
-                    TextButton(
+                    OutlinedButton(
                         onClick = onClearAll,
-                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.error)
                     ) {
                         Icon(Icons.Default.DeleteSweep, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(6.dp))
+                        Spacer(Modifier.width(8.dp))
                         Text(stringResource(R.string.media_search_clear))
                     }
                 }

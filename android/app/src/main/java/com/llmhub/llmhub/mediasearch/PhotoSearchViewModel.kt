@@ -179,7 +179,7 @@ class PhotoSearchViewModel(application: Application) : MediaSearchViewModel(appl
                 byId[v.id]?.let { PhotoMatch(it, dot(query, v.vector)) }
             }
         }
-        scored.sortedByDescending { it.score }.take(MAX_RESULTS)
+        scored.filter { it.score >= MIN_SCORE }.sortedByDescending { it.score }.take(MAX_RESULTS)
     }
 
     private fun setSource(value: PhotoSource) {
@@ -297,5 +297,7 @@ class PhotoSearchViewModel(application: Application) : MediaSearchViewModel(appl
         const val KEY_SELECTED = "selected_uris"
         const val SAVE_EVERY = 20
         const val MAX_RESULTS = 120
+        /** Drop weak cosine matches so the grid is not filled with unrelated photos. */
+        const val MIN_SCORE = 0.30f
     }
 }
