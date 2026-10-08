@@ -11,8 +11,9 @@ import UniformTypeIdentifiers
 final class PhotoSearchModel: ObservableObject {
     enum Source: String { case none, allPhotos, selected }
 
-    /// Cosine floor. Weaker matches stay out of the grid so a search is not padded with unrelated photos.
-    static let minimumScore: Float = 0.30
+    /// A hit has to clear this cosine, and sit close to the best hit, or it stays out of the grid.
+    static let minimumScore: Float = 0.42
+    static let scoreGap: Float = 0.07
 
     /// "ph:<PHAsset localIdentifier>" for library items, "file:<name>" for imported copies.
     struct Item: Identifiable, Hashable {
@@ -296,14 +297,16 @@ final class PhotoSearchModel: ObservableObject {
 
     private func rank(_ query: [Float], excluding: String?) -> [Match] {
         let live = Set(items.map(\.id))
-            let videoIds = Set(items.filter(\.isVideo).map(\.id))
-            return store.all
+        let videoIds = Set(items.filter(\.isVideo).map(\.id))
+        let ranked = store.all
             .filter { $0.id != excluding && live.contains($0.id) }
             .map { Match(item: Item(id: $0.id, isVideo: videoIds.contains($0.id)), score: mediaDot(query, $0.vector)) }
-            .filter { $0.score >= PhotoSearchModel.minimumScore }
             .sorted { $0.score > $1.score }
             .prefix(120)
             .map { $0 }
+        guard let best = ranked.first?.score, best >= Self.minimumScore else { return [] }
+        let floor = max(Self.minimumScore, best - Self.scoreGap)
+        return ranked.filter { $0.score >= floor }
     }
 
     private func loadFrames(_ item: Item, maxEdge: CGFloat) async -> [Data] {
@@ -340,35 +343,120 @@ final class PhotoSearchModel: ObservableObject {
 
     private func startIndexing() {
         guard indexTask == nil || indexTask?.isCancelled == true, !isPaused, currentModel != nil else { return }
-        indexTask = Task {
-            defer { indexTask = nil }
-            await ensureEngine()
-            guard !modelError else { return }
+        let engine = engine
+        indexTask = Task.detached(priority: .utility) { [weak self] in
+            guard let self else { return }
+            await self.ensureEngine()
+            if await MainActor.run(body: { self.modelError }) {
+                await MainActor.run { self.indexTask = nil }
+                return
+            }
             var sinceSave = 0
-            while !Task.isCancelled && !isPaused {
-                let indexed = store.ids
-                let pending = items.filter { !indexed.contains($0.id) && !failed.contains($0.id) }
-                if pending.isEmpty { break }
-                for item in pending {
-                    if Task.isCancelled || isPaused { break }
-                    await Task.yield()
-                    let frames = await loadFrames(item, maxEdge: 512)
-                    if let vector = await engine.embedImages(frames), !frames.isEmpty {
-                        store.put(MediaVector(id: item.id, startMs: 0, endMs: 0, vector: vector))
-                    } else {
-                        failed.insert(item.id)
-                    }
-                    progress.processed = min(progress.processed + 1, progress.total)
-                    sinceSave += 1
-                    if sinceSave >= 20 {
-                        store.saveIfDirty()
-                        sinceSave = 0
-                    }
+            while !Task.isCancelled {
+                guard let job = await self.nextIndexJob() else { break }
+                if await MainActor.run(body: { self.isPaused }) { break }
+                let frames = await PhotoIndexFrames.load(job, maxEdge: 512)
+                let vector = await engine.embedImages(frames)
+                await self.recordIndex(job.id, vector: frames.isEmpty ? nil : vector)
+                sinceSave += 1
+                if sinceSave >= 20 {
+                    await MainActor.run { self.store.saveIfDirty() }
+                    sinceSave = 0
                 }
             }
-            store.saveIfDirty()
-            if !query.isEmpty { updateQuery(query) }
+            await MainActor.run {
+                self.store.saveIfDirty()
+                self.indexTask = nil
+                if !self.query.isEmpty { self.updateQuery(self.query) }
+            }
         }
+    }
+
+    private func nextIndexJob() -> IndexJob? {
+        let indexed = store.ids
+        guard let item = items.first(where: { !indexed.contains($0.id) && !failed.contains($0.id) }) else { return nil }
+        let path = item.id.hasPrefix("file:")
+            ? Self.importedDir.appendingPathComponent(String(item.id.dropFirst(5))).path
+            : nil
+        return IndexJob(id: item.id, isVideo: item.isVideo, filePath: path)
+    }
+
+    private func recordIndex(_ id: String, vector: [Float]?) {
+        if let vector, !vector.isEmpty {
+            store.put(MediaVector(id: id, startMs: 0, endMs: 0, vector: vector))
+        } else {
+            failed.insert(id)
+        }
+        progress.processed = min(progress.processed + 1, progress.total)
+    }
+}
+
+private struct IndexJob: Sendable {
+    let id: String
+    let isVideo: Bool
+    let filePath: String?
+}
+
+/// Photo decode and JPEG encoding for the index. Runs on a background queue so the
+/// main thread can keep drawing and taking touches while a library is analyzed.
+private enum PhotoIndexFrames {
+    static func load(_ job: IndexJob, maxEdge: CGFloat) async -> [Data] {
+        await withCheckedContinuation { continuation in
+            DispatchQueue.global(qos: .utility).async {
+                continuation.resume(returning: syncLoad(job, maxEdge: maxEdge))
+            }
+        }
+    }
+
+    private static func syncLoad(_ job: IndexJob, maxEdge: CGFloat) -> [Data] {
+        if let path = job.filePath {
+            let url = URL(fileURLWithPath: path)
+            if job.isVideo { return videoKeyframes(url: url, maxEdge: maxEdge) }
+            guard let image = UIImage(contentsOfFile: path),
+                  let jpeg = mediaSearchJPEG(from: image, maxEdge: maxEdge) else { return [] }
+            return [jpeg]
+        }
+        let localId = String(job.id.dropFirst(3))
+        guard let asset = PHAsset.fetchAssets(withLocalIdentifiers: [localId], options: nil).firstObject else { return [] }
+        if asset.mediaType == .video {
+            guard let url = videoURL(asset) else { return [] }
+            return videoKeyframes(url: url, maxEdge: maxEdge)
+        }
+        guard let image = still(asset, maxEdge: maxEdge),
+              let jpeg = mediaSearchJPEG(from: image, maxEdge: maxEdge) else { return [] }
+        return [jpeg]
+    }
+
+    private static func still(_ asset: PHAsset, maxEdge: CGFloat) -> UIImage? {
+        let options = PHImageRequestOptions()
+        options.deliveryMode = .highQualityFormat
+        options.resizeMode = .exact
+        options.isSynchronous = true
+        options.isNetworkAccessAllowed = true
+        var image: UIImage?
+        PHImageManager.default().requestImage(
+            for: asset,
+            targetSize: CGSize(width: maxEdge, height: maxEdge),
+            contentMode: .aspectFit,
+            options: options
+        ) { result, _ in
+            image = result
+        }
+        return image
+    }
+
+    private static func videoURL(_ asset: PHAsset) -> URL? {
+        let options = PHVideoRequestOptions()
+        options.isNetworkAccessAllowed = true
+        options.deliveryMode = .fastFormat
+        var url: URL?
+        let gate = DispatchSemaphore(value: 0)
+        PHImageManager.default().requestAVAsset(forVideo: asset, options: options) { avAsset, _, _ in
+            url = (avAsset as? AVURLAsset)?.url
+            gate.signal()
+        }
+        _ = gate.wait(timeout: .now() + 30)
+        return url
     }
 }
 
