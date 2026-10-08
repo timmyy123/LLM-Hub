@@ -990,3 +990,8 @@
 "drawthings_ram_unknown" = "RAM-krav ukendt";
 "import_image_tab" = "Billede";
 "import_video_tab" = "Video";
+"music_live_generation" = "Livegenerering";
+"music_live_generation_desc" = "Lyt til musikken, mens den genereres. Det færdige klip gemmes, så du kan afspille og dele det.";
+"music_stop_generation" = "Stop generering";
+"music_unlimited_duration" = "Ubegrænset varighed";
+"music_unlimited_duration_desc" = "Generér, indtil du trykker på Stop. Optagelsen gemmes, når du stopper.";

@@ -990,3 +990,8 @@
 "drawthings_ram_unknown" = "RAM-vereiste onbekend";
 "import_image_tab" = "Afbeelding";
 "import_video_tab" = "Video";
+"music_live_generation" = "Live genereren";
+"music_live_generation_desc" = "Luister naar de muziek terwijl deze wordt gegenereerd. De voltooide clip wordt opgeslagen om opnieuw af te spelen en te delen.";
+"music_stop_generation" = "Genereren stoppen";
+"music_unlimited_duration" = "Onbeperkte duur";
+"music_unlimited_duration_desc" = "Het genereren gaat door totdat je op Stoppen drukt. De opname wordt opgeslagen zodra je stopt.";

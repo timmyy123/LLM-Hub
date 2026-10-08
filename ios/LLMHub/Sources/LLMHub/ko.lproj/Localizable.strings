@@ -983,3 +983,8 @@
 "drawthings_ram_unknown" = "RAM 요구 사항을 알 수 없음";
 "import_image_tab" = "이미지";
 "import_video_tab" = "동영상";
+"music_live_generation" = "실시간 생성";
+"music_live_generation_desc" = "음악이 생성되는 동안 감상하세요. 완성된 클립은 다시 재생하고 공유할 수 있도록 저장됩니다.";
+"music_stop_generation" = "생성 중지";
+"music_unlimited_duration" = "시간 제한 없음";
+"music_unlimited_duration_desc" = "중지를 누를 때까지 계속 생성합니다. 중지하면 녹음이 저장됩니다.";

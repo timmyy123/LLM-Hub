@@ -2,7 +2,7 @@
 import Foundation
 import MLX
 
-/// Offline iOS driver for Magenta RealTime 2's exported stateful MLX function.
+/// Streaming and offline iOS driver for Magenta RealTime 2's exported stateful MLX function.
 ///
 /// This follows magenta-realtime/core/src/mlx_engine.cpp: one 1,920-sample
 /// stereo frame at 48 kHz per transformer invocation, carrying every returned
@@ -60,18 +60,23 @@ public enum MagentaRealtimeEngine {
         )
     }
 
+    /// A nil duration streams until shouldStop returns true. Use collectAudio=false
+    /// with onAudioFrame to keep memory bounded during an unlimited recording.
     public static func generate(
         session: Session,
         prompt: String,
         resourceDirectory: URL,
-        durationSeconds: Double,
+        durationSeconds: Double?,
+        collectAudio: Bool = true,
+        shouldStop: @Sendable () -> Bool = { false },
+        onAudioFrame: (@Sendable (Data) throws -> Void)? = nil,
         progress: @Sendable (Double) -> Void
     ) throws -> Data {
         let function = session.function
         var state = session.initialState
 
-        let frameCount = max(1, Int(ceil(durationSeconds * 25.0)))
-        var pcm = Data(capacity: frameCount * frameSamples * 4)
+        let frameCount = durationSeconds.map { max(1, Int(ceil($0 * 25.0))) }
+        var pcm = Data(capacity: collectAudio ? (frameCount ?? 0) * frameSamples * 4 : 0)
         let musicCoCaTokens = try MagentaPromptEncoder.encode(
             prompt: prompt,
             resourceDirectory: resourceDirectory
@@ -80,7 +85,11 @@ public enum MagentaRealtimeEngine {
         let negativeMusic = makeNegativeMusic(from: condition)
         let negativeNotes = makeNegativeNotes(from: condition)
 
-        for frame in 0..<frameCount {
+        var frame = 0
+        while frameCount.map({ frame < $0 }) ?? true {
+            try Task.checkCancellation()
+            if shouldStop() { break }
+            var framePCM = Data(capacity: frameSamples * 4)
             var arguments: [MLXArray] = [
                 MLXArray(condition, [1, 1, conditionLength]),
                 // Match `mrt mlx generate`, the repository's documented MLX path.
@@ -115,8 +124,8 @@ public enum MagentaRealtimeEngine {
                 for sample in 0..<frameSamples {
                     var left = audio[sample].littleEndian
                     var right = audio[frameSamples + sample].littleEndian
-                    withUnsafeBytes(of: &left) { pcm.append(contentsOf: $0) }
-                    withUnsafeBytes(of: &right) { pcm.append(contentsOf: $0) }
+                    withUnsafeBytes(of: &left) { framePCM.append(contentsOf: $0) }
+                    withUnsafeBytes(of: &right) { framePCM.append(contentsOf: $0) }
                 }
             case .float32:
                 // Some exports emit normalized Float32, matching the C++
@@ -128,14 +137,17 @@ public enum MagentaRealtimeEngine {
                 for sample in 0..<frameSamples {
                     var left = Int16(clamping: Int((audio[sample].clamped(to: -1...1) * 32_767).rounded())).littleEndian
                     var right = Int16(clamping: Int((audio[frameSamples + sample].clamped(to: -1...1) * 32_767).rounded())).littleEndian
-                    withUnsafeBytes(of: &left) { pcm.append(contentsOf: $0) }
-                    withUnsafeBytes(of: &right) { pcm.append(contentsOf: $0) }
+                    withUnsafeBytes(of: &left) { framePCM.append(contentsOf: $0) }
+                    withUnsafeBytes(of: &right) { framePCM.append(contentsOf: $0) }
                 }
             default:
                 throw EngineError.unsupportedAudioType(String(describing: audioTensor.dtype))
             }
+            if collectAudio { pcm.append(framePCM) }
+            try onAudioFrame?(framePCM)
             state = Array(outputs.dropFirst())
-            progress(Double(frame + 1) / Double(frameCount))
+            frame += 1
+            if let frameCount { progress(Double(frame) / Double(frameCount)) }
         }
         return pcm
     }

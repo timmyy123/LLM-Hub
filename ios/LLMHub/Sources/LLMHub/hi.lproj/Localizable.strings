@@ -995,3 +995,8 @@
 "drawthings_ram_unknown" = "RAM की ज़रूरत अज्ञात है";
 "import_image_tab" = "छवि";
 "import_video_tab" = "वीडियो";
+"music_live_generation" = "लाइव जनरेशन";
+"music_live_generation_desc" = "संगीत बनते समय उसे सुनें। पूरा होने पर क्लिप दोबारा सुनने और साझा करने के लिए सहेजी जाती है।";
+"music_stop_generation" = "जनरेशन रोकें";
+"music_unlimited_duration" = "असीमित अवधि";
+"music_unlimited_duration_desc" = "रोकें दबाने तक संगीत बनता रहेगा। रोकने पर रिकॉर्डिंग सहेज दी जाएगी।";

@@ -983,3 +983,8 @@
 "drawthings_ram_unknown" = "דרישת זיכרון RAM אינה ידועה";
 "import_image_tab" = "תמונה";
 "import_video_tab" = "וידאו";
+"music_live_generation" = "יצירה בזמן אמת";
+"music_live_generation_desc" = "ניתן להאזין למוזיקה בזמן יצירתה. הקטע המושלם נשמר להאזנה חוזרת ולשיתוף.";
+"music_stop_generation" = "עצירת היצירה";
+"music_unlimited_duration" = "משך ללא הגבלה";
+"music_unlimited_duration_desc" = "היצירה נמשכת עד ללחיצה על עצירה. ההקלטה נשמרת בעת העצירה.";

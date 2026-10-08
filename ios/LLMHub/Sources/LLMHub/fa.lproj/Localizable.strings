@@ -983,3 +983,8 @@
 "drawthings_ram_unknown" = "میزان RAM مورد نیاز نامشخص است";
 "import_image_tab" = "تصویر";
 "import_video_tab" = "ویدیو";
+"music_live_generation" = "تولید زنده";
+"music_live_generation_desc" = "هنگام تولید موسیقی به آن گوش دهید. قطعهٔ کامل‌شده برای پخش مجدد و اشتراک‌گذاری ذخیره می‌شود.";
+"music_stop_generation" = "توقف تولید";
+"music_unlimited_duration" = "مدت نامحدود";
+"music_unlimited_duration_desc" = "تولید تا زمانی که توقف را بزنید ادامه دارد. ضبط هنگام توقف ذخیره می‌شود.";

@@ -990,3 +990,8 @@
 "drawthings_ram_unknown" = "ไม่ทราบความต้องการ RAM";
 "import_image_tab" = "รูปภาพ";
 "import_video_tab" = "วิดีโอ";
+"music_live_generation" = "สร้างแบบเรียลไทม์";
+"music_live_generation_desc" = "ฟังเพลงขณะที่กำลังสร้าง คลิปที่สร้างเสร็จจะถูกบันทึกไว้เพื่อเล่นซ้ำและแชร์";
+"music_stop_generation" = "หยุดสร้าง";
+"music_unlimited_duration" = "ไม่จำกัดเวลา";
+"music_unlimited_duration_desc" = "สร้างต่อไปจนกว่าคุณจะกดหยุด ระบบจะบันทึกเสียงไว้เมื่อคุณหยุด";

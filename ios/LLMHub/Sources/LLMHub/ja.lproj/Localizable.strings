@@ -983,3 +983,8 @@
 "drawthings_ram_unknown" = "必要な RAM 容量は不明です";
 "import_image_tab" = "画像";
 "import_video_tab" = "動画";
+"music_live_generation" = "リアルタイム生成";
+"music_live_generation_desc" = "音楽を生成しながら聴くことができます。完成したクリップは、再生や共有のために保存されます。";
+"music_stop_generation" = "生成を停止";
+"music_unlimited_duration" = "時間制限なし";
+"music_unlimited_duration_desc" = "停止を押すまで生成を続けます。停止すると録音が保存されます。";

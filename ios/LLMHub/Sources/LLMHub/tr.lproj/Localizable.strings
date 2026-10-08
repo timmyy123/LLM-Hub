@@ -983,3 +983,8 @@
 "drawthings_ram_unknown" = "RAM gereksinimi bilinmiyor";
 "import_image_tab" = "Görsel";
 "import_video_tab" = "Video";
+"music_live_generation" = "Canlı üretim";
+"music_live_generation_desc" = "Müzik üretilirken dinleyin. Tamamlanan klip, tekrar oynatmak ve paylaşmak için kaydedilir.";
+"music_stop_generation" = "Üretimi durdur";
+"music_unlimited_duration" = "Sınırsız süre";
+"music_unlimited_duration_desc" = "Durdur düğmesine basana kadar üretim devam eder. Durdurduğunuzda kayıt kaydedilir.";

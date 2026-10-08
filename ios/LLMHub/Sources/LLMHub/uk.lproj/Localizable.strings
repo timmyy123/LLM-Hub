@@ -983,3 +983,8 @@
 "drawthings_ram_unknown" = "Вимоги до оперативної пам’яті невідомі";
 "import_image_tab" = "Зображення";
 "import_video_tab" = "Відео";
+"music_live_generation" = "Генерація в реальному часі";
+"music_live_generation_desc" = "Слухайте музику під час її генерації. Готовий фрагмент зберігається для повторного відтворення та поширення.";
+"music_stop_generation" = "Зупинити генерацію";
+"music_unlimited_duration" = "Без обмеження часу";
+"music_unlimited_duration_desc" = "Генерація триває, доки ви не натиснете «Зупинити». Запис зберігається після зупинки.";

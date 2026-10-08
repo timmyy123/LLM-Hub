@@ -1001,3 +1001,9 @@
 "drawthings_ram_unknown" = "RAM requirement unknown";
 "import_image_tab" = "Image";
 "import_video_tab" = "Video";
+
+"music_live_generation" = "Live generation";
+"music_live_generation_desc" = "Listen as music is generated. The completed clip is saved for replay and sharing.";
+"music_stop_generation" = "Stop generation";
+"music_unlimited_duration" = "Unlimited duration";
+"music_unlimited_duration_desc" = "Generate until you press Stop. The recording is saved when you stop.";

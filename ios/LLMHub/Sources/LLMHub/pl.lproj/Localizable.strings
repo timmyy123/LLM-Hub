@@ -983,3 +983,8 @@
 "drawthings_ram_unknown" = "Wymagania dotyczące RAM nieznane";
 "import_image_tab" = "Obraz";
 "import_video_tab" = "Wideo";
+"music_live_generation" = "Generowanie na żywo";
+"music_live_generation_desc" = "Słuchaj muzyki podczas jej generowania. Gotowy klip zostanie zapisany do ponownego odtwarzania i udostępniania.";
+"music_stop_generation" = "Zatrzymaj generowanie";
+"music_unlimited_duration" = "Nieograniczony czas";
+"music_unlimited_duration_desc" = "Generowanie trwa do naciśnięcia przycisku Zatrzymaj. Nagranie zostanie zapisane po zatrzymaniu.";

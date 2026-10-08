@@ -991,3 +991,8 @@
 "drawthings_ram_unknown" = "RAM 需求未知";
 "import_image_tab" = "圖片";
 "import_video_tab" = "影片";
+"music_live_generation" = "即時生成";
+"music_live_generation_desc" = "在音樂生成時聆聽。完成的片段會儲存，以便重播與分享。";
+"music_stop_generation" = "停止生成";
+"music_unlimited_duration" = "不限時間";
+"music_unlimited_duration_desc" = "持續生成，直到您按下停止。停止時會儲存錄音。";

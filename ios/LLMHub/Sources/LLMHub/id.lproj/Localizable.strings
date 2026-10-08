@@ -983,3 +983,8 @@
 "drawthings_ram_unknown" = "Kebutuhan RAM tidak diketahui";
 "import_image_tab" = "Gambar";
 "import_video_tab" = "Video";
+"music_live_generation" = "Pembuatan langsung";
+"music_live_generation_desc" = "Dengarkan musik saat sedang dibuat. Klip yang sudah selesai disimpan untuk diputar ulang dan dibagikan.";
+"music_stop_generation" = "Hentikan pembuatan";
+"music_unlimited_duration" = "Durasi tanpa batas";
+"music_unlimited_duration_desc" = "Pembuatan berlanjut sampai Anda menekan Hentikan. Rekaman disimpan saat Anda berhenti.";

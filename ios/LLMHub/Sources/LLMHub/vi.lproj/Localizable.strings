@@ -990,3 +990,8 @@
 "drawthings_ram_unknown" = "Chưa rõ yêu cầu RAM";
 "import_image_tab" = "Hình ảnh";
 "import_video_tab" = "Video";
+"music_live_generation" = "Tạo nhạc trực tiếp";
+"music_live_generation_desc" = "Nghe nhạc trong khi đang tạo. Đoạn nhạc hoàn chỉnh được lưu để phát lại và chia sẻ.";
+"music_stop_generation" = "Dừng tạo nhạc";
+"music_unlimited_duration" = "Thời lượng không giới hạn";
+"music_unlimited_duration_desc" = "Tiếp tục tạo cho đến khi bạn nhấn Dừng. Bản ghi được lưu khi bạn dừng.";

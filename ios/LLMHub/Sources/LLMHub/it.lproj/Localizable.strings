@@ -973,3 +973,8 @@
 "drawthings_ram_unknown" = "Requisito di RAM sconosciuto";
 "import_image_tab" = "Immagine";
 "import_video_tab" = "Video";
+"music_live_generation" = "Generazione in tempo reale";
+"music_live_generation_desc" = "Ascolta la musica mentre viene generata. Il clip completato viene salvato per riascoltarlo e condividerlo.";
+"music_stop_generation" = "Interrompi la generazione";
+"music_unlimited_duration" = "Durata illimitata";
+"music_unlimited_duration_desc" = "La generazione continua finché non premi Interrompi. La registrazione viene salvata quando la interrompi.";

@@ -983,3 +983,8 @@
 "drawthings_ram_unknown" = "متطلبات ذاكرة RAM غير معروفة";
 "import_image_tab" = "صورة";
 "import_video_tab" = "فيديو";
+"music_live_generation" = "التوليد المباشر";
+"music_live_generation_desc" = "استمع إلى الموسيقى أثناء توليدها. يُحفظ المقطع المكتمل لإعادة تشغيله ومشاركته.";
+"music_stop_generation" = "إيقاف التوليد";
+"music_unlimited_duration" = "مدة غير محدودة";
+"music_unlimited_duration_desc" = "يستمر التوليد حتى تضغط على إيقاف. يُحفظ التسجيل عند الإيقاف.";
