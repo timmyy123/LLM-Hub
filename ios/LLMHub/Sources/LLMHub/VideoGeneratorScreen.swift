@@ -32,7 +32,7 @@ struct VideoGeneratorScreen: View {
 
     // Only real video generation drawthings models — never image gen models
     private var availableModels: [AIModel] {
-        ModelData.models.filter { $0.isDrawThingsVideoGeneration && ModelData.isModelFullyAvailableLocally($0) }
+        ModelData.allModels().filter { $0.isDrawThingsVideoGeneration && ModelData.isModelFullyAvailableLocally($0) }
     }
 
     private var selectedModel: AIModel? {
@@ -390,7 +390,7 @@ struct VideoGeneratorScreen: View {
         }
         .foregroundStyle(.white)
         .liquidGlassPrimaryButton(cornerRadius: 12)
-        .disabled(!isGenerating && (promptText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || inputImage == nil))
+        .disabled(!isGenerating && (promptText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || (inputImage == nil && selectedModel?.supportsPromptOnlyVideoGeneration != true)))
     }
 
     private var saveButton: some View {
@@ -424,7 +424,7 @@ struct VideoGeneratorScreen: View {
 
     private func startGeneration() {
         guard !promptText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
-        guard inputImage != nil else {
+        guard inputImage != nil || selectedModel?.supportsPromptOnlyVideoGeneration == true else {
             errorMessage = VideoError.inputImageRequired.localizedDescription
             return
         }

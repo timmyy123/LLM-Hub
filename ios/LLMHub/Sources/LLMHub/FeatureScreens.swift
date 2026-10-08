@@ -6509,7 +6509,7 @@ struct ImageGeneratorScreen: View {
     let onNavigateToModels: () -> Void
 
     private var availableModels: [AIModel] {
-        ModelData.models.filter { $0.isDrawThingsImageGeneration && StableDiffusionBackend.isModelDownloaded(modelId: $0.id) }
+        ModelData.allModels().filter { $0.isDrawThingsImageGeneration && StableDiffusionBackend.isModelDownloaded(modelId: $0.id) }
     }
 
     private var selectedModel: AIModel? {

@@ -985,3 +985,19 @@
 "audio_search_permission_denied" = "Audio access is needed to analyze device audio.";
 "audio_search_count" = "%1$d of %2$d files analyzed";
 "audio_search_moment" = "Play %1$s";
+
+/* Draw Things model import */
+"search_drawthings" = "Search Draw Things";
+"search_drawthings_placeholder" = "Search models by name or repository";
+"refresh_drawthings_catalog" = "Refresh Draw Things catalog";
+"drawthings_no_results" = "No matching models found.";
+"drawthings_result_count" = "%d models";
+"drawthings_already_added" = "Added";
+"drawthings_checking_size" = "Checking download size…";
+"drawthings_download_size" = "Download size";
+"drawthings_size_unknown" = "Download size unavailable";
+"drawthings_dependencies_hint" = "Includes the model and required encoders and other dependencies. Memory requirements vary by model and generation settings.";
+"drawthings_catalog_load_error" = "Could not refresh the Draw Things catalog. Showing models available offline.";
+"drawthings_ram_unknown" = "RAM requirement unknown";
+"import_image_tab" = "Image";
+"import_video_tab" = "Video";

@@ -969,3 +969,17 @@
 "audio_search_permission_denied" = "נדרשת גישה לשמע כדי לנתח את השמע במכשיר.";
 "audio_search_count" = "נותחו %1$d מתוך %2$d קבצים";
 "audio_search_moment" = "ניגון %1$s";
+"search_drawthings" = "חיפוש ב-Draw Things";
+"search_drawthings_placeholder" = "חיפוש מודלים לפי שם או מאגר";
+"refresh_drawthings_catalog" = "רענון קטלוג Draw Things";
+"drawthings_no_results" = "לא נמצאו מודלים תואמים.";
+"drawthings_result_count" = "%d מודלים";
+"drawthings_already_added" = "נוסף";
+"drawthings_checking_size" = "גודל ההורדה נבדק…";
+"drawthings_download_size" = "גודל ההורדה";
+"drawthings_size_unknown" = "גודל ההורדה אינו זמין";
+"drawthings_dependencies_hint" = "כולל את המודל, המקודדים הנדרשים ותלויות נוספות. דרישות הזיכרון משתנות בהתאם למודל ולהגדרות היצירה.";
+"drawthings_catalog_load_error" = "לא ניתן לרענן את קטלוג Draw Things. מוצגים מודלים הזמינים במצב לא מקוון.";
+"drawthings_ram_unknown" = "דרישת זיכרון RAM אינה ידועה";
+"import_image_tab" = "תמונה";
+"import_video_tab" = "וידאו";

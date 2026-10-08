@@ -976,3 +976,17 @@
 "audio_search_permission_denied" = "Cần quyền truy cập âm thanh để phân tích âm thanh trên thiết bị.";
 "audio_search_count" = "Đã phân tích %1$d/%2$d tệp";
 "audio_search_moment" = "Phát %1$s";
+"search_drawthings" = "Tìm kiếm trên Draw Things";
+"search_drawthings_placeholder" = "Tìm mô hình theo tên hoặc kho lưu trữ";
+"refresh_drawthings_catalog" = "Làm mới danh mục Draw Things";
+"drawthings_no_results" = "Không tìm thấy mô hình phù hợp.";
+"drawthings_result_count" = "%d mô hình";
+"drawthings_already_added" = "Đã thêm";
+"drawthings_checking_size" = "Đang kiểm tra kích thước tải xuống…";
+"drawthings_download_size" = "Kích thước tải xuống";
+"drawthings_size_unknown" = "Không có thông tin kích thước tải xuống";
+"drawthings_dependencies_hint" = "Bao gồm mô hình, các bộ mã hóa cần thiết và các thành phần phụ thuộc khác. Yêu cầu bộ nhớ thay đổi tùy theo mô hình và cài đặt tạo nội dung.";
+"drawthings_catalog_load_error" = "Không thể làm mới danh mục Draw Things. Đang hiển thị các mô hình có sẵn ngoại tuyến.";
+"drawthings_ram_unknown" = "Chưa rõ yêu cầu RAM";
+"import_image_tab" = "Hình ảnh";
+"import_video_tab" = "Video";

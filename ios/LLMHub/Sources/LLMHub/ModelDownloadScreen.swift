@@ -1,6 +1,7 @@
 import SwiftUI
 import UniformTypeIdentifiers
-import ModelZoo
+@preconcurrency import ModelZoo
+import ImageGenerator
 
 struct ModelFamilyGroup: Identifiable {
     let title: String
@@ -235,6 +236,16 @@ class ModelDownloadViewModel: ObservableObject {
         return true
     }
 
+    func addDrawThingsModel(_ model: AIModel) -> Bool {
+        guard !models.contains(where: { $0.id == model.id || $0.name == model.name }) else { return false }
+        models.append(model)
+        downloadStates[model.id] = .notDownloaded
+        saveImportedModels()
+        refreshStatuses()
+        if downloadStates[model.id] != .downloaded { startDownload(model) }
+        return true
+    }
+
     /// Updates prompt template for an imported model (source == "Custom").
     func updatePromptTemplate(for modelId: String, promptTemplate: String?) {
         guard let idx = models.firstIndex(where: { $0.id == modelId }) else { return }
@@ -300,7 +311,7 @@ class ModelDownloadViewModel: ObservableObject {
             let model = Self.migrateCustomModelIntoAppStorage(ModelData.normalizeCustomModel(raw))
             if model.url != raw.url || model.additionalFiles != raw.additionalFiles { needsResave = true }
             models.append(model)
-            downloadStates[model.id] = .downloaded
+            downloadStates[model.id] = model.modelFormat == .drawthings ? .notDownloaded : .downloaded
         }
         if needsResave { saveImportedModels() }
     }
@@ -337,7 +348,8 @@ class ModelDownloadViewModel: ObservableObject {
     }
 
     private func saveImportedModels() {
-        let imported = models.filter { $0.source == "Custom" }
+        let builtinIDs = Set(ModelData.models.map(\.id))
+        let imported = models.filter { $0.source == "Custom" || ($0.modelFormat == .drawthings && !builtinIDs.contains($0.id)) }
         if let data = try? JSONEncoder().encode(imported) {
             UserDefaults.standard.set(data, forKey: importedModelsKey)
         }
@@ -687,7 +699,9 @@ struct ModelRowView: View {
                                 .foregroundColor(.white.opacity(0.62))
                             Text("•")
                                 .foregroundColor(.white.opacity(0.52))
-                            Text(String(format: settings.localized("ram_requirement_format"), Int(model.requirements.minRamGB)))
+                            Text(model.requirements.minRamGB > 0
+                                ? String(format: settings.localized("ram_requirement_format"), model.requirements.minRamGB)
+                                : settings.localized("drawthings_ram_unknown"))
                                 .font(.caption)
                                 .foregroundColor(.white.opacity(0.62))
                         }
@@ -1295,6 +1309,16 @@ struct ImportExternalModelSheet: View {
     @State private var isImporting = false
     @State private var promptTemplate = ""
     @State private var modelFormat: ModelFormat = .gguf
+    @State private var importKind: ModelImportKind = .gguf
+    @State private var drawThingsQuery = ""
+    @State private var drawThingsModels: [DrawThingsCatalogEntry] = []
+    @State private var selectedDrawThingsModel: DrawThingsCatalogEntry?
+    @State private var isLoadingDrawThings = false
+    @State private var hasLoadedDrawThingsCatalog = false
+    @State private var drawThingsLoadID = UUID()
+    @State private var drawThingsSizeModelID: String?
+    @State private var drawThingsSize: Int64?
+    @State private var isCheckingDrawThingsSize = false
     @State private var hfQuery = ""
     @State private var hfFiles: [HuggingFaceImportFile] = []
     @State private var isSearchingHuggingFace = false
@@ -1309,77 +1333,105 @@ struct ImportExternalModelSheet: View {
                 .foregroundColor(.white)
         }
 
-        Picker(settings.localized("model_format"), selection: $modelFormat) {
-            Text("GGUF").tag(ModelFormat.gguf)
-            Text("LiteRT-LM").tag(ModelFormat.litertlm)
+        Picker(settings.localized("model_format"), selection: $importKind) {
+            ForEach(ModelImportKind.allCases) { kind in
+                Text(settings.localized(kind.title)).tag(kind)
+            }
         }
         .pickerStyle(.segmented)
-        .onChange(of: modelFormat) { _, _ in
+        .disabled(isImporting)
+        .onChange(of: importKind) { _, kind in
+            if kind == .gguf { modelFormat = .gguf }
+            if kind == .liteRT { modelFormat = .litertlm }
+            selectedDrawThingsModel = nil
+            drawThingsSize = nil
+            selectedHuggingFaceModel = nil
+            hfFiles = []
+            selectedFileURL = nil
+            selectedFileName = ""
+            modelName = ""
+            showError = false
             supportsVision = false
             projectorFileURL = nil
             projectorFileName = ""
             selectedHuggingFaceProjector = nil
         }
 
-        HuggingFaceSearchPanel(
-            query: $hfQuery,
-            files: $hfFiles,
-            isSearching: $isSearchingHuggingFace,
-            selectedModel: $selectedHuggingFaceModel,
-            modelName: $modelName,
-            modelFormat: modelFormat,
-            onSearch: { await searchHuggingFace() }
-        )
+        if importKind.isMedia {
+            DrawThingsSearchPanel(
+                query: $drawThingsQuery,
+                selectedModel: $selectedDrawThingsModel,
+                modelName: $modelName,
+                models: drawThingsModels,
+                kind: importKind,
+                importedIDs: Set(vm.models.map(\.id)),
+                isLoading: isLoadingDrawThings,
+                downloadSize: drawThingsSize,
+                isCheckingSize: isCheckingDrawThingsSize,
+                onRefresh: { await loadDrawThingsCatalog() }
+            )
+            .id(importKind)
+        } else {
+            HuggingFaceSearchPanel(
+                query: $hfQuery,
+                files: $hfFiles,
+                isSearching: $isSearchingHuggingFace,
+                selectedModel: $selectedHuggingFaceModel,
+                modelName: $modelName,
+                modelFormat: modelFormat,
+                onSearch: { await searchHuggingFace() }
+            )
 
-        // File import remains available alongside Hugging Face search.
-        importField(label: modelFormat == .gguf ? "GGUF File" : "LiteRT-LM File") {
-            Button { showFilePicker = true } label: {
-                HStack(spacing: 10) {
-                    Image(systemName: "doc.badge.plus")
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundColor(.white.opacity(0.7))
-                    Text(selectedFileName.isEmpty ? settings.localized("select_model_file") : selectedFileName)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                        .foregroundColor(selectedFileName.isEmpty ? .white.opacity(0.5) : .white)
-                    Spacer()
-                    if !selectedFileName.isEmpty {
-                        Image(systemName: "checkmark")
-                            .font(.system(size: 12, weight: .semibold))
+            // File import remains available alongside Hugging Face search.
+            importField(label: modelFormat == .gguf ? "GGUF File" : "LiteRT-LM File") {
+                Button { showFilePicker = true } label: {
+                    HStack(spacing: 10) {
+                        Image(systemName: "doc.badge.plus")
+                            .font(.system(size: 15, weight: .medium))
                             .foregroundColor(.white.opacity(0.7))
+                        Text(selectedFileName.isEmpty ? settings.localized("select_model_file") : selectedFileName)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                            .foregroundColor(selectedFileName.isEmpty ? .white.opacity(0.5) : .white)
+                        Spacer()
+                        if !selectedFileName.isEmpty {
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundColor(.white.opacity(0.7))
+                        }
                     }
                 }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
-        }
-        .fileImporter(isPresented: $showFilePicker, allowedContentTypes: [UTType.data], allowsMultipleSelection: false) { result in
-            handleFileSelected(result: result)
-        }
-
-        // GGUF declares its own context length in the file header.
-        if modelFormat != .gguf {
-            importField(label: settings.localized("context_window_size")) {
-                TextField("4096", text: $contextWindowSize)
-                    .keyboardType(.numberPad)
-                    .foregroundColor(.white)
+            .fileImporter(isPresented: $showFilePicker, allowedContentTypes: [UTType.data], allowsMultipleSelection: false) { result in
+                handleFileSelected(result: result)
             }
-        }
 
-        // Prompt template (optional)
-        VStack(alignment: .leading, spacing: 6) {
-            Text(settings.localized("prompt_template_optional"))
-                .font(.caption.bold())
-                .foregroundColor(.white.opacity(0.55))
-            VStack(alignment: .leading, spacing: 4) {
-                glassRow {
-                    TextField(settings.localized("prompt_template_placeholder"), text: $promptTemplate, axis: .vertical)
-                        .lineLimit(3...6)
+            // GGUF declares its own context length in the file header.
+            if modelFormat != .gguf {
+                importField(label: settings.localized("context_window_size")) {
+                    TextField("4096", text: $contextWindowSize)
+                        .keyboardType(.numberPad)
                         .foregroundColor(.white)
-                        .font(.system(.caption, design: .monospaced))
                 }
-                Text(settings.localized("prompt_template_hint"))
-                    .font(.caption2)
-                    .foregroundColor(.white.opacity(0.4))
+            }
+
+            // Prompt template (optional)
+            VStack(alignment: .leading, spacing: 6) {
+                Text(settings.localized("prompt_template_optional"))
+                    .font(.caption.bold())
+                    .foregroundColor(.white.opacity(0.55))
+                VStack(alignment: .leading, spacing: 4) {
+                    glassRow {
+                        TextField(settings.localized("prompt_template_placeholder"), text: $promptTemplate, axis: .vertical)
+                            .lineLimit(3...6)
+                            .foregroundColor(.white)
+                            .font(.system(.caption, design: .monospaced))
+                    }
+                    Text(settings.localized("prompt_template_hint"))
+                        .font(.caption2)
+                        .foregroundColor(.white.opacity(0.4))
+                }
             }
         }
     }
@@ -1475,7 +1527,7 @@ struct ImportExternalModelSheet: View {
 
                         importFormFields
 
-                        visionSection
+                        if !importKind.isMedia { visionSection }
 
                         // Error message
                         if showError {
@@ -1494,6 +1546,23 @@ struct ImportExternalModelSheet: View {
                     .padding(20)
                     .animation(.spring(response: 0.3), value: supportsVision)
                 }
+            }
+            .task(id: importKind) {
+                if importKind.isMedia && !hasLoadedDrawThingsCatalog {
+                    await loadDrawThingsCatalog()
+                }
+            }
+            .task(id: selectedDrawThingsModel?.id) {
+                drawThingsSize = nil
+                drawThingsSizeModelID = nil
+                isCheckingDrawThingsSize = false
+                guard let selected = selectedDrawThingsModel else { return }
+                isCheckingDrawThingsSize = true
+                let size = await DrawThingsCatalogClient.downloadSize(for: selected)
+                guard !Task.isCancelled, selectedDrawThingsModel?.id == selected.id else { return }
+                drawThingsSize = size
+                drawThingsSizeModelID = selected.id
+                isCheckingDrawThingsSize = false
             }
             .navigationTitle(settings.localized("import_external_model"))
             .navigationBarTitleDisplayMode(.inline)
@@ -1537,7 +1606,13 @@ struct ImportExternalModelSheet: View {
     }
 
     private var canImport: Bool {
-        !modelName.trimmingCharacters(in: .whitespaces).isEmpty
+        if importKind.isMedia {
+            return selectedDrawThingsModel != nil
+                && drawThingsSizeModelID == selectedDrawThingsModel?.id
+                && !isCheckingDrawThingsSize
+                && !modelName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }
+        return !modelName.trimmingCharacters(in: .whitespaces).isEmpty
             && (selectedFileURL != nil || selectedHuggingFaceModel != nil)
             && (!supportsVision || projectorFileURL != nil || selectedHuggingFaceProjector != nil)
     }
@@ -1594,6 +1669,10 @@ struct ImportExternalModelSheet: View {
     }
 
     private func performImport() {
+        if importKind.isMedia {
+            importDrawThingsModel()
+            return
+        }
         let name = modelName.trimmingCharacters(in: .whitespaces)
         guard !name.isEmpty, selectedFileURL != nil || selectedHuggingFaceModel != nil else { return }
 
@@ -1715,11 +1794,70 @@ struct ImportExternalModelSheet: View {
         }
     }
 
+    private func loadDrawThingsCatalog() async {
+        let loadID = UUID()
+        drawThingsLoadID = loadID
+        isLoadingDrawThings = true
+        defer {
+            if drawThingsLoadID == loadID { isLoadingDrawThings = false }
+        }
+        if drawThingsModels.isEmpty { drawThingsModels = DrawThingsCatalogClient.builtinModels() }
+        do {
+            let models = try await DrawThingsCatalogClient.load()
+            guard !Task.isCancelled, drawThingsLoadID == loadID else { return }
+            drawThingsModels = models
+            hasLoadedDrawThingsCatalog = true
+            showError = false
+        } catch is CancellationError {
+        } catch {
+            guard !Task.isCancelled, drawThingsLoadID == loadID else { return }
+            showError = true
+            errorMessage = settings.localized("drawthings_catalog_load_error") + " " + error.localizedDescription
+        }
+    }
+
+    private func importDrawThingsModel() {
+        guard let entry = selectedDrawThingsModel, canImport else { return }
+        let name = modelName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !vm.models.contains(where: { $0.id == entry.id || $0.name == name }) else {
+            showError = true
+            errorMessage = String(format: settings.localized("model_name_already_exists"), name)
+            return
+        }
+        do {
+            try DrawThingsCatalogClient.register(entry, catalog: drawThingsModels)
+            let size = drawThingsSize ?? 0
+            let model = AIModel(
+                id: entry.id, name: name,
+                description: entry.specification.note ?? entry.name,
+                url: "https://static.libnnc.org/" + entry.id,
+                category: entry.isVideo ? .videoGeneration : .imageGeneration,
+                sizeBytes: size, source: "Draw Things",
+                supportsVision: false, supportsAudio: false, supportsThinking: false,
+                supportsGpu: true,
+                requirements: ModelRequirements(minRamGB: 0, recommendedRamGB: 0),
+                contextWindowSize: 0, modelFormat: .drawthings
+            )
+            if vm.addDrawThingsModel(model) { dismiss() }
+        } catch {
+            showError = true
+            errorMessage = error.localizedDescription
+        }
+    }
+
     private func searchHuggingFace() async {
         isSearchingHuggingFace = true
         defer { isSearchingHuggingFace = false }
-        do { hfFiles = try await HuggingFaceImportClient.search(query: hfQuery, format: modelFormat, token: huggingFaceToken) }
-        catch { showError = true; errorMessage = error.localizedDescription }
+        let kind = importKind
+        do {
+            let files = try await HuggingFaceImportClient.search(query: hfQuery, format: modelFormat, token: huggingFaceToken)
+            guard importKind == kind else { return }
+            hfFiles = files
+        } catch {
+            guard importKind == kind else { return }
+            showError = true
+            errorMessage = error.localizedDescription
+        }
     }
 
     private var huggingFaceToken: String? {
@@ -1857,5 +1995,294 @@ private enum HuggingFaceImportClient {
             results += entries.filter { $0.type == "file" && $0.path.lowercased().hasSuffix(".\(format.rawValue)") }.map { HuggingFaceImportFile(repo: repo.id, path: $0.path, size: $0.size ?? 0) }
         }
         return results.sorted { $0.size < $1.size }
+    }
+}
+
+private enum ModelImportKind: String, CaseIterable, Identifiable {
+    case gguf, liteRT, image, video
+    var id: String { rawValue }
+    var title: String {
+        switch self {
+        case .gguf: return "GGUF"
+        case .liteRT: return "LiteRT-LM"
+        case .image: return "import_image_tab"
+        case .video: return "import_video_tab"
+        }
+    }
+    var isMedia: Bool { self == .image || self == .video }
+}
+
+private struct DrawThingsCatalogEntry: Identifiable {
+    let specification: ModelZoo.Specification
+    var id: String { specification.file }
+    var name: String { specification.name }
+    var isVideo: Bool {
+        ImageGeneratorUtils.isVideoModel(specification.version)
+    }
+    func matches(_ query: String) -> Bool {
+        let terms = query.lowercased().split(whereSeparator: { $0.isWhitespace })
+        let text = [name, id, specification.huggingFaceLink ?? "", specification.version.rawValue]
+            .joined(separator: " ").lowercased()
+        return terms.allSatisfy { text.contains($0) }
+    }
+}
+
+@MainActor
+private enum DrawThingsCatalogClient {
+    private static func decode(_ data: Data) throws -> [DrawThingsCatalogEntry] {
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        return try decoder.decode([FailableDecodable<ModelZoo.Specification>].self, from: data)
+            .compactMap(\.value)
+            .filter { $0.remoteApiModelConfig == nil && validFiles(for: $0) }
+            .map { DrawThingsCatalogEntry(specification: $0) }
+    }
+
+    private static func validFiles(for specification: ModelZoo.Specification) -> Bool {
+        ModelZoo.filesToDownload(specification).allSatisfy { item in
+            !item.file.isEmpty && item.file != "." && item.file != ".."
+                && !item.file.contains("/") && !item.file.contains("\\")
+        }
+    }
+
+    static func builtinModels() -> [DrawThingsCatalogEntry] {
+        var entries = ModelZoo.availableSpecifications
+            .filter { $0.remoteApiModelConfig == nil && validFiles(for: $0) }
+            .map { DrawThingsCatalogEntry(specification: $0) }
+        if let url = Bundle.main.url(forResource: "models", withExtension: "json"),
+           let data = try? Data(contentsOf: url), let bundled = try? decode(data) {
+            entries += bundled
+        }
+        return merge(entries)
+    }
+
+    static func load() async throws -> [DrawThingsCatalogEntry] {
+        let url = URL(string: "https://models.drawthings.ai/models.json")!
+        let (data, response) = try await URLSession.shared.data(from: url)
+        guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+            throw URLError(.badServerResponse)
+        }
+        let remote = try decode(data)
+        guard !remote.isEmpty else { throw URLError(.cannotParseResponse) }
+        return merge(builtinModels() + remote)
+    }
+
+    private static func merge(_ entries: [DrawThingsCatalogEntry]) -> [DrawThingsCatalogEntry] {
+        var byFile: [String: DrawThingsCatalogEntry] = [:]
+        for entry in entries { byFile[entry.id] = entry }
+        return byFile.values.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+    }
+
+    private static var fileSizes: [String: Int64] = [:]
+    private static var fileSizeTasks: [String: Task<Int64?, Never>] = [:]
+
+    private static func fileSize(_ file: String) async -> Int64? {
+        if let size = fileSizes[file] { return size }
+        if let task = fileSizeTasks[file] { return await task.value }
+        let task = Task<Int64?, Never> {
+            guard let url = URL(string: "https://static.libnnc.org/" + file) else { return nil }
+            var request = URLRequest(url: url)
+            request.httpMethod = "HEAD"
+            request.setValue("bytes=0-0", forHTTPHeaderField: "Range")
+            request.setValue("LLMHub", forHTTPHeaderField: "User-Agent")
+            request.timeoutInterval = 15
+            guard let (_, response) = try? await URLSession.shared.data(for: request),
+                  let http = response as? HTTPURLResponse,
+                  (200...299).contains(http.statusCode) else { return nil }
+            // A ranged HEAD can return Content-Length: 1. Content-Range carries
+            // the complete checkpoint size, without transferring model data.
+            if let range = http.value(forHTTPHeaderField: "Content-Range"),
+               let total = range.split(separator: "/").last,
+               let size = Int64(total), size > 0 {
+                return size
+            }
+            guard http.statusCode == 200,
+                  let value = http.value(forHTTPHeaderField: "Content-Length"),
+                  let size = Int64(value), size > 0 else { return nil }
+            return size
+        }
+        fileSizeTasks[file] = task
+        let size = await task.value
+        fileSizeTasks[file] = nil
+        if let size { fileSizes[file] = size }
+        return size
+    }
+
+    static func downloadSize(for entry: DrawThingsCatalogEntry) async -> Int64? {
+        let files = Set(ModelZoo.filesToDownload(entry.specification).map(\.file))
+        return await withTaskGroup(of: Int64?.self) { group in
+            for file in files {
+                group.addTask { await fileSize(file) }
+            }
+            var total: Int64 = 0
+            var complete = true
+            for await size in group {
+                if let size { total += size } else { complete = false }
+            }
+            return complete ? total : nil
+        }
+    }
+
+    /// Save the SDK's own metadata alongside the imported app entry so offline
+    /// downloads, dependency checks, and generation still work after relaunch.
+    static func register(_ entry: DrawThingsCatalogEntry, catalog: [DrawThingsCatalogEntry]) throws {
+        var specifications = [entry.specification]
+        var seen = Set([entry.id])
+        var index = 0
+        while index < specifications.count {
+            if let refiner = specifications[index].defaultRefiner,
+               seen.insert(refiner).inserted,
+               let dependency = catalog.first(where: { $0.id == refiner }) {
+                specifications.append(dependency.specification)
+            }
+            index += 1
+        }
+        for specification in specifications {
+            ModelZoo.appendCustomSpecification(specification)
+        }
+        let url = ModelZoo.persistentModelsDirectory().appendingPathComponent("custom.json")
+        let saved = try decode(Data(contentsOf: url))
+        guard specifications.allSatisfy({ specification in saved.contains { $0.id == specification.file } }) else {
+            throw URLError(.cannotWriteToFile)
+        }
+    }
+}
+
+private struct DrawThingsSearchPanel: View {
+    @EnvironmentObject private var settings: AppSettings
+    @Binding var query: String
+    @Binding var selectedModel: DrawThingsCatalogEntry?
+    @Binding var modelName: String
+    let models: [DrawThingsCatalogEntry]
+    let kind: ModelImportKind
+    let importedIDs: Set<String>
+    let isLoading: Bool
+    let downloadSize: Int64?
+    let isCheckingSize: Bool
+    let onRefresh: () async -> Void
+    @State private var currentPage = 0
+    @State private var resultSizes: [String: Int64] = [:]
+    @State private var unavailableSizes: Set<String> = []
+    private let pageSize = 10
+
+    private var results: [DrawThingsCatalogEntry] {
+        models.filter { $0.isVideo == (kind == .video) && $0.matches(query) }
+    }
+    private var totalPages: Int { max(1, (results.count + pageSize - 1) / pageSize) }
+    private var page: [DrawThingsCatalogEntry] {
+        Array(results.dropFirst(currentPage * pageSize).prefix(pageSize))
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(settings.localized("search_drawthings"))
+                .font(.caption.bold()).foregroundColor(.white.opacity(0.55))
+            HStack {
+                TextField(settings.localized("search_drawthings_placeholder"), text: $query)
+                    .foregroundColor(.white)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .submitLabel(.search)
+                Button { Task { await onRefresh() } } label: {
+                    if isLoading { ProgressView().tint(.white) }
+                    else { Image(systemName: "arrow.clockwise") }
+                }
+                .accessibilityLabel(settings.localized("refresh_drawthings_catalog"))
+                .disabled(isLoading)
+            }
+            .padding(12).background(.ultraThinMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+
+            if results.isEmpty && !isLoading {
+                Text(settings.localized("drawthings_no_results"))
+                    .font(.caption).foregroundColor(.white.opacity(0.65))
+            } else {
+                Text(String(format: settings.localized("drawthings_result_count"), results.count))
+                    .font(.caption).foregroundColor(.white.opacity(0.55))
+            }
+            ForEach(page) { entry in
+                Button {
+                    selectedModel = entry
+                    modelName = entry.name
+                } label: {
+                    HStack(spacing: 10) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(entry.name).font(.subheadline).multilineTextAlignment(.leading)
+                            Text(entry.id).font(.caption2).foregroundColor(.white.opacity(0.5))
+                                .lineLimit(1).truncationMode(.middle)
+                        }
+                        Spacer(minLength: 0)
+                        if let size = resultSizes[entry.id] {
+                            Text(ByteCountFormatter.string(fromByteCount: size, countStyle: .file))
+                                .font(.caption).fixedSize(horizontal: true, vertical: false)
+                        } else if unavailableSizes.contains(entry.id) {
+                            Text(settings.localized("drawthings_size_unknown"))
+                                .font(.caption2).multilineTextAlignment(.trailing)
+                        } else {
+                            ProgressView().tint(.white)
+                                .accessibilityLabel(settings.localized("drawthings_checking_size"))
+                        }
+                        if importedIDs.contains(entry.id) {
+                            Text(settings.localized("drawthings_already_added")).font(.caption)
+                        } else if selectedModel?.id == entry.id {
+                            Image(systemName: "checkmark.circle.fill")
+                        }
+                    }
+                    .foregroundColor(selectedModel?.id == entry.id ? ApolloPalette.accentStrong : .white)
+                    .padding(12).background(.ultraThinMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                }
+                .buttonStyle(.plain)
+                .disabled(importedIDs.contains(entry.id))
+                .task(id: entry.id) {
+                    guard resultSizes[entry.id] == nil else { return }
+                    let size = await DrawThingsCatalogClient.downloadSize(for: entry)
+                    guard !Task.isCancelled else { return }
+                    if let size {
+                        resultSizes[entry.id] = size
+                        unavailableSizes.remove(entry.id)
+                    } else {
+                        unavailableSizes.insert(entry.id)
+                    }
+                }
+            }
+            if totalPages > 1 {
+                HStack {
+                    Button { currentPage -= 1 } label: { Image(systemName: "chevron.left") }
+                        .disabled(currentPage == 0)
+                    Spacer()
+                    Text("\(currentPage + 1) / \(totalPages)").font(.caption)
+                    Spacer()
+                    Button { currentPage += 1 } label: { Image(systemName: "chevron.right") }
+                        .disabled(currentPage >= totalPages - 1)
+                }
+                .foregroundColor(.white)
+            }
+            if let selectedModel {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(selectedModel.name).font(.subheadline.bold())
+                    if isCheckingSize {
+                        HStack {
+                            ProgressView().tint(.white)
+                            Text(settings.localized("drawthings_checking_size"))
+                        }
+                    } else if let downloadSize {
+                        Text(settings.localized("drawthings_download_size") + ": " + ByteCountFormatter.string(fromByteCount: downloadSize, countStyle: .file))
+                    } else {
+                        Text(settings.localized("drawthings_size_unknown"))
+                    }
+                    Text(settings.localized("drawthings_dependencies_hint"))
+                        .foregroundColor(.white.opacity(0.65))
+                    if let note = selectedModel.specification.note, !note.isEmpty {
+                        Text(.init(note)).foregroundColor(.white.opacity(0.75))
+                    }
+                }
+                .font(.caption)
+                .padding(12).frame(maxWidth: .infinity, alignment: .leading)
+                .background(.ultraThinMaterial).clipShape(RoundedRectangle(cornerRadius: 10))
+            }
+        }
+        .onChange(of: query) { _, _ in currentPage = 0 }
+        .onChange(of: models.count) { _, _ in currentPage = min(currentPage, totalPages - 1) }
     }
 }

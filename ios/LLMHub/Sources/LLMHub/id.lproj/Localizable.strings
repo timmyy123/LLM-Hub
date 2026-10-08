@@ -969,3 +969,17 @@
 "audio_search_permission_denied" = "Akses audio diperlukan untuk menganalisis audio perangkat.";
 "audio_search_count" = "%1$d dari %2$d file dianalisis";
 "audio_search_moment" = "Putar %1$s";
+"search_drawthings" = "Cari di Draw Things";
+"search_drawthings_placeholder" = "Cari model berdasarkan nama atau repositori";
+"refresh_drawthings_catalog" = "Perbarui katalog Draw Things";
+"drawthings_no_results" = "Tidak ada model yang cocok.";
+"drawthings_result_count" = "%d model";
+"drawthings_already_added" = "Ditambahkan";
+"drawthings_checking_size" = "Memeriksa ukuran unduhan…";
+"drawthings_download_size" = "Ukuran unduhan";
+"drawthings_size_unknown" = "Ukuran unduhan tidak tersedia";
+"drawthings_dependencies_hint" = "Mencakup model, encoder yang diperlukan, dan dependensi lainnya. Kebutuhan memori bervariasi menurut model dan pengaturan pembuatan.";
+"drawthings_catalog_load_error" = "Tidak dapat memperbarui katalog Draw Things. Menampilkan model yang tersedia secara offline.";
+"drawthings_ram_unknown" = "Kebutuhan RAM tidak diketahui";
+"import_image_tab" = "Gambar";
+"import_video_tab" = "Video";

@@ -959,3 +959,17 @@
 "audio_search_permission_denied" = "Serve l'accesso all'audio per analizzare l'audio del dispositivo.";
 "audio_search_count" = "%1$d di %2$d file analizzati";
 "audio_search_moment" = "Riproduci %1$s";
+"search_drawthings" = "Cerca in Draw Things";
+"search_drawthings_placeholder" = "Cerca modelli per nome o repository";
+"refresh_drawthings_catalog" = "Aggiorna il catalogo Draw Things";
+"drawthings_no_results" = "Nessun modello corrispondente trovato.";
+"drawthings_result_count" = "%d modelli";
+"drawthings_already_added" = "Aggiunto";
+"drawthings_checking_size" = "Verifica delle dimensioni del download…";
+"drawthings_download_size" = "Dimensioni del download";
+"drawthings_size_unknown" = "Dimensioni del download non disponibili";
+"drawthings_dependencies_hint" = "Include il modello, gli encoder richiesti e le altre dipendenze. I requisiti di memoria variano in base al modello e alle impostazioni di generazione.";
+"drawthings_catalog_load_error" = "Impossibile aggiornare il catalogo Draw Things. Vengono mostrati i modelli disponibili offline.";
+"drawthings_ram_unknown" = "Requisito di RAM sconosciuto";
+"import_image_tab" = "Immagine";
+"import_video_tab" = "Video";

@@ -969,3 +969,17 @@
 "audio_search_permission_denied" = "Cihazdaki sesleri analiz etmek için ses erişimi gerekiyor.";
 "audio_search_count" = "%2$d dosyadan %1$d tanesi analiz edildi";
 "audio_search_moment" = "%1$s oynat";
+"search_drawthings" = "Draw Things’te ara";
+"search_drawthings_placeholder" = "Modelleri ada veya depoya göre ara";
+"refresh_drawthings_catalog" = "Draw Things kataloğunu yenile";
+"drawthings_no_results" = "Eşleşen model bulunamadı.";
+"drawthings_result_count" = "%d model";
+"drawthings_already_added" = "Eklendi";
+"drawthings_checking_size" = "İndirme boyutu kontrol ediliyor…";
+"drawthings_download_size" = "İndirme boyutu";
+"drawthings_size_unknown" = "İndirme boyutu kullanılamıyor";
+"drawthings_dependencies_hint" = "Modeli, gerekli kodlayıcıları ve diğer bağımlılıkları içerir. Bellek gereksinimleri modele ve üretim ayarlarına göre değişir.";
+"drawthings_catalog_load_error" = "Draw Things kataloğu yenilenemedi. Çevrimdışı kullanılabilen modeller gösteriliyor.";
+"drawthings_ram_unknown" = "RAM gereksinimi bilinmiyor";
+"import_image_tab" = "Görsel";
+"import_video_tab" = "Video";

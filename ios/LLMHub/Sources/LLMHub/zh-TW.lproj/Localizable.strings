@@ -977,3 +977,17 @@
 "audio_search_permission_denied" = "需要音訊存取權才能分析裝置上的音訊。";
 "audio_search_count" = "已分析 %1$d / %2$d 個檔案";
 "audio_search_moment" = "播放 %1$s";
+"search_drawthings" = "搜尋 Draw Things";
+"search_drawthings_placeholder" = "依名稱或儲存庫搜尋模型";
+"refresh_drawthings_catalog" = "重新整理 Draw Things 目錄";
+"drawthings_no_results" = "找不到符合的模型。";
+"drawthings_result_count" = "%d 個模型";
+"drawthings_already_added" = "已加入";
+"drawthings_checking_size" = "正在檢查下載大小…";
+"drawthings_download_size" = "下載大小";
+"drawthings_size_unknown" = "無法取得下載大小";
+"drawthings_dependencies_hint" = "包含模型、必要的編碼器及其他相依檔案。記憶體需求因模型和生成設定而異。";
+"drawthings_catalog_load_error" = "無法重新整理 Draw Things 目錄。正在顯示離線可用的模型。";
+"drawthings_ram_unknown" = "RAM 需求未知";
+"import_image_tab" = "圖片";
+"import_video_tab" = "影片";

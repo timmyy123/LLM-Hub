@@ -981,3 +981,17 @@
 "audio_search_permission_denied" = "डिवाइस ऑडियो के विश्लेषण के लिए ऑडियो की अनुमति चाहिए।";
 "audio_search_count" = "%2$d में से %1$d फ़ाइलों का विश्लेषण हुआ";
 "audio_search_moment" = "%1$s चलाएँ";
+"search_drawthings" = "Draw Things में खोजें";
+"search_drawthings_placeholder" = "नाम या रिपॉज़िटरी से मॉडल खोजें";
+"refresh_drawthings_catalog" = "Draw Things कैटलॉग रीफ़्रेश करें";
+"drawthings_no_results" = "कोई मेल खाने वाला मॉडल नहीं मिला।";
+"drawthings_result_count" = "%d मॉडल";
+"drawthings_already_added" = "जोड़ा गया";
+"drawthings_checking_size" = "डाउनलोड का आकार जाँचा जा रहा है…";
+"drawthings_download_size" = "डाउनलोड का आकार";
+"drawthings_size_unknown" = "डाउनलोड का आकार उपलब्ध नहीं है";
+"drawthings_dependencies_hint" = "इसमें मॉडल, आवश्यक एनकोडर और अन्य निर्भरताएँ शामिल हैं। मेमोरी की ज़रूरतें मॉडल और जनरेशन सेटिंग के अनुसार बदलती हैं।";
+"drawthings_catalog_load_error" = "Draw Things कैटलॉग रीफ़्रेश नहीं हो सका। ऑफ़लाइन उपलब्ध मॉडल दिखाए जा रहे हैं।";
+"drawthings_ram_unknown" = "RAM की ज़रूरत अज्ञात है";
+"import_image_tab" = "छवि";
+"import_video_tab" = "वीडियो";

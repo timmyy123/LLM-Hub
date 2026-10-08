@@ -976,3 +976,17 @@
 "audio_search_permission_denied" = "ต้องได้รับสิทธิ์เข้าถึงเสียงเพื่อวิเคราะห์เสียงในอุปกรณ์";
 "audio_search_count" = "วิเคราะห์ไฟล์แล้ว %1$d จาก %2$d";
 "audio_search_moment" = "เล่น %1$s";
+"search_drawthings" = "ค้นหาใน Draw Things";
+"search_drawthings_placeholder" = "ค้นหาโมเดลตามชื่อหรือที่เก็บ";
+"refresh_drawthings_catalog" = "รีเฟรชแค็ตตาล็อก Draw Things";
+"drawthings_no_results" = "ไม่พบโมเดลที่ตรงกัน";
+"drawthings_result_count" = "%d โมเดล";
+"drawthings_already_added" = "เพิ่มแล้ว";
+"drawthings_checking_size" = "กำลังตรวจสอบขนาดดาวน์โหลด…";
+"drawthings_download_size" = "ขนาดดาวน์โหลด";
+"drawthings_size_unknown" = "ไม่ทราบขนาดดาวน์โหลด";
+"drawthings_dependencies_hint" = "รวมโมเดล ตัวเข้ารหัสที่จำเป็น และไฟล์ที่เกี่ยวข้องอื่น ๆ ความต้องการหน่วยความจำแตกต่างกันตามโมเดลและการตั้งค่าการสร้าง";
+"drawthings_catalog_load_error" = "ไม่สามารถรีเฟรชแค็ตตาล็อก Draw Things ได้ กำลังแสดงโมเดลที่พร้อมใช้งานแบบออฟไลน์";
+"drawthings_ram_unknown" = "ไม่ทราบความต้องการ RAM";
+"import_image_tab" = "รูปภาพ";
+"import_video_tab" = "วิดีโอ";

@@ -969,3 +969,17 @@
 "audio_search_permission_denied" = "Для аналізу аудіо пристрою потрібен доступ до аудіо.";
 "audio_search_count" = "Проаналізовано %1$d з %2$d файлів";
 "audio_search_moment" = "Відтворити %1$s";
+"search_drawthings" = "Пошук у Draw Things";
+"search_drawthings_placeholder" = "Пошук моделей за назвою або репозиторієм";
+"refresh_drawthings_catalog" = "Оновити каталог Draw Things";
+"drawthings_no_results" = "Відповідних моделей не знайдено.";
+"drawthings_result_count" = "Моделей: %d";
+"drawthings_already_added" = "Додано";
+"drawthings_checking_size" = "Перевірка розміру завантаження…";
+"drawthings_download_size" = "Розмір завантаження";
+"drawthings_size_unknown" = "Розмір завантаження недоступний";
+"drawthings_dependencies_hint" = "Містить модель, необхідні кодувальники та інші залежності. Вимоги до пам’яті залежать від моделі та налаштувань генерації.";
+"drawthings_catalog_load_error" = "Не вдалося оновити каталог Draw Things. Показано моделі, доступні без підключення до мережі.";
+"drawthings_ram_unknown" = "Вимоги до оперативної пам’яті невідомі";
+"import_image_tab" = "Зображення";
+"import_video_tab" = "Відео";

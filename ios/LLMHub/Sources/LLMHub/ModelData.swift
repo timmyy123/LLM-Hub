@@ -164,6 +164,7 @@ public struct AIModel: Identifiable, Codable, Sendable {
     }
 
     public var sizeLabel: String {
+        guard sizeBytes > 0 else { return "Size unknown" }
         let formatter = ByteCountFormatter()
         formatter.allowedUnits = [.useGB, .useMB]
         formatter.countStyle = .file
@@ -181,7 +182,7 @@ public struct AIModel: Identifiable, Codable, Sendable {
     }
 
     public var ramLabel: String {
-        "\(requirements.minRamGB)GB RAM"
+        requirements.minRamGB > 0 ? "\(requirements.minRamGB)GB RAM" : "RAM requirement unknown"
     }
 
     public var allDownloadURLs: [URL] {
@@ -221,6 +222,11 @@ public struct AIModel: Identifiable, Codable, Sendable {
 
     public var isDrawThingsVideoGeneration: Bool {
         modelFormat == .drawthings && category == .videoGeneration
+    }
+
+    /// LTX-2.3 accepts a prompt alone or an optional conditioning image.
+    public var supportsPromptOnlyVideoGeneration: Bool {
+        isDrawThingsVideoGeneration && ModelZoo.specificationForModel(id)?.version == .ltx2_3
     }
 
     public var isDrawThingsImageUpscale: Bool {
