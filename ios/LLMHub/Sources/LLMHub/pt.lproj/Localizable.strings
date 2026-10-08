@@ -883,8 +883,8 @@
 "prompt_template_none" = "Nenhum (padrão)";
 
 /* Photo Search / Audio Search */
-"feature_photo_search" = "Busca de fotos";
-"feature_photo_search_desc" = "Encontre fotos no seu dispositivo descrevendo-as";
+"feature_photo_search" = "Busca de fotos e vídeos";
+"feature_photo_search_desc" = "Encontre fotos e vídeos no seu dispositivo descrevendo-os";
 "feature_audio_search" = "Busca de áudio";
 "feature_audio_search_desc" = "Encontre momentos nos seus áudios descrevendo-os";
 "media_search_download_model" = "Baixar EmbeddingGemma 2";
@@ -901,14 +901,14 @@
 "media_search_library" = "Biblioteca";
 "media_search_clear" = "Limpar tudo e recomeçar";
 "media_search_grant_access" = "Permitir acesso";
-"photo_search_onboarding_title" = "Pesquise suas fotos descrevendo-as";
-"photo_search_onboarding_desc" = "O EmbeddingGemma 2 analisa suas fotos neste dispositivo; depois você pode buscá-las com palavras simples ou encontrar fotos parecidas. Nada sai do seu celular.";
-"photo_search_all_photos" = "Analisar todas as fotos";
-"photo_search_select_photos" = "Selecionar fotos";
-"photo_search_hint" = "Descreva uma foto, ex.: cachorro na praia";
+"photo_search_onboarding_title" = "Pesquise suas fotos e vídeos descrevendo-os";
+"photo_search_onboarding_desc" = "O EmbeddingGemma 2 analisa suas fotos e vídeos neste dispositivo. Os vídeos são lidos pelo primeiro e pelo último quadro. Depois você pode pesquisar com palavras simples ou encontrar itens semelhantes. Nada sai do seu telefone.";
+"photo_search_all_photos" = "Analisar todas as fotos e vídeos";
+"photo_search_select_photos" = "Selecionar fotos e vídeos";
+"photo_search_hint" = "Descreva uma foto ou vídeo, p. ex. cachorro na praia";
 "photo_search_find_similar" = "Encontrar fotos parecidas";
 "photo_search_similar_results" = "Fotos parecidas";
-"photo_search_permission_denied" = "É preciso acesso às fotos para analisar todas.";
+"photo_search_permission_denied" = "É necessário acesso a fotos e vídeos para analisar sua biblioteca.";
 "photo_search_count" = "%1$d de %2$d fotos analisadas";
 "audio_search_onboarding_title" = "Pesquise seus áudios descrevendo-os";
 "audio_search_onboarding_desc" = "O EmbeddingGemma 2 divide cada gravação em momentos curtos e os analisa neste dispositivo, para você ir direto ao trecho descrito.";

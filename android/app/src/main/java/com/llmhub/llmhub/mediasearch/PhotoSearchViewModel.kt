@@ -20,7 +20,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
-data class PhotoAsset(val id: String, val uri: Uri)
+data class PhotoAsset(val id: String, val uri: Uri, val isVideo: Boolean = false)
 
 data class PhotoMatch(val asset: PhotoAsset, val score: Float)
 
@@ -142,7 +142,8 @@ class PhotoSearchViewModel(application: Application) : MediaSearchViewModel(appl
         searchJob = viewModelScope.launch {
             val vector = storeMutex.withLock { store.vectorsFor(asset.id).firstOrNull()?.vector }
                 ?: ensureModelLoaded()?.let { service ->
-                    loadJpegForEmbedding(context, asset.uri, 1024)?.let { service.generateImageEmbedding(it) }
+                    val frames = if (asset.isVideo) loadVideoKeyframes(context, asset.uri, 1024) else listOfNotNull(loadJpegForEmbedding(context, asset.uri, 1024))
+                    service.generateImagesEmbedding(frames)
                 }
             _results.value = if (vector == null) emptyList() else rank(vector, exclude = asset.id)
             _isSearching.value = false
@@ -193,8 +194,8 @@ class PhotoSearchViewModel(application: Application) : MediaSearchViewModel(appl
         val assets = withContext(Dispatchers.IO) {
             when (_source.value) {
                 PhotoSource.NONE -> emptyList()
-                PhotoSource.ALL_PHOTOS -> queryDevicePhotos() + selectedUris().map { PhotoAsset(it, Uri.parse(it)) }
-                PhotoSource.SELECTED -> selectedUris().map { PhotoAsset(it, Uri.parse(it)) }
+                PhotoSource.ALL_PHOTOS -> queryDeviceMedia() + selectedUris().map { describeSelected(Uri.parse(it)) }
+                PhotoSource.SELECTED -> selectedUris().map { describeSelected(Uri.parse(it)) }
             }.distinctBy { it.id }
         }
         _assets.value = assets
@@ -209,26 +210,38 @@ class PhotoSearchViewModel(application: Application) : MediaSearchViewModel(appl
         startIndexing()
     }
 
-    private fun queryDevicePhotos(): List<PhotoAsset> {
-        val collection = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+    /** Photos and videos, newest first, matching Gallery's Instant Media Search. */
+    private fun queryDeviceMedia(): List<PhotoAsset> {
+        val result = ArrayList<PhotoAsset>()
+        result.addAll(queryCollection(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, isVideo = false))
+        result.addAll(queryCollection(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, isVideo = true))
+        return result
+    }
+
+    private fun queryCollection(collection: Uri, isVideo: Boolean): List<PhotoAsset> {
         val result = ArrayList<PhotoAsset>()
         try {
             context.contentResolver.query(
                 collection,
-                arrayOf(MediaStore.Images.Media._ID),
+                arrayOf(MediaStore.MediaColumns._ID, MediaStore.MediaColumns.DATE_ADDED),
                 null, null,
-                "${MediaStore.Images.Media.DATE_ADDED} DESC"
+                "${MediaStore.MediaColumns.DATE_ADDED} DESC"
             )?.use { cursor ->
-                val idCol = cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID)
+                val idCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns._ID)
                 while (cursor.moveToNext()) {
                     val uri = ContentUris.withAppendedId(collection, cursor.getLong(idCol))
-                    result.add(PhotoAsset(uri.toString(), uri))
+                    result.add(PhotoAsset(uri.toString(), uri, isVideo))
                 }
             }
         } catch (e: SecurityException) {
-            Log.w(TAG, "No photo library access: ${e.message}")
+            Log.w(TAG, "No library access for $collection: ${e.message}")
         }
         return result
+    }
+
+    private fun describeSelected(uri: Uri): PhotoAsset {
+        val type = context.contentResolver.getType(uri).orEmpty()
+        return PhotoAsset(uri.toString(), uri, type.startsWith("video"))
     }
 
     private suspend fun updateProgress() {
@@ -252,7 +265,8 @@ class PhotoSearchViewModel(application: Application) : MediaSearchViewModel(appl
                 if (pending.isEmpty()) break
                 for (next in pending) {
                     if (!isActive || _isPaused.value) break
-                    val vector = loadJpegForEmbedding(context, next.uri)?.let { service.generateImageEmbedding(it) }
+                    val frames = if (next.isVideo) loadVideoKeyframes(context, next.uri) else listOfNotNull(loadJpegForEmbedding(context, next.uri))
+                    val vector = service.generateImagesEmbedding(frames)
                     storeMutex.withLock {
                         if (vector != null) store.put(MediaVector(next.id, 0, 0, vector)) else failedIds.add(next.id)
                         if (++sinceSave >= SAVE_EVERY) {

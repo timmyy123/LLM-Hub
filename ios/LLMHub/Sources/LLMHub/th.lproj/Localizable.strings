@@ -933,8 +933,8 @@
 "prompt_template_none" = "ไม่มี (ค่าเริ่มต้น)";
 
 /* Photo Search / Audio Search */
-"feature_photo_search" = "ค้นหารูปภาพ";
-"feature_photo_search_desc" = "ค้นหารูปภาพในอุปกรณ์ด้วยการบรรยาย";
+"feature_photo_search" = "ค้นหารูปภาพและวิดีโอ";
+"feature_photo_search_desc" = "ค้นหารูปภาพและวิดีโอบนอุปกรณ์โดยอธิบาย";
 "feature_audio_search" = "ค้นหาเสียง";
 "feature_audio_search_desc" = "ค้นหาช่วงเวลาในไฟล์เสียงด้วยการบรรยาย";
 "media_search_download_model" = "ดาวน์โหลด EmbeddingGemma 2";
@@ -951,14 +951,14 @@
 "media_search_library" = "คลัง";
 "media_search_clear" = "ล้างทั้งหมดแล้วเริ่มใหม่";
 "media_search_grant_access" = "อนุญาตการเข้าถึง";
-"photo_search_onboarding_title" = "ค้นหารูปภาพด้วยการบรรยาย";
-"photo_search_onboarding_desc" = "EmbeddingGemma 2 วิเคราะห์รูปภาพบนอุปกรณ์นี้ จากนั้นคุณค้นหาด้วยคำธรรมดาหรือหารูปที่คล้ายกันได้ ไม่มีข้อมูลออกจากโทรศัพท์ของคุณ";
-"photo_search_all_photos" = "วิเคราะห์รูปภาพทั้งหมด";
-"photo_search_select_photos" = "เลือกรูปภาพ";
-"photo_search_hint" = "บรรยายรูปภาพ เช่น สุนัขบนชายหาด";
+"photo_search_onboarding_title" = "ค้นหารูปภาพและวิดีโอโดยอธิบาย";
+"photo_search_onboarding_desc" = "EmbeddingGemma 2 วิเคราะห์รูปภาพและวิดีโอบนอุปกรณ์นี้ วิดีโอถูกอ่านจากเฟรมแรกและเฟรมสุดท้าย จากนั้นค้นหาด้วยคำธรรมดาหรือหาสิ่งที่คล้ายกันได้ ไม่มีอะไรออกจากโทรศัพท์";
+"photo_search_all_photos" = "วิเคราะห์รูปภาพและวิดีโอทั้งหมด";
+"photo_search_select_photos" = "เลือกรูปภาพและวิดีโอ";
+"photo_search_hint" = "อธิบายรูปหรือวิดีโอ เช่น สุนัขบนชายหาด";
 "photo_search_find_similar" = "ค้นหารูปภาพที่คล้ายกัน";
 "photo_search_similar_results" = "รูปภาพที่คล้ายกัน";
-"photo_search_permission_denied" = "ต้องได้รับสิทธิ์เข้าถึงรูปภาพเพื่อวิเคราะห์รูปภาพทั้งหมด";
+"photo_search_permission_denied" = "ต้องเข้าถึงรูปภาพและวิดีโอเพื่อวิเคราะห์คลังของคุณ";
 "photo_search_count" = "วิเคราะห์รูปภาพแล้ว %1$d จาก %2$d";
 "audio_search_onboarding_title" = "ค้นหาเสียงด้วยการบรรยาย";
 "audio_search_onboarding_desc" = "EmbeddingGemma 2 แบ่งแต่ละการบันทึกเป็นช่วงสั้นๆ และวิเคราะห์บนอุปกรณ์นี้ เพื่อให้คุณข้ามไปยังส่วนที่บรรยายได้ทันที";

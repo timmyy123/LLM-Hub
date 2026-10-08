@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Context
 import android.graphics.Bitmap
 import android.media.MediaCodec
+import android.media.MediaMetadataRetriever
 import android.media.MediaExtractor
 import android.media.MediaFormat
 import android.net.Uri
@@ -142,6 +143,36 @@ internal suspend fun loadJpegForEmbedding(context: Context, uri: Uri, maxEdge: I
         ByteArrayOutputStream().use { out ->
             bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out)
             out.toByteArray()
+        }
+    }
+
+/**
+ * First frame and, for clips longer than a second, the frame near the end. Same two-keyframe
+ * approach AI Edge Gallery uses so a video fits the 256-token input (70 vision tokens each).
+ */
+internal suspend fun loadVideoKeyframes(context: Context, uri: Uri, maxEdge: Int = 512): List<ByteArray> =
+    withContext(Dispatchers.IO) {
+        val retriever = MediaMetadataRetriever()
+        try {
+            retriever.setDataSource(context, uri)
+            val durationMs = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: 0L
+            val timesUs = mutableListOf(0L)
+            if (durationMs > 1_000) timesUs.add((durationMs - 500).coerceAtLeast(0) * 1_000)
+            timesUs.mapNotNull { timeUs ->
+                val frame = retriever.getScaledFrameAtTime(timeUs, MediaMetadataRetriever.OPTION_CLOSEST_SYNC, maxEdge, maxEdge)
+                    ?: return@mapNotNull null
+                val bytes = ByteArrayOutputStream().use { out ->
+                    frame.compress(Bitmap.CompressFormat.JPEG, 90, out)
+                    out.toByteArray()
+                }
+                frame.recycle()
+                bytes
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Video frames failed for $uri: ${e.message}")
+            emptyList()
+        } finally {
+            try { retriever.release() } catch (_: Exception) { }
         }
     }
 

@@ -153,9 +153,14 @@ actor EmbeddingService {
 
     /// Embed a JPEG/PNG image into the same vector space as text queries.
     func embedImage(_ data: Data) async throws -> [Float]? {
-        guard isInitialized, supportsImage, let lmEngine else { return nil }
+        try await embedImages([data])
+    }
+
+    /// One embedding for several frames, so a video's first and last frame share a vector.
+    func embedImages(_ frames: [Data]) async throws -> [Float]? {
+        guard isInitialized, supportsImage, let lmEngine, !frames.isEmpty else { return nil }
         return try await lmEngine.computeEmbedding(
-            contents: [.imageData(data)],
+            contents: frames.map { .imageData($0) },
             options: LiteRTLM.EmbeddingOptions(normalize: true, visionTokensPerImage: visionTokensPerImage)
         ).embedding
     }

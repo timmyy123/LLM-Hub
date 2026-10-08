@@ -926,8 +926,8 @@
 "prompt_template_none" = "Tidak ada (Default)";
 
 /* Photo Search / Audio Search */
-"feature_photo_search" = "Penelusuran Foto";
-"feature_photo_search_desc" = "Temukan foto di perangkat dengan mendeskripsikannya";
+"feature_photo_search" = "Pencarian foto dan video";
+"feature_photo_search_desc" = "Temukan foto dan video di perangkat dengan mendeskripsikannya";
 "feature_audio_search" = "Penelusuran Audio";
 "feature_audio_search_desc" = "Temukan momen dalam audio dengan mendeskripsikannya";
 "media_search_download_model" = "Unduh EmbeddingGemma 2";
@@ -944,14 +944,14 @@
 "media_search_library" = "Pustaka";
 "media_search_clear" = "Hapus semua dan mulai lagi";
 "media_search_grant_access" = "Izinkan akses";
-"photo_search_onboarding_title" = "Cari foto dengan mendeskripsikannya";
-"photo_search_onboarding_desc" = "EmbeddingGemma 2 menganalisis foto Anda di perangkat ini, lalu Anda bisa mencarinya dengan kata-kata biasa atau menemukan foto serupa. Tidak ada yang keluar dari ponsel Anda.";
-"photo_search_all_photos" = "Analisis semua foto";
-"photo_search_select_photos" = "Pilih foto";
-"photo_search_hint" = "Deskripsikan foto, mis. anjing di pantai";
+"photo_search_onboarding_title" = "Cari foto dan video dengan mendeskripsikannya";
+"photo_search_onboarding_desc" = "EmbeddingGemma 2 menganalisis foto dan video di perangkat ini. Video dibaca dari bingkai pertama dan terakhir. Lalu Anda bisa mencari dengan kata biasa atau menemukan item serupa. Tidak ada yang keluar dari ponsel.";
+"photo_search_all_photos" = "Analisis semua foto dan video";
+"photo_search_select_photos" = "Pilih foto dan video";
+"photo_search_hint" = "Deskripsikan foto atau video, mis. anjing di pantai";
 "photo_search_find_similar" = "Temukan foto serupa";
 "photo_search_similar_results" = "Foto serupa";
-"photo_search_permission_denied" = "Akses foto diperlukan untuk menganalisis semua foto.";
+"photo_search_permission_denied" = "Akses foto dan video diperlukan untuk menganalisis pustaka Anda.";
 "photo_search_count" = "%1$d dari %2$d foto dianalisis";
 "audio_search_onboarding_title" = "Cari audio dengan mendeskripsikannya";
 "audio_search_onboarding_desc" = "EmbeddingGemma 2 membagi setiap rekaman menjadi momen singkat dan menganalisisnya di perangkat ini, sehingga Anda bisa langsung ke bagian yang dideskripsikan.";

@@ -175,7 +175,11 @@ class LiteRtLmEmbeddingService(
 
     /** [jpegOrPng] must be JPEG or PNG bytes. */
     suspend fun generateImageEmbedding(jpegOrPng: ByteArray): FloatArray? =
-        if (supportsImageEmbedding) embed(listOf(InputData.Image(jpegOrPng))) else null
+        generateImagesEmbedding(listOf(jpegOrPng))
+
+    /** One embedding for several frames, so a video's first and last frame share a vector. */
+    suspend fun generateImagesEmbedding(jpegOrPngs: List<ByteArray>): FloatArray? =
+        if (supportsImageEmbedding && jpegOrPngs.isNotEmpty()) embed(jpegOrPngs.map { InputData.Image(it) }) else null
 
     /** [wav] must be a 16 kHz mono WAV file. */
     suspend fun generateAudioEmbedding(wav: ByteArray): FloatArray? =

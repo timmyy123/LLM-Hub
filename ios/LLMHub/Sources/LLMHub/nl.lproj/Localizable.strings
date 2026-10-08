@@ -933,8 +933,8 @@
 "prompt_template_none" = "Geen (standaard)";
 
 /* Photo Search / Audio Search */
-"feature_photo_search" = "Foto's zoeken";
-"feature_photo_search_desc" = "Vind foto's op je apparaat door ze te beschrijven";
+"feature_photo_search" = "Foto's en video's zoeken";
+"feature_photo_search_desc" = "Vind foto's en video's op je apparaat door ze te beschrijven";
 "feature_audio_search" = "Audio zoeken";
 "feature_audio_search_desc" = "Vind momenten in je audio door ze te beschrijven";
 "media_search_download_model" = "EmbeddingGemma 2 downloaden";
@@ -951,14 +951,14 @@
 "media_search_library" = "Bibliotheek";
 "media_search_clear" = "Alles wissen en opnieuw beginnen";
 "media_search_grant_access" = "Toegang toestaan";
-"photo_search_onboarding_title" = "Zoek je foto's door ze te beschrijven";
-"photo_search_onboarding_desc" = "EmbeddingGemma 2 analyseert je foto's op dit apparaat. Daarna kun je ze met gewone woorden zoeken of vergelijkbare foto's vinden. Er verlaat niets je telefoon.";
-"photo_search_all_photos" = "Alle foto's analyseren";
-"photo_search_select_photos" = "Foto's kiezen";
-"photo_search_hint" = "Beschrijf een foto, bijv. hond op het strand";
+"photo_search_onboarding_title" = "Zoek je foto's en video's door ze te beschrijven";
+"photo_search_onboarding_desc" = "EmbeddingGemma 2 analyseert je foto's en video's op dit apparaat. Video's worden gelezen via het eerste en laatste beeld. Daarna kun je ze met gewone woorden zoeken of iets vergelijkbaars vinden. Er verlaat niets je telefoon.";
+"photo_search_all_photos" = "Alle foto's en video's analyseren";
+"photo_search_select_photos" = "Foto's en video's selecteren";
+"photo_search_hint" = "Beschrijf een foto of video, bijv. hond op het strand";
 "photo_search_find_similar" = "Vergelijkbare foto's vinden";
 "photo_search_similar_results" = "Vergelijkbare foto's";
-"photo_search_permission_denied" = "Toegang tot foto's is nodig om alle foto's te analyseren.";
+"photo_search_permission_denied" = "Toegang tot foto's en video's is nodig om je bibliotheek te analyseren.";
 "photo_search_count" = "%1$d van %2$d foto's geanalyseerd";
 "audio_search_onboarding_title" = "Zoek je audio door het te beschrijven";
 "audio_search_onboarding_desc" = "EmbeddingGemma 2 deelt elke opname op in korte momenten en analyseert ze op dit apparaat, zodat je direct naar het beschreven stuk springt.";

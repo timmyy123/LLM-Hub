@@ -934,8 +934,8 @@
 "prompt_template_none" = "無（預設）";
 
 /* Photo Search / Audio Search */
-"feature_photo_search" = "照片搜尋";
-"feature_photo_search_desc" = "透過描述找到裝置上的照片";
+"feature_photo_search" = "照片與影片搜尋";
+"feature_photo_search_desc" = "用描述在裝置上尋找照片與影片";
 "feature_audio_search" = "音訊搜尋";
 "feature_audio_search_desc" = "透過描述找到音訊中的片段";
 "media_search_download_model" = "下載 EmbeddingGemma 2";
@@ -952,14 +952,14 @@
 "media_search_library" = "資料庫";
 "media_search_clear" = "全部清除並重新開始";
 "media_search_grant_access" = "允許存取";
-"photo_search_onboarding_title" = "透過描述搜尋照片";
-"photo_search_onboarding_desc" = "EmbeddingGemma 2 會在此裝置上分析你的照片，之後你可以用日常用語搜尋或找出相似照片。任何資料都不會離開手機。";
-"photo_search_all_photos" = "分析所有照片";
-"photo_search_select_photos" = "選擇照片";
-"photo_search_hint" = "描述一張照片，例如：海灘上的狗";
+"photo_search_onboarding_title" = "用描述搜尋照片與影片";
+"photo_search_onboarding_desc" = "EmbeddingGemma 2 會在這台裝置上分析你的照片與影片。影片會讀取第一個與最後一個影格。之後可以用一般詞語搜尋，或找出相似項目。沒有任何內容會離開手機。";
+"photo_search_all_photos" = "分析所有照片與影片";
+"photo_search_select_photos" = "選擇照片與影片";
+"photo_search_hint" = "描述一張照片或一段影片，例如海灘上的狗";
 "photo_search_find_similar" = "尋找相似照片";
 "photo_search_similar_results" = "相似照片";
-"photo_search_permission_denied" = "需要照片存取權才能分析所有照片。";
+"photo_search_permission_denied" = "分析資料庫需要照片與影片的存取權限。";
 "photo_search_count" = "已分析 %1$d / %2$d 張照片";
 "audio_search_onboarding_title" = "透過描述搜尋音訊";
 "audio_search_onboarding_desc" = "EmbeddingGemma 2 會將每段錄音切成短片段並在此裝置上分析，讓你直接跳到描述的部分。";

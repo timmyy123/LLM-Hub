@@ -926,8 +926,8 @@
 "prompt_template_none" = "هیچ‌کدام (پیش‌فرض)";
 
 /* Photo Search / Audio Search */
-"feature_photo_search" = "جستجوی عکس";
-"feature_photo_search_desc" = "عکس‌های دستگاه را با توصیف پیدا کنید";
+"feature_photo_search" = "جستجوی عکس و ویدیو";
+"feature_photo_search_desc" = "عکس‌ها و ویدیوهای دستگاه را با توصیف پیدا کنید";
 "feature_audio_search" = "جستجوی صدا";
 "feature_audio_search_desc" = "لحظه‌های فایل‌های صوتی را با توصیف پیدا کنید";
 "media_search_download_model" = "دانلود EmbeddingGemma 2";
@@ -944,14 +944,14 @@
 "media_search_library" = "کتابخانه";
 "media_search_clear" = "پاک کردن همه و شروع دوباره";
 "media_search_grant_access" = "اجازه دسترسی";
-"photo_search_onboarding_title" = "عکس‌هایتان را با توصیف جستجو کنید";
-"photo_search_onboarding_desc" = "EmbeddingGemma 2 عکس‌های شما را روی همین دستگاه تحلیل می‌کند؛ سپس می‌توانید با کلمات ساده جستجو کنید یا عکس‌های مشابه پیدا کنید. چیزی از گوشی خارج نمی‌شود.";
-"photo_search_all_photos" = "تحلیل همه عکس‌ها";
-"photo_search_select_photos" = "انتخاب عکس";
-"photo_search_hint" = "یک عکس را توصیف کنید، مثلاً سگ در ساحل";
+"photo_search_onboarding_title" = "عکس‌ها و ویدیوها را با توصیف جستجو کنید";
+"photo_search_onboarding_desc" = "EmbeddingGemma 2 عکس‌ها و ویدیوهای شما را روی همین دستگاه تحلیل می‌کند. ویدیوها از قاب اول و آخر خوانده می‌شوند. بعد می‌توانید با واژه‌های ساده جستجو کنید یا موارد مشابه پیدا کنید. هیچ چیز از گوشی خارج نمی‌شود.";
+"photo_search_all_photos" = "تحلیل همه عکس‌ها و ویدیوها";
+"photo_search_select_photos" = "انتخاب عکس و ویدیو";
+"photo_search_hint" = "یک عکس یا ویدیو را توصیف کنید، مثلاً سگ در ساحل";
 "photo_search_find_similar" = "یافتن عکس‌های مشابه";
 "photo_search_similar_results" = "عکس‌های مشابه";
-"photo_search_permission_denied" = "برای تحلیل همه عکس‌ها به دسترسی عکس نیاز است.";
+"photo_search_permission_denied" = "برای تحلیل کتابخانه به دسترسی عکس و ویدیو نیاز است.";
 "photo_search_count" = "%1$d از %2$d عکس تحلیل شد";
 "audio_search_onboarding_title" = "فایل‌های صوتی را با توصیف جستجو کنید";
 "audio_search_onboarding_desc" = "EmbeddingGemma 2 هر ضبط را به لحظه‌های کوتاه تقسیم و روی همین دستگاه تحلیل می‌کند تا مستقیم به بخشی که توصیف می‌کنید بروید.";

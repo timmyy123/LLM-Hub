@@ -913,8 +913,8 @@
 "prompt_template_none" = "Aucun (par défaut)";
 
 /* Photo Search / Audio Search */
-"feature_photo_search" = "Recherche de photos";
-"feature_photo_search_desc" = "Trouvez des photos sur votre appareil en les décrivant";
+"feature_photo_search" = "Recherche photos et vidéos";
+"feature_photo_search_desc" = "Trouvez des photos et des vidéos sur votre appareil en les décrivant";
 "feature_audio_search" = "Recherche audio";
 "feature_audio_search_desc" = "Trouvez des moments dans vos audios en les décrivant";
 "media_search_download_model" = "Télécharger EmbeddingGemma 2";
@@ -931,14 +931,14 @@
 "media_search_library" = "Bibliothèque";
 "media_search_clear" = "Tout effacer et recommencer";
 "media_search_grant_access" = "Autoriser l'accès";
-"photo_search_onboarding_title" = "Recherchez vos photos en les décrivant";
-"photo_search_onboarding_desc" = "EmbeddingGemma 2 analyse vos photos sur cet appareil, puis vous pouvez les rechercher avec des mots simples ou trouver des photos similaires. Rien ne quitte votre téléphone.";
-"photo_search_all_photos" = "Analyser toutes les photos";
-"photo_search_select_photos" = "Choisir des photos";
-"photo_search_hint" = "Décrivez une photo, ex. chien sur la plage";
+"photo_search_onboarding_title" = "Recherchez vos photos et vidéos en les décrivant";
+"photo_search_onboarding_desc" = "EmbeddingGemma 2 analyse vos photos et vidéos sur cet appareil. Les vidéos sont lues à partir de la première et de la dernière image. Vous pouvez ensuite les chercher avec des mots simples ou trouver des éléments similaires. Rien ne quitte votre téléphone.";
+"photo_search_all_photos" = "Analyser toutes les photos et vidéos";
+"photo_search_select_photos" = "Sélectionner des photos et vidéos";
+"photo_search_hint" = "Décrivez une photo ou une vidéo, p. ex. chien sur la plage";
 "photo_search_find_similar" = "Trouver des photos similaires";
 "photo_search_similar_results" = "Photos similaires";
-"photo_search_permission_denied" = "L'accès aux photos est nécessaire pour toutes les analyser.";
+"photo_search_permission_denied" = "L'accès aux photos et vidéos est nécessaire pour analyser votre bibliothèque.";
 "photo_search_count" = "%1$d photos sur %2$d analysées";
 "audio_search_onboarding_title" = "Recherchez vos audios en les décrivant";
 "audio_search_onboarding_desc" = "EmbeddingGemma 2 découpe chaque enregistrement en courts moments et les analyse sur cet appareil, pour aller directement au passage décrit.";

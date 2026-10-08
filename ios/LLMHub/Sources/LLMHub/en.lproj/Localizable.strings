@@ -938,8 +938,8 @@
 "prompt_template_none" = "None (Default)";
 
 /* Photo Search / Audio Search */
-"feature_photo_search" = "Photo Search";
-"feature_photo_search_desc" = "Find photos on your device by describing them";
+"feature_photo_search" = "Photo & Video Search";
+"feature_photo_search_desc" = "Find photos and videos on your device by describing them";
 "feature_audio_search" = "Audio Search";
 "feature_audio_search_desc" = "Find moments in your audio by describing them";
 "media_search_download_model" = "Download EmbeddingGemma 2";
@@ -956,14 +956,14 @@
 "media_search_library" = "Library";
 "media_search_clear" = "Clear all and start over";
 "media_search_grant_access" = "Allow access";
-"photo_search_onboarding_title" = "Search your photos by describing them";
-"photo_search_onboarding_desc" = "EmbeddingGemma 2 analyzes your photos on this device, then you can search them in plain words or find similar photos. Nothing leaves your phone.";
-"photo_search_all_photos" = "Analyze all photos";
-"photo_search_select_photos" = "Select photos";
-"photo_search_hint" = "Describe a photo, e.g. dog on the beach";
+"photo_search_onboarding_title" = "Search your photos and videos by describing them";
+"photo_search_onboarding_desc" = "EmbeddingGemma 2 analyzes your photos and videos on this device. Videos are read from their first and last frame. Then you can search in plain words or find similar items. Nothing leaves your phone.";
+"photo_search_all_photos" = "Analyze all photos and videos";
+"photo_search_select_photos" = "Select photos and videos";
+"photo_search_hint" = "Describe a photo or video, e.g. dog on the beach";
 "photo_search_find_similar" = "Find similar photos";
 "photo_search_similar_results" = "Similar photos";
-"photo_search_permission_denied" = "Photo access is needed to analyze all photos.";
+"photo_search_permission_denied" = "Photo and video access is needed to analyze your library.";
 "photo_search_count" = "%1$d of %2$d photos analyzed";
 "audio_search_onboarding_title" = "Search your audio by describing it";
 "audio_search_onboarding_desc" = "EmbeddingGemma 2 splits each recording into short moments and analyzes them on this device, so you can jump straight to the part you describe.";

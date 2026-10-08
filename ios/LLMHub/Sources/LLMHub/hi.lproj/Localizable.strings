@@ -938,8 +938,8 @@
 "prompt_template_none" = "कोई नहीं (डिफ़ॉल्ट)";
 
 /* Photo Search / Audio Search */
-"feature_photo_search" = "फ़ोटो खोज";
-"feature_photo_search_desc" = "डिवाइस पर फ़ोटो का वर्णन करके उन्हें खोजें";
+"feature_photo_search" = "फ़ोटो और वीडियो खोज";
+"feature_photo_search_desc" = "वर्णन करके अपने डिवाइस पर फ़ोटो और वीडियो ढूँढें";
 "feature_audio_search" = "ऑडियो खोज";
 "feature_audio_search_desc" = "ऑडियो में पल का वर्णन करके उन्हें खोजें";
 "media_search_download_model" = "EmbeddingGemma 2 डाउनलोड करें";
@@ -956,14 +956,14 @@
 "media_search_library" = "लाइब्रेरी";
 "media_search_clear" = "सब मिटाएँ और फिर से शुरू करें";
 "media_search_grant_access" = "अनुमति दें";
-"photo_search_onboarding_title" = "फ़ोटो का वर्णन करके उन्हें खोजें";
-"photo_search_onboarding_desc" = "EmbeddingGemma 2 इसी डिवाइस पर आपकी फ़ोटो का विश्लेषण करता है, फिर आप सामान्य शब्दों में खोज सकते हैं या मिलती-जुलती फ़ोटो पा सकते हैं। कुछ भी आपके फ़ोन से बाहर नहीं जाता।";
-"photo_search_all_photos" = "सभी फ़ोटो का विश्लेषण करें";
-"photo_search_select_photos" = "फ़ोटो चुनें";
-"photo_search_hint" = "किसी फ़ोटो का वर्णन करें, जैसे समुद्र तट पर कुत्ता";
+"photo_search_onboarding_title" = "वर्णन करके अपनी फ़ोटो और वीडियो खोजें";
+"photo_search_onboarding_desc" = "EmbeddingGemma 2 इस डिवाइस पर आपकी फ़ोटो और वीडियो का विश्लेषण करता है। वीडियो पहले और आखिरी फ़्रेम से पढ़े जाते हैं। फिर आप साधारण शब्दों से खोज सकते हैं या मिलते-जुलते आइटम पा सकते हैं। कुछ भी फ़ोन से बाहर नहीं जाता।";
+"photo_search_all_photos" = "सभी फ़ोटो और वीडियो का विश्लेषण करें";
+"photo_search_select_photos" = "फ़ोटो और वीडियो चुनें";
+"photo_search_hint" = "कोई फ़ोटो या वीडियो बताएँ, जैसे समुद्र तट पर कुत्ता";
 "photo_search_find_similar" = "मिलती-जुलती फ़ोटो खोजें";
 "photo_search_similar_results" = "मिलती-जुलती फ़ोटो";
-"photo_search_permission_denied" = "सभी फ़ोटो के विश्लेषण के लिए फ़ोटो की अनुमति चाहिए।";
+"photo_search_permission_denied" = "लाइब्रेरी का विश्लेषण करने के लिए फ़ोटो और वीडियो एक्सेस ज़रूरी है।";
 "photo_search_count" = "%2$d में से %1$d फ़ोटो का विश्लेषण हुआ";
 "audio_search_onboarding_title" = "ऑडियो का वर्णन करके उसमें खोजें";
 "audio_search_onboarding_desc" = "EmbeddingGemma 2 हर रिकॉर्डिंग को छोटे पलों में बाँटकर इसी डिवाइस पर उनका विश्लेषण करता है, ताकि आप सीधे बताए गए हिस्से पर जा सकें।";

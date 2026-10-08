@@ -1,6 +1,8 @@
+import AVKit
 import Photos
 import PhotosUI
 import SwiftUI
+import UniformTypeIdentifiers
 
 // MARK: - Photo Search model
 
@@ -9,8 +11,11 @@ import SwiftUI
 final class PhotoSearchModel: ObservableObject {
     enum Source: String { case none, allPhotos, selected }
 
-    /// "ph:<PHAsset localIdentifier>" for library photos, "file:<name>" for imported copies.
-    struct Item: Identifiable, Hashable { let id: String }
+    /// "ph:<PHAsset localIdentifier>" for library items, "file:<name>" for imported copies.
+    struct Item: Identifiable, Hashable {
+        let id: String
+        let isVideo: Bool
+    }
 
     struct Match: Identifiable {
         let item: Item
@@ -90,12 +95,19 @@ final class PhotoSearchModel: ObservableObject {
     func importPhotos(_ pickerItems: [PhotosPickerItem]) async {
         var added = false
         for pickerItem in pickerItems {
-            guard let data = try? await pickerItem.loadTransferable(type: Data.self),
-                  let image = UIImage(data: data),
-                  let jpeg = mediaSearchJPEG(from: image, maxEdge: 1024) else { continue }
-            let name = "\(UUID().uuidString).jpg"
-            if (try? jpeg.write(to: Self.importedDir.appendingPathComponent(name), options: .atomic)) != nil {
-                added = true
+            if let data = try? await pickerItem.loadTransferable(type: Data.self),
+               let image = UIImage(data: data),
+               let jpeg = mediaSearchJPEG(from: image, maxEdge: 1024) {
+                let name = "\(UUID().uuidString).jpg"
+                if (try? jpeg.write(to: Self.importedDir.appendingPathComponent(name), options: .atomic)) != nil {
+                    added = true
+                }
+                continue
+            }
+            if let movie = try? await pickerItem.loadTransferable(type: PickedMovie.self) {
+                let ext = movie.url.pathExtension.isEmpty ? "mov" : movie.url.pathExtension
+                let dest = Self.importedDir.appendingPathComponent("\(UUID().uuidString).\(ext)")
+                if (try? FileManager.default.copyItem(at: movie.url, to: dest)) != nil { added = true }
             }
         }
         guard added else { return }
@@ -158,9 +170,12 @@ final class PhotoSearchModel: ObservableObject {
         isSearching = true
         searchTask = Task {
             var vector = store.vectors(for: item.id).first?.vector
-            if vector == nil, let jpeg = await loadJPEG(item, maxEdge: 1024) {
-                await ensureEngine()
-                vector = await engine.embedImage(jpeg)
+            if vector == nil {
+                let frames = await loadFrames(item, maxEdge: 1024)
+                if !frames.isEmpty {
+                    await ensureEngine()
+                    vector = await engine.embedImages(frames)
+                }
             }
             guard !Task.isCancelled else { return }
             results = vector.map { rank($0, excluding: item.id) } ?? []
@@ -177,9 +192,34 @@ final class PhotoSearchModel: ObservableObject {
     }
 
     /// Thumbnail / full image for display.
+    func playbackURL(_ item: Item) async -> URL? {
+        if item.id.hasPrefix("file:") {
+            return Self.importedDir.appendingPathComponent(String(item.id.dropFirst(5)))
+        }
+        let localId = String(item.id.dropFirst(3))
+        guard let asset = PHAsset.fetchAssets(withLocalIdentifiers: [localId], options: nil).firstObject else { return nil }
+        let options = PHVideoRequestOptions()
+        options.isNetworkAccessAllowed = true
+        options.deliveryMode = .automatic
+        return await withCheckedContinuation { continuation in
+            let once = PhotoRequestOnce()
+            PHImageManager.default().requestAVAsset(forVideo: asset, options: options) { avAsset, _, _ in
+                let url = (avAsset as? AVURLAsset)?.url
+                once.run { continuation.resume(returning: url) }
+            }
+        }
+    }
+
     func loadImage(_ item: Item, targetSize: CGSize) async -> UIImage? {
         if item.id.hasPrefix("file:") {
             let url = Self.importedDir.appendingPathComponent(String(item.id.dropFirst(5)))
+            if item.isVideo {
+                let edge = max(targetSize.width, targetSize.height)
+                if let jpeg = await Task.detached(operation: { videoKeyframes(url: url, maxEdge: edge) }).value.first {
+                    return UIImage(data: jpeg)
+                }
+                return nil
+            }
             return UIImage(contentsOfFile: url.path)
         }
         let localId = String(item.id.dropFirst(3))
@@ -211,16 +251,25 @@ final class PhotoSearchModel: ObservableObject {
             let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
             libraryAccessDenied = !(status == .authorized || status == .limited)
             if !libraryAccessDenied {
-                let options = PHFetchOptions()
-                options.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
-                let assets = PHAsset.fetchAssets(with: .image, options: options)
+            let options = PHFetchOptions()
+            options.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
+            options.predicate = NSPredicate(
+                format: "mediaType == %d OR mediaType == %d",
+                PHAssetMediaType.image.rawValue,
+                PHAssetMediaType.video.rawValue
+            )
+            let assets = PHAsset.fetchAssets(with: options)
                 list.reserveCapacity(assets.count)
-                assets.enumerateObjects { asset, _, _ in list.append(Item(id: "ph:" + asset.localIdentifier)) }
+                assets.enumerateObjects { asset, _, _ in
+                list.append(Item(id: "ph:" + asset.localIdentifier, isVideo: asset.mediaType == .video))
+            }
             }
         }
         if source != .none {
             let files = (try? FileManager.default.contentsOfDirectory(at: Self.importedDir, includingPropertiesForKeys: [.creationDateKey])) ?? []
-            list += files.sorted { $0.lastPathComponent > $1.lastPathComponent }.map { Item(id: "file:" + $0.lastPathComponent) }
+            list += files.sorted { $0.lastPathComponent > $1.lastPathComponent }.map {
+                Item(id: "file:" + $0.lastPathComponent, isVideo: !["jpg", "jpeg", "png", "heic"].contains($0.pathExtension.lowercased()))
+            }
         }
         items = list
         let live = Set(list.map(\.id))
@@ -246,12 +295,40 @@ final class PhotoSearchModel: ObservableObject {
 
     private func rank(_ query: [Float], excluding: String?) -> [Match] {
         let live = Set(items.map(\.id))
-        return store.all
+            let videoIds = Set(items.filter(\.isVideo).map(\.id))
+            return store.all
             .filter { $0.id != excluding && live.contains($0.id) }
-            .map { Match(item: Item(id: $0.id), score: mediaDot(query, $0.vector)) }
+            .map { Match(item: Item(id: $0.id, isVideo: videoIds.contains($0.id)), score: mediaDot(query, $0.vector)) }
             .sorted { $0.score > $1.score }
             .prefix(120)
             .map { $0 }
+    }
+
+    private func loadFrames(_ item: Item, maxEdge: CGFloat) async -> [Data] {
+        if item.isVideo { return await loadVideoFrames(item, maxEdge: maxEdge) }
+        if let jpeg = await loadJPEG(item, maxEdge: maxEdge) { return [jpeg] }
+        return []
+    }
+
+    private func loadVideoFrames(_ item: Item, maxEdge: CGFloat) async -> [Data] {
+        if item.id.hasPrefix("file:") {
+            let url = Self.importedDir.appendingPathComponent(String(item.id.dropFirst(5)))
+            return await Task.detached { videoKeyframes(url: url, maxEdge: maxEdge) }.value
+        }
+        let localId = String(item.id.dropFirst(3))
+        guard let asset = PHAsset.fetchAssets(withLocalIdentifiers: [localId], options: nil).firstObject else { return [] }
+        let options = PHVideoRequestOptions()
+        options.isNetworkAccessAllowed = true
+        options.deliveryMode = .fastFormat
+        let url: URL? = await withCheckedContinuation { continuation in
+            let once = PhotoRequestOnce()
+            PHImageManager.default().requestAVAsset(forVideo: asset, options: options) { avAsset, _, _ in
+                let url = (avAsset as? AVURLAsset)?.url
+                once.run { continuation.resume(returning: url) }
+            }
+        }
+        guard let url else { return [] }
+        return await Task.detached { videoKeyframes(url: url, maxEdge: maxEdge) }.value
     }
 
     private func loadJPEG(_ item: Item, maxEdge: CGFloat) async -> Data? {
@@ -272,7 +349,8 @@ final class PhotoSearchModel: ObservableObject {
                 if pending.isEmpty { break }
                 for item in pending {
                     if Task.isCancelled || isPaused { break }
-                    if let jpeg = await loadJPEG(item, maxEdge: 512), let vector = await engine.embedImage(jpeg) {
+                    let frames = await loadFrames(item, maxEdge: 512)
+                    if let vector = await engine.embedImages(frames), !frames.isEmpty {
                         store.put(MediaVector(id: item.id, startMs: 0, endMs: 0, vector: vector))
                     } else {
                         failed.insert(item.id)
@@ -337,7 +415,7 @@ struct PhotoSearchScreen: View {
                     }
                     .foregroundStyle(.white)
                     .liquidGlassPrimaryButton(cornerRadius: 12)
-                    PhotosPicker(selection: $pickerItems, matching: .images) {
+                    PhotosPicker(selection: $pickerItems, matching: .any(of: [.images, .videos])) {
                         Text(settings.localized("photo_search_select_photos"))
                             .frame(maxWidth: .infinity).frame(height: 50)
                             .foregroundStyle(.white)
@@ -375,7 +453,7 @@ struct PhotoSearchScreen: View {
                 countText: String(format: settings.localized("photo_search_count"), model.progress.processed, model.items.count),
                 onClearAll: { model.clearAll() }
             ) {
-                PhotosPicker(selection: $pickerItems, matching: .images) {
+                PhotosPicker(selection: $pickerItems, matching: .any(of: [.images, .videos])) {
                     Label(settings.localized("photo_search_select_photos"), systemImage: "photo.badge.plus")
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
@@ -474,6 +552,12 @@ private struct PhotoSearchThumbnail: View {
                 if let image {
                     Image(uiImage: image).resizable().scaledToFill()
                 }
+                if item.isVideo {
+                    Image(systemName: "play.circle.fill")
+                        .font(.title2)
+                        .foregroundStyle(.white)
+                        .shadow(radius: 4)
+                }
             }
             .frame(width: geo.size.width, height: geo.size.height)
             .clipped()
@@ -492,11 +576,18 @@ private struct PhotoSearchViewer: View {
     let onClose: () -> Void
     @EnvironmentObject var settings: AppSettings
     @State private var image: UIImage?
+    @State private var player: AVPlayer?
 
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
-            if let image {
+            if item.isVideo {
+                if let player {
+                    VideoPlayer(player: player)
+                } else {
+                    ProgressView().tint(.white)
+                }
+            } else if let image {
                 Image(uiImage: image).resizable().scaledToFit()
             } else {
                 ProgressView().tint(.white)
@@ -518,7 +609,33 @@ private struct PhotoSearchViewer: View {
                 .padding(.bottom, 32)
             }
         }
-        .task { image = await model.loadImage(item, targetSize: CGSize(width: 2048, height: 2048)) }
+        .task {
+            if item.isVideo {
+                if let url = await model.playbackURL(item) {
+                    let next = AVPlayer(url: url)
+                    player = next
+                    next.play()
+                }
+            } else {
+                image = await model.loadImage(item, targetSize: CGSize(width: 2048, height: 2048))
+            }
+        }
+        .onDisappear { player?.pause() }
+    }
+}
+
+private struct PickedMovie: Transferable {
+    let url: URL
+
+    static var transferRepresentation: some TransferRepresentation {
+        FileRepresentation(contentType: .movie) { movie in
+            SentTransferredFile(movie.url)
+        } importing: { received in
+            let ext = received.file.pathExtension.isEmpty ? "mov" : received.file.pathExtension
+            let dest = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).\(ext)")
+            try FileManager.default.copyItem(at: received.file, to: dest)
+            return PickedMovie(url: dest)
+        }
     }
 }
 

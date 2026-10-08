@@ -2,6 +2,26 @@ import AVFoundation
 import Foundation
 import UIKit
 
+/// First frame and, for clips longer than a second, the frame near the end.
+func videoKeyframes(url: URL, maxEdge: CGFloat = 512) -> [Data] {
+    let asset = AVURLAsset(url: url)
+    let generator = AVAssetImageGenerator(asset: asset)
+    generator.appliesPreferredTrackTransform = true
+    generator.maximumSize = CGSize(width: maxEdge, height: maxEdge)
+    let seconds = CMTimeGetSeconds(asset.duration)
+    var times: [CMTime] = [.zero]
+    if seconds.isFinite, seconds > 1 {
+        times.append(CMTime(seconds: max(0, seconds - 0.5), preferredTimescale: 600))
+    }
+    var frames: [Data] = []
+    for time in times {
+        guard let cg = try? generator.copyCGImage(at: time, actualTime: nil),
+              let jpeg = mediaSearchJPEG(from: UIImage(cgImage: cg), maxEdge: maxEdge) else { continue }
+        frames.append(jpeg)
+    }
+    return frames
+}
+
 // MARK: - Shared engine + storage for Photo Search and Audio Search
 // Mirrors AI Edge Gallery's Instant Media Search / Video Moment Finder: EmbeddingGemma 2 with a
 // 70-token vision budget and 256-token inputs, vectors stored locally and ranked by cosine.
@@ -185,6 +205,10 @@ actor MediaSearchEngine {
 
     func embedImage(_ jpeg: Data) async -> [Float]? {
         try? await service.embedImage(jpeg)
+    }
+
+    func embedImages(_ frames: [Data]) async -> [Float]? {
+        try? await service.embedImages(frames)
     }
 
     func embedAudio(_ wav: Data) async -> [Float]? {

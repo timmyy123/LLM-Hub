@@ -926,8 +926,8 @@
 "prompt_template_none" = "Yok (Varsayılan)";
 
 /* Photo Search / Audio Search */
-"feature_photo_search" = "Fotoğraf Arama";
-"feature_photo_search_desc" = "Cihazınızdaki fotoğrafları tarif ederek bulun";
+"feature_photo_search" = "Fotoğraf ve video arama";
+"feature_photo_search_desc" = "Cihazınızdaki fotoğraf ve videoları tarif ederek bulun";
 "feature_audio_search" = "Ses Arama";
 "feature_audio_search_desc" = "Seslerinizdeki anları tarif ederek bulun";
 "media_search_download_model" = "EmbeddingGemma 2'yi indir";
@@ -944,14 +944,14 @@
 "media_search_library" = "Kitaplık";
 "media_search_clear" = "Tümünü temizle ve baştan başla";
 "media_search_grant_access" = "Erişime izin ver";
-"photo_search_onboarding_title" = "Fotoğraflarınızı tarif ederek arayın";
-"photo_search_onboarding_desc" = "EmbeddingGemma 2 fotoğraflarınızı bu cihazda analiz eder; ardından onları basit kelimelerle arayabilir veya benzer fotoğrafları bulabilirsiniz. Hiçbir şey telefonunuzdan çıkmaz.";
-"photo_search_all_photos" = "Tüm fotoğrafları analiz et";
-"photo_search_select_photos" = "Fotoğraf seç";
-"photo_search_hint" = "Bir fotoğrafı tarif edin, ör. sahilde köpek";
+"photo_search_onboarding_title" = "Fotoğraf ve videolarınızı tarif ederek arayın";
+"photo_search_onboarding_desc" = "EmbeddingGemma 2 fotoğraf ve videolarınızı bu cihazda analiz eder. Videolar ilk ve son kareden okunur. Ardından sade sözcüklerle arayabilir veya benzer öğeler bulabilirsiniz. Hiçbir şey telefonunuzdan çıkmaz.";
+"photo_search_all_photos" = "Tüm fotoğraf ve videoları analiz et";
+"photo_search_select_photos" = "Fotoğraf ve video seç";
+"photo_search_hint" = "Bir fotoğraf veya video tarif edin, örn. sahilde köpek";
 "photo_search_find_similar" = "Benzer fotoğrafları bul";
 "photo_search_similar_results" = "Benzer fotoğraflar";
-"photo_search_permission_denied" = "Tüm fotoğrafları analiz etmek için fotoğraf erişimi gerekiyor.";
+"photo_search_permission_denied" = "Kitaplığınızı analiz etmek için fotoğraf ve video erişimi gerekir.";
 "photo_search_count" = "%2$d fotoğraftan %1$d tanesi analiz edildi";
 "audio_search_onboarding_title" = "Seslerinizi tarif ederek arayın";
 "audio_search_onboarding_desc" = "EmbeddingGemma 2 her kaydı kısa anlara böler ve bunları bu cihazda analiz eder; böylece tarif ettiğiniz bölüme doğrudan gidebilirsiniz.";

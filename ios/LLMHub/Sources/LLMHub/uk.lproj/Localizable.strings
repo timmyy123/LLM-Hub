@@ -926,8 +926,8 @@
 "prompt_template_none" = "Немає (за замовчуванням)";
 
 /* Photo Search / Audio Search */
-"feature_photo_search" = "Пошук фото";
-"feature_photo_search_desc" = "Знаходьте фото на пристрої за описом";
+"feature_photo_search" = "Пошук фото й відео";
+"feature_photo_search_desc" = "Знаходьте фото й відео на пристрої, описуючи їх";
 "feature_audio_search" = "Пошук аудіо";
 "feature_audio_search_desc" = "Знаходьте моменти в аудіо за описом";
 "media_search_download_model" = "Завантажити EmbeddingGemma 2";
@@ -944,14 +944,14 @@
 "media_search_library" = "Медіатека";
 "media_search_clear" = "Очистити все й почати знову";
 "media_search_grant_access" = "Дозволити доступ";
-"photo_search_onboarding_title" = "Шукайте фото за описом";
-"photo_search_onboarding_desc" = "EmbeddingGemma 2 аналізує ваші фото на цьому пристрої, після чого їх можна шукати простими словами або знаходити схожі. Ніщо не залишає телефон.";
-"photo_search_all_photos" = "Аналізувати всі фото";
-"photo_search_select_photos" = "Вибрати фото";
-"photo_search_hint" = "Опишіть фото, напр.: собака на пляжі";
+"photo_search_onboarding_title" = "Шукайте фото й відео, описуючи їх";
+"photo_search_onboarding_desc" = "EmbeddingGemma 2 аналізує фото й відео на цьому пристрої. Відео читається з першого й останнього кадру. Потім можна шукати звичайними словами або знаходити схоже. Нічого не залишає телефон.";
+"photo_search_all_photos" = "Аналізувати всі фото й відео";
+"photo_search_select_photos" = "Вибрати фото й відео";
+"photo_search_hint" = "Опишіть фото чи відео, наприклад собака на пляжі";
 "photo_search_find_similar" = "Знайти схожі фото";
 "photo_search_similar_results" = "Схожі фото";
-"photo_search_permission_denied" = "Для аналізу всіх фото потрібен доступ до фото.";
+"photo_search_permission_denied" = "Для аналізу бібліотеки потрібен доступ до фото й відео.";
 "photo_search_count" = "Проаналізовано %1$d з %2$d фото";
 "audio_search_onboarding_title" = "Шукайте в аудіо за описом";
 "audio_search_onboarding_desc" = "EmbeddingGemma 2 ділить кожен запис на короткі моменти й аналізує їх на цьому пристрої, щоб одразу перейти до потрібного місця.";

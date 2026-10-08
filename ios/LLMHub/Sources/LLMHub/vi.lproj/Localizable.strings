@@ -933,8 +933,8 @@
 "prompt_template_none" = "Không có (Mặc định)";
 
 /* Photo Search / Audio Search */
-"feature_photo_search" = "Tìm ảnh";
-"feature_photo_search_desc" = "Tìm ảnh trên thiết bị bằng cách mô tả";
+"feature_photo_search" = "Tìm ảnh và video";
+"feature_photo_search_desc" = "Tìm ảnh và video trên thiết bị bằng cách mô tả";
 "feature_audio_search" = "Tìm âm thanh";
 "feature_audio_search_desc" = "Tìm khoảnh khắc trong âm thanh bằng cách mô tả";
 "media_search_download_model" = "Tải EmbeddingGemma 2";
@@ -951,14 +951,14 @@
 "media_search_library" = "Thư viện";
 "media_search_clear" = "Xóa tất cả và bắt đầu lại";
 "media_search_grant_access" = "Cho phép truy cập";
-"photo_search_onboarding_title" = "Tìm ảnh bằng cách mô tả";
-"photo_search_onboarding_desc" = "EmbeddingGemma 2 phân tích ảnh ngay trên thiết bị này, sau đó bạn có thể tìm bằng từ ngữ thông thường hoặc tìm ảnh tương tự. Không có gì rời khỏi điện thoại.";
-"photo_search_all_photos" = "Phân tích tất cả ảnh";
-"photo_search_select_photos" = "Chọn ảnh";
-"photo_search_hint" = "Mô tả một bức ảnh, vd. chó trên bãi biển";
+"photo_search_onboarding_title" = "Tìm ảnh và video bằng cách mô tả";
+"photo_search_onboarding_desc" = "EmbeddingGemma 2 phân tích ảnh và video trên thiết bị này. Video được đọc từ khung hình đầu và cuối. Sau đó bạn có thể tìm bằng lời thường hoặc tìm mục tương tự. Không có gì rời khỏi điện thoại.";
+"photo_search_all_photos" = "Phân tích mọi ảnh và video";
+"photo_search_select_photos" = "Chọn ảnh và video";
+"photo_search_hint" = "Mô tả ảnh hoặc video, ví dụ chó trên bãi biển";
 "photo_search_find_similar" = "Tìm ảnh tương tự";
 "photo_search_similar_results" = "Ảnh tương tự";
-"photo_search_permission_denied" = "Cần quyền truy cập ảnh để phân tích tất cả ảnh.";
+"photo_search_permission_denied" = "Cần quyền ảnh và video để phân tích thư viện.";
 "photo_search_count" = "Đã phân tích %1$d/%2$d ảnh";
 "audio_search_onboarding_title" = "Tìm âm thanh bằng cách mô tả";
 "audio_search_onboarding_desc" = "EmbeddingGemma 2 chia mỗi bản ghi thành các khoảnh khắc ngắn và phân tích ngay trên thiết bị này, để bạn nhảy thẳng đến đoạn đã mô tả.";

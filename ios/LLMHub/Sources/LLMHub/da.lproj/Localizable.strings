@@ -933,8 +933,8 @@
 "prompt_template_none" = "Ingen (standard)";
 
 /* Photo Search / Audio Search */
-"feature_photo_search" = "Fotosøgning";
-"feature_photo_search_desc" = "Find fotos på din enhed ved at beskrive dem";
+"feature_photo_search" = "Foto- og videosøgning";
+"feature_photo_search_desc" = "Find fotos og videoer på din enhed ved at beskrive dem";
 "feature_audio_search" = "Lydsøgning";
 "feature_audio_search_desc" = "Find øjeblikke i din lyd ved at beskrive dem";
 "media_search_download_model" = "Download EmbeddingGemma 2";
@@ -951,14 +951,14 @@
 "media_search_library" = "Bibliotek";
 "media_search_clear" = "Ryd alt og start forfra";
 "media_search_grant_access" = "Tillad adgang";
-"photo_search_onboarding_title" = "Søg i dine fotos ved at beskrive dem";
-"photo_search_onboarding_desc" = "EmbeddingGemma 2 analyserer dine fotos på denne enhed, så du kan søge med almindelige ord eller finde lignende fotos. Intet forlader din telefon.";
-"photo_search_all_photos" = "Analyser alle fotos";
-"photo_search_select_photos" = "Vælg fotos";
-"photo_search_hint" = "Beskriv et foto, f.eks. hund på stranden";
+"photo_search_onboarding_title" = "Søg i dine fotos og videoer ved at beskrive dem";
+"photo_search_onboarding_desc" = "EmbeddingGemma 2 analyserer dine fotos og videoer på denne enhed. Videoer læses fra det første og sidste billede. Derefter kan du søge med almindelige ord eller finde lignende ting. Intet forlader din telefon.";
+"photo_search_all_photos" = "Analysér alle fotos og videoer";
+"photo_search_select_photos" = "Vælg fotos og videoer";
+"photo_search_hint" = "Beskriv et foto eller en video, f.eks. hund på stranden";
 "photo_search_find_similar" = "Find lignende fotos";
 "photo_search_similar_results" = "Lignende fotos";
-"photo_search_permission_denied" = "Der kræves adgang til fotos for at analysere alle fotos.";
+"photo_search_permission_denied" = "Adgang til fotos og videoer kræves for at analysere dit bibliotek.";
 "photo_search_count" = "%1$d af %2$d fotos analyseret";
 "audio_search_onboarding_title" = "Søg i din lyd ved at beskrive den";
 "audio_search_onboarding_desc" = "EmbeddingGemma 2 deler hver optagelse op i korte øjeblikke og analyserer dem på denne enhed, så du kan springe direkte til den del, du beskriver.";

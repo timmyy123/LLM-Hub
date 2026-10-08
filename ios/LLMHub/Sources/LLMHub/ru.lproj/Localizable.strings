@@ -898,8 +898,8 @@
 "prompt_template_none" = "Нет (по умолчанию)";
 
 /* Photo Search / Audio Search */
-"feature_photo_search" = "Поиск фото";
-"feature_photo_search_desc" = "Находите фото на устройстве по описанию";
+"feature_photo_search" = "Поиск фото и видео";
+"feature_photo_search_desc" = "Находите фото и видео на устройстве, описывая их";
 "feature_audio_search" = "Поиск аудио";
 "feature_audio_search_desc" = "Находите моменты в аудио по описанию";
 "media_search_download_model" = "Скачать EmbeddingGemma 2";
@@ -916,14 +916,14 @@
 "media_search_library" = "Медиатека";
 "media_search_clear" = "Очистить всё и начать заново";
 "media_search_grant_access" = "Разрешить доступ";
-"photo_search_onboarding_title" = "Ищите фото по описанию";
-"photo_search_onboarding_desc" = "EmbeddingGemma 2 анализирует ваши фото на этом устройстве, после чего их можно искать простыми словами или находить похожие. Ничего не покидает телефон.";
-"photo_search_all_photos" = "Анализировать все фото";
-"photo_search_select_photos" = "Выбрать фото";
-"photo_search_hint" = "Опишите фото, например: собака на пляже";
+"photo_search_onboarding_title" = "Ищите фото и видео, описывая их";
+"photo_search_onboarding_desc" = "EmbeddingGemma 2 анализирует фото и видео на этом устройстве. Видео читается по первому и последнему кадру. Затем можно искать обычными словами или находить похожее. Ничего не покидает телефон.";
+"photo_search_all_photos" = "Анализировать все фото и видео";
+"photo_search_select_photos" = "Выбрать фото и видео";
+"photo_search_hint" = "Опишите фото или видео, например собака на пляже";
 "photo_search_find_similar" = "Найти похожие фото";
 "photo_search_similar_results" = "Похожие фото";
-"photo_search_permission_denied" = "Для анализа всех фото нужен доступ к фото.";
+"photo_search_permission_denied" = "Для анализа библиотеки нужен доступ к фото и видео.";
 "photo_search_count" = "Проанализировано %1$d из %2$d фото";
 "audio_search_onboarding_title" = "Ищите в аудио по описанию";
 "audio_search_onboarding_desc" = "EmbeddingGemma 2 делит каждую запись на короткие моменты и анализирует их на этом устройстве, чтобы сразу перейти к нужному месту.";

@@ -926,8 +926,8 @@
 "prompt_template_none" = "Brak (domyślny)";
 
 /* Photo Search / Audio Search */
-"feature_photo_search" = "Wyszukiwanie zdjęć";
-"feature_photo_search_desc" = "Znajduj zdjęcia na urządzeniu, opisując je";
+"feature_photo_search" = "Wyszukiwanie zdjęć i filmów";
+"feature_photo_search_desc" = "Znajdź zdjęcia i filmy na urządzeniu, opisując je";
 "feature_audio_search" = "Wyszukiwanie audio";
 "feature_audio_search_desc" = "Znajduj momenty w nagraniach, opisując je";
 "media_search_download_model" = "Pobierz EmbeddingGemma 2";
@@ -944,14 +944,14 @@
 "media_search_library" = "Biblioteka";
 "media_search_clear" = "Wyczyść wszystko i zacznij od nowa";
 "media_search_grant_access" = "Zezwól na dostęp";
-"photo_search_onboarding_title" = "Szukaj zdjęć, opisując je";
-"photo_search_onboarding_desc" = "EmbeddingGemma 2 analizuje zdjęcia na tym urządzeniu, a potem możesz je wyszukiwać zwykłymi słowami lub znajdować podobne. Nic nie opuszcza telefonu.";
-"photo_search_all_photos" = "Przeanalizuj wszystkie zdjęcia";
-"photo_search_select_photos" = "Wybierz zdjęcia";
-"photo_search_hint" = "Opisz zdjęcie, np. pies na plaży";
+"photo_search_onboarding_title" = "Przeszukuj zdjęcia i filmy, opisując je";
+"photo_search_onboarding_desc" = "EmbeddingGemma 2 analizuje zdjęcia i filmy na tym urządzeniu. Filmy są odczytywane z pierwszej i ostatniej klatki. Potem możesz szukać zwykłymi słowami albo znajdować podobne rzeczy. Nic nie opuszcza telefonu.";
+"photo_search_all_photos" = "Analizuj wszystkie zdjęcia i filmy";
+"photo_search_select_photos" = "Wybierz zdjęcia i filmy";
+"photo_search_hint" = "Opisz zdjęcie lub film, np. pies na plaży";
 "photo_search_find_similar" = "Znajdź podobne zdjęcia";
 "photo_search_similar_results" = "Podobne zdjęcia";
-"photo_search_permission_denied" = "Do analizy wszystkich zdjęć potrzebny jest dostęp do zdjęć.";
+"photo_search_permission_denied" = "Do analizy biblioteki potrzebny jest dostęp do zdjęć i filmów.";
 "photo_search_count" = "Przeanalizowano %1$d z %2$d zdjęć";
 "audio_search_onboarding_title" = "Szukaj w nagraniach, opisując je";
 "audio_search_onboarding_desc" = "EmbeddingGemma 2 dzieli każde nagranie na krótkie momenty i analizuje je na tym urządzeniu, aby od razu przejść do opisanego fragmentu.";
