@@ -7236,6 +7236,8 @@ public struct MusicGeneratorScreen: View {
     @State private var durationSeconds: Double = 10.0
     @AppStorage("feature_music_live_generation") private var liveGeneration: Bool = false
     @AppStorage("feature_music_unlimited_duration") private var unlimitedDuration: Bool = false
+    @AppStorage("feature_music_random_seed") private var randomSeed: Bool = true
+    @AppStorage("feature_music_seed") private var musicSeed: Double = 0
     @State private var showSettings: Bool = false
     @State private var isLoading: Bool = false
     @State private var errorMessage: String? = nil
@@ -7517,6 +7519,23 @@ public struct MusicGeneratorScreen: View {
                     .foregroundColor(.white)
                     .disabled(isGenerating || isLoading)
             }
+            Toggle(settings.localized("image_generator_random_seed"), isOn: $randomSeed)
+                .tint(ApolloPalette.accentStrong)
+                .foregroundColor(.white)
+                .disabled(isGenerating || isLoading)
+
+            if !randomSeed {
+                HStack {
+                    Text(settings.localized("image_generator_seed"))
+                    Spacer()
+                    Text("\(Int(musicSeed))")
+                        .monospacedDigit()
+                }
+                .foregroundColor(.white)
+                Slider(value: $musicSeed, in: 0...999_999, step: 1)
+                    .tint(ApolloPalette.accentStrong)
+                    .disabled(isGenerating || isLoading)
+            }
         }
     }
 
@@ -7590,6 +7609,7 @@ public struct MusicGeneratorScreen: View {
         let requestedModel = selectedModelName
         let requestedLive = liveGeneration
         let requestedUnlimited = liveGeneration && unlimitedDuration
+        let requestedSeed: UInt64? = randomSeed ? nil : UInt64(min(999_999, max(0, musicSeed)))
         isLoading = true
         Task {
             if !isCurrentModelLoaded {
@@ -7613,7 +7633,8 @@ public struct MusicGeneratorScreen: View {
                 prompt: requestedPrompt,
                 durationSeconds: Double(requestedDuration),
                 live: requestedLive,
-                unlimited: requestedUnlimited
+                unlimited: requestedUnlimited,
+                seed: requestedSeed
             ) {
                 await MainActor.run {
                     generatedTracks.append(

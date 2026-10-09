@@ -531,7 +531,8 @@ public final class MusicGeneratorBackend: ObservableObject {
         prompt: String,
         durationSeconds: Double,
         live: Bool = false,
-        unlimited: Bool = false
+        unlimited: Bool = false,
+        seed: UInt64? = nil
     ) async -> URL? {
         guard !isGenerating, generationTask == nil else { return nil }
         guard await loadModel(modelName: modelName),
@@ -586,6 +587,7 @@ public final class MusicGeneratorBackend: ObservableObject {
                     prompt: prompt,
                     resourceDirectory: resourceDirectory,
                     durationSeconds: runsUntilStopped ? nil : durationSeconds,
+                    seed: seed,
                     collectAudio: false,
                     shouldStop: { stop.isRequested },
                     onAudioFrame: { pcm in

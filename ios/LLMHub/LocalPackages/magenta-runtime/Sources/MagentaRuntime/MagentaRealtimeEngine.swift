@@ -19,10 +19,12 @@ public enum MagentaRealtimeEngine {
     public final class Session: @unchecked Sendable {
         fileprivate let function: ImportedFunction
         fileprivate let initialState: [MLXArray]
+        fileprivate let randomKeyIndex: Int
 
-        fileprivate init(function: ImportedFunction, initialState: [MLXArray]) {
+        fileprivate init(function: ImportedFunction, initialState: [MLXArray], randomKeyIndex: Int) {
             self.function = function
             self.initialState = initialState
+            self.randomKeyIndex = randomKeyIndex
         }
     }
 
@@ -38,8 +40,16 @@ public enum MagentaRealtimeEngine {
         guard state.count == 165 || state.count == 229 else {
             throw EngineError.unsupportedStateCount(state.count)
         }
+        // Match the native engine: the RNG key is the unique uint32 state
+        // tensor with a trailing dimension of two, for either model size.
+        let keyIndices = state.indices.filter {
+            state[$0].dtype == .uint32 && state[$0].shape.last == 2
+        }
+        guard keyIndices.count == 1 else {
+            throw EngineError.invalidRandomKeyCount(keyIndices.count)
+        }
         eval(state)
-        return Session(function: function, initialState: state)
+        return Session(function: function, initialState: state, randomKeyIndex: keyIndices[0])
     }
 
     public static func generate(
@@ -48,6 +58,7 @@ public enum MagentaRealtimeEngine {
         prompt: String,
         resourceDirectory: URL,
         durationSeconds: Double,
+        seed: UInt64? = nil,
         progress: @Sendable (Double) -> Void
     ) throws -> Data {
         let session = try load(functionURL: functionURL, stateURL: stateURL)
@@ -56,6 +67,7 @@ public enum MagentaRealtimeEngine {
             prompt: prompt,
             resourceDirectory: resourceDirectory,
             durationSeconds: durationSeconds,
+            seed: seed,
             progress: progress
         )
     }
@@ -67,6 +79,7 @@ public enum MagentaRealtimeEngine {
         prompt: String,
         resourceDirectory: URL,
         durationSeconds: Double?,
+        seed: UInt64? = nil,
         collectAudio: Bool = true,
         shouldStop: @Sendable () -> Bool = { false },
         onAudioFrame: (@Sendable (Data) throws -> Void)? = nil,
@@ -100,6 +113,12 @@ public enum MagentaRealtimeEngine {
             MLX.zeros([1, 0, musicCoCaLevels], dtype: .int32),
         ]
         arguments.append(contentsOf: session.initialState)
+        let generationSeed = seed ?? UInt64.random(in: 0...UInt64.max)
+        let savedKey = session.initialState[session.randomKeyIndex]
+        let keyCount = savedKey.size / 2
+        let keys = (0..<keyCount).map { MLXRandom.key(generationSeed &+ UInt64($0)) }
+        arguments[9 + session.randomKeyIndex] = stacked(keys).reshaped(savedKey.shape)
+        print("[LLMHub][MusicGen] seed=\(generationSeed)")
         eval(arguments)
 
         var modelTime = 0.0
@@ -635,12 +654,15 @@ public enum MagentaRealtimeEngine {
 
     enum EngineError: LocalizedError {
         case unsupportedStateCount(Int)
+        case invalidRandomKeyCount(Int)
         case invalidOutputCount(Int, Int)
         case invalidAudioShape([Int])
         case unsupportedAudioType(String)
 
         var errorDescription: String? {
             switch self {
+            case .invalidRandomKeyCount(let count):
+                return "Magenta state must contain one RNG key tensor; found \(count)"
             case .unsupportedStateCount(let count):
                 return "Unsupported Magenta state layout (\(count) arrays)"
             case .invalidOutputCount(let actual, let expected):
