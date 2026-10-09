@@ -40,10 +40,13 @@
 | **💬 Chat** | Multi-turn conversations with RAG memory, web search, TTS auto-readout, and multimodal input |
 | **🤖 AI Agent** | **[NEW]** Autonomous device agent with function calling, interactive maps, device tools, MCP tools, and Termux terminal command generation on Android |
 | **🤖 creAItor** | **[NEW]** Design custom AI personas with specialized system prompts (PCTF) in seconds |
-| **💻 Vibe Coder** | **[NEW]** Explain your app idea and watch it be built in real-time with live HTML/JS preview |
+| **💻 Vibe Coder** | **[NEW]** Build apps with live HTML/JS preview; Android also integrates Codex through Termux using your selected local model |
 | **✍️ Writing Aid** | Summarize, expand, rewrite, improve grammar, or generate code from descriptions |
 | **🎨 Image Generator** | Create images from text prompts using Stable Diffusion 1.5 with swipeable gallery |
-| **🎵 Music Generator** | **[NEW]** Generate music and sound effects locally with SoundGen on Android and Magenta Realtime 2 on iOS |
+| **🎵 Music Generator** | **[NEW]** Generate music and sound effects locally with SoundGen on Android and Magenta Realtime 2 on iOS, including live playback as music is generated |
+| **🔎 Instant Media Search** | **[NEW]** Search photos and videos by description or a reference image on Android and iOS using on-device EmbeddingGemma 2 |
+| **🎞️ Video Moment Finder** | **[NEW]** Describe a moment in a video and jump to matching timestamps using visual and audio embeddings on Android and iOS |
+| **🔊 Text to Speech & Voice Cloning** | Android supports Kokoro, multilingual Supertonic 3 with voice-profile import, and Pocket TTS with on-device voice cloning |
 | **🔍 Image Upscale** | **[NEW]** Upscale images up to 4× using AI super-resolution models (RealESRGAN, UltraSharp) with NPU acceleration |
 | **🎥 Video Generator** | **[NEW]** Generate videos from text prompts or images using Stable Video Diffusion on iOS |
 | **🌍 Translator** | Translate text, images (OCR), and audio across 50+ languages - offline |
@@ -63,7 +66,20 @@ The **AI Agent** turns on-device LLMs into autonomous assistants with device fun
 ### 🎙️ Supported ASR Models (Android)
 The offline **Transcriber** feature on Android supports on-device Whisper models for high-accuracy local speech-to-text.
 
-Android also includes Kokoro TTS models for local text-to-speech.
+### 🔊 Android Text to Speech & Voice Cloning
+- **Kokoro**: Local speech with downloadable voices managed in Settings.
+- **Supertonic 3**: Multilingual on-device speech with downloadable presets and import of compatible voice-style JSON files. Raw audio cloning and Pocket TTS voice states are not supported by Supertonic's importer. See [Supertonic 3 setup](android/docs/supertonic-3.md).
+- **Pocket TTS**: English speech and fully local voice cloning from recorded or imported audio. Manage, select, rename and delete cloned voices in Settings. Cloning uses 3–30 seconds of reference audio; longer imports use their first 30 seconds. See [Pocket TTS setup](android/docs/pocket-tts.md).
+- Selecting an engine and voice in Settings applies it to app-wide speech and auto-readout. Translator keeps system TTS.
+
+### 🔎 Media Search & Video Moment Finder
+On Android and iOS, **Instant Media Search** uses EmbeddingGemma 2 to index photos and videos locally, then find matches from a text description or reference image. **Video Moment Finder** combines video frames and audio from two-second windows so you can search for a scene or event and play the matching moment. Download a compatible EmbeddingGemma 2 model and choose the media to index; search runs on-device.
+
+### 💻 Android Vibe Coder & Codex
+Enable **Codex mode** in Vibe Coder's model settings to use the selected on-device model with the Codex app server running in Termux. Codex can inspect project files, edit code and run project commands, with streamed activity and terminal output in the app. This mode requires an ARM64 device running Android 10 or newer and does not require an OpenAI login. Install Termux, allow external app commands, grant LLM Hub permission to run Termux commands, and use the in-app **Install Codex** action before starting.
+
+### 🎵 iOS Live Music Generation
+The iOS Music Generator supports **Live generation** with Magenta Realtime 2: hear audio as it is generated while the app writes it to a local file. Enable **Unlimited duration** to keep generating until you press Stop, or use a fixed duration. Fixed-duration output uses WAV; unlimited sessions use CAF for long recordings.
 
 ### 🔐 Privacy First
 - **100% on-device processing** - no internet required for inference
@@ -98,6 +114,9 @@ Technology
 - **LLM & ASR Runtime**: MediaPipe, LiteRT, GenieX SDK (GGUF on Android), WhisperKit (ASR with TFLite + QNN NPU on Android), Llama.cpp (via [Run Anywhere SDK](https://github.com/RunanywhereAI/runanywhere-sdks) on iOS), whisper.cpp on iOS for transcription
 - **Image & Video Gen**: [Draw Things (MediaGenerationKit)](https://drawthings.ai/) (iOS), Qualcomm QNN (Android)
 - **Music Gen**: Magenta Realtime 2 with MLX/LiteRT (iOS), SoundGen with LiteRT (Android)
+- **Media Search**: EmbeddingGemma 2 for local media indexing and video moment retrieval (Android and iOS)
+- **Android TTS**: Kokoro, Supertonic 3 with ONNX Runtime, and PocketTTS.cpp with an NDK/JNI integration for local voice cloning
+- **Android Coding Agent**: Codex app server in Termux, connected to the app's local model through a loopback inference server
 
 
 Acknowledgments
@@ -106,6 +125,8 @@ Acknowledgments
 - [whisper.cpp](https://github.com/ggml-org/whisper.cpp) — On-device ASR/transcription support on iOS
 - [Run Anywhere SDK](https://github.com/RunanywhereAI/runanywhere-sdks) — iOS model runtime and LLM execution framework 🚀
 - [Draw Things](https://drawthings.ai/) — iOS image and video generation engine (MediaGenerationKit) 🎨
+- [PocketTTS.cpp](https://github.com/VolgaGerm/PocketTTS.cpp) — Android local speech and voice cloning integration
+- [Supertone Supertonic 3](https://huggingface.co/Supertone/supertonic-3) — Multilingual on-device TTS and voice presets
 - **Google, OpenAI, Meta, Microsoft, IBM, LiquidAI, Mistral, Primsm ML, HuggingFace** — model and tooling contributions
 
 Development Setup
