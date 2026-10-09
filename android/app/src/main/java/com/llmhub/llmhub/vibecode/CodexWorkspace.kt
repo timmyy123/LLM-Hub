@@ -143,7 +143,7 @@ internal class CodexWorkspace(
         }
     }
 
-    suspend fun stage(client: CodexClient, editorUri: String?, editorName: String?, editorText: String) {
+    suspend fun stage(client: CodexClient, editorUri: String?, editorName: String?, editorText: String, editorDirty: Boolean = false) {
         val realPath = resolveRealPath(context, tree)
         val targetPath = realPath ?: "/storage/emulated/0/Codex"
         val targetDir = java.io.File(targetPath)
@@ -151,15 +151,11 @@ internal class CodexWorkspace(
         isDirect = true
         remote = runCatching { targetDir.canonicalPath }.getOrDefault(targetPath)
 
-        // Write the active editor file directly so the model can read it immediately
-        if (!editorName.isNullOrBlank() && editorText.isNotEmpty()) {
-            runCatching {
-                java.io.File(targetDir, editorName).writeText(editorText)
-            }
-            runCatching {
-                client.request("fs/writeFile", JSONObject().put("path", "$remote/$editorName")
-                    .put("dataBase64", Base64.encodeToString(editorText.toByteArray(), Base64.NO_WRAP)))
-            }
+        // A clean editor may be stale after an interrupted run. Never overwrite an agent's
+        // actual edits with that snapshot on the next prompt; only publish unsaved user edits.
+        if (editorDirty && !editorName.isNullOrBlank()) {
+            client.request("fs/writeFile", JSONObject().put("path", "$remote/$editorName")
+                .put("dataBase64", Base64.encodeToString(editorText.toByteArray(), Base64.NO_WRAP)))
         }
     }
 

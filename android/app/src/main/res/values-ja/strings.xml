@@ -1098,4 +1098,5 @@
     <string name="vibe_codex_staging">プロジェクトファイルを準備中…</string>
     <string name="vibe_codex_generating">ローカルモデルが処理中…</string>
     <string name="vibe_codex_syncing">プロジェクトの変更を適用中…</string>
+    <string name="vibe_codex_step_progress">エージェントのステップ %1$d · 試行 %2$d · %3$d 文字生成済み</string>
 </resources>

@@ -12,48 +12,141 @@ internal object CodexResponses {
     fun prompt(request: JSONObject): String {
         val instructions = request.optString("instructions").trim()
         val toolsArray = request.optJSONArray("tools") ?: JSONArray()
-        val conversation = formatConversationInput(request.opt("input"))
+        val conversation = formatConversationInput(request.opt("input"), CodexProgressGuard.supersededResults(request))
 
         return buildString {
+            // The inference backend parses lowercase role labels into the model's chat template.
+            // Tool results must be subsequent turns, not a transcript inside the original request.
+            append("system: You are a coding agent continuing a tool-driven conversation.\n")
             if (instructions.isNotEmpty()) {
                 append("Instructions:\n").append(instructions).append("\n\n")
             }
-            append("Available tools:\n").append(toolsArray.toString(2)).append("\n\n")
-            if (conversation.isNotEmpty()) {
-                append("Conversation (including executed tool results):\n").append(conversation).append("\n\n")
+            val running = CodexProgressGuard.latestResult(request)?.second?.contains("Process running with session ID") == true
+            append("Available tools:\n").append(toolManifest(toolsArray, running).toString()).append("\n\n")
+            tools(toolsArray).entries.firstOrNull { isShellTool(it.key) }?.let { (name, _) ->
+                append("Use ").append(name).append(" for reading files and running checks. Use replace_in_file for exact edits and write_file for complete files. Example:\n")
+                append(JSONObject().put("text", "Applying a targeted edit").put("tool_calls", JSONArray().put(JSONObject()
+                    .put("name", "replace_in_file").put("arguments", JSONObject().put("path", "path/to/file")
+                        .put("old_text", "exact existing text").put("new_text", "replacement text"))))).append("\n")
+                append("write_stdin only sends bytes to an already running process. It does not edit files. A Chunk ID is not a session ID.\n\n")
             }
+            if (conversation.isNotEmpty()) {
+                append(conversation).append("\n\n")
+            }
+            append("user: Continue after the executed tool results above.\n")
             append("""
-                You are an expert coding agent. Follow the instructions and conversation above.
-                Return exactly one JSON object, without markdown or thinking tags:
-                {"text":"brief reply to user","tool_calls":[{"name":"exact tool name","arguments":{}}]}
-
-                CRITICAL INSTRUCTIONS:
-                - All project files are in the current working directory. Always access files by simple relative names (e.g. cat gay.html or cat index.html). Never use old absolute paths from prior chat history.
-                - If the user asks to create, modify, inspect, or run anything, you MUST call a tool in tool_calls.
-                - NEVER claim that you have finished, created, or edited files without calling tools first.
-                - To inspect or read a file, use shell_command with cat:
-                  {"name":"shell_command","arguments":{"command":"cat filename.ext"}}
-                - To write or create a file, use shell_command with cat:
-                  {"name":"shell_command","arguments":{"command":"cat << 'EOF' > filename.ext\n<file content>\nEOF"}}
-                - To inspect files or directory contents, use shell_command (e.g. ls -la).
-                - Use an empty tool_calls array ([]) ONLY when asking the user a clarifying question or answering a non-coding general question.
-
-                Example of reading a file:
-                {"text":"Reading file","tool_calls":[{"name":"shell_command","arguments":{"command":"cat gay.html"}}]}
-
-                Example of creating or editing a file:
-                {"text":"Writing index.html","tool_calls":[{"name":"shell_command","arguments":{"command":"cat << 'EOF' > index.html\n<!DOCTYPE html>\n<html>\n<head><title>App</title></head>\n<body><h1>Hello World</h1></body>\n</html>\nEOF"}}]}
-
-                Example of inspecting files:
-                {"text":"Checking workspace files","tool_calls":[{"name":"shell_command","arguments":{"command":"ls -la"}}]}
-
-                Example of asking clarification:
-                {"text":"Which file would you like me to update?","tool_calls":[]}
+                Act on the latest user request using the tools above. Tool results are real executed results.
+                Return one JSON object:
+                {"text":"brief progress or final reply","tool_calls":[{"name":"exact tool name","arguments":{}}]}
+                For custom tools, use "input" containing the raw tool input instead of "arguments".
+                Commands and edits are already authorized; execute them without asking permission.
+                Read a relevant file once, then edit it using its returned contents. Do not keep rereading an unchanged file.
+                The latest successful read is the current file. Older snapshots may contain bugs that have already been fixed.
+                If a command failed, change the command to address its actual error.
+                For HTML, URLs, quotes and multiline changes, use replace_in_file or write_file with literal text. Do not put them in sed substitutions or shell quoting.
+                Fix the user's requested change, not unrelated issues from earlier assistant reasoning.
+                Use relative paths in the current project. Use the exact argument names in the tool schema.
+                For a small typo, perform a targeted replacement rather than rewriting the entire file.
+                After editing, run a check to verify the change. After successful verification, finish with tool_calls: [].
+                You can instead call finish(summary="factual result") to end the turn. Do not call a read tool to finish.
+                When adding a framework, verify its dependency or script/import is actually present. Custom CSS and utility class names alone do not load a CSS framework.
+                An empty tool_calls list is also valid for a general question or a necessary clarification.
+                Never claim that a file changed without successful tool evidence.
+                Keep reasoning brief. Emit the next tool call instead of repeatedly describing a plan.
             """.trimIndent())
+            if (conversation.contains("tailwind", ignoreCase = true)) {
+                append("\nTailwind reference for standalone HTML previews without a build pipeline: ")
+                append("load <script src=\"https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4\"></script> in <head>, then apply utility classes. ")
+                append("Normal <style> tags do not compile @tailwind or @apply directives. Do not replace working CSS with uncompiled directives. ")
+                append("Existing build-based projects should keep their installed version and produce compiled CSS. ")
+                append("Reference: https://tailwindcss.com/docs/installation/play-cdn\n")
+            }
+            CodexProgressGuard.latestResult(request)?.let { (call, result) ->
+                append("\n\nMost recent executed tool: ").append(executedCall(call)).append("\n")
+                append("Most recent tool result (use this to choose the NEXT action):\n").append(result)
+                append("\nThe tool above already ran. Use its result; do not restart the same inspection.\n")
+            }
+
         }
     }
 
-    private fun formatConversationInput(inputObj: Any?): String {
+    private fun toolManifest(array: JSONArray, running: Boolean): JSONArray = JSONArray().apply {
+        for ((name, spec) in tools(array)) {
+            if (name.substringAfterLast('.') in setOf("get_goal", "create_goal", "update_goal")) continue
+            if (name.substringAfterLast('.') == "write_stdin" && !running) continue
+            put(JSONObject().put("name", name).put("type", spec.optString("type"))
+                .put("description", spec.optString("description").take(320)).apply {
+                    spec.optJSONObject("parameters")?.let { parameters ->
+                        val compact = JSONObject(parameters.toString())
+                        compact.optJSONObject("properties")?.let { properties ->
+                            for (key in properties.keys()) properties.optJSONObject(key)?.remove("description")
+                        }
+                        put("parameters", compact)
+                    }
+                })
+        }
+        if (tools(array).keys.any(::isShellTool)) {
+            for ((name, fields) in listOf("replace_in_file" to listOf("path", "old_text", "new_text"),
+                "write_file" to listOf("path", "content"))) {
+                val properties = JSONObject()
+                fields.forEach { properties.put(it, JSONObject().put("type", "string")) }
+                put(JSONObject().put("name", name).put("type", "function")
+                    .put("description", if (name == "replace_in_file") "Replace one unique fragment in a UTF-8 file. Copy old_text from the returned file. Indentation-only differences are accepted for HTML and brace-based code. Writes the actual file."
+                        else "Write complete literal UTF-8 content to the actual file, creating parent directories.")
+                    .put("parameters", JSONObject().put("type", "object").put("properties", properties).put("required", JSONArray(fields))))
+            }
+        }
+        put(JSONObject().put("name", "finish").put("type", "function")
+            .put("description", "End the agent turn with a factual summary after successful edits and verification. Does not execute a command.")
+            .put("parameters", JSONObject().put("type", "object")
+                .put("properties", JSONObject().put("summary", JSONObject().put("type", "string")))
+                .put("required", JSONArray().put("summary"))))
+    }
+
+    fun recoveryPrompt(request: JSONObject, error: Exception): String {
+        val input = request.optJSONArray("input") ?: JSONArray().put(JSONObject().put("type", "message")
+            .put("role", "user").put("content", request.optString("input")))
+        val condensed = JSONArray()
+        val latestId = CodexProgressGuard.latestResult(request)?.first?.optString("call_id")
+        val superseded = CodexProgressGuard.supersededResults(request)
+        val inspections = mutableSetOf<String>()
+        val retained = mutableSetOf<String>()
+        var lastSuccessfulAction: String? = null
+        latestId?.let(retained::add)
+        for (i in 0 until input.length()) {
+            val item = input.optJSONObject(i) ?: continue
+            if (item.optString("type") == "function_call" && CodexProgressGuard.inspectionKey(item) != null) {
+                inspections.add(item.optString("call_id"))
+            }
+        }
+        for (i in 0 until input.length()) {
+            val item = input.optJSONObject(i) ?: continue
+            val id = item.optString("call_id")
+            if (item.optString("type") == "function_call_output" && id in inspections && id !in superseded &&
+                item.optString("output").contains("Process exited with code 0")) retained.add(id)
+            if (item.optString("type") == "function_call_output" && id !in inspections &&
+                item.optString("output").contains("Process exited with code 0")) lastSuccessfulAction = id
+        }
+        lastSuccessfulAction?.let(retained::add)
+        for (i in 0 until input.length()) {
+            val original = input.optJSONObject(i) ?: continue
+            val item = JSONObject(original.toString())
+            when (item.optString("type")) {
+                "function_call_output", "custom_tool_call_output", "function_call", "custom_tool_call" ->
+                    if (item.optString("call_id") !in retained) continue
+                "message" -> if (item.optString("role") == "assistant") continue
+            }
+            condensed.put(item)
+        }
+        val recovery = JSONObject(request.toString()).put("input", condensed)
+        return prompt(recovery) + "\n\nRecovery instruction: ${error.message?.take(2000)}\n" +
+            "The earlier commands and edits listed above already executed. You are continuing after them. " +
+            "Use the latest result to determine what remains. If it verifies the requested change, finish now with " +
+            "{\"text\":\"concise factual result\",\"tool_calls\":[]}. Otherwise call a different necessary tool. " +
+            "Your rejected tool calls were NOT executed. Return complete valid JSON with text and tool_calls."
+    }
+
+    private fun formatConversationInput(inputObj: Any?, superseded: Set<String> = emptySet()): String {
         if (inputObj !is JSONArray) return inputObj?.toString().orEmpty()
         val sb = StringBuilder()
         for (i in 0 until inputObj.length()) {
@@ -64,7 +157,13 @@ internal object CodexResponses {
             }
             when (item.optString("type")) {
                 "message" -> {
-                    val role = item.optString("role").replaceFirstChar { it.uppercase() }
+                    // Executed results are evidence; earlier model plans and success claims are not.
+                    if (item.optString("role") == "assistant") continue
+                    val role = when (item.optString("role")) {
+                        "assistant" -> "assistant"
+                        "developer", "system" -> "system"
+                        else -> "user"
+                    }
                     val contentArr = item.optJSONArray("content")
                     val text = if (contentArr != null) {
                         (0 until contentArr.length()).mapNotNull { idx ->
@@ -75,13 +174,13 @@ internal object CodexResponses {
                     if (text.isNotBlank()) sb.append("$role: $text\n\n")
                 }
                 "function_call" -> {
-                    val name = item.optString("name")
-                    val args = item.opt("arguments")
-                    sb.append("Assistant (Tool Call): $name($args)\n\n")
+                    sb.append("assistant: Tool call already submitted: ${executedCall(item)}\n\n")
                 }
                 "function_call_output" -> {
-                    val output = item.optString("output")
-                    sb.append("Tool Output: $output\n\n")
+                    val output = if (item.optString("call_id") in superseded)
+                        "Earlier inspection superseded by a successful edit or later read. Use the current file contents, not this old snapshot."
+                    else item.optString("output")
+                    sb.append("user: Executed tool result: $output\n\n")
                 }
                 else -> {
                     val text = item.optString("text")
@@ -94,6 +193,9 @@ internal object CodexResponses {
             .replace(Regex("/data/data/com\\.termux/files/home/\\.llmhub-codex/workspaces/[^/'\"\\s]+/[^/'\"\\s]+"), ".")
             .replace(Regex("/data/data/com\\.termux/files/home/\\.llmhub-codex/workspaces/[^/'\"\\s]+"), ".")
     }
+
+    private fun executedCall(call: JSONObject): String = CodexProgressGuard.command(call)?.let(CodexFileEdits::commandSummary)
+        ?: "${call.optString("name")}(${call.optString("arguments")})"
 
     private fun tools(array: JSONArray, prefix: String = ""): Map<String, JSONObject> = buildMap {
         for (i in 0 until array.length()) {
@@ -112,8 +214,8 @@ internal object CodexResponses {
         if (clean.contains(SENTINEL_THINK)) {
             val idx = clean.indexOf(SENTINEL_THINK)
             val after = clean.substring(idx)
-            val jsonStart = after.indexOf('{')
-            clean = if (jsonStart >= 0) clean.substring(0, idx) + after.substring(jsonStart)
+            val actionStart = responseStart(after)
+            clean = if (actionStart >= 0) clean.substring(0, idx) + after.substring(actionStart)
                     else clean.substring(0, idx)
         }
         // 2. Strip standard thinking tags: <think>...</think>, <thought>...</thought>, <reasoning>...</reasoning>
@@ -126,13 +228,23 @@ internal object CodexResponses {
             if (clean.contains(tag)) {
                 val idx = clean.indexOf(tag)
                 val after = clean.substring(idx)
-                val jsonStart = after.indexOf('{')
-                clean = if (jsonStart >= 0) clean.substring(0, idx) + after.substring(jsonStart)
+                val actionStart = responseStart(after)
+                clean = if (actionStart >= 0) clean.substring(0, idx) + after.substring(actionStart)
                         else clean.substring(0, idx)
             }
         }
         // Strip zero-width spaces
         return clean.replace("\u200B", "").trim()
+    }
+
+    private fun responseStart(text: String): Int = listOf(text.indexOf('{'), text.indexOf("<|tool_call_start|>"),
+        text.indexOf("<tool_call>")).filter { it >= 0 }.minOrNull() ?: -1
+
+    private fun openThinking(after: String): Pair<String, String> {
+        val json = Regex("\\{\\s*\"(?:text|tool_calls)\"\\s*:").find(after)?.range?.first ?: -1
+        val marker = listOf(after.indexOf("<|tool_call_start|>"), after.indexOf("<tool_call>"), json)
+            .filter { it >= 0 }.minOrNull() ?: return after.trim() to ""
+        return after.substring(0, marker).trim() to after.substring(marker).trim()
     }
 
     private fun extractJson(text: String): String? {
@@ -200,16 +312,15 @@ internal object CodexResponses {
         }
 
         // 2. Bracket tool calls: [read_file(...)] or [read_file, {...}]
-        val bracketRegex = Regex("(?s)\\[([a-zA-Z0-9_.-]+(?:\\(.*?\\)|\\s*,\\s*\\{.*?\\}))\\]")
-        val bracketMatches = bracketRegex.findAll(text).toList()
+        val bracketMatches = CodexToolArguments.bracketRanges(text)
         if (bracketMatches.isNotEmpty()) {
             val calls = JSONArray()
             var messageText = text
-            for (m in bracketMatches) {
-                val inner = m.groupValues[1].trim()
-                val parsedCall = parseToolCallString(inner)
+            for (range in bracketMatches) {
+                val rawCall = text.substring(range)
+                val parsedCall = parseToolCallString(rawCall)
                 if (parsedCall != null) {
-                    messageText = messageText.replace(m.value, "").trim()
+                    messageText = messageText.replace(rawCall, "").trim()
                     calls.put(parsedCall)
                 }
             }
@@ -256,30 +367,7 @@ internal object CodexResponses {
         return null
     }
 
-    private fun parsePythonKwargs(str: String): JSONObject {
-        val obj = JSONObject()
-        val trimmed = str.trim()
-        if (trimmed.isBlank()) return obj
-        val pattern = Regex("([a-zA-Z0-9_]+)\\s*=\\s*(\"[^\"]*\"|'[^']*'|[^,]+)")
-        val matches = pattern.findAll(trimmed).toList()
-        for (m in matches) {
-            val k = m.groupValues[1]
-            var v = m.groupValues[2].trim()
-            if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith('\'') && v.endsWith('\''))) {
-                v = v.substring(1, v.length - 1)
-                obj.put(k, v)
-            } else if (v.equals("true", ignoreCase = true)) obj.put(k, true)
-            else if (v.equals("false", ignoreCase = true)) obj.put(k, false)
-            else if (v.toIntOrNull() != null) obj.put(k, v.toInt())
-            else obj.put(k, v)
-        }
-        if (obj.length() == 0 && trimmed.isNotBlank()) {
-            val cleanVal = trimmed.trim('"', '\'')
-            obj.put("path", cleanVal)
-            obj.put("command", cleanVal)
-        }
-        return obj
-    }
+    private fun parsePythonKwargs(str: String): JSONObject = CodexToolArguments.parse(str)
 
     fun resolveTool(name: String, available: Map<String, JSONObject>): Pair<String, JSONObject>? {
         val cleaned = cleanToolName(name)
@@ -327,6 +415,15 @@ internal object CodexResponses {
 
     private fun normalizeToolCall(call: JSONObject, available: Map<String, JSONObject>): JSONObject {
         val rawName = cleanToolName(call.optString("name").ifBlank { call.optString("tool").ifBlank { call.optString("function") } })
+        if (rawName.substringAfterLast('.') == "finish") {
+            val value = call.opt("arguments") ?: call.opt("parameters")
+            val args = if (value is JSONObject) value else JSONObject(value?.toString() ?: "{}")
+            val summary = args.getString("summary")
+            require(summary.isNotBlank()) { "finish requires a factual summary" }
+            return JSONObject().put("type", "message").put("id", "msg_${UUID.randomUUID()}")
+                .put("role", "assistant").put("status", "completed")
+                .put("content", JSONArray().put(JSONObject().put("type", "output_text").put("text", summary).put("annotations", JSONArray())))
+        }
         val (qualified, spec) = requireNotNull(resolveTool(rawName, available)) { "Unknown tool: $rawName" }
         val custom = spec.optString("type") == "custom"
         val item = JSONObject().put("type", if (custom) "custom_tool_call" else "function_call")
@@ -356,16 +453,29 @@ internal object CodexResponses {
                 }
             }
 
-            val lowerRaw = cleanToolName(rawName).lowercase()
+            val lowerRaw = cleanToolName(rawName).substringAfterLast('.').lowercase()
             if (isShellTool(qualified)) {
-                if (lowerRaw in setOf("write_file", "create_file", "edit_file", "save_file", "file_write", "update_file")) {
+                // Full-access, unattended execution does not need escalation metadata.
+                args.remove("justification")
+                args.remove("sandbox_permissions")
+                args.remove("prefix_rule")
+                if (lowerRaw == "replace_in_file") {
+                    val path = args.getString("path").removePrefix("/cwd/")
+                    val old = args.getString("old_text")
+                    args.put("command", CodexFileEdits.replaceCommand(path, old, args.getString("new_text")))
+                    listOf("path", "old_text", "new_text").forEach(args::remove)
+                } else if (lowerRaw in setOf("write_file", "create_file", "edit_file", "save_file", "file_write", "update_file")) {
                     var path = args.optString("path").ifBlank { args.optString("file").ifBlank { args.optString("filename").ifBlank { args.optString("target_file").ifBlank { args.optString("name") } } } }
                     if (path.contains(".llmhub-codex")) path = path.substringAfterLast('/')
-                    val content = args.optString("content").ifBlank { args.optString("code").ifBlank { args.optString("text").ifBlank { args.optString("body").ifBlank { args.optString("data") } } } }
-                    if (path.isNotBlank()) {
-                        val delimiter = "EOF_CODE"
-                        args.put("command", "cat << '$delimiter' > \"$path\"\n$content\n$delimiter")
-                    }
+                    path = path.removePrefix("/cwd/")
+                    require(path.isNotBlank()) { "Missing file path" }
+                    val contentKey = listOf("content", "code", "text", "body", "data").firstOrNull { args.has(it) && !args.isNull(it) }
+                    require(contentKey != null) { "Missing file content" }
+                    val content = args.getString(contentKey)
+                    val encoded = java.util.Base64.getEncoder().encodeToString(content.toByteArray(Charsets.UTF_8))
+                    val parent = java.io.File(path).parent
+                    val prepare = if (parent != null) "mkdir -p -- ${CodexConfig.shellQuote(parent)} && " else ""
+                    args.put("command", prepare + "printf '%s' ${CodexConfig.shellQuote(encoded)} | base64 -d > ${CodexConfig.shellQuote(path)}")
                 } else if (lowerRaw in setOf("read_file", "view_file", "cat", "open_file", "file_read")) {
                     var path = args.optString("path").ifBlank { args.optString("file").ifBlank { args.optString("filename").ifBlank { args.optString("name") } } }
                     if (path.contains(".llmhub-codex")) {
@@ -373,6 +483,7 @@ internal object CodexResponses {
                             path.substringAfterLast('/')
                         } else ""
                     }
+                    path = path.removePrefix("/cwd/")
                     if (path.isNotBlank()) args.put("command", "cat \"$path\"")
                     else args.put("command", "ls -la")
                 } else if (lowerRaw in setOf("list_files", "list_dir", "ls", "dir", "tree")) {
@@ -397,6 +508,21 @@ internal object CodexResponses {
                     }
                     if (cmd.isNotBlank()) args.put("command", cmd)
                 }
+                // shell_command accepts `command`; exec_command accepts `cmd`.
+                // Adapt aliases to the offered schema rather than assuming one executor.
+                val parameters = spec.optJSONObject("parameters")
+                val required = parameters?.optJSONArray("required") ?: JSONArray()
+                val usesCmd = parameters?.optJSONObject("properties")?.has("cmd") == true ||
+                    (0 until required.length()).any { required.optString(it) == "cmd" }
+                if (usesCmd && args.has("command")) {
+                    args.put("cmd", args.remove("command"))
+                }
+                val commandKey = if (usesCmd) "cmd" else "command"
+                if (Regex("^cat\\s").containsMatchIn(args.optString(commandKey).trim()) &&
+                    args.has("max_output_tokens") && args.optInt("max_output_tokens") < 2048) {
+                    // Tiny model-selected budgets hide the edited file and provoke repeated reads.
+                    args.put("max_output_tokens", 2048)
+                }
             }
 
             val required = spec.optJSONObject("parameters")?.optJSONArray("required") ?: JSONArray()
@@ -407,6 +533,28 @@ internal object CodexResponses {
             item.put("arguments", args.toString())
         }
         return item
+    }
+
+    private fun appendCalls(result: JSONArray, calls: List<JSONObject>, available: Map<String, JSONObject>) {
+        val finish = calls.any { cleanToolName(it.optString("name")).substringAfterLast('.') == "finish" }
+        if (finish) {
+            require(calls.size == 1) { "finish must be the only action; pending commands must execute first" }
+            // One final summary, rather than a progress message plus the same summary again.
+            while (result.length() > 0) result.remove(result.length() - 1)
+        }
+        calls.forEach { result.put(normalizeToolCall(it, available)) }
+    }
+
+    /** The native backend can wrap an ordinary final answer in an unclosed thinking sentinel. */
+    fun nativeCompletion(raw: String): String? {
+        if (!raw.startsWith(SENTINEL_THINK)) return null
+        var body = stripThinking(raw).trim()
+        if (body.isBlank() && !raw.contains(SENTINEL_ENDTHINK) && !raw.contains("<think>")) {
+            body = raw.removePrefix(SENTINEL_THINK).trim()
+        }
+        if (body.isBlank() || body.startsWith('{') || body.contains("```json") ||
+            body.contains("tool_call") || CodexToolArguments.bracketRanges(body).isNotEmpty()) return null
+        return body
     }
 
     fun output(raw: String, request: JSONObject, allowPlainText: Boolean = false): JSONArray {
@@ -424,10 +572,7 @@ internal object CodexResponses {
                     .put("content", JSONArray().put(JSONObject().put("type", "output_text").put("text", msgText)
                         .put("annotations", JSONArray()))))
             }
-            for (i in 0 until calls.length()) {
-                val item = normalizeToolCall(calls.getJSONObject(i), available)
-                result.put(item)
-            }
+            appendCalls(result, (0 until calls.length()).map { calls.getJSONObject(it) }, available)
             if (result.length() > 0) return result
         }
 
@@ -459,10 +604,7 @@ internal object CodexResponses {
                 reply.optJSONObject("function_call")?.let { callsList.add(it) }
             }
 
-            for (call in callsList) {
-                val item = normalizeToolCall(call, available)
-                result.put(item)
-            }
+            appendCalls(result, callsList, available)
 
             if (result.length() > 0) return result
         }
@@ -523,21 +665,21 @@ internal object CodexResponses {
             if (after.contains(SENTINEL_ENDTHINK)) {
                 return after.substringBefore(SENTINEL_ENDTHINK).trim() to after.substringAfter(SENTINEL_ENDTHINK).trim()
             }
-            return after.trim() to ""
+            return openThinking(after)
         }
         if (content.contains("<think>")) {
             val after = content.substringAfter("<think>")
             if (after.contains("</think>")) {
                 return after.substringBefore("</think>").trim() to after.substringAfter("</think>").trim()
             }
-            return after.trim() to ""
+            return openThinking(after)
         }
         if (content.contains("<thought>")) {
             val after = content.substringAfter("<thought>")
             if (after.contains("</thought>")) {
                 return after.substringBefore("</thought>").trim() to after.substringAfter("</thought>").trim()
             }
-            return after.trim() to ""
+            return openThinking(after)
         }
         return "" to content
     }
@@ -560,7 +702,8 @@ internal object CodexResponses {
             val partial = partialText(cleanAnswer)
             if (partial.isNotBlank()) partial
             else if (cleanAnswer.startsWith('{')) ""
-            else cleanAnswer.removePrefix("```json").removePrefix("```").trim()
+            else cleanAnswer.removePrefix("```json").removePrefix("```")
+                .substringBefore("<|tool_call_start|>").substringBefore("<tool_call>").trim()
         }
 
         return buildString {

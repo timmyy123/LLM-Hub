@@ -1067,4 +1067,5 @@
     <string name="vibe_codex_staging">Projektdateien werden vorbereitet…</string>
     <string name="vibe_codex_generating">Lokales Modell arbeitet…</string>
     <string name="vibe_codex_syncing">Projektänderungen werden angewendet…</string>
+    <string name="vibe_codex_step_progress">Agentenschritt %1$d · Versuch %2$d · %3$d Zeichen generiert</string>
 </resources>

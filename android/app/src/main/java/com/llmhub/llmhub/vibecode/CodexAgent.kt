@@ -29,7 +29,7 @@ internal class CodexAgent(private val context: Context) {
         infer: suspend (String, (String) -> Unit) -> String,
         onThread: (String) -> Unit,
         onMessage: (CodexActivity) -> Unit,
-        approve: suspend (String, String) -> Boolean
+        editorDirty: Boolean = false
     ): Map<String, Uri> = coroutineScope {
         check(Build.VERSION.SDK_INT >= 29 && Build.SUPPORTED_ABIS.contains("arm64-v8a")) {
             context.getString(R.string.vibe_codex_requirements)
@@ -39,7 +39,13 @@ internal class CodexAgent(private val context: Context) {
         val runId = UUID.randomUUID().toString()
         val home = "/data/data/com.termux/files/home/.llmhub-codex"
         val workspace = CodexWorkspace(context, Uri.parse(folder), home)
-        val server = LocalCodexServer({ infer(it) {} }, context.getString(R.string.vibe_codex_model_error), streamInfer = infer)
+        val renderer = CodexActivityRenderer()
+        val server = LocalCodexServer({ infer(it) {} }, context.getString(R.string.vibe_codex_model_error), streamInfer = infer,
+            onProgress = { id, step, attempt, raw ->
+                onMessage(CodexActivity("progress-$id", context.getString(R.string.vibe_codex_step_progress,
+                    step, attempt, raw.length), "status", "running"))
+                renderer.thinking(id, CodexResponses.parseThinking(raw).first)?.let(onMessage)
+            })
         var client: CodexClient? = null
         var serverJob: Job? = null
         val serverOutput = TerminalOutputBuffer()
@@ -72,17 +78,18 @@ internal class CodexAgent(private val context: Context) {
             }
             val rpc = client ?: throw IllegalStateException(context.getString(R.string.vibe_codex_connection_error), lastFailure)
             status(R.string.vibe_codex_staging)
-            workspace.stage(rpc, editorUri, editorName, editorCode)
+            workspace.stage(rpc, editorUri, editorName, editorCode, editorDirty)
             if (workspace.isDirect) {
                 onMessage(CodexActivity("workspace-mode", "Working directly in folder: ${workspace.remote}", "status", "running"))
             } else {
                 onMessage(CodexActivity("workspace-mode", "Working in staged workspace: ${workspace.remote}", "status", "running"))
             }
             val threadParams = JSONObject().put("model", "llmhub-local").put("modelProvider", "llmhub_local")
-                .put("cwd", workspace.remote).put("approvalPolicy", "untrusted")
+                .put("cwd", workspace.remote).put("approvalPolicy", CodexApprovals.POLICY)
                 .put("baseInstructions", "You are a coding agent working in the current project. " +
                     "Read relevant files before editing. Use the supplied tools to edit files and run commands. " +
                     "Work only in the project directory. Follow AGENTS.md instructions. " +
+                    "Project commands and file edits are pre-authorized. Execute them without asking for permission. " +
                     "Run relevant checks and use their output to fix failures. " +
                     "Do not claim changes or successful tests without tool evidence. " +
                     "Finish with a concise account of changes and validation.")
@@ -96,19 +103,15 @@ internal class CodexAgent(private val context: Context) {
             val turnPrompt = buildString {
                 if (!editorName.isNullOrBlank()) {
                     append("Active editor file: ").append(editorName).append("\n")
-                    if (editorCode.isNotBlank()) {
-                        append("Current file contents:\n```\n").append(editorCode.take(4000)).append("\n```\n")
-                    } else {
-                        append("The file is currently empty. Write the requested code into it using tools.\n")
-                    }
+                    append("Read the current file from disk using tools. Its contents may have changed since earlier turns.\n")
                     append("\nUser request:\n")
                 }
                 append(prompt)
             }
             val turn = rpc.request("turn/start", JSONObject().put("threadId", threadId).put("cwd", workspace.remote)
+                .put("approvalPolicy", CodexApprovals.POLICY)
                 .put("input", JSONArray().put(JSONObject().put("type", "text").put("text", turnPrompt)
                     .put("text_elements", JSONArray())))).getJSONObject("turn").getString("id")
-            val renderer = CodexActivityRenderer()
             var completedSuccessfully = false
             try {
                 withTimeout(30 * 60_000L) {
@@ -117,10 +120,10 @@ internal class CodexAgent(private val context: Context) {
                         val params = event.optJSONObject("params") ?: JSONObject()
                         if (params.has("threadId") && params.optString("threadId") != threadId) continue
                         if (event.has("id")) {
-                            if (method == "item/commandExecution/requestApproval" || method == "item/fileChange/requestApproval") {
-                                val description = params.optString("command").ifBlank { params.toString(2) }
-                                val accepted = approve(method, description)
-                                rpc.respond(event.get("id"), JSONObject().put("decision", if (accepted) "accept" else "decline"))
+                            val accepted = CodexApprovals.response(method, params)
+                            if (accepted != null) {
+                                android.util.Log.d("CodexAgent", "Auto-approved $method: $params")
+                                rpc.respond(event.get("id"), accepted)
                             } else rpc.reject(event.get("id"))
                         } else when (method) {
                             "item/agentMessage/delta", "item/commandExecution/outputDelta", "item/fileChange/outputDelta",

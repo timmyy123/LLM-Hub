@@ -138,7 +138,6 @@ fun VibeCoderScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val isProcessing by viewModel.isProcessing.collectAsState()
     val codexEnabled by viewModel.codexEnabled.collectAsState()
-    val codexApproval by viewModel.codexApproval.collectAsState()
     val workspaceRevision by viewModel.workspaceRevision.collectAsState()
     var installAfterPermission by remember { mutableStateOf(false) }
     val termuxPermission = androidx.activity.compose.rememberLauncherForActivityResult(
@@ -304,7 +303,9 @@ fun VibeCoderScreen(
 
         val treeUri = android.net.Uri.parse(folderUriString)
         val realPath = CodexWorkspace.resolveRealPath(context, treeUri)
-        if (realPath != null) {
+        // A document-tree grant does not grant direct filesystem access on Android.
+        // Keep document URIs for files opened through the folder picker.
+        if (realPath != null && treeUri.scheme != "content") {
             val dir = java.io.File(realPath)
             if (dir.exists() && dir.isDirectory) {
                 val files = mutableListOf<Pair<String, String>>()
@@ -811,16 +812,6 @@ fun VibeCoderScreen(
         )
     }
 
-    codexApproval?.let { approval ->
-        AlertDialog(
-            onDismissRequest = { viewModel.answerCodexApproval(false) },
-            title = { Text(stringResource(R.string.vibe_codex_approval)) },
-            text = { Text(approval.detail, modifier = Modifier.verticalScroll(rememberScrollState()).heightIn(max = 360.dp)) },
-            confirmButton = { TextButton(onClick = { viewModel.answerCodexApproval(true) }) { Text(stringResource(R.string.agent_mcp_allow)) } },
-            dismissButton = { TextButton(onClick = { viewModel.answerCodexApproval(false) }) { Text(stringResource(R.string.agent_mcp_deny)) } }
-        )
-    }
-
     if (showNewFileDialog) {
         AlertDialog(
             onDismissRequest = { showNewFileDialog = false },
@@ -1291,13 +1282,19 @@ private fun EditorPane(
                 }
             }
             Spacer(modifier = Modifier.height(8.dp))
-            if (folderFiles.isNotEmpty()) {
+            val visibleFiles = folderFiles.toMutableList().apply {
+                if (currentFileUri != null && currentFileName != null &&
+                    none { it.first == currentFileUri || it.second == currentFileName }) {
+                    add(currentFileUri to currentFileName)
+                }
+            }
+            if (visibleFiles.isNotEmpty()) {
                 LazyRow(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    items(folderFiles) { item ->
-                        val selected = item.first == currentFileUri
+                    items(visibleFiles) { item ->
+                        val selected = item.first == currentFileUri || item.second == currentFileName
                         val chipContainerColor = if (selected) {
                             MaterialTheme.colorScheme.primaryContainer
                         } else {
@@ -1320,7 +1317,9 @@ private fun EditorPane(
                                     shape = RoundedCornerShape(16.dp),
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = chipContainerColor,
-                                        contentColor = chipContentColor
+                                        contentColor = chipContentColor,
+                                        disabledContainerColor = chipContainerColor,
+                                        disabledContentColor = chipContentColor
                                     )
                                 ) {
                                     Text(

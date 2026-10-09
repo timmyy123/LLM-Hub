@@ -1073,4 +1073,5 @@
     <string name="vibe_codex_staging">Подготовка файлов проекта…</string>
     <string name="vibe_codex_generating">Локальная модель работает…</string>
     <string name="vibe_codex_syncing">Применение изменений проекта…</string>
+    <string name="vibe_codex_step_progress">Шаг агента %1$d · попытка %2$d · создано символов: %3$d</string>
 </resources>

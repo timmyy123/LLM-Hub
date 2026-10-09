@@ -1008,4 +1008,5 @@
     <string name="vibe_codex_staging">กำลังเตรียมไฟล์โปรเจ็กต์…</string>
     <string name="vibe_codex_generating">โมเดลในเครื่องกำลังทำงาน…</string>
     <string name="vibe_codex_syncing">กำลังนำการเปลี่ยนแปลงไปใช้กับโปรเจ็กต์…</string>
+    <string name="vibe_codex_step_progress">ขั้นตอนเอเจนต์ %1$d · ครั้งที่ %2$d · สร้างแล้ว %3$d อักขระ</string>
 </resources>

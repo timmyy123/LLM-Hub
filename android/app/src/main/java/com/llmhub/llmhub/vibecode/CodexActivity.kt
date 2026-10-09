@@ -10,13 +10,25 @@ internal class CodexActivityRenderer {
     private val commands = mutableMapOf<String, String>()
     private val outputs = mutableMapOf<String, TerminalOutputBuffer>()
     private val text = mutableMapOf<String, String>()
+    private val thoughts = java.util.concurrent.ConcurrentHashMap<String, String>()
+
+    fun thinking(id: String, value: String): CodexActivity? {
+        if (value.isBlank()) return if (thoughts.remove(id) != null)
+            CodexActivity(id, text[id].orEmpty(), state = "running") else null
+        thoughts[id] = value.takeLast(100_000)
+        return CodexActivity(id, answer(id, ""), state = "running")
+    }
+
+    private fun answer(id: String, value: String) = thoughts[id]?.let {
+        "<think>$it</think>\n\n$value"
+    } ?: value
     fun render(method: String, params: JSONObject): CodexActivity? {
         val key = params.optString("itemId")
         return when (method) {
             "item/agentMessage/delta" -> {
                 val value = (text[key].orEmpty() + params.optString("delta")).takeLast(100_000)
                 text[key] = value
-                CodexActivity(key, value)
+                CodexActivity(key, answer(key, value), state = "running")
             }
             "item/commandExecution/outputDelta", "item/fileChange/outputDelta" -> {
                 val body = outputs.getOrPut(key) { TerminalOutputBuffer() }.append(params.optString("delta"))
@@ -38,7 +50,9 @@ internal class CodexActivityRenderer {
                     }
                     "fileChange" -> CodexActivity(id, item.optJSONArray("changes")?.toString(2).orEmpty(), "terminal",
                         if (!done) "running" else if (item.optString("status") == "failed") "failed" else "succeeded")
-                    "agentMessage" -> if (done) CodexActivity(id, item.optString("text")) else null
+                    // A finished model message does not mean its pending edit succeeded.
+                    // The view model marks these complete only when the entire turn finishes.
+                    "agentMessage" -> if (done) CodexActivity(id, answer(id, item.optString("text")), state = "running") else null
                     else -> null
                 }
             }

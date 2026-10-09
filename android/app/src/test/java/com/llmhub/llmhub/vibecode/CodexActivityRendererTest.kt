@@ -5,6 +5,27 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class CodexActivityRendererTest {
+    @Test fun nativeFinalSummaryIsNotDuplicatedAsThinking() {
+        val renderer = CodexActivityRenderer()
+        renderer.thinking("message", "The edit is verified.")
+        renderer.thinking("message", "")
+        val result = renderer.render("item/completed", JSONObject("""{"item":{"id":"message","type":"agentMessage","text":"The edit is verified."}}"""))!!
+        assertEquals("The edit is verified.", result.text)
+    }
+    @Test fun modelMessageCompletionIsNotReportedAsSuccessfulFileExecution() {
+        val result = CodexActivityRenderer().render("item/completed",
+            JSONObject("""{"item":{"id":"message","type":"agentMessage","text":"Updated the file"}}"""))!!
+        assertEquals("running", result.state)
+    }
+    @Test fun liveThinkingAndValidatedAnswerUseOneCard() {
+        val render = CodexActivityRenderer()
+        val cards = mutableMapOf<String, CodexActivity>()
+        render.thinking("msg-1", "Inspecting files")!!.let { cards[it.key] = it }
+        render.render("item/agentMessage/delta", JSONObject("""{"itemId":"msg-1","delta":"Done"}"""))!!.let { cards[it.key] = it }
+        render.render("item/completed", JSONObject("""{"item":{"id":"msg-1","type":"agentMessage","text":"Done"}}"""))!!.let { cards[it.key] = it }
+        assertEquals(1, cards.size)
+        assertEquals("<think>Inspecting files</think>\n\nDone", cards.getValue("msg-1").text)
+    }
     @Test fun commandOutputAccumulatesLiveAndRetainsCommandHeader() {
         val render = CodexActivityRenderer()
         val started = render.render("item/started", JSONObject("""{"item":{"type":"commandExecution","id":"1","command":"npm test"}}"""))!!

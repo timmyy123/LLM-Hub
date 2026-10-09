@@ -32,18 +32,46 @@ class CodexTermuxInstrumentedTest {
         assertEquals("earlylate\n", output.toString())
     }
 
-    @Test fun installedCodexUsesLocalEndpointAndStreamsItsRealCommandOutput() = runBlocking {
+    @Test fun installedCodexUsesLocalEndpointAndStreamsItsRealCommandOutput() = runCodexScenario(false)
+
+    @Test fun malformedCompletionRecoversAndProducesOneAssistantMessage() = runCodexScenario(true)
+
+    private fun runCodexScenario(repairMalformed: Boolean) = runBlocking {
         var request = JSONObject()
-        var calls = 0
-        val local = LocalCodexServer(infer = {
+        var calls = if (repairMalformed) -1 else 0
+        val renderer = CodexActivityRenderer()
+        val activities = java.util.concurrent.ConcurrentHashMap<String, CodexActivity>()
+        val sharedScratch = "/storage/emulated/0/Download/llmhub-codex-write-${UUID.randomUUID()}"
+        val writtenContent = """
+            <!DOCTYPE html>
+            <html lang="en"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <script>const values = ["a,b", ")]"]; document.getElementById('button').textContent = 'It works 😀';</script>
+            </html>
+        """.trimIndent() + "\n"
+        val local = LocalCodexServer(infer = { prompt ->
             calls++
-            if (calls == 1) {
+            val step = calls - if (repairMalformed) 1 else 0
+            if (step == 0) {
+                """{"text":"I've finished updating the project!"]}"""
+            } else if (step == 1) {
+                if (repairMalformed) check(prompt.contains("were NOT executed"))
+                "${CodexResponses.SENTINEL_THINK}Read the file${CodexResponses.SENTINEL_ENDTHINK}" +
+                    "<|tool_call_start|>[read_file(path='/cwd/smoke.txt')]<|tool_call_end|>"
+            } else if (step == 2 && repairMalformed) {
+                val command = "cat << 'EOF_CODE' > smoke.txt\n${writtenContent}EOF_CODE"
+                val literal = "'" + command.replace("\\", "\\\\").replace("'", "\\'").replace("\n", "\\n") + "'"
+                "<|tool_call_start|>[exec_command(command=$literal, justification='Update the website')]<|tool_call_end|>"
+            } else if (step == 3 && repairMalformed) {
+                JSONObject().put("text", "Writing the shared-storage file").put("tool_calls", JSONArray().put(
+                    JSONObject().put("name", "write_file").put("arguments", JSONObject()
+                        .put("path", "$sharedScratch/nested/file' name.html").put("content", writtenContent)))).toString()
+            } else if (step == 2) {
                 fun find(tools: JSONArray, prefix: String = ""): String? {
                     for (i in 0 until tools.length()) {
                         val tool = tools.getJSONObject(i)
                         if (tool.optString("type") == "namespace") {
                             find(tool.getJSONArray("tools"), prefix + tool.getString("name") + ".")?.let { return it }
-                        } else if (tool.optString("name") == "shell_command") return prefix + "shell_command"
+                        } else if (tool.optString("name") in setOf("shell_command", "exec_command")) return prefix + tool.getString("name")
                     }
                     return null
                 }
@@ -51,8 +79,11 @@ class CodexTermuxInstrumentedTest {
                 JSONObject().put("text", "").put("tool_calls", JSONArray().put(JSONObject().put("name", name)
                     .put("arguments", JSONObject().put("command", "printf 'codex-early\\n'; sleep 2; printf 'codex-late\\n' >&2")
                         .put("timeout_ms", 10_000).put("login", false)))).toString()
-            } else """{"text":"ready","tool_calls":[]}"""
-        }, modelError = "Invalid local test response", onRequest = { request = it })
+            } else """<think>Final check</think>{"text":"ready","tool_calls":[]}"""
+        }, modelError = "Invalid local test response", onRequest = { request = it },
+            onProgress = { id, _, _, raw ->
+                renderer.thinking(id, CodexResponses.parseThinking(raw).first)?.let { activities[it.key] = it }
+            })
         val port = ServerSocket(0, 1, InetAddress.getByName("127.0.0.1")).use { it.localPort }
         val token = UUID.randomUUID().toString()
         val sha = java.security.MessageDigest.getInstance("SHA-256").digest(token.toByteArray()).joinToString("") { "%02x".format(it) }
@@ -74,27 +105,56 @@ class CodexTermuxInstrumentedTest {
             }
             val rpc = checkNotNull(client) { logs.toString() }
             rpc.request("fs/createDirectory", JSONObject().put("path", "$home/project"))
+            rpc.request("fs/writeFile", JSONObject().put("path", "$home/project/smoke.txt")
+                .put("dataBase64", android.util.Base64.encodeToString("read-file-passed\n".toByteArray(), android.util.Base64.NO_WRAP)))
             val thread = rpc.request("thread/start", JSONObject().put("model", "llmhub-local")
                 .put("modelProvider", "llmhub_local").put("cwd", "$home/project")
-                .put("sandbox", "danger-full-access").put("approvalPolicy", "untrusted"))
+                .put("sandbox", "danger-full-access").put("approvalPolicy", if (repairMalformed) "untrusted" else CodexApprovals.POLICY))
                 .getJSONObject("thread").getString("id")
-            rpc.request("turn/start", JSONObject().put("threadId", thread).put("input", JSONArray().put(
+            if (repairMalformed) {
+                // Codex persists a resumable rollout only after the first turn.
+                rpc.request("turn/start", JSONObject().put("threadId", thread).put("input", JSONArray().put(
+                    JSONObject().put("type", "text").put("text", "Prepare this test session").put("text_elements", JSONArray()))))
+                withTimeout(15_000) {
+                    for (event in rpc.events) {
+                        if (event.optString("method") == "turn/completed") break
+                    }
+                }
+                activities.clear()
+                // Existing chats must also lose the previous interactive approval policy.
+                rpc.request("thread/resume", JSONObject().put("threadId", thread)
+                    .put("model", "llmhub-local").put("modelProvider", "llmhub_local")
+                    .put("cwd", "$home/project").put("sandbox", "danger-full-access")
+                    .put("approvalPolicy", CodexApprovals.POLICY))
+            }
+            rpc.request("turn/start", JSONObject().put("threadId", thread).put("approvalPolicy", CodexApprovals.POLICY).put("input", JSONArray().put(
                 JSONObject().put("type", "text").put("text", "Run the smoke command then reply ready").put("text_elements", JSONArray()))))
             var early = false
-            var commandFinished = false
+            val finishedCommands = mutableSetOf<String>()
+            var fileRead = false
             var completed = false
+            var approvals = 0
             withTimeout(40_000) {
                 for (event in rpc.events) {
                     logs.append("\n").append(event.toString())
                     val method = event.optString("method")
                     val params = event.optJSONObject("params") ?: JSONObject()
+                    renderer.render(method, params)?.let { activities[it.key] = it }
                     when {
-                        event.has("id") && method.endsWith("requestApproval") -> rpc.respond(event.get("id"), JSONObject().put("decision", "accept"))
+                        event.has("id") && CodexApprovals.response(method, params) != null -> {
+                            approvals++
+                            rpc.respond(event.get("id"), CodexApprovals.response(method, params)!!)
+                        }
                         event.has("id") -> rpc.reject(event.get("id"))
                         method == "item/commandExecution/outputDelta" -> if (params.optString("delta").contains("codex-early")) {
-                            assertFalse("Output must precede the completed event", commandFinished); early = true
+                            assertFalse("Output must precede the completed event", params.optString("itemId") in finishedCommands); early = true
                         }
-                        method == "item/completed" && params.optJSONObject("item")?.optString("type") == "commandExecution" -> commandFinished = true
+                        method == "item/completed" && params.optJSONObject("item")?.optString("type") == "commandExecution" -> {
+                            val item = params.getJSONObject("item")
+                            assertEquals(item.toString() + logs, 0, item.optInt("exitCode", -1))
+                            finishedCommands.add(item.getString("id"))
+                            if (item.optString("aggregatedOutput").contains("read-file-passed")) fileRead = true
+                        }
                         method == "turn/completed" -> {
                             assertEquals(params.toString() + logs, "completed", params.getJSONObject("turn").getString("status"))
                             completed = true; break
@@ -103,14 +163,34 @@ class CodexTermuxInstrumentedTest {
                     }
                 }
             }
-            assertTrue("Local provider was not called", calls >= 2)
-            assertTrue("No streamed command output: $logs", early)
+            assertTrue("Local provider did not continue after tools", calls >= 3)
+            assertTrue("Tagged read_file was not executed: $logs", fileRead)
+            if (!repairMalformed) assertTrue("No streamed command output: $logs", early)
+            else {
+                assertTrue("Malformed response was not retried", calls >= 4)
+                val assistant = activities.values.filter { it.role == "assistant" && it.text.endsWith("ready") }
+                assertEquals(1, assistant.size)
+                assertEquals("<think>Final check</think>\n\nready", assistant.single().text)
+                assertFalse(activities.values.any { it.text.contains("I've finished updating") })
+                for (path in listOf("$home/project/smoke.txt", "$sharedScratch/nested/file' name.html")) {
+                    val result = rpc.request("fs/readFile", JSONObject().put("path", path))
+                    val actual = String(android.util.Base64.decode(result.getString("dataBase64"), android.util.Base64.DEFAULT), Charsets.UTF_8)
+                    assertEquals("Actual file contents differ at $path", writtenContent, actual)
+                }
+                val workspace = CodexWorkspace(context, android.net.Uri.parse("$home/project"), home)
+                workspace.stage(rpc, null, "smoke.txt", "stale editor snapshot", editorDirty = false)
+                val preserved = rpc.request("fs/readFile", JSONObject().put("path", "$home/project/smoke.txt"))
+                assertEquals(writtenContent, String(android.util.Base64.decode(preserved.getString("dataBase64"), android.util.Base64.DEFAULT), Charsets.UTF_8))
+                workspace.stage(rpc, null, "smoke.txt", "", editorDirty = true)
+                assertEquals("", rpc.request("fs/readFile", JSONObject().put("path", "$home/project/smoke.txt")).getString("dataBase64"))
+            }
             assertTrue(completed)
+            assertEquals("Unattended mode must not request approvals", 0, approvals)
         } finally {
             client?.close()
             withContext(NonCancellable) {
                 server.cancelAndJoin(); local.shutdown()
-                runCatching { TermuxStreamingCommand.run(context, "rm -rf -- ${CodexConfig.shellQuote(home)}", 10_000) {} }
+                runCatching { TermuxStreamingCommand.run(context, "rm -rf -- ${CodexConfig.shellQuote(home)} ${CodexConfig.shellQuote(sharedScratch)}", 10_000) {} }
             }
         }
     }

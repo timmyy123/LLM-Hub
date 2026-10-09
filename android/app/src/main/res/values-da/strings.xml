@@ -1069,4 +1069,5 @@ Du forsøger at sende et billede, men den nuværende model er **kun-tekst**:
     <string name="vibe_codex_staging">Forbereder projektfiler…</string>
     <string name="vibe_codex_generating">Den lokale model arbejder…</string>
     <string name="vibe_codex_syncing">Anvender projektændringer…</string>
+    <string name="vibe_codex_step_progress">Agenttrin %1$d · forsøg %2$d · %3$d tegn genereret</string>
 </resources>

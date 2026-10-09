@@ -1101,4 +1101,5 @@
     <string name="vibe_codex_staging">جارٍ تجهيز ملفات المشروع…</string>
     <string name="vibe_codex_generating">النموذج المحلي يعمل…</string>
     <string name="vibe_codex_syncing">جارٍ تطبيق تغييرات المشروع…</string>
+    <string name="vibe_codex_step_progress">خطوة الوكيل %1$d · المحاولة %2$d · تم توليد %3$d حرفًا</string>
 </resources>

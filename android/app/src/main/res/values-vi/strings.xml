@@ -1008,4 +1008,5 @@
     <string name="vibe_codex_staging">Đang chuẩn bị tệp dự án…</string>
     <string name="vibe_codex_generating">Mô hình cục bộ đang làm việc…</string>
     <string name="vibe_codex_syncing">Đang áp dụng thay đổi cho dự án…</string>
+    <string name="vibe_codex_step_progress">Bước tác nhân %1$d · lần thử %2$d · đã tạo %3$d ký tự</string>
 </resources>

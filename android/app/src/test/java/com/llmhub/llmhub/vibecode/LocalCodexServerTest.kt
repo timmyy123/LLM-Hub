@@ -6,31 +6,100 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class LocalCodexServerTest {
-    @Test fun assistantTextArrivesWhileLocalModelIsStillGenerating() {
-        val release = java.util.concurrent.CountDownLatch(1)
-        LocalCodexServer(infer = { error("Streaming inference must be used") }, modelError = "Invalid response",
-            streamInfer = { _, emit ->
-                emit("""{"text":"Early""")
-                check(release.await(5, java.util.concurrent.TimeUnit.SECONDS))
-                """{"text":"Early finished","tool_calls":[]}"""
-            }).use { server ->
-            val connection = URL("${server.baseUrl}/responses").openConnection() as HttpURLConnection
-            connection.requestMethod = "POST"; connection.doOutput = true; connection.readTimeout = 5000
-            val body = """{"input":"hello","tools":[]}""".toByteArray()
-            connection.setFixedLengthStreamingMode(body.size)
-            try {
-                connection.outputStream.use { it.write(body) }
-                val reader = connection.inputStream.bufferedReader()
-                var line: String
-                do { line = reader.readLine() ?: error("Stream closed before text") }
-                while (!line.contains("\"delta\":\"Early\""))
-                release.countDown()
-                val rest = reader.readText()
-                assertTrue(rest.contains("response.completed"))
-                assertTrue(rest.contains(" finished"))
-            } finally { release.countDown(); connection.disconnect() }
+    @Test fun nativeFinalAnswerAfterVerifiedEditDoesNotRestartTheAgent() {
+        var attempts = 0
+        LocalCodexServer(infer = { attempts++; CodexResponses.SENTINEL_THINK + "The edit is saved and verified. No further action is needed." }, modelError = "Invalid").use { server ->
+            val (_, stream) = post("${server.baseUrl}/responses", """{"input":[
+                {"type":"message","role":"user","content":"edit index.html"},
+                {"type":"function_call","name":"exec_command","call_id":"edit","arguments":"{\"cmd\":\"node edit.js\"}"},
+                {"type":"function_call_output","call_id":"edit","output":"Process exited with code 0"},
+                {"type":"function_call","name":"exec_command","call_id":"read","arguments":"{\"cmd\":\"cat index.html\"}"},
+                {"type":"function_call_output","call_id":"read","output":"Process exited with code 0\nOutput:\nupdated"}],"tools":[]}""")
+            assertEquals(1,attempts)
+            assertTrue(stream.contains("response.completed"))
+            assertFalse(stream.contains("response.failed"))
         }
     }
+    @Test fun nativeSuccessClaimWithoutAnEditOrCheckIsStillRejected() {
+        LocalCodexServer(infer = { CodexResponses.SENTINEL_THINK + "All changes are complete." }, modelError = "Invalid").use { server ->
+            val (_, stream) = post("${server.baseUrl}/responses", """{"input":[{"type":"message","role":"user","content":"edit index.html"}],"tools":[]}""")
+            assertTrue(stream.contains("response.failed"))
+            assertFalse(stream.contains("response.completed"))
+        }
+    }
+    @Test fun formattingRecoveryDoesNotForgetRejectedCompletion() {
+        var attempts = 0
+        LocalCodexServer(infer = { prompt ->
+            when (++attempts) {
+                1 -> """{"text":"Already completed","tool_calls":[]}"""
+                2 -> "<think>I should edit it</think>"
+                else -> {
+                    assertTrue(prompt.contains("Unverified completion"))
+                    """{"tool_calls":[{"name":"exec_command","arguments":{"cmd":"grep tailwind index.html"}}]}"""
+                }
+            }
+        }, modelError = "Invalid response").use { server ->
+            val (_, stream) = post("${server.baseUrl}/responses",
+                """{"input":[{"type":"message","role":"user","content":"Active editor file: index.html\n\nUser request:\nuse tailwind css"}],"tools":[{"type":"function","name":"exec_command","parameters":{"required":["cmd"]}}]}""")
+            assertEquals(3, attempts)
+            assertTrue(stream.contains("response.completed"))
+            assertFalse(stream.contains("Already completed"))
+        }
+    }
+    @Test fun reportsProgressBeforeInferenceFinishesAndAcrossAgentSteps() {
+        val updates = mutableListOf<Pair<Int, String>>()
+        LocalCodexServer(infer = { error("Expected streaming inference") }, modelError = "Invalid response",
+            streamInfer = { _, emit ->
+                emit("<think>Reading files")
+                assertTrue(updates.any { it.second.contains("Reading files") })
+                """{"text":"Ready","tool_calls":[]}"""
+            }, onProgress = { _, step, _, raw -> updates.add(step to raw) }).use { server ->
+            repeat(2) { post("${server.baseUrl}/responses", """{"input":"hello","tools":[]}""") }
+            assertTrue(updates.any { it.first == 1 && it.second.isNotBlank() })
+            assertTrue(updates.any { it.first == 2 && it.second.isNotBlank() })
+        }
+    }
+    @Test fun malformedCompletionIsRetriedWithoutPublishingIt() {
+        var attempts = 0
+        LocalCodexServer(infer = { error("Expected streaming inference") }, modelError = "Invalid response",
+            streamInfer = { prompt, emit ->
+                attempts++
+                if (attempts == 1) {
+                    val broken = """{"text":"I finished updating everything!"]}"""
+                    emit(broken)
+                    broken
+                } else {
+                    assertTrue(prompt.contains("were NOT executed"))
+                    assertTrue(prompt.contains("tool_calls"))
+                    """{"text":"Reading the project","tool_calls":[{"name":"shell_command","arguments":{"command":"ls"}}]}"""
+                }
+            }).use { server ->
+            val (_, stream) = post("${server.baseUrl}/responses",
+                """{"input":"edit the project","tools":[{"type":"function","name":"shell_command","parameters":{"required":["command"]}}]}""")
+            assertEquals(2, attempts)
+            assertFalse(stream.contains("I finished updating everything"))
+            assertFalse(stream.contains("response.failed"))
+            assertTrue(stream.contains("response.completed"))
+            val events = stream.lineSequence().filter { it.startsWith("data: ") }
+                .map { org.json.JSONObject(it.removePrefix("data: ")) }.toList()
+            assertEquals(1, events.count { it.optString("type") == "response.output_text.delta" })
+            assertEquals(1, events.count { it.optString("type") == "response.output_item.added" &&
+                it.optJSONObject("item")?.optString("type") == "message" })
+            assertTrue(events.any { it.optJSONObject("item")?.optString("type") == "function_call" })
+        }
+    }
+
+    @Test fun repeatedMalformedResponsesStopAfterThreeAttempts() {
+        var attempts = 0
+        LocalCodexServer(infer = { attempts++; """{"text":"fake completion"]}""" }, modelError = "Invalid response").use { server ->
+            val (_, stream) = post("${server.baseUrl}/responses", """{"input":"edit","tools":[]}""")
+            assertEquals(3, attempts)
+            assertTrue(stream.contains("response.failed"))
+            assertFalse(stream.contains("response.output_text.delta"))
+            assertFalse(stream.contains("response.completed"))
+        }
+    }
+
     private fun post(url: String, body: String): Pair<Int, String> {
         val conn = URL(url).openConnection() as HttpURLConnection
         conn.requestMethod = "POST"; conn.doOutput = true

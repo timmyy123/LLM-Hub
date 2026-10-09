@@ -9,7 +9,6 @@ import com.llmhub.llmhub.vibecode.CodexActivity
 import com.llmhub.llmhub.agent.TerminalOutputBuffer
 import com.llmhub.llmhub.agent.TermuxStreamingCommand
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -78,8 +77,6 @@ enum class ProgrammingLanguage {
     KOTLIN
 }
 
-data class VibeCodexApproval(val detail: String, val answer: CompletableDeferred<Boolean>)
-
 data class VibeChatMessage(
     val id: String = UUID.randomUUID().toString(),
     val role: String,
@@ -121,8 +118,6 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
 
     private val _codexEnabled = MutableStateFlow(prefs.getBoolean("codex_enabled", false))
     val codexEnabled = _codexEnabled.asStateFlow()
-    private val _codexApproval = MutableStateFlow<VibeCodexApproval?>(null)
-    val codexApproval = _codexApproval.asStateFlow()
     private val _workspaceRevision = MutableStateFlow(0)
     val workspaceRevision = _workspaceRevision.asStateFlow()
     private val codexInferenceLock = Mutex()
@@ -132,11 +127,6 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
         _codexEnabled.value = enabled
         prefs.edit().putBoolean("codex_enabled", enabled).apply()
         saveSettings()
-    }
-
-    fun answerCodexApproval(allow: Boolean) {
-        _codexApproval.value?.answer?.complete(allow)
-        _codexApproval.value = null
     }
 
     private fun codexMessageUpdater(): (CodexActivity) -> Unit {
@@ -221,6 +211,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
         val editorUri = _currentFileUri.value
         val editorName = _currentFileName.value
         val editorCode = _generatedCode.value
+        val editorDirty = _isDirty.value
         appendChat("user", prompt.trim())
         _lastUserPrompt.value = prompt.trim()
         _isProcessing.value = true
@@ -232,38 +223,25 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
                 loadModelInternal()
                 check(_isModelLoaded.value) { "local_model_unavailable" }
                 val codexContextWindow = inferenceService.getLoadedContextSize() ?: _selectedMaxTokens.value
-                applyGenerationParametersToService(maxTokens = codexContextWindow, topK = 40, topP = 0.95f, temperature = 0.2f)
-                var inferenceStep = 0
+                // Context capacity and one tool-response budget are different limits.
+                applyGenerationParametersToService(maxTokens = codexContextWindow, topK = 40, topP = 0.95f,
+                    temperature = 0.2f, responseMaxTokens = 4096)
                 val published = withContext(Dispatchers.IO) {
                     CodexAgent(app).run(prompt.trim(), folder, session, prefs.getString("codex_thread_$session", null),
                         editorUri, editorName, editorCode, codexContextWindow,
                         infer = { request, onDelta ->
                             codexInferenceLock.withLock {
-                                val stepKey = "model_inference_${++inferenceStep}"
                                 val output = StringBuilder()
                                 inferenceService.generateResponseStream(request, model).collect { chunk ->
                                     output.append(chunk)
                                     onDelta(chunk)
-                                    val formatted = com.llmhub.llmhub.vibecode.CodexResponses.formatDisplayMessage(output.toString())
-                                    if (formatted.isNotBlank()) {
-                                        update(CodexActivity(stepKey, formatted, role = "assistant", state = "running"))
-                                    }
                                 }
-                                val full = output.toString()
-                                val formatted = com.llmhub.llmhub.vibecode.CodexResponses.formatDisplayMessage(full)
-                                if (formatted.isNotBlank()) {
-                                    update(CodexActivity(stepKey, formatted, role = "assistant", state = "succeeded"))
-                                }
-                                full
+                                // Codex events own assistant messages; rendering here duplicates every answer.
+                                output.toString()
                             }
                         },
                         onThread = { prefs.edit().putString("codex_thread_$session", it).apply() },
-                        onMessage = update,
-                        approve = { _, detail ->
-                            val answer = CompletableDeferred<Boolean>()
-                            _codexApproval.value = VibeCodexApproval(detail, answer)
-                            try { answer.await() } finally { _codexApproval.value = null }
-                        })
+                        onMessage = update, editorDirty = editorDirty)
                 }
                 val activeUri = (if (editorName != null) published[editorName] else null)
                     ?: published.values.firstOrNull { it.toString() == editorUri }
@@ -291,13 +269,28 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
                         _isDirty.value = false
                     }
                 }
-                _workspaceRevision.value++
                 finalState = "succeeded"
             } catch (e: CancellationException) { finalState = "stopped"; throw e }
             catch (e: Exception) { reportCodexError(e) }
             finally {
+                // A tool can edit successfully before a later model step fails or is stopped.
+                // Show the actual saved contents instead of leaving the stale pre-run editor visible.
+                if (finalState != "succeeded" && !editorDirty && editorUri != null && _currentFileUri.value == editorUri) {
+                    withContext(kotlinx.coroutines.NonCancellable + Dispatchers.IO) {
+                        val uri = android.net.Uri.parse(editorUri)
+                        val saved = runCatching {
+                            if (uri.scheme == "file" || uri.scheme.isNullOrEmpty()) {
+                                java.io.File(uri.path ?: editorUri).readText()
+                            } else app.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
+                        }.getOrNull()
+                        if (saved != null) {
+                            _generatedCode.value = saved
+                            _isDirty.value = false
+                        }
+                    }
+                }
+                _workspaceRevision.value++
                 finishCodexActivities(finalState)
-                _codexApproval.value = null
                 _isProcessing.value = false
                 persistActiveSession()
                 saveSettings()
@@ -1039,7 +1032,8 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
         maxTokens: Int? = null,
         topK: Int? = null,
         topP: Float? = null,
-        temperature: Float? = null
+        temperature: Float? = null,
+        responseMaxTokens: Int? = null
     ) {
         val model = _selectedModel.value
         val effectiveMaxTokens = when {
@@ -1053,7 +1047,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
         val isGranite42 = model?.name?.contains("granite-4.2", ignoreCase = true) == true || model?.name?.contains("granite 4.2", ignoreCase = true) == true
         val useThinking = if (model?.name?.contains("Gemma-4", ignoreCase = true) == true || isMuseGlimmer || isGranite42) false else _enableThinking.value
         inferenceService.setGenerationParameters(
-            maxTokens = effectiveMaxTokens,
+            maxTokens = responseMaxTokens?.coerceIn(1, effectiveMaxTokens) ?: effectiveMaxTokens,
             topK = topK,
             topP = topP,
             temperature = temperature,
@@ -1510,7 +1504,6 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     private suspend fun cancelGenerationInternal() {
-        answerCodexApproval(false)
         val activeJob = processingJob
         if (activeJob != null) {
             activeJob.cancel()

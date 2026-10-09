@@ -6,6 +6,57 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class CodexResponsesTest {
+    @Test fun nativeFinishEndsWithOneSummaryAndNoShellCommand() {
+        val output = CodexResponses.output("Finished. <tool_call>[finish(summary='Verified the file change')]</tool_call>", request)
+        assertEquals(1, output.length())
+        assertEquals("message", output.getJSONObject(0).getString("type"))
+        assertEquals("Verified the file change", output.getJSONObject(0).getJSONArray("content").getJSONObject(0).getString("text"))
+    }
+    @Test(expected = IllegalArgumentException::class) fun cannotFinishWithPendingCommands() {
+        CodexResponses.output("""{"tool_calls":[{"name":"finish","arguments":{"summary":"Done"}},{"name":"shell","arguments":{"command":"echo pending"}}]}""",request)
+    }
+    @Test fun jsonReplyIsNotDuplicatedInsideAnUnclosedThinkingPrefix() {
+        val raw = CodexResponses.SENTINEL_THINK + "Verified the edit." + """{"text":"Fixed the typo.","tool_calls":[]}"""
+        assertEquals("Verified the edit.", CodexResponses.parseThinking(raw).first)
+        val display = CodexResponses.formatDisplayMessage(raw)
+        assertEquals(1, Regex("Fixed the typo\\.").findAll(display).count())
+        assertFalse(display.contains("tool_calls"))
+    }
+    @Test fun nativeToolCallEndsAnUnclosedThinkingPrefix() {
+        val offered = JSONObject("""{"tools":[{"type":"function","name":"exec_command","parameters":{"properties":{"cmd":{"type":"string"}},"required":["cmd"]}}]}""")
+        for (prefix in listOf(CodexResponses.SENTINEL_THINK, "<think>")) {
+            val raw = prefix + "Reading now<|tool_call_start|>[read_file(path='/cwd/index.html')]<|tool_call_end|>"
+            val call = CodexResponses.output(raw, offered).getJSONObject(0)
+            assertEquals("cat \"index.html\"", JSONObject(call.getString("arguments")).getString("cmd"))
+            assertEquals("Reading now", CodexResponses.parseThinking(raw).first)
+            assertFalse(CodexResponses.formatDisplayMessage(raw).contains("tool_call"))
+        }
+    }
+    @Test fun adaptsDeviceReadFileResponseToExecCommandSchema() {
+        val offered = JSONObject("""{"tools":[{"type":"function","name":"exec_command","parameters":{"properties":{"cmd":{"type":"string"}},"required":["cmd"]}}]}""")
+        val raw = "${CodexResponses.SENTINEL_THINK}Read before editing${CodexResponses.SENTINEL_ENDTHINK}" +
+            "<|tool_call_start|>[read_file(path='/cwd/gay.html')]<|tool_call_end|>"
+        val call = CodexResponses.output(raw, offered).getJSONObject(0)
+        assertEquals("exec_command", call.getString("name"))
+        val args = JSONObject(call.getString("arguments"))
+        assertEquals("cat \"gay.html\"", args.getString("cmd"))
+        assertFalse(args.has("command"))
+        val display = CodexResponses.formatDisplayMessage(raw)
+        assertTrue(display.contains("Read before editing"))
+        assertFalse(display.contains("tool_call"))
+        assertFalse(display.contains("read_file("))
+    }
+
+    @Test fun adaptsWriteAndShellAliasesToOfferedCmdParameter() {
+        val offered = JSONObject("""{"tools":[{"type":"function","name":"exec_command","parameters":{"required":["cmd"]}}]}""")
+        for (raw in listOf(
+            """{"name":"write_file","arguments":{"path":"index.html","content":"hello"}}""",
+            """{"name":"shell_command","arguments":{"command":"ls -la"}}"""
+        )) {
+            val call = CodexResponses.output(raw, offered).getJSONObject(0)
+            assertTrue(JSONObject(call.getString("arguments")).getString("cmd").isNotBlank())
+        }
+    }
     private val request = JSONObject("""{"tools":[
         {"type":"function","name":"shell","parameters":{"required":["command"]}},
         {"type":"custom","name":"apply_patch"},
@@ -120,8 +171,8 @@ class CodexResponsesTest {
         val call = output.getJSONObject(1)
         assertEquals("function_call", call.getString("type"))
         val cmd = JSONObject(call.getString("arguments")).getString("command")
-        assertTrue(cmd.contains("cat << 'EOF_CODE' > \"index.html\""))
-        assertTrue(cmd.contains("<h1>hello</h1>"))
+        assertTrue(cmd.contains("base64 -d > 'index.html'"))
+        assertTrue(cmd.contains(java.util.Base64.getEncoder().encodeToString("<h1>hello</h1>".toByteArray())))
     }
 
     @Test fun adaptsReadFileToShellCommand() {
@@ -167,6 +218,3 @@ class CodexResponsesTest {
         assertEquals("cat gay.html", args.getString("command"))
     }
 }
-
-
-

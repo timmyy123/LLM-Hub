@@ -1008,4 +1008,5 @@
     <string name="vibe_codex_staging">Projectbestanden voorbereiden…</string>
     <string name="vibe_codex_generating">Het lokale model is bezig…</string>
     <string name="vibe_codex_syncing">Projectwijzigingen toepassen…</string>
+    <string name="vibe_codex_step_progress">Agentstap %1$d · poging %2$d · %3$d tekens gegenereerd</string>
 </resources>

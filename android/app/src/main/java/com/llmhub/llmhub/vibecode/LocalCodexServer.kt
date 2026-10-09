@@ -14,13 +14,15 @@ internal class LocalCodexServer(
     private val infer: suspend (String) -> String,
     private val modelError: String,
     private val streamInfer: (suspend (String, (String) -> Unit) -> String)? = null,
-    private val onRequest: (JSONObject) -> Unit = {}
+    private val onRequest: (JSONObject) -> Unit = {},
+    private val onProgress: (String, Int, Int, String) -> Unit = { _, _, _, _ -> }
 ) : Closeable {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val listener = ServerSocket(0, 4, InetAddress.getByName("127.0.0.1"))
     private val token = UUID.randomUUID().toString()
     val baseUrl = "http://127.0.0.1:${listener.localPort}/$token/v1"
     private val sockets = java.util.concurrent.ConcurrentHashMap.newKeySet<Socket>()
+    private val steps = java.util.concurrent.atomic.AtomicInteger()
 
     init {
         scope.launch {
@@ -106,42 +108,70 @@ internal class LocalCodexServer(
             }
             try {
                 val messageId = "msg_${UUID.randomUUID()}"
-                var liveText = ""
-                var messageAdded = false
-                val partial = StringBuilder()
-                fun onChunk(chunk: String) {
-                    partial.append(chunk)
-                    val preview = CodexResponses.partialText(partial.toString())
-                    if (preview.length <= liveText.length || !preview.startsWith(liveText)) return
-                    if (!messageAdded) {
-                        event(CodexResponses.event("response.output_item.added", "output_index" to 0,
-                            "item" to JSONObject().put("id", messageId).put("type", "message").put("role", "assistant")
-                                .put("status", "in_progress").put("content", org.json.JSONArray())))
-                        messageAdded = true
-                    }
-                    event(CodexResponses.event("response.output_text.delta", "item_id" to messageId,
-                        "output_index" to 0, "content_index" to 0, "delta" to preview.substring(liveText.length)))
-                    liveText = preview
-                }
+                val step = steps.incrementAndGet()
                 val prompt = CodexResponses.prompt(request)
                 runCatching { android.util.Log.d("LocalCodexServer", "Codex prompt length: ${prompt.length}") }
-                val raw = streamInfer?.invoke(prompt, ::onChunk) ?: infer(prompt)
-                runCatching { android.util.Log.d("LocalCodexServer", "Raw model output (len ${raw.length}): $raw") }
-                val output = CodexResponses.output(raw, request)
-                for (i in 0 until output.length()) {
-                    val item = output.getJSONObject(i)
+                var inferencePrompt = prompt
+                val rejectionReasons = mutableListOf<String>()
+                fun recover(error: Exception): String {
+                    error.message?.let { if (it !in rejectionReasons) rejectionReasons.add(it) }
+                    return CodexResponses.recoveryPrompt(request,
+                        IllegalArgumentException(rejectionReasons.joinToString("\nPrevious rejection: ")))
+                }
+                var output: org.json.JSONArray? = null
+                for (attempt in 0..2) {
+                    val preview = StringBuilder()
+                    var lastUpdate = 0L
+                    onProgress(messageId, step, attempt + 1, "")
+                    // Publish assistant text only after validation; rejected attempts stay out of chat.
+                    val raw = streamInfer?.invoke(inferencePrompt) { chunk ->
+                        preview.append(chunk)
+                        val now = System.nanoTime()
+                        if (now - lastUpdate >= 200_000_000) {
+                            onProgress(messageId, step, attempt + 1, preview.toString())
+                            lastUpdate = now
+                        }
+                    }
+                        ?: infer(inferencePrompt)
+                    onProgress(messageId, step, attempt + 1, raw)
+                    try {
+                        var nativeSummary: String? = null
+                        val candidate = try { CodexResponses.output(raw, request) }
+                            catch (error: org.json.JSONException) {
+                                val completion = CodexResponses.nativeCompletion(raw) ?: throw error
+                                nativeSummary = completion
+                                CodexResponses.output(completion, request, allowPlainText = true)
+                            }
+                        CodexProgressGuard.validate(candidate, request)
+                        nativeSummary?.let { summary ->
+                            // Replace the provisional thinking preview before publishing this same final text.
+                            onProgress(messageId, step, attempt + 1,
+                                JSONObject().put("text", summary).put("tool_calls", org.json.JSONArray()).toString())
+                        }
+                        output = candidate
+                        break
+                    } catch (e: IllegalArgumentException) {
+                        if (attempt == 2) throw e
+                        inferencePrompt = recover(e)
+                    } catch (e: org.json.JSONException) {
+                        if (attempt == 2) throw e
+                        inferencePrompt = recover(e)
+                    }
+                }
+                val validated = checkNotNull(output)
+                for (i in 0 until validated.length()) {
+                    val item = validated.getJSONObject(i)
                     if (item.optString("type") == "message") {
                         item.put("id", messageId)
-                        if (!messageAdded) event(CodexResponses.event("response.output_item.added", "output_index" to i, "item" to item))
+                        event(CodexResponses.event("response.output_item.added", "output_index" to i, "item" to item))
                         val text = item.getJSONArray("content").getJSONObject(0).getString("text")
-                        val delta = if (text.startsWith(liveText)) text.substring(liveText.length) else text
-                        if (delta.isNotEmpty()) event(CodexResponses.event("response.output_text.delta", "item_id" to messageId,
-                            "output_index" to i, "content_index" to 0, "delta" to delta))
+                        if (text.isNotEmpty()) event(CodexResponses.event("response.output_text.delta", "item_id" to messageId,
+                            "output_index" to i, "content_index" to 0, "delta" to text))
                     } else event(CodexResponses.event("response.output_item.added", "output_index" to i, "item" to item))
                     event(CodexResponses.event("response.output_item.done", "output_index" to i, "item" to item))
                 }
                 event(CodexResponses.event("response.completed", "response" to JSONObject().put("id", id)
-                    .put("status", "completed").put("output", output)))
+                    .put("status", "completed").put("output", validated)))
             } catch (e: CancellationException) { throw e }
             catch (e: Exception) {
                 runCatching { android.util.Log.e("LocalCodexServer", "Error generating or parsing response", e) }

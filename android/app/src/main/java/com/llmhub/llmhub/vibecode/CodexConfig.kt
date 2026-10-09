@@ -9,6 +9,7 @@ internal object CodexConfig {
     fun shellQuote(value: String) = "'" + value.replace("'", "'\"'\"'") + "'"
     fun arguments(baseUrl: String, contextWindow: Int): String = linkedMapOf(
         "model" to "\"llmhub-local\"", "model_provider" to "\"llmhub_local\"",
+        "approval_policy" to "\"${CodexApprovals.POLICY}\"",
         "model_providers.llmhub_local.name" to "\"LLM Hub local\"",
         "model_providers.llmhub_local.base_url" to literal(baseUrl),
         "model_providers.llmhub_local.wire_api" to "\"responses\"",
