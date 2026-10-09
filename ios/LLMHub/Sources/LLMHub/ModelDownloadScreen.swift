@@ -308,7 +308,23 @@ class ModelDownloadViewModel: ObservableObject {
         var needsResave = false
         for raw in imported {
             guard !models.contains(where: { $0.id == raw.id }) else { continue }
-            let model = Self.migrateCustomModelIntoAppStorage(ModelData.normalizeCustomModel(raw))
+            var model = Self.migrateCustomModelIntoAppStorage(ModelData.normalizeCustomModel(raw))
+            if model.modelFormat == .gguf,
+               let url = LLMBackend.shared.ggufFileURL(for: model),
+               let realContext = GGUFLayerLimits.readContextLength(from: url),
+               realContext > 0 && realContext != model.contextWindowSize {
+                model = AIModel(
+                    id: model.id, name: model.name, description: model.description,
+                    url: model.url, category: model.category, sizeBytes: model.sizeBytes,
+                    source: model.source, supportsVision: model.supportsVision,
+                    supportsAudio: model.supportsAudio, supportsThinking: model.supportsThinking,
+                    supportsGpu: model.supportsGpu, supportsMtp: model.supportsMtp, requirements: model.requirements,
+                    contextWindowSize: realContext, modelFormat: model.modelFormat,
+                    additionalFiles: model.additionalFiles, promptTemplate: model.promptTemplate,
+                    chatTemplateFamily: model.chatTemplateFamily
+                )
+                needsResave = true
+            }
             if model.url != raw.url || model.additionalFiles != raw.additionalFiles { needsResave = true }
             models.append(model)
             downloadStates[model.id] = model.modelFormat == .drawthings ? .notDownloaded : .downloaded
@@ -543,6 +559,26 @@ class ModelDownloadViewModel: ObservableObject {
                     self.downloadStates[model.id] = .downloaded
                     self.downloadTasks.removeValue(forKey: model.id)
                     self.clearPending(model.id)
+                    if let idx = self.models.firstIndex(where: { $0.id == model.id }) {
+                        var m = self.models[idx]
+                        if m.modelFormat == .gguf,
+                           let url = LLMBackend.shared.ggufFileURL(for: m),
+                           let realContext = GGUFLayerLimits.readContextLength(from: url),
+                           realContext > 0 {
+                            m = AIModel(
+                                id: m.id, name: m.name, description: m.description,
+                                url: m.url, category: m.category, sizeBytes: m.sizeBytes,
+                                source: m.source, supportsVision: m.supportsVision,
+                                supportsAudio: m.supportsAudio, supportsThinking: m.supportsThinking,
+                                supportsGpu: m.supportsGpu, supportsMtp: m.supportsMtp, requirements: m.requirements,
+                                contextWindowSize: realContext, modelFormat: m.modelFormat,
+                                additionalFiles: m.additionalFiles, promptTemplate: m.promptTemplate,
+                                chatTemplateFamily: m.chatTemplateFamily
+                            )
+                            self.models[idx] = m
+                            self.saveImportedModels()
+                        }
+                    }
                     self.refreshStatuses()
                 }
 

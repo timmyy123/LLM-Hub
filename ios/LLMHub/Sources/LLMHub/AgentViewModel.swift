@@ -134,7 +134,7 @@ public class AgentViewModel: ObservableObject {
                     do {
                         let savedMaxTokens = UserDefaults.standard.double(forKey: "agent_max_tokens")
                         let maxTok = savedMaxTokens > 0 ? savedMaxTokens : 4096
-                        let modelContextCap = modelToLoad.contextWindowSize > 0 ? modelToLoad.contextWindowSize : 4096
+                        let modelContextCap = LLMBackend.shared.modelMaxContextWindow(for: modelToLoad)
                         let effectiveContext = min(max(1, Int(maxTok)), modelContextCap)
                         LLMBackend.shared.maxTokens = min(Int(maxTok), effectiveContext)
                         LLMBackend.shared.contextWindow = effectiveContext
@@ -199,7 +199,7 @@ public class AgentViewModel: ObservableObject {
                 let maxTok = savedMaxTokens > 0 ? savedMaxTokens : 4096
                 if let loadedName = LLMBackend.shared.currentlyLoadedModel,
                    let model = ModelData.allModels().first(where: { $0.name == loadedName }) {
-                    let modelContextCap = model.contextWindowSize > 0 ? model.contextWindowSize : 4096
+                    let modelContextCap = LLMBackend.shared.modelMaxContextWindow(for: model)
                     let effectiveContext = min(max(1, Int(maxTok)), modelContextCap)
                     LLMBackend.shared.contextWindow = effectiveContext
                     LLMBackend.shared.maxTokens = min(Int(maxTok), effectiveContext)
@@ -282,7 +282,7 @@ public class AgentViewModel: ObservableObject {
         let maxTok = savedMaxTokens > 0 ? savedMaxTokens : 4096
         if let loadedName = LLMBackend.shared.currentlyLoadedModel,
            let model = ModelData.allModels().first(where: { $0.name == loadedName }) {
-            let modelContextCap = model.contextWindowSize > 0 ? model.contextWindowSize : 4096
+            let modelContextCap = LLMBackend.shared.modelMaxContextWindow(for: model)
             let effectiveContext = min(max(1, Int(maxTok)), modelContextCap)
             LLMBackend.shared.contextWindow = effectiveContext
             LLMBackend.shared.maxTokens = min(Int(maxTok), effectiveContext)

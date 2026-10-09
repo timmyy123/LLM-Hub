@@ -529,8 +529,11 @@ class LLMBackend: ObservableObject {
         try? SimplifiedFileManager.shared.getModelFolderURL(modelId: model.id, framework: model.inferenceFramework)
     }
 
-    private func isModelAvailableLocally(_ model: AIModel) -> Bool {
-        // Custom imported models store their file at model.url (an absolute file path).
+    func isModelAvailableLocally(_ model: AIModel) -> Bool {
+        if model.modelFormat == .gguf {
+            return (try? resolveModelGGUFPath(for: model)) != nil
+        }
+
         if model.source == "Custom", FileManager.default.fileExists(atPath: model.url) {
             return true
         }
@@ -605,13 +608,24 @@ class LLMBackend: ObservableObject {
         return URL(fileURLWithPath: path)
     }
 
-    private func resolveModelGGUFPath(for model: AIModel) throws -> String {
-        // Custom imported models store the GGUF path directly in model.url.
-        if model.source == "Custom" {
-            // Safety: if model.url somehow points to an mmproj file, find the real main model
-            // in the same directory instead (mmproj/CLIP files can't be loaded as main models).
-            if model.url.lowercased().contains("mmproj") {
-                let directory = URL(fileURLWithPath: model.url).deletingLastPathComponent()
+    func modelMaxGpuLayers(for model: AIModel) -> Int {
+        guard model.modelFormat == .gguf,
+              let url = ggufFileURL(for: model),
+              let limit = GGUFLayerLimits.read(from: url) else {
+            return GGUFLayerLimits.unknown
+        }
+        return limit
+    }
+
+    func resolveModelGGUFPath(for model: AIModel) throws -> String {
+        // 1. Direct path check if model.url is a local file path
+        if !model.url.hasPrefix("http://") && !model.url.hasPrefix("https://") {
+            let directUrl = URL(fileURLWithPath: model.url)
+            if FileManager.default.fileExists(atPath: directUrl.path) {
+                if !directUrl.lastPathComponent.lowercased().contains("mmproj") && !directUrl.lastPathComponent.lowercased().contains("projector") {
+                    return directUrl.path
+                }
+                let directory = directUrl.deletingLastPathComponent()
                 if let mainModel = listGGUFFiles(in: directory).first(where: {
                     let name = $0.lastPathComponent.lowercased()
                     return !name.contains("mmproj") && !name.contains("projector")
@@ -619,36 +633,64 @@ class LLMBackend: ObservableObject {
                     return mainModel.path
                 }
             }
-            guard FileManager.default.fileExists(atPath: model.url) else {
-                throw NSError(domain: "LLMBackend", code: -101, userInfo: [NSLocalizedDescriptionKey: "Custom model file missing: \(model.url)"])
-            }
-            return model.url
         }
 
-        let folderURL = try SimplifiedFileManager.shared.getModelFolderURL(modelId: model.id, framework: model.inferenceFramework)
-        let files = listGGUFFiles(in: folderURL)
+        // 2. Candidate folders for imported/custom or standard models
+        var candidateDirs: [URL] = []
+        if let dir = try? SimplifiedFileManager.shared.getModelFolderURL(modelId: model.id, framework: .llamaCpp) {
+            candidateDirs.append(dir)
+        }
+        if let dir = try? SimplifiedFileManager.shared.getModelFolderURL(modelId: model.id, framework: model.inferenceFramework) {
+            if !candidateDirs.contains(dir) { candidateDirs.append(dir) }
+        }
+        if let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
+            candidateDirs.append(docs.appendingPathComponent("ImportedModels/\(model.id)", isDirectory: true))
+            candidateDirs.append(docs.appendingPathComponent("ImportedModels", isDirectory: true))
+            candidateDirs.append(docs.appendingPathComponent("models/\(model.id)", isDirectory: true))
+        }
+        if let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first {
+            candidateDirs.append(appSupport.appendingPathComponent("Models", isDirectory: true))
+        }
 
-        if let modelURL = URL(string: model.url) {
-            let preferredFilename = filename(from: modelURL).lowercased()
-            if let exact = files.first(where: { $0.lastPathComponent.lowercased() == preferredFilename }) {
+        // Search candidate dirs for exact matching filename first
+        let targetFilename: String? = {
+            if !model.url.hasPrefix("http://") && !model.url.hasPrefix("https://") {
+                return URL(fileURLWithPath: model.url).lastPathComponent.lowercased()
+            } else if let u = URL(string: model.url) {
+                return filename(from: u).lowercased()
+            }
+            return nil
+        }()
+
+        if let targetFilename = targetFilename, !targetFilename.contains("mmproj") {
+            for dir in candidateDirs {
+                let candidateFile = dir.appendingPathComponent(targetFilename)
+                if FileManager.default.fileExists(atPath: candidateFile.path) {
+                    return candidateFile.path
+                }
+            }
+        }
+
+        // Search candidate dirs for any valid non-projector GGUF file
+        for dir in candidateDirs {
+            let files = listGGUFFiles(in: dir)
+            if let targetFilename = targetFilename,
+               let exact = files.first(where: { $0.lastPathComponent.lowercased() == targetFilename }) {
                 return exact.path
             }
-        }
-
-        if let quantTag = quantizationTag(from: model.name),
-           let quantMatched = files.first(where: {
-               let lower = $0.lastPathComponent.lowercased()
-               return !lower.contains("mmproj") && lower.contains(quantTag)
-           }) {
-            return quantMatched.path
-        }
-
-        if let preferred = files.first(where: { !$0.lastPathComponent.lowercased().contains("mmproj") }) {
-            return preferred.path
-        }
-
-        if let first = files.first {
-            return first.path
+            if let quantTag = quantizationTag(from: model.name),
+               let quantMatched = files.first(where: {
+                   let lower = $0.lastPathComponent.lowercased()
+                   return !lower.contains("mmproj") && !lower.contains("projector") && lower.contains(quantTag)
+               }) {
+                return quantMatched.path
+            }
+            if let preferred = files.first(where: {
+                let lower = $0.lastPathComponent.lowercased()
+                return !lower.contains("mmproj") && !lower.contains("projector")
+            }) {
+                return preferred.path
+            }
         }
 
         throw NSError(domain: "LLMBackend", code: -101, userInfo: [NSLocalizedDescriptionKey: "Main GGUF file not found for model \(model.name)"])
@@ -843,9 +885,11 @@ class LLMBackend: ObservableObject {
                 ? resolveVisionProjectorPath(for: model) : nil
             let contextSize = clampedContextWindow(contextWindow, for: model)
             let isCPU = selectedBackend.caseInsensitiveCompare("CPU") == .orderedSame
+            let maxLayers = modelMaxGpuLayers(for: model)
             let storedLayers = UserDefaults.standard.object(forKey: "gpu_layers_\(model.id)") != nil
-                ? UserDefaults.standard.integer(forKey: "gpu_layers_\(model.id)") : 999
-            let gpuLayers = isCPU ? 0 : max(0, storedLayers)
+                ? UserDefaults.standard.integer(forKey: "gpu_layers_\(model.id)") : maxLayers
+            let effectiveLayers = (storedLayers == 999 && maxLayers != GGUFLayerLimits.unknown) ? maxLayers : storedLayers
+            let gpuLayers = isCPU ? 0 : max(0, effectiveLayers)
             try await DirectLlamaCppBackend.shared.load(
                 path: modelPath, projector: projector,
                 contextSize: contextSize, gpuLayers: gpuLayers

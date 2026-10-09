@@ -208,7 +208,7 @@ public struct AgentScreen: View {
             return
         }
         do {
-            let modelContextCap = model.contextWindowSize > 0 ? model.contextWindowSize : 4096
+            let modelContextCap = LLMBackend.shared.modelMaxContextWindow(for: model)
             let effectiveContext = min(max(1, Int(agentMaxTokens)), modelContextCap)
             let isGranite42 = agentModelName.lowercased().contains("granite-4.2") || agentModelName.lowercased().contains("granite 4.2")
             LLMBackend.shared.enableThinking = isGranite42 ? false : agentEnableThinking

@@ -884,7 +884,7 @@ class ChatViewModel: ObservableObject {
         guard selectedModelName != AppSettings.shared.localized("no_model_selected") else { return }
         guard let model = chatModel(named: selectedModelName) else { return }
 
-        let modelMaxContext = max(1, model.contextWindowSize > 0 ? model.contextWindowSize : 2048)
+        let modelMaxContext = LLMBackend.shared.modelMaxContextWindow(for: model)
         let desiredContextWindow = min(max(1, Int(contextWindow)), modelMaxContext)
 
         if !force,
@@ -1001,7 +1001,7 @@ class ChatViewModel: ObservableObject {
             return fallback
         }
 
-        let modelMaxContext = Double(max(1, model.contextWindowSize > 0 ? model.contextWindowSize : 2048))
+        let modelMaxContext = Double(LLMBackend.shared.modelMaxContextWindow(for: model))
         var clamped = settings
         clamped.contextWindow = min(max(1, clamped.contextWindow), modelMaxContext)
         clamped.maxTokens = min(max(1, clamped.maxTokens), clamped.contextWindow)

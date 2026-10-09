@@ -421,9 +421,8 @@ struct ChatSettingsSheet: View {
 
     private var modelMaxContextWindow: Double {
         guard let currentModel else { return 4096 }
-        if currentModel.modelFormat == .gguf {
-            return Double(LLMBackend.shared.modelMaxContextWindow(for: currentModel))
-        }
+        let cap = LLMBackend.shared.modelMaxContextWindow(for: currentModel)
+        if cap > 0 { return Double(cap) }
         let advertised = currentModel.contextWindowSize > 0 ? currentModel.contextWindowSize : 4096
         return Double(max(1, advertised))
     }
@@ -453,17 +452,20 @@ struct ChatSettingsSheet: View {
 
     private func loadInitialGpuLayers() {
         guard let currentModel = currentModel else { return }
-        // Read the small GGUF metadata header before presenting the slider. Updating its
-        // range asynchronously made SwiftUI briefly draw the thumb at the left edge.
-        let limit = LLMBackend.shared.ggufFileURL(for: currentModel)
-            .flatMap { GGUFLayerLimits.read(from: $0) } ?? GGUFLayerLimits.unknown
+        let limit = LLMBackend.shared.modelMaxGpuLayers(for: currentModel)
         gpuLayerLimit = Double(limit)
         let key = "gpu_layers_\(currentModel.id)"
         if UserDefaults.standard.object(forKey: key) != nil {
             let stored = UserDefaults.standard.integer(forKey: key)
-            gpuLayersTemp = min(max(0, Double(stored == 99 ? 999 : stored)), gpuLayerLimit)
+            if stored == 999 || stored == 99 || (limit != GGUFLayerLimits.unknown && stored > limit) {
+                gpuLayersTemp = Double(limit)
+                saveGpuLayers(Double(limit))
+            } else {
+                gpuLayersTemp = min(max(0, Double(stored)), gpuLayerLimit)
+            }
         } else {
             gpuLayersTemp = gpuLayerLimit
+            saveGpuLayers(gpuLayerLimit)
         }
     }
 

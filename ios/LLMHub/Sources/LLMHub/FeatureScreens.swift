@@ -18,7 +18,8 @@ import Network
 @MainActor
 private func contextLimitForFeatureModel(_ model: AIModel, fallback: Int = 4096) -> Int {
     if model.modelFormat == .gguf {
-        return LLMBackend.shared.modelMaxContextWindow(for: model)
+        let maxCap = LLMBackend.shared.modelMaxContextWindow(for: model)
+        if maxCap > 0 { return maxCap }
     }
     return model.contextWindowSize > 0 ? model.contextWindowSize : fallback
 }
@@ -481,7 +482,7 @@ struct FeatureModelSettingsSheet: View {
         guard let selectedModel else { return 4096 }
         let cap = selectedModel.modelFormat == .gguf
             ? llm.modelMaxContextWindow(for: selectedModel)
-            : selectedModel.contextWindowSize
+            : (selectedModel.contextWindowSize > 0 ? selectedModel.contextWindowSize : 4096)
         return Double(max(2, cap))
     }
 
@@ -721,24 +722,22 @@ struct FeatureModelSettingsSheet: View {
 
     private func loadInitialGpuLayers() {
         guard let selectedModel = selectedModel else { return }
-        gpuLayerLimit = Double(GGUFLayerLimits.unknown)
+        let limit = LLMBackend.shared.modelMaxGpuLayers(for: selectedModel)
         let key = "gpu_layers_\(selectedModel.id)"
-        if UserDefaults.standard.object(forKey: key) != nil {
-            let stored = UserDefaults.standard.integer(forKey: key)
-            gpuLayersTemp = Double(stored == 99 ? 999 : stored)
-        } else {
-            gpuLayersTemp = 999
-        }
-        if let url = LLMBackend.shared.ggufFileURL(for: selectedModel) {
-            let modelID = selectedModel.id
-            Task {
-                let limit = await Task.detached(priority: .utility) {
-                    GGUFLayerLimits.read(from: url)
-                }.value ?? GGUFLayerLimits.unknown
-                guard self.selectedModel?.id == modelID else { return }
-                gpuLayersTemp = min(max(0, gpuLayersTemp), Double(limit))
-                gpuLayerLimit = Double(limit)
+        let hasStored = UserDefaults.standard.object(forKey: key) != nil
+        let stored = hasStored ? UserDefaults.standard.integer(forKey: key) : -1
+
+        if limit != GGUFLayerLimits.unknown {
+            gpuLayerLimit = Double(limit)
+            if !hasStored || stored == 999 || stored == 99 || stored > limit {
+                gpuLayersTemp = Double(limit)
+                saveGpuLayers(Double(limit))
+            } else {
+                gpuLayersTemp = min(max(0, Double(stored)), Double(limit))
             }
+        } else {
+            gpuLayerLimit = Double(GGUFLayerLimits.unknown)
+            gpuLayersTemp = hasStored ? Double(stored) : Double(GGUFLayerLimits.unknown)
         }
     }
 
@@ -3076,7 +3075,7 @@ struct WritingAidScreen: View {
         }
         if let model = selectedFeatureModel(named: modelName) {
             let cap = contextLimitForFeatureModel(model)
-            return Double(min(4096, cap))
+            return Double(cap)
         }
         return 4096
     }
@@ -3462,10 +3461,10 @@ struct TranslatorScreen: View {
             return val
         }
         if let model = selectedFeatureModel(named: modelName) {
-            let cap = contextLimitForFeatureModel(model, fallback: 2048)
-            return Double(min(2048, cap))
+            let cap = contextLimitForFeatureModel(model, fallback: 4096)
+            return Double(cap)
         }
-        return 2048
+        return 4096
     }
 
     private func saveTranslatorContextWindow(value: Double, for modelName: String) {
@@ -4263,7 +4262,7 @@ struct ScamDetectorScreen: View {
         }
         if let model = selectedFeatureModel(named: modelName) {
             let cap = contextLimitForFeatureModel(model)
-            return Double(min(4096, cap))
+            return Double(cap)
         }
         return 4096
     }
@@ -5021,7 +5020,7 @@ struct VibeCoderScreen: View {
         }
         if let model = selectedFeatureModel(named: modelName) {
             let cap = contextLimitForFeatureModel(model)
-            return Double(min(4096, cap))
+            return Double(cap)
         }
         return 4096
     }
