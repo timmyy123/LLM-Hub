@@ -7234,8 +7234,8 @@ public struct MusicGeneratorScreen: View {
     @State private var generationStartedAt: Date?
     @State private var generatedTracks: [GeneratedMusicTrack] = []
     @State private var durationSeconds: Double = 10.0
-    @State private var liveGeneration: Bool = false
-    @State private var unlimitedDuration: Bool = false
+    @AppStorage("feature_music_live_generation") private var liveGeneration: Bool = false
+    @AppStorage("feature_music_unlimited_duration") private var unlimitedDuration: Bool = false
     @State private var showSettings: Bool = false
     @State private var isLoading: Bool = false
     @State private var errorMessage: String? = nil
