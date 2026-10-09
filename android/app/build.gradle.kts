@@ -551,7 +551,8 @@ val extractLitertQnnLibs = tasks.register<Copy>("extractLitertQnnLibs") {
     into(layout.buildDirectory.dir("generated/qnnlibs_litert_assets/qnnlibs_litert"))
 }
 tasks.configureEach {
-    if (name.startsWith("merge") && name.contains("Assets")) {
+    // Lint also reads the generated asset source directory, independently of asset merging.
+    if ((name.startsWith("merge") && name.contains("Assets")) || name.contains("lint", ignoreCase = true)) {
         dependsOn(extractLitertQnnLibs)
     }
 }
