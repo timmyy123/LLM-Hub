@@ -6,6 +6,31 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class LocalCodexServerTest {
+    @Test fun redundantReadAfterExactSavedFileVerificationCompletesWithoutAnotherCommand() {
+        val content = "<html>pig</html>"
+        val encoded = java.util.Base64.getEncoder().encodeToString(content.toByteArray())
+        var attempts = 0
+        val input = org.json.JSONArray()
+            .put(org.json.JSONObject().put("type", "message").put("role", "user").put("content", "make a pig site"))
+        for ((id, command, result) in listOf(
+            Triple("write", "printf '%s' '$encoded' | base64 -d > 'pig.html'", "Process exited with code 0\nOutput:\n"),
+            Triple("read", "cat pig.html", "Process exited with code 0\nOutput:\n$content"))) {
+            input.put(org.json.JSONObject().put("type", "function_call").put("name", "exec_command").put("call_id", id)
+                .put("arguments", org.json.JSONObject().put("cmd", command).toString()))
+            input.put(org.json.JSONObject().put("type", "function_call_output").put("call_id", id).put("output", result))
+        }
+        LocalCodexServer(infer = { attempts++; """{"tool_calls":[{"name":"exec_command","arguments":{"cmd":"cat pig.html"}}]}""" },
+            modelError = "Invalid", verifiedFileSummary = { "Saved and verified $it" }).use { server ->
+            val request = org.json.JSONObject().put("input", input).put("tools", org.json.JSONArray()
+                .put(org.json.JSONObject().put("type", "function").put("name", "exec_command")))
+            val (_, stream) = post("${server.baseUrl}/responses", request.toString())
+            assertEquals(1, attempts)
+            assertTrue(stream.contains("response.completed"))
+            assertTrue(stream.contains("Saved and verified pig.html"))
+            assertFalse(stream.contains("response.failed"))
+            assertFalse(stream.contains("function_call"))
+        }
+    }
     @Test fun nativeFinalAnswerAfterVerifiedEditDoesNotRestartTheAgent() {
         var attempts = 0
         LocalCodexServer(infer = { attempts++; CodexResponses.SENTINEL_THINK + "The edit is saved and verified. No further action is needed." }, modelError = "Invalid").use { server ->

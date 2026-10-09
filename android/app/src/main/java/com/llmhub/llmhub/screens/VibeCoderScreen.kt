@@ -363,24 +363,32 @@ fun VibeCoderScreen(
     fun createFileInCurrentFolder(fileName: String) {
         val folder = currentFolderUri ?: return
         val treeUri = android.net.Uri.parse(folder)
+        val treeDocId = runCatching { DocumentsContract.getTreeDocumentId(treeUri) }.getOrNull()
         val realPath = CodexWorkspace.resolveRealPath(context, treeUri)
-        if (realPath != null) {
+        // Use the folder's document grant even when its physical path is known.
+        // Scoped storage can deny File writes while DocumentsContract is authorized.
+        if (treeDocId == null && realPath != null) {
             val dir = java.io.File(realPath)
             dir.mkdirs()
             val newFile = java.io.File(dir, fileName)
-            if (!newFile.exists()) {
-                runCatching {
+            val created = runCatching {
+                if (!newFile.exists()) {
                     newFile.parentFile?.mkdirs()
-                    newFile.createNewFile()
+                    check(newFile.createNewFile())
                 }
+                check(newFile.isFile)
+            }.isSuccess
+            if (!created) {
+                viewModel.setError(context.getString(R.string.file_save_error))
+                return
             }
             val newUri = android.net.Uri.fromFile(newFile).toString()
-            viewModel.openEditorFile(newUri, fileName, "")
+            loadFileFromUri(newUri)
             refreshFolderFiles(folder)
             return
         }
 
-        val treeDocId = runCatching { DocumentsContract.getTreeDocumentId(treeUri) }.getOrNull() ?: return
+        if (treeDocId == null) return
         val parentDocUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, treeDocId)
         val mime = when {
             fileName.endsWith(".py", true) -> "text/x-python"
@@ -407,6 +415,7 @@ fun VibeCoderScreen(
         val newUri = runCatching {
             DocumentsContract.createDocument(context.contentResolver, parentDocUri, mime, fileName)
         }.getOrNull()
+        if (newUri == null) viewModel.setError(context.getString(R.string.file_save_error))
         if (newUri != null) {
             val actualName = runCatching {
                 context.contentResolver.query(newUri, null, null, null, null)?.use { cursor ->

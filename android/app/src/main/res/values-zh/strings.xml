@@ -1110,4 +1110,5 @@
     <string name="vibe_codex_generating">本地模型正在工作…</string>
     <string name="vibe_codex_syncing">正在应用项目更改…</string>
     <string name="vibe_codex_step_progress">代理步骤 %1$d · 第 %2$d 次尝试 · 已生成 %3$d 个字符</string>
+    <string name="vibe_codex_saved_verified">已保存 %1$s 并验证其内容。</string>
 </resources>

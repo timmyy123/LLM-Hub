@@ -6,6 +6,30 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class CodexProgressGuardTest {
+    @Test fun duplicateReadFinishesOnlyAfterMatchingLiteralWriteAndReadBack() {
+        val path = "/project/pig.html"
+        val content = "<html>🐷</html>"
+        val encoded = java.util.Base64.getEncoder().encodeToString(content.toByteArray())
+        val write = "mkdir -p -- '/project' && printf '%s' '$encoded' | base64 -d > '$path'"
+        val read = JSONObject().put("type", "function_call").put("name", "exec_command").put("call_id", "read")
+            .put("arguments", JSONObject().put("cmd", "cat \"$path\"").toString())
+        fun history(writeResult: String = "Process exited with code 0", readResult: String = "Process exited with code 0\nOutput:\n$content") = JSONObject().put("input", JSONArray()
+            .put(JSONObject().put("type", "message").put("role", "user").put("content", "make a pig site"))
+            .put(JSONObject().put("type", "function_call").put("name", "exec_command").put("call_id", "write")
+                .put("arguments", JSONObject().put("cmd", write).toString()))
+            .put(JSONObject().put("type", "function_call_output").put("call_id", "write").put("output", writeResult))
+            .put(read)
+            .put(JSONObject().put("type", "function_call_output").put("call_id", "read").put("output", readResult)))
+        val next = JSONArray().put(read)
+        assertEquals(path, CodexProgressGuard.verifiedDuplicateRead(next, history()))
+        assertNull(CodexProgressGuard.verifiedDuplicateRead(next, history(writeResult = "Process exited with code 1")))
+        assertNull(CodexProgressGuard.verifiedDuplicateRead(next, history(readResult = "Process exited with code 0\nOutput:\nwrong content")))
+        assertNull(CodexProgressGuard.verifiedDuplicateRead(next, history(readResult = "Process exited with code 0\nWarning: truncated output\nOutput:\n$content")))
+        assertNull(CodexProgressGuard.verifiedDuplicateRead(JSONArray().put(read).put(read), history()))
+        val request = history()
+        request.getJSONArray("input").put(JSONObject().put("type", "message").put("role", "user").put("content", "add something else"))
+        assertNull(CodexProgressGuard.verifiedDuplicateRead(next, request))
+    }
     @Test fun successfulEditInvalidatesPreviousFileContentsBeforeVerificationRead() {
         val req = request()
         req.getJSONArray("input").put(call("node successful-edit.js", "edit"))

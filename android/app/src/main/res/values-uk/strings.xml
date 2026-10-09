@@ -1102,4 +1102,5 @@
     <string name="vibe_codex_generating">Локальна модель працює…</string>
     <string name="vibe_codex_syncing">Застосування змін проєкту…</string>
     <string name="vibe_codex_step_progress">Крок агента %1$d · спроба %2$d · згенеровано символів: %3$d</string>
+    <string name="vibe_codex_saved_verified">%1$s збережено, вміст перевірено.</string>
 </resources>

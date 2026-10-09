@@ -1102,4 +1102,5 @@
     <string name="vibe_codex_generating">مدل محلی در حال کار است…</string>
     <string name="vibe_codex_syncing">در حال اعمال تغییرات پروژه…</string>
     <string name="vibe_codex_step_progress">مرحلهٔ عامل %1$d · تلاش %2$d · %3$d نویسه تولید شد</string>
+    <string name="vibe_codex_saved_verified">%1$s ذخیره و محتوای آن بررسی شد.</string>
 </resources>

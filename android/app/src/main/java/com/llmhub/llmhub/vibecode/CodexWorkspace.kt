@@ -153,9 +153,22 @@ internal class CodexWorkspace(
 
         // A clean editor may be stale after an interrupted run. Never overwrite an agent's
         // actual edits with that snapshot on the next prompt; only publish unsaved user edits.
-        if (editorDirty && !editorName.isNullOrBlank()) {
-            client.request("fs/writeFile", JSONObject().put("path", "$remote/$editorName")
+        if (!editorName.isNullOrBlank()) {
+            val target = java.io.File(remote, editorName).canonicalPath
+            require(target.startsWith("$remote/")) { "Editor file must be inside the workspace" }
+            val missing = if (editorDirty) false else try {
+                client.request("fs/readFile", JSONObject().put("path", target))
+                false
+            } catch (e: java.io.IOException) {
+                // Permission errors and connection failures must not become overwrites.
+                if (e.message.orEmpty().contains("No such file", ignoreCase = true) ||
+                    e.message.orEmpty().contains("ENOENT")) true else throw e
+            }
+            if (editorDirty || missing) {
+                ensureDirectory(client, java.io.File(target).parent!!)
+                client.request("fs/writeFile", JSONObject().put("path", target)
                 .put("dataBase64", Base64.encodeToString(editorText.toByteArray(), Base64.NO_WRAP)))
+            }
         }
     }
 

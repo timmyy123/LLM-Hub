@@ -1074,4 +1074,5 @@
     <string name="vibe_codex_generating">Локальная модель работает…</string>
     <string name="vibe_codex_syncing">Применение изменений проекта…</string>
     <string name="vibe_codex_step_progress">Шаг агента %1$d · попытка %2$d · создано символов: %3$d</string>
+    <string name="vibe_codex_saved_verified">%1$s сохранён, содержимое проверено.</string>
 </resources>

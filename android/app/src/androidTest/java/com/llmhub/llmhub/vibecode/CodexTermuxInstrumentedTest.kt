@@ -36,6 +36,56 @@ class CodexTermuxInstrumentedTest {
 
     @Test fun malformedCompletionRecoversAndProducesOneAssistantMessage() = runCodexScenario(true)
 
+    @Test fun emptyEditorFileExistsInTermuxBeforeAgentReadsIt() = runBlocking {
+        val local = LocalCodexServer(infer = { "{\"text\":\"ready\",\"tool_calls\":[]}" },
+            modelError = "Invalid local test response")
+        val port = ServerSocket(0, 1, InetAddress.getByName("127.0.0.1")).use { it.localPort }
+        val token = UUID.randomUUID().toString()
+        val sha = java.security.MessageDigest.getInstance("SHA-256").digest(token.toByteArray())
+            .joinToString("") { "%02x".format(it) }
+        val home = "/data/data/com.termux/files/home/.llmhub-codex/empty-file-${UUID.randomUUID()}"
+        val project = "/storage/emulated/0/Download/llmhub-empty-file-${UUID.randomUUID()}"
+        val logs = StringBuffer()
+        val server = async(Dispatchers.IO) {
+            TermuxStreamingCommand.run(context,
+                "export PATH=/data/data/com.termux/files/usr/bin:\$PATH; mkdir -p ${CodexConfig.shellQuote(home)}; " +
+                    "CODEX_HOME=${CodexConfig.shellQuote(home)} codex app-server --listen ws://127.0.0.1:$port " +
+                    "--ws-auth capability-token --ws-token-sha256 $sha ${CodexConfig.arguments(local.baseUrl, 8192)}",
+                120_000) { logs.append(it) }
+        }
+        var client: CodexClient? = null
+        try {
+            for (i in 0 until 40) {
+                val candidate = CodexClient()
+                try { candidate.connect(port, token); client = candidate; break }
+                catch (e: CancellationException) { candidate.close(); throw e }
+                catch (_: Exception) { candidate.close(); delay(250) }
+            }
+            val rpc = checkNotNull(client) { logs.toString() }
+            rpc.request("fs/createDirectory", JSONObject().put("path", project))
+            val workspace = CodexWorkspace(context, android.net.Uri.parse(project), home)
+            val path = "$project/girl.html"
+            // Reproduce the clean tab pointing at a file that failed to be created.
+            workspace.stage(rpc, android.net.Uri.fromFile(java.io.File(path)).toString(), "girl.html", "", false)
+            assertEquals("", rpc.request("fs/readFile", JSONObject().put("path", path)).getString("dataBase64"))
+            // A clean empty editor must never erase content subsequently written on disk.
+            val saved = android.util.Base64.encodeToString("saved on disk".toByteArray(), android.util.Base64.NO_WRAP)
+            rpc.request("fs/writeFile", JSONObject().put("path", path).put("dataBase64", saved))
+            workspace.stage(rpc, null, "girl.html", "", false)
+            assertEquals(saved, rpc.request("fs/readFile", JSONObject().put("path", path)).getString("dataBase64"))
+            // An intentional unsaved deletion does publish an empty file.
+            workspace.stage(rpc, null, "girl.html", "", true)
+            assertEquals("", rpc.request("fs/readFile", JSONObject().put("path", path)).getString("dataBase64"))
+        } finally {
+            client?.close()
+            withContext(NonCancellable) {
+                server.cancelAndJoin(); local.shutdown()
+                runCatching { TermuxStreamingCommand.run(context,
+                    "rm -rf -- ${CodexConfig.shellQuote(home)} ${CodexConfig.shellQuote(project)}", 10_000) {} }
+            }
+        }
+    }
+
     private fun runCodexScenario(repairMalformed: Boolean) = runBlocking {
         var request = JSONObject()
         var calls = if (repairMalformed) -1 else 0

@@ -5,6 +5,38 @@ import org.json.JSONObject
 
 /** Prevent a successful inspection from being executed forever while the model repeats its plan. */
 internal object CodexProgressGuard {
+    /** End a redundant verification only when a literal write and its exact read-back succeeded. */
+    fun verifiedDuplicateRead(output: JSONArray, request: JSONObject): String? {
+        val proposed = (0 until output.length()).map { output.getJSONObject(it) }
+            .filter { it.optString("type") in setOf("function_call", "custom_tool_call") }
+        if (proposed.size != 1) return null
+        val nextKey = inspectionKey(proposed.single())?.takeIf { it.startsWith("cat ") } ?: return null
+        val input = request.optJSONArray("input") ?: return null
+        val calls = mutableMapOf<String, JSONObject>()
+        var written: Pair<String, String>? = null
+        var verifiedKey: String? = null
+        for (i in 0 until input.length()) {
+            val item = input.optJSONObject(i) ?: continue
+            if (item.optString("role") == "user") { written = null; verifiedKey = null; calls.clear() }
+            when (item.optString("type")) {
+                "function_call" -> calls[item.optString("call_id")] = item
+                "function_call_output" -> {
+                    val call = calls[item.optString("call_id")] ?: continue
+                    val result = item.optString("output")
+                    val key = inspectionKey(call)
+                    if (key == null) {
+                        verifiedKey = null
+                        written = if (completeInspection(result)) command(call)?.let(CodexFileEdits::writtenFile) else null
+                    } else if (written != null && key == "cat ${written.first}") {
+                        val content = result.substringAfter("Output:\n", "")
+                        verifiedKey = if (completeInspection(result) && result.contains("Output:\n") &&
+                            (content == written.second || content == written.second + "\n")) key else null
+                    }
+                }
+            }
+        }
+        return written?.first?.takeIf { nextKey == verifiedKey }
+    }
     private fun completeInspection(output: String): Boolean = output.contains("Process exited with code 0") &&
         !Regex("truncated output|tokens truncated|output truncated", RegexOption.IGNORE_CASE).containsMatchIn(output)
     fun latestResult(request: JSONObject): Pair<JSONObject, String>? {

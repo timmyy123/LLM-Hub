@@ -25,6 +25,8 @@ class CodexLocalModelInstrumentedTest {
         val model = ModelAvailabilityProvider.loadAvailableModels(context).first { it.name == modelName }
         val inference = UnifiedInferenceService(context)
         val project = "/storage/emulated/0/Download/llmhub-real-model-${UUID.randomUUID()}"
+        val fileName = args.getString("codex_file_name") ?: "index.html"
+        require(Regex("[A-Za-z0-9_.-]+\\.html").matches(fileName))
         val activity = StringBuffer()
         try {
             java.io.File(context.cacheDir, "codex-real-model-raw.txt").writeText("")
@@ -32,8 +34,8 @@ class CodexLocalModelInstrumentedTest {
             val fixture = "<!DOCTYPE html>\n<html><body><p id='output'></p><script>\n" +
                 "const display = document.getElementById('output');\nconst randomAffirmation = 'Hello';\n" +
                 "display.textContent = randomAffation;\n</script></body></html>\n"
-            val prepare = if (source != null) "cp ${CodexConfig.shellQuote(source)} ${CodexConfig.shellQuote("$project/index.html")}" else
-                "printf '%s' ${CodexConfig.shellQuote(fixture)} > ${CodexConfig.shellQuote("$project/index.html")}"
+            val prepare = if (source != null) "cp ${CodexConfig.shellQuote(source)} ${CodexConfig.shellQuote("$project/$fileName")}" else
+                "printf '%s' ${CodexConfig.shellQuote(fixture)} > ${CodexConfig.shellQuote("$project/$fileName")}"
             TermuxStreamingCommand.run(context,
                 "mkdir -p ${CodexConfig.shellQuote(project)} && $prepare", 10000) {}
             val backend = prefs.getString("selected_backend_$modelName", prefs.getString("selected_backend", "CPU"))
@@ -49,7 +51,7 @@ class CodexLocalModelInstrumentedTest {
             withTimeout(300_000) {
                 CodexAgent(context).run(
                     args.getString("codex_prompt") ?: "Read index.html. Fix the JavaScript typo randomAffation to randomAffirmation. Make the actual file edit, verify the typo is gone, then finish.",
-                    project, UUID.randomUUID().toString(), null, null, "index.html", "", 8192,
+                    project, UUID.randomUUID().toString(), null, null, fileName, "", 8192,
                     infer = { prompt, emit ->
                         val raw = StringBuilder()
                         inference.generateResponseStream(prompt, model).collect { raw.append(it); emit(it) }
@@ -58,7 +60,7 @@ class CodexLocalModelInstrumentedTest {
                     }, onThread = {}, onMessage = { activity.append("\n").append(it) })
             }
             val file = StringBuffer()
-            TermuxStreamingCommand.run(context,"cat ${CodexConfig.shellQuote("$project/index.html")}",10000){file.append(it)}
+            TermuxStreamingCommand.run(context,"cat ${CodexConfig.shellQuote("$project/$fileName")}",10000){file.append(it)}
             val expected = args.getString("codex_expected")
             if (expected != null) {
                 assertTrue(activity.toString(), file.contains(expected))

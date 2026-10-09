@@ -4,6 +4,11 @@ import org.json.JSONObject
 
 /** Transport literal edits without shell escaping, accepting unique indentation-only matches. */
 internal object CodexFileEdits {
+    fun writtenFile(command: String): Pair<String, String>? {
+        val match = Regex("(?:mkdir -p -- '[^']*' && )?printf '%s' '([A-Za-z0-9+/=]*)' \\| base64 -d > ('(?:[^']|'\"'\"')*')").matchEntire(command) ?: return null
+        val path = match.groupValues[2].removeSurrounding("'").replace("'\"'\"'", "'")
+        return runCatching { path to String(java.util.Base64.getDecoder().decode(match.groupValues[1]), Charsets.UTF_8) }.getOrNull()
+    }
     fun commandSummary(command: String): String? {
         if (!command.startsWith("node -e ") || !command.contains("const p=JSON.parse(Buffer.from(process.argv[1]")) return null
         val encoded = Regex("'([A-Za-z0-9+/=]+)'$").find(command)?.groupValues?.get(1) ?: return null

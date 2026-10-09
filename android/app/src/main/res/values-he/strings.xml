@@ -1101,4 +1101,5 @@
     <string name="vibe_codex_generating">המודל המקומי עובד…</string>
     <string name="vibe_codex_syncing">מחיל שינויים בפרויקט…</string>
     <string name="vibe_codex_step_progress">שלב סוכן %1$d · ניסיון %2$d · נוצרו %3$d תווים</string>
+    <string name="vibe_codex_saved_verified">%1$s נשמר והתוכן שלו אומת.</string>
 </resources>

@@ -41,6 +41,7 @@ internal class CodexAgent(private val context: Context) {
         val workspace = CodexWorkspace(context, Uri.parse(folder), home)
         val renderer = CodexActivityRenderer()
         val server = LocalCodexServer({ infer(it) {} }, context.getString(R.string.vibe_codex_model_error), streamInfer = infer,
+            verifiedFileSummary = { context.getString(R.string.vibe_codex_saved_verified, it) },
             onProgress = { id, step, attempt, raw ->
                 onMessage(CodexActivity("progress-$id", context.getString(R.string.vibe_codex_step_progress,
                     step, attempt, raw.length), "status", "running"))

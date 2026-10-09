@@ -1128,4 +1128,5 @@
     <string name="vibe_codex_generating">स्थानीय मॉडल काम कर रहा है…</string>
     <string name="vibe_codex_syncing">प्रोजेक्ट में बदलाव लागू हो रहे हैं…</string>
     <string name="vibe_codex_step_progress">एजेंट चरण %1$d · प्रयास %2$d · %3$d अक्षर उत्पन्न हुए</string>
+    <string name="vibe_codex_saved_verified">%1$s सहेजा गया और उसकी सामग्री की पुष्टि की गई।</string>
 </resources>

@@ -1104,4 +1104,5 @@
     <string name="vibe_codex_generating">Model lokal sedang bekerja…</string>
     <string name="vibe_codex_syncing">Menerapkan perubahan proyek…</string>
     <string name="vibe_codex_step_progress">Langkah agen %1$d · percobaan %2$d · %3$d karakter dihasilkan</string>
+    <string name="vibe_codex_saved_verified">%1$s disimpan dan isinya diverifikasi.</string>
 </resources>

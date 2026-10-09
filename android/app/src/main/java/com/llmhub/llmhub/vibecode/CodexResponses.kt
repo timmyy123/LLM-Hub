@@ -47,6 +47,8 @@ internal object CodexResponses {
                 Fix the user's requested change, not unrelated issues from earlier assistant reasoning.
                 Use relative paths in the current project. Use the exact argument names in the tool schema.
                 For a small typo, perform a targeted replacement rather than rewriting the entire file.
+                For other edits, replace only the smallest necessary fragment; do not copy the whole existing file into old_text.
+                A successful read with empty output means the file EXISTS and is EMPTY. Create its contents with write_file; do not search for it or read it again.
                 After editing, run a check to verify the change. After successful verification, finish with tool_calls: [].
                 You can instead call finish(summary="factual result") to end the turn. Do not call a read tool to finish.
                 When adding a framework, verify its dependency or script/import is actually present. Custom CSS and utility class names alone do not load a CSS framework.
@@ -65,9 +67,21 @@ internal object CodexResponses {
                 append("\n\nMost recent executed tool: ").append(executedCall(call)).append("\n")
                 append("Most recent tool result (use this to choose the NEXT action):\n").append(result)
                 append("\nThe tool above already ran. Use its result; do not restart the same inspection.\n")
+                if (emptyFileRead(call, result)) {
+                    append("\nThe file read succeeded: the file exists and contains zero bytes. There is no existing code to inspect or replace. ")
+                    append("Your NEXT action is write_file with the same file path and complete new content implementing the user's request. ")
+                    append("After that write succeeds, read the saved file once to verify it and finish.\n")
+                }
             }
 
         }
+    }
+
+    private fun emptyFileRead(call: JSONObject, result: String): Boolean {
+        val command = CodexProgressGuard.command(call).orEmpty()
+        return Regex("^cat\\s+(?:\"[^\"]+\"|'[^']+'|[^\\s;&|<>]+)\\s*$").matches(command) &&
+            result.contains("Process exited with code 0") && result.contains("Output:") &&
+            result.substringAfter("Output:").isBlank()
     }
 
     private fun toolManifest(array: JSONArray, running: Boolean): JSONArray = JSONArray().apply {

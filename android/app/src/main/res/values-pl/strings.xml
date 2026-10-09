@@ -1106,4 +1106,5 @@
     <string name="vibe_codex_generating">Model lokalny pracuje…</string>
     <string name="vibe_codex_syncing">Wprowadzanie zmian w projekcie…</string>
     <string name="vibe_codex_step_progress">Krok agenta %1$d · próba %2$d · wygenerowano %3$d znaków</string>
+    <string name="vibe_codex_saved_verified">Zapisano %1$s i zweryfikowano jego zawartość.</string>
 </resources>

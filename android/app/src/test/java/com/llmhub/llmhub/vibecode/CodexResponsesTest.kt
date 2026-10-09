@@ -6,6 +6,15 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class CodexResponsesTest {
+    @Test fun successfulEmptyReadTellsModelToWriteInsteadOfSearchingAgain() {
+        fun prompt(result: String) = CodexResponses.prompt(JSONObject().put("input", JSONArray()
+            .put(JSONObject().put("type", "function_call").put("call_id", "read").put("name", "exec_command")
+                .put("arguments", "{\"cmd\":\"cat \\\"pig.html\\\"\"}"))
+            .put(JSONObject().put("type", "function_call_output").put("call_id", "read").put("output", result))))
+        assertTrue(prompt("Process exited with code 0\nOutput:\n").contains("NEXT action is write_file"))
+        assertFalse(prompt("Process exited with code 1\nOutput:\nNo such file").contains("NEXT action is write_file"))
+        assertFalse(prompt("Process exited with code 0\nOutput:\n<html>").contains("NEXT action is write_file"))
+    }
     @Test fun nativeFinishEndsWithOneSummaryAndNoShellCommand() {
         val output = CodexResponses.output("Finished. <tool_call>[finish(summary='Verified the file change')]</tool_call>", request)
         assertEquals(1, output.length())

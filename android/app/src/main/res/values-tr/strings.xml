@@ -1100,4 +1100,5 @@
     <string name="vibe_codex_generating">Yerel model çalışıyor…</string>
     <string name="vibe_codex_syncing">Proje değişiklikleri uygulanıyor…</string>
     <string name="vibe_codex_step_progress">Ajan adımı %1$d · deneme %2$d · %3$d karakter üretildi</string>
+    <string name="vibe_codex_saved_verified">%1$s kaydedildi ve içeriği doğrulandı.</string>
 </resources>

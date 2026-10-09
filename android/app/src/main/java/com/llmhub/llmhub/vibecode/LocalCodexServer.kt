@@ -15,7 +15,8 @@ internal class LocalCodexServer(
     private val modelError: String,
     private val streamInfer: (suspend (String, (String) -> Unit) -> String)? = null,
     private val onRequest: (JSONObject) -> Unit = {},
-    private val onProgress: (String, Int, Int, String) -> Unit = { _, _, _, _ -> }
+    private val onProgress: (String, Int, Int, String) -> Unit = { _, _, _, _ -> },
+    private val verifiedFileSummary: (String) -> String = { "Saved $it and verified its contents." }
 ) : Closeable {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val listener = ServerSocket(0, 4, InetAddress.getByName("127.0.0.1"))
@@ -136,12 +137,17 @@ internal class LocalCodexServer(
                     onProgress(messageId, step, attempt + 1, raw)
                     try {
                         var nativeSummary: String? = null
-                        val candidate = try { CodexResponses.output(raw, request) }
+                        var candidate = try { CodexResponses.output(raw, request) }
                             catch (error: org.json.JSONException) {
                                 val completion = CodexResponses.nativeCompletion(raw) ?: throw error
                                 nativeSummary = completion
                                 CodexResponses.output(completion, request, allowPlainText = true)
                             }
+                        CodexProgressGuard.verifiedDuplicateRead(candidate, request)?.let { path ->
+                            nativeSummary = verifiedFileSummary(path)
+                            candidate = CodexResponses.output(JSONObject().put("text", nativeSummary)
+                                .put("tool_calls", org.json.JSONArray()).toString(), request)
+                        }
                         CodexProgressGuard.validate(candidate, request)
                         nativeSummary?.let { summary ->
                             // Replace the provisional thinking preview before publishing this same final text.
