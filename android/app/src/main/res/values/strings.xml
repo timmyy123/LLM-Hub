@@ -1077,10 +1077,10 @@
 
     <!-- On-device PocketTTS.cpp voice cloning -->
     <string name="pocket_voice_cloning">Voice cloning · Pocket TTS</string>
-    <string name="pocket_voice_help">Record here or import audio. English only. Import a clear 3–30 second WAV, MP3 or FLAC clip (up to 20 MB). Cloning runs entirely on this device. Selecting a voice uses Pocket TTS across the app, except Translator.</string>
+    <string name="pocket_voice_help">Record here or import audio. English only. Import a clear 3–30 second WAV, MP3, FLAC, M4A/AAC or OGG clip (up to 20 MB). Cloning runs entirely on this device. Selecting a voice uses Pocket TTS across the app, except Translator.</string>
     <string name="pocket_model_required">Download Pocket TTS from the model download screen first.</string>
     <string name="pocket_cloning">Cloning voice on this device…</string>
-    <string name="pocket_clone_failed">Could not clone this voice. Use a clear WAV, MP3 or FLAC speech clip of at least 3 seconds.</string>
+    <string name="pocket_clone_failed">Could not clone this voice. Use a clear WAV, MP3, FLAC, M4A/AAC or OGG speech clip of at least 3 seconds.</string>
     <string name="pocket_import_voice">Import and clone voice</string>
     <string name="pocket_speech_failed">Could not generate speech. Select a cloned Pocket TTS voice in Settings.</string>
 
@@ -1121,4 +1121,6 @@
     <string name="vibe_codex_syncing">Applying project changes…</string>
     <string name="vibe_codex_step_progress">Agent step %1$d · attempt %2$d · %3$d characters generated</string>
     <string name="vibe_codex_saved_verified">Saved %1$s and verified its contents.</string>
+    <string name="tts_voice_name">Voice name</string>
+    <string name="tts_voice_rename_failed">Could not rename this voice. Please try again.</string>
 </resources>

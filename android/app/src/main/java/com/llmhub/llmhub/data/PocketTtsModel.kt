@@ -32,6 +32,22 @@ object PocketTtsModel {
     }?.sortedBy { it.name } ?: emptyList()
     fun label(file: File): String = File(file.path + ".txt").takeIf { it.isFile }?.readText()?.take(80) ?: file.name
     internal val operationLock = Any()
+    fun renameVoice(context: Context, id: String, label: String) = synchronized(operationLock) {
+        val name = label.trim()
+        require(name.isNotEmpty() && name.length <= 80)
+        val voice = requireNotNull(voiceFile(context, id))
+        val labelFile = File(voice.path + ".txt")
+        check(labelFile.isFile)
+        val atomic = android.util.AtomicFile(labelFile)
+        val stream = atomic.startWrite()
+        try {
+            stream.write(name.toByteArray(Charsets.UTF_8))
+            atomic.finishWrite(stream)
+        } catch (e: Exception) {
+            atomic.failWrite(stream)
+            throw e
+        }
+    }
     fun deleteVoice(context: Context, id: String) = synchronized(operationLock) {
         require(voiceName.matches(id))
         voiceFile(context, id)?.let { it.delete(); File(it.path + ".txt").delete() }

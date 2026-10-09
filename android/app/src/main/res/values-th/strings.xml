@@ -966,10 +966,10 @@
 
     <!-- On-device PocketTTS.cpp voice cloning -->
     <string name="pocket_voice_cloning">โคลนเสียง · Pocket TTS</string>
-    <string name="pocket_voice_help">บันทึกที่นี่หรือนำเข้าเสียง รองรับภาษาอังกฤษเท่านั้น นำเข้าคลิป WAV, MP3 หรือ FLAC ที่ชัดเจนยาว 3–30 วินาที (ไม่เกิน 20 MB) การโคลนทำบนอุปกรณ์นี้ทั้งหมด เมื่อเลือกเสียงจะใช้ Pocket TTS ทั่วทั้งแอป ยกเว้นตัวแปลภาษา</string>
+    <string name="pocket_voice_help">บันทึกที่นี่หรือนำเข้าเสียง รองรับภาษาอังกฤษเท่านั้น นำเข้าคลิป WAV, MP3, FLAC, M4A/AAC หรือ OGG ที่ชัดเจนยาว 3–30 วินาที (ไม่เกิน 20 MB) การโคลนทำบนอุปกรณ์นี้ทั้งหมด เมื่อเลือกเสียงจะใช้ Pocket TTS ทั่วทั้งแอป ยกเว้นตัวแปลภาษา</string>
     <string name="pocket_model_required">ดาวน์โหลด Pocket TTS จากหน้าดาวน์โหลดโมเดลก่อน</string>
     <string name="pocket_cloning">กำลังโคลนเสียงบนอุปกรณ์นี้…</string>
-    <string name="pocket_clone_failed">ไม่สามารถโคลนเสียงได้ โปรดใช้คลิปเสียงพูด WAV, MP3 หรือ FLAC ที่ชัดเจนยาวอย่างน้อย 3 วินาที</string>
+    <string name="pocket_clone_failed">ไม่สามารถโคลนเสียงได้ โปรดใช้คลิปเสียงพูด WAV, MP3, FLAC, M4A/AAC หรือ OGG ที่ชัดเจนยาวอย่างน้อย 3 วินาที</string>
     <string name="pocket_import_voice">นำเข้าและโคลนเสียง</string>
     <string name="pocket_speech_failed">ไม่สามารถสร้างเสียงพูดได้ เลือกเสียง Pocket TTS ที่โคลนแล้วในการตั้งค่า</string>
 
@@ -1010,4 +1010,6 @@
     <string name="vibe_codex_syncing">กำลังนำการเปลี่ยนแปลงไปใช้กับโปรเจ็กต์…</string>
     <string name="vibe_codex_step_progress">ขั้นตอนเอเจนต์ %1$d · ครั้งที่ %2$d · สร้างแล้ว %3$d อักขระ</string>
     <string name="vibe_codex_saved_verified">บันทึก %1$s และตรวจสอบเนื้อหาแล้ว</string>
+    <string name="tts_voice_name">ชื่อเสียง</string>
+    <string name="tts_voice_rename_failed">ไม่สามารถเปลี่ยนชื่อเสียงนี้ได้ โปรดลองอีกครั้ง</string>
 </resources>

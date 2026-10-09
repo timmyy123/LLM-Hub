@@ -1025,10 +1025,10 @@
 
     <!-- On-device PocketTTS.cpp voice cloning -->
     <string name="pocket_voice_cloning">Stimme klonen · Pocket TTS</string>
-    <string name="pocket_voice_help">Nimm hier auf oder importiere Audio. Nur Englisch. Importiere einen klaren WAV-, MP3- oder FLAC-Clip von 3–30 Sekunden (maximal 20 MB). Das Klonen erfolgt vollständig auf diesem Gerät. Die gewählte Stimme nutzt Pocket TTS in der gesamten App außer im Übersetzer.</string>
+    <string name="pocket_voice_help">Nimm hier auf oder importiere Audio. Nur Englisch. Importiere einen klaren WAV-, MP3-, FLAC-, M4A/AAC- oder OGG-Clip von 3–30 Sekunden (maximal 20 MB). Das Klonen erfolgt vollständig auf diesem Gerät. Die gewählte Stimme nutzt Pocket TTS in der gesamten App außer im Übersetzer.</string>
     <string name="pocket_model_required">Lade zuerst Pocket TTS auf dem Modelldownload-Bildschirm herunter.</string>
     <string name="pocket_cloning">Stimme wird auf diesem Gerät geklont…</string>
-    <string name="pocket_clone_failed">Stimme konnte nicht geklont werden. Verwende einen klaren WAV-, MP3- oder FLAC-Sprachclip von mindestens 3 Sekunden.</string>
+    <string name="pocket_clone_failed">Stimme konnte nicht geklont werden. Verwende einen klaren WAV-, MP3-, FLAC-, M4A/AAC- oder OGG-Sprachclip von mindestens 3 Sekunden.</string>
     <string name="pocket_import_voice">Stimme importieren und klonen</string>
     <string name="pocket_speech_failed">Sprache konnte nicht erzeugt werden. Wähle in den Einstellungen eine geklonte Pocket TTS-Stimme.</string>
 
@@ -1069,4 +1069,6 @@
     <string name="vibe_codex_syncing">Projektänderungen werden angewendet…</string>
     <string name="vibe_codex_step_progress">Agentenschritt %1$d · Versuch %2$d · %3$d Zeichen generiert</string>
     <string name="vibe_codex_saved_verified">%1$s gespeichert und Inhalt überprüft.</string>
+    <string name="tts_voice_name">Name der Stimme</string>
+    <string name="tts_voice_rename_failed">Diese Stimme konnte nicht umbenannt werden. Bitte versuche es erneut.</string>
 </resources>

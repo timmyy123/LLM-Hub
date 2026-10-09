@@ -1067,10 +1067,10 @@
 
     <!-- On-device PocketTTS.cpp voice cloning -->
     <string name="pocket_voice_cloning">声音克隆 · Pocket TTS</string>
-    <string name="pocket_voice_help">在此录音或导入音频。仅支持英语。导入清晰的3–30秒WAV、MP3或FLAC语音片段（最大20 MB）。克隆完全在本机进行。选择声音后，除翻译功能外，整个应用将使用Pocket TTS。</string>
+    <string name="pocket_voice_help">在此录音或导入音频。仅支持英语。导入清晰的3–30秒WAV、MP3、FLAC、M4A/AAC或OGG语音片段（最大20 MB）。克隆完全在本机进行。选择声音后，除翻译功能外，整个应用将使用Pocket TTS。</string>
     <string name="pocket_model_required">请先从模型下载页面下载Pocket TTS。</string>
     <string name="pocket_cloning">正在本机克隆声音…</string>
-    <string name="pocket_clone_failed">无法克隆此声音。请使用至少3秒的清晰WAV、MP3或FLAC语音片段。</string>
+    <string name="pocket_clone_failed">无法克隆此声音。请使用至少3秒的清晰WAV、MP3、FLAC、M4A/AAC或OGG语音片段。</string>
     <string name="pocket_import_voice">导入并克隆声音</string>
     <string name="pocket_speech_failed">无法生成语音。请在设置中选择Pocket TTS克隆声音。</string>
 
@@ -1111,4 +1111,6 @@
     <string name="vibe_codex_syncing">正在应用项目更改…</string>
     <string name="vibe_codex_step_progress">代理步骤 %1$d · 第 %2$d 次尝试 · 已生成 %3$d 个字符</string>
     <string name="vibe_codex_saved_verified">已保存 %1$s 并验证其内容。</string>
+    <string name="tts_voice_name">声音名称</string>
+    <string name="tts_voice_rename_failed">无法重命名此声音。请重试。</string>
 </resources>

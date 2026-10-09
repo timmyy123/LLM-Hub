@@ -966,10 +966,10 @@
 
     <!-- On-device PocketTTS.cpp voice cloning -->
     <string name="pocket_voice_cloning">Stem klonen · Pocket TTS</string>
-    <string name="pocket_voice_help">Neem hier op of importeer audio. Alleen Engels. Importeer een duidelijke WAV-, MP3- of FLAC-clip van 3–30 seconden (maximaal 20 MB). Het klonen gebeurt volledig op dit apparaat. De gekozen stem gebruikt Pocket TTS in de hele app behalve Vertaler.</string>
+    <string name="pocket_voice_help">Neem hier op of importeer audio. Alleen Engels. Importeer een duidelijke WAV-, MP3-, FLAC-, M4A/AAC- of OGG-clip van 3–30 seconden (maximaal 20 MB). Het klonen gebeurt volledig op dit apparaat. De gekozen stem gebruikt Pocket TTS in de hele app behalve Vertaler.</string>
     <string name="pocket_model_required">Download eerst Pocket TTS via het scherm voor modeldownloads.</string>
     <string name="pocket_cloning">Stem klonen op dit apparaat…</string>
-    <string name="pocket_clone_failed">Deze stem kon niet worden gekloond. Gebruik een duidelijke WAV-, MP3- of FLAC-spraakclip van minstens 3 seconden.</string>
+    <string name="pocket_clone_failed">Deze stem kon niet worden gekloond. Gebruik een duidelijke WAV-, MP3-, FLAC-, M4A/AAC- of OGG-spraakclip van minstens 3 seconden.</string>
     <string name="pocket_import_voice">Stem importeren en klonen</string>
     <string name="pocket_speech_failed">Spraak genereren mislukt. Selecteer een gekloonde Pocket TTS-stem in Instellingen.</string>
 
@@ -1010,4 +1010,6 @@
     <string name="vibe_codex_syncing">Projectwijzigingen toepassen…</string>
     <string name="vibe_codex_step_progress">Agentstap %1$d · poging %2$d · %3$d tekens gegenereerd</string>
     <string name="vibe_codex_saved_verified">%1$s opgeslagen en de inhoud gecontroleerd.</string>
+    <string name="tts_voice_name">Stemnaam</string>
+    <string name="tts_voice_rename_failed">Deze stem kon niet worden hernoemd. Probeer het opnieuw.</string>
 </resources>

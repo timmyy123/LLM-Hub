@@ -1056,10 +1056,10 @@
 
     <!-- On-device PocketTTS.cpp voice cloning -->
     <string name="pocket_voice_cloning">音声クローン · Pocket TTS</string>
-    <string name="pocket_voice_help">ここで録音するか、音声を読み込んでください。英語のみ対応。明瞭な3〜30秒のWAV・MP3・FLAC音声（最大20 MB）を読み込んでください。クローン作成はすべて端末内で行われます。音声を選ぶと翻訳機能以外のアプリ全体でPocket TTSが使われます。</string>
+    <string name="pocket_voice_help">ここで録音するか、音声を読み込んでください。英語のみ対応。明瞭な3〜30秒のWAV・MP3・FLAC・M4A/AAC・OGG音声（最大20 MB）を読み込んでください。クローン作成はすべて端末内で行われます。音声を選ぶと翻訳機能以外のアプリ全体でPocket TTSが使われます。</string>
     <string name="pocket_model_required">先にモデルダウンロード画面からPocket TTSをダウンロードしてください。</string>
     <string name="pocket_cloning">端末内で音声クローンを作成中…</string>
-    <string name="pocket_clone_failed">音声クローンを作成できませんでした。3秒以上の明瞭なWAV・MP3・FLACの音声を使用してください。</string>
+    <string name="pocket_clone_failed">音声クローンを作成できませんでした。3秒以上の明瞭なWAV・MP3・FLAC・M4A/AAC・OGGの音声を使用してください。</string>
     <string name="pocket_import_voice">音声を読み込んでクローン作成</string>
     <string name="pocket_speech_failed">音声を生成できませんでした。設定でPocket TTSのクローン音声を選択してください。</string>
 
@@ -1100,4 +1100,6 @@
     <string name="vibe_codex_syncing">プロジェクトの変更を適用中…</string>
     <string name="vibe_codex_step_progress">エージェントのステップ %1$d · 試行 %2$d · %3$d 文字生成済み</string>
     <string name="vibe_codex_saved_verified">%1$s を保存し、内容を確認しました。</string>
+    <string name="tts_voice_name">音声の名前</string>
+    <string name="tts_voice_rename_failed">この音声の名前を変更できませんでした。もう一度お試しください。</string>
 </resources>

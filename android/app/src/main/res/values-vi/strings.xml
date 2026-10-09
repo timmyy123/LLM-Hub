@@ -966,10 +966,10 @@
 
     <!-- On-device PocketTTS.cpp voice cloning -->
     <string name="pocket_voice_cloning">Nhân bản giọng nói · Pocket TTS</string>
-    <string name="pocket_voice_help">Ghi âm tại đây hoặc nhập âm thanh. Chỉ hỗ trợ tiếng Anh. Nhập đoạn WAV, MP3 hoặc FLAC rõ ràng dài 3–30 giây (tối đa 20 MB). Nhân bản hoàn toàn trên thiết bị. Giọng được chọn dùng Pocket TTS trong toàn ứng dụng, trừ Trình dịch.</string>
+    <string name="pocket_voice_help">Ghi âm tại đây hoặc nhập âm thanh. Chỉ hỗ trợ tiếng Anh. Nhập đoạn WAV, MP3, FLAC, M4A/AAC hoặc OGG rõ ràng dài 3–30 giây (tối đa 20 MB). Nhân bản hoàn toàn trên thiết bị. Giọng được chọn dùng Pocket TTS trong toàn ứng dụng, trừ Trình dịch.</string>
     <string name="pocket_model_required">Trước tiên hãy tải Pocket TTS từ màn hình tải mô hình.</string>
     <string name="pocket_cloning">Đang nhân bản giọng trên thiết bị…</string>
-    <string name="pocket_clone_failed">Không thể nhân bản giọng. Hãy dùng đoạn giọng nói WAV, MP3 hoặc FLAC rõ ràng dài ít nhất 3 giây.</string>
+    <string name="pocket_clone_failed">Không thể nhân bản giọng. Hãy dùng đoạn giọng nói WAV, MP3, FLAC, M4A/AAC hoặc OGG rõ ràng dài ít nhất 3 giây.</string>
     <string name="pocket_import_voice">Nhập và nhân bản giọng</string>
     <string name="pocket_speech_failed">Không thể tạo giọng nói. Chọn giọng Pocket TTS đã nhân bản trong Cài đặt.</string>
 
@@ -1010,4 +1010,6 @@
     <string name="vibe_codex_syncing">Đang áp dụng thay đổi cho dự án…</string>
     <string name="vibe_codex_step_progress">Bước tác nhân %1$d · lần thử %2$d · đã tạo %3$d ký tự</string>
     <string name="vibe_codex_saved_verified">Đã lưu %1$s và xác minh nội dung.</string>
+    <string name="tts_voice_name">Tên giọng nói</string>
+    <string name="tts_voice_rename_failed">Không thể đổi tên giọng nói này. Vui lòng thử lại.</string>
 </resources>

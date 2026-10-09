@@ -1059,10 +1059,10 @@
 
     <!-- On-device PocketTTS.cpp voice cloning -->
     <string name="pocket_voice_cloning">שכפול קול · Pocket TTS</string>
-    <string name="pocket_voice_help">הקליטו כאן או ייבאו אודיו. אנגלית בלבד. יש לייבא קטע WAV, MP3 או FLAC ברור באורך 3–30 שניות (עד 20 MB). השכפול מתבצע כולו במכשיר זה. בחירת קול מפעילה את Pocket TTS בכל האפליקציה מלבד המתרגם.</string>
+    <string name="pocket_voice_help">הקליטו כאן או ייבאו אודיו. אנגלית בלבד. יש לייבא קטע WAV, MP3, FLAC, M4A/AAC או OGG ברור באורך 3–30 שניות (עד 20 MB). השכפול מתבצע כולו במכשיר זה. בחירת קול מפעילה את Pocket TTS בכל האפליקציה מלבד המתרגם.</string>
     <string name="pocket_model_required">תחילה יש להוריד את Pocket TTS ממסך הורדת המודלים.</string>
     <string name="pocket_cloning">משכפל קול במכשיר זה…</string>
-    <string name="pocket_clone_failed">לא ניתן לשכפל את הקול. יש להשתמש בקטע דיבור ברור מסוג WAV, MP3 או FLAC באורך 3 שניות לפחות.</string>
+    <string name="pocket_clone_failed">לא ניתן לשכפל את הקול. יש להשתמש בקטע דיבור ברור מסוג WAV, MP3, FLAC, M4A/AAC או OGG באורך 3 שניות לפחות.</string>
     <string name="pocket_import_voice">ייבוא ושכפול קול</string>
     <string name="pocket_speech_failed">לא ניתן ליצור דיבור. יש לבחור קול משוכפל של Pocket TTS בהגדרות.</string>
 
@@ -1103,4 +1103,6 @@
     <string name="vibe_codex_syncing">מחיל שינויים בפרויקט…</string>
     <string name="vibe_codex_step_progress">שלב סוכן %1$d · ניסיון %2$d · נוצרו %3$d תווים</string>
     <string name="vibe_codex_saved_verified">%1$s נשמר והתוכן שלו אומת.</string>
+    <string name="tts_voice_name">שם הקול</string>
+    <string name="tts_voice_rename_failed">לא ניתן לשנות את שם הקול הזה. נסו שוב.</string>
 </resources>

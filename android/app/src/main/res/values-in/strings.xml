@@ -1061,10 +1061,10 @@
 
     <!-- On-device PocketTTS.cpp voice cloning -->
     <string name="pocket_voice_cloning">Kloning suara · Pocket TTS</string>
-    <string name="pocket_voice_help">Rekam di sini atau impor audio. Hanya bahasa Inggris. Impor klip WAV, MP3, atau FLAC yang jernih sepanjang 3–30 detik (maksimal 20 MB). Kloning sepenuhnya di perangkat ini. Memilih suara menggunakan Pocket TTS di seluruh aplikasi kecuali Penerjemah.</string>
+    <string name="pocket_voice_help">Rekam di sini atau impor audio. Hanya bahasa Inggris. Impor klip WAV, MP3, FLAC, M4A/AAC, atau OGG yang jernih sepanjang 3–30 detik (maksimal 20 MB). Kloning sepenuhnya di perangkat ini. Memilih suara menggunakan Pocket TTS di seluruh aplikasi kecuali Penerjemah.</string>
     <string name="pocket_model_required">Unduh Pocket TTS dari layar unduhan model terlebih dahulu.</string>
     <string name="pocket_cloning">Mengkloning suara di perangkat ini…</string>
-    <string name="pocket_clone_failed">Tidak dapat mengkloning suara. Gunakan klip ucapan WAV, MP3, atau FLAC yang jernih minimal 3 detik.</string>
+    <string name="pocket_clone_failed">Tidak dapat mengkloning suara. Gunakan klip ucapan WAV, MP3, FLAC, M4A/AAC, atau OGG yang jernih minimal 3 detik.</string>
     <string name="pocket_import_voice">Impor dan kloning suara</string>
     <string name="pocket_speech_failed">Tidak dapat menghasilkan ucapan. Pilih suara kloning Pocket TTS di Pengaturan.</string>
 
@@ -1105,4 +1105,6 @@
     <string name="vibe_codex_syncing">Menerapkan perubahan proyek…</string>
     <string name="vibe_codex_step_progress">Langkah agen %1$d · percobaan %2$d · %3$d karakter dihasilkan</string>
     <string name="vibe_codex_saved_verified">%1$s disimpan dan isinya diverifikasi.</string>
+    <string name="tts_voice_name">Nama suara</string>
+    <string name="tts_voice_rename_failed">Tidak dapat mengganti nama suara ini. Silakan coba lagi.</string>
 </resources>

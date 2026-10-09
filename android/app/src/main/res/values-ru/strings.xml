@@ -1031,10 +1031,10 @@
 
     <!-- On-device PocketTTS.cpp voice cloning -->
     <string name="pocket_voice_cloning">Клонирование голоса · Pocket TTS</string>
-    <string name="pocket_voice_help">Запишите здесь или импортируйте аудио. Только английский. Импортируйте чёткую запись WAV, MP3 или FLAC длиной 3–30 секунд (до 20 МБ). Клонирование полностью выполняется на устройстве. Выбранный голос включает Pocket TTS во всём приложении, кроме Переводчика.</string>
+    <string name="pocket_voice_help">Запишите здесь или импортируйте аудио. Только английский. Импортируйте чёткую запись WAV, MP3, FLAC, M4A/AAC или OGG длиной 3–30 секунд (до 20 МБ). Клонирование полностью выполняется на устройстве. Выбранный голос включает Pocket TTS во всём приложении, кроме Переводчика.</string>
     <string name="pocket_model_required">Сначала скачайте Pocket TTS на экране загрузки моделей.</string>
     <string name="pocket_cloning">Клонирование голоса на устройстве…</string>
-    <string name="pocket_clone_failed">Не удалось клонировать голос. Используйте чёткую запись речи WAV, MP3 или FLAC длиной не менее 3 секунд.</string>
+    <string name="pocket_clone_failed">Не удалось клонировать голос. Используйте чёткую запись речи WAV, MP3, FLAC, M4A/AAC или OGG длиной не менее 3 секунд.</string>
     <string name="pocket_import_voice">Импортировать и клонировать голос</string>
     <string name="pocket_speech_failed">Не удалось создать речь. Выберите клонированный голос Pocket TTS в Настройках.</string>
 
@@ -1075,4 +1075,6 @@
     <string name="vibe_codex_syncing">Применение изменений проекта…</string>
     <string name="vibe_codex_step_progress">Шаг агента %1$d · попытка %2$d · создано символов: %3$d</string>
     <string name="vibe_codex_saved_verified">%1$s сохранён, содержимое проверено.</string>
+    <string name="tts_voice_name">Название голоса</string>
+    <string name="tts_voice_rename_failed">Не удалось переименовать этот голос. Попробуйте ещё раз.</string>
 </resources>

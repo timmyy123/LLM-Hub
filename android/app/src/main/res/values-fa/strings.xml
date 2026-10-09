@@ -1059,10 +1059,10 @@
 
     <!-- On-device PocketTTS.cpp voice cloning -->
     <string name="pocket_voice_cloning">شبیه‌سازی صدا · Pocket TTS</string>
-    <string name="pocket_voice_help">اینجا ضبط کنید یا صدا وارد کنید. فقط انگلیسی. یک کلیپ واضح WAV، MP3 یا FLAC به مدت ۳ تا ۳۰ ثانیه (حداکثر ۲۰ مگابایت) وارد کنید. شبیه‌سازی کاملاً روی این دستگاه انجام می‌شود. انتخاب صدا، Pocket TTS را در سراسر برنامه به‌جز مترجم فعال می‌کند.</string>
+    <string name="pocket_voice_help">اینجا ضبط کنید یا صدا وارد کنید. فقط انگلیسی. یک کلیپ واضح WAV، MP3، FLAC، M4A/AAC یا OGG به مدت ۳ تا ۳۰ ثانیه (حداکثر ۲۰ مگابایت) وارد کنید. شبیه‌سازی کاملاً روی این دستگاه انجام می‌شود. انتخاب صدا، Pocket TTS را در سراسر برنامه به‌جز مترجم فعال می‌کند.</string>
     <string name="pocket_model_required">ابتدا Pocket TTS را از صفحه دانلود مدل‌ها دانلود کنید.</string>
     <string name="pocket_cloning">در حال شبیه‌سازی صدا روی این دستگاه…</string>
-    <string name="pocket_clone_failed">شبیه‌سازی صدا ممکن نشد. از کلیپ گفتار واضح WAV، MP3 یا FLAC با طول حداقل ۳ ثانیه استفاده کنید.</string>
+    <string name="pocket_clone_failed">شبیه‌سازی صدا ممکن نشد. از کلیپ گفتار واضح WAV، MP3، FLAC، M4A/AAC یا OGG با طول حداقل ۳ ثانیه استفاده کنید.</string>
     <string name="pocket_import_voice">وارد کردن و شبیه‌سازی صدا</string>
     <string name="pocket_speech_failed">تولید گفتار ممکن نشد. در تنظیمات یک صدای شبیه‌سازی‌شده Pocket TTS انتخاب کنید.</string>
 
@@ -1103,4 +1103,6 @@
     <string name="vibe_codex_syncing">در حال اعمال تغییرات پروژه…</string>
     <string name="vibe_codex_step_progress">مرحلهٔ عامل %1$d · تلاش %2$d · %3$d نویسه تولید شد</string>
     <string name="vibe_codex_saved_verified">%1$s ذخیره و محتوای آن بررسی شد.</string>
+    <string name="tts_voice_name">نام صدا</string>
+    <string name="tts_voice_rename_failed">تغییر نام این صدا ممکن نشد. دوباره تلاش کنید.</string>
 </resources>

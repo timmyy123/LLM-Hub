@@ -2,7 +2,6 @@ package com.llmhub.llmhub.screens
 
 import android.Manifest
 import android.content.pm.PackageManager
-import android.provider.OpenableColumns
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -25,6 +24,7 @@ import com.llmhub.llmhub.R
 import com.llmhub.llmhub.data.PocketTtsModel
 import com.llmhub.llmhub.data.ThemePreferences
 import com.llmhub.llmhub.ui.components.PocketTtsEngine
+import com.llmhub.llmhub.ui.components.PocketVoiceImport
 import com.llmhub.llmhub.ui.components.PocketVoiceRecorder
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.CancellationException
@@ -48,6 +48,10 @@ internal fun PocketVoiceSettings() {
     var busy by remember { mutableStateOf(false) }
     var revision by remember { mutableIntStateOf(0) }
     var error by remember { mutableStateOf<String?>(null) }
+    var renamingVoice by remember { mutableStateOf<File?>(null) }
+    var voiceName by remember { mutableStateOf("") }
+    var savingName by remember { mutableStateOf(false) }
+    var renameFailed by remember { mutableStateOf(false) }
     val voices = remember(revision) { PocketTtsModel.voices(context) }
     val selectedLabel = voices.find { it.name == selected }?.let(PocketTtsModel::label)
     var recording by remember { mutableStateOf(false) }
@@ -123,30 +127,7 @@ internal fun PocketVoiceSettings() {
     }
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) cloneReference { track ->
-            withContext(Dispatchers.IO) {
-                val label = context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use {
-                    if (it.moveToFirst()) it.getString(0) else null
-                }?.take(80) ?: context.getString(R.string.tts_voice_setting) + ".wav"
-                val extension = label.substringAfterLast('.', "wav").lowercase()
-                require(extension in listOf("wav", "mp3", "flac"))
-                val output = File(PocketTtsModel.voicesDirectory(context), "${UUID.randomUUID()}.$extension")
-                track(output)
-                context.contentResolver.openInputStream(uri)!!.use { input ->
-                    output.outputStream().use { target ->
-                        val buffer = ByteArray(16384)
-                        var total = 0L
-                        while (true) {
-                            coroutineContext.ensureActive()
-                            val read = input.read(buffer)
-                            if (read < 0) break
-                            total += read
-                            require(total <= 20L * 1024 * 1024)
-                            target.write(buffer, 0, read)
-                        }
-                    }
-                }
-                output to label.substringBeforeLast('.').take(80)
-            }
+            PocketVoiceImport.import(context, uri, PocketTtsModel.voicesDirectory(context), track)
         }
     }
     SettingsItem(Icons.Default.RecordVoiceOver, stringResource(R.string.pocket_voice_cloning),
@@ -191,6 +172,11 @@ internal fun PocketVoiceSettings() {
                             })
                             Text(PocketTtsModel.label(voice), Modifier.weight(1f))
                             IconButton(enabled = !busy, onClick = {
+                                voiceName = PocketTtsModel.label(voice)
+                                renameFailed = false
+                                renamingVoice = voice
+                            }) { Icon(Icons.Default.Edit, stringResource(R.string.action_rename)) }
+                            IconButton(enabled = !busy, onClick = {
                                 scope.launch {
                                     withContext(Dispatchers.IO) { PocketTtsModel.deleteVoice(context, voice.name) }
                                     if (selected == voice.name) preferences.setPocketVoice("")
@@ -204,11 +190,43 @@ internal fun PocketVoiceSettings() {
         },
         confirmButton = {
             TextButton(enabled = !busy && PocketTtsModel.isComplete(context), onClick = {
-                picker.launch(arrayOf("audio/wav", "audio/x-wav", "audio/mpeg", "audio/flac", "audio/x-flac"))
+                picker.launch(arrayOf("audio/*", "application/octet-stream"))
             }) { Text(stringResource(R.string.pocket_import_voice)) }
         },
         dismissButton = { TextButton(enabled = !busy || recording, onClick = { captureJob?.cancel(); open = false }) { Text(stringResource(R.string.cancel)) } }
     )
+    renamingVoice?.let { voice -> AlertDialog(
+        onDismissRequest = { if (!savingName) renamingVoice = null },
+        title = { Text(stringResource(R.string.action_rename)) },
+        text = {
+            OutlinedTextField(
+                value = voiceName,
+                onValueChange = { voiceName = it.take(80); renameFailed = false },
+                label = { Text(stringResource(R.string.tts_voice_name)) },
+                singleLine = true,
+                enabled = !savingName,
+                isError = renameFailed,
+                supportingText = if (renameFailed) ({ Text(stringResource(R.string.tts_voice_rename_failed)) }) else null
+            )
+        },
+        confirmButton = { TextButton(enabled = !savingName && voiceName.isNotBlank(), onClick = {
+            savingName = true
+            scope.launch {
+                try {
+                    withContext(Dispatchers.IO) { PocketTtsModel.renameVoice(context, voice.name, voiceName) }
+                    revision++
+                    renamingVoice = null
+                } catch (e: CancellationException) { throw e
+                } catch (e: Exception) {
+                    android.util.Log.e("PocketVoiceSettings", "Voice rename failed", e)
+                    renameFailed = true
+                } finally { savingName = false }
+            }
+        }) { Text(stringResource(R.string.save)) } },
+        dismissButton = { TextButton(enabled = !savingName, onClick = { renamingVoice = null }) {
+            Text(stringResource(R.string.cancel))
+        } }
+    ) }
     error?.let { message -> AlertDialog(
         onDismissRequest = { error = null }, text = { Text(message) },
         confirmButton = { TextButton(onClick = { error = null }) { Text(stringResource(android.R.string.ok)) } }

@@ -1045,10 +1045,10 @@
 
     <!-- On-device PocketTTS.cpp voice cloning -->
     <string name="pocket_voice_cloning">Clonage vocal · Pocket TTS</string>
-    <string name="pocket_voice_help">Enregistrez ici ou importez un fichier audio. Anglais uniquement. Importez un extrait clair WAV, MP3 ou FLAC de 3 à 30 secondes (20 Mo maximum). Le clonage se fait entièrement sur cet appareil. La voix choisie utilise Pocket TTS dans toute l’application, sauf le Traducteur.</string>
+    <string name="pocket_voice_help">Enregistrez ici ou importez un fichier audio. Anglais uniquement. Importez un extrait clair WAV, MP3, FLAC, M4A/AAC ou OGG de 3 à 30 secondes (20 Mo maximum). Le clonage se fait entièrement sur cet appareil. La voix choisie utilise Pocket TTS dans toute l’application, sauf le Traducteur.</string>
     <string name="pocket_model_required">Téléchargez d’abord Pocket TTS depuis l’écran de téléchargement des modèles.</string>
     <string name="pocket_cloning">Clonage de la voix sur cet appareil…</string>
-    <string name="pocket_clone_failed">Impossible de cloner cette voix. Utilisez un extrait vocal clair WAV, MP3 ou FLAC d’au moins 3 secondes.</string>
+    <string name="pocket_clone_failed">Impossible de cloner cette voix. Utilisez un extrait vocal clair WAV, MP3, FLAC, M4A/AAC ou OGG d’au moins 3 secondes.</string>
     <string name="pocket_import_voice">Importer et cloner une voix</string>
     <string name="pocket_speech_failed">Impossible de générer la parole. Sélectionnez une voix clonée Pocket TTS dans les paramètres.</string>
 
@@ -1089,4 +1089,6 @@
     <string name="vibe_codex_syncing">Application des modifications du projet…</string>
     <string name="vibe_codex_step_progress">Étape de l’agent %1$d · tentative %2$d · %3$d caractères générés</string>
     <string name="vibe_codex_saved_verified">%1$s a été enregistré et son contenu vérifié.</string>
+    <string name="tts_voice_name">Nom de la voix</string>
+    <string name="tts_voice_rename_failed">Impossible de renommer cette voix. Réessayez.</string>
 </resources>
