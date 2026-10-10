@@ -22,6 +22,35 @@ func videoKeyframes(url: URL, maxEdge: CGFloat = 512) -> [Data] {
     return frames
 }
 
+/// Movie length from the file timeline. AVAudioPlayer(contentsOf:) loads the entire file into memory, and a failed load was stored as 0.
+func videoDurationMs(url: URL) async -> Int {
+    let asset = AVURLAsset(url: url, options: [AVURLAssetPreferPreciseDurationAndTimingKey: true])
+    guard let duration = try? await asset.load(.duration) else { return 0 }
+    let seconds = CMTimeGetSeconds(duration)
+    guard seconds.isFinite, seconds > 0 else { return 0 }
+    return Int((seconds * 1000).rounded())
+}
+
+/// One JPEG frame. A 4K file can miss an exact timestamp, so a nearby frame is used.
+func videoFrameJPEG(url: URL, timeMs: Int, maxEdge: CGFloat = 512) async -> Data? {
+    let asset = AVURLAsset(url: url)
+    let generator = AVAssetImageGenerator(asset: asset)
+    generator.appliesPreferredTrackTransform = true
+    generator.maximumSize = CGSize(width: maxEdge, height: maxEdge)
+    generator.requestedTimeToleranceBefore = CMTime(seconds: 1, preferredTimescale: 600)
+    generator.requestedTimeToleranceAfter = CMTime(seconds: 1, preferredTimescale: 600)
+    var times = [max(0, timeMs)]
+    if timeMs != 0 { times.append(0) }
+    if timeMs < 1000 { times.append(1000) }
+    for ms in times {
+        let time = CMTime(value: CMTimeValue(ms), timescale: 1000)
+        guard let result = try? await generator.image(at: time),
+              let jpeg = mediaSearchJPEG(from: UIImage(cgImage: result.image), maxEdge: maxEdge) else { continue }
+        return jpeg
+    }
+    return nil
+}
+
 // MARK: - Shared engine + storage for Photo Search and Audio Search
 // Mirrors AI Edge Gallery's Instant Media Search / Video Moment Finder: EmbeddingGemma 2 with a
 // 70-token vision budget and 256-token inputs, vectors stored locally and ranked by cosine.

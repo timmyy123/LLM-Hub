@@ -30,6 +30,7 @@ final class VideoMomentModel: ObservableObject {
     @Published private(set) var isSearching = false
     @Published private(set) var isLoadingModel = false
     @Published private(set) var modelError = false
+    @Published private(set) var isImporting = false
 
     private let engine = MediaSearchEngine()
     private let store = MediaIndexStore(name: "video_moments")
@@ -65,6 +66,7 @@ final class VideoMomentModel: ObservableObject {
             UserDefaults.standard.set(model.id, forKey: Self.indexedModelKey)
         }
         loadPickedVideos()
+        await repairStoredDurations()
         await ensureEngine()
         startIndexing()
     }
@@ -76,20 +78,59 @@ final class VideoMomentModel: ObservableObject {
     }
 
     /// Gallery imports one picked video. It does not scan the library.
-    func addPickedVideo(_ url: URL) {
+    func importPickedItem(_ item: PhotosPickerItem) async {
+        isImporting = true
+        defer { isImporting = false }
+        guard let movie = try? await item.loadTransferable(type: MomentMovie.self) else { return }
+        await storeImportedVideo(movie.url)
+    }
+
+    private func storeImportedVideo(_ url: URL) async {
         let accessing = url.startAccessingSecurityScopedResource()
         defer { if accessing { url.stopAccessingSecurityScopedResource() } }
         let ext = url.pathExtension.isEmpty ? "mov" : url.pathExtension
         let id = "\(UUID().uuidString).\(ext)"
         let dest = Self.videosDir.appendingPathComponent(id)
-        guard (try? FileManager.default.copyItem(at: url, to: dest)) != nil else { return }
-        let seconds = (try? AVAudioPlayer(contentsOf: dest))?.duration ?? 0
-        let video = Video(id: id, name: url.deletingPathExtension().lastPathComponent, durationMs: Int(seconds * 1000))
-        videos.insert(video, at: 0)
+        let name = url.deletingPathExtension().lastPathComponent
+        let stored = await Task.detached {
+            if FileManager.default.fileExists(atPath: dest.path) {
+                try? FileManager.default.removeItem(at: dest)
+            }
+            do {
+                try FileManager.default.moveItem(at: url, to: dest)
+            } catch {
+                do { try FileManager.default.copyItem(at: url, to: dest) } catch { return false }
+            }
+            return true
+        }.value
+        guard stored else { return }
+        let durationMs = await videoDurationMs(url: dest)
+        videos.insert(Video(id: id, name: name, durationMs: durationMs), at: 0)
         savePickedVideos()
+        refreshProgress()
+        startIndexing()
+    }
+
+    /// A failed AVAudioPlayer load stored 0 and marked that empty pass finished.
+    private func repairStoredDurations() async {
+        var changed = false
+        for video in videos where video.durationMs < 1000 {
+            let ms = await videoDurationMs(url: Self.playbackURL(video))
+            guard ms >= 1000, ms > video.durationMs, let index = videos.firstIndex(where: { $0.id == video.id }) else { continue }
+            videos[index] = Video(id: video.id, name: video.name, durationMs: ms)
+            store.remove(ids: [video.id])
+            failed.remove(video.id)
+            changed = true
+        }
+        if changed {
+            savePickedVideos()
+            refreshProgress()
+        }
+    }
+
+    private func refreshProgress() {
         let done = Set(store.all.filter { $0.startMs == Self.doneMarker }.map(\.id))
         progress = MediaIndexingProgress(processed: videos.filter { done.contains($0.id) || failed.contains($0.id) }.count, total: videos.count)
-        startIndexing()
     }
 
     func open(_ video: Video) {
@@ -255,7 +296,10 @@ final class VideoMomentModel: ObservableObject {
     private func windowParts(_ video: Video, samples: [Float]?, startMs: Int, endMs: Int) async -> [MediaEmbedPart] {
         let url = Self.playbackURL(video)
         let times = [startMs, max(startMs, endMs - 1)]
-        let frames = await Task.detached { times.compactMap { videoFrameJPEG(url: url, timeMs: $0) } }.value
+        var frames: [Data] = []
+        for time in times {
+            if let jpeg = await videoFrameJPEG(url: url, timeMs: time) { frames.append(jpeg) }
+        }
         guard !frames.isEmpty else { return [] }
         let slices = audioSlices(samples, startMs: startMs, endMs: endMs, count: frames.count)
         let hasAudio = slices.contains { $0 != nil }
@@ -332,7 +376,7 @@ private struct VideoPoster: View {
             .clipShape(RoundedRectangle(cornerRadius: 16))
         .task(id: video.id) {
             let url = VideoMomentModel.playbackURL(video)
-            if let data = await Task.detached(operation: { videoFrameJPEG(url: url, timeMs: 500) }).value {
+            if let data = await videoFrameJPEG(url: url, timeMs: 500) {
                 image = UIImage(data: data)
             }
         }
@@ -371,7 +415,7 @@ private struct MomentThumb: View {
         .task(id: moment.id) {
             let url = VideoMomentModel.playbackURL(moment.video)
             let start = moment.startMs
-            if let data = await Task.detached(operation: { videoFrameJPEG(url: url, timeMs: start) }).value {
+            if let data = await videoFrameJPEG(url: url, timeMs: start) {
                 image = UIImage(data: data)
             }
         }
@@ -414,16 +458,6 @@ private func thumbClock(_ ms: Int) -> String {
     return String(format: "%02d:%02d", s / 60, s % 60)
 }
 
-private func videoFrameJPEG(url: URL, timeMs: Int) -> Data? {
-    let asset = AVURLAsset(url: url)
-    let generator = AVAssetImageGenerator(asset: asset)
-    generator.appliesPreferredTrackTransform = true
-    generator.maximumSize = CGSize(width: 512, height: 512)
-    let time = CMTime(value: CMTimeValue(timeMs), timescale: 1000)
-    guard let cg = try? generator.copyCGImage(at: time, actualTime: nil) else { return nil }
-    return mediaSearchJPEG(from: UIImage(cgImage: cg), maxEdge: 512)
-}
-
 struct VideoMomentScreen: View {
     let onNavigateBack: () -> Void
     let onNavigateToModels: () -> Void
@@ -455,7 +489,7 @@ struct VideoMomentScreen: View {
         Group {
             if downloadedModels.isEmpty {
                 MediaSearchGateView(icon: "film.stack", onNavigateToModels: onNavigateToModels)
-            } else if model.videos.isEmpty && model.progress.total == 0 {
+            } else if model.videos.isEmpty && !model.isImporting && model.progress.total == 0 {
                 MediaSearchOnboardingView(
                     icon: "film.stack",
                     title: settings.localized("video_moment_onboarding_title"),
@@ -503,11 +537,7 @@ struct VideoMomentScreen: View {
         .onChange(of: pickedVideo) { _, item in
             guard let item else { return }
             pickedVideo = nil
-            Task {
-                if let movie = try? await item.loadTransferable(type: MomentMovie.self) {
-                    model.addPickedVideo(movie.url)
-                }
-            }
+            Task { await model.importPickedItem(item) }
         }
         .onChange(of: model.query) { _, _ in selectedMoment = nil }
         .onChange(of: model.openVideo?.id) { _, _ in
@@ -545,6 +575,16 @@ struct VideoMomentScreen: View {
                         ZStack {
                             RoundedRectangle(cornerRadius: 16).fill(Color.white.opacity(0.08))
                             Image(systemName: "plus").font(.largeTitle).foregroundStyle(.white)
+                        }
+                        .aspectRatio(1, contentMode: .fit)
+                        Text(settings.localized("video_moment_pick")).font(.caption).foregroundStyle(.white)
+                    }
+                }
+                if model.isImporting {
+                    VStack(spacing: 8) {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 16).fill(Color.white.opacity(0.08))
+                            ProgressView().tint(.white)
                         }
                         .aspectRatio(1, contentMode: .fit)
                         Text(settings.localized("video_moment_pick")).font(.caption).foregroundStyle(.white)
