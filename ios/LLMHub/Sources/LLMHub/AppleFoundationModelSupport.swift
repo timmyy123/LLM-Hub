@@ -13,7 +13,7 @@ func isAppleFoundationModel(_ model: AIModel?) -> Bool {
 @MainActor
 func appleFoundationModelIfAvailable() -> AIModel? {
     #if canImport(FoundationModels)
-    if #available(iOS 26.0, *) {
+    if #available(iOS 26.0, macOS 26.0, *) {
         let model = SystemLanguageModel.default
         guard model.isAvailable else { return nil }
 
@@ -51,7 +51,7 @@ func generateAppleFoundationResponse(
     onUpdate: @escaping (String, Int, Double) -> Void
 ) async throws {
     #if canImport(FoundationModels)
-    if #available(iOS 26.0, *) {
+    if #available(iOS 26.0, macOS 26.0, *) {
         try Task.checkCancellation()
         let model = SystemLanguageModel.default
         guard model.isAvailable else {

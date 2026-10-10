@@ -1,6 +1,10 @@
 import Foundation
 import SwiftUI
+#if canImport(UIKit)
 import UIKit
+#else
+import AppKit
+#endif
 import ModelZoo
 
 @main
@@ -13,7 +17,9 @@ struct LLMHubApp: App {
             FileHandle.standardError.write(data)
         }
         NSLog("[LLMHub] App launched")
+        #if !os(macOS)
         UISwitch.appearance().onTintColor = UIColor(ApolloPalette.accentStrong)
+        #endif
 
         // Register upscaler hashes so EnvWrapper.env.ensure can verify them
         ModelZoo.mergeFileSHA256([
@@ -25,6 +31,9 @@ struct LLMHubApp: App {
             "4x_ultrasharp_f16.ckpt": "c8e9a1ee8bf5bc71cef7204bf1cf8cb120dc8b578189d33fd94025a6cfa9f0ec"
         ])
 
+        // Feature context windows default to 4096 (older builds persisted the model max).
+        migrateFeatureContextWindowDefaults()
+
         // Warm up StoreKit 2 / restore premium state
         Task {
             await PurchaseManager.shared.loadProduct()
@@ -34,14 +43,31 @@ struct LLMHubApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            rootView
                 .environmentObject(settings)
                 .preferredColorScheme(.dark)
                 .environment(\.locale, settings.selectedLanguage.locale)
                 .ifLet(layoutDirectionOverride) { view, dir in
                     view.environment(\.layoutDirection, dir)
                 }
+                #if os(macOS)
+                .frame(minWidth: 900, minHeight: 600)
+                .tint(ApolloPalette.accentStrong)
+                #endif
         }
+        #if os(macOS)
+        .defaultSize(width: 1180, height: 820)
+        #endif
+    }
+
+    /// macOS gets its own native window layout; iOS keeps the existing UI.
+    @ViewBuilder
+    private var rootView: some View {
+        #if os(macOS)
+        MacRootView()
+        #else
+        ContentView()
+        #endif
     }
 
     /// Resolves the layout direction override for the currently selected language.

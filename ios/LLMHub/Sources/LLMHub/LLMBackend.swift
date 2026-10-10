@@ -2,8 +2,10 @@ import Foundation
 import LlamaCppRuntime
 #if canImport(UIKit)
 import UIKit
-import ImageIO
+#else
+import AppKit
 #endif
+import ImageIO
 
 @MainActor
 class LLMBackend: ObservableObject {
@@ -564,7 +566,7 @@ class LLMBackend: ObservableObject {
         }
         if modelName == "Apple Foundation Model" {
             #if canImport(FoundationModels)
-            if #available(iOS 26.0, *) {
+            if #available(iOS 26.0, macOS 26.0, *) {
                 return AIModel(
                     id: "apple.foundation.system",
                     name: "Apple Foundation Model",
@@ -784,7 +786,7 @@ class LLMBackend: ObservableObject {
         return path != nil
     }
 
-#if canImport(UIKit)
+#if canImport(UIKit) || os(macOS)
     private func downsampledUIImage(from imageURL: URL, maxDimension: CGFloat = 448) -> UIImage? {
         let sourceOptions = [kCGImageSourceShouldCache: false] as CFDictionary
         guard let source = CGImageSourceCreateWithURL(imageURL as CFURL, sourceOptions) else {
@@ -1107,7 +1109,7 @@ class LLMBackend: ObservableObject {
                     contextSize: clampedContextWindow(contextWindow, for: model),
                     gpuLayers: isCPU ? 0 : max(0, layers)
                 )
-                #if canImport(UIKit)
+                #if canImport(UIKit) || os(macOS)
                 // Keep vision input at 448 pixels. Sending the full-resolution photo makes
                 // llama.cpp split tall images into many costly 512px vision slices.
                 if let thumbnail = downsampledUIImage(from: imageURL),

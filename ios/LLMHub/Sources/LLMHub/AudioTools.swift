@@ -28,6 +28,7 @@ final class AudioRecorder: NSObject, ObservableObject, AVAudioRecorderDelegate {
         }
 
         let sessionConfigured = await MainActor.run {
+            #if os(iOS)
             let session = AVAudioSession.sharedInstance()
             do {
                 try session.setCategory(.playAndRecord, mode: .spokenAudio, options: [.defaultToSpeaker, .allowBluetoothHFP])
@@ -36,6 +37,10 @@ final class AudioRecorder: NSObject, ObservableObject, AVAudioRecorderDelegate {
             } catch {
                 return false
             }
+            #else
+            // macOS routes audio through the system default devices; no session setup needed.
+            return true
+            #endif
         }
 
         guard sessionConfigured else {

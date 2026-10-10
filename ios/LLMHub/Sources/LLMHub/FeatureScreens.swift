@@ -7,6 +7,8 @@ import PhotosUI
 import UniformTypeIdentifiers
 #if canImport(UIKit)
 import UIKit
+#else
+import AppKit
 #endif
 #if canImport(FoundationModels)
 import FoundationModels
@@ -16,12 +18,38 @@ import Network
 #endif
 
 @MainActor
-private func contextLimitForFeatureModel(_ model: AIModel, fallback: Int = 4096) -> Int {
+func contextLimitForFeatureModel(_ model: AIModel, fallback: Int = 4096) -> Int {
     if model.modelFormat == .gguf {
         let maxCap = LLMBackend.shared.modelMaxContextWindow(for: model)
         if maxCap > 0 { return maxCap }
     }
     return model.contextWindowSize > 0 ? model.contextWindowSize : fallback
+}
+
+/// Default context window for feature screens when the user hasn't chosen one.
+let featureDefaultContextWindow = 4096
+
+/// One-time cleanup: feature screens used to default the context window to the
+/// model's maximum and persist it immediately. Reset values that equal the
+/// model maximum (i.e. the old default) so they fall back to 4096; values the
+/// user picked below the maximum are kept.
+@MainActor
+func migrateFeatureContextWindowDefaults() {
+    let defaults = UserDefaults.standard
+    let migrationKey = "feature_context_default_4096_migrated"
+    guard !defaults.bool(forKey: migrationKey) else { return }
+    let prefixes = ["feature_writing_max_tokens_", "feature_translator_max_tokens_", "feature_scam_max_tokens_", "feature_vibecoder_max_tokens_"]
+    for key in defaults.dictionaryRepresentation().keys {
+        guard let prefix = prefixes.first(where: { key.hasPrefix($0) }) else { continue }
+        let modelName = String(key.dropFirst(prefix.count))
+        guard let model = selectedFeatureModel(named: modelName) else { continue }
+        let cap = contextLimitForFeatureModel(model)
+        let stored = defaults.double(forKey: key)
+        if cap > featureDefaultContextWindow && stored >= Double(cap) {
+            defaults.removeObject(forKey: key)
+        }
+    }
+    defaults.set(true, forKey: migrationKey)
 }
 
 enum WritingAidMode: String, CaseIterable {
@@ -30,14 +58,14 @@ enum WritingAidMode: String, CaseIterable {
     case concise = "writing_aid_tone_concise"
 }
 
-private struct TranslatorLanguage: Identifiable, Hashable {
+struct TranslatorLanguage: Identifiable, Hashable {
     let code: String
     let localizationKey: String
 
     var id: String { code }
 }
 
-private let translatorLanguageEnglishNames: [String: String] = [
+let translatorLanguageEnglishNames: [String: String] = [
     "en": "English",
     "af": "Afrikaans",
     "am": "Amharic",
@@ -114,7 +142,7 @@ private let translatorLanguageEnglishNames: [String: String] = [
     "zu": "Zulu",
 ]
 
-private let translatorLanguages: [TranslatorLanguage] = [
+let translatorLanguages: [TranslatorLanguage] = [
     TranslatorLanguage(code: "en", localizationKey: "lang_english"),
     TranslatorLanguage(code: "af", localizationKey: "lang_afrikaans"),
     TranslatorLanguage(code: "am", localizationKey: "lang_amharic"),
@@ -191,7 +219,7 @@ private let translatorLanguages: [TranslatorLanguage] = [
     TranslatorLanguage(code: "zu", localizationKey: "lang_zulu"),
 ]
 
-private func persistentAudioStorageDirectory() -> URL {
+func persistentAudioStorageDirectory() -> URL {
     let fileManager = FileManager.default
     let base = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
         ?? fileManager.urls(for: .documentDirectory, in: .userDomainMask).first
@@ -201,7 +229,7 @@ private func persistentAudioStorageDirectory() -> URL {
     return dir
 }
 
-private func isTranslateGemmaModel(_ model: AIModel) -> Bool {
+func isTranslateGemmaModel(_ model: AIModel) -> Bool {
     !model.isDependencyOnly
         && model.category == .multimodal
         && model.supportsVision
@@ -213,7 +241,7 @@ private func downloadableTranslatorModels() -> [AIModel] {
     downloadableFeatureModels().filter(isTranslatorSupportedModel)
 }
 
-private func isTranslatorSupportedModel(_ model: AIModel) -> Bool {
+func isTranslatorSupportedModel(_ model: AIModel) -> Bool {
     model.isLanguageModel && !model.isDependencyOnly
 }
 
@@ -221,11 +249,11 @@ private func usesGemma4TurnTemplate(_ model: AIModel) -> Bool {
     model.name.localizedCaseInsensitiveContains("gemma 4") && !model.name.localizedCaseInsensitiveContains("translate")
 }
 
-private func isNonTranslatorFeatureModel(_ model: AIModel) -> Bool {
+func isNonTranslatorFeatureModel(_ model: AIModel) -> Bool {
     model.isLanguageModel && !model.name.hasPrefix("Translate Gemma")
 }
 
-private func isMusicGenerationFeatureModel(_ model: AIModel) -> Bool {
+func isMusicGenerationFeatureModel(_ model: AIModel) -> Bool {
     model.category == .musicGeneration
 }
 
@@ -251,13 +279,13 @@ private func translatorVisionFamilyName(for modelName: String) -> String {
 }
 
 @MainActor
-private func translatorHasDownloadedVisionProjector(for model: AIModel) -> Bool {
+func translatorHasDownloadedVisionProjector(for model: AIModel) -> Bool {
     guard model.modelFormat == .gguf, model.supportsVision else { return true }
     return LLMBackend.shared.isVisionProjectorAvailable(for: model)
 }
 
 @MainActor
-private func hasDownloadedVisionProjector(for model: AIModel) -> Bool {
+func hasDownloadedVisionProjector(for model: AIModel) -> Bool {
     guard model.modelFormat == .gguf, model.supportsVision else { return true }
     return ModelData.allModels().contains { candidate in
         candidate.isDependencyOnly
@@ -282,7 +310,7 @@ private func isInstalledModelDownloaded(_ model: AIModel) -> Bool {
 }
 
 @MainActor
-private func downloadableFeatureModels() -> [AIModel] {
+func downloadableFeatureModels() -> [AIModel] {
     let legacyModelsDir: URL? = {
         guard let documentsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return nil }
         return documentsDir.appendingPathComponent("models")
@@ -338,7 +366,7 @@ private func downloadableFeatureModels() -> [AIModel] {
 
 
 @MainActor
-private func selectedFeatureModel(named selectedModelName: String) -> AIModel? {
+func selectedFeatureModel(named selectedModelName: String) -> AIModel? {
     if let appleModel = appleFoundationModelIfAvailable(), appleModel.name == selectedModelName {
         return appleModel
     }
@@ -346,18 +374,18 @@ private func selectedFeatureModel(named selectedModelName: String) -> AIModel? {
 }
 
 @MainActor
-private func refreshDownloadedModelStatus() async {
+func refreshDownloadedModelStatus() async {
     ModelDownloadViewModel.shared.refreshStatuses()
 }
 
 @MainActor
 private func dismissKeyboard() {
-    #if canImport(UIKit)
+    #if canImport(UIKit) || os(macOS)
     UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
     #endif
 }
 
-private func sanitizeModelOutputText(_ text: String) -> String {
+func sanitizeModelOutputText(_ text: String) -> String {
     text
         .replacingOccurrences(of: "â€™", with: "'")
         .replacingOccurrences(of: "â€˜", with: "'")
@@ -500,7 +528,7 @@ struct FeatureModelSettingsSheet: View {
     }
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
                 ApolloLiquidBackground()
 
@@ -540,7 +568,7 @@ struct FeatureModelSettingsSheet: View {
                                         .monospacedDigit()
                                 }
                                 if maxContextCap > 1 {
-                                    Slider(value: $maxTokens, in: 1...maxContextCap, step: 1) { editing in
+                                    ApolloSlider(value: $maxTokens, in: 1...maxContextCap, step: 1) { editing in
                                         if !editing {
                                             maxTokens = min(max(1, maxTokens), maxContextCap)
                                         }
@@ -663,8 +691,11 @@ struct FeatureModelSettingsSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .apolloNavigationBackground()
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(settings.localized("done")) { dismiss() }
+                ToolbarItem(placement: .apolloSheetTrailing) {
+                    Group {
+                        Button(settings.localized("done")) { dismiss() }
+                    }
+                    .apolloToolbarControl()
                 }
             }
             .task {
@@ -750,7 +781,7 @@ struct FeatureModelSettingsSheet: View {
     }
 }
 
-@available(iOS 17.0, *)
+@available(iOS 17.0, macOS 14.0, *)
 actor SpeechEngine {
     private var audioEngine: AVAudioEngine?
     private let speechRecognizer = SFSpeechRecognizer()
@@ -769,9 +800,11 @@ actor SpeechEngine {
         self.onError = onError
         self.isStreaming = true
 
+        #if os(iOS)
         let session = AVAudioSession.sharedInstance()
         try session.setCategory(.record, mode: .measurement, options: .duckOthers)
         try session.setActive(true, options: .notifyOthersOnDeactivation)
+        #endif
 
         // Create a FRESH AVAudioEngine each time. The old engine's inputNode
         // permanently caches a stale format (0 Hz) after the audio session
@@ -851,16 +884,16 @@ actor SpeechEngine {
     }
 }
 
-@available(iOS 17.0, *)
+@available(iOS 17.0, macOS 14.0, *)
 struct TranscriptionSession: Identifiable, Codable {
     let id: UUID
     var text: String
     let timestamp: Date
 }
 
-@available(iOS 17.0, *)
+@available(iOS 17.0, macOS 14.0, *)
 @MainActor
-private final class IOSSpeechTranscriber: NSObject, ObservableObject {
+final class IOSSpeechTranscriber: NSObject, ObservableObject {
     @Published var transcript: String = ""
     @Published var history: [TranscriptionSession] = []
     @Published var isRecording: Bool = false
@@ -1104,7 +1137,7 @@ private final class IOSSpeechTranscriber: NSObject, ObservableObject {
 }
 
 
-@available(iOS 17.0, *)
+@available(iOS 17.0, macOS 14.0, *)
 private struct IOS26TranscriberScreen: View {
     @EnvironmentObject var settings: AppSettings
     @StateObject private var transcriber = IOSSpeechTranscriber()
@@ -1326,17 +1359,23 @@ private struct IOS26TranscriberScreen: View {
         .apolloNavigationBackground()
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
-                Button {
-                    transcriber.cleanup()
-                    onNavigateBack()
-                } label: {
-                    Image(systemName: "arrow.left")
+                Group {
+                    Button {
+                        transcriber.cleanup()
+                        onNavigateBack()
+                    } label: {
+                        Image(systemName: "arrow.left")
+                    }
                 }
+                .apolloToolbarControl()
             }
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button { showSettings = true } label: {
-                    Image(systemName: "slider.horizontal.3")
+                Group {
+                    Button { showSettings = true } label: {
+                        Image(systemName: "slider.horizontal.3")
+                    }
                 }
+                .apolloToolbarControl()
             }
         }
         .apolloSheet(isPresented: $showSettings) {
@@ -1468,7 +1507,7 @@ private struct IOS26TranscriberScreen: View {
                     .featureActionIconButtonStyle()
 
                     Button {
-                        #if canImport(UIKit)
+                        #if canImport(UIKit) || os(macOS)
                         UIPasteboard.general.string = text
                         #endif
                     } label: {
@@ -1953,7 +1992,7 @@ struct TranscriberScreen: View {
 
     @ViewBuilder
     var body: some View {
-        if #available(iOS 17.0, *) {
+        if #available(iOS 17.0, macOS 14.0, *) {
             IOS26TranscriberScreen(onNavigateBack: onNavigateBack)
         } else {
             VStack(spacing: 12) {
@@ -1975,11 +2014,14 @@ struct TranscriberScreen: View {
             .apolloNavigationBackground()
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button {
-                        onNavigateBack()
-                    } label: {
-                        Image(systemName: "arrow.left")
+                    Group {
+                        Button {
+                            onNavigateBack()
+                        } label: {
+                            Image(systemName: "arrow.left")
+                        }
                     }
+                    .apolloToolbarControl()
                 }
             }
         }
@@ -1988,9 +2030,9 @@ struct TranscriberScreen: View {
 
 // MARK: - VibeVoice
 
-@available(iOS 17.0, *)
+@available(iOS 17.0, macOS 14.0, *)
 @MainActor
-private final class IOSVibeVoiceTranscriber: NSObject, ObservableObject {
+final class IOSVibeVoiceTranscriber: NSObject, ObservableObject {
     @Published var transcript: String = ""
     @Published var isRecording: Bool = false
     @Published var isPreparing: Bool = false
@@ -2178,7 +2220,7 @@ private final class IOSVibeVoiceTranscriber: NSObject, ObservableObject {
     }
 }
 
-private enum VibeVoiceState: Equatable {
+enum VibeVoiceState: Equatable {
     case idle, listening, responding, speaking
 }
 
@@ -2189,7 +2231,7 @@ private struct ViewHeightKey: PreferenceKey {
     }
 }
 
-@available(iOS 17.0, *)
+@available(iOS 17.0, macOS 14.0, *)
 private struct IOS17VibeVoiceScreen: View {
     @EnvironmentObject var settings: AppSettings
     @ObservedObject private var llm = LLMBackend.shared
@@ -2239,18 +2281,24 @@ private struct IOS17VibeVoiceScreen: View {
         .apolloNavigationBackground()
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
-                Button {
-                    stopAll()
-                    llm.unloadModel()
-                    onNavigateBack()
-                } label: {
-                    Image(systemName: "arrow.left")
+                Group {
+                    Button {
+                        stopAll()
+                        llm.unloadModel()
+                        onNavigateBack()
+                    } label: {
+                        Image(systemName: "arrow.left")
+                    }
                 }
+                .apolloToolbarControl()
             }
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button { showSettings = true } label: {
-                    Image(systemName: "slider.horizontal.3")
+                Group {
+                    Button { showSettings = true } label: {
+                        Image(systemName: "slider.horizontal.3")
+                    }
                 }
+                .apolloToolbarControl()
             }
         }
         .apolloSheet(isPresented: $showSettings) {
@@ -3055,7 +3103,7 @@ struct VibeVoiceScreen: View {
     let onNavigateBack: () -> Void
 
     var body: some View {
-        if #available(iOS 17.0, *) {
+        if #available(iOS 17.0, macOS 14.0, *) {
             IOS17VibeVoiceScreen(onNavigateBack: onNavigateBack)
         }
     }
@@ -3075,7 +3123,7 @@ struct WritingAidScreen: View {
         }
         if let model = selectedFeatureModel(named: modelName) {
             let cap = contextLimitForFeatureModel(model)
-            return Double(cap)
+            return Double(min(featureDefaultContextWindow, cap))
         }
         return 4096
     }
@@ -3164,7 +3212,7 @@ struct WritingAidScreen: View {
 
                         HStack(spacing: 8) {
                             Button {
-                                #if canImport(UIKit)
+                                #if canImport(UIKit) || os(macOS)
                                 if let clip = UIPasteboard.general.string, !clip.isEmpty {
                                     inputText += clip
                                 }
@@ -3191,7 +3239,7 @@ struct WritingAidScreen: View {
                             .disabled(outputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
 
                             Button {
-                                #if canImport(UIKit)
+                                #if canImport(UIKit) || os(macOS)
                                 UIPasteboard.general.string = getDisplayContentWithoutThinking(outputText)
                                 #endif
                             } label: {
@@ -3292,16 +3340,22 @@ struct WritingAidScreen: View {
         .apolloNavigationBackground()
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
-                Button {
-                    generationTask?.cancel()
-                    llm.unloadModel()
-                    onNavigateBack()
-                } label: {
-                    Image(systemName: "arrow.left")
+                Group {
+                    Button {
+                        generationTask?.cancel()
+                        llm.unloadModel()
+                        onNavigateBack()
+                    } label: {
+                        Image(systemName: "arrow.left")
+                    }
                 }
+                .apolloToolbarControl()
             }
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button { showSettings = true } label: { Image(systemName: "slider.horizontal.3") }
+                Group {
+                    Button { showSettings = true } label: { Image(systemName: "slider.horizontal.3") }
+                }
+                .apolloToolbarControl()
             }
         }
         .apolloSheet(isPresented: $showSettings) {
@@ -3462,7 +3516,7 @@ struct TranslatorScreen: View {
         }
         if let model = selectedFeatureModel(named: modelName) {
             let cap = contextLimitForFeatureModel(model, fallback: 4096)
-            return Double(cap)
+            return Double(min(featureDefaultContextWindow, cap))
         }
         return 4096
     }
@@ -3560,16 +3614,22 @@ struct TranslatorScreen: View {
         .apolloNavigationBackground()
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
-                Button {
-                    generationTask?.cancel()
-                    llm.unloadModel()
-                    onNavigateBack()
-                } label: {
-                    Image(systemName: "arrow.left")
+                Group {
+                    Button {
+                        generationTask?.cancel()
+                        llm.unloadModel()
+                        onNavigateBack()
+                    } label: {
+                        Image(systemName: "arrow.left")
+                    }
                 }
+                .apolloToolbarControl()
             }
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button { showSettings = true } label: { Image(systemName: "slider.horizontal.3") }
+                Group {
+                    Button { showSettings = true } label: { Image(systemName: "slider.horizontal.3") }
+                }
+                .apolloToolbarControl()
             }
         }
         .apolloSheet(isPresented: $showSettings) {
@@ -3754,7 +3814,7 @@ struct TranslatorScreen: View {
 
                 HStack(spacing: 8) {
                     Button {
-                        #if canImport(UIKit)
+                        #if canImport(UIKit) || os(macOS)
                         if let clip = UIPasteboard.general.string, !clip.isEmpty {
                             inputText += clip
                             selectedImageItem = nil
@@ -3913,7 +3973,7 @@ struct TranslatorScreen: View {
                             .disabled(outputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
 
                             Button {
-                                #if canImport(UIKit)
+                                #if canImport(UIKit) || os(macOS)
                                 UIPasteboard.general.string = outputText
                                 #endif
                             } label: {
@@ -4262,7 +4322,7 @@ struct ScamDetectorScreen: View {
         }
         if let model = selectedFeatureModel(named: modelName) {
             let cap = contextLimitForFeatureModel(model)
-            return Double(cap)
+            return Double(min(featureDefaultContextWindow, cap))
         }
         return 4096
     }
@@ -4347,7 +4407,7 @@ struct ScamDetectorScreen: View {
 
                         HStack(spacing: 8) {
                             Button {
-                                #if canImport(UIKit)
+                                #if canImport(UIKit) || os(macOS)
                                 if let clip = UIPasteboard.general.string, !clip.isEmpty {
                                     inputText += clip
                                 }
@@ -4391,7 +4451,7 @@ struct ScamDetectorScreen: View {
                             .disabled(outputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
 
                             Button {
-                                #if canImport(UIKit)
+                                #if canImport(UIKit) || os(macOS)
                                 UIPasteboard.general.string = getDisplayContentWithoutThinking(outputText)
                                 #endif
                             } label: {
@@ -4478,7 +4538,7 @@ struct ScamDetectorScreen: View {
                                     HStack {
                                         Spacer()
                                         Button {
-                                            #if canImport(UIKit)
+                                            #if canImport(UIKit) || os(macOS)
                                             UIPasteboard.general.string = getDisplayContentWithoutThinking(outputText)
                                             #endif
                                         } label: {
@@ -4544,16 +4604,22 @@ struct ScamDetectorScreen: View {
         .apolloNavigationBackground()
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
-                Button {
-                    generationTask?.cancel()
-                    llm.unloadModel()
-                    onNavigateBack()
-                } label: {
-                    Image(systemName: "arrow.left")
+                Group {
+                    Button {
+                        generationTask?.cancel()
+                        llm.unloadModel()
+                        onNavigateBack()
+                    } label: {
+                        Image(systemName: "arrow.left")
+                    }
                 }
+                .apolloToolbarControl()
             }
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button { showSettings = true } label: { Image(systemName: "slider.horizontal.3") }
+                Group {
+                    Button { showSettings = true } label: { Image(systemName: "slider.horizontal.3") }
+                }
+                .apolloToolbarControl()
             }
         }
         .apolloSheet(isPresented: $showSettings) {
@@ -4827,13 +4893,13 @@ struct ScamDetectorScreen: View {
     }
 }
 
-private struct VibeChatMessage: Identifiable, Codable, Equatable {
+struct VibeChatMessage: Identifiable, Codable, Equatable {
     var id: UUID = UUID()
     let role: String
     var text: String
 }
 
-private struct VibeChatSession: Identifiable, Codable, Equatable {
+struct VibeChatSession: Identifiable, Codable, Equatable {
     var id: UUID = UUID()
     var title: String
     var messages: [VibeChatMessage] = []
@@ -4922,7 +4988,7 @@ private struct WorkspaceFilesSheet: View {
     @State private var files: [URL] = []
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
                 ApolloLiquidBackground()
 
@@ -4962,8 +5028,11 @@ private struct WorkspaceFilesSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .apolloNavigationBackground()
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(settings.localized("done")) { dismiss() }
+                ToolbarItem(placement: .apolloSheetTrailing) {
+                    Group {
+                        Button(settings.localized("done")) { dismiss() }
+                    }
+                    .apolloToolbarControl()
                 }
             }
             .task {
@@ -4978,7 +5047,7 @@ private struct WorkspaceFilesSheet: View {
             return
         }
 
-        #if canImport(UIKit)
+        #if canImport(UIKit) || os(macOS)
         let didStart = folderURL.startAccessingSecurityScopedResource()
         defer {
             if didStart {
@@ -5020,7 +5089,7 @@ struct VibeCoderScreen: View {
         }
         if let model = selectedFeatureModel(named: modelName) {
             let cap = contextLimitForFeatureModel(model)
-            return Double(cap)
+            return Double(min(featureDefaultContextWindow, cap))
         }
         return 4096
     }
@@ -5471,7 +5540,7 @@ struct VibeCoderScreen: View {
                             }
 
                             Button {
-                                #if canImport(UIKit)
+                                #if canImport(UIKit) || os(macOS)
                                 UIPasteboard.general.string = generatedCode
                                 #endif
                             } label: {
@@ -5578,26 +5647,35 @@ struct VibeCoderScreen: View {
         .ignoresSafeArea(.keyboard, edges: .bottom)
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
-                Spacer()
-                Button(settings.localized("done")) {
-                    focusedField = nil
-                    dismissKeyboard()
+                Group {
+                    Spacer()
+                    Button(settings.localized("done")) {
+                        focusedField = nil
+                        dismissKeyboard()
+                    }
                 }
+                .apolloToolbarControl()
             }
         }
         .apolloNavigationBackground()
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
-                Button {
-                    stopGeneration()
-                    llm.unloadModel()
-                    onNavigateBack()
-                } label: {
-                    Image(systemName: "arrow.left")
+                Group {
+                    Button {
+                        stopGeneration()
+                        llm.unloadModel()
+                        onNavigateBack()
+                    } label: {
+                        Image(systemName: "arrow.left")
+                    }
                 }
+                .apolloToolbarControl()
             }
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button { showSettings = true } label: { Image(systemName: "slider.horizontal.3") }
+                Group {
+                    Button { showSettings = true } label: { Image(systemName: "slider.horizontal.3") }
+                }
+                .apolloToolbarControl()
             }
         }
         .apolloSheet(isPresented: $showSettings) {
@@ -5832,7 +5910,7 @@ struct VibeCoderScreen: View {
 
     private func openFile(_ url: URL, announceInChat: Bool = true) {
         do {
-            #if canImport(UIKit)
+            #if canImport(UIKit) || os(macOS)
             let scopeURL = workspaceFolderURL ?? url
             let didStart = scopeURL.startAccessingSecurityScopedResource()
             defer {
@@ -5867,7 +5945,7 @@ struct VibeCoderScreen: View {
 
         let fileURL = folderURL.appendingPathComponent(name)
         do {
-            #if canImport(UIKit)
+            #if canImport(UIKit) || os(macOS)
             let didStart = folderURL.startAccessingSecurityScopedResource()
             defer {
                 if didStart {
@@ -5914,7 +5992,7 @@ struct VibeCoderScreen: View {
         }
 
         do {
-            #if canImport(UIKit)
+            #if canImport(UIKit) || os(macOS)
             let didStart = folderURL.startAccessingSecurityScopedResource()
             defer {
                 if didStart {
@@ -5957,7 +6035,7 @@ struct VibeCoderScreen: View {
         currentFileName = nil
         generatedCode = ""
         do {
-            #if canImport(UIKit)
+            #if canImport(UIKit) || os(macOS)
             let didStart = url.startAccessingSecurityScopedResource()
             defer {
                 if didStart {
@@ -6371,7 +6449,7 @@ struct VibeCoderScreen: View {
         }
 
         do {
-            #if canImport(UIKit)
+            #if canImport(UIKit) || os(macOS)
             let didStart = folderURL.startAccessingSecurityScopedResource()
             defer {
                 if didStart {
@@ -6401,7 +6479,7 @@ struct VibeCoderScreen: View {
         }
 
         do {
-            #if canImport(UIKit)
+            #if canImport(UIKit) || os(macOS)
             let didStart = folderURL.startAccessingSecurityScopedResource()
             defer {
                 if didStart {
@@ -6541,14 +6619,20 @@ struct ImageGeneratorScreen: View {
         .apolloNavigationBackground()
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
-                Button {
-                    generateTask?.cancel()
-                    sdBackend.unloadModel()
-                    onNavigateBack()
-                } label: { Image(systemName: "arrow.left") }
+                Group {
+                    Button {
+                        generateTask?.cancel()
+                        sdBackend.unloadModel()
+                        onNavigateBack()
+                    } label: { Image(systemName: "arrow.left") }
+                }
+                .apolloToolbarControl()
             }
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button { showSettings = true } label: { Image(systemName: "slider.horizontal.3") }
+                Group {
+                    Button { showSettings = true } label: { Image(systemName: "slider.horizontal.3") }
+                }
+                .apolloToolbarControl()
             }
         }
         .apolloSheet(isPresented: $showSettings) {
@@ -6852,32 +6936,80 @@ struct ImageGeneratorScreen: View {
 
     // MARK: - Image Swipe View (HorizontalPager equivalent)
 
-    private var imageSwipeView: some View {
-        VStack(spacing: 8) {
-            TabView(selection: $currentPage) {
-                ForEach(0..<(generatedImages.count + 1), id: \.self) { page in
-                    if page < generatedImages.count {
-                        Image(uiImage: generatedImages[page])
-                            .resizable()
-                            .aspectRatio(1, contentMode: .fit)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                            .padding(.horizontal, 4)
-                            .tag(page)
-                            .contextMenu {
-                                Button {
-                                    saveImageToPhotos(generatedImages[page])
-                                } label: {
-                                    Label(settings.localized("image_generator_save"), systemImage: "square.and.arrow.down")
-                                }
-                            }
-                    } else {
-                        placeholderPage
-                            .tag(page)
+    @ViewBuilder
+    private func imageSwipePage(_ page: Int) -> some View {
+        if page < generatedImages.count {
+            Image(uiImage: generatedImages[page])
+                .resizable()
+                .aspectRatio(1, contentMode: .fit)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .padding(.horizontal, 4)
+                .tag(page)
+                .contextMenu {
+                    Button {
+                        saveImageToPhotos(generatedImages[page])
+                    } label: {
+                        Label(settings.localized("image_generator_save"), systemImage: "square.and.arrow.down")
                     }
                 }
+        } else {
+            placeholderPage
+                .tag(page)
+        }
+    }
+
+    @ViewBuilder
+    private var imagePager: some View {
+        #if os(macOS)
+        // Horizontal pager: trackpad swipes page natively; arrows for mouse users.
+        ScrollView(.horizontal, showsIndicators: false) {
+            LazyHStack(spacing: 0) {
+                ForEach(0..<(generatedImages.count + 1), id: \.self) { page in
+                    imageSwipePage(page)
+                        .containerRelativeFrame(.horizontal)
+                        .id(page)
+                }
             }
-            .tabViewStyle(.page(indexDisplayMode: .never))
-            .aspectRatio(1, contentMode: .fit)
+            .scrollTargetLayout()
+        }
+        .scrollTargetBehavior(.paging)
+        .scrollPosition(id: Binding(get: { currentPage }, set: { currentPage = $0 ?? currentPage }))
+        .overlay {
+            HStack {
+                Button {
+                    withAnimation { currentPage = max(0, currentPage - 1) }
+                } label: {
+                    Image(systemName: "chevron.left.circle.fill").font(.title)
+                }
+                .buttonStyle(.plain)
+                .opacity(currentPage > 0 ? 0.85 : 0)
+                Spacer()
+                Button {
+                    withAnimation { currentPage = min(generatedImages.count, currentPage + 1) }
+                } label: {
+                    Image(systemName: "chevron.right.circle.fill").font(.title)
+                }
+                .buttonStyle(.plain)
+                .opacity(currentPage < generatedImages.count ? 0.85 : 0)
+            }
+            .foregroundStyle(.white)
+            .padding(.horizontal, 10)
+        }
+        .aspectRatio(1, contentMode: .fit)
+        #else
+        TabView(selection: $currentPage) {
+            ForEach(0..<(generatedImages.count + 1), id: \.self) { page in
+                imageSwipePage(page)
+            }
+        }
+        .tabViewStyle(.page(indexDisplayMode: .never))
+        .aspectRatio(1, contentMode: .fit)
+        #endif
+    }
+
+    private var imageSwipeView: some View {
+        VStack(spacing: 8) {
+            imagePager
             .onChange(of: currentPage) { _, page in
                 checkForPrefetch(page: page)
             }
@@ -7147,7 +7279,7 @@ private struct ImageGeneratorSettingsSheet: View {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("\(settings.localized("image_generator_iterations")): \(Int(steps))")
                             .font(.headline)
-                        Slider(value: $steps, in: 1...50, step: 1)
+                        ApolloSlider(value: $steps, in: 1...50, step: 1)
                             .tint(ApolloPalette.accentStrong)
                     }
                     .padding()
@@ -7205,14 +7337,17 @@ private struct ImageGeneratorSettingsSheet: View {
             .apolloNavigationBackground()
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(settings.localized("close")) { dismiss() }
+                    Group {
+                        Button(settings.localized("close")) { dismiss() }
+                    }
+                    .apolloToolbarControl()
                 }
             }
         }
     }
 }
 
-private struct GeneratedMusicTrack: Identifiable {
+struct GeneratedMusicTrack: Identifiable {
     let id = UUID()
     let prompt: String
     let requestedDurationSeconds: Int
@@ -7330,7 +7465,7 @@ public struct MusicGeneratorScreen: View {
                                             .bold()
                                             .foregroundStyle(ApolloPalette.accentStrong)
                                     }
-                                    Slider(value: $durationSeconds, in: 1...600, step: 1)
+                                    ApolloSlider(value: $durationSeconds, in: 1...600, step: 1)
                                         .tint(ApolloPalette.accentStrong)
                                 }
                                 .padding(.horizontal)
@@ -7448,22 +7583,28 @@ public struct MusicGeneratorScreen: View {
         .apolloNavigationBackground()
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
-                Button {
-                    musicBackend.unloadModel()
-                    onNavigateBack?()
-                } label: {
-                    Image(systemName: "arrow.left")
+                Group {
+                    Button {
+                        musicBackend.unloadModel()
+                        onNavigateBack?()
+                    } label: {
+                        Image(systemName: "arrow.left")
+                    }
+                    .tint(.white)
                 }
-                .tint(.white)
+                .apolloToolbarControl()
             }
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button {
-                    showSettings = true
-                } label: {
-                    Image(systemName: "slider.horizontal.3")
+                Group {
+                    Button {
+                        showSettings = true
+                    } label: {
+                        Image(systemName: "slider.horizontal.3")
+                    }
+                    .disabled(isGenerating || isLoading)
+                    .tint(.white)
                 }
-                .disabled(isGenerating || isLoading)
-                .tint(.white)
+                .apolloToolbarControl()
             }
         }
         .apolloSheet(isPresented: $showSettings) {
@@ -7532,7 +7673,7 @@ public struct MusicGeneratorScreen: View {
                         .monospacedDigit()
                 }
                 .foregroundColor(.white)
-                Slider(value: $musicSeed, in: 0...999_999, step: 1)
+                ApolloSlider(value: $musicSeed, in: 0...999_999, step: 1)
                     .tint(ApolloPalette.accentStrong)
                     .disabled(isGenerating || isLoading)
             }

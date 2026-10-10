@@ -1,5 +1,9 @@
 import SwiftUI
+#if canImport(UIKit)
 import UIKit
+#else
+import AppKit
+#endif
 
 // MARK: - Settings Screen (mirroring Android SettingsScreen.kt)
 struct SettingsScreen: View {
@@ -209,14 +213,17 @@ struct SettingsScreen: View {
         .apolloNavigationBackground()
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
-                Button {
-                    onNavigateBack()
-                } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: "chevron.left")
-                        Text(settings.localized("back"))
+                Group {
+                    Button {
+                        onNavigateBack()
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "chevron.left")
+                            Text(settings.localized("back"))
+                        }
                     }
                 }
+                .apolloToolbarControl()
             }
         }
         // Language Dialog
@@ -363,7 +370,7 @@ struct MemoryManagerSheet: View {
     @StateObject private var ragManager = RagServiceManager.shared
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
                 ApolloLiquidBackground()
                 ScrollView {
@@ -508,8 +515,11 @@ struct MemoryManagerSheet: View {
             .apolloNavigationBackground()
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(settings.localized("done")) { onDismiss() }
-                        .foregroundColor(.white)
+                    Group {
+                        Button(settings.localized("done")) { onDismiss() }
+                            .foregroundColor(.white)
+                    }
+                    .apolloToolbarControl()
                 }
             }
             .confirmationDialog(settings.localized("confirm_replace_memory_title"), isPresented: $showClearConfirm, titleVisibility: .visible) {
@@ -638,7 +648,7 @@ private struct EditMemorySheet: View {
     }
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
                 ApolloLiquidBackground()
                 VStack(spacing: 16) {
@@ -659,28 +669,34 @@ private struct EditMemorySheet: View {
             .apolloNavigationBackground()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(settings.localized("cancel")) { onDismiss() }
-                        .foregroundColor(.white)
+                    Group {
+                        Button(settings.localized("cancel")) { onDismiss() }
+                            .foregroundColor(.white)
+                    }
+                    .apolloToolbarControl()
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    if isSaving {
-                        ProgressView().tint(.white)
-                    } else {
-                        Button(settings.localized("save_changes")) {
-                            let trimmed = editedContent.trimmingCharacters(in: .whitespacesAndNewlines)
-                            guard !trimmed.isEmpty else { return }
-                            isSaving = true
-                            Task {
-                                await RagServiceManager.shared.updateGlobalMemoryDocument(docId: document.id, newContent: trimmed)
-                                await MainActor.run {
-                                    isSaving = false
-                                    onDismiss()
+                    Group {
+                        if isSaving {
+                            ProgressView().tint(.white)
+                        } else {
+                            Button(settings.localized("save_changes")) {
+                                let trimmed = editedContent.trimmingCharacters(in: .whitespacesAndNewlines)
+                                guard !trimmed.isEmpty else { return }
+                                isSaving = true
+                                Task {
+                                    await RagServiceManager.shared.updateGlobalMemoryDocument(docId: document.id, newContent: trimmed)
+                                    await MainActor.run {
+                                        isSaving = false
+                                        onDismiss()
+                                    }
                                 }
                             }
+                            .foregroundColor(.white)
+                            .disabled(editedContent.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                         }
-                        .foregroundColor(.white)
-                        .disabled(editedContent.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     }
+                    .apolloToolbarControl()
                 }
             }
         }
@@ -699,7 +715,7 @@ private struct ChatImportSheet: View {
     @State private var isImporting = false
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
                 ApolloLiquidBackground()
                 if chatStore.chatSessions.isEmpty {
@@ -738,43 +754,49 @@ private struct ChatImportSheet: View {
             .apolloNavigationBackground()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(settings.localized("cancel")) { onDismiss() }
-                        .foregroundColor(.white)
+                    Group {
+                        Button(settings.localized("cancel")) { onDismiss() }
+                            .foregroundColor(.white)
+                    }
+                    .apolloToolbarControl()
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    if isImporting {
-                        ProgressView().tint(.white)
-                    } else {
-                        Button(settings.localized("import_chat_history")) {
-                            let toImport = chatStore.chatSessions.filter { selectedIds.contains($0.id) }
-                            guard !toImport.isEmpty else { return }
-                            isImporting = true
-                            Task {
-                                var allSucceeded = true
-                                for session in toImport {
-                                    let chatText = session.messages.map { msg in
-                                        let role = msg.isFromUser ? "User" : "Assistant"
-                                        return "\(role): \(msg.content)"
-                                    }.joined(separator: "\n\n")
-                                    guard !chatText.isEmpty else { continue }
-                                    let title = session.title.isEmpty ? settings.localized("drawer_new_chat") : session.title
-                                    let ok = await RagServiceManager.shared.addGlobalMemory(
-                                        text: chatText,
-                                        fileName: "Chat: \(title)",
-                                        metadata: "chat_import"
-                                    )
-                                    if !ok { allSucceeded = false }
-                                }
-                                await MainActor.run {
-                                    isImporting = false
-                                    onImport(toImport, allSucceeded)
-                                    onDismiss()
+                    Group {
+                        if isImporting {
+                            ProgressView().tint(.white)
+                        } else {
+                            Button(settings.localized("import_chat_history")) {
+                                let toImport = chatStore.chatSessions.filter { selectedIds.contains($0.id) }
+                                guard !toImport.isEmpty else { return }
+                                isImporting = true
+                                Task {
+                                    var allSucceeded = true
+                                    for session in toImport {
+                                        let chatText = session.messages.map { msg in
+                                            let role = msg.isFromUser ? "User" : "Assistant"
+                                            return "\(role): \(msg.content)"
+                                        }.joined(separator: "\n\n")
+                                        guard !chatText.isEmpty else { continue }
+                                        let title = session.title.isEmpty ? settings.localized("drawer_new_chat") : session.title
+                                        let ok = await RagServiceManager.shared.addGlobalMemory(
+                                            text: chatText,
+                                            fileName: "Chat: \(title)",
+                                            metadata: "chat_import"
+                                        )
+                                        if !ok { allSucceeded = false }
+                                    }
+                                    await MainActor.run {
+                                        isImporting = false
+                                        onImport(toImport, allSucceeded)
+                                        onDismiss()
+                                    }
                                 }
                             }
+                            .foregroundColor(selectedIds.isEmpty ? .white.opacity(0.4) : .white)
+                            .disabled(selectedIds.isEmpty)
                         }
-                        .foregroundColor(selectedIds.isEmpty ? .white.opacity(0.4) : .white)
-                        .disabled(selectedIds.isEmpty)
                     }
+                    .apolloToolbarControl()
                 }
             }
         }
@@ -819,7 +841,10 @@ struct LanguagePickerSheet: View {
         .apolloNavigationBackground()
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
-                Button(settings.localized("done")) { dismiss() }
+                Group {
+                    Button(settings.localized("done")) { dismiss() }
+                }
+                .apolloToolbarControl()
             }
         }
     }
@@ -974,7 +999,7 @@ struct AboutScreen: View {
     }
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
                 ApolloLiquidBackground()
 
@@ -1047,8 +1072,11 @@ struct AboutScreen: View {
             .apolloNavigationBackground()
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(settings.localized("done")) { dismiss() }
-                        .foregroundColor(.white)
+                    Group {
+                        Button(settings.localized("done")) { dismiss() }
+                            .foregroundColor(.white)
+                    }
+                    .apolloToolbarControl()
                 }
             }
         }
@@ -1075,7 +1103,7 @@ struct TermsOfServiceScreen: View {
     ]
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
                 ApolloLiquidBackground()
 
@@ -1117,8 +1145,11 @@ struct TermsOfServiceScreen: View {
             .apolloNavigationBackground()
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(settings.localized("done")) { dismiss() }
-                        .foregroundColor(.white)
+                    Group {
+                        Button(settings.localized("done")) { dismiss() }
+                            .foregroundColor(.white)
+                    }
+                    .apolloToolbarControl()
                 }
             }
         }
@@ -1236,10 +1267,13 @@ private struct HuggingFaceTokenSheet: View {
             .apolloNavigationBackground()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(settings.localized("close")) {
-                        onDismiss()
+                    Group {
+                        Button(settings.localized("close")) {
+                            onDismiss()
+                        }
+                        .foregroundColor(.white)
                     }
-                    .foregroundColor(.white)
+                    .apolloToolbarControl()
                 }
             }
             .onAppear {

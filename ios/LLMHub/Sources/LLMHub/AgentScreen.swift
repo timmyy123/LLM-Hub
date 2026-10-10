@@ -3,7 +3,7 @@ import MapKit
 import Speech
 import AVFoundation
 
-@available(iOS 17.0, *)
+@available(iOS 17.0, macOS 14.0, *)
 public struct AgentScreen: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var settings: AppSettings
@@ -74,20 +74,26 @@ public struct AgentScreen: View {
         .apolloNavigationBackground()
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
-                Button {
-                    dismiss()
-                } label: {
-                    Image(systemName: "arrow.left")
-                        .foregroundColor(.white)
+                Group {
+                    Button {
+                        dismiss()
+                    } label: {
+                        Image(systemName: "arrow.left")
+                            .foregroundColor(.white)
+                    }
                 }
+                .apolloToolbarControl()
             }
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button {
-                    showSettings = true
-                } label: {
-                    Image(systemName: "slider.horizontal.3")
-                        .foregroundColor(.white)
+                Group {
+                    Button {
+                        showSettings = true
+                    } label: {
+                        Image(systemName: "slider.horizontal.3")
+                            .foregroundColor(.white)
+                    }
                 }
+                .apolloToolbarControl()
             }
         }
         .apolloSheet(isPresented: $showSettings) {
@@ -800,11 +806,11 @@ struct AgentMapViewCell: View {
     }
 }
 
-struct MapViewRepresentable: UIViewRepresentable {
+struct MapViewRepresentable {
     let coordinate: CLLocationCoordinate2D
     let title: String
 
-    func makeUIView(context: Context) -> MKMapView {
+    fileprivate func makeMapView() -> MKMapView {
         let mapView = MKMapView()
         mapView.isScrollEnabled = true
         mapView.isZoomEnabled = true
@@ -818,6 +824,16 @@ struct MapViewRepresentable: UIViewRepresentable {
 
         return mapView
     }
+}
 
+#if os(macOS)
+extension MapViewRepresentable: NSViewRepresentable {
+    func makeNSView(context: Context) -> MKMapView { makeMapView() }
+    func updateNSView(_ nsView: MKMapView, context: Context) {}
+}
+#else
+extension MapViewRepresentable: UIViewRepresentable {
+    func makeUIView(context: Context) -> MKMapView { makeMapView() }
     func updateUIView(_ uiView: MKMapView, context: Context) {}
 }
+#endif

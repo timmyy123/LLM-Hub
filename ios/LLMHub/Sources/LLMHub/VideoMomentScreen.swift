@@ -511,11 +511,17 @@ struct VideoMomentScreen: View {
         .apolloNavigationBackground()
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
-                Button { leave() } label: { Image(systemName: "arrow.left") }
+                Group {
+                    Button { leave() } label: { Image(systemName: "arrow.left") }
+                }
+                .apolloToolbarControl()
             }
             if !downloadedModels.isEmpty {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button { showSettings = true } label: { Image(systemName: "slider.horizontal.3") }
+                    Group {
+                        Button { showSettings = true } label: { Image(systemName: "slider.horizontal.3") }
+                    }
+                    .apolloToolbarControl()
                 }
             }
         }
@@ -554,6 +560,7 @@ struct VideoMomentScreen: View {
         .onDisappear { model.stop(); playback.stop() }
         .sheet(item: $editing) { moment in
             ClipEditSheet(moment: moment) { editing = nil }
+                .apolloMacSheetSizing()
         }
     }
 
@@ -700,7 +707,7 @@ struct VideoMomentScreen: View {
 }
 
 @MainActor
-private final class MomentPlayer: ObservableObject {
+final class MomentPlayer: ObservableObject {
     let player = AVPlayer()
     @Published private(set) var isPlaying = false
     @Published private(set) var isMuted = false
@@ -804,6 +811,40 @@ private final class MomentPlayer: ObservableObject {
     }
 }
 
+#if os(macOS)
+struct MomentPlayerView: NSViewRepresentable {
+    let player: AVPlayer
+
+    func makeNSView(context: Context) -> MomentPlayerHost {
+        let view = MomentPlayerHost()
+        view.playerLayer.player = player
+        view.playerLayer.videoGravity = .resizeAspect
+        view.playerLayer.backgroundColor = NSColor.black.cgColor
+        return view
+    }
+
+    func updateNSView(_ nsView: MomentPlayerHost, context: Context) {
+        nsView.playerLayer.player = player
+    }
+}
+
+/// Layer-hosting NSView whose backing layer is an AVPlayerLayer.
+final class MomentPlayerHost: NSView {
+    let playerLayer = AVPlayerLayer()
+
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        layer = playerLayer
+        wantsLayer = true
+    }
+
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        layer = playerLayer
+        wantsLayer = true
+    }
+}
+#else
 private struct MomentPlayerView: UIViewRepresentable {
     let player: AVPlayer
 
@@ -825,14 +866,16 @@ private final class MomentPlayerHost: UIView {
     var playerLayer: AVPlayerLayer { layer as! AVPlayerLayer }
 }
 
-private struct MergedInterval: Identifiable {
+#endif
+
+struct MergedInterval: Identifiable {
     let startMs: Int
     let endMs: Int
     let ids: Set<String>
     var id: Int { startMs }
 }
 
-private func mergedIntervals(_ results: [VideoMomentModel.Moment]) -> [MergedInterval] {
+func mergedIntervals(_ results: [VideoMomentModel.Moment]) -> [MergedInterval] {
     var merged: [MergedInterval] = []
     for result in results.sorted(by: { $0.startMs < $1.startMs }) {
         if let last = merged.last, result.startMs <= last.endMs + 500 {

@@ -1,6 +1,10 @@
 import AVFoundation
 import Foundation
+#if canImport(UIKit)
 import UIKit
+#else
+import AppKit
+#endif
 
 /// First frame and, for clips longer than a second, the frame near the end.
 func videoKeyframes(url: URL, maxEdge: CGFloat = 512) -> [Data] {

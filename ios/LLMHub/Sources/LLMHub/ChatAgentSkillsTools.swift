@@ -1,5 +1,9 @@
 import Foundation
+#if canImport(UIKit)
 import UIKit
+#else
+import AppKit
+#endif
 import CryptoKit
 import AVFoundation
 #if canImport(LiteRTLM)

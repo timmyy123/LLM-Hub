@@ -1116,32 +1116,38 @@ struct ModelDownloadScreen: View {
         .apolloTopScrollEdgeHidden()
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
-                Button {
-                    onNavigateBack()
-                } label: {
-                    Image(systemName: "arrow.left")
-                        .font(.headline)
+                Group {
+                    Button {
+                        onNavigateBack()
+                    } label: {
+                        Image(systemName: "arrow.left")
+                            .font(.headline)
+                    }
                 }
+                .apolloToolbarControl()
             }
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button {
-                    if purchases.isPremium {
-                        showImportSheet = true
-                    } else {
-                        onShowPremium?()
-                    }
-                } label: {
-                    HStack(spacing: 4) {
-                        if !purchases.isPremium {
-                            Image(systemName: "crown.fill")
-                                .font(.system(size: 11))
-                                .foregroundStyle(Color(hex: "FFD700"))
+                Group {
+                    Button {
+                        if purchases.isPremium {
+                            showImportSheet = true
+                        } else {
+                            onShowPremium?()
                         }
-                        Image(systemName: "plus")
-                            .font(.system(size: 14, weight: .semibold))
+                    } label: {
+                        HStack(spacing: 4) {
+                            if !purchases.isPremium {
+                                Image(systemName: "crown.fill")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(Color(hex: "FFD700"))
+                            }
+                            Image(systemName: "plus")
+                                .font(.system(size: 14, weight: .semibold))
+                        }
                     }
+                    .accessibilityLabel(settings.localized("import_external_model"))
                 }
-                .accessibilityLabel(settings.localized("import_external_model"))
+                .apolloToolbarControl()
             }
         }
         .apolloSheet(isPresented: $showImportSheet) {
@@ -1303,19 +1309,25 @@ struct EditPromptTemplateSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .apolloNavigationBackground()
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button(settings.localized("cancel")) {
-                        dismiss()
+                ToolbarItem(placement: .apolloSheetLeading) {
+                    Group {
+                        Button(settings.localized("cancel")) {
+                            dismiss()
+                        }
+                        .foregroundColor(.white)
                     }
-                    .foregroundColor(.white)
+                    .apolloToolbarControl()
                 }
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(settings.localized("save")) {
-                        vm.updatePromptTemplate(for: model.id, promptTemplate: promptTemplate)
-                        dismiss()
+                ToolbarItem(placement: .apolloSheetTrailing) {
+                    Group {
+                        Button(settings.localized("save")) {
+                            vm.updatePromptTemplate(for: model.id, promptTemplate: promptTemplate)
+                            dismiss()
+                        }
+                        .bold()
+                        .foregroundColor(.white)
                     }
-                    .bold()
-                    .foregroundColor(.white)
+                    .apolloToolbarControl()
                 }
             }
         }
@@ -1604,19 +1616,25 @@ struct ImportExternalModelSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .apolloNavigationBackground()
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button(settings.localized("cancel")) { dismiss() }
-                        .foregroundColor(.white)
-                }
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    if isImporting {
-                        ProgressView().tint(.white)
-                    } else {
-                        Button(settings.localized("import_model")) { performImport() }
-                            .bold()
-                            .foregroundColor(canImport ? .white : .white.opacity(0.35))
-                            .disabled(!canImport)
+                ToolbarItem(placement: .apolloSheetLeading) {
+                    Group {
+                        Button(settings.localized("cancel")) { dismiss() }
+                            .foregroundColor(.white)
                     }
+                    .apolloToolbarControl()
+                }
+                ToolbarItem(placement: .apolloSheetTrailing) {
+                    Group {
+                        if isImporting {
+                            ProgressView().tint(.white)
+                        } else {
+                            Button(settings.localized("import_model")) { performImport() }
+                                .bold()
+                                .foregroundColor(canImport ? .white : .white.opacity(0.35))
+                                .disabled(!canImport)
+                        }
+                    }
+                    .apolloToolbarControl()
                 }
             }
         }
@@ -1923,7 +1941,7 @@ struct ImportExternalModelSheet: View {
     }
 }
 
-private struct HuggingFaceImportFile: Identifiable {
+struct HuggingFaceImportFile: Identifiable {
     let repo: String
     let path: String
     let size: Int64
@@ -2005,7 +2023,7 @@ private struct HuggingFaceSearchPanel: View {
     }
 }
 
-private enum HuggingFaceImportClient {
+enum HuggingFaceImportClient {
     private struct Repo: Decodable { let id: String }
     private struct TreeEntry: Decodable { let path: String; let size: Int64?; let type: String? }
     static func search(query: String, format: ModelFormat, token: String?) async throws -> [HuggingFaceImportFile] {
@@ -2034,7 +2052,7 @@ private enum HuggingFaceImportClient {
     }
 }
 
-private enum ModelImportKind: String, CaseIterable, Identifiable {
+enum ModelImportKind: String, CaseIterable, Identifiable {
     case gguf, liteRT, image, video
     var id: String { rawValue }
     var title: String {
@@ -2048,7 +2066,7 @@ private enum ModelImportKind: String, CaseIterable, Identifiable {
     var isMedia: Bool { self == .image || self == .video }
 }
 
-private struct DrawThingsCatalogEntry: Identifiable {
+struct DrawThingsCatalogEntry: Identifiable {
     let specification: ModelZoo.Specification
     var id: String { specification.file }
     var name: String { specification.name }
@@ -2064,7 +2082,7 @@ private struct DrawThingsCatalogEntry: Identifiable {
 }
 
 @MainActor
-private enum DrawThingsCatalogClient {
+enum DrawThingsCatalogClient {
     private static func decode(_ data: Data) throws -> [DrawThingsCatalogEntry] {
         let decoder = JSONDecoder()
         decoder.keyDecodingStrategy = .convertFromSnakeCase

@@ -326,8 +326,10 @@ final class AudioMomentPlayer: NSObject, ObservableObject, @preconcurrency AVAud
             playingId = item.id
             durationMs = Int(p.duration * 1000)
         }
+        #if os(iOS)
         try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
         try? AVAudioSession.sharedInstance().setActive(true)
+        #endif
         player?.currentTime = Double(fromMs) / 1000
         positionMs = fromMs
         player?.play()
@@ -436,11 +438,17 @@ struct AudioSearchScreen: View {
         .apolloNavigationBackground()
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
-                Button { onNavigateBack() } label: { Image(systemName: "arrow.left") }
+                Group {
+                    Button { onNavigateBack() } label: { Image(systemName: "arrow.left") }
+                }
+                .apolloToolbarControl()
             }
             if !downloadedModels.isEmpty {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button { showSettings = true } label: { Image(systemName: "slider.horizontal.3") }
+                    Group {
+                        Button { showSettings = true } label: { Image(systemName: "slider.horizontal.3") }
+                    }
+                    .apolloToolbarControl()
                 }
             }
         }
@@ -588,7 +596,7 @@ private struct AudioSearchCard: View {
 }
 
 /// Waveform-style strip: one bar per analyzed moment, height = match strength. Tap or drag to seek.
-private struct MomentStrip: View {
+struct MomentStrip: View {
     let timeline: [AudioSearchModel.Moment]
     let totalMs: Int
     let progress: Double

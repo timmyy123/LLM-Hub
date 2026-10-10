@@ -10,6 +10,8 @@ import UniformTypeIdentifiers
 
 #if canImport(UIKit)
   import UIKit
+#elseif canImport(AppKit)
+  import AppKit
 #endif
 #if canImport(CoreML)
   import CoreML
@@ -675,6 +677,132 @@ public enum ImageConverter {
                 p.deallocate()
               })!, decode: nil, shouldInterpolate: false,
             intent: CGColorRenderingIntent.defaultIntent)!)
+      }
+    }
+  #elseif canImport(AppKit)
+
+    public static func image(
+      from tensor: Tensor<FloatType>, scaleFactor: CGFloat, binaryMask: Tensor<UInt8>? = nil,
+      only1: Bool = false, overlayRects: [CGRect] = []
+    ) -> NSImage {
+      let imageHeight = tensor.shape[1]
+      let imageWidth = tensor.shape[2]
+      let bytes = UnsafeMutablePointer<UInt8>.allocate(capacity: imageWidth * imageHeight * 4)
+      tensor.withUnsafeBytes {
+        guard let fp16 = $0.baseAddress?.assumingMemoryBound(to: FloatType.self) else { return }
+        for i in 0..<imageHeight * imageWidth {
+          let r = (fp16[i * 3] + 1) * 127.5
+          let g = (fp16[i * 3 + 1] + 1) * 127.5
+          let b = (fp16[i * 3 + 2] + 1) * 127.5
+          bytes[i * 4] = UInt8(min(max(Int(r.isFinite ? r : 0), 0), 255))
+          bytes[i * 4 + 1] = UInt8(min(max(Int(g.isFinite ? g : 0), 0), 255))
+          bytes[i * 4 + 2] = UInt8(min(max(Int(b.isFinite ? b : 0), 0), 255))
+          bytes[i * 4 + 3] = 255
+        }
+      }
+      let invScale = 1 / scaleFactor
+      if let binaryMask = binaryMask {
+        let maskHeight = binaryMask.shape[0]
+        let maskWidth = binaryMask.shape[1]
+        if only1 {
+          let overlayIntegralRects: [(minX: Int, minY: Int, maxX: Int, maxY: Int)] =
+            overlayRects.map {
+              (
+                minX: Int($0.minX.rounded(.up)), minY: Int($0.minY.rounded(.up)),
+                maxX: Int(($0.maxX - 1).rounded(.down)), maxY: Int(($0.maxY - 1).rounded(.down))
+              )
+            }
+          binaryMask.withUnsafeBytes {
+            guard let u8 = $0.baseAddress?.assumingMemoryBound(to: UInt8.self) else { return }
+            for i in 0..<imageHeight {
+              let ii = max(
+                0, min(maskHeight - 1, Int(((CGFloat(i) + 0.5) * invScale - 0.5).rounded())))
+              for j in 0..<imageWidth {
+                let ij = max(
+                  0, min(maskWidth - 1, Int(((CGFloat(j) + 0.5) * invScale - 0.5).rounded())))
+                let byteMask = u8[ii * maskWidth + ij]
+                let flag = overlayIntegralRects.contains {
+                  ii >= $0.minY && ii <= $0.maxY && ij >= $0.minX && ij <= $0.maxX
+                }
+                // We make it transparent if it is 1 or it is overlapped by the overlay rects.
+                if (byteMask & 7) == 1 || (flag && (byteMask & 7) != 0 && (byteMask & 7) != 3) {
+                  let alpha = byteMask & 0xf8
+                  if alpha > 0 {
+                    bytes[i * imageWidth * 4 + j * 4] = UInt8(
+                      min((Int32(bytes[i * imageWidth * 4 + j * 4]) * Int32(alpha)) >> 8, 255))
+                    bytes[i * imageWidth * 4 + j * 4 + 1] = UInt8(
+                      min((Int32(bytes[i * imageWidth * 4 + j * 4 + 1]) * Int32(alpha)) >> 8, 255))
+                    bytes[i * imageWidth * 4 + j * 4 + 2] = UInt8(
+                      min((Int32(bytes[i * imageWidth * 4 + j * 4 + 2]) * Int32(alpha)) >> 8, 255))
+                    bytes[i * imageWidth * 4 + j * 4 + 3] = alpha
+                  } else {
+                    bytes[i * imageWidth * 4 + j * 4] = 0
+                    bytes[i * imageWidth * 4 + j * 4 + 1] = 0
+                    bytes[i * imageWidth * 4 + j * 4 + 2] = 0
+                    bytes[i * imageWidth * 4 + j * 4 + 3] = 0
+                  }
+                }
+              }
+            }
+          }
+        } else {
+          binaryMask.withUnsafeBytes {
+            guard let u8 = $0.baseAddress?.assumingMemoryBound(to: UInt8.self) else { return }
+            for i in 0..<imageHeight {
+              let ii = max(
+                0, min(maskHeight - 1, Int(((CGFloat(i) + 0.5) * invScale - 0.5).rounded())))
+              for j in 0..<imageWidth {
+                let ij = max(
+                  0, min(maskWidth - 1, Int(((CGFloat(j) + 0.5) * invScale - 0.5).rounded())))
+                let byteMask = u8[ii * maskWidth + ij]
+                if (byteMask & 7) != 0 && (byteMask & 7) != 3 {
+                  let alpha = byteMask & 0xf8
+                  if alpha > 0 {
+                    bytes[i * imageWidth * 4 + j * 4] = UInt8(
+                      min((Int32(bytes[i * imageWidth * 4 + j * 4]) * Int32(alpha)) >> 8, 255))
+                    bytes[i * imageWidth * 4 + j * 4 + 1] = UInt8(
+                      min((Int32(bytes[i * imageWidth * 4 + j * 4 + 1]) * Int32(alpha)) >> 8, 255))
+                    bytes[i * imageWidth * 4 + j * 4 + 2] = UInt8(
+                      min((Int32(bytes[i * imageWidth * 4 + j * 4 + 2]) * Int32(alpha)) >> 8, 255))
+                    bytes[i * imageWidth * 4 + j * 4 + 3] = alpha
+                  } else {
+                    bytes[i * imageWidth * 4 + j * 4] = 0
+                    bytes[i * imageWidth * 4 + j * 4 + 1] = 0
+                    bytes[i * imageWidth * 4 + j * 4 + 2] = 0
+                    bytes[i * imageWidth * 4 + j * 4 + 3] = 0
+                  }
+                }
+              }
+            }
+          }
+        }
+        return NSImage(
+          cgImage: CGImage(
+            width: imageWidth, height: imageHeight, bitsPerComponent: 8, bitsPerPixel: 32,
+            bytesPerRow: 4 * imageWidth, space: CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGBitmapInfo(
+              rawValue: CGBitmapInfo.byteOrder32Big.rawValue
+                | CGImageAlphaInfo.premultipliedLast.rawValue),
+            provider: CGDataProvider(
+              dataInfo: nil, data: bytes, size: imageWidth * imageHeight * 4,
+              releaseData: { _, p, _ in
+                p.deallocate()
+              })!, decode: nil, shouldInterpolate: false,
+            intent: CGColorRenderingIntent.defaultIntent)!, size: NSSize(width: imageWidth, height: imageHeight))
+      } else {
+        return NSImage(
+          cgImage: CGImage(
+            width: imageWidth, height: imageHeight, bitsPerComponent: 8, bitsPerPixel: 32,
+            bytesPerRow: 4 * imageWidth, space: CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGBitmapInfo(
+              rawValue: CGBitmapInfo.byteOrder32Big.rawValue
+                | CGImageAlphaInfo.noneSkipLast.rawValue),
+            provider: CGDataProvider(
+              dataInfo: nil, data: bytes, size: imageWidth * imageHeight * 4,
+              releaseData: { _, p, _ in
+                p.deallocate()
+              })!, decode: nil, shouldInterpolate: false,
+            intent: CGColorRenderingIntent.defaultIntent)!, size: NSSize(width: imageWidth, height: imageHeight))
       }
     }
   #endif

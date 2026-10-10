@@ -4,6 +4,8 @@ import MediaGenerationKit
 import ModelZoo
 #if canImport(UIKit)
 import UIKit
+#else
+import AppKit
 #endif
 
 // MARK: - SDError (always compiled)

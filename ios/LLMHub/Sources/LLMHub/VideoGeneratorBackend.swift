@@ -5,6 +5,8 @@ import MediaGenerationKit
 import ModelZoo
 #if canImport(UIKit)
 import UIKit
+#else
+import AppKit
 #endif
 
 enum VideoError: LocalizedError {
@@ -290,12 +292,18 @@ final class VideoGeneratorBackend: ObservableObject {
             bitmapInfo: bitmapInfo
         ) else { return nil }
 
+        #if os(macOS)
+        // CoreGraphics and AppKit share a bottom-left origin, so draw the CGImage directly.
+        guard let cgImage = image.cgImage else { return nil }
+        context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
+        #else
         // UIKit coordinate system is flipped vs CoreGraphics — fix orientation
         context.translateBy(x: 0, y: CGFloat(height))
         context.scaleBy(x: 1, y: -1)
         UIGraphicsPushContext(context)
         image.draw(in: CGRect(x: 0, y: 0, width: width, height: height))
         UIGraphicsPopContext()
+        #endif
 
         return buffer
     }

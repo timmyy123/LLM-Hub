@@ -13,6 +13,8 @@ import UniformTypeIdentifiers
 
 #if canImport(UIKit)
   import UIKit
+#elseif canImport(AppKit)
+  import AppKit
 #endif
 
 /// A typed input passed to ``MediaGenerationPipeline/generate(prompt:negativePrompt:inputs:stateHandler:)``.
@@ -1177,6 +1179,32 @@ extension CIImage {
         return
       }
       self.init(cgImage: cgImage)
+    }
+  }
+#elseif canImport(AppKit)
+  extension NSImage: MediaGenerationImageInput {}
+
+  extension NSImage: MediaGenerationImageDataSource {
+    func mediaGenerationEncodedData() throws -> Data {
+      var rect = CGRect(origin: .zero, size: size)
+      guard let cgImage = cgImage(forProposedRect: &rect, context: nil, hints: nil),
+        let data = NSBitmapImageRep(cgImage: cgImage).representation(using: .png, properties: [:])
+      else {
+        throw MediaGenerationKitError.generationFailed("failed to encode NSImage input as PNG")
+      }
+      return data
+    }
+  }
+
+  extension NSImage {
+    public convenience init(_ result: MediaGenerationPipeline.Result) {
+      guard let imageData = try? MediaGenerationImageCodec.encode(result.tensor, type: UTType.png),
+        let source = CGImageSourceCreateWithData(imageData as CFData, nil),
+        let cgImage = CGImageSourceCreateImageAtIndex(source, 0, nil)
+      else {
+        preconditionFailure("MediaGenerationPipeline.Result does not contain decodable image data")
+      }
+      self.init(cgImage: cgImage, size: NSSize(width: cgImage.width, height: cgImage.height))
     }
   }
 #endif

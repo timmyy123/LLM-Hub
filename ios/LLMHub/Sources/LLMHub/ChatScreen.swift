@@ -3,7 +3,11 @@ import Foundation
 import PhotosUI
 import Speech
 import SwiftUI
+#if canImport(UIKit)
 import UIKit
+#else
+import AppKit
+#endif
 import UniformTypeIdentifiers
 import WebKit
 #if canImport(FoundationModels)
@@ -373,7 +377,7 @@ actor WebSearchService {
 
 // MARK: -
 
-private func persistentAttachmentDirectoryURL() -> URL {
+func persistentAttachmentDirectoryURL() -> URL {
     let fileManager = FileManager.default
     let base = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
         ?? fileManager.urls(for: .documentDirectory, in: .userDomainMask).first
@@ -383,7 +387,7 @@ private func persistentAttachmentDirectoryURL() -> URL {
     return dir
 }
 
-private func resolveStoredAttachmentURL(_ storedPath: String?) -> URL? {
+func resolveStoredAttachmentURL(_ storedPath: String?) -> URL? {
     guard var raw = storedPath?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty else {
         return nil
     }
@@ -426,9 +430,9 @@ private func resolveStoredAttachmentURL(_ storedPath: String?) -> URL? {
 private let chatAppleFoundationModelId = "apple.foundation.system"
 
 @MainActor
-private func chatAppleFoundationModelIfAvailable() -> AIModel? {
+func chatAppleFoundationModelIfAvailable() -> AIModel? {
     #if canImport(FoundationModels)
-    if #available(iOS 26.0, *) {
+    if #available(iOS 26.0, macOS 26.0, *) {
         let model = SystemLanguageModel.default
         guard model.isAvailable else { return nil }
 
@@ -456,7 +460,7 @@ private func chatAppleFoundationModelIfAvailable() -> AIModel? {
 }
 
 @MainActor
-private func chatModel(named modelName: String) -> AIModel? {
+func chatModel(named modelName: String) -> AIModel? {
     if let model = ModelData.allModels().first(where: {
         $0.name == modelName && $0.isLanguageModel && !$0.isDependencyOnly
     }) {
@@ -470,7 +474,7 @@ private func chatModel(named modelName: String) -> AIModel? {
 
 // MARK: - Chat Mic Transcriber
 // Lightweight transcriber for injecting speech into the input field.
-@available(iOS 17.0, *)
+@available(iOS 17.0, macOS 14.0, *)
 @MainActor
 final class ChatMicTranscriber: NSObject, ObservableObject {
     @Published var liveText: String = ""
@@ -2742,21 +2746,13 @@ struct RenderMessageSegments: View {
     }
 }
 
-private struct MathView: UIViewRepresentable {
+private struct MathView {
     let equation: String
     let isBlock: Bool
 
-    func makeUIView(context: Context) -> WKWebView {
-        let webView = WKWebView()
-        webView.backgroundColor = .clear
-        webView.isOpaque = false
-        webView.scrollView.isScrollEnabled = false
-        return webView
-    }
-
-    func updateUIView(_ uiView: WKWebView, context: Context) {
+    var html: String {
         let isDark = true // App is mainly dark
-        let html = """
+        return """
         <!DOCTYPE html>
         <html>
         <head>
@@ -2792,9 +2788,38 @@ private struct MathView: UIViewRepresentable {
         </body>
         </html>
         """
+    }
+}
+
+#if os(macOS)
+extension MathView: NSViewRepresentable {
+    func makeNSView(context: Context) -> WKWebView {
+        let webView = WKWebView()
+        // Transparent background so equations sit on the chat bubble.
+        webView.setValue(false, forKey: "drawsBackground")
+        webView.underPageBackgroundColor = .clear
+        return webView
+    }
+
+    func updateNSView(_ nsView: WKWebView, context: Context) {
+        nsView.loadHTMLString(html, baseURL: nil)
+    }
+}
+#else
+extension MathView: UIViewRepresentable {
+    func makeUIView(context: Context) -> WKWebView {
+        let webView = WKWebView()
+        webView.backgroundColor = .clear
+        webView.isOpaque = false
+        webView.scrollView.isScrollEnabled = false
+        return webView
+    }
+
+    func updateUIView(_ uiView: WKWebView, context: Context) {
         uiView.loadHTMLString(html, baseURL: nil)
     }
 }
+#endif
 
 struct MarkdownTableView: View {
     let rawTable: String
@@ -2866,44 +2891,8 @@ struct MarkdownMessageText: View {
 /// A `UITextView`-backed view that renders markdown as `NSAttributedString`.
 /// This gives native long-press-to-select with highlight handles and copy menu,
 /// exactly like ChatGPT / Gemini iOS apps.
-private struct SelectableMarkdownText: UIViewRepresentable {
+private struct SelectableMarkdownText {
     let text: String
-
-    func makeUIView(context: Context) -> UITextView {
-        let tv = UITextView()
-        tv.isEditable = false
-        tv.isSelectable = true
-        tv.isScrollEnabled = false
-        tv.backgroundColor = .clear
-        tv.textContainerInset = .zero
-        tv.textContainer.lineFragmentPadding = 0
-        // Do NOT use dataDetectorTypes — it re-runs detection on every
-        // attributedText update during streaming, causing links to blink.
-        tv.dataDetectorTypes = []
-        tv.linkTextAttributes = [
-            .foregroundColor: UIColor(red: 0.54, green: 0.71, blue: 0.97, alpha: 1.0) // #8ab4f8
-        ]
-        // Prevent the text view from absorbing scroll events
-        tv.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
-        tv.setContentHuggingPriority(.defaultHigh, for: .vertical)
-        return tv
-    }
-
-    func updateUIView(_ uiView: UITextView, context: Context) {
-        let attributed = markdownToAttributedString(text)
-        // Only update if content changed to avoid resetting selection
-        if uiView.attributedText.string != attributed.string {
-            uiView.attributedText = attributed
-        }
-        uiView.invalidateIntrinsicContentSize()
-    }
-
-    @MainActor
-    func sizeThatFits(_ proposal: ProposedViewSize, uiView: UITextView, context: Context) -> CGSize? {
-        let width = proposal.width ?? UIScreen.main.bounds.width
-        let size = uiView.sizeThatFits(CGSize(width: width, height: .greatestFiniteMagnitude))
-        return CGSize(width: width, height: size.height)
-    }
 
     // MARK: - Markdown → NSAttributedString
 
@@ -3105,6 +3094,105 @@ private struct SelectableMarkdownText: UIViewRepresentable {
     }
 }
 
+#if os(macOS)
+/// `NSTextView`-backed counterpart: native click-drag selection, ⌘C, and the
+/// standard contextual menu, rendering the same attributed markdown.
+extension SelectableMarkdownText: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSTextView {
+        // Use TextKit 1 from the start: sizing below reads `layoutManager`, and
+        // touching it on a TextKit 2 view swaps the text system after it has
+        // drawn, which leaves streamed responses blank.
+        let tv = NSTextView(usingTextLayoutManager: false)
+        tv.isEditable = false
+        tv.isSelectable = true
+        tv.drawsBackground = false
+        tv.isRichText = true
+        tv.textContainerInset = .zero
+        tv.textContainer?.lineFragmentPadding = 0
+        tv.textContainer?.widthTracksTextView = true
+        tv.isVerticallyResizable = false
+        tv.isHorizontallyResizable = false
+        tv.isAutomaticLinkDetectionEnabled = false
+        tv.linkTextAttributes = [
+            .foregroundColor: NSColor(red: 0.54, green: 0.71, blue: 0.97, alpha: 1.0), // #8ab4f8
+            .cursor: NSCursor.pointingHand
+        ]
+        tv.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        tv.setContentHuggingPriority(.defaultHigh, for: .vertical)
+        return tv
+    }
+
+    func updateNSView(_ nsView: NSTextView, context: Context) {
+        let attributed = markdownToAttributedString(text)
+        // Only update if content changed to avoid resetting selection
+        if nsView.textStorage?.string != attributed.string {
+            nsView.textStorage?.setAttributedString(attributed)
+        }
+        nsView.invalidateIntrinsicContentSize()
+    }
+
+    @MainActor
+    func sizeThatFits(_ proposal: ProposedViewSize, nsView: NSTextView, context: Context) -> CGSize? {
+        guard let storage = nsView.textStorage else { return nil }
+        // Only size against a concrete width. Ideal-size queries (no width)
+        // get no preference: reporting a guessed width made the layout flip
+        // between widths, and reporting the natural width let long lines
+        // (e.g. URLs) widen the whole window content past the window.
+        guard let width = proposal.width, width.isFinite, width > 0 else { return nil }
+        // Measure with a separate TextKit stack configured like the view, so
+        // the measured height always matches what gets drawn at this width
+        // (resizing the view's own container fights `widthTracksTextView`).
+        let measureStorage = NSTextStorage(attributedString: storage)
+        let layoutManager = NSLayoutManager()
+        let container = NSTextContainer(size: CGSize(width: width, height: .greatestFiniteMagnitude))
+        container.lineFragmentPadding = 0
+        layoutManager.addTextContainer(container)
+        measureStorage.addLayoutManager(layoutManager)
+        layoutManager.ensureLayout(for: container)
+        let used = layoutManager.usedRect(for: container)
+        return CGSize(width: width, height: ceil(used.height) + 1)
+    }
+}
+#else
+extension SelectableMarkdownText: UIViewRepresentable {
+    func makeUIView(context: Context) -> UITextView {
+        let tv = UITextView()
+        tv.isEditable = false
+        tv.isSelectable = true
+        tv.isScrollEnabled = false
+        tv.backgroundColor = .clear
+        tv.textContainerInset = .zero
+        tv.textContainer.lineFragmentPadding = 0
+        // Do NOT use dataDetectorTypes — it re-runs detection on every
+        // attributedText update during streaming, causing links to blink.
+        tv.dataDetectorTypes = []
+        tv.linkTextAttributes = [
+            .foregroundColor: UIColor(red: 0.54, green: 0.71, blue: 0.97, alpha: 1.0) // #8ab4f8
+        ]
+        // Prevent the text view from absorbing scroll events
+        tv.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        tv.setContentHuggingPriority(.defaultHigh, for: .vertical)
+        return tv
+    }
+
+    func updateUIView(_ uiView: UITextView, context: Context) {
+        let attributed = markdownToAttributedString(text)
+        // Only update if content changed to avoid resetting selection
+        if uiView.attributedText.string != attributed.string {
+            uiView.attributedText = attributed
+        }
+        uiView.invalidateIntrinsicContentSize()
+    }
+
+    @MainActor
+    func sizeThatFits(_ proposal: ProposedViewSize, uiView: UITextView, context: Context) -> CGSize? {
+        let width = proposal.width ?? UIScreen.main.bounds.width
+        let size = uiView.sizeThatFits(CGSize(width: width, height: .greatestFiniteMagnitude))
+        return CGSize(width: width, height: size.height)
+    }
+}
+#endif
+
 // MARK: - Drawer Panel
 struct ChatDrawerPanel: View {
     @EnvironmentObject var settings: AppSettings
@@ -3188,19 +3276,30 @@ struct ChatDrawerPanel: View {
             .navigationBarTitleDisplayMode(.inline)
             .apolloNavigationBackground()
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    // Back arrow to Home - same as Android drawer's ArrowBack
-                    Button {
-                        onClose()
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-                            onNavigateBack()
+                ToolbarItem(placement: .apolloSheetLeading) {
+                    Group {
+                        // Back arrow to Home - same as Android drawer's ArrowBack
+                        Button {
+                            onClose()
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                                onNavigateBack()
+                            }
+                        } label: {
+                            Image(systemName: "arrow.left")
                         }
-                    } label: {
-                        Image(systemName: "arrow.left")
+                        #if os(macOS)
+                        // Standard "Back" shortcut; also keeps Esc for closing the sheet
+                        // instead of the implicit cancel shortcut navigating Home.
+                        .keyboardShortcut("[", modifiers: .command)
+                        #endif
                     }
+                    .apolloToolbarControl()
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(settings.localized("done"), action: onClose)
+                    Group {
+                        Button(settings.localized("done"), action: onClose)
+                    }
+                    .apolloToolbarControl()
                 }
             }
         }
@@ -3597,44 +3696,53 @@ struct ChatScreen: View {
         .apolloNavigationBackground()
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
-                Button {
-                    showDrawer = true
-                } label: {
-                    Image(systemName: "line.3.horizontal")
+                Group {
+                    Button {
+                        showDrawer = true
+                    } label: {
+                        Image(systemName: "line.3.horizontal")
+                    }
                 }
+                .apolloToolbarControl()
             }
             ToolbarItem(placement: .principal) {
-                Button {
-                    showSettings = true
-                } label: {
-                    HStack(spacing: 4) {
-                        Text(vm.selectedModelName)
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundColor(.white)
-                            .lineLimit(1)
-                            .truncationMode(.tail)
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundColor(.white.opacity(0.78))
-                            .fixedSize()
+                Group {
+                    Button {
+                        showSettings = true
+                    } label: {
+                        HStack(spacing: 4) {
+                            Text(vm.selectedModelName)
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundColor(.white)
+                                .lineLimit(1)
+                                .truncationMode(.tail)
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(.white.opacity(0.78))
+                                .fixedSize()
+                        }
+                        .frame(maxWidth: UIScreen.main.bounds.width * 0.55)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(vm.isBackendLoading ? Color.orange.opacity(0.26) : Color.white.opacity(0.12))
+                        .clipShape(Capsule())
+                        .overlay(
+                            Capsule()
+                                .stroke(Color.white.opacity(0.18), lineWidth: 1)
+                        )
                     }
-                    .frame(maxWidth: UIScreen.main.bounds.width * 0.55)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(vm.isBackendLoading ? Color.orange.opacity(0.26) : Color.white.opacity(0.12))
-                    .clipShape(Capsule())
-                    .overlay(
-                        Capsule()
-                            .stroke(Color.white.opacity(0.18), lineWidth: 1)
-                    )
                 }
             }
+            .apolloHideSharedToolbarBackground()
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button {
-                    vm.newChat()
-                } label: {
-                    Image(systemName: "square.and.pencil")
+                Group {
+                    Button {
+                        vm.newChat()
+                    } label: {
+                        Image(systemName: "square.and.pencil")
+                    }
                 }
+                .apolloToolbarControl()
             }
         }
         .apolloSheet(isPresented: $showSettings) {
@@ -3991,7 +4099,7 @@ struct ChatScreen: View {
     }
 }
 
-private struct FullScreenImagePreview: View {
+struct FullScreenImagePreview: View {
     let path: String?
     let onDismiss: () -> Void
 
@@ -4050,6 +4158,94 @@ struct AtBottomPreferenceKey: PreferenceKey {
 // Placed *inside* scroll content so it is a real UIScrollView descendant.
 // Attaches a target to panGestureRecognizer — no delegate replacement needed.
 // scrollToBottom() stops any active deceleration and jumps to bottom via UIScrollView directly.
+#if os(macOS)
+/// AppKit counterpart: finds the hosting NSScrollView and reports the start of a
+/// user scroll (trackpad live scroll or mouse wheel) so auto-follow can pause.
+private struct ScrollDragDetector: NSViewRepresentable {
+    let onDragBegan: @MainActor () -> Void
+    let onAttached: @MainActor (Coordinator) -> Void
+
+    func makeCoordinator() -> Coordinator { Coordinator(onDragBegan: onDragBegan) }
+
+    func makeNSView(context: Context) -> NSView {
+        NSView()
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        let coordinator = context.coordinator
+        let onAttached = onAttached
+        Task { @MainActor in
+            guard let scrollView = nsView.enclosingScrollView else { return }
+            let wasAttached = coordinator.isAttached
+            coordinator.attach(to: scrollView)
+            if !wasAttached { onAttached(coordinator) }
+        }
+    }
+
+    static func dismantleNSView(_ nsView: NSView, coordinator: Coordinator) {
+        coordinator.detach()
+    }
+
+    @MainActor
+    class Coordinator: NSObject {
+        let onDragBegan: @MainActor () -> Void
+        private weak var attachedScrollView: NSScrollView?
+        private var liveScrollObserver: NSObjectProtocol?
+        private var wheelMonitor: Any?
+
+        init(onDragBegan: @escaping @MainActor () -> Void) {
+            self.onDragBegan = onDragBegan
+        }
+
+        var isAttached: Bool { attachedScrollView != nil }
+
+        func attach(to scrollView: NSScrollView) {
+            guard scrollView !== attachedScrollView else { return }
+            detach()
+            attachedScrollView = scrollView
+            liveScrollObserver = NotificationCenter.default.addObserver(
+                forName: NSScrollView.willStartLiveScrollNotification,
+                object: scrollView,
+                queue: .main
+            ) { [weak self] _ in
+                MainActor.assumeIsolated { self?.onDragBegan() }
+            }
+            // Discrete mouse wheels don't start a live scroll; watch wheel events too.
+            wheelMonitor = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) { [weak self] event in
+                MainActor.assumeIsolated {
+                    guard let self, let sv = self.attachedScrollView, event.window === sv.window else { return }
+                    let point = sv.convert(event.locationInWindow, from: nil)
+                    if sv.bounds.contains(point), event.phase != .changed, event.momentumPhase == [] {
+                        self.onDragBegan()
+                    }
+                }
+                return event
+            }
+        }
+
+        func detach() {
+            if let liveScrollObserver { NotificationCenter.default.removeObserver(liveScrollObserver) }
+            if let wheelMonitor { NSEvent.removeMonitor(wheelMonitor) }
+            liveScrollObserver = nil
+            wheelMonitor = nil
+            attachedScrollView = nil
+        }
+
+        func scrollToBottom() {
+            guard let scrollView = attachedScrollView, let documentView = scrollView.documentView else { return }
+            let clipView = scrollView.contentView
+            let maxOffset = documentView.frame.height - clipView.bounds.height
+            guard maxOffset > 0 else { return }
+            let y = documentView.isFlipped ? maxOffset : 0
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = 0.25
+                clipView.animator().setBoundsOrigin(NSPoint(x: clipView.bounds.origin.x, y: y))
+            }
+            scrollView.reflectScrolledClipView(clipView)
+        }
+    }
+}
+#else
 private struct ScrollDragDetector: UIViewRepresentable {
     let onDragBegan: @MainActor () -> Void
     let onAttached: @MainActor (Coordinator) -> Void
@@ -4116,3 +4312,4 @@ private extension UIView {
         return superview?.nearestScrollView()
     }
 }
+#endif

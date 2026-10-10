@@ -95,7 +95,7 @@
       "Bash(xcrun ld *)",
       "Bash(git -C /Users/timmybrown/Documents/GitHub/LLM-Hub show 32629440 -- ios/runanywhere-sdks-latest/sdk/runanywhere-swift/Sources/RunAnywhere/Foundation/Bridge/Extensions/CppBridge+NativeProtoABI.swift)",
       "Bash(nm /Users/timmybrown/Documents/GitHub/LLM-Hub/ios/runanywhere-sdks-latest/sdk/runanywhere-swift/Binaries/RACommons.xcframework/ios-arm64/librac_commons.a)",
-      "Bash(# Check what the app's DerivedData has — did it use a resolved package cache or local sources? *)",
+      "Bash(# Check what the app's DerivedData has \u2014 did it use a resolved package cache or local sources? *)",
       "Read(//Users/timmybrown/Library/Developer/Xcode/DerivedData/**)",
       "Bash(strings \"/Users/timmybrown/Library/Developer/Xcode/Archives/2026-07-15/LLMHub 15-7-2026, 3.43 pm.xcarchive/Products/Applications/LLMHub.app/LLMHub\" 2>/dev/null | grep -i \"native\\\\|proto ABI\\\\|RACommons\" | head -20)",
       "Read(//Users/timmybrown/Library/Developer/Xcode/Archives/2026-07-15/LLMHub 15-7-2026, 3.43 pm.xcarchive/Products/Applications/LLMHub.app/**)",
@@ -105,7 +105,19 @@
       "Bash(python3 -c \"import json,sys; [print\\(r['id']\\) for r in json.load\\(sys.stdin\\)]\")",
       "Bash(curl -s \"https://huggingface.co/api/models?search=llama&filter=gguf&limit=3&offset=3\")",
       "Bash(curl -s \"https://huggingface.co/api/models?search=llama&filter=gguf&limit=50\")",
-      "Bash(python3 -c \"import json,sys; repos=json.load\\(sys.stdin\\); print\\(len\\(repos\\)\\); [print\\(r['id']\\) for r in repos[:5]]\")"
+      "Bash(python3 -c \"import json,sys; repos=json.load\\(sys.stdin\\); print\\(len\\(repos\\)\\); [print\\(r['id']\\) for r in repos[:5]]\")",
+      "Bash",
+      "Edit",
+      "Write",
+      "Read",
+      "Glob",
+      "Grep",
+      "NotebookEdit",
+      "WebFetch",
+      "WebSearch",
+      "Skill",
+      "Agent",
+      "mcp__xcode-tools"
     ],
     "additionalDirectories": [
       "/private/tmp"

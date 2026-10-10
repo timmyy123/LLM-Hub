@@ -234,8 +234,10 @@ final class OnDeviceTtsManager: NSObject, ObservableObject, AVSpeechSynthesizerD
         let fallback = fallbackLanguage
         Task { @MainActor [weak self, cleaned, fallback] in
             guard let self = self else { return }
+            #if os(iOS)
             try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .spokenAudio, options: .duckOthers)
             try? AVAudioSession.sharedInstance().setActive(true)
+            #endif
             let utterance = AVSpeechUtterance(string: cleaned)
             utterance.voice = self.bestVoice(for: cleaned, fallbackLanguage: fallback)
             utterance.rate = AVSpeechUtteranceDefaultSpeechRate
@@ -253,8 +255,10 @@ final class OnDeviceTtsManager: NSObject, ObservableObject, AVSpeechSynthesizerD
 
         // Activate audio session on first token
         if !isSpeaking && streamingBuffer.isEmpty {
+            #if os(iOS)
             try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .spokenAudio, options: .duckOthers)
             try? AVAudioSession.sharedInstance().setActive(true)
+            #endif
             currentKey = key
             isSpeaking = true
             activeUtterancesCount = 0

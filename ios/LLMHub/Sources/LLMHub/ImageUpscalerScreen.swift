@@ -57,16 +57,22 @@ struct ImageUpscalerScreen: View {
         .apolloNavigationBackground()
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
-                Button {
-                    upscaleTask?.cancel()
-                    onNavigateBack()
-                } label: { Image(systemName: "arrow.left") }
+                Group {
+                    Button {
+                        upscaleTask?.cancel()
+                        onNavigateBack()
+                    } label: { Image(systemName: "arrow.left") }
+                }
+                .apolloToolbarControl()
             }
             if !downloadedModels.isEmpty {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button { showSettings = true } label: {
-                        Image(systemName: "slider.horizontal.3")
+                    Group {
+                        Button { showSettings = true } label: {
+                            Image(systemName: "slider.horizontal.3")
+                        }
                     }
+                    .apolloToolbarControl()
                 }
             }
         }
@@ -415,7 +421,7 @@ struct ImageUpscalerScreen: View {
 
 // MARK: - Zoomable Image Card
 
-private struct ZoomableImageCard: View {
+struct ZoomableImageCard: View {
     let image: UIImage?
     let label: String
     let placeholderIcon: String
@@ -590,7 +596,10 @@ struct ImageUpscalerSettingsSheet: View {
             .apolloNavigationBackground()
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(settings.localized("close")) { dismiss() }
+                    Group {
+                        Button(settings.localized("close")) { dismiss() }
+                    }
+                    .apolloToolbarControl()
                 }
             }
         }

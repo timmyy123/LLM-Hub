@@ -527,11 +527,17 @@ struct PhotoSearchScreen: View {
         .apolloNavigationBackground()
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
-                Button { onNavigateBack() } label: { Image(systemName: "arrow.left") }
+                Group {
+                    Button { onNavigateBack() } label: { Image(systemName: "arrow.left") }
+                }
+                .apolloToolbarControl()
             }
             if !downloadedModels.isEmpty {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button { showSettings = true } label: { Image(systemName: "slider.horizontal.3") }
+                    Group {
+                        Button { showSettings = true } label: { Image(systemName: "slider.horizontal.3") }
+                    }
+                    .apolloToolbarControl()
                 }
             }
         }
@@ -940,7 +946,10 @@ struct MediaSearchSettingsSheet<LibraryActions: View>: View {
             .apolloNavigationBackground()
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(settings.localized("done")) { dismiss() }
+                    Group {
+                        Button(settings.localized("done")) { dismiss() }
+                    }
+                    .apolloToolbarControl()
                 }
             }
             .confirmationDialog(settings.localized("media_search_clear"), isPresented: $confirmClear, titleVisibility: .visible) {

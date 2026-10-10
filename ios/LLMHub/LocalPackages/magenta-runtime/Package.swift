@@ -4,7 +4,7 @@ import PackageDescription
 
 let package = Package(
     name: "MagentaRuntime",
-    platforms: [.iOS(.v17)],
+    platforms: [.iOS(.v17), .macOS(.v14)],
     products: [
         .library(name: "MagentaRuntime", type: .dynamic, targets: ["MagentaRuntime"]),
     ],

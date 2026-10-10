@@ -136,7 +136,7 @@ struct ChatSettingsSheet: View {
     @State private var cachedModels: [AIModel] = []
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
                 ApolloLiquidBackground()
                 
@@ -170,6 +170,7 @@ struct ChatSettingsSheet: View {
                                             Text(model.name).tag(model.name)
                                         }
                                     }
+                                    .apolloMenuEmbeddedPicker()
                                 } label: {
                                     HStack(spacing: 6) {
                                         Text(vm.selectedModelName)
@@ -182,6 +183,7 @@ struct ChatSettingsSheet: View {
                                     // ensure it aligns properly and can shrink
                                     .multilineTextAlignment(.trailing)
                                 }
+                                .apolloPlainMenu()
                             }
                             .frame(maxWidth: .infinity)
                         }
@@ -370,11 +372,14 @@ struct ChatSettingsSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .apolloNavigationBackground()
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(settings.localized("done")) {
-                        applyDraftToViewModel()
-                        dismiss()
+                ToolbarItem(placement: .apolloSheetTrailing) {
+                    Group {
+                        Button(settings.localized("done")) {
+                            applyDraftToViewModel()
+                            dismiss()
+                        }
                     }
+                    .apolloToolbarControl()
                 }
             }
             .onAppear {
@@ -512,7 +517,7 @@ struct ChatSettingsSheet: View {
     @MainActor
     private func appleFoundationModelIfAvailable() -> AIModel? {
         #if canImport(FoundationModels)
-        if #available(iOS 26.0, *) {
+        if #available(iOS 26.0, macOS 26.0, *) {
             let model = SystemLanguageModel.default
             guard model.isAvailable else { return nil }
 
@@ -568,7 +573,7 @@ struct ConfigSlider: View {
             }
             Group {
                 if let step {
-                    Slider(value: $value, in: range, step: step) { editing in
+                    ApolloSlider(value: $value, in: range, step: step) { editing in
                         if !editing {
                             // Snap to max if within one step — fixes slider not reaching max
                             // due to step not dividing evenly from lower bound
@@ -613,7 +618,7 @@ struct GPULayersSlider: View {
                     .fontWeight(.bold)
                     .foregroundColor(.white.opacity(0.92))
             }
-            Slider(
+            ApolloSlider(
                 value: $value,
                 in: 0...maxLayers,
                 step: 1,

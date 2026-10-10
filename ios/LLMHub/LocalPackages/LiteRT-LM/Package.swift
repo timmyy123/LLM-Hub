@@ -15,7 +15,7 @@ let package = Package(
         ),
         .library(
             name: "CLiteRTLMRuntime",
-            targets: ["CLiteRTLM"]
+            targets: ["CLiteRTLMRuntimeShim"]
         ),
     ],
     targets: [
@@ -30,6 +30,15 @@ let package = Package(
             name: "CLiteRTLM_mac",
             url: "https://github.com/google-ai-edge/LiteRT-LM/releases/download/v0.18.0/CLiteRTLM_mac.xcframework.zip",
             checksum: "5f6ee68d95eeccb084c6e66d5ee47255e3020fa0fb29696dd0301ae26d6cfb4f"
+        ),
+        // Links the platform-appropriate LiteRT-LM binary for C/C++ clients.
+        .target(
+            name: "CLiteRTLMRuntimeShim",
+            dependencies: [
+                .target(name: "CLiteRTLM", condition: .when(platforms: [.iOS])),
+                .target(name: "CLiteRTLM_mac", condition: .when(platforms: [.macOS]))
+            ],
+            path: "runtime_shim"
         ),
         // The Swift Wrapper Target
         .target(

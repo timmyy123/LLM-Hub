@@ -10,6 +10,28 @@
 		1AE5E42ED85BEFE5C3ED1D2A /* LocalizationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75BBFF4AA65F0EF6FF1DB93D /* LocalizationManager.swift */; };
 		1D92A835955F48E1AA4AEEEF /* EmbeddingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59683F4EC0364144B429B48B /* EmbeddingService.swift */; };
 		1F3A9E5C7B2E4D6F8A1B2C3D /* ApolloTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E4B5F6A7C8D9E0F1A2B3C4D /* ApolloTheme.swift */; };
+		244F73CF307A4E8A006A7768 /* PlatformCompat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 244F73CE307A4E8A006A7768 /* PlatformCompat.swift */; };
+		244F73D9307A9398006A7768 /* MacFeatureComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 244F73D8307A9398006A7768 /* MacFeatureComponents.swift */; };
+		244F73DB307A93CD006A7768 /* MacWritingAidView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 244F73DA307A93CD006A7768 /* MacWritingAidView.swift */; };
+		244F73DD307A93ED006A7768 /* MacRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 244F73DC307A93ED006A7768 /* MacRootView.swift */; };
+		244F73E1307A97D0006A7768 /* MacImageGeneratorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 244F73E0307A97D0006A7768 /* MacImageGeneratorView.swift */; };
+		244F73E3307A97EF006A7768 /* MacPhotoSearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 244F73E2307A97EF006A7768 /* MacPhotoSearchView.swift */; };
+		244F73E5307A97FB006A7768 /* MacVideoGeneratorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 244F73E4307A97FB006A7768 /* MacVideoGeneratorView.swift */; };
+		244F73E7307A9810006A7768 /* MacAudioSearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 244F73E6307A9810006A7768 /* MacAudioSearchView.swift */; };
+		244F73E9307A9820006A7768 /* MacImageUpscalerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 244F73E8307A9820006A7768 /* MacImageUpscalerView.swift */; };
+		244F73EB307A9822006A7768 /* MacTranslatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 244F73EA307A9822006A7768 /* MacTranslatorView.swift */; };
+		244F73ED307A9848006A7768 /* MacVideoMomentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 244F73EC307A9848006A7768 /* MacVideoMomentView.swift */; };
+		244F73EF307A984C006A7768 /* MacMusicGeneratorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 244F73EE307A984C006A7768 /* MacMusicGeneratorView.swift */; };
+		244F73F1307A985D006A7768 /* MacScamDetectorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 244F73F0307A985D006A7768 /* MacScamDetectorView.swift */; };
+		244F73F3307A9872006A7768 /* MacVibeCoderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 244F73F2307A9872006A7768 /* MacVibeCoderView.swift */; };
+		244F73F5307A9888006A7768 /* MacModelsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 244F73F4307A9888006A7768 /* MacModelsView.swift */; };
+		244F73F7307A98AC006A7768 /* MacPremiumView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 244F73F6307A98AC006A7768 /* MacPremiumView.swift */; };
+		244F73F9307A98AE006A7768 /* MacTranscriberView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 244F73F8307A98AE006A7768 /* MacTranscriberView.swift */; };
+		244F73FB307A98B8006A7768 /* MacAgentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 244F73FA307A98B8006A7768 /* MacAgentView.swift */; };
+		244F73FD307A98EA006A7768 /* MacVibeVoiceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 244F73FC307A98EA006A7768 /* MacVibeVoiceView.swift */; };
+		244F73FF307A98FD006A7768 /* MacSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 244F73FE307A98FD006A7768 /* MacSettingsView.swift */; };
+		244F7401307A9A71006A7768 /* MacChatSettingsInspector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 244F7400307A9A71006A7768 /* MacChatSettingsInspector.swift */; };
+		244F7403307A9B60006A7768 /* MacChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 244F7402307A9B60006A7768 /* MacChatView.swift */; };
 		2461869E2FB9A616005E46A3 /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2461869D2FB9A616005E46A3 /* StoreKit.framework */; };
 		24E38142303A08E70031A1EA /* WhisperWrapper in Frameworks */ = {isa = PBXBuildFile; productRef = WH000001000000000000WH02 /* WhisperWrapper */; };
 		2A3672DC476297C35298841D /* HomeScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6D5DEA8384F9DDFC69C359C /* HomeScreen.swift */; };
@@ -86,6 +108,28 @@
 		05BF91E2CF47146ED081A0A8 /* ModelDownloader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelDownloader.swift; sourceTree = "<group>"; };
 		0805DB9589154E465145E2DB /* ChatModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatModels.swift; sourceTree = "<group>"; };
 		223C0ACCB98929BFEDBB0B16 /* it */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = it; path = it.lproj/Localizable.strings; sourceTree = "<group>"; };
+		244F73CE307A4E8A006A7768 /* PlatformCompat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlatformCompat.swift; sourceTree = "<group>"; };
+		244F73D8307A9398006A7768 /* MacFeatureComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacFeatureComponents.swift; sourceTree = "<group>"; };
+		244F73DA307A93CD006A7768 /* MacWritingAidView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacWritingAidView.swift; sourceTree = "<group>"; };
+		244F73DC307A93ED006A7768 /* MacRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacRootView.swift; sourceTree = "<group>"; };
+		244F73E0307A97D0006A7768 /* MacImageGeneratorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacImageGeneratorView.swift; sourceTree = "<group>"; };
+		244F73E2307A97EF006A7768 /* MacPhotoSearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacPhotoSearchView.swift; sourceTree = "<group>"; };
+		244F73E4307A97FB006A7768 /* MacVideoGeneratorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacVideoGeneratorView.swift; sourceTree = "<group>"; };
+		244F73E6307A9810006A7768 /* MacAudioSearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacAudioSearchView.swift; sourceTree = "<group>"; };
+		244F73E8307A9820006A7768 /* MacImageUpscalerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacImageUpscalerView.swift; sourceTree = "<group>"; };
+		244F73EA307A9822006A7768 /* MacTranslatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacTranslatorView.swift; sourceTree = "<group>"; };
+		244F73EC307A9848006A7768 /* MacVideoMomentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacVideoMomentView.swift; sourceTree = "<group>"; };
+		244F73EE307A984C006A7768 /* MacMusicGeneratorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacMusicGeneratorView.swift; sourceTree = "<group>"; };
+		244F73F0307A985D006A7768 /* MacScamDetectorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacScamDetectorView.swift; sourceTree = "<group>"; };
+		244F73F2307A9872006A7768 /* MacVibeCoderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacVibeCoderView.swift; sourceTree = "<group>"; };
+		244F73F4307A9888006A7768 /* MacModelsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacModelsView.swift; sourceTree = "<group>"; };
+		244F73F6307A98AC006A7768 /* MacPremiumView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacPremiumView.swift; sourceTree = "<group>"; };
+		244F73F8307A98AE006A7768 /* MacTranscriberView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacTranscriberView.swift; sourceTree = "<group>"; };
+		244F73FA307A98B8006A7768 /* MacAgentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacAgentView.swift; sourceTree = "<group>"; };
+		244F73FC307A98EA006A7768 /* MacVibeVoiceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacVibeVoiceView.swift; sourceTree = "<group>"; };
+		244F73FE307A98FD006A7768 /* MacSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacSettingsView.swift; sourceTree = "<group>"; };
+		244F7400307A9A71006A7768 /* MacChatSettingsInspector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacChatSettingsInspector.swift; sourceTree = "<group>"; };
+		244F7402307A9B60006A7768 /* MacChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacChatView.swift; sourceTree = "<group>"; };
 		2461869C2FB762B0005E46A3 /* LLMHub.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = LLMHub.entitlements; sourceTree = SOURCE_ROOT; };
 		2461869D2FB9A616005E46A3 /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
 		2461869F2FB9AAE2005E46A3 /* Secrets.debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.debug.xcconfig; sourceTree = "<group>"; };
@@ -246,6 +290,28 @@
 				SS000001000000000000SS02 /* SplashScreenView.swift */,
 				UP000001000000000000UP04 /* ImageUpscalerBackend.swift */,
 				WB000001000000000000WB02 /* WhisperBackend.swift */,
+				244F73CE307A4E8A006A7768 /* PlatformCompat.swift */,
+				244F73D8307A9398006A7768 /* MacFeatureComponents.swift */,
+				244F73DA307A93CD006A7768 /* MacWritingAidView.swift */,
+				244F73DC307A93ED006A7768 /* MacRootView.swift */,
+				244F73E0307A97D0006A7768 /* MacImageGeneratorView.swift */,
+				244F73E2307A97EF006A7768 /* MacPhotoSearchView.swift */,
+				244F73E4307A97FB006A7768 /* MacVideoGeneratorView.swift */,
+				244F73E6307A9810006A7768 /* MacAudioSearchView.swift */,
+				244F73E8307A9820006A7768 /* MacImageUpscalerView.swift */,
+				244F73EA307A9822006A7768 /* MacTranslatorView.swift */,
+				244F73EC307A9848006A7768 /* MacVideoMomentView.swift */,
+				244F73EE307A984C006A7768 /* MacMusicGeneratorView.swift */,
+				244F73F0307A985D006A7768 /* MacScamDetectorView.swift */,
+				244F73F2307A9872006A7768 /* MacVibeCoderView.swift */,
+				244F73F4307A9888006A7768 /* MacModelsView.swift */,
+				244F73F6307A98AC006A7768 /* MacPremiumView.swift */,
+				244F73F8307A98AE006A7768 /* MacTranscriberView.swift */,
+				244F73FA307A98B8006A7768 /* MacAgentView.swift */,
+				244F73FC307A98EA006A7768 /* MacVibeVoiceView.swift */,
+				244F73FE307A98FD006A7768 /* MacSettingsView.swift */,
+				244F7400307A9A71006A7768 /* MacChatSettingsInspector.swift */,
+				244F7402307A9B60006A7768 /* MacChatView.swift */,
 			);
 			name = LLMHub;
 			path = Sources/LLMHub;
@@ -379,19 +445,25 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				244F73DB307A93CD006A7768 /* MacWritingAidView.swift in Sources */,
 				1F3A9E5C7B2E4D6F8A1B2C3D /* ApolloTheme.swift in Sources */,
 				F1A2B3C4D5E6F708192A3B4D /* AudioTools.swift in Sources */,
 				E1B2C3D4E5F600001A2B3C4D /* ChatAgentSkillsTools.swift in Sources */,
+				244F7403307A9B60006A7768 /* MacChatView.swift in Sources */,
 				467EEBBF61BCADC562B0C42C /* ChatModels.swift in Sources */,
 				1D92A835955F48E1AA4AEEEF /* EmbeddingService.swift in Sources */,
 				7410CEC1D27C4FE7BC6C6486 /* RagService.swift in Sources */,
 				CB4333B9DD904E3DBB3184F9 /* MemoryStore.swift in Sources */,
+				244F73FB307A98B8006A7768 /* MacAgentView.swift in Sources */,
 				2CD0F1D1F3E04E66AA24812C /* RagServiceManager.swift in Sources */,
 				2A9D5B7C8E1F4A3B6C0D2E10 /* SimplifiedFileManager.swift in Sources */,
+				244F73F5307A9888006A7768 /* MacModelsView.swift in Sources */,
 				ABE54570472C4132920C1447 /* DocumentTextExtractor.swift in Sources */,
 				3701462555C0F00B7A0F5B01 /* ChatScreen.swift in Sources */,
+				244F73E5307A97FB006A7768 /* MacVideoGeneratorView.swift in Sources */,
 				DF4968608455CAC5D2C20BE3 /* ChatSettingsSheet.swift in Sources */,
 				98A2325EC92DABBC3DFE2229 /* ChatStore.swift in Sources */,
+				244F73FF307A98FD006A7768 /* MacSettingsView.swift in Sources */,
 				CBC2016A51F62C4A68987D57 /* ContentView.swift in Sources */,
 				3DAB449A0AE3C67F8D2F39B1 /* FeatureScreens.swift in Sources */,
 				2A3672DC476297C35298841D /* HomeScreen.swift in Sources */,
@@ -402,25 +474,41 @@
 				53F6C1EA0149E74AC5BB3E22 /* LLMBackend.swift in Sources */,
 				F1A2B3C4D5E6F708192A3B50 /* LiteRTLMBackend.swift in Sources */,
 				BBEFB76ECA4FB739E947BF5D /* LLMHubApp.swift in Sources */,
+				244F73F7307A98AC006A7768 /* MacPremiumView.swift in Sources */,
 				1AE5E42ED85BEFE5C3ED1D2A /* LocalizationManager.swift in Sources */,
 				59504FB10CC196F7E32BAB32 /* ModelData.swift in Sources */,
 				366119C26429D712F621B7DF /* ModelDownloadScreen.swift in Sources */,
+				244F73F9307A98AE006A7768 /* MacTranscriberView.swift in Sources */,
+				244F7401307A9A71006A7768 /* MacChatSettingsInspector.swift in Sources */,
+				244F73EF307A984C006A7768 /* MacMusicGeneratorView.swift in Sources */,
 				B0DC2F58405BDC55315A8099 /* ModelDownloader.swift in Sources */,
+				244F73D9307A9398006A7768 /* MacFeatureComponents.swift in Sources */,
 				8372657E94B22EF042E769D9 /* ModelManager.swift in Sources */,
 				CB9C318430890100AF670AFF /* SettingsScreen.swift in Sources */,
+				244F73DD307A93ED006A7768 /* MacRootView.swift in Sources */,
 				FA001122334455667788AABB /* StableDiffusionBackend.swift in Sources */,
+				244F73CF307A4E8A006A7768 /* PlatformCompat.swift in Sources */,
 				A1B2C3D4E5F600001A2B3C4D /* ThinkingComponents.swift in Sources */,
 				FA0011BB334455667788AA01 /* PreviewServer.swift in Sources */,
+				244F73E7307A9810006A7768 /* MacAudioSearchView.swift in Sources */,
+				244F73F1307A985D006A7768 /* MacScamDetectorView.swift in Sources */,
+				244F73E9307A9820006A7768 /* MacImageUpscalerView.swift in Sources */,
 				AD000001000000000000AA03 /* PurchaseManager.swift in Sources */,
+				244F73FD307A98EA006A7768 /* MacVibeVoiceView.swift in Sources */,
 				AD000001000000000000AA05 /* PremiumScreen.swift in Sources */,
+				244F73ED307A9848006A7768 /* MacVideoMomentView.swift in Sources */,
 				VG000001000000000000VG01 /* VideoGeneratorScreen.swift in Sources */,
 				VG000001000000000000VG03 /* VideoGeneratorBackend.swift in Sources */,
 				AF000001000000000000AF01 /* AppleFoundationModelSupport.swift in Sources */,
+				244F73F3307A9872006A7768 /* MacVibeCoderView.swift in Sources */,
 				UP000001000000000000UP01 /* ImageUpscalerScreen.swift in Sources */,
 				MS000001000000000000MS05 /* AudioSearchScreen.swift in Sources */,
 				VM000001000000000000VM01 /* VideoMomentScreen.swift in Sources */,
+				244F73EB307A9822006A7768 /* MacTranslatorView.swift in Sources */,
 				MS000001000000000000MS03 /* PhotoSearchScreen.swift in Sources */,
 				MS000001000000000000MS01 /* MediaSearchCore.swift in Sources */,
+				244F73E3307A97EF006A7768 /* MacPhotoSearchView.swift in Sources */,
+				244F73E1307A97D0006A7768 /* MacImageGeneratorView.swift in Sources */,
 				SS000001000000000000SS01 /* SplashScreenView.swift in Sources */,
 				UP000001000000000000UP03 /* ImageUpscalerBackend.swift in Sources */,
 				WB000001000000000000WB01 /* WhisperBackend.swift in Sources */,
@@ -534,13 +622,26 @@
 				CODE_SIGN_ENTITLEMENTS = LLMHub.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 76;
+				CURRENT_PROJECT_VERSION = 77;
 				DEAD_CODE_STRIPPING = NO;
 				DEVELOPMENT_TEAM = 76K65T869A;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_INCOMING_NETWORK_CONNECTIONS = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
+				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = YES;
+				ENABLE_RESOURCE_ACCESS_CALENDARS = YES;
+				ENABLE_RESOURCE_ACCESS_CONTACTS = YES;
+				ENABLE_RESOURCE_ACCESS_LOCATION = YES;
+				ENABLE_RESOURCE_ACCESS_PHOTO_LIBRARY = YES;
+				ENABLE_USER_SELECTED_FILES = readwrite;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "LLMHub-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = LLMHub;
 				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = NO;
+				"INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace[sdk=iphoneos*]" = NO;
+				"INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace[sdk=iphonesimulator*]" = NO;
+				"INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace[sdk=macosx*]" = YES;
 				INFOPLIST_KEY_NSAlarmKitUsageDescription = "LLM Hub schedules alarms you create with the AI Agent.";
 				INFOPLIST_KEY_NSCalendarsUsageDescription = "LLM Hub needs permission to access your calendar to create and view calendar events.";
 				INFOPLIST_KEY_NSCalendarsWriteOnlyAccessUsageDescription = "LLM Hub needs permission to add events to your calendar.";
@@ -561,12 +662,20 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.5;
 				MARKETING_VERSION = 1.5.0;
 				OTHER_LDFLAGS = "$(inherited)";
 				PRODUCT_BUNDLE_IDENTIFIER = com.llmhub.llmhub;
 				PRODUCT_NAME = LLMHub;
+				REGISTER_APP_GROUPS = YES;
 				SDKROOT = iphoneos;
-				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -580,13 +689,26 @@
 				CODE_SIGN_ENTITLEMENTS = LLMHub.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 76;
+				CURRENT_PROJECT_VERSION = 77;
 				DEAD_CODE_STRIPPING = NO;
 				DEVELOPMENT_TEAM = 76K65T869A;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_INCOMING_NETWORK_CONNECTIONS = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
+				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = YES;
+				ENABLE_RESOURCE_ACCESS_CALENDARS = YES;
+				ENABLE_RESOURCE_ACCESS_CONTACTS = YES;
+				ENABLE_RESOURCE_ACCESS_LOCATION = YES;
+				ENABLE_RESOURCE_ACCESS_PHOTO_LIBRARY = YES;
+				ENABLE_USER_SELECTED_FILES = readwrite;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "LLMHub-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = LLMHub;
 				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = NO;
+				"INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace[sdk=iphoneos*]" = NO;
+				"INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace[sdk=iphonesimulator*]" = NO;
+				"INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace[sdk=macosx*]" = YES;
 				INFOPLIST_KEY_NSAlarmKitUsageDescription = "LLM Hub schedules alarms you create with the AI Agent.";
 				INFOPLIST_KEY_NSCalendarsUsageDescription = "LLM Hub needs permission to access your calendar to create and view calendar events.";
 				INFOPLIST_KEY_NSCalendarsWriteOnlyAccessUsageDescription = "LLM Hub needs permission to add events to your calendar.";
@@ -607,12 +729,20 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.5;
 				MARKETING_VERSION = 1.5.0;
 				OTHER_LDFLAGS = "$(inherited)";
 				PRODUCT_BUNDLE_IDENTIFIER = com.llmhub.llmhub;
 				PRODUCT_NAME = LLMHub;
+				REGISTER_APP_GROUPS = YES;
 				SDKROOT = iphoneos;
-				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};

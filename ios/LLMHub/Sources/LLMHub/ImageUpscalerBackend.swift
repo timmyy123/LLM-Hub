@@ -8,6 +8,8 @@ import LocalImageGenerator
 import Diffusion
 #if canImport(UIKit)
 import UIKit
+#else
+import AppKit
 #endif
 
 enum UpscalerError: LocalizedError {

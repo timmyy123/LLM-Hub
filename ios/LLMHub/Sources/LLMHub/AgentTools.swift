@@ -1,7 +1,11 @@
 import Foundation
 import MapKit
 import EventKit
+#if canImport(UIKit)
 import UIKit
+#else
+import AppKit
+#endif
 import AVFoundation
 import Contacts
 import CoreLocation
@@ -25,7 +29,7 @@ public struct MapResult {
 }
 
 #if canImport(AlarmKit)
-@available(iOS 26.0, *)
+@available(iOS 26.0, macOS 26.0, *)
 private struct AgentAlarmMetadata: AlarmMetadata, Codable {}
 #endif
 
@@ -498,7 +502,12 @@ public class AgentLocationHelper: NSObject, @preconcurrency CLLocationManagerDel
     }
 
     public func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
-        if manager.authorizationStatus == .authorizedWhenInUse || manager.authorizationStatus == .authorizedAlways {
+        #if os(macOS)
+        let isAuthorized = manager.authorizationStatus == .authorized || manager.authorizationStatus == .authorizedAlways
+        #else
+        let isAuthorized = manager.authorizationStatus == .authorizedWhenInUse || manager.authorizationStatus == .authorizedAlways
+        #endif
+        if isAuthorized {
             manager.startUpdatingLocation()
             manager.requestLocation()
         }
@@ -607,7 +616,7 @@ public class AgentLocationHelper: NSObject, @preconcurrency CLLocationManagerDel
     public func addCalendarEvent(title: String, dateStr: String) async -> String {
         let eventStore = EKEventStore()
         let granted: Bool
-        if #available(iOS 17.0, *) {
+        if #available(iOS 17.0, macOS 14.0, *) {
             granted = (try? await eventStore.requestWriteOnlyAccessToEvents()) ?? false
         } else {
             granted = await withCheckedContinuation { continuation in

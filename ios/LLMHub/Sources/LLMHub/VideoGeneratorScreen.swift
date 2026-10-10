@@ -60,15 +60,21 @@ struct VideoGeneratorScreen: View {
         .apolloNavigationBackground()
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
-                Button {
-                    generateTask?.cancel()
-                    videoBackend.unloadModel()
-                    onNavigateBack()
-                } label: { Image(systemName: "arrow.left") }
+                Group {
+                    Button {
+                        generateTask?.cancel()
+                        videoBackend.unloadModel()
+                        onNavigateBack()
+                    } label: { Image(systemName: "arrow.left") }
+                }
+                .apolloToolbarControl()
             }
             if !availableModels.isEmpty {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button { showSettings = true } label: { Image(systemName: "slider.horizontal.3") }
+                    Group {
+                        Button { showSettings = true } label: { Image(systemName: "slider.horizontal.3") }
+                    }
+                    .apolloToolbarControl()
                 }
             }
         }
@@ -548,7 +554,7 @@ struct VideoGeneratorSettingsSheet: View {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("\(settings.localized("video_generator_iterations")): \(Int(steps))")
                             .font(.headline)
-                        Slider(value: $steps, in: 4...50, step: 1)
+                        ApolloSlider(value: $steps, in: 4...50, step: 1)
                             .tint(ApolloPalette.accentStrong)
                     }
                     .padding()
@@ -620,7 +626,10 @@ struct VideoGeneratorSettingsSheet: View {
             .apolloNavigationBackground()
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(settings.localized("close")) { dismiss() }
+                    Group {
+                        Button(settings.localized("close")) { dismiss() }
+                    }
+                    .apolloToolbarControl()
                 }
             }
         }
