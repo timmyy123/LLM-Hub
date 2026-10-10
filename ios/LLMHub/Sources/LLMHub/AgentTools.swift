@@ -1,7 +1,9 @@
 import Foundation
 import MapKit
 import EventKit
+#if canImport(UIKit)
 import UIKit
+#endif
 import AVFoundation
 import Contacts
 import CoreLocation
@@ -498,10 +500,17 @@ public class AgentLocationHelper: NSObject, @preconcurrency CLLocationManagerDel
     }
 
     public func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        #if os(macOS)
+        if manager.authorizationStatus == .authorizedAlways {
+            manager.startUpdatingLocation()
+            manager.requestLocation()
+        }
+        #else
         if manager.authorizationStatus == .authorizedWhenInUse || manager.authorizationStatus == .authorizedAlways {
             manager.startUpdatingLocation()
             manager.requestLocation()
         }
+        #endif
     }
 }
 

@@ -1,0 +1,347 @@
+import Foundation
+import UIKit
+#if canImport(LiteRTLM)
+@preconcurrency import LiteRTLM
+
+// MARK: - Errors
+
+enum LiteRTLMError: LocalizedError {
+    case engineNotLoaded
+    case conversationNotCreated
+    case modelFileNotFound(String)
+
+    var errorDescription: String? {
+        switch self {
+        case .engineNotLoaded:
+            return "LiteRT-LM engine is not loaded. Load a model first."
+        case .conversationNotCreated:
+            return "LiteRT-LM conversation not created. Call createConversation() first."
+        case .modelFileNotFound(let path):
+            return "LiteRT-LM model file not found at: \(path)"
+        }
+    }
+}
+
+// MARK: - LiteRTLMBackend
+
+/// Wraps the Google LiteRT-LM Swift SDK.
+/// Always uses GPU (Metal) backend for text generation.
+/// Vision is handled via the built-in encoder (no separate mmproj needed).
+@MainActor
+final class LiteRTLMBackend {
+
+    static let shared = LiteRTLMBackend()
+
+    private var engine: Engine?
+    private var loadedModelPath: String?
+    private var isGemma4_12B = false
+    /// The single active conversation. LiteRT-LM only allows one at a time.
+    private var currentConversation: Conversation?
+    /// Prevents re-entrancy bugs where a new session is created before the old one is destroyed.
+    private var generationInProgress = false
+    /// Track background invalidation tasks so we don't block the main thread.
+    private var activeInvalidationTask: Task<Void, Never>? = nil
+
+    private init() {}
+
+    // MARK: - Model Lifecycle
+
+    /// Load a .litertlm model file from disk.
+    func loadModel(
+        at path: String,
+        modelName: String? = nil,
+        supportsVision: Bool,
+        supportsAudio: Bool,
+        supportsGpu: Bool = true,
+        supportsMtp: Bool = true,
+        maxTokens: Int?
+    ) async throws {
+        guard FileManager.default.fileExists(atPath: path) else {
+            throw LiteRTLMError.modelFileNotFound(path)
+        }
+
+        // Unload any existing engine first
+        await unload()
+
+        let identifier = (modelName ?? path).lowercased()
+        self.isGemma4_12B = identifier.contains("12b") || identifier.contains("gemma-4-12b") || identifier.contains("gemma4_12b")
+
+        ExperimentalFlags.optIntoExperimentalAPIs()
+        ExperimentalFlags.enableSpeculativeDecoding = supportsMtp
+        ExperimentalFlags.enableBenchmark = true
+
+        let fileHasMtp = ModelInfo(modelPath: path)?.llm?.hasSpeculativeDecodingSupport() ?? false
+        print("ℹ️ [LiteRTLMBackend] loadModel path=\(path) vision=\(supportsVision) audio=\(supportsAudio) maxTokens=\(String(describing: maxTokens)) supportsMtp=\(supportsMtp) fileHasMtp=\(fileHasMtp) is12B=\(isGemma4_12B)")
+
+        let config = try EngineConfig(
+            modelPath: path,
+            backend: supportsGpu ? .gpu : .cpu(),
+            visionBackend: supportsVision ? .cpu() : nil,
+            audioBackend: supportsAudio ? .cpu() : nil,
+            maxNumTokens: maxTokens,
+            cacheDir: liteRTCacheDir()
+        )
+        let eng = Engine(engineConfig: config)
+        try await eng.initialize()
+
+        self.engine = eng
+        self.loadedModelPath = path
+        print("✅ [LiteRTLMBackend] engine ready path=\(path)")
+    }
+
+    /// Unload the engine and release all resources.
+    func unload() async {
+        if let previousTask = activeInvalidationTask {
+            _ = await previousTask.result
+            activeInvalidationTask = nil
+        }
+        if let conv = currentConversation {
+            currentConversation = nil
+            let task = Task.detached(priority: .userInitiated) {
+                _ = conv
+            }
+            _ = await task.result
+        }
+        engine = nil
+        loadedModelPath = nil
+        isGemma4_12B = false
+        print("ℹ️ [LiteRTLMBackend] unloaded")
+    }
+
+    var isLoaded: Bool { engine != nil }
+    var currentModelPath: String? { loadedModelPath }
+
+    // MARK: - Generation
+
+    /// Create a fresh Conversation and stream a response token by token.
+    /// A new Conversation is created per call so the pre-formatted multi-turn
+    /// prompt (already built by the caller) is sent as a single user message,
+    /// matching the GGUF backend's existing prompt-formatting contract.
+    func generateStream(
+        prompt: String,
+        imageURL: URL?,
+        audioURL: URL?,
+        systemPrompt: String?,
+        temperature: Float,
+        topK: Int,
+        topP: Float,
+        maxTokens: Int,
+        useThinking: Bool,
+        enableAgentTools: Bool,
+        onUpdate: @escaping (String, Int, Double) -> Void
+    ) async throws {
+        guard let engine else {
+            throw LiteRTLMError.engineNotLoaded
+        }
+
+        // Wait if a previous generation is still winding down (to avoid 'Session already exists' crashes)
+        while generationInProgress {
+            try await Task.sleep(nanoseconds: 50_000_000)
+            try Task.checkCancellation()
+        }
+        generationInProgress = true
+        defer { generationInProgress = false }
+
+        // Build sampler
+        let samplerConfig = try SamplerConfig(
+            topK: topK,
+            topP: topP,
+            temperature: temperature
+        )
+
+        // For Gemma 4 12B, use native ThinkingConfig.
+        // For E2B / E4B (and other models), use prompt injection (<|think|>) so MTP acceleration works directly on the main token stream.
+        let useNativeThinking = useThinking && isGemma4_12B
+        let usePromptInjectThinking = useThinking && !isGemma4_12B
+
+        // Determine the final system prompt based on agent tools and thinking toggles
+        let finalSystemPrompt: String?
+        if enableAgentTools {
+            let basePrompt = (systemPrompt != nil && !systemPrompt!.isEmpty) ? systemPrompt! : ChatAgentSkillsTools.AGENT_SYSTEM_PROMPT
+            if usePromptInjectThinking {
+                finalSystemPrompt = "<|think|>\n\(basePrompt)"
+            } else {
+                finalSystemPrompt = basePrompt
+            }
+        } else {
+            if usePromptInjectThinking {
+                if let systemPrompt, !systemPrompt.isEmpty {
+                    finalSystemPrompt = "<|think|>\n\(systemPrompt)"
+                } else {
+                    finalSystemPrompt = "<|think|>"
+                }
+            } else {
+                finalSystemPrompt = systemPrompt
+            }
+        }
+
+        // Ensure any pending conversation invalidation from a previous run is complete
+        if let previousTask = activeInvalidationTask {
+            _ = await previousTask.result
+            activeInvalidationTask = nil
+        }
+
+        let thinkingConfig = useNativeThinking ? ThinkingConfig(enableThinking: true) : nil
+
+        let conversation: Conversation
+        if enableAgentTools {
+            ExperimentalFlags.enableConversationConstrainedDecoding = true
+            let config = ConversationConfig(
+                systemMessage: finalSystemPrompt.map { Message($0) },
+                tools: ChatAgentSkillsTools.allTools(),
+                samplerConfig: samplerConfig,
+                thinkingConfig: thinkingConfig
+            )
+            conversation = try await engine.createConversation(with: config)
+            ExperimentalFlags.enableConversationConstrainedDecoding = false
+        } else {
+            let config = ConversationConfig(
+                systemMessage: finalSystemPrompt.map { Message($0) },
+                samplerConfig: samplerConfig,
+                thinkingConfig: thinkingConfig
+            )
+            conversation = try await engine.createConversation(with: config)
+        }
+        currentConversation = conversation
+
+        // Always release the conversation when generation ends (success, error, or cancellation).
+        // Setting `currentConversation` to nil and capturing the conversation in a background
+        // task allows the C session to be freed asynchronously on a background thread.
+        // Also open any URL deferred by tools (Maps/Email/SMS) — they must NOT open mid-stream
+        // because that sends the app to background and kills Metal GPU access.
+        defer {
+            let conv = currentConversation
+            self.currentConversation = nil
+            if let conv = conv {
+                self.activeInvalidationTask = Task.detached(priority: .userInitiated) {
+                    _ = conv
+                }
+            }
+            print("ℹ️ [LiteRTLMBackend] conversation invalidation dispatched to background")
+
+            // Open deferred URL now that GPU work is done
+            if let urlToOpen = ChatAgentSkillsTools.deferredOpenURL {
+                ChatAgentSkillsTools.deferredOpenURL = nil
+                UIApplication.shared.open(urlToOpen)
+                print("ℹ️ [LiteRTLMBackend] opened deferred URL post-generation: \(urlToOpen)")
+            }
+        }
+
+        // Build user message — interleave image + audio + text if provided
+        var contents: [Content] = []
+        if let imageURL {
+            contents.append(.imageFile(imageURL.path))
+        }
+        if let audioURL {
+            contents.append(.audioFile(audioURL.path))
+        }
+        contents.append(.text(prompt))
+
+        let message = Message(contents: contents)
+
+        // Stream response
+        var currentOutput = ""
+        var sentThinkOpen = false
+        var sentThinkClose = false
+        var tokenCount = 0
+        var generationStartTime: Date? = nil
+
+        for try await chunk in conversation.sendMessageStream(message) {
+            try Task.checkCancellation()
+            tokenCount += 1
+            if generationStartTime == nil {
+                generationStartTime = Date()
+            }
+
+            let textChunk = chunk.toString
+            let thinkingChunk = useThinking ? chunk.channels["thought"] : nil
+            let isThinking = thinkingChunk != nil && !thinkingChunk!.isEmpty
+
+            if useThinking && isThinking {
+                if !sentThinkOpen {
+                    currentOutput += "\u{200B}\u{200B}THINK\u{200B}\u{200B}"
+                    sentThinkOpen = true
+                }
+                let cleanedThinking = processLlamaStopTokens(thinkingChunk!)
+                if !cleanedThinking.isEmpty {
+                    currentOutput += cleanedThinking
+                }
+            } else {
+                let cleaned = processLlamaStopTokens(textChunk)
+                if sentThinkOpen && !sentThinkClose {
+                    currentOutput += "\u{200B}\u{200B}ENDTHINK\u{200B}\u{200B}"
+                    sentThinkClose = true
+                }
+                if !cleaned.isEmpty {
+                    currentOutput += cleaned
+                }
+            }
+            let elapsed = generationStartTime != nil ? Date().timeIntervalSince(generationStartTime!) : 0.0
+            let estimatedTokens = Double(currentOutput.count) / 3.5
+            let tps = (elapsed > 0 && estimatedTokens > 0) ? (estimatedTokens / elapsed) : 0.0
+            onUpdate(currentOutput, Int(estimatedTokens), tps)
+        }
+
+        var finalTokens = tokenCount
+        var finalTps = 0.0
+        
+        let elapsed = generationStartTime != nil ? Date().timeIntervalSince(generationStartTime!) : 0.0
+        if elapsed > 0 {
+            let estimatedTokens = Double(currentOutput.count) / 3.5
+            finalTps = estimatedTokens / elapsed
+            finalTokens = Int(estimatedTokens)
+        }
+        
+        if let benchmark = try? conversation.getBenchmarkInfo() {
+            if benchmark.lastDecodeTokenCount > 0 {
+                finalTokens = benchmark.lastDecodeTokenCount
+            }
+            if benchmark.lastDecodeTokensPerSecond > 0 {
+                finalTps = benchmark.lastDecodeTokensPerSecond
+            }
+            print("📊 [LiteRTLMBackend] Benchmark metrics: prefillCount=\(benchmark.lastPrefillTokenCount) prefillTps=\(benchmark.lastPrefillTokensPerSecond) decodeCount=\(benchmark.lastDecodeTokenCount) decodeTps=\(benchmark.lastDecodeTokensPerSecond)")
+        } else {
+            print("⚠️ [LiteRTLMBackend] getBenchmarkInfo returned nil or threw")
+        }
+
+        if useThinking && sentThinkOpen && !sentThinkClose {
+            currentOutput += "\u{200B}\u{200B}ENDTHINK\u{200B}\u{200B}"
+            onUpdate(currentOutput, finalTokens, finalTps)
+        } else {
+            // Final update with accumulated text
+            onUpdate(currentOutput, finalTokens, finalTps)
+        }
+        print("✅ [LiteRTLMBackend] generation complete chars=\(currentOutput.count)")
+    }
+
+    private func processLlamaStopTokens(_ text: String) -> String {
+        let stopTokens = ["<|eot_id|>", "<|end_of_text|>", "<|end|>", "</s>"]
+        var cleaned = text
+        for stopToken in stopTokens {
+            if let range = cleaned.range(of: stopToken) {
+                cleaned = String(cleaned[..<range.lowerBound])
+                break
+            }
+        }
+        cleaned = cleaned
+            .replacingOccurrences(of: "<|start_header_id|>", with: "")
+            .replacingOccurrences(of: "<|end_header_id|>", with: "")
+            .replacingOccurrences(of: "<channel|>", with: "")
+            .replacingOccurrences(of: "<|channel|>", with: "")
+        return cleaned
+    }
+
+    // MARK: - Helpers
+
+    /// Returns (and creates if needed) a writable cache directory for LiteRT-LM
+    /// shader compilation artefacts.
+    private func liteRTCacheDir() -> String {
+        let cacheURL = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)
+            .first!
+            .appendingPathComponent("LiteRTLM", isDirectory: true)
+        try? FileManager.default.createDirectory(at: cacheURL, withIntermediateDirectories: true)
+        return cacheURL.path
+    }
+}
+
+#endif // canImport(LiteRTLM)

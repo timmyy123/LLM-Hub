@@ -27,6 +27,7 @@ final class AudioRecorder: NSObject, ObservableObject, AVAudioRecorderDelegate {
             return false
         }
 
+        #if os(iOS)
         let sessionConfigured = await MainActor.run {
             let session = AVAudioSession.sharedInstance()
             do {
@@ -37,6 +38,9 @@ final class AudioRecorder: NSObject, ObservableObject, AVAudioRecorderDelegate {
                 return false
             }
         }
+        #else
+        let sessionConfigured = true
+        #endif
 
         guard sessionConfigured else {
             isPreparing = false

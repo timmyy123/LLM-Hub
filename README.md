@@ -194,6 +194,21 @@ sudo xcode-select -s /Applications/Xcode-beta.app/Contents/Developer
 xcodebuild -version
 ```
 
+### macOS local development (Native Apple Silicon App)
+
+1. Open the macOS project in Xcode:
+```bash
+open macos/LLMHub/LLMHub.xcodeproj
+```
+2. Select target **LLMHub** and run destination **My Mac**.
+3. Press **Cmd+R** to build and run the native macOS app.
+
+Or build via Swift CLI:
+```bash
+cd macos/LLMHub
+swift build
+```
+
 #### iOS TTS voice troubleshooting
 
 **TTS falls back to a robotic default voice after changing Siri voices**

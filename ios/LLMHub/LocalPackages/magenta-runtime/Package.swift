@@ -4,7 +4,10 @@ import PackageDescription
 
 let package = Package(
     name: "MagentaRuntime",
-    platforms: [.iOS(.v17)],
+    platforms: [
+        .iOS(.v17),
+        .macOS(.v14),
+    ],
     products: [
         .library(name: "MagentaRuntime", type: .dynamic, targets: ["MagentaRuntime"]),
     ],
@@ -25,7 +28,8 @@ let package = Package(
         .target(
             name: "MagentaLiteRTBridge",
             dependencies: [
-                .product(name: "CLiteRTLMRuntime", package: "LiteRT-LM"),
+                .product(name: "CLiteRTLMRuntime", package: "LiteRT-LM", condition: .when(platforms: [.iOS])),
+                .product(name: "CLiteRTLMRuntime_mac", package: "LiteRT-LM", condition: .when(platforms: [.macOS])),
             ],
             publicHeadersPath: "include"
         ),

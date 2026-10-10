@@ -6,6 +6,9 @@ import ModelZoo
 #if canImport(UIKit)
 import UIKit
 #endif
+#if canImport(AppKit)
+import AppKit
+#endif
 
 enum VideoError: LocalizedError {
     case modelNotDownloaded
@@ -143,10 +146,18 @@ final class VideoGeneratorBackend: ObservableObject {
     nonisolated private static func normalizeToSRGB(_ image: UIImage) -> UIImage {
         let size = image.size
         guard size.width > 0, size.height > 0 else { return image }
+        #if os(macOS)
+        let newImage = NSImage(size: size)
+        newImage.lockFocus()
+        image.draw(in: NSRect(origin: .zero, size: size), from: NSRect(origin: .zero, size: size), operation: .copy, fraction: 1.0)
+        newImage.unlockFocus()
+        return newImage
+        #else
         let renderer = UIGraphicsImageRenderer(size: size)
         return renderer.image { _ in
             image.draw(in: CGRect(origin: .zero, size: size))
         }
+        #endif
     }
 
     // MARK: - Video Compilation Helper
@@ -290,12 +301,18 @@ final class VideoGeneratorBackend: ObservableObject {
             bitmapInfo: bitmapInfo
         ) else { return nil }
 
+        #if os(macOS)
+        if let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) {
+            context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
+        }
+        #else
         // UIKit coordinate system is flipped vs CoreGraphics — fix orientation
         context.translateBy(x: 0, y: CGFloat(height))
         context.scaleBy(x: 1, y: -1)
         UIGraphicsPushContext(context)
         image.draw(in: CGRect(x: 0, y: 0, width: width, height: height))
         UIGraphicsPopContext()
+        #endif
 
         return buffer
     }

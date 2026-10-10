@@ -820,7 +820,10 @@ class LLMBackend: ObservableObject {
         min(max(1, requested), modelMaxContextWindow(for: model))
     }
 
-    func loadModel(_ model: AIModel) async throws {
+    func loadModel(_ model: AIModel, contextWindow requestedContext: Int? = nil) async throws {
+        if let requestedContext = requestedContext {
+            self.contextWindow = requestedContext
+        }
         isBackendLoading = true
         defer { isBackendLoading = false }
 
@@ -934,6 +937,52 @@ class LLMBackend: ObservableObject {
                 self.isLoaded = false
                 self.currentlyLoadedModel = nil
                 self.loadedContextWindow = nil
+            }
+        }
+    }
+
+    func stopGeneration() {
+        // Broadcast cancellation / no-op if no active generation
+    }
+
+    func generateStream(
+        prompt: String,
+        systemPrompt: String? = nil,
+        imageURL: URL? = nil,
+        temperature: Double? = nil,
+        topP: Double? = nil,
+        maxTokens: Int? = nil
+    ) -> AsyncThrowingStream<String, Error> {
+        if let temperature = temperature {
+            self.temperature = Float(temperature)
+        }
+        if let topP = topP {
+            self.topP = Float(topP)
+        }
+        if let maxTokens = maxTokens {
+            self.maxTokens = maxTokens
+        }
+        return AsyncThrowingStream { continuation in
+            Task {
+                do {
+                    var previousLength = 0
+                    try await self.generate(
+                        prompt: prompt,
+                        imageURL: imageURL,
+                        systemPrompt: systemPrompt,
+                        maxTokensOverride: maxTokens
+                    ) { fullText, _, _ in
+                        if fullText.count > previousLength {
+                            let startIndex = fullText.index(fullText.startIndex, offsetBy: previousLength)
+                            let newChunk = String(fullText[startIndex...])
+                            previousLength = fullText.count
+                            continuation.yield(newChunk)
+                        }
+                    }
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
             }
         }
     }

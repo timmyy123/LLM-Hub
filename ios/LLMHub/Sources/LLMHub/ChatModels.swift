@@ -14,6 +14,26 @@ public struct ChatMessage: Identifiable, Equatable, Sendable, Codable {
     public var attachmentAudioPath: String?
     public var attachmentDocumentName: String?   // display name of attached text document
 
+    public enum Role: String, Codable, Sendable {
+        case user
+        case assistant
+        case system
+    }
+
+    public var role: Role {
+        get { isFromUser ? .user : .assistant }
+    }
+
+    public var imageURL: URL? {
+        guard let attachmentImagePath = attachmentImagePath else { return nil }
+        return URL(fileURLWithPath: attachmentImagePath)
+    }
+
+    public var thinkingContent: String? {
+        let parsed = parseThinkingAndAnswer(content)
+        return parsed.thinking.isEmpty ? nil : parsed.thinking
+    }
+
     public init(
         id: UUID = UUID(),
         content: String,
@@ -37,6 +57,20 @@ public struct ChatMessage: Identifiable, Equatable, Sendable, Codable {
         self.attachmentAudioPath = attachmentAudioPath
         self.attachmentDocumentName = attachmentDocumentName
     }
+
+    public init(
+        id: UUID = UUID(),
+        role: Role,
+        content: String,
+        imageURL: URL? = nil
+    ) {
+        self.init(
+            id: id,
+            content: content,
+            isFromUser: role == .user,
+            attachmentImagePath: imageURL?.path
+        )
+    }
 }
 
 public struct ChatSession: Identifiable, Sendable, Codable {
@@ -44,6 +78,10 @@ public struct ChatSession: Identifiable, Sendable, Codable {
     public var title: String
     public var messages: [ChatMessage]
     public let createdAt: Date
+
+    public var lastUpdated: Date {
+        messages.last?.timestamp ?? createdAt
+    }
 
     public init(id: UUID = UUID(), title: String = "", messages: [ChatMessage] = [], createdAt: Date = Date()) {
         self.id = id

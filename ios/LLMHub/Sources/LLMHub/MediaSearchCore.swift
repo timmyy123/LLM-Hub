@@ -1,6 +1,11 @@
 import AVFoundation
 import Foundation
+#if canImport(UIKit)
 import UIKit
+#endif
+#if canImport(AppKit)
+import AppKit
+#endif
 
 /// First frame and, for clips longer than a second, the frame near the end.
 func videoKeyframes(url: URL, maxEdge: CGFloat = 512) -> [Data] {
@@ -20,6 +25,35 @@ func videoKeyframes(url: URL, maxEdge: CGFloat = 512) -> [Data] {
         frames.append(jpeg)
     }
     return frames
+}
+
+/// Movie length from the file timeline. The old path used AVAudioPlayer(contentsOf:), which loads the entire file into memory and was discarded with try? when that load failed.
+func videoDurationMs(url: URL) async -> Int {
+    let asset = AVURLAsset(url: url, options: [AVURLAssetPreferPreciseDurationAndTimingKey: true])
+    guard let duration = try? await asset.load(.duration) else { return 0 }
+    let seconds = CMTimeGetSeconds(duration)
+    guard seconds.isFinite, seconds > 0 else { return 0 }
+    return Int((seconds * 1000).rounded())
+}
+
+/// One JPEG frame. 4K60 files often miss an exact timestamp, so a nearby frame is used.
+func videoFrameJPEG(url: URL, timeMs: Int, maxEdge: CGFloat = 512) async -> Data? {
+    let asset = AVURLAsset(url: url)
+    let generator = AVAssetImageGenerator(asset: asset)
+    generator.appliesPreferredTrackTransform = true
+    generator.maximumSize = CGSize(width: maxEdge, height: maxEdge)
+    generator.requestedTimeToleranceBefore = CMTime(seconds: 1, preferredTimescale: 600)
+    generator.requestedTimeToleranceAfter = CMTime(seconds: 1, preferredTimescale: 600)
+    var times = [max(0, timeMs)]
+    if timeMs != 0 { times.append(0) }
+    if timeMs < 1000 { times.append(1000) }
+    for ms in times {
+        let time = CMTime(value: CMTimeValue(ms), timescale: 1000)
+        guard let result = try? await generator.image(at: time),
+              let jpeg = mediaSearchJPEG(from: UIImage(cgImage: result.image), maxEdge: maxEdge) else { continue }
+        return jpeg
+    }
+    return nil
 }
 
 // MARK: - Shared engine + storage for Photo Search and Audio Search
@@ -226,12 +260,23 @@ func mediaSearchJPEG(from image: UIImage, maxEdge: CGFloat = 512) -> Data? {
     guard longest > 0 else { return nil }
     let scale = min(1, maxEdge / longest)
     let size = CGSize(width: (image.size.width * scale).rounded(), height: (image.size.height * scale).rounded())
+#if os(macOS)
+    let resized = NSImage(size: NSSize(width: size.width, height: size.height))
+    resized.lockFocus()
+    image.draw(in: NSRect(origin: .zero, size: NSSize(width: size.width, height: size.height)),
+               from: NSRect(origin: .zero, size: image.size),
+               operation: .copy,
+               fraction: 1.0)
+    resized.unlockFocus()
+    return resized.jpegData(compressionQuality: 0.9)
+#else
     let format = UIGraphicsImageRendererFormat.default()
     format.scale = 1
     let resized = UIGraphicsImageRenderer(size: size, format: format).image { _ in
         image.draw(in: CGRect(origin: .zero, size: size))
     }
     return resized.jpegData(compressionQuality: 0.9)
+#endif
 }
 
 /// Decode the first `maxSeconds` of an audio file to 16 kHz mono floats.

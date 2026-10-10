@@ -6,7 +6,7 @@ let package = Package(
     name: "LiteRTLM",
     platforms: [
         .iOS(.v15),
-        .macOS(.v12),
+        .macOS(.v14),
     ],
     products: [
         .library(
@@ -16,6 +16,10 @@ let package = Package(
         .library(
             name: "CLiteRTLMRuntime",
             targets: ["CLiteRTLM"]
+        ),
+        .library(
+            name: "CLiteRTLMRuntime_mac",
+            targets: ["CLiteRTLM_mac"]
         ),
     ],
     targets: [

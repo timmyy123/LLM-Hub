@@ -328,3 +328,33 @@ struct ThinkingAwareResultContent: View {
         }
     }
 }
+
+public struct ThinkingBlockView: View {
+    public let reasoning: String
+    @State private var isExpanded: Bool = false
+
+    public init(reasoning: String) {
+        self.reasoning = reasoning
+    }
+
+    public var body: some View {
+        DisclosureGroup(isExpanded: $isExpanded) {
+            Text(reasoning)
+                .font(.system(size: 12))
+                .foregroundColor(.white.opacity(0.7))
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(8)
+                .background(Color.white.opacity(0.04))
+                .cornerRadius(6)
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "brain")
+                    .foregroundColor(ApolloPalette.accent)
+                Text(isExpanded ? "Hide Reasoning" : "Thought Process")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(ApolloPalette.accent)
+            }
+        }
+        .padding(.vertical, 4)
+    }
+}

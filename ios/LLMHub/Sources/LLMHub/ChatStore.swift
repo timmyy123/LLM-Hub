@@ -56,4 +56,82 @@ class ChatStore: ObservableObject {
         chatSessions.removeAll()
         saveSessions()
     }
+
+    @Published var currentConversationId: UUID?
+
+    var conversations: [ChatSession] {
+        chatSessions
+    }
+
+    var currentMessages: [ChatMessage] {
+        get {
+            if let currentId = currentConversationId,
+               let session = chatSessions.first(where: { $0.id == currentId }) {
+                return session.messages
+            }
+            return chatSessions.first?.messages ?? []
+        }
+        set {
+            let targetId = currentConversationId ?? chatSessions.first?.id
+            if let targetId = targetId,
+               let idx = chatSessions.firstIndex(where: { $0.id == targetId }) {
+                chatSessions[idx].messages = newValue
+                saveSessions()
+            }
+        }
+    }
+
+    func selectConversation(_ id: UUID) {
+        currentConversationId = id
+    }
+
+    func deleteConversation(_ id: UUID) {
+        deleteSession(id: id)
+        if currentConversationId == id {
+            currentConversationId = chatSessions.first?.id
+        }
+    }
+
+    func clearCurrentConversation() {
+        let targetId = currentConversationId ?? chatSessions.first?.id
+        if let targetId = targetId,
+           let idx = chatSessions.firstIndex(where: { $0.id == targetId }) {
+            chatSessions[idx].messages.removeAll()
+            saveSessions()
+        }
+    }
+
+    func appendMessage(_ message: ChatMessage) {
+        if chatSessions.isEmpty {
+            _ = createNewConversation()
+        }
+        let targetId = currentConversationId ?? chatSessions.first!.id
+        if let idx = chatSessions.firstIndex(where: { $0.id == targetId }) {
+            chatSessions[idx].messages.append(message)
+            saveSessions()
+        }
+    }
+
+    func appendChunkToMessage(id: UUID, chunk: String) {
+        let targetId = currentConversationId ?? chatSessions.first?.id
+        guard let targetId = targetId,
+              let sessionIdx = chatSessions.firstIndex(where: { $0.id == targetId }),
+              let msgIdx = chatSessions[sessionIdx].messages.firstIndex(where: { $0.id == id }) else {
+            return
+        }
+        chatSessions[sessionIdx].messages[msgIdx].content += chunk
+    }
+
+    @discardableResult
+    func createNewConversation() -> ChatSession {
+        let session = ChatSession(title: AppSettings.shared.localized("drawer_new_chat"))
+        addSession(session)
+        currentConversationId = session.id
+        return session
+    }
+
+    func clearAllConversations() {
+        clearAll()
+        currentConversationId = nil
+    }
 }

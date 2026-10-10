@@ -10,6 +10,14 @@ import UniformTypeIdentifiers
 
 #if canImport(UIKit)
   import UIKit
+#elseif canImport(AppKit)
+  import AppKit
+  public typealias UIImage = NSImage
+  extension NSImage {
+    public convenience init(cgImage: CGImage) {
+      self.init(cgImage: cgImage, size: NSSize(width: cgImage.width, height: cgImage.height))
+    }
+  }
 #endif
 #if canImport(CoreML)
   import CoreML
@@ -551,7 +559,7 @@ public enum ImageConverter {
     }
     return (rgbTensor, binaryMask)
   }
-  #if canImport(UIKit)
+  #if canImport(UIKit) || canImport(AppKit)
 
     public static func image(
       from tensor: Tensor<FloatType>, scaleFactor: CGFloat, binaryMask: Tensor<UInt8>? = nil,

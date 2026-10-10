@@ -1,0 +1,199 @@
+[
+  {
+    "name": "FLUX.1 [dev] (5-bit)",
+    "version": "flux1",
+    "autoencoder": "flux_1_vae_f16.ckpt",
+    "prefix": "",
+    "default_scale": 16,
+    "hires_fix_scale": 24,
+    "file": "flux_1_dev_q5p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "t5_xxl_encoder_q6p.ckpt",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "high_precision_autoencoder": true,
+    "guidance_embed": true,
+    "padded_text_encoding_length": 512,
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "tea_cache_coefficients": [
+      498.651651,
+      -283.781631,
+      55.8554382,
+      -3.82021401,
+      0.264230861
+    ]
+  },
+  {
+    "name": "SD3 Medium 3.5 (8-bit)",
+    "version": "sd3",
+    "autoencoder": "sd3_vae_f16.ckpt",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "t5_encoder": "t5_xxl_encoder_q6p.ckpt",
+    "prefix": "",
+    "default_scale": 16,
+    "hires_fix_scale": 32,
+    "file": "sd3_medium_3.5_q8p.ckpt",
+    "upcast_attention": false,
+    "text_encoder": "open_clip_vit_bigg14_f16.ckpt",
+    "objective": {
+      "u": {
+        "condition_scale": 1000
+      }
+    },
+    "mmdit": {
+      "qk_norm": true,
+      "dual_attention_layers": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ]
+    }
+  },
+  {
+    "file": "svd_i2v_xt_1.1_q6p_q8p.ckpt",
+    "version": "svd_i2v",
+    "conditioning": "noise",
+    "objective": {
+      "v": {}
+    },
+    "prefix": "",
+    "default_scale": 8,
+    "clip_encoder": "svd_i2v_xt_1.1_q6p_q8p.ckpt",
+    "name": "Stable Video Diffusion I2V XT v1.1 (8-bit)",
+    "text_encoder": "open_clip_vit_h14_vision_model_f16.ckpt",
+    "upcast_attention": false,
+    "modifier": "none",
+    "noise_discretization": {
+      "edm": {
+        "_0": {
+          "sigma_max": 700,
+          "sigma_data": 0.5,
+          "sigma_min": 0.002
+        }
+      }
+    }
+  },
+  {
+    "conditioning": "noise",
+    "latents_std": [
+      8.4927,
+      5.9022,
+      6.5498,
+      5.2299
+    ],
+    "autoencoder": "sdxl_vae_v1.0_f16.ckpt",
+    "default_scale": 16,
+    "objective": {
+      "edm": {
+        "sigma_data": 0.5
+      }
+    },
+    "prefix": "",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "version": "sdxl_base_v0.9",
+    "upcast_attention": false,
+    "name": "Playground v2.5 (8-bit)",
+    "file": "playground_v2.5_q6p_q8p.ckpt",
+    "noise_discretization": {
+      "edm": {
+        "_0": {
+          "sigma_min": 0.002,
+          "sigma_data": 0.5,
+          "sigma_max": 80
+        }
+      }
+    },
+    "text_encoder": "open_clip_vit_bigg14_f16.ckpt",
+    "latents_mean": [
+      -1.6574,
+      1.886,
+      -1.383,
+      2.5155
+    ],
+    "latents_scaling_factor": 0.5
+  },
+  {
+    "name": "SDXL Turbo (8-bit)",
+    "prefix": "",
+    "default_scale": 8,
+    "autoencoder": "sdxl_vae_v1.0_f16.ckpt",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "text_encoder": "open_clip_vit_bigg14_f16.ckpt",
+    "file": "sd_xl_turbo_q6p_q8p.ckpt",
+    "version": "sdxl_base_v0.9",
+    "upcast_attention": false,
+    "is_consistency_model": true
+  },
+  {
+    "file": "svd_i2v_1.0_q6p_q8p.ckpt",
+    "version": "svd_i2v",
+    "conditioning": "noise",
+    "objective": {
+      "v": {}
+    },
+    "prefix": "",
+    "default_scale": 8,
+    "clip_encoder": "svd_i2v_1.0_q6p_q8p.ckpt",
+    "name": "Stable Video Diffusion I2V v1.0 (8-bit)",
+    "text_encoder": "open_clip_vit_h14_vision_model_f16.ckpt",
+    "upcast_attention": false,
+    "modifier": "none",
+    "noise_discretization": {
+      "edm": {
+        "_0": {
+          "sigma_max": 700,
+          "sigma_data": 0.5,
+          "sigma_min": 0.002
+        }
+      }
+    }
+  },
+  {
+    "text_encoder": "open_clip_vit_bigg14_f16.ckpt",
+    "prefix": "",
+    "file": "ssd_1b_q6p_q8p.ckpt",
+    "clip_encoder": "clip_vit_l14_f16.ckpt",
+    "version": "ssd_1b",
+    "autoencoder": "sdxl_vae_v1.0_f16.ckpt",
+    "upcast_attention": false,
+    "name": "SSD 1B (Segmind SDXL) (8-bit)",
+    "default_scale": 16
+  },
+  {
+    "prefix": "",
+    "upcast_attention": false,
+    "clip_encoder": "open_clip_vit_h14_visual_proj_f16.ckpt",
+    "text_encoder": "open_clip_vit_h14_vision_model_f16.ckpt",
+    "conditioning": "noise",
+    "version": "svd_i2v",
+    "default_scale": 8,
+    "name": "AnimateLCM SVD XT v1.1 (8-bit)",
+    "noise_discretization": {
+      "edm": {
+        "_0": {
+          "sigma_max": 700,
+          "sigma_data": 0.5,
+          "sigma_min": 0.002
+        }
+      }
+    },
+    "modifier": "none",
+    "objective": {
+      "v": {}
+    },
+    "file": "animatelcm_svd_xt_v1.1_q6p_q8p.ckpt"
+  }
+]

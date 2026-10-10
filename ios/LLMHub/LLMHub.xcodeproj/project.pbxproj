@@ -10,6 +10,14 @@
 		1AE5E42ED85BEFE5C3ED1D2A /* LocalizationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75BBFF4AA65F0EF6FF1DB93D /* LocalizationManager.swift */; };
 		1D92A835955F48E1AA4AEEEF /* EmbeddingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59683F4EC0364144B429B48B /* EmbeddingService.swift */; };
 		1F3A9E5C7B2E4D6F8A1B2C3D /* ApolloTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E4B5F6A7C8D9E0F1A2B3C4D /* ApolloTheme.swift */; };
+		242C2C793079D273006DA6B8 /* configs.json in Resources */ = {isa = PBXBuildFile; fileRef = D70000000000000000000022 /* configs.json */; };
+		242C2C7A3079D273006DA6B8 /* models.json in Resources */ = {isa = PBXBuildFile; fileRef = D70000000000000000000012 /* models.json */; };
+		242C2C7B3079D273006DA6B8 /* LlamaCppBinary in Frameworks */ = {isa = PBXBuildFile; productRef = DC1100000000000000000004 /* LlamaCppBinary */; };
+		242C2C7C3079D273006DA6B8 /* ZIPFoundation in Frameworks */ = {isa = PBXBuildFile; productRef = FA001122334455667788AA11 /* ZIPFoundation */; };
+		242C2C7D3079D273006DA6B8 /* MediaGenerationKit in Frameworks */ = {isa = PBXBuildFile; productRef = MGK00001000000000000MG02 /* MediaGenerationKit */; };
+		242C2C7E3079D273006DA6B8 /* WhisperWrapper in Frameworks */ = {isa = PBXBuildFile; productRef = WH000001000000000000WH02 /* WhisperWrapper */; };
+		242C2C823079DC2E006DA6B8 /* LiteRTLM in Frameworks */ = {isa = PBXBuildFile; productRef = AD000002000000000000BB08 /* LiteRTLM */; };
+		242C2C833079DC2E006DA6B8 /* MagentaRuntime in Frameworks */ = {isa = PBXBuildFile; productRef = F1A2B3C4D5E6F708192A3B5C /* MagentaRuntime */; };
 		2461869E2FB9A616005E46A3 /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2461869D2FB9A616005E46A3 /* StoreKit.framework */; };
 		24E38142303A08E70031A1EA /* WhisperWrapper in Frameworks */ = {isa = PBXBuildFile; productRef = WH000001000000000000WH02 /* WhisperWrapper */; };
 		2A3672DC476297C35298841D /* HomeScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6D5DEA8384F9DDFC69C359C /* HomeScreen.swift */; };
@@ -55,6 +63,50 @@
 		FA001122334455667788AABB /* StableDiffusionBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA001122334455667788AACC /* StableDiffusionBackend.swift */; };
 		FA001122334455667788AAFF /* ZIPFoundation in Frameworks */ = {isa = PBXBuildFile; productRef = FA001122334455667788AA11 /* ZIPFoundation */; };
 		FA0011BB334455667788AA01 /* PreviewServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA0011BB334455667788AA02 /* PreviewServer.swift */; };
+		MCB000000000000000000001 /* Mac/UI/SettingsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = MCF000000000000000000001 /* Mac/UI/SettingsScreen.swift */; };
+		MCB000000000000000000002 /* Mac/UI/PremiumScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = MCF000000000000000000002 /* Mac/UI/PremiumScreen.swift */; };
+		MCB000000000000000000003 /* Mac/UI/ChatSettingsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = MCF000000000000000000003 /* Mac/UI/ChatSettingsSheet.swift */; };
+		MCB000000000000000000004 /* Mac/UI/ModelDownloadScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = MCF000000000000000000004 /* Mac/UI/ModelDownloadScreen.swift */; };
+		MCB000000000000000000005 /* Mac/UI/ChatScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = MCF000000000000000000005 /* Mac/UI/ChatScreen.swift */; };
+		MCB000000000000000000006 /* Mac/UI/MediaScreens.swift in Sources */ = {isa = PBXBuildFile; fileRef = MCF000000000000000000006 /* Mac/UI/MediaScreens.swift */; };
+		MCB000000000000000000007 /* Mac/UI/HomeScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = MCF000000000000000000007 /* Mac/UI/HomeScreen.swift */; };
+		MCB000000000000000000008 /* Mac/UI/AgentScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = MCF000000000000000000008 /* Mac/UI/AgentScreen.swift */; };
+		MCB000000000000000000009 /* Mac/UI/FeatureScreens.swift in Sources */ = {isa = PBXBuildFile; fileRef = MCF000000000000000000009 /* Mac/UI/FeatureScreens.swift */; };
+		MCB000000000000000000010 /* Mac/UI/Components/WebPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = MCF000000000000000000010 /* Mac/UI/Components/WebPreviewView.swift */; };
+		MCB000000000000000000011 /* Mac/UI/Components/CodeBlockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = MCF000000000000000000011 /* Mac/UI/Components/CodeBlockView.swift */; };
+		MCB000000000000000000012 /* Mac/UI/Components/MarkdownTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = MCF000000000000000000012 /* Mac/UI/Components/MarkdownTextView.swift */; };
+		MCB000000000000000000013 /* Mac/App/LLMHubMacApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = MCF000000000000000000013 /* Mac/App/LLMHubMacApp.swift */; };
+		MCB000000000000000000014 /* Mac/App/PlatformCompatibility.swift in Sources */ = {isa = PBXBuildFile; fileRef = MCF000000000000000000014 /* Mac/App/PlatformCompatibility.swift */; };
+		MCB000000000000000000015 /* Mac/App/ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = MCF000000000000000000015 /* Mac/App/ContentView.swift */; };
+		MCB000000000000000000016 /* Mac/Theme/ApolloThemeMac.swift in Sources */ = {isa = PBXBuildFile; fileRef = MCF000000000000000000016 /* Mac/Theme/ApolloThemeMac.swift */; };
+		MCB000000000000000000101 /* AudioTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A2B3C4D5E6F708192A3B4C /* AudioTools.swift */; };
+		MCB000000000000000000102 /* ChatAgentSkillsTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1B2C3D4E5F600002A2B3C4D /* ChatAgentSkillsTools.swift */; };
+		MCB000000000000000000103 /* ChatModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0805DB9589154E465145E2DB /* ChatModels.swift */; };
+		MCB000000000000000000104 /* EmbeddingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59683F4EC0364144B429B48B /* EmbeddingService.swift */; };
+		MCB000000000000000000105 /* RagService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C74D4095CAC843D4AD4F61B3 /* RagService.swift */; };
+		MCB000000000000000000106 /* MemoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27AC91B048B74436A4029665 /* MemoryStore.swift */; };
+		MCB000000000000000000107 /* RagServiceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9DF631F25054004865F2A2B /* RagServiceManager.swift */; };
+		MCB000000000000000000108 /* SimplifiedFileManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A9D5B7C8E1F4A3B6C0D2E11 /* SimplifiedFileManager.swift */; };
+		MCB000000000000000000109 /* DocumentTextExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D399F03307D44289BC766AD9 /* DocumentTextExtractor.swift */; };
+		MCB000000000000000000110 /* ChatStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C56D7A951BFDFE19E54CB73B /* ChatStore.swift */; };
+		MCB000000000000000000111 /* AgentViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A161C7E902C4A77ABC84BC4 /* AgentViewModel.swift */; };
+		MCB000000000000000000112 /* MCPClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D4350000000000000000002 /* MCPClient.swift */; };
+		MCB000000000000000000113 /* AgentTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0C36C1D16AF4675BEDB54C5 /* AgentTools.swift */; };
+		MCB000000000000000000114 /* LLMBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = ECD7AAE029AF6E8F7EA01B3D /* LLMBackend.swift */; };
+		MCB000000000000000000115 /* LiteRTLMBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A2B3C4D5E6F708192A3B4F /* LiteRTLMBackend.swift */; };
+		MCB000000000000000000116 /* LocalizationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75BBFF4AA65F0EF6FF1DB93D /* LocalizationManager.swift */; };
+		MCB000000000000000000117 /* ModelData.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3C1A239A9E6DC307A0767C5 /* ModelData.swift */; };
+		MCB000000000000000000118 /* ModelDownloader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05BF91E2CF47146ED081A0A8 /* ModelDownloader.swift */; };
+		MCB000000000000000000119 /* ModelManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D54909FE8CC139164BABB54 /* ModelManager.swift */; };
+		MCB000000000000000000120 /* StableDiffusionBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA001122334455667788AACC /* StableDiffusionBackend.swift */; };
+		MCB000000000000000000121 /* ThinkingComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F600002A2B3C4D /* ThinkingComponents.swift */; };
+		MCB000000000000000000122 /* PreviewServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA0011BB334455667788AA02 /* PreviewServer.swift */; };
+		MCB000000000000000000123 /* PurchaseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD000001000000000000AA04 /* PurchaseManager.swift */; };
+		MCB000000000000000000124 /* VideoGeneratorBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = VG000001000000000000VG04 /* VideoGeneratorBackend.swift */; };
+		MCB000000000000000000125 /* AppleFoundationModelSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF000001000000000000AF02 /* AppleFoundationModelSupport.swift */; };
+		MCB000000000000000000126 /* MediaSearchCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = MS000001000000000000MS02 /* MediaSearchCore.swift */; };
+		MCB000000000000000000127 /* ImageUpscalerBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = UP000001000000000000UP04 /* ImageUpscalerBackend.swift */; };
+		MCB000000000000000000128 /* WhisperBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = WB000001000000000000WB02 /* WhisperBackend.swift */; };
 		MGK00001000000000000MG01 /* MediaGenerationKit in Frameworks */ = {isa = PBXBuildFile; productRef = MGK00001000000000000MG02 /* MediaGenerationKit */; };
 		MS000001000000000000MS01 /* MediaSearchCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = MS000001000000000000MS02 /* MediaSearchCore.swift */; };
 		MS000001000000000000MS03 /* PhotoSearchScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = MS000001000000000000MS04 /* PhotoSearchScreen.swift */; };
@@ -151,6 +203,23 @@
 		F841EEA264BDE0E6E2A1BC18 /* Icon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Icon.png; sourceTree = "<group>"; };
 		FA001122334455667788AACC /* StableDiffusionBackend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StableDiffusionBackend.swift; sourceTree = "<group>"; };
 		FA0011BB334455667788AA02 /* PreviewServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewServer.swift; sourceTree = "<group>"; };
+		MAC00006000000000000MAC06 /* LLM Hub.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "LLM Hub.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		MCF000000000000000000001 /* Mac/UI/SettingsScreen.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Mac/UI/SettingsScreen.swift; sourceTree = "<group>"; };
+		MCF000000000000000000002 /* Mac/UI/PremiumScreen.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Mac/UI/PremiumScreen.swift; sourceTree = "<group>"; };
+		MCF000000000000000000003 /* Mac/UI/ChatSettingsSheet.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Mac/UI/ChatSettingsSheet.swift; sourceTree = "<group>"; };
+		MCF000000000000000000004 /* Mac/UI/ModelDownloadScreen.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Mac/UI/ModelDownloadScreen.swift; sourceTree = "<group>"; };
+		MCF000000000000000000005 /* Mac/UI/ChatScreen.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Mac/UI/ChatScreen.swift; sourceTree = "<group>"; };
+		MCF000000000000000000006 /* Mac/UI/MediaScreens.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Mac/UI/MediaScreens.swift; sourceTree = "<group>"; };
+		MCF000000000000000000007 /* Mac/UI/HomeScreen.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Mac/UI/HomeScreen.swift; sourceTree = "<group>"; };
+		MCF000000000000000000008 /* Mac/UI/AgentScreen.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Mac/UI/AgentScreen.swift; sourceTree = "<group>"; };
+		MCF000000000000000000009 /* Mac/UI/FeatureScreens.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Mac/UI/FeatureScreens.swift; sourceTree = "<group>"; };
+		MCF000000000000000000010 /* Mac/UI/Components/WebPreviewView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Mac/UI/Components/WebPreviewView.swift; sourceTree = "<group>"; };
+		MCF000000000000000000011 /* Mac/UI/Components/CodeBlockView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Mac/UI/Components/CodeBlockView.swift; sourceTree = "<group>"; };
+		MCF000000000000000000012 /* Mac/UI/Components/MarkdownTextView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Mac/UI/Components/MarkdownTextView.swift; sourceTree = "<group>"; };
+		MCF000000000000000000013 /* Mac/App/LLMHubMacApp.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Mac/App/LLMHubMacApp.swift; sourceTree = "<group>"; };
+		MCF000000000000000000014 /* Mac/App/PlatformCompatibility.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Mac/App/PlatformCompatibility.swift; sourceTree = "<group>"; };
+		MCF000000000000000000015 /* Mac/App/ContentView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Mac/App/ContentView.swift; sourceTree = "<group>"; };
+		MCF000000000000000000016 /* Mac/Theme/ApolloThemeMac.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Mac/Theme/ApolloThemeMac.swift; sourceTree = "<group>"; };
 		MS000001000000000000MS02 /* MediaSearchCore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaSearchCore.swift; sourceTree = "<group>"; };
 		MS000001000000000000MS04 /* PhotoSearchScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoSearchScreen.swift; sourceTree = "<group>"; };
 		MS000001000000000000MS06 /* AudioSearchScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioSearchScreen.swift; sourceTree = "<group>"; };
@@ -179,9 +248,45 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		MAC00005000000000000MAC05 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				242C2C7B3079D273006DA6B8 /* LlamaCppBinary in Frameworks */,
+				242C2C823079DC2E006DA6B8 /* LiteRTLM in Frameworks */,
+				242C2C7E3079D273006DA6B8 /* WhisperWrapper in Frameworks */,
+				242C2C833079DC2E006DA6B8 /* MagentaRuntime in Frameworks */,
+				242C2C7D3079D273006DA6B8 /* MediaGenerationKit in Frameworks */,
+				242C2C7C3079D273006DA6B8 /* ZIPFoundation in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		242C2C7F3079D273006DA6B8 /* Recovered References */ = {
+			isa = PBXGroup;
+			children = (
+				MCF000000000000000000001 /* Mac/UI/SettingsScreen.swift */,
+				MCF000000000000000000002 /* Mac/UI/PremiumScreen.swift */,
+				MCF000000000000000000003 /* Mac/UI/ChatSettingsSheet.swift */,
+				MCF000000000000000000004 /* Mac/UI/ModelDownloadScreen.swift */,
+				MCF000000000000000000005 /* Mac/UI/ChatScreen.swift */,
+				MCF000000000000000000006 /* Mac/UI/MediaScreens.swift */,
+				MCF000000000000000000007 /* Mac/UI/HomeScreen.swift */,
+				MCF000000000000000000008 /* Mac/UI/AgentScreen.swift */,
+				MCF000000000000000000009 /* Mac/UI/FeatureScreens.swift */,
+				MCF000000000000000000010 /* Mac/UI/Components/WebPreviewView.swift */,
+				MCF000000000000000000011 /* Mac/UI/Components/CodeBlockView.swift */,
+				MCF000000000000000000012 /* Mac/UI/Components/MarkdownTextView.swift */,
+				MCF000000000000000000013 /* Mac/App/LLMHubMacApp.swift */,
+				MCF000000000000000000014 /* Mac/App/PlatformCompatibility.swift */,
+				MCF000000000000000000015 /* Mac/App/ContentView.swift */,
+				MCF000000000000000000016 /* Mac/Theme/ApolloThemeMac.swift */,
+			);
+			name = "Recovered References";
+			sourceTree = "<group>";
+		};
 		2C0336DBCA471F0B9ACFE6C9 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
@@ -259,6 +364,7 @@
 				F9BA2238AD5E6E62D6EC09E6 /* Products */,
 				2461869F2FB9AAE2005E46A3 /* Secrets.debug.xcconfig */,
 				246186A02FB9AAF6005E46A3 /* Secrets.release.xcconfig */,
+				242C2C7F3079D273006DA6B8 /* Recovered References */,
 			);
 			sourceTree = "<group>";
 		};
@@ -266,6 +372,7 @@
 			isa = PBXGroup;
 			children = (
 				5F60B98E5AE21634E4E47E99 /* LLMHub.app */,
+				MAC00006000000000000MAC06 /* LLM Hub.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -299,6 +406,31 @@
 			productReference = 5F60B98E5AE21634E4E47E99 /* LLMHub.app */;
 			productType = "com.apple.product-type.application";
 		};
+		MAC00001000000000000MAC01 /* LLM Hub */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = MAC00002000000000000MAC02 /* Build configuration list for PBXNativeTarget "LLM Hub" */;
+			buildPhases = (
+				MAC00003000000000000MAC03 /* Sources */,
+				MAC00004000000000000MAC04 /* Resources */,
+				MAC00005000000000000MAC05 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "LLM Hub";
+			packageProductDependencies = (
+				DC1100000000000000000004 /* LlamaCppBinary */,
+				FA001122334455667788AA11 /* ZIPFoundation */,
+				MGK00001000000000000MG02 /* MediaGenerationKit */,
+				WH000001000000000000WH02 /* WhisperWrapper */,
+				AD000002000000000000BB08 /* LiteRTLM */,
+				F1A2B3C4D5E6F708192A3B5C /* MagentaRuntime */,
+			);
+			productName = "LLM Hub";
+			productReference = MAC00006000000000000MAC06 /* LLM Hub.app */;
+			productType = "com.apple.product-type.application";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -309,6 +441,10 @@
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
 					4DC2B594A3D4811E50B2A8D3 = {
+						ProvisioningStyle = Automatic;
+					};
+					MAC00001000000000000MAC01 = {
+						CreatedOnToolsVersion = 15.0;
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -355,6 +491,7 @@
 			projectRoot = "";
 			targets = (
 				4DC2B594A3D4811E50B2A8D3 /* LLMHub */,
+				MAC00001000000000000MAC01 /* LLM Hub */,
 			);
 		};
 /* End PBXProject section */
@@ -369,6 +506,15 @@
 				5A9D0089FE08164E4232AD63 /* Assets.xcassets in Resources */,
 				BB0639256B9F424CC61F2737 /* Icon.png in Resources */,
 				AFCC035B534D28D50731B66D /* Localizable.strings in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		MAC00004000000000000MAC04 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				242C2C793079D273006DA6B8 /* configs.json in Resources */,
+				242C2C7A3079D273006DA6B8 /* models.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -424,6 +570,57 @@
 				SS000001000000000000SS01 /* SplashScreenView.swift in Sources */,
 				UP000001000000000000UP03 /* ImageUpscalerBackend.swift in Sources */,
 				WB000001000000000000WB01 /* WhisperBackend.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		MAC00003000000000000MAC03 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				MCB000000000000000000001 /* Mac/UI/SettingsScreen.swift in Sources */,
+				MCB000000000000000000002 /* Mac/UI/PremiumScreen.swift in Sources */,
+				MCB000000000000000000003 /* Mac/UI/ChatSettingsSheet.swift in Sources */,
+				MCB000000000000000000004 /* Mac/UI/ModelDownloadScreen.swift in Sources */,
+				MCB000000000000000000005 /* Mac/UI/ChatScreen.swift in Sources */,
+				MCB000000000000000000006 /* Mac/UI/MediaScreens.swift in Sources */,
+				MCB000000000000000000007 /* Mac/UI/HomeScreen.swift in Sources */,
+				MCB000000000000000000008 /* Mac/UI/AgentScreen.swift in Sources */,
+				MCB000000000000000000009 /* Mac/UI/FeatureScreens.swift in Sources */,
+				MCB000000000000000000010 /* Mac/UI/Components/WebPreviewView.swift in Sources */,
+				MCB000000000000000000011 /* Mac/UI/Components/CodeBlockView.swift in Sources */,
+				MCB000000000000000000012 /* Mac/UI/Components/MarkdownTextView.swift in Sources */,
+				MCB000000000000000000013 /* Mac/App/LLMHubMacApp.swift in Sources */,
+				MCB000000000000000000014 /* Mac/App/PlatformCompatibility.swift in Sources */,
+				MCB000000000000000000015 /* Mac/App/ContentView.swift in Sources */,
+				MCB000000000000000000016 /* Mac/Theme/ApolloThemeMac.swift in Sources */,
+				MCB000000000000000000101 /* AudioTools.swift in Sources */,
+				MCB000000000000000000102 /* ChatAgentSkillsTools.swift in Sources */,
+				MCB000000000000000000103 /* ChatModels.swift in Sources */,
+				MCB000000000000000000104 /* EmbeddingService.swift in Sources */,
+				MCB000000000000000000105 /* RagService.swift in Sources */,
+				MCB000000000000000000106 /* MemoryStore.swift in Sources */,
+				MCB000000000000000000107 /* RagServiceManager.swift in Sources */,
+				MCB000000000000000000108 /* SimplifiedFileManager.swift in Sources */,
+				MCB000000000000000000109 /* DocumentTextExtractor.swift in Sources */,
+				MCB000000000000000000110 /* ChatStore.swift in Sources */,
+				MCB000000000000000000111 /* AgentViewModel.swift in Sources */,
+				MCB000000000000000000112 /* MCPClient.swift in Sources */,
+				MCB000000000000000000113 /* AgentTools.swift in Sources */,
+				MCB000000000000000000114 /* LLMBackend.swift in Sources */,
+				MCB000000000000000000115 /* LiteRTLMBackend.swift in Sources */,
+				MCB000000000000000000116 /* LocalizationManager.swift in Sources */,
+				MCB000000000000000000117 /* ModelData.swift in Sources */,
+				MCB000000000000000000118 /* ModelDownloader.swift in Sources */,
+				MCB000000000000000000119 /* ModelManager.swift in Sources */,
+				MCB000000000000000000120 /* StableDiffusionBackend.swift in Sources */,
+				MCB000000000000000000121 /* ThinkingComponents.swift in Sources */,
+				MCB000000000000000000122 /* PreviewServer.swift in Sources */,
+				MCB000000000000000000123 /* PurchaseManager.swift in Sources */,
+				MCB000000000000000000124 /* VideoGeneratorBackend.swift in Sources */,
+				MCB000000000000000000125 /* AppleFoundationModelSupport.swift in Sources */,
+				MCB000000000000000000126 /* MediaSearchCore.swift in Sources */,
+				MCB000000000000000000127 /* ImageUpscalerBackend.swift in Sources */,
+				MCB000000000000000000128 /* WhisperBackend.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -534,12 +731,12 @@
 				CODE_SIGN_ENTITLEMENTS = LLMHub.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 74;
+				CURRENT_PROJECT_VERSION = 76;
 				DEAD_CODE_STRIPPING = NO;
 				DEVELOPMENT_TEAM = 76K65T869A;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "LLMHub-Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = LLMHub;
+				INFOPLIST_KEY_CFBundleDisplayName = "LLM Hub";
 				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = NO;
 				INFOPLIST_KEY_NSAlarmKitUsageDescription = "LLM Hub schedules alarms you create with the AI Agent.";
 				INFOPLIST_KEY_NSCalendarsUsageDescription = "LLM Hub needs permission to access your calendar to create and view calendar events.";
@@ -580,12 +777,12 @@
 				CODE_SIGN_ENTITLEMENTS = LLMHub.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 74;
+				CURRENT_PROJECT_VERSION = 76;
 				DEAD_CODE_STRIPPING = NO;
 				DEVELOPMENT_TEAM = 76K65T869A;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "LLMHub-Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = LLMHub;
+				INFOPLIST_KEY_CFBundleDisplayName = "LLM Hub";
 				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = NO;
 				INFOPLIST_KEY_NSAlarmKitUsageDescription = "LLM Hub schedules alarms you create with the AI Agent.";
 				INFOPLIST_KEY_NSCalendarsUsageDescription = "LLM Hub needs permission to access your calendar to create and view calendar events.";
@@ -675,6 +872,50 @@
 			};
 			name = Release;
 		};
+		MAC00007000000000000MAC07 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIconMac;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 74;
+				DEVELOPMENT_TEAM = 76K65T869A;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "LLM Hub";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.5.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.llmhub.llmhub;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		MAC00008000000000000MAC08 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIconMac;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 74;
+				DEVELOPMENT_TEAM = 76K65T869A;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "LLM Hub";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.5.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.llmhub.llmhub;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -692,6 +933,15 @@
 			buildConfigurations = (
 				5F27A11A650BD7025E6AF037 /* Debug */,
 				EE0D8D09C754D34589382FCA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		MAC00002000000000000MAC02 /* Build configuration list for PBXNativeTarget "LLM Hub" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				MAC00007000000000000MAC07 /* Debug */,
+				MAC00008000000000000MAC08 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
