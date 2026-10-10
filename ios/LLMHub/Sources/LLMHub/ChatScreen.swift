@@ -664,7 +664,7 @@ class ChatViewModel: ObservableObject {
 
     private static let defaultGenerationSettings = ModelGenerationSettings(
         maxTokens: 512,
-        contextWindow: 2048,
+        contextWindow: 4096,
         topK: 64,
         topP: 0.95,
         temperature: 1.0,
@@ -1033,7 +1033,8 @@ class ChatViewModel: ObservableObject {
             settings.maxTokens = defaults.double(forKey: PersistenceKeys.maxTokens)
         }
         if defaults.object(forKey: PersistenceKeys.contextWindow) != nil {
-            settings.contextWindow = defaults.double(forKey: PersistenceKeys.contextWindow)
+            let legacyCtx = defaults.double(forKey: PersistenceKeys.contextWindow)
+            settings.contextWindow = (legacyCtx == 2048) ? 4096 : legacyCtx
         }
         if defaults.object(forKey: PersistenceKeys.topK) != nil {
             settings.topK = defaults.double(forKey: PersistenceKeys.topK)

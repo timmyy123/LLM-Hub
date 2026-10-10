@@ -126,7 +126,7 @@ struct ChatSettingsSheet: View {
     @ObservedObject var vm: ChatViewModel
     @EnvironmentObject var settings: AppSettings
     @Environment(\.dismiss) var dismiss
-    @State private var draftContextWindow: Double = 2048
+    @State private var draftContextWindow: Double = 4096
     @State private var draftTopK: Double = 64
     @State private var draftTopP: Double = 0.95
     @State private var draftTemperature: Double = 1.0
@@ -497,7 +497,7 @@ struct ChatSettingsSheet: View {
     }
 
     private func resetAllConfigsToDefaults() {
-        draftContextWindow = min(2048, modelMaxContextWindow)
+        draftContextWindow = min(4096, modelMaxContextWindow)
         draftTopK = 64
         draftTopP = 0.95
         draftTemperature = 1.0

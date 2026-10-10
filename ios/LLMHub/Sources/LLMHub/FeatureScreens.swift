@@ -2195,7 +2195,25 @@ private struct IOS17VibeVoiceScreen: View {
     @ObservedObject private var llm = LLMBackend.shared
     @ObservedObject private var ttsManager = OnDeviceTtsManager.shared
     @AppStorage("feature_vibevoice_model_name") private var selectedModelName: String = ""
-    @AppStorage("feature_vibevoice_max_tokens") private var maxTokens: Double = 512
+    @State private var maxTokens: Double = 4096
+
+    private func loadVibeVoiceContextWindow(for modelName: String) -> Double {
+        let key = "feature_vibevoice_max_tokens_\(modelName)"
+        let val = UserDefaults.standard.double(forKey: key)
+        if val > 0 {
+            return val
+        }
+        if let model = selectedFeatureModel(named: modelName) {
+            let cap = contextLimitForFeatureModel(model)
+            return Double(min(4096, cap))
+        }
+        return 4096
+    }
+
+    private func saveVibeVoiceContextWindow(value: Double, for modelName: String) {
+        let key = "feature_vibevoice_max_tokens_\(modelName)"
+        UserDefaults.standard.set(value, forKey: key)
+    }
     @AppStorage("feature_vibevoice_enable_model_audio") private var enableModelAudio: Bool = true
     @State private var voiceState: VibeVoiceState = .idle
     @State private var isChatActive = false
@@ -2282,7 +2300,14 @@ private struct IOS17VibeVoiceScreen: View {
                 if selectedModelName.isEmpty || !available.contains(where: { $0.name == selectedModelName }) {
                     selectedModelName = available.first?.name ?? ""
                 }
+                maxTokens = loadVibeVoiceContextWindow(for: selectedModelName)
             }
+        }
+        .onChange(of: selectedModelName) { _, newModelName in
+            maxTokens = loadVibeVoiceContextWindow(for: newModelName)
+        }
+        .onChange(of: maxTokens) { _, newValue in
+            saveVibeVoiceContextWindow(value: newValue, for: selectedModelName)
         }
         .onDisappear {
             stopAll()
@@ -3075,7 +3100,7 @@ struct WritingAidScreen: View {
         }
         if let model = selectedFeatureModel(named: modelName) {
             let cap = contextLimitForFeatureModel(model)
-            return Double(cap)
+            return Double(min(4096, cap))
         }
         return 4096
     }
@@ -3452,7 +3477,7 @@ struct TranslatorScreen: View {
     @EnvironmentObject var settings: AppSettings
     @ObservedObject private var ttsManager = OnDeviceTtsManager.shared
     @AppStorage("feature_translator_model_name") private var selectedModelName: String = ""
-    @State private var maxTokens: Double = 2048
+    @State private var maxTokens: Double = 4096
 
     private func loadTranslatorContextWindow(for modelName: String) -> Double {
         let key = "feature_translator_max_tokens_\(modelName)"
@@ -3462,7 +3487,7 @@ struct TranslatorScreen: View {
         }
         if let model = selectedFeatureModel(named: modelName) {
             let cap = contextLimitForFeatureModel(model, fallback: 4096)
-            return Double(cap)
+            return Double(min(4096, cap))
         }
         return 4096
     }
@@ -4262,7 +4287,7 @@ struct ScamDetectorScreen: View {
         }
         if let model = selectedFeatureModel(named: modelName) {
             let cap = contextLimitForFeatureModel(model)
-            return Double(cap)
+            return Double(min(4096, cap))
         }
         return 4096
     }
@@ -5020,7 +5045,7 @@ struct VibeCoderScreen: View {
         }
         if let model = selectedFeatureModel(named: modelName) {
             let cap = contextLimitForFeatureModel(model)
-            return Double(cap)
+            return Double(min(4096, cap))
         }
         return 4096
     }
