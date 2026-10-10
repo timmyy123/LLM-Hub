@@ -2537,9 +2537,11 @@ struct MessageBubble: View {
                 }
             }
 
-            Text(message.timestamp, style: .time)
-                .font(.caption2)
-                .foregroundColor(.white.opacity(0.5))
+            if !message.isGenerating || !message.content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                Text(message.timestamp, style: .time)
+                    .font(.caption2)
+                    .foregroundColor(.white.opacity(0.5))
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .confirmationDialog(settings.localized("more_options"), isPresented: $showActions) {
@@ -2576,22 +2578,21 @@ struct MessageBubble: View {
 
 // MARK: - Typing Indicator
 struct TypingIndicator: View {
-    @State private var phase = 0.0
+    @EnvironmentObject var settings: AppSettings
 
     var body: some View {
-        HStack(spacing: 4) {
-            ForEach(0..<3) { i in
-                Circle()
-                    .fill(Color.white.opacity(0.68))
-                    .frame(width: 6, height: 6)
-                    .scaleEffect(1.0 + 0.4 * sin(phase + Double(i) * .pi / 1.5))
-            }
+        HStack(spacing: 10) {
+            ProgressView()
+                .tint(Color(hex: "A78BFA"))
+            Text(settings.localized("ai_thinking"))
+                .font(.subheadline)
+                .foregroundColor(.white.opacity(0.85))
+            Spacer()
         }
-        .onAppear {
-            withAnimation(.linear(duration: 1).repeatForever(autoreverses: false)) {
-                phase = .pi * 2
-            }
-        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(Color.white.opacity(0.08))
+        .cornerRadius(14)
     }
 }
 
