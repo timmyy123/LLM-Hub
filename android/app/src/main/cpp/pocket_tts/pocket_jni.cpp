@@ -20,6 +20,7 @@ static std::string utf8(JNIEnv* env, jstring input) {
     return result;
 }
 static void fail(JNIEnv* env, const std::exception& error) {
+    if (env->ExceptionCheck()) return;
     env->ThrowNew(env->FindClass("java/lang/IllegalStateException"), error.what());
 }
 extern "C" JNIEXPORT jlong JNICALL
@@ -52,8 +53,15 @@ extern "C" JNIEXPORT jfloatArray JNICALL
 Java_com_llmhub_llmhub_ui_components_PocketTtsEngine_nativeSynthesize(JNIEnv* env, jobject, jlong handle, jstring text, jstring voice, jobject probe) {
     std::lock_guard<std::mutex> lock(engine_mutex);
     try {
-        auto method = env->GetMethodID(env->GetObjectClass(probe), "isCancelled", "()Z");
-        if (env->CallBooleanMethod(probe, method)) return env->NewFloatArray(0);
+        auto probe_class = env->GetObjectClass(probe);
+        if (!probe_class) return nullptr;
+        auto method = env->GetMethodID(probe_class, "isCancelled", "()Z");
+        env->DeleteLocalRef(probe_class);
+        // Failed lookups leave a Java exception pending; never call a null method ID.
+        if (!method || env->ExceptionCheck()) return nullptr;
+        auto cancelled = env->CallBooleanMethod(probe, method);
+        if (env->ExceptionCheck()) return nullptr;
+        if (cancelled) return env->NewFloatArray(0);
         std::string reference = utf8(env, voice);
         if (!std::ifstream(reference).good()) throw std::runtime_error("Reference audio was deleted");
         std::vector<float> samples;
@@ -63,6 +71,7 @@ Java_com_llmhub_llmhub_ui_components_PocketTtsEngine_nativeSynthesize(JNIEnv* en
             samples.insert(samples.end(), data, data + size);
             return true;
         }, 500);
+        if (env->ExceptionCheck()) return nullptr;
         auto result = env->NewFloatArray(samples.size());
         if (result) env->SetFloatArrayRegion(result, 0, samples.size(), samples.data());
         return result;

@@ -12,6 +12,22 @@ object SupertonicModel {
     const val NAME = "Supertonic 3 (ONNX)"
     const val REVISION = "3cadd1ee6394adea1bd021217a0e650ede09a323"
     const val BASE_URL = "https://huggingface.co/Supertone/supertonic-3/resolve/$REVISION"
+    const val FP16_NAME = "Supertonic 3 (ONNX FP16)"
+    const val FP16_REVISION = "d9bfd0a9384b42a76f9256eafdd3d8a5cc4706ba"
+    const val FP16_BASE_URL = "https://huggingface.co/Kyumdroid/supertonic-3-quant/resolve/$FP16_REVISION"
+    val fp16CoreFiles = linkedMapOf(
+        "duration_predictor.onnx" to 2058262L,
+        "text_encoder.onnx" to 18567302L,
+        "vector_estimator.onnx" to 128515913L,
+        "vocoder.onnx" to 50773381L,
+        "tts.json" to 8253L,
+        "unicode_indexer.json" to 277676L
+    )
+    fun isModel(name: String?) = name == NAME || name == FP16_NAME
+    fun coreFilesFor(name: String?): Map<String, Long> {
+        require(isModel(name))
+        return if (name == FP16_NAME) fp16CoreFiles else coreFiles
+    }
     val coreFiles = linkedMapOf(
         "duration_predictor.onnx" to 3700147L,
         "text_encoder.onnx" to 36416150L,
@@ -26,9 +42,12 @@ object SupertonicModel {
         "M2" to 292055L, "M3" to 290198L, "M4" to 291522L, "M5" to 291469L
     )
     val languages = listOf("en", "ko", "ja", "ar", "bg", "cs", "da", "de", "el", "es", "et", "fi", "fr", "hi", "hr", "hu", "id", "it", "lt", "lv", "nl", "pl", "pt", "ro", "ru", "sk", "sl", "sv", "tr", "uk", "vi")
-    fun directory(context: Context) = File(context.filesDir, "models/Supertonic_3_ONNX")
-    fun isComplete(context: Context) = coreFiles.all { (name, size) ->
-        File(directory(context), name).let { it.isFile && it.length() == size }
+    fun directory(context: Context, modelName: String? = NAME): File {
+        require(isModel(modelName))
+        return File(context.filesDir, if (modelName == FP16_NAME) "models/Supertonic_3_ONNX_FP16" else "models/Supertonic_3_ONNX")
+    }
+    fun isComplete(context: Context, modelName: String? = NAME) = coreFilesFor(modelName).all { (name, size) ->
+        File(directory(context, modelName), name).let { it.isFile && it.length() == size }
     }
     private val customKey = Regex("custom_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
     fun isVoiceKey(key: String) = key in voices || customKey.matches(key)

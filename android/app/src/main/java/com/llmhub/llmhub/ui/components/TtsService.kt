@@ -162,7 +162,7 @@ class TtsService(private val context: Context, private val isTranslationFeature:
             } else {
                 combine(themePreferences.selectedTtsModel, themePreferences.selectedTtsDevice,
                     themePreferences.selectedTtsVoice) { model, device, voice ->
-                    if (model in setOf(SupertonicModel.NAME, PocketTtsModel.NAME)) listOf(model, "cpu", "")
+                    if (SupertonicModel.isModel(model) || model == PocketTtsModel.NAME) listOf(model, "cpu", "")
                     else listOf(model, device, voice)
                 }.distinctUntilChanged().collectLatest { settings ->
                     isInitialized = false
@@ -209,16 +209,17 @@ class TtsService(private val context: Context, private val isTranslationFeature:
             }
             return
         }
-        if (selectedModel == SupertonicModel.NAME) {
+        if (SupertonicModel.isModel(selectedModel)) {
             try {
-                check(SupertonicModel.isComplete(context))
+                check(SupertonicModel.isComplete(context, selectedModel))
                 // Assign inside the IO block so cancellation cannot orphan native sessions.
                 withContext(Dispatchers.IO) {
-                    supertonicEngine = SupertonicEngine(SupertonicModel.directory(context))
+                    supertonicEngine = SupertonicEngine(SupertonicModel.directory(context, selectedModel),
+                        fp16 = selectedModel == SupertonicModel.FP16_NAME)
                 }
                 isCustomTts = true
                 isInitialized = true
-                currentModelDir = SupertonicModel.directory(context)
+                currentModelDir = SupertonicModel.directory(context, selectedModel)
                 startAudioTrackPlayback()
                 startSynthesisWorker()
                 flushPendingQueue()

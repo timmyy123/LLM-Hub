@@ -1645,7 +1645,7 @@ private fun TtsModelSelector(themeViewModel: ThemeViewModel) {
 @Composable
 private fun TtsDeviceSelector(themeViewModel: ThemeViewModel) {
     val selectedTtsModel by themeViewModel.selectedTtsModel.collectAsState()
-    if (selectedTtsModel == null || selectedTtsModel in setOf(SupertonicModel.NAME, PocketTtsModel.NAME)) return
+    if (selectedTtsModel == null || SupertonicModel.isModel(selectedTtsModel) || selectedTtsModel == PocketTtsModel.NAME) return
 
     val selectedTtsDevice by themeViewModel.selectedTtsDevice.collectAsState()
     var showTtsDeviceDialog by remember { mutableStateOf(false) }
@@ -1733,7 +1733,7 @@ private fun TtsVoiceSelector(themeViewModel: ThemeViewModel) {
         PocketVoiceSettings()
         return
     }
-    if (selectedTtsModel == SupertonicModel.NAME) {
+    if (SupertonicModel.isModel(selectedTtsModel)) {
         SupertonicVoiceSettings()
         return
     }

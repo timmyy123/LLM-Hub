@@ -128,4 +128,5 @@
 
 # PocketTTS.cpp JNI cancellation callback and native entry points.
 -keep class com.llmhub.llmhub.ui.components.PocketTtsEngine { *; }
+-keep interface com.llmhub.llmhub.ui.components.PocketTtsEngine$CancellationProbe { *; }
 -keep class * implements com.llmhub.llmhub.ui.components.PocketTtsEngine$CancellationProbe { *; }

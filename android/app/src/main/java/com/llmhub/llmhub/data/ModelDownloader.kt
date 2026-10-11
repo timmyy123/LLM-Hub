@@ -475,10 +475,11 @@ class ModelDownloader(
     }.flowOn(Dispatchers.IO)
 
     fun downloadVoiceFile(model: LLMModel, voiceKey: String): Flow<DownloadStatus> = flow {
-        if (model.name == SupertonicModel.NAME) {
+        if (SupertonicModel.isModel(model.name)) {
             require(voiceKey in SupertonicModel.voices)
             val expected = SupertonicModel.voices.getValue(voiceKey)
-            val dir = getOnnxModelDir(model)
+            // Both precisions use the same profiles and the same voice selection.
+            val dir = SupertonicModel.directory(context).apply { mkdirs() }
             val target = File(dir, "$voiceKey.json")
             val partial = File(dir, "$voiceKey.json.part")
             val connection = openConnectionWithAuthRedirects("${SupertonicModel.BASE_URL}/voice_styles/$voiceKey.json")
@@ -918,9 +919,9 @@ class ModelDownloader(
             currentFileIndex++
             val targetFile = File(modelDir, fileName)
 
-            val expected = when (model.name) {
-                SupertonicModel.NAME -> SupertonicModel.coreFiles[fileName]
-                PocketTtsModel.NAME -> PocketTtsModel.coreFiles[fileName]
+            val expected = when {
+                SupertonicModel.isModel(model.name) -> SupertonicModel.coreFilesFor(model.name)[fileName]
+                model.name == PocketTtsModel.NAME -> PocketTtsModel.coreFiles[fileName]
                 else -> null
             }
             if (expected != null && targetFile.length() > expected) {
@@ -989,7 +990,7 @@ class ModelDownloader(
         }
 
         if (model.name == PocketTtsModel.NAME) check(PocketTtsModel.isComplete(context)) { "Incomplete Pocket TTS bundle" }
-        if (model.name == SupertonicModel.NAME) check(SupertonicModel.isComplete(context)) { "Incomplete Supertonic bundle" }
+        if (SupertonicModel.isModel(model.name)) check(SupertonicModel.isComplete(context, model.name)) { "Incomplete Supertonic bundle" }
         // Final emit - use authoritative total if we have it
         val authoritativeFinal = if (totalSize > 0) totalSize else totalDownloaded
         emit(DownloadStatus(totalDownloaded, authoritativeFinal, 0))

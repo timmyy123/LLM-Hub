@@ -26,6 +26,7 @@ import com.llmhub.llmhub.data.ThemePreferences
 import com.llmhub.llmhub.ui.components.PocketTtsEngine
 import com.llmhub.llmhub.ui.components.PocketVoiceImport
 import com.llmhub.llmhub.ui.components.PocketVoiceRecorder
+import com.llmhub.llmhub.ui.components.finishPocketVoiceCreation
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -97,12 +98,15 @@ internal fun PocketVoiceSettings() {
                 android.util.Log.e("PocketVoiceSettings", "Local voice creation failed", e)
                 error = context.getString(if (wasRecording) R.string.pocket_record_failed else R.string.pocket_clone_failed)
             } finally {
-                if (!committed) reference?.let { file ->
-                    withContext(kotlinx.coroutines.NonCancellable + Dispatchers.IO) { PocketTtsModel.deleteVoice(context, file.name) }
-                }
-                recording = false
-                busy = false
-                captureJob = null
+                finishPocketVoiceCreation(cleanup = {
+                    if (!committed) reference?.let { file ->
+                        withContext(Dispatchers.IO) { PocketTtsModel.deleteVoice(context, file.name) }
+                    }
+                }, reset = {
+                    recording = false
+                    busy = false
+                    captureJob = null
+                })
             }
         }
     }

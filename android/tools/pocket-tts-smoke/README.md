@@ -15,6 +15,16 @@ To also test coexistence with the app’s Java ONNX environment, include the ONN
 
 The test validates reference encoding, shared-session lifetime, finite/non-silent synthesis, cancellation before and during synthesis, and Java exceptions for missing, too-short and silent references. It creates invalid reference fixtures and cached voice states in that temporary directory. Remove the test directory when finished. It does not test the Compose UI or speaker playback.
 
+## Release JNI callback regression harness
+
+`PocketReleaseCallbackSmoke.java` tests the actual R8-processed Kotlin engine from the release APK. Compile and dex it like the importer harness below, then run with the release APK and its ARM64 `libllmhub_pocket_tts.so` and `libonnxruntime.so` in a temporary device directory:
+
+```sh
+LD_LIBRARY_PATH="$PWD" CLASSPATH="$PWD/classes.dex:$PWD/app-release.apk" app_process /system/bin PocketReleaseCallbackSmoke "$PWD"
+```
+
+It verifies pre-cancellation, missing-reference errors, and propagation of exceptions from the Kotlin callback without a JNI abort. It uses an unallocated sentinel handle only on paths that exit before accessing the native engine, so it needs no models and does not test speech generation or playback. It never installs the APK or changes app data. Remove the temporary directory afterward.
+
 ## Audio import regression harness
 
 `PocketVoiceImportSmoke.java` runs the actual importer from the built debug APK. It creates AAC/M4A fixtures on the device and verifies content detection, mono PCM16 conversion, truncation to 30 seconds, and short-reference cleanup. It does not install the APK or change app data.

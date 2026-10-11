@@ -16,7 +16,7 @@ import java.util.concurrent.CancellationException
 import kotlin.math.ceil
 
 /** CPU inference adapted from Supertone's MIT Java/Python examples. See assets/supertonic-NOTICE.txt. */
-class SupertonicEngine(private val directory: File) : Closeable {
+class SupertonicEngine(private val directory: File, fp16: Boolean = false) : Closeable {
     private val env = OrtEnvironment.getEnvironment()
     private val sessions = mutableListOf<OrtSession>()
     private val config = JSONObject(File(directory, "tts.json").readText())
@@ -34,7 +34,11 @@ class SupertonicEngine(private val directory: File) : Closeable {
         try {
             OrtSession.SessionOptions().use { opts ->
                 opts.setIntraOpNumThreads(Runtime.getRuntime().availableProcessors().coerceAtMost(4))
-                opts.setOptimizationLevel(OrtSession.SessionOptions.OptLevel.ALL_OPT)
+                // Extended fusion creates FP16 com.microsoft.Gelu nodes for which
+                // Android ORT 1.24.1 has no CPU kernel. Basic optimization keeps
+                // the supported standard operations in the quantized graphs.
+                opts.setOptimizationLevel(if (fp16) OrtSession.SessionOptions.OptLevel.BASIC_OPT
+                    else OrtSession.SessionOptions.OptLevel.ALL_OPT)
                 for (name in listOf("duration_predictor", "text_encoder", "vector_estimator", "vocoder")) {
                     sessions.add(env.createSession(File(directory, "$name.onnx").absolutePath, opts))
                 }

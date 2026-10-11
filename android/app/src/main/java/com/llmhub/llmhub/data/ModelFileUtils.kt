@@ -73,7 +73,7 @@ fun LLMModel.requiresExternalVisionProjector(): Boolean {
  */
 fun LLMModel.hasCompleteDownloadedBundle(context: Context): Boolean {
     if (name == PocketTtsModel.NAME) return PocketTtsModel.isComplete(context)
-    if (name == SupertonicModel.NAME) return SupertonicModel.isComplete(context)
+    if (SupertonicModel.isModel(name)) return SupertonicModel.isComplete(context, name)
     val modelsDir = File(context.filesDir, "models")
     val targetDir = if (additionalFiles.isNotEmpty()) {
         val safeName = name.replace(" ", "_").replace(Regex("[^a-zA-Z0-9_.-]"), "")
