@@ -93,6 +93,32 @@ public actor DirectLlamaCppBackend {
         projectorPath = nil
     }
 
+    /// Wraps a single-turn prompt in the loaded GGUF's embedded chat template.
+    /// Returns nil when the model has no template or llama.cpp doesn't recognise it.
+    public func applyChatTemplate(systemPrompt: String?, userPrompt: String) -> String? {
+        guard let model, let template = llama_model_chat_template(model, nil) else { return nil }
+
+        var turns: [(role: String, content: String)] = []
+        if let systemPrompt, !systemPrompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            turns.append(("system", systemPrompt))
+        }
+        turns.append(("user", userPrompt))
+
+        let cStrings = turns.map { (strdup($0.role)!, strdup($0.content)!) }
+        defer { cStrings.forEach { free($0.0); free($0.1) } }
+        let messages = cStrings.map { llama_chat_message(role: $0.0, content: $0.1) }
+
+        let estimate = turns.reduce(0) { $0 + $1.content.utf8.count } * 2 + 512
+        var buffer = [CChar](repeating: 0, count: estimate)
+        var length = llama_chat_apply_template(template, messages, messages.count, true, &buffer, Int32(buffer.count))
+        if length > Int32(buffer.count) {
+            buffer = [CChar](repeating: 0, count: Int(length) + 1)
+            length = llama_chat_apply_template(template, messages, messages.count, true, &buffer, Int32(buffer.count))
+        }
+        guard length > 0 else { return nil }
+        return String(decoding: buffer.prefix(Int(length)).map(UInt8.init(bitPattern:)), as: UTF8.self)
+    }
+
     /// Emits cumulative UTF-8 text, matching LLMBackend's existing UI contract.
     public func stream(
         prompt: String,

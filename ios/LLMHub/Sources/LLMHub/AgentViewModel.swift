@@ -268,6 +268,7 @@ public class AgentViewModel: ObservableObject {
         - For any request to evaluate or solve a math expression or calculation (e.g. "1+1", "What's 15*8"), YOU MUST call calculate_math(expression: "expression string").
         - Output tool calls in this format ONLY:
         [TOOL: tool_name(arguments)]
+        - Replace the placeholder values with real values from the user's request. Example: "find coffee nearby" -> [TOOL: show_map(location: "coffee near me")]
         - For MCP tools, pass exactly one valid JSON object using the shown argument keys.
         - MCP arguments marked REQUIRED must be present. If a required MCP argument is unknown, ask a short question instead of calling the tool.
 
@@ -302,7 +303,7 @@ public class AgentViewModel: ObservableObject {
                         await self.handleParsedToolCall(toolMatch, originalPrompt: prompt)
                     } else {
                         let cleanText = text
-                            .replacingOccurrences(of: "\\[\\s*(?:TOOL|calc|calculator|math)\\s*:[^\\]]*(?:\\]|$)", with: "", options: [.regularExpression, .caseInsensitive])
+                            .replacingOccurrences(of: "[\\[<]\\s*(?:TOOL|calc|calculator|math)\\s*:[^\\]>]*(?:[\\]>]|$)", with: "", options: [.regularExpression, .caseInsensitive])
                         let formattedContent = cleanText.contains("\u{200B}") ? cleanText : cleanText.trimmingCharacters(in: .whitespacesAndNewlines)
                         self.updateTextMessage(id: aiMsgId, newContent: formattedContent)
                     }
@@ -332,8 +333,8 @@ public class AgentViewModel: ObservableObject {
 
     private func parseBracketedToolCall(from text: String, requireToolPrefix: Bool) -> ParsedTool? {
         let pattern = requireToolPrefix
-            ? "\\[\\s*TOOL:\\s*([a-zA-Z0-9._]+)\\s*\\("
-            : "\\[\\s*([a-zA-Z0-9._]+)\\s*\\("
+            ? "[\\[<]\\s*TOOL:\\s*([a-zA-Z0-9._]+)\\s*\\("
+            : "[\\[<]\\s*([a-zA-Z0-9._]+)\\s*\\("
         guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) else {
             return nil
         }
@@ -379,7 +380,9 @@ public class AgentViewModel: ObservableObject {
               CharacterSet.whitespacesAndNewlines.contains(scalar) {
             closingBracket += 1
         }
-        guard closingBracket < nsText.length, nsText.character(at: closingBracket) == 93 else { return nil }
+        // Accept "]" or ">" — small models often emit <TOOL: ...> instead of [TOOL: ...].
+        guard closingBracket < nsText.length,
+              nsText.character(at: closingBracket) == 93 || nsText.character(at: closingBracket) == 62 else { return nil }
 
         let rawArgs = nsText.substring(with: NSRange(location: argsStart, length: cursor - argsStart))
             .trimmingCharacters(in: .whitespacesAndNewlines)

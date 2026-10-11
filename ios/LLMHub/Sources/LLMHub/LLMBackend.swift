@@ -1090,6 +1090,18 @@ class LLMBackend: ObservableObject {
             }
         }
 
+        // DirectLlamaCppBackend feeds text verbatim, so non-raw prompts that no
+        // family-specific branch above formatted still need the GGUF's chat template.
+        // Without it the model treats the prompt as a document and just continues it.
+        let handledByFamilyTemplate = isLfmModel || isPhi4MiniModel || isHarmonyModel || isMuseGlimmerModel || isGranite42Model
+        if let model = loadedModel, model.modelFormat == .gguf,
+           !prompt.hasPrefix("__RAW_PROMPT__"), !handledByFamilyTemplate,
+           let templated = await DirectLlamaCppBackend.shared.applyChatTemplate(
+               systemPrompt: effectiveSystemPrompt, userPrompt: usePrompt
+           ) {
+            usePrompt = templated
+        }
+
         if let model = loadedModel, model.modelFormat == .gguf {
             var imageData: Data?
             if let imageURL, enableVision, model.supportsVision {
