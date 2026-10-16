@@ -2911,7 +2911,7 @@ private struct SelectableMarkdownText: UIViewRepresentable {
 
     @MainActor
     func sizeThatFits(_ proposal: ProposedViewSize, uiView: UITextView, context: Context) -> CGSize? {
-        let width = proposal.width ?? UIScreen.main.bounds.width
+        let width = proposal.width ?? uiView.window?.bounds.width ?? uiView.bounds.width
         let size = uiView.sizeThatFits(CGSize(width: width, height: .greatestFiniteMagnitude))
         return CGSize(width: width, height: size.height)
     }
@@ -3256,6 +3256,8 @@ struct ChatScreen: View {
     @FocusState private var isComposerFocused: Bool
     @State private var userHasScrolledUp = false
     @State private var isAtBottom = true
+    /// Width of the chat scene, tracked so the toolbar can adapt as the window resizes.
+    @State private var chatWidth: CGFloat? = nil
     @State private var scrollDetectorCoordinator: ScrollDragDetector.Coordinator?
 
 
@@ -3600,6 +3602,7 @@ struct ChatScreen: View {
             }
         }
         .coordinateSpace(name: "chat_geo")
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { chatWidth = $0 }
         .apolloScreenBackground()
         .onPreferenceChange(AtBottomPreferenceKey.self) { atBottom in
             isAtBottom = atBottom
@@ -3629,7 +3632,7 @@ struct ChatScreen: View {
                             .foregroundColor(.white.opacity(0.78))
                             .fixedSize()
                     }
-                    .frame(maxWidth: UIScreen.main.bounds.width * 0.55)
+                    .frame(maxWidth: chatWidth.map { $0 * 0.55 })
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
                     .background(vm.isBackendLoading ? Color.orange.opacity(0.26) : Color.white.opacity(0.12))

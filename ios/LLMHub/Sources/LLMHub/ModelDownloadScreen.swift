@@ -1026,6 +1026,10 @@ struct ModelDownloadScreen: View {
                     .padding(.vertical, 12)
                 }
                 .apolloTopScrollEdgeHidden()
+                // Scroll content otherwise draws into the horizontal safe areas, where
+                // iPhone Duo places the status bar. Clip the chips to the safe area and
+                // let only the material backdrop extend edge to edge.
+                .clipped()
                 .background(.ultraThinMaterial)
                 .overlay(alignment: .bottom) {
                     Rectangle()

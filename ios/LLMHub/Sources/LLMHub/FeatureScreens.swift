@@ -5308,8 +5308,8 @@ struct VibeCoderScreen: View {
     @ViewBuilder
     private var workspaceView: some View {
         VStack(spacing: 12) {
-            GeometryReader { _ in
-                let isLandscape = UIScreen.main.bounds.width > UIScreen.main.bounds.height
+            GeometryReader { proxy in
+                let isLandscape = proxy.size.width > proxy.size.height
 
                 let chatPanel = AnyView(
                     VStack(alignment: .leading, spacing: 10) {
