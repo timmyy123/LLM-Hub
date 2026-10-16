@@ -623,6 +623,7 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
         val thinking = (((model.name.contains("Thinking", true) ||
             model.name.contains("Reasoning", true) ||
             model.name.contains("LFM2.5-8B-A1B", true) ||
+            model.name.contains("LFM2.5-24B-A2B", true) ||
             model.name.contains("LFM-2.5 2.6B", true)) && !model.name.contains("muse", true)) ||
             (isGranite42 && thinkingEnabled))
         when {

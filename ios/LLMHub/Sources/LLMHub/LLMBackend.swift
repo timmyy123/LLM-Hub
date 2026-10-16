@@ -1023,7 +1023,7 @@ class LLMBackend: ObservableObject {
             effectiveSystemPrompt = systemPrompt
         }
 
-        let isLfmModel = loadedModelName.contains("LFM2.5-8B-A1B") || loadedModelName.contains("LFM-2.5 2.6B") || loadedModelName.contains("LFM-2.5 1.2B Thinking")
+        let isLfmModel = loadedModelName.contains("LFM2.5-8B-A1B") || loadedModelName.contains("LFM2.5-24B-A2B") || loadedModelName.contains("LFM-2.5 2.6B") || loadedModelName.contains("LFM-2.5 1.2B Thinking")
         let isPhi4MiniModel = loadedModelName.lowercased().contains("phi-4") || loadedModelName.lowercased().contains("phi 4") || loadedModelName.lowercased().contains("phi4")
         var usePrompt: String
         do {
