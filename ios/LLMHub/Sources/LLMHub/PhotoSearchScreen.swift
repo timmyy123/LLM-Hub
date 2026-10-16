@@ -581,7 +581,13 @@ struct PhotoSearchScreen: View {
             }
             .environmentObject(settings)
         }
-        .photosPicker(isPresented: $showLibraryPicker, selection: $pickerItems, matching: .any(of: [.images, .videos]))
+        .photosPicker(
+            isPresented: $showLibraryPicker,
+            selection: $pickerItems,
+            matching: .any(of: [.images, .videos]),
+            preferredItemEncoding: .current,
+            photoLibrary: .shared()
+        )
         .onChange(of: pickerItems) { _, items in
             guard !items.isEmpty else { return }
             model.importPhotos(items)
