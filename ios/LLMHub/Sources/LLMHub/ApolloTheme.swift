@@ -236,7 +236,18 @@ extension View {
     @ViewBuilder
     func apolloDetectsHinge(_ hasHinge: Binding<Bool>) -> some View {
         if #available(iOS 27.1, *) {
-            background(ApolloHingeDetector(hasHinge: hasHinge))
+            background(ApolloHingeDetector(hasHinge: hasHinge, isUnfolded: nil))
+        } else {
+            self
+        }
+    }
+
+    /// Sets `isUnfolded` to true while a hinged device (iPhone Duo) is open, so the
+    /// inner display spans the hinge. False when folded, elsewhere, and before iOS 27.1.
+    @ViewBuilder
+    func apolloDetectsUnfoldedHinge(_ isUnfolded: Binding<Bool>) -> some View {
+        if #available(iOS 27.1, *) {
+            background(ApolloHingeDetector(hasHinge: nil, isUnfolded: isUnfolded))
         } else {
             self
         }
@@ -245,7 +256,8 @@ extension View {
 
 @available(iOS 27.1, *)
 private struct ApolloHingeDetector: UIViewRepresentable {
-    @Binding var hasHinge: Bool
+    var hasHinge: Binding<Bool>?
+    var isUnfolded: Binding<Bool>?
 
     func makeUIView(context: Context) -> UIView {
         let view = UIView()
@@ -253,7 +265,11 @@ private struct ApolloHingeDetector: UIViewRepresentable {
         // The update's `hinge` is nil when the hierarchy provides no hinge updates.
         view.addInteraction(UIHingeInteraction { [weak view] _, update in
             let detected = update.hinge != nil
-            if hasHinge != detected { hasHinge = detected }
+            if let hasHinge, hasHinge.wrappedValue != detected { hasHinge.wrappedValue = detected }
+            if let isUnfolded {
+                let unfolded = update.hinge.map { $0.status == .partiallyOpen || $0.status == .fullyOpen } ?? false
+                if isUnfolded.wrappedValue != unfolded { isUnfolded.wrappedValue = unfolded }
+            }
             if ApolloDevice.hasHinge != detected {
                 ApolloDevice.hasHinge = detected
                 // The app delegate allows extra orientations on a hinged device.
@@ -358,6 +374,86 @@ struct ApolloHingeSplit<Leading: View, Trailing: View>: View {
     }
 }
 
+/// A feature screen's input, output, and footer (error text and action button).
+///
+/// - Landscape: input and footer in the leading column, output in the trailing
+///   column, divided at the iPhone Duo hinge. With `columnsOnlyWhenShort`, only on
+///   compact-height screens (iPhone, folded iPhone Duo), where a stack would push
+///   the output off screen; taller screens keep the stack.
+/// - Portrait on an unfolded iPhone Duo (unless `columnsOnlyWhenShort`): input above
+///   the hinge, output and footer below it.
+/// - Otherwise: all three stacked.
+///
+/// The sections carry their own 16pt horizontal padding, which forms the gap.
+struct ApolloInputOutputLayout<Input: View, Output: View, Footer: View>: View {
+    var spacing: CGFloat = 12
+    var columnsOnlyWhenShort = false
+    @ViewBuilder var input: Input
+    @ViewBuilder var output: Output
+    @ViewBuilder var footer: Footer
+
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+    @State private var isLandscape = false
+    @State private var isUnfolded = false
+
+    private var usesColumns: Bool {
+        isLandscape && (!columnsOnlyWhenShort || verticalSizeClass == .compact)
+    }
+
+    var body: some View {
+        Group {
+            if usesColumns {
+                ApolloHingeSplit(alignment: .top, spacing: 0) {
+                    VStack(spacing: spacing) {
+                        input
+                        footer
+                    }
+                } trailing: {
+                    output
+                }
+            } else if !isLandscape && isUnfolded && !columnsOnlyWhenShort {
+                ApolloHingeVSplit(spacing: spacing) {
+                    input
+                } bottom: {
+                    VStack(spacing: spacing) {
+                        output
+                        footer
+                    }
+                }
+            } else {
+                VStack(spacing: spacing) {
+                    input
+                    output
+                    footer
+                }
+            }
+        }
+        .onGeometryChange(for: Bool.self) { $0.size.width > $0.size.height } action: { isLandscape = $0 }
+        .apolloDetectsUnfoldedHinge($isUnfolded)
+    }
+}
+
+/// Empty stand-in for a generator's output area before anything is generated.
+struct ApolloOutputPlaceholder: View {
+    let systemImage: String
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: 16)
+            .fill(.ultraThinMaterial)
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(Color.white.opacity(0.14), lineWidth: 1)
+            )
+            .overlay {
+                Image(systemName: systemImage)
+                    .font(.system(size: 40, weight: .regular))
+                    .foregroundStyle(.white.opacity(0.3))
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .accessibilityHidden(true)
+    }
+}
+
 /// Two stacked panels whose gap is centered on the window's vertical midpoint, so
 /// the divider lands on the hinge of an iPhone Duo held unfolded in portrait. Falls
 /// back to an even split when the midpoint leaves too little room for either panel.
@@ -383,10 +479,10 @@ struct ApolloHingeVSplit<Top: View, Bottom: View>: View {
         VStack(spacing: spacing) {
             // Same modifier chain in both modes keeps the panels' identity stable.
             top
-                .frame(height: topHeight)
-                .frame(maxHeight: topHeight == nil ? .infinity : nil)
+                .frame(height: topHeight, alignment: .top)
+                .frame(maxHeight: topHeight == nil ? .infinity : nil, alignment: .top)
             bottom
-                .frame(maxHeight: .infinity)
+                .frame(maxHeight: .infinity, alignment: .top)
         }
         .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { globalFrame = $0 }
     }

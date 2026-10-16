@@ -15,7 +15,7 @@ struct VideoGeneratorScreen: View {
     @State private var seed: Int = Int.random(in: 0..<1_000_000)
     @State private var generatedVideoURL: URL?
     @State private var isGenerating = false
-    @State private var hasHinge = false
+    @State private var isUnfolded = false
     @State private var isSaving = false
     @State private var showSettings = false
     @State private var errorMessage: String?
@@ -205,15 +205,15 @@ struct VideoGeneratorScreen: View {
     private var mainGenerationView: some View {
         GeometryReader { geo in
             let isLandscape = geo.size.width > geo.size.height
-            if isLandscape && generatedVideoURL != nil {
+            if isLandscape {
                 landscapeLayout
-            } else if hasHinge, let url = generatedVideoURL {
+            } else if isUnfolded, let url = generatedVideoURL {
                 hingePortraitLayout(url: url)
             } else {
                 portraitLayout
             }
         }
-        .apolloDetectsHinge($hasHinge)
+        .apolloDetectsUnfoldedHinge($isUnfolded)
     }
 
     // MARK: - Hinge Portrait Layout (stacked, divided at the iPhone Duo hinge)
@@ -269,8 +269,13 @@ struct VideoGeneratorScreen: View {
                     .padding(.vertical, 12)
             }
         } trailing: {
+            // Landscape always uses two columns; the output side waits empty until
+            // a video exists.
             if let url = generatedVideoURL {
                 videoPlayerCard(url: url)
+            } else {
+                ApolloOutputPlaceholder(systemImage: "film")
+                    .padding(.vertical, 12)
             }
         }
         .padding(.horizontal)

@@ -1164,7 +1164,7 @@ private struct IOS26TranscriberScreen: View {
             } else if useModelAudioInput {
                 gemmaAudioTranscriberView
             } else {
-                VStack(spacing: 12) {
+                ApolloInputOutputLayout(spacing: 12, columnsOnlyWhenShort: true) {
             VStack(spacing: 16) {
                 Button {
                     if transcriber.isRecording {
@@ -1252,7 +1252,7 @@ private struct IOS26TranscriberScreen: View {
                     .stroke(Color.white.opacity(0.14), lineWidth: 1)
             )
             .padding(.horizontal)
-
+            } output: {
             ScrollViewReader { proxy in
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
@@ -1281,7 +1281,7 @@ private struct IOS26TranscriberScreen: View {
                     }
                 }
             }
-
+            } footer: {
             Spacer(minLength: 0)
 
             Button {
@@ -1506,7 +1506,7 @@ private struct IOS26TranscriberScreen: View {
     }
 
     private var gemmaAudioTranscriberView: some View {
-        VStack(spacing: 12) {
+        ApolloInputOutputLayout(spacing: 12, columnsOnlyWhenShort: true) {
             VStack(spacing: 16) {
                 Button {
                     if audioRecorder.isRecording {
@@ -1608,7 +1608,7 @@ private struct IOS26TranscriberScreen: View {
                     .stroke(Color.white.opacity(0.14), lineWidth: 1)
             )
             .padding(.horizontal)
-
+            } output: {
             ScrollViewReader { proxy in
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
@@ -1637,7 +1637,7 @@ private struct IOS26TranscriberScreen: View {
                     }
                 }
             }
-
+            } footer: {
             Spacer(minLength: 0)
 
             Button {
@@ -1796,7 +1796,7 @@ private struct IOS26TranscriberScreen: View {
     // MARK: - Whisper Transcriber View
 
     private var whisperTranscriberView: some View {
-        VStack(spacing: 12) {
+        ApolloInputOutputLayout(spacing: 12, columnsOnlyWhenShort: true) {
             VStack(spacing: 16) {
                 Button {
                     if audioRecorder.isRecording {
@@ -1881,7 +1881,7 @@ private struct IOS26TranscriberScreen: View {
             .clipShape(RoundedRectangle(cornerRadius: 16))
             .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.white.opacity(0.14), lineWidth: 1))
             .padding(.horizontal)
-
+            } output: {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     ForEach(whisperHistory) { session in
@@ -1893,7 +1893,7 @@ private struct IOS26TranscriberScreen: View {
                 }
                 .padding(.horizontal)
             }
-
+            } footer: {
             Spacer(minLength: 0)
 
             Button {
@@ -3175,7 +3175,7 @@ struct WritingAidScreen: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                VStack(spacing: 12) {
+                ApolloInputOutputLayout(spacing: 12) {
                     VStack(alignment: .leading, spacing: 10) {
                         Text(settings.localized("writing_aid_input_label"))
                             .font(.headline)
@@ -3239,7 +3239,7 @@ struct WritingAidScreen: View {
                             .stroke(Color.white.opacity(0.14), lineWidth: 1)
                     )
                     .padding(.horizontal)
-
+                } output: {
                     ScrollViewReader { scrollProxy in
                         ScrollView {
                             VStack(alignment: .leading, spacing: 8) {
@@ -3274,7 +3274,7 @@ struct WritingAidScreen: View {
                             }
                         }
                     }
-
+                } footer: {
                     if let errorMessage {
                         Text(errorMessage)
                             .foregroundColor(.red)
@@ -3505,6 +3505,7 @@ struct TranslatorScreen: View {
     @State private var outputText: String = ""
     @State private var isLoading = false
     @State private var isTranslating = false
+    @State private var isLandscapeLayout = false
     @State private var showSettings = false
     @State private var errorMessage: String?
     @State private var selectedImageItem: PhotosPickerItem?
@@ -3745,6 +3746,8 @@ struct TranslatorScreen: View {
         return VStack(spacing: 14) {
             languageBar
 
+            ApolloInputOutputLayout(spacing: 14) {
+
             VStack(alignment: .leading, spacing: 8) {
                 Text(settings.localized("translator_input_label"))
                     .font(.headline)
@@ -3896,7 +3899,7 @@ struct TranslatorScreen: View {
                     .stroke(Color.white.opacity(0.14), lineWidth: 1)
             )
             .padding(.horizontal)
-
+            } output: {
             ScrollViewReader { scrollProxy in
                 ScrollView {
                     VStack(alignment: .leading, spacing: 8) {
@@ -3958,7 +3961,7 @@ struct TranslatorScreen: View {
                     }
                 }
             }
-
+            } footer: {
             if let errorMessage {
                 Text(errorMessage)
                     .foregroundColor(.red)
@@ -3991,11 +3994,37 @@ struct TranslatorScreen: View {
             .disabled(isLoading || (!isTranslating && !inputHasContent))
             .padding(.horizontal)
             .padding(.bottom, 8)
+            }
+        }
+        .onGeometryChange(for: Bool.self) { $0.size.width > $0.size.height } action: { isLandscapeLayout = $0 }
+    }
+
+    /// One row in portrait. In landscape it splits like the input/output columns
+    /// below (at the iPhone Duo hinge): source and swap lead, target trails.
+    @ViewBuilder
+    private var languageBar: some View {
+        if isLandscapeLayout {
+            ApolloHingeSplit(alignment: .bottom, spacing: 0) {
+                HStack(alignment: .bottom, spacing: 10) {
+                    sourceLanguagePicker
+                    swapLanguagesButton
+                }
+                .padding(.horizontal)
+            } trailing: {
+                targetLanguagePicker
+                    .padding(.horizontal)
+            }
+        } else {
+            HStack(spacing: 10) {
+                sourceLanguagePicker
+                swapLanguagesButton
+                targetLanguagePicker
+            }
+            .padding(.horizontal)
         }
     }
 
-    private var languageBar: some View {
-        HStack(spacing: 10) {
+    private var sourceLanguagePicker: some View {
             VStack(alignment: .leading, spacing: 6) {
                 Text(settings.localized("translator_source_lang"))
                     .font(.caption.weight(.semibold))
@@ -4027,7 +4056,9 @@ struct TranslatorScreen: View {
                 }
                 .featureActionIconButtonStyle(cornerRadius: 12)
             }
+    }
 
+    private var swapLanguagesButton: some View {
             Button {
                 let oldSource = sourceLanguageCode
                 sourceLanguageCode = targetLanguageCode
@@ -4039,7 +4070,9 @@ struct TranslatorScreen: View {
             }
             .featureActionIconButtonStyle(cornerRadius: 12)
             .disabled(autoDetectSource)
+    }
 
+    private var targetLanguagePicker: some View {
             VStack(alignment: .leading, spacing: 6) {
                 Text(settings.localized("translator_target_lang"))
                     .font(.caption.weight(.semibold))
@@ -4066,8 +4099,6 @@ struct TranslatorScreen: View {
                 }
                 .featureActionIconButtonStyle(cornerRadius: 12)
             }
-        }
-        .padding(.horizontal)
     }
 
     private func englishName(for language: TranslatorLanguage) -> String {
@@ -4358,7 +4389,7 @@ struct ScamDetectorScreen: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                VStack(spacing: 14) {
+                ApolloInputOutputLayout(spacing: 14) {
                     VStack(alignment: .leading, spacing: 8) {
                         Text(settings.localized("scam_detector_input_label"))
                             .font(.headline)
@@ -4472,7 +4503,7 @@ struct ScamDetectorScreen: View {
                         }
                         .padding(.horizontal)
                     }
-
+                } output: {
                     ScrollViewReader { scrollProxy in
                         ScrollView {
                             VStack(alignment: .leading, spacing: 8) {
@@ -4526,7 +4557,7 @@ struct ScamDetectorScreen: View {
                             }
                         }
                     }
-
+                } footer: {
                     if let errorMessage {
                         Text(errorMessage)
                             .foregroundColor(.red)
@@ -5067,7 +5098,7 @@ struct VibeCoderScreen: View {
     @State private var currentFileURL: URL?
     @State private var currentFileName: String?
     @State private var showWorkspaceFolderPicker = false
-    @State private var hasHinge = false
+    @State private var isUnfolded = false
     @State private var showCreateFileDialog = false
     @State private var newFileNameInput = ""
     @State private var isLoading = false
@@ -5569,7 +5600,7 @@ struct VibeCoderScreen: View {
                             chatPanel
                                 .frame(maxHeight: .infinity)
                         }
-                    } else if hasHinge {
+                    } else if isUnfolded {
                         // iPhone Duo unfolded in portrait: divide the panels at the hinge.
                         ApolloHingeVSplit {
                             chatPanel
@@ -5603,7 +5634,7 @@ struct VibeCoderScreen: View {
                 noFolderView
             } else {
                 workspaceView
-                    .apolloDetectsHinge($hasHinge)
+                    .apolloDetectsUnfoldedHinge($isUnfolded)
             }
         }
         .navigationTitle(settings.localized("vibe_coder_title"))
@@ -6525,7 +6556,7 @@ struct ImageGeneratorScreen: View {
     @State private var seed: Int = Int.random(in: 0..<1_000_000)
     @State private var generatedImages: [UIImage] = []
     @State private var isGenerating = false
-    @State private var hasHinge = false
+    @State private var isUnfolded = false
     @State private var currentPage = 0
     @State private var showSettings = false
     @State private var errorMessage: String?
@@ -6737,15 +6768,15 @@ struct ImageGeneratorScreen: View {
         GeometryReader { geo in
             let isLandscape = geo.size.width > geo.size.height
             let hasOutput = !generatedImages.isEmpty || isGenerating
-            if isLandscape && hasOutput {
+            if isLandscape {
                 landscapeLayout
-            } else if hasHinge && hasOutput {
+            } else if isUnfolded && hasOutput {
                 hingePortraitLayout
             } else {
                 portraitLayout
             }
         }
-        .apolloDetectsHinge($hasHinge)
+        .apolloDetectsUnfoldedHinge($isUnfolded)
     }
 
     // MARK: - Hinge Portrait Layout (stacked, divided at the iPhone Duo hinge)
@@ -6804,8 +6835,15 @@ struct ImageGeneratorScreen: View {
                     .padding(.vertical, 12)
             }
         } trailing: {
-            imageSwipeView
-                .padding(.vertical, 12)
+            // Landscape always uses two columns; the output side waits empty until
+            // the first image starts generating.
+            if !generatedImages.isEmpty || isGenerating {
+                imageSwipeView
+                    .padding(.vertical, 12)
+            } else {
+                ApolloOutputPlaceholder(systemImage: "photo")
+                    .padding(.vertical, 12)
+            }
         }
         .padding(.horizontal)
     }
@@ -7290,6 +7328,8 @@ public struct MusicGeneratorScreen: View {
     @State private var isGenerating: Bool = false
     @State private var generationStartedAt: Date?
     @State private var generatedTracks: [GeneratedMusicTrack] = []
+    @State private var isLandscape = false
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
     @State private var durationSeconds: Double = 10.0
     @AppStorage("feature_music_live_generation") private var liveGeneration: Bool = false
     @AppStorage("feature_music_unlimited_duration") private var unlimitedDuration: Bool = false
@@ -7369,134 +7409,59 @@ public struct MusicGeneratorScreen: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 VStack(spacing: 0) {
-                    ScrollViewReader { scrollProxy in
-                        ScrollView {
-                            VStack(spacing: 14) {
-                            // Prompt Input Card
-                            promptInputCard
-
-                            // Duration Controls
-                            if !liveGeneration || !unlimitedDuration {
-                                VStack(alignment: .leading, spacing: 12) {
-                                    HStack {
-                                        Text(settings.localized("music_duration_label"))
-                                            .font(.subheadline)
-                                        Spacer()
-                                        Text("\(Int(durationSeconds))s")
-                                            .font(.subheadline)
-                                            .bold()
-                                            .foregroundStyle(ApolloPalette.accentStrong)
-                                    }
-                                    Slider(value: $durationSeconds, in: 1...600, step: 1)
-                                        .tint(ApolloPalette.accentStrong)
+                    if isLandscape && verticalSizeClass == .compact {
+                        // Short landscape screens (iPhone, folded iPhone Duo): inputs and
+                        // the action button lead, tracks trail, so the tracks stay visible.
+                        // Taller screens keep the single scrolling column.
+                        ApolloHingeSplit(alignment: .top, spacing: 0) {
+                            VStack(spacing: 12) {
+                                ScrollView {
+                                    musicInputs(includesDuration: false)
+                                        .padding([.horizontal, .top])
                                 }
-                                .padding(.horizontal)
-                                .padding(.vertical, 12)
-                                .background(.ultraThinMaterial)
-                                .clipShape(RoundedRectangle(cornerRadius: 16))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 16)
-                                        .stroke(Color.white.opacity(0.14), lineWidth: 1)
-                                )
-
+                                musicFooter
                             }
-
-                            if let errorMessage {
-                                Text(errorMessage)
-                                    .foregroundColor(.red)
-                                    .font(.caption)
-                                    .padding(.horizontal)
-                            }
-
-                            ForEach(generatedTracks) { track in
-                                VStack(spacing: 14) {
-                                    HStack {
-                                        Image(systemName: "waveform.circle.fill")
-                                            .font(.title2)
-                                            .foregroundStyle(ApolloPalette.accentStrong)
-                                        VStack(alignment: .leading, spacing: 2) {
-                                            Text(track.prompt)
-                                                .font(.subheadline)
-                                                .bold()
-                                                .lineLimit(1)
-                                            Text("\(track.requestedDurationSeconds)s Audio Clip")
-                                                .font(.caption)
-                                                .foregroundStyle(.secondary)
-                                        }
-                                        Spacer()
-                                        ShareLink(item: track.url) {
-                                            Image(systemName: "square.and.arrow.down")
-                                                .font(.system(size: 16, weight: .semibold))
-                                                .frame(width: 40, height: 40)
-                                        }
-                                        .featureActionIconButtonStyle()
-                                        .accessibilityLabel(settings.localized("save"))
-                                        AudioPlaybackButton(url: track.url)
+                        } trailing: {
+                            // The duration slider sits at the bottom of this column, level
+                            // with the action button, so the leading column fits the
+                            // prompt and button without scrolling.
+                            VStack(spacing: 12) {
+                                ScrollViewReader { scrollProxy in
+                                    ScrollView {
+                                        musicTracks
+                                            .padding([.horizontal, .top])
                                     }
+                                    .onChange(of: generatedTracks.count) { _, _ in
+                                        if let latest = generatedTracks.last {
+                                            withAnimation { scrollProxy.scrollTo(latest.id, anchor: .bottom) }
+                                        }
+                                    }
+                                }
+                                durationControls
+                                    .padding(.horizontal)
+                                    .padding(.bottom, 8)
+                            }
+                        }
+                    } else {
+                        ScrollViewReader { scrollProxy in
+                            ScrollView {
+                                VStack(spacing: 14) {
+                                    musicInputs()
+                                    musicTracks
                                 }
                                 .padding()
-                                .background(.ultraThinMaterial)
-                                .clipShape(RoundedRectangle(cornerRadius: 16))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 16)
-                                        .stroke(Color.white.opacity(0.14), lineWidth: 1)
-                                )
-                                .id(track.id)
                             }
-                            }
-                            .padding()
-                        }
-                        .onChange(of: generatedTracks.count) { _, _ in
-                            if let latest = generatedTracks.last {
-                                withAnimation { scrollProxy.scrollTo(latest.id, anchor: .bottom) }
-                            }
-                        }
-                    }
-
-                    if isGenerating && !(liveGeneration && unlimitedDuration) {
-                        ProgressView(value: musicBackend.progress)
-                            .tint(ApolloPalette.accentStrong)
-                            .padding(.horizontal)
-                            .padding(.bottom, 10)
-                    }
-
-                    Button {
-                        if isGenerating {
-                            musicBackend.stopLiveGeneration()
-                        } else {
-                            generateMusic()
-                        }
-                    } label: {
-                        HStack(spacing: 8) {
-                            if isLoading {
-                                ProgressView()
-                                    .tint(.white)
-                                    .scaleEffect(0.85)
-                            } else {
-                                Image(systemName: isGenerating ? "stop.fill" : "sparkles")
-                                    .font(.system(size: 13, weight: .bold))
-                            }
-                            if isGenerating {
-                                TimelineView(.periodic(from: .now, by: 1)) { context in
-                                    let elapsed = max(0, Int(context.date.timeIntervalSince(generationStartedAt ?? context.date)))
-                                    Text("\(settings.localized("music_stop_generation")) · \(String(format: "%02d:%02d", elapsed / 60, elapsed % 60))")
-                                        .monospacedDigit()
-                                        .lineLimit(1)
+                            .onChange(of: generatedTracks.count) { _, _ in
+                                if let latest = generatedTracks.last {
+                                    withAnimation { scrollProxy.scrollTo(latest.id, anchor: .bottom) }
                                 }
-                            } else {
-                                Text(settings.localized(isLoading ? "model_loading" : "generate_music"))
-                                    .lineLimit(1)
                             }
                         }
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 52)
+
+                        musicFooter
                     }
-                    .foregroundStyle(.white)
-                    .liquidGlassPrimaryButton(cornerRadius: 12)
-                    .disabled(isLoading || (!isGenerating && prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty))
-                    .padding(.horizontal)
-                    .padding(.bottom, 8)
                 }
+                .onGeometryChange(for: Bool.self) { $0.size.width > $0.size.height } action: { isLandscape = $0 }
             }
         }
         .navigationTitle(settings.localized("feature_music_generator"))
@@ -7594,6 +7559,140 @@ public struct MusicGeneratorScreen: View {
                     .disabled(isGenerating || isLoading)
             }
         }
+    }
+
+    /// Prompt, duration, and error. With `includesDuration` false (the two-column
+    /// layout), the duration slider moves to the tracks column instead.
+    private func musicInputs(includesDuration: Bool = true) -> some View {
+        VStack(spacing: 14) {
+            // Prompt Input Card
+            promptInputCard
+
+            if includesDuration {
+                durationControls
+            }
+
+            if let errorMessage {
+                Text(errorMessage)
+                    .foregroundColor(.red)
+                    .font(.caption)
+                    .padding(.horizontal)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var durationControls: some View {
+        if !liveGeneration || !unlimitedDuration {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Text(settings.localized("music_duration_label"))
+                        .font(.subheadline)
+                    Spacer()
+                    Text("\(Int(durationSeconds))s")
+                        .font(.subheadline)
+                        .bold()
+                        .foregroundStyle(ApolloPalette.accentStrong)
+                }
+                Slider(value: $durationSeconds, in: 1...600, step: 1)
+                    .tint(ApolloPalette.accentStrong)
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 12)
+            .background(.ultraThinMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(Color.white.opacity(0.14), lineWidth: 1)
+            )
+        }
+    }
+
+    private var musicTracks: some View {
+        VStack(spacing: 14) {
+            ForEach(generatedTracks) { track in
+                VStack(spacing: 14) {
+                    HStack {
+                        Image(systemName: "waveform.circle.fill")
+                            .font(.title2)
+                            .foregroundStyle(ApolloPalette.accentStrong)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(track.prompt)
+                                .font(.subheadline)
+                                .bold()
+                                .lineLimit(1)
+                            Text("\(track.requestedDurationSeconds)s Audio Clip")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        ShareLink(item: track.url) {
+                            Image(systemName: "square.and.arrow.down")
+                                .font(.system(size: 16, weight: .semibold))
+                                .frame(width: 40, height: 40)
+                        }
+                        .featureActionIconButtonStyle()
+                        .accessibilityLabel(settings.localized("save"))
+                        AudioPlaybackButton(url: track.url)
+                    }
+                }
+                .padding()
+                .background(.ultraThinMaterial)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.white.opacity(0.14), lineWidth: 1)
+                )
+                .id(track.id)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var musicFooter: some View {
+        if isGenerating && !(liveGeneration && unlimitedDuration) {
+            ProgressView(value: musicBackend.progress)
+                .tint(ApolloPalette.accentStrong)
+                .padding(.horizontal)
+                .padding(.bottom, 10)
+        }
+
+        Button {
+            if isGenerating {
+                musicBackend.stopLiveGeneration()
+            } else {
+                generateMusic()
+            }
+        } label: {
+            HStack(spacing: 8) {
+                if isLoading {
+                    ProgressView()
+                        .tint(.white)
+                        .scaleEffect(0.85)
+                } else {
+                    Image(systemName: isGenerating ? "stop.fill" : "sparkles")
+                        .font(.system(size: 13, weight: .bold))
+                }
+                if isGenerating {
+                    TimelineView(.periodic(from: .now, by: 1)) { context in
+                        let elapsed = max(0, Int(context.date.timeIntervalSince(generationStartedAt ?? context.date)))
+                        Text("\(settings.localized("music_stop_generation")) · \(String(format: "%02d:%02d", elapsed / 60, elapsed % 60))")
+                            .monospacedDigit()
+                            .lineLimit(1)
+                    }
+                } else {
+                    Text(settings.localized(isLoading ? "model_loading" : "generate_music"))
+                        .lineLimit(1)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 52)
+        }
+        .foregroundStyle(.white)
+        .liquidGlassPrimaryButton(cornerRadius: 12)
+        .disabled(isLoading || (!isGenerating && prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty))
+        .padding(.horizontal)
+        .padding(.bottom, 8)
     }
 
     @ViewBuilder
