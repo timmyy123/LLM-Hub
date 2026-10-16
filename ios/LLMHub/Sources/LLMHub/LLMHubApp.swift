@@ -3,8 +3,21 @@ import SwiftUI
 import UIKit
 import ModelZoo
 
+final class LLMHubAppDelegate: NSObject, UIApplicationDelegate {
+    func application(_ application: UIApplication, supportedInterfaceOrientationsFor window: UIWindow?) -> UIInterfaceOrientationMask {
+        // iPhone Duo's folded screen reports one of its landscape poses as upside-down
+        // portrait, so allow every orientation there. Elsewhere keep the Info.plist
+        // sets: all four on iPad, all but upside-down on iPhone.
+        if ApolloDevice.hasHinge || window?.traitCollection.userInterfaceIdiom == .pad {
+            return .all
+        }
+        return .allButUpsideDown
+    }
+}
+
 @main
 struct LLMHubApp: App {
+    @UIApplicationDelegateAdaptor(LLMHubAppDelegate.self) private var appDelegate
     @StateObject private var settings = AppSettings.shared
 
     init() {

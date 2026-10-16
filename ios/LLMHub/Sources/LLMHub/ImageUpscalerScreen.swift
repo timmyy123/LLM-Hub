@@ -295,7 +295,7 @@ struct ImageUpscalerScreen: View {
                 }
             }
 
-            HStack(spacing: 12) {
+            ApolloHingeSplit {
                 ZoomableImageCard(
                     image: inputImage,
                     label: inputImage.map { "\(Int($0.size.width))×\(Int($0.size.height))" } ?? "",
@@ -318,8 +318,8 @@ struct ImageUpscalerScreen: View {
                         }
                     }
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-
+                .frame(maxHeight: .infinity)
+            } trailing: {
                 if let out = outputImage {
                     ZoomableImageCard(
                         image: out,
@@ -332,10 +332,10 @@ struct ImageUpscalerScreen: View {
                         onClose: {},
                         onTap: nil
                     )
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .frame(maxHeight: .infinity)
                 } else {
                     Spacer()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .frame(maxHeight: .infinity)
                 }
             }
             .frame(maxWidth: .infinity)

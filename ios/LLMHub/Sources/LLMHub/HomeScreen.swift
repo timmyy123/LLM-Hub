@@ -9,8 +9,22 @@ struct FeatureCard {
     let route: String
 }
 
+private extension View {
+    /// The soft top edge effect blurs content that starts at the screen's top edge,
+    /// which Home does when the iPhone Duo vertical bar holds its buttons.
+    @ViewBuilder
+    func apolloHomeTopScrollEdge(hidden: Bool) -> some View {
+        if hidden {
+            apolloTopScrollEdgeHidden()
+        } else {
+            apolloTopScrollEdgeFade()
+        }
+    }
+}
+
 struct HomeScreen: View {
     @Environment(\.openURL) private var openURL
+    @Environment(\.displayScale) private var displayScale
     @EnvironmentObject var settings: AppSettings
     var onNavigateToChat: () -> Void
     var onNavigateToModels: () -> Void
@@ -19,6 +33,7 @@ struct HomeScreen: View {
     @State private var githubStars: Int? = nil
     @ObservedObject private var purchases = PurchaseManager.shared
     @State private var showPremium = false
+    @State private var hasHinge = false
 
     var heroFeature: FeatureCard {
         FeatureCard(titleKey: "feature_ai_chat", descriptionKey: "feature_ai_chat_desc", iconSystemName: "bubble.left.and.bubble.right.fill", gradient: [Color(hex: "7ea3ff"), Color(hex: "5e79da")], route: "chat")
@@ -49,6 +64,16 @@ struct HomeScreen: View {
 
 
     var body: some View {
+        ApolloVerticalBarReader { hasVerticalBar in
+            content(hasVerticalBar: hasVerticalBar, usesSystemBar: hasVerticalBar || hasHinge)
+        }
+        .apolloDetectsHinge($hasHinge)
+    }
+
+    /// On iPhone Duo (any posture), the top bar's buttons move into the system
+    /// navigation bar and the inline title is dropped. `hasVerticalBar` is true when
+    /// that bar sits on the side edge rather than the top.
+    private func content(hasVerticalBar: Bool, usesSystemBar: Bool) -> some View {
         GeometryReader { geo in
             let horizontalPadding: CGFloat = 16
             let rawUsableWidth = geo.size.width - (horizontalPadding * 2)
@@ -73,95 +98,97 @@ struct HomeScreen: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 20) {
                         // Top Bar (now inside ScrollView so it scrolls away)
-                        HStack(spacing: 12) {
-                            Text(settings.localized("app_name"))
-                                .font(.title.bold())
-                                .foregroundColor(.white)
+                        if !usesSystemBar {
+                            HStack(spacing: 12) {
+                                Text(settings.localized("app_name"))
+                                    .font(.title.bold())
+                                    .foregroundColor(.white)
 
-                            Spacer()
+                                Spacer()
 
-                            if !purchases.isPremium {
-                                Button {
-                                    showPremium = true
-                                } label: {
-                                    Image(systemName: "crown.fill")
-                                        .font(.system(size: 18, weight: .semibold))
-                                        .foregroundStyle(Color(hex: "FFD700"))
-                                        .padding(8)
-                                        .background(.ultraThinMaterial, in: Circle())
-                                        .overlay(
-                                            Circle()
-                                                .stroke(
-                                                    LinearGradient(
-                                                        colors: [Color.white.opacity(0.35), Color.white.opacity(0.08)],
-                                                        startPoint: .top,
-                                                        endPoint: .bottom
-                                                    ),
-                                                    lineWidth: 1
-                                                )
-                                        )
-                                        .shadow(color: .black.opacity(0.2), radius: 6, x: 0, y: 3)
-                                }
-                                .buttonStyle(.plain)
-                            }
-
-                            HStack(spacing: 10) {
-                                if let githubStars, githubStars > 0 {
+                                if !purchases.isPremium {
                                     Button {
-                                        openGithubRepository()
+                                        showPremium = true
                                     } label: {
-                                        HStack(spacing: 4) {
-                                            Image("GitHubMark")
-                                                .renderingMode(.template)
-                                                .resizable()
-                                                .scaledToFit()
-                                                .frame(width: 20, height: 20)
-                                            Text("\(githubStars)")
-                                                .font(.subheadline.bold())
-                                                .lineLimit(1)
-                                                .fixedSize(horizontal: true, vertical: false)
-                                        }
-                                        .padding(.horizontal, 8)
-                                        .padding(.vertical, 5)
+                                        Image(systemName: "crown.fill")
+                                            .font(.system(size: 18, weight: .semibold))
+                                            .foregroundStyle(Color(hex: "FFD700"))
+                                            .padding(8)
+                                            .background(.ultraThinMaterial, in: Circle())
+                                            .overlay(
+                                                Circle()
+                                                    .stroke(
+                                                        LinearGradient(
+                                                            colors: [Color.white.opacity(0.35), Color.white.opacity(0.08)],
+                                                            startPoint: .top,
+                                                            endPoint: .bottom
+                                                        ),
+                                                        lineWidth: 1
+                                                    )
+                                            )
+                                            .shadow(color: .black.opacity(0.2), radius: 6, x: 0, y: 3)
                                     }
                                     .buttonStyle(.plain)
                                 }
 
-                                Button {
-                                    onNavigateToModels()
-                                } label: {
-                                    Image(systemName: "arrow.down.circle")
-                                        .font(.system(size: 22))
-                                }
-                                .buttonStyle(ApolloIconButtonStyle())
+                                HStack(spacing: 10) {
+                                    if let githubStars, githubStars > 0 {
+                                        Button {
+                                            openGithubRepository()
+                                        } label: {
+                                            HStack(spacing: 4) {
+                                                Image("GitHubMark")
+                                                    .renderingMode(.template)
+                                                    .resizable()
+                                                    .scaledToFit()
+                                                    .frame(width: 20, height: 20)
+                                                Text("\(githubStars)")
+                                                    .font(.subheadline.bold())
+                                                    .lineLimit(1)
+                                                    .fixedSize(horizontal: true, vertical: false)
+                                            }
+                                            .padding(.horizontal, 8)
+                                            .padding(.vertical, 5)
+                                        }
+                                        .buttonStyle(.plain)
+                                    }
 
-                                Button {
-                                    onNavigateToSettings()
-                                } label: {
-                                    Image(systemName: "gearshape")
-                                        .font(.system(size: 22))
+                                    Button {
+                                        onNavigateToModels()
+                                    } label: {
+                                        Image(systemName: "arrow.down.circle")
+                                            .font(.system(size: 22))
+                                    }
+                                    .buttonStyle(ApolloIconButtonStyle())
+
+                                    Button {
+                                        onNavigateToSettings()
+                                    } label: {
+                                        Image(systemName: "gearshape")
+                                            .font(.system(size: 22))
+                                    }
+                                    .buttonStyle(ApolloIconButtonStyle())
                                 }
-                                .buttonStyle(ApolloIconButtonStyle())
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 7)
+                                .background(.ultraThinMaterial, in: Capsule())
+                                .overlay(
+                                    Capsule()
+                                        .stroke(
+                                            LinearGradient(
+                                                colors: [Color.white.opacity(0.35), Color.white.opacity(0.08)],
+                                                startPoint: .top,
+                                                endPoint: .bottom
+                                            ),
+                                            lineWidth: 1
+                                        )
+                                )
+                                .shadow(color: .black.opacity(0.32), radius: 10, x: 0, y: 6)
+                                .clipShape(Capsule())
+                                .fixedSize(horizontal: true, vertical: false)
                             }
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 7)
-                            .background(.ultraThinMaterial, in: Capsule())
-                            .overlay(
-                                Capsule()
-                                    .stroke(
-                                        LinearGradient(
-                                            colors: [Color.white.opacity(0.35), Color.white.opacity(0.08)],
-                                            startPoint: .top,
-                                            endPoint: .bottom
-                                        ),
-                                        lineWidth: 1
-                                    )
-                            )
-                            .shadow(color: .black.opacity(0.32), radius: 10, x: 0, y: 6)
-                            .clipShape(Capsule())
-                            .fixedSize(horizontal: true, vertical: false)
+                            .padding(.top, topPadding)
                         }
-                        .padding(.top, topPadding)
 
                         // Hero Card for Chat
                         Button {
@@ -199,10 +226,13 @@ struct HomeScreen: View {
                         }
                     }
                     .padding(.horizontal, horizontalPadding)
+                    .padding(.top, usesSystemBar ? horizontalPadding : 0)
                     .padding(.bottom, gridBottomPadding)
                 }
-                .ignoresSafeArea(.container, edges: .bottom)
-                .apolloTopScrollEdgeFade()
+                // With the buttons in the vertical bar, the navigation bar still reserves
+                // an empty top inset; start the content at the top edge instead.
+                .ignoresSafeArea(.container, edges: hasVerticalBar ? [.top, .bottom] : .bottom)
+                .apolloHomeTopScrollEdge(hidden: hasVerticalBar)
             }
             .onAppear {
                 if githubStars == nil {
@@ -212,13 +242,151 @@ struct HomeScreen: View {
                 }
             }
         }
+        .ignoresSafeArea(.container, edges: hasVerticalBar ? .top : [])
         .apolloScreenBackground()
         .apolloNavigationBackground()
-        .toolbar(.hidden, for: .navigationBar)
+        .toolbar(usesSystemBar ? .visible : .hidden, for: .navigationBar)
+        // The top bar shows the app name as a leading title; the vertical bar has no
+        // room for one.
+        .navigationTitle(usesSystemBar && !hasVerticalBar ? settings.localized("app_name") : "")
+        .toolbarTitleDisplayMode(.inlineLarge)
+        .toolbar {
+            if usesSystemBar {
+                systemBarItems(hasVerticalBar: hasVerticalBar)
+            }
+        }
         .apolloSheet(isPresented: $showPremium) {
             PremiumScreen()
                 .environmentObject(settings)
         }
+    }
+
+    /// Home's buttons in the system bar on iPhone Duo, in the trailing placement the
+    /// Human Interface Guidelines reserve for actions. The system positions them in
+    /// the top bar or the vertical bar.
+    @ToolbarContentBuilder
+    private func systemBarItems(hasVerticalBar: Bool) -> some ToolbarContent {
+        let placement: ToolbarItemPlacement = .topBarTrailing
+
+        // In the narrow vertical bar, GitHub is its own button with the star count on
+        // a row under the logo. The vertical bar moves any item containing text out
+        // into a horizontal bar, so that label is drawn as a single image.
+        if hasVerticalBar, let githubStars, githubStars > 0 {
+            ToolbarItem(placement: placement) {
+                Button {
+                    openGithubRepository()
+                } label: {
+                    stackedGithubBadge(stars: githubStars)
+                }
+                .accessibilityLabel("GitHub, \(githubStars) stars")
+            }
+            if #available(iOS 26.0, *) {
+                ToolbarSpacer(.fixed, placement: placement)
+            }
+        }
+
+        if hasVerticalBar {
+            ToolbarItemGroup(placement: placement) {
+                premiumButton
+                modelsButton
+                settingsButton
+            }
+        } else {
+            if !purchases.isPremium {
+                ToolbarItem(placement: placement) {
+                    premiumButton
+                }
+                if #available(iOS 26.0, *) {
+                    ToolbarSpacer(.fixed, placement: placement)
+                }
+            }
+            // One item with the same tight 10pt spacing as the top bar capsule on
+            // other iPhones, rather than the wider per-item spacing of a group.
+            ToolbarItem(placement: placement) {
+                HStack(spacing: 10) {
+                    if let githubStars, githubStars > 0 {
+                        githubButton(stars: githubStars, showsCount: true)
+                    }
+                    modelsButton
+                    settingsButton
+                }
+                .font(.system(size: 20))
+                .padding(.horizontal, 4)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var premiumButton: some View {
+        if !purchases.isPremium {
+            Button {
+                showPremium = true
+            } label: {
+                Image(systemName: "crown.fill")
+                    .foregroundStyle(Color(hex: "FFD700"))
+            }
+        }
+    }
+
+    private var modelsButton: some View {
+        Button {
+            onNavigateToModels()
+        } label: {
+            Image(systemName: "arrow.down.circle")
+        }
+    }
+
+    private var settingsButton: some View {
+        Button {
+            onNavigateToSettings()
+        } label: {
+            Image(systemName: "gearshape")
+        }
+    }
+
+    private func githubButton(stars: Int, showsCount: Bool) -> some View {
+        Button {
+            openGithubRepository()
+        } label: {
+            HStack(spacing: 4) {
+                Image("GitHubMark")
+                    .renderingMode(.template)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 20, height: 20)
+                if showsCount {
+                    Text("\(stars)")
+                        .font(.subheadline.bold())
+                        .lineLimit(1)
+                        .fixedSize()
+                }
+            }
+        }
+        .accessibilityLabel("GitHub, \(stars) stars")
+    }
+
+    /// GitHub logo with the star count on a row below, rendered at screen scale as a
+    /// template image so the toolbar tints it like a symbol.
+    private func stackedGithubBadge(stars: Int) -> Image {
+        let renderer = ImageRenderer(content:
+            VStack(spacing: 3) {
+                Image("GitHubMark")
+                    .renderingMode(.template)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 22, height: 22)
+                Text("\(stars)")
+                    .font(.caption.bold())
+                    .lineLimit(1)
+                    .fixedSize()
+            }
+            .foregroundStyle(.white)
+        )
+        renderer.scale = displayScale
+        guard let image = renderer.uiImage else {
+            return Image("GitHubMark").renderingMode(.template)
+        }
+        return Image(uiImage: image).renderingMode(.template)
     }
 
     private func loadGithubStars() async {

@@ -999,8 +999,39 @@ struct ModelDownloadScreen: View {
     @State private var showImportSheet = false
     @State private var showPremiumForImport = false
     @State private var editingTemplateModel: AIModel? = nil
+    @State private var hasVerticalBar = false
     var onNavigateBack: () -> Void
     var onShowPremium: (() -> Void)? = nil
+
+    private var backButton: some View {
+        Button {
+            onNavigateBack()
+        } label: {
+            Image(systemName: "arrow.left")
+                .font(.headline)
+        }
+    }
+
+    private var importButton: some View {
+        Button {
+            if purchases.isPremium {
+                showImportSheet = true
+            } else {
+                onShowPremium?()
+            }
+        } label: {
+            HStack(spacing: 4) {
+                if !purchases.isPremium {
+                    Image(systemName: "crown.fill")
+                        .font(.system(size: 11))
+                        .foregroundStyle(Color(hex: "FFD700"))
+                }
+                Image(systemName: "plus")
+                    .font(.system(size: 14, weight: .semibold))
+            }
+        }
+        .accessibilityLabel(settings.localized("import_external_model"))
+    }
 
     var body: some View {
         ZStack {
@@ -1119,35 +1150,28 @@ struct ModelDownloadScreen: View {
         .toolbarBackground(.hidden, for: .navigationBar)
         .apolloTopScrollEdgeHidden()
         .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
-                Button {
-                    onNavigateBack()
-                } label: {
-                    Image(systemName: "arrow.left")
-                        .font(.headline)
+            // In the iPhone Duo vertical bar the buttons sit at the bottom, clear of
+            // the category header that spans the top of the screen.
+            if hasVerticalBar {
+                ToolbarItem(placement: .bottomBar) {
+                    backButton
                 }
-            }
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button {
-                    if purchases.isPremium {
-                        showImportSheet = true
-                    } else {
-                        onShowPremium?()
-                    }
-                } label: {
-                    HStack(spacing: 4) {
-                        if !purchases.isPremium {
-                            Image(systemName: "crown.fill")
-                                .font(.system(size: 11))
-                                .foregroundStyle(Color(hex: "FFD700"))
-                        }
-                        Image(systemName: "plus")
-                            .font(.system(size: 14, weight: .semibold))
-                    }
+                if #available(iOS 26.0, *) {
+                    ToolbarSpacer(.fixed, placement: .bottomBar)
                 }
-                .accessibilityLabel(settings.localized("import_external_model"))
+                ToolbarItem(placement: .bottomBar) {
+                    importButton
+                }
+            } else {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    backButton
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    importButton
+                }
             }
         }
+        .apolloReadsVerticalBar($hasVerticalBar)
         .apolloSheet(isPresented: $showImportSheet) {
             ImportExternalModelSheet(vm: vm)
                 .environmentObject(settings)

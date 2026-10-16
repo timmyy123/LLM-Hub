@@ -15,6 +15,7 @@ struct VideoGeneratorScreen: View {
     @State private var seed: Int = Int.random(in: 0..<1_000_000)
     @State private var generatedVideoURL: URL?
     @State private var isGenerating = false
+    @State private var hasHinge = false
     @State private var isSaving = false
     @State private var showSettings = false
     @State private var errorMessage: String?
@@ -206,8 +207,37 @@ struct VideoGeneratorScreen: View {
             let isLandscape = geo.size.width > geo.size.height
             if isLandscape && generatedVideoURL != nil {
                 landscapeLayout
+            } else if hasHinge, let url = generatedVideoURL {
+                hingePortraitLayout(url: url)
             } else {
                 portraitLayout
+            }
+        }
+        .apolloDetectsHinge($hasHinge)
+    }
+
+    // MARK: - Hinge Portrait Layout (stacked, divided at the iPhone Duo hinge)
+
+    private func hingePortraitLayout(url: URL) -> some View {
+        ApolloHingeVSplit {
+            ScrollView {
+                generationControls
+                    .padding(.vertical, 12)
+            }
+        } bottom: {
+            videoPlayerCard(url: url)
+                .padding(.bottom, 12)
+        }
+        .padding(.horizontal)
+    }
+
+    private var generationControls: some View {
+        VStack(spacing: 14) {
+            promptCard
+            img2vidCard
+            generateButton
+            if generatedVideoURL != nil {
+                saveButton
             }
         }
     }
@@ -233,23 +263,14 @@ struct VideoGeneratorScreen: View {
     // MARK: - Landscape Layout
 
     private var landscapeLayout: some View {
-        HStack(spacing: 14) {
+        ApolloHingeSplit {
             ScrollView {
-                VStack(spacing: 14) {
-                    promptCard
-                    img2vidCard
-                    generateButton
-                    if generatedVideoURL != nil {
-                        saveButton
-                    }
-                }
-                .padding(.vertical, 12)
+                generationControls
+                    .padding(.vertical, 12)
             }
-            .frame(maxWidth: .infinity)
-
+        } trailing: {
             if let url = generatedVideoURL {
                 videoPlayerCard(url: url)
-                    .frame(maxWidth: .infinity)
             }
         }
         .padding(.horizontal)

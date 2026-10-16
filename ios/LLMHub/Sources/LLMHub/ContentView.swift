@@ -176,6 +176,7 @@ struct ContentView: View {
                 }
             }
         }
+        .apolloProvidesWindowWidth()
         .onOpenURL { url in
             guard AudioSearchModel.isAudioURL(url) else { return }
             AudioSearchModel.importShared([url])

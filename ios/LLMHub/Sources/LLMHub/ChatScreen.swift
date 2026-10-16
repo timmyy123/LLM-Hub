@@ -3124,6 +3124,7 @@ struct ChatDrawerPanel: View {
     let onNavigateBack: () -> Void
     let onNavigateToModels: () -> Void
     let onNavigateToSettings: () -> Void
+    var showsBackButton = true
     @State private var showDeleteAllAlert = false
 
     var body: some View {
@@ -3199,15 +3200,19 @@ struct ChatDrawerPanel: View {
             .navigationBarTitleDisplayMode(.inline)
             .apolloNavigationBackground()
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    // Back arrow to Home - same as Android drawer's ArrowBack
-                    Button {
-                        onClose()
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-                            onNavigateBack()
+                // With a vertical bar (iPhone Duo) the chat screen already shows this
+                // arrow in the bar, so the drawer drops its copy.
+                if showsBackButton {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        // Back arrow to Home - same as Android drawer's ArrowBack
+                        Button {
+                            onClose()
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                                onNavigateBack()
+                            }
+                        } label: {
+                            Image(systemName: "arrow.left")
                         }
-                    } label: {
-                        Image(systemName: "arrow.left")
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
@@ -3238,6 +3243,7 @@ struct ChatScreen: View {
     var onNavigateBack: () -> Void
 
     @State private var showDrawer = false
+    @State private var hasVerticalBar = false
     @State private var showSettings = false
     @State private var copiedMessageId: UUID? = nil
     @State private var selectedImageItem: PhotosPickerItem?
@@ -3301,6 +3307,8 @@ struct ChatScreen: View {
                         }
                         .padding(.vertical, 12)
                         .padding(.bottom, 12)
+                        .frame(maxWidth: ApolloLayout.chatColumnMaxWidth)
+                        .frame(maxWidth: .infinity)
                     }
                     .safeAreaPadding(.bottom, 130)
                     .apolloTopScrollEdgeFade()
@@ -3596,6 +3604,7 @@ struct ChatScreen: View {
                     )
                 }
                 .padding(.horizontal, 16)
+                .frame(maxWidth: ApolloLayout.chatColumnMaxWidth)
                 .padding(.bottom, 12)
                 .padding(.top, 4)
                 .animation(.easeOut(duration: 0.2), value: isComposerFocused)
@@ -3650,7 +3659,22 @@ struct ChatScreen: View {
                     Image(systemName: "square.and.pencil")
                 }
             }
+            // The vertical bar (iPhone Duo) has room to spare, so surface the
+            // drawer's back-to-home arrow directly, in its own group.
+            if hasVerticalBar {
+                if #available(iOS 26.0, *) {
+                    ToolbarSpacer(.fixed, placement: .navigationBarTrailing)
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
+                        onNavigateBack()
+                    } label: {
+                        Image(systemName: "arrow.left")
+                    }
+                }
+            }
         }
+        .apolloReadsVerticalBar($hasVerticalBar)
         .apolloSheet(isPresented: $showSettings) {
              ChatSettingsSheet(vm: vm)
                 .environmentObject(settings)
@@ -3673,7 +3697,8 @@ struct ChatScreen: View {
                 onClose: { showDrawer = false },
                 onNavigateBack: onNavigateBack,
                 onNavigateToModels: onNavigateToModels,
-                onNavigateToSettings: onNavigateToSettings
+                onNavigateToSettings: onNavigateToSettings,
+                showsBackButton: !hasVerticalBar
             )
             .environmentObject(settings)
         }

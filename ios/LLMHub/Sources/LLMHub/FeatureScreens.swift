@@ -5067,6 +5067,7 @@ struct VibeCoderScreen: View {
     @State private var currentFileURL: URL?
     @State private var currentFileName: String?
     @State private var showWorkspaceFolderPicker = false
+    @State private var hasHinge = false
     @State private var showCreateFileDialog = false
     @State private var newFileNameInput = ""
     @State private var isLoading = false
@@ -5468,7 +5469,6 @@ struct VibeCoderScreen: View {
                         RoundedRectangle(cornerRadius: 16)
                             .stroke(Color.white.opacity(0.14), lineWidth: 1)
                     )
-                    .padding(.horizontal)
                 )
 
                 let editorPanel = AnyView(
@@ -5558,16 +5558,23 @@ struct VibeCoderScreen: View {
                         RoundedRectangle(cornerRadius: 16)
                             .stroke(Color.white.opacity(0.14), lineWidth: 1)
                     )
-                    .padding(.horizontal)
                 )
 
                 Group {
                     if isLandscape {
-                        HStack(spacing: 12) {
+                        ApolloHingeSplit {
                             editorPanel
-                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                .frame(maxHeight: .infinity)
+                        } trailing: {
                             chatPanel
-                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                .frame(maxHeight: .infinity)
+                        }
+                    } else if hasHinge {
+                        // iPhone Duo unfolded in portrait: divide the panels at the hinge.
+                        ApolloHingeVSplit {
+                            chatPanel
+                        } bottom: {
+                            editorPanel
                         }
                     } else {
                         VStack(spacing: 12) {
@@ -5576,6 +5583,7 @@ struct VibeCoderScreen: View {
                         }
                     }
                 }
+                .padding(.horizontal)
             }
 
             if let errorMessage {
@@ -5595,6 +5603,7 @@ struct VibeCoderScreen: View {
                 noFolderView
             } else {
                 workspaceView
+                    .apolloDetectsHinge($hasHinge)
             }
         }
         .navigationTitle(settings.localized("vibe_coder_title"))
@@ -6516,6 +6525,7 @@ struct ImageGeneratorScreen: View {
     @State private var seed: Int = Int.random(in: 0..<1_000_000)
     @State private var generatedImages: [UIImage] = []
     @State private var isGenerating = false
+    @State private var hasHinge = false
     @State private var currentPage = 0
     @State private var showSettings = false
     @State private var errorMessage: String?
@@ -6726,10 +6736,42 @@ struct ImageGeneratorScreen: View {
     private var mainGenerationView: some View {
         GeometryReader { geo in
             let isLandscape = geo.size.width > geo.size.height
-            if isLandscape && (!generatedImages.isEmpty || isGenerating) {
+            let hasOutput = !generatedImages.isEmpty || isGenerating
+            if isLandscape && hasOutput {
                 landscapeLayout
+            } else if hasHinge && hasOutput {
+                hingePortraitLayout
             } else {
                 portraitLayout
+            }
+        }
+        .apolloDetectsHinge($hasHinge)
+    }
+
+    // MARK: - Hinge Portrait Layout (stacked, divided at the iPhone Duo hinge)
+
+    private var hingePortraitLayout: some View {
+        ApolloHingeVSplit {
+            ScrollView {
+                generationControls
+                    .padding(.vertical, 12)
+            }
+        } bottom: {
+            imageSwipeView
+                .padding(.bottom, 12)
+        }
+        .padding(.horizontal)
+    }
+
+    private var generationControls: some View {
+        VStack(spacing: 14) {
+            promptCard
+            if selectedModelSupportsImageToImage {
+                img2imgCard
+            }
+            generateButton
+            if !generatedImages.isEmpty {
+                saveButton
             }
         }
     }
@@ -6756,24 +6798,14 @@ struct ImageGeneratorScreen: View {
     // MARK: - Landscape Layout (side-by-side)
 
     private var landscapeLayout: some View {
-        HStack(alignment: .top, spacing: 14) {
+        ApolloHingeSplit(alignment: .top) {
             ScrollView {
-                VStack(spacing: 14) {
-                    promptCard
-                    if selectedModelSupportsImageToImage {
-                        img2imgCard
-                    }
-                    generateButton
-                    if !generatedImages.isEmpty {
-                        saveButton
-                    }
-                }
-                .padding(.vertical, 12)
+                generationControls
+                    .padding(.vertical, 12)
             }
-            .frame(maxWidth: .infinity)
+        } trailing: {
             imageSwipeView
                 .padding(.vertical, 12)
-                .frame(maxWidth: .infinity)
         }
         .padding(.horizontal)
     }

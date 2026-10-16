@@ -136,6 +136,8 @@ public struct AgentScreen: View {
             }
             .padding(.vertical, 12)
             .padding(.bottom, 12)
+            .frame(maxWidth: ApolloLayout.chatColumnMaxWidth)
+            .frame(maxWidth: .infinity)
         }
         .safeAreaPadding(.bottom, 150)
         .scrollDismissesKeyboard(.interactively)
@@ -303,6 +305,7 @@ public struct AgentScreen: View {
             )
         }
         .padding(.horizontal, 16)
+        .frame(maxWidth: ApolloLayout.chatColumnMaxWidth)
         .padding(.bottom, 12)
         .padding(.top, 4)
         .animation(.easeOut(duration: 0.2), value: isComposerFocused)

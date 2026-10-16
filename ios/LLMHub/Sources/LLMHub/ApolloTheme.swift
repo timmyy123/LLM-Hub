@@ -10,6 +10,12 @@ enum ApolloPalette {
     static let destructive = Color(hex: "E96A63")
 }
 
+enum ApolloLayout {
+    /// Max width of the centered message + composer column in chat-style screens on
+    /// wide layouts (iPad, iPhone Duo unfolded, landscape). Includes the 16pt side padding.
+    static let chatColumnMaxWidth: CGFloat = 760
+}
+
 struct ApolloLiquidBackground: View {
     var body: some View {
         ZStack {
@@ -180,6 +186,209 @@ extension View {
         } else {
             self
         }
+    }
+}
+
+// MARK: - Hinge-aligned split
+
+extension EnvironmentValues {
+    /// Full window width, including horizontal safe areas. Split layouts use its
+    /// midpoint, which is where the hinge sits on iPhone Duo.
+    @Entry var apolloWindowWidth: CGFloat? = nil
+    /// Full window height, including vertical safe areas. On iPhone Duo held unfolded
+    /// in portrait, its midpoint is where the hinge sits.
+    @Entry var apolloWindowHeight: CGFloat? = nil
+}
+
+extension View {
+    /// Publishes the window width to descendants. Apply once at the root of a window.
+    func apolloProvidesWindowWidth() -> some View {
+        modifier(ApolloWindowWidthReader())
+    }
+}
+
+private struct ApolloWindowWidthReader: ViewModifier {
+    @State private var windowSize: CGSize?
+
+    func body(content: Content) -> some View {
+        content
+            .onGeometryChange(for: CGSize.self) { proxy in
+                let insets = proxy.safeAreaInsets
+                return CGSize(
+                    width: proxy.size.width + insets.leading + insets.trailing,
+                    height: proxy.size.height + insets.top + insets.bottom
+                )
+            } action: { windowSize = $0 }
+            .environment(\.apolloWindowWidth, windowSize?.width)
+            .environment(\.apolloWindowHeight, windowSize?.height)
+    }
+}
+
+@MainActor
+enum ApolloDevice {
+    /// Whether this device has a hinge (iPhone Duo). Set by `apolloDetectsHinge`.
+    static var hasHinge = false
+}
+
+extension View {
+    /// Sets `hasHinge` to true on hardware with a hinge (iPhone Duo), in any posture
+    /// or orientation. Stays false elsewhere and before iOS 27.1.
+    @ViewBuilder
+    func apolloDetectsHinge(_ hasHinge: Binding<Bool>) -> some View {
+        if #available(iOS 27.1, *) {
+            background(ApolloHingeDetector(hasHinge: hasHinge))
+        } else {
+            self
+        }
+    }
+}
+
+@available(iOS 27.1, *)
+private struct ApolloHingeDetector: UIViewRepresentable {
+    @Binding var hasHinge: Bool
+
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView()
+        view.isUserInteractionEnabled = false
+        // The update's `hinge` is nil when the hierarchy provides no hinge updates.
+        view.addInteraction(UIHingeInteraction { [weak view] _, update in
+            let detected = update.hinge != nil
+            if hasHinge != detected { hasHinge = detected }
+            if ApolloDevice.hasHinge != detected {
+                ApolloDevice.hasHinge = detected
+                // The app delegate allows extra orientations on a hinged device.
+                view?.window?.rootViewController?.setNeedsUpdateOfSupportedInterfaceOrientations()
+            }
+        })
+        return view
+    }
+
+    func updateUIView(_ uiView: UIView, context: Context) {}
+}
+
+/// Passes whether the system shows its vertical bar (iPhone Duo unfolded) to `content`.
+/// Read it on the screen itself: the value isn't resolved above the NavigationStack.
+struct ApolloVerticalBarReader<Content: View>: View {
+    @ViewBuilder var content: (_ hasVerticalBar: Bool) -> Content
+
+    var body: some View {
+        if #available(iOS 27.1, *) {
+            ApolloVerticalBarEdgeReader(content: content)
+        } else {
+            content(false)
+        }
+    }
+}
+
+@available(iOS 27.1, *)
+private struct ApolloVerticalBarEdgeReader<Content: View>: View {
+    // nil where the system never places a vertical bar.
+    @Environment(\.toolbarVerticalEdge) private var toolbarVerticalEdge
+    let content: (Bool) -> Content
+
+    var body: some View {
+        content(toolbarVerticalEdge != nil)
+    }
+}
+
+extension View {
+    /// Keeps `hasVerticalBar` in sync with whether the system shows its vertical bar
+    /// (iPhone Duo unfolded). Stays false before iOS 27.1.
+    @ViewBuilder
+    func apolloReadsVerticalBar(_ hasVerticalBar: Binding<Bool>) -> some View {
+        if #available(iOS 27.1, *) {
+            modifier(ApolloVerticalBarBinding(hasVerticalBar: hasVerticalBar))
+        } else {
+            self
+        }
+    }
+}
+
+@available(iOS 27.1, *)
+private struct ApolloVerticalBarBinding: ViewModifier {
+    @Environment(\.toolbarVerticalEdge) private var toolbarVerticalEdge
+    @Binding var hasVerticalBar: Bool
+
+    func body(content: Content) -> some View {
+        content.onChange(of: toolbarVerticalEdge != nil, initial: true) { _, isPresent in
+            hasVerticalBar = isPresent
+        }
+    }
+}
+
+/// Two side-by-side panels whose gap is centered on the window's midpoint, so the
+/// divider lands on the iPhone Duo hinge even when the system's vertical bar insets
+/// one edge. Falls back to an even split when the midpoint leaves too little room
+/// for either panel (for example in a narrow multitasking window).
+struct ApolloHingeSplit<Leading: View, Trailing: View>: View {
+    var alignment: VerticalAlignment = .center
+    var spacing: CGFloat = 16
+    @ViewBuilder var leading: Leading
+    @ViewBuilder var trailing: Trailing
+
+    @Environment(\.apolloWindowWidth) private var windowWidth
+    @Environment(\.layoutDirection) private var layoutDirection
+    @State private var globalFrame: CGRect = .zero
+
+    private static var minimumPanelWidth: CGFloat { 200 }
+
+    private var leadingWidth: CGFloat? {
+        guard let windowWidth, globalFrame.width > 0 else { return nil }
+        let hinge = windowWidth / 2
+        let distanceToHinge = layoutDirection == .leftToRight
+            ? hinge - globalFrame.minX
+            : globalFrame.maxX - hinge
+        let width = distanceToHinge - spacing / 2
+        guard width >= Self.minimumPanelWidth,
+              globalFrame.width - spacing - width >= Self.minimumPanelWidth else { return nil }
+        return width
+    }
+
+    var body: some View {
+        HStack(alignment: alignment, spacing: spacing) {
+            // One modifier chain in both cases keeps the panel's identity (and its
+            // state, like text focus) stable when switching between split modes.
+            leading
+                .frame(width: leadingWidth)
+                .frame(maxWidth: leadingWidth == nil ? .infinity : nil)
+            trailing
+                .frame(maxWidth: .infinity)
+        }
+        .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { globalFrame = $0 }
+    }
+}
+
+/// Two stacked panels whose gap is centered on the window's vertical midpoint, so
+/// the divider lands on the hinge of an iPhone Duo held unfolded in portrait. Falls
+/// back to an even split when the midpoint leaves too little room for either panel.
+struct ApolloHingeVSplit<Top: View, Bottom: View>: View {
+    var spacing: CGFloat = 12
+    @ViewBuilder var top: Top
+    @ViewBuilder var bottom: Bottom
+
+    @Environment(\.apolloWindowHeight) private var windowHeight
+    @State private var globalFrame: CGRect = .zero
+
+    private static var minimumPanelHeight: CGFloat { 160 }
+
+    private var topHeight: CGFloat? {
+        guard let windowHeight, globalFrame.height > 0 else { return nil }
+        let height = windowHeight / 2 - globalFrame.minY - spacing / 2
+        guard height >= Self.minimumPanelHeight,
+              globalFrame.height - spacing - height >= Self.minimumPanelHeight else { return nil }
+        return height
+    }
+
+    var body: some View {
+        VStack(spacing: spacing) {
+            // Same modifier chain in both modes keeps the panels' identity stable.
+            top
+                .frame(height: topHeight)
+                .frame(maxHeight: topHeight == nil ? .infinity : nil)
+            bottom
+                .frame(maxHeight: .infinity)
+        }
+        .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { globalFrame = $0 }
     }
 }
 
