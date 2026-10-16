@@ -926,15 +926,18 @@
 "prompt_template_none" = "Yok (Varsayılan)";
 
 /* Photo Search / Audio Search */
-"feature_photo_search" = "Instant Media Search";
-"feature_photo_search_desc" = "Organize and search your photos and videos locally with EmbeddingGemma 2";
-"feature_video_moment" = "Video Moment Finder";
-"feature_video_moment_desc" = "Search for moments in videos using natural language with EmbeddingGemma 2";
+"feature_photo_search" = "Medya arama";
+"feature_photo_search_desc" = "Fotoğrafları ve videoları EmbeddingGemma 2 ile cihazda düzenleyin ve arayın";
+"feature_video_moment" = "Video anı bulucu";
+"feature_video_moment_desc" = "Videolardaki anları EmbeddingGemma 2 ile doğal dille arayın";
 "video_moment_onboarding_title" = "Search for a moment inside your videos";
 "video_moment_onboarding_desc" = "EmbeddingGemma 2 splits each video into 2 second windows, reads two frames and the audio in each window, then you can jump to the moment you describe.";
 "video_moment_all" = "Analyze all videos";
-"video_moment_pick" = "Select videos";
+"video_moment_pick" = "Videoları seç";
 "video_moment_hint" = "Describe a moment, e.g. cutting a cake";
+"media_search_vision_off" = "Bu modelde görüntü kodlayıcı yok, bu yüzden fotoğraf ve video araması kapalı.";
+"video_moment_vision_off" = "Bu modelde görüntü kodlayıcı yok, bu yüzden an araması kapalı.";
+"video_moment_audio_off" = "Bu modelde ses kodlayıcı yok, bu yüzden klipler yalnızca karelerden eşleştirilir.";
 "video_moment_play" = "Play %@";
 "feature_audio_search" = "Ses Arama";
 "feature_audio_search_desc" = "Seslerinizdeki anları tarif ederek bulun";

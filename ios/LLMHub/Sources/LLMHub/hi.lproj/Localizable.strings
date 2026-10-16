@@ -938,15 +938,18 @@
 "prompt_template_none" = "कोई नहीं (डिफ़ॉल्ट)";
 
 /* Photo Search / Audio Search */
-"feature_photo_search" = "Instant Media Search";
-"feature_photo_search_desc" = "Organize and search your photos and videos locally with EmbeddingGemma 2";
-"feature_video_moment" = "Video Moment Finder";
-"feature_video_moment_desc" = "Search for moments in videos using natural language with EmbeddingGemma 2";
+"feature_photo_search" = "मीडिया खोज";
+"feature_photo_search_desc" = "EmbeddingGemma 2 से फ़ोटो और वीडियो को डिवाइस पर व्यवस्थित करें और खोजें";
+"feature_video_moment" = "वीडियो पल खोज";
+"feature_video_moment_desc" = "EmbeddingGemma 2 से वीडियो के पल सामान्य भाषा में खोजें";
 "video_moment_onboarding_title" = "Search for a moment inside your videos";
 "video_moment_onboarding_desc" = "EmbeddingGemma 2 splits each video into 2 second windows, reads two frames and the audio in each window, then you can jump to the moment you describe.";
 "video_moment_all" = "Analyze all videos";
-"video_moment_pick" = "Select videos";
+"video_moment_pick" = "वीडियो चुनें";
 "video_moment_hint" = "Describe a moment, e.g. cutting a cake";
+"media_search_vision_off" = "इस मॉडल में विज़न एन्कोडर नहीं है, इसलिए फ़ोटो और वीडियो खोज बंद है।";
+"video_moment_vision_off" = "इस मॉडल में विज़न एन्कोडर नहीं है, इसलिए मोमेंट खोज बंद है।";
+"video_moment_audio_off" = "इस मॉडल में ऑडियो एन्कोडर नहीं है, इसलिए क्लिप केवल फ़्रेम से मिलाई जाती हैं।";
 "video_moment_play" = "Play %@";
 "feature_audio_search" = "ऑडियो खोज";
 "feature_audio_search_desc" = "ऑडियो में पल का वर्णन करके उन्हें खोजें";

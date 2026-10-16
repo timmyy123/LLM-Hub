@@ -926,15 +926,18 @@
 "prompt_template_none" = "없음(기본값)";
 
 /* Photo Search / Audio Search */
-"feature_photo_search" = "Instant Media Search";
-"feature_photo_search_desc" = "Organize and search your photos and videos locally with EmbeddingGemma 2";
-"feature_video_moment" = "Video Moment Finder";
-"feature_video_moment_desc" = "Search for moments in videos using natural language with EmbeddingGemma 2";
+"feature_photo_search" = "미디어 검색";
+"feature_photo_search_desc" = "EmbeddingGemma 2로 사진과 동영상을 기기에서 정리하고 검색";
+"feature_video_moment" = "영상 순간 찾기";
+"feature_video_moment_desc" = "EmbeddingGemma 2로 영상 속 순간을 말로 검색";
 "video_moment_onboarding_title" = "Search for a moment inside your videos";
 "video_moment_onboarding_desc" = "EmbeddingGemma 2 splits each video into 2 second windows, reads two frames and the audio in each window, then you can jump to the moment you describe.";
 "video_moment_all" = "Analyze all videos";
-"video_moment_pick" = "Select videos";
+"video_moment_pick" = "동영상 선택";
 "video_moment_hint" = "Describe a moment, e.g. cutting a cake";
+"media_search_vision_off" = "이 모델에는 비전 인코더가 없어 사진과 동영상 검색이 꺼져 있습니다.";
+"video_moment_vision_off" = "이 모델에는 비전 인코더가 없어 순간 검색이 꺼져 있습니다.";
+"video_moment_audio_off" = "이 모델에는 오디오 인코더가 없어 클립은 프레임만으로 찾습니다.";
 "video_moment_play" = "Play %@";
 "feature_audio_search" = "오디오 검색";
 "feature_audio_search_desc" = "설명만으로 오디오 속 순간을 찾아보세요";

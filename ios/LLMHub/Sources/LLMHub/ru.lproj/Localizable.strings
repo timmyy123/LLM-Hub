@@ -898,15 +898,18 @@
 "prompt_template_none" = "Нет (по умолчанию)";
 
 /* Photo Search / Audio Search */
-"feature_photo_search" = "Instant Media Search";
-"feature_photo_search_desc" = "Organize and search your photos and videos locally with EmbeddingGemma 2";
-"feature_video_moment" = "Video Moment Finder";
-"feature_video_moment_desc" = "Search for moments in videos using natural language with EmbeddingGemma 2";
+"feature_photo_search" = "Поиск медиа";
+"feature_photo_search_desc" = "Упорядочивайте и ищите фото и видео на устройстве с EmbeddingGemma 2";
+"feature_video_moment" = "Моменты видео";
+"feature_video_moment_desc" = "Ищите моменты в видео обычными словами с EmbeddingGemma 2";
 "video_moment_onboarding_title" = "Search for a moment inside your videos";
 "video_moment_onboarding_desc" = "EmbeddingGemma 2 splits each video into 2 second windows, reads two frames and the audio in each window, then you can jump to the moment you describe.";
 "video_moment_all" = "Analyze all videos";
-"video_moment_pick" = "Select videos";
+"video_moment_pick" = "Выбрать видео";
 "video_moment_hint" = "Describe a moment, e.g. cutting a cake";
+"media_search_vision_off" = "У этой модели нет визуального кодировщика, поэтому поиск фото и видео отключён.";
+"video_moment_vision_off" = "У этой модели нет визуального кодировщика, поэтому поиск моментов отключён.";
+"video_moment_audio_off" = "У этой модели нет аудиокодировщика, поэтому клипы сопоставляются только по кадрам.";
 "video_moment_play" = "Play %@";
 "feature_audio_search" = "Поиск аудио";
 "feature_audio_search_desc" = "Находите моменты в аудио по описанию";

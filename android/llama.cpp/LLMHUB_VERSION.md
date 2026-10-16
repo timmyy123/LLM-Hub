@@ -11,6 +11,8 @@ the Vulkan GPU runtime (`libllmhub_llama_vulkan.so`) for arm64 devices.
 Android Studio builds Vulkan with NDK shader tools and vendored Vulkan-Headers.
 The Android API 27 compatibility patch in `ggml/src/ggml-vulkan/ggml-vulkan.cpp`
 uses the Vulkan dispatcher for `vkGetPhysicalDeviceFeatures2`.
+The buffer allocator in `ggml/src/ggml-vulkan/ggml-vulkan-buffers.cpp` uses
+`posix_memalign` below Android API 28, where `aligned_alloc` is unavailable.
 
 The Android app also vendors the official **b11683 Snapdragon** Android release
 (`llama-b11683-bin-android-arm64-snapdragon.tar.gz`, SHA-256

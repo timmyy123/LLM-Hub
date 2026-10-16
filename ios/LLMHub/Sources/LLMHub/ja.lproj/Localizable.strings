@@ -926,15 +926,18 @@
 "prompt_template_none" = "なし（デフォルト）";
 
 /* Photo Search / Audio Search */
-"feature_photo_search" = "Instant Media Search";
-"feature_photo_search_desc" = "Organize and search your photos and videos locally with EmbeddingGemma 2";
-"feature_video_moment" = "Video Moment Finder";
-"feature_video_moment_desc" = "Search for moments in videos using natural language with EmbeddingGemma 2";
+"feature_photo_search" = "メディア検索";
+"feature_photo_search_desc" = "EmbeddingGemma 2 で写真と動画を端末内で整理して検索";
+"feature_video_moment" = "動画モーメント検索";
+"feature_video_moment_desc" = "EmbeddingGemma 2 で動画の場面を言葉で検索";
 "video_moment_onboarding_title" = "Search for a moment inside your videos";
 "video_moment_onboarding_desc" = "EmbeddingGemma 2 splits each video into 2 second windows, reads two frames and the audio in each window, then you can jump to the moment you describe.";
 "video_moment_all" = "Analyze all videos";
-"video_moment_pick" = "Select videos";
+"video_moment_pick" = "動画を選択";
 "video_moment_hint" = "Describe a moment, e.g. cutting a cake";
+"media_search_vision_off" = "このモデルには画像エンコーダーがないため、写真と動画の検索はオフです。";
+"video_moment_vision_off" = "このモデルには画像エンコーダーがないため、モーメント検索はオフです。";
+"video_moment_audio_off" = "このモデルには音声エンコーダーがないため、クリップはフレームだけから照合されます。";
 "video_moment_play" = "Play %@";
 "feature_audio_search" = "オーディオ検索";
 "feature_audio_search_desc" = "説明するだけで音声内の場面を見つけます";

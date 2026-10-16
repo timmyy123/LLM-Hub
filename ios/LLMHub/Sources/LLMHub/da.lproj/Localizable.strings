@@ -933,15 +933,18 @@
 "prompt_template_none" = "Ingen (standard)";
 
 /* Photo Search / Audio Search */
-"feature_photo_search" = "Instant Media Search";
-"feature_photo_search_desc" = "Organize and search your photos and videos locally with EmbeddingGemma 2";
-"feature_video_moment" = "Video Moment Finder";
-"feature_video_moment_desc" = "Search for moments in videos using natural language with EmbeddingGemma 2";
+"feature_photo_search" = "Mediesøgning";
+"feature_photo_search_desc" = "Organiser og søg i fotos og videoer på enheden med EmbeddingGemma 2";
+"feature_video_moment" = "Videøjeblikke";
+"feature_video_moment_desc" = "Søg efter øjeblikke i videoer med almindeligt sprog og EmbeddingGemma 2";
 "video_moment_onboarding_title" = "Search for a moment inside your videos";
 "video_moment_onboarding_desc" = "EmbeddingGemma 2 splits each video into 2 second windows, reads two frames and the audio in each window, then you can jump to the moment you describe.";
 "video_moment_all" = "Analyze all videos";
-"video_moment_pick" = "Select videos";
+"video_moment_pick" = "Vælg videoer";
 "video_moment_hint" = "Describe a moment, e.g. cutting a cake";
+"media_search_vision_off" = "Denne model har ingen billedkoder, så søgning i fotos og videoer er slået fra.";
+"video_moment_vision_off" = "Denne model har ingen billedkoder, så søgning efter øjeblikke er slået fra.";
+"video_moment_audio_off" = "Denne model har ingen lydkoder, så klip matches kun ud fra billederne.";
 "video_moment_play" = "Play %@";
 "feature_audio_search" = "Lydsøgning";
 "feature_audio_search_desc" = "Find øjeblikke i din lyd ved at beskrive dem";

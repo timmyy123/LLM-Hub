@@ -933,15 +933,18 @@
 "prompt_template_none" = "Không có (Mặc định)";
 
 /* Photo Search / Audio Search */
-"feature_photo_search" = "Instant Media Search";
-"feature_photo_search_desc" = "Organize and search your photos and videos locally with EmbeddingGemma 2";
-"feature_video_moment" = "Video Moment Finder";
-"feature_video_moment_desc" = "Search for moments in videos using natural language with EmbeddingGemma 2";
+"feature_photo_search" = "Tìm media";
+"feature_photo_search_desc" = "Sắp xếp và tìm ảnh, video trên máy bằng EmbeddingGemma 2";
+"feature_video_moment" = "Khoảnh khắc video";
+"feature_video_moment_desc" = "Tìm khoảnh khắc trong video bằng lời nói thường với EmbeddingGemma 2";
 "video_moment_onboarding_title" = "Search for a moment inside your videos";
 "video_moment_onboarding_desc" = "EmbeddingGemma 2 splits each video into 2 second windows, reads two frames and the audio in each window, then you can jump to the moment you describe.";
 "video_moment_all" = "Analyze all videos";
-"video_moment_pick" = "Select videos";
+"video_moment_pick" = "Chọn video";
 "video_moment_hint" = "Describe a moment, e.g. cutting a cake";
+"media_search_vision_off" = "Mô hình này không có bộ mã hóa hình ảnh, nên tìm kiếm ảnh và video đang tắt.";
+"video_moment_vision_off" = "Mô hình này không có bộ mã hóa hình ảnh, nên tìm kiếm khoảnh khắc đang tắt.";
+"video_moment_audio_off" = "Mô hình này không có bộ mã hóa âm thanh, nên các đoạn chỉ được đối chiếu từ khung hình.";
 "video_moment_play" = "Play %@";
 "feature_audio_search" = "Tìm âm thanh";
 "feature_audio_search_desc" = "Tìm khoảnh khắc trong âm thanh bằng cách mô tả";

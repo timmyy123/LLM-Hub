@@ -934,15 +934,18 @@
 "prompt_template_none" = "無（預設）";
 
 /* Photo Search / Audio Search */
-"feature_photo_search" = "Instant Media Search";
-"feature_photo_search_desc" = "Organize and search your photos and videos locally with EmbeddingGemma 2";
-"feature_video_moment" = "Video Moment Finder";
-"feature_video_moment_desc" = "Search for moments in videos using natural language with EmbeddingGemma 2";
+"feature_photo_search" = "即時媒體搜尋";
+"feature_photo_search_desc" = "用 EmbeddingGemma 2 在裝置上整理並搜尋相片與影片";
+"feature_video_moment" = "影片片刻搜尋";
+"feature_video_moment_desc" = "用 EmbeddingGemma 2 以自然語言搜尋影片中的片刻";
 "video_moment_onboarding_title" = "Search for a moment inside your videos";
 "video_moment_onboarding_desc" = "EmbeddingGemma 2 splits each video into 2 second windows, reads two frames and the audio in each window, then you can jump to the moment you describe.";
 "video_moment_all" = "Analyze all videos";
-"video_moment_pick" = "Select videos";
+"video_moment_pick" = "選取影片";
 "video_moment_hint" = "Describe a moment, e.g. cutting a cake";
+"media_search_vision_off" = "此模型沒有視覺編碼器，因此相片與影片搜尋已關閉。";
+"video_moment_vision_off" = "此模型沒有視覺編碼器，因此時刻搜尋已關閉。";
+"video_moment_audio_off" = "此模型沒有音訊編碼器，因此片段只根據畫面比對。";
 "video_moment_play" = "Play %@";
 "feature_audio_search" = "音訊搜尋";
 "feature_audio_search_desc" = "透過描述找到音訊中的片段";

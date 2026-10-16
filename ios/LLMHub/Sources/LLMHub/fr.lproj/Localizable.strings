@@ -913,15 +913,18 @@
 "prompt_template_none" = "Aucun (par défaut)";
 
 /* Photo Search / Audio Search */
-"feature_photo_search" = "Instant Media Search";
-"feature_photo_search_desc" = "Organize and search your photos and videos locally with EmbeddingGemma 2";
-"feature_video_moment" = "Video Moment Finder";
-"feature_video_moment_desc" = "Search for moments in videos using natural language with EmbeddingGemma 2";
+"feature_photo_search" = "Recherche média";
+"feature_photo_search_desc" = "Classez et recherchez vos photos et vidéos sur l’appareil avec EmbeddingGemma 2";
+"feature_video_moment" = "Moments vidéo";
+"feature_video_moment_desc" = "Cherchez des moments dans les vidéos en langage naturel avec EmbeddingGemma 2";
 "video_moment_onboarding_title" = "Search for a moment inside your videos";
 "video_moment_onboarding_desc" = "EmbeddingGemma 2 splits each video into 2 second windows, reads two frames and the audio in each window, then you can jump to the moment you describe.";
 "video_moment_all" = "Analyze all videos";
-"video_moment_pick" = "Select videos";
+"video_moment_pick" = "Sélectionner des vidéos";
 "video_moment_hint" = "Describe a moment, e.g. cutting a cake";
+"media_search_vision_off" = "Ce modèle n’a pas d’encodeur visuel, donc la recherche de photos et de vidéos est désactivée.";
+"video_moment_vision_off" = "Ce modèle n’a pas d’encodeur visuel, donc la recherche de moments est désactivée.";
+"video_moment_audio_off" = "Ce modèle n’a pas d’encodeur audio, donc les extraits sont trouvés uniquement à partir des images.";
 "video_moment_play" = "Play %@";
 "feature_audio_search" = "Recherche audio";
 "feature_audio_search_desc" = "Trouvez des moments dans vos audios en les décrivant";
