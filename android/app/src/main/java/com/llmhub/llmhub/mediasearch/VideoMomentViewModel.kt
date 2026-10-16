@@ -114,6 +114,11 @@ class VideoMomentViewModel(application: Application) : MediaSearchViewModel(appl
 
     /** Gallery searches when the query is submitted, not on each keystroke. */
     fun submitSearch() {
+        if (selectedModel.value?.supportsVision != true) {
+            _results.value = null
+            _isSearching.value = false
+            return
+        }
         val text = _query.value.trim()
         searchJob?.cancel()
         if (text.isEmpty()) {
@@ -226,6 +231,7 @@ class VideoMomentViewModel(application: Application) : MediaSearchViewModel(appl
     }
 
     private fun startIndexing() {
+        if (selectedModel.value?.supportsVision != true) return
         if (indexJob?.isActive == true || _isPaused.value) return
         indexJob = viewModelScope.launch(Dispatchers.Default) {
             val service = ensureModelLoaded() ?: return@launch
@@ -247,7 +253,7 @@ class VideoMomentViewModel(application: Application) : MediaSearchViewModel(appl
     }
 
     private suspend fun indexVideo(video: MomentVideo, service: com.llmhub.llmhub.embedding.LiteRtLmEmbeddingService) {
-        val samples = decodeAudio16kMono(context, video.uri, MAX_SECONDS)
+        val samples = if (selectedModel.value?.supportsAudio == true) decodeAudio16kMono(context, video.uri, MAX_SECONDS) else null
         storeMutex.withLock { store.removeIds(setOf(video.id)) }
         val limitMs = minOf(video.durationMs, MAX_SECONDS * 1000L)
         var start = 0L

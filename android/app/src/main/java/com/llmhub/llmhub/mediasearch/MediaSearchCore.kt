@@ -353,7 +353,7 @@ abstract class MediaSearchViewModel(application: Application, private val prefsN
     private val modelMutex = Mutex()
 
     fun refreshModels() {
-        val models = ModelData.embeddingGemma2Models.filter { it.hasCompleteDownloadedBundle(context) }
+        val models = ModelData.embeddingGemma2Models.filter { it.supportsVision && it.hasCompleteDownloadedBundle(context) }
         _downloadedModels.value = models
         val saved = prefs.getString(KEY_MODEL, null)
         val current = _selectedModel.value

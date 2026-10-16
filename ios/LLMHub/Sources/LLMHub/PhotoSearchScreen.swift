@@ -45,6 +45,7 @@ final class PhotoSearchModel: ObservableObject {
     private var storeLoaded = false
 
     private static let sourceKey = "photo_search_source"
+    private static let selectedIdsKey = "photo_search_selected_ids"
     private static let indexedModelKey = "photo_search_indexed_model"
     private static let importedDir: URL = {
         let dir = MediaSearchConfig.directory.appendingPathComponent("photos", isDirectory: true)
@@ -98,25 +99,25 @@ final class PhotoSearchModel: ObservableObject {
         startIndexing()
     }
 
-    func importPhotos(_ pickerItems: [PhotosPickerItem]) async {
+    /// Ask for library access before the picker opens, so each picked item has a photo-library id.
+    func preparePhotoPicker() async -> Bool {
+        let status = await PHPhotoLibrary.requestAuthorization(for: .readWrite)
+        let ok = status == .authorized || status == .limited
+        libraryAccessDenied = !ok
+        return ok
+    }
+
+    /// Same path as Analyze all: keep the photo-library items and load frames later. Do not copy the files first.
+    func importPhotos(_ pickerItems: [PhotosPickerItem]) {
+        var ids = UserDefaults.standard.stringArray(forKey: Self.selectedIdsKey) ?? []
         var added = false
-        for pickerItem in pickerItems {
-            if let data = try? await pickerItem.loadTransferable(type: Data.self),
-               let image = UIImage(data: data),
-               let jpeg = mediaSearchJPEG(from: image, maxEdge: 1024) {
-                let name = "\(UUID().uuidString).jpg"
-                if (try? jpeg.write(to: Self.importedDir.appendingPathComponent(name), options: .atomic)) != nil {
-                    added = true
-                }
-                continue
-            }
-            if let movie = try? await pickerItem.loadTransferable(type: PickedMovie.self) {
-                let ext = movie.url.pathExtension.isEmpty ? "mov" : movie.url.pathExtension
-                let dest = Self.importedDir.appendingPathComponent("\(UUID().uuidString).\(ext)")
-                if (try? FileManager.default.copyItem(at: movie.url, to: dest)) != nil { added = true }
-            }
+        for item in pickerItems {
+            guard let id = item.itemIdentifier, !ids.contains(id) else { continue }
+            ids.append(id)
+            added = true
         }
         guard added else { return }
+        UserDefaults.standard.set(ids, forKey: Self.selectedIdsKey)
         if source != .allPhotos { setSource(.selected) }
         refreshItems()
         startIndexing()
@@ -129,6 +130,7 @@ final class PhotoSearchModel: ObservableObject {
         try? FileManager.default.removeItem(at: Self.importedDir)
         try? FileManager.default.createDirectory(at: Self.importedDir, withIntermediateDirectories: true)
         failed.removeAll()
+        UserDefaults.standard.removeObject(forKey: Self.selectedIdsKey)
         setSource(.none)
         items = []
         progress = MediaIndexingProgress()
@@ -152,6 +154,11 @@ final class PhotoSearchModel: ObservableObject {
         query = text
         similarTo = nil
         searchTask?.cancel()
+        if currentModel?.supportsVision == false {
+            results = nil
+            isSearching = false
+            return
+        }
         guard !text.trimmingCharacters(in: .whitespaces).isEmpty else {
             results = nil
             isSearching = false
@@ -170,6 +177,7 @@ final class PhotoSearchModel: ObservableObject {
     }
 
     func findSimilar(_ item: Item) {
+        guard currentModel?.supportsVision == true else { return }
         searchTask?.cancel()
         query = ""
         similarTo = item
@@ -271,6 +279,14 @@ final class PhotoSearchModel: ObservableObject {
             }
             }
         }
+        if source == .selected {
+            let ids = UserDefaults.standard.stringArray(forKey: Self.selectedIdsKey) ?? []
+            if !ids.isEmpty {
+                PHAsset.fetchAssets(withLocalIdentifiers: ids, options: nil).enumerateObjects { asset, _, _ in
+                    list.append(Item(id: "ph:" + asset.localIdentifier, isVideo: asset.mediaType == .video))
+                }
+            }
+        }
         if source != .none {
             let files = (try? FileManager.default.contentsOfDirectory(at: Self.importedDir, includingPropertiesForKeys: [.creationDateKey])) ?? []
             list += files.sorted { $0.lastPathComponent > $1.lastPathComponent }.map {
@@ -341,6 +357,7 @@ final class PhotoSearchModel: ObservableObject {
     }
 
     private func startIndexing() {
+        guard currentModel?.supportsVision == true else { return }
         guard indexTask == nil || indexTask?.isCancelled == true, !isPaused, currentModel != nil else { return }
         let engine = engine
         indexTask = Task.detached(priority: .utility) { [weak self] in
@@ -483,6 +500,7 @@ struct PhotoSearchScreen: View {
     @AppStorage("photo_search_model_id") private var selectedModelId = ""
     @State private var showSettings = false
     @State private var pickerItems: [PhotosPickerItem] = []
+    @State private var showLibraryPicker = false
     @State private var viewing: PhotoSearchModel.Item?
 
     private var downloadedModels: [AIModel] { MediaSearchConfig.downloadedModels() }
@@ -505,7 +523,9 @@ struct PhotoSearchScreen: View {
                     }
                     .foregroundStyle(.white)
                     .liquidGlassPrimaryButton(cornerRadius: 12)
-                    PhotosPicker(selection: $pickerItems, matching: .any(of: [.images, .videos])) {
+                    Button {
+                        Task { showLibraryPicker = await model.preparePhotoPicker() }
+                    } label: {
                         Text(settings.localized("photo_search_select_photos"))
                             .frame(maxWidth: .infinity).frame(height: 50)
                             .foregroundStyle(.white)
@@ -542,7 +562,9 @@ struct PhotoSearchScreen: View {
                 countText: String(format: settings.localized("photo_search_count"), model.progress.processed, model.items.count),
                 onClearAll: { model.clearAll() }
             ) {
-                PhotosPicker(selection: $pickerItems, matching: .any(of: [.images, .videos])) {
+                Button {
+                    Task { showLibraryPicker = await model.preparePhotoPicker() }
+                } label: {
                     Text(settings.localized("photo_search_select_photos"))
                         .frame(maxWidth: .infinity)
                         .frame(height: 50)
@@ -559,10 +581,11 @@ struct PhotoSearchScreen: View {
             }
             .environmentObject(settings)
         }
+        .photosPicker(isPresented: $showLibraryPicker, selection: $pickerItems, matching: .any(of: [.images, .videos]))
         .onChange(of: pickerItems) { _, items in
             guard !items.isEmpty else { return }
+            model.importPhotos(items)
             pickerItems = []
-            Task { await model.importPhotos(items) }
         }
         .task(id: selectedModel?.id) { await model.start(model: selectedModel) }
         // Presenting the full-screen viewer also fires onDisappear; keep the engine for that.
@@ -586,6 +609,9 @@ struct PhotoSearchScreen: View {
                 placeholder: settings.localized("photo_search_hint"),
                 isSearching: model.isSearching
             )
+            if selectedModel?.supportsVision == false {
+                Text(settings.localized("media_search_vision_off")).font(.caption).foregroundStyle(.red)
+            }
             MediaSearchStatusCard(
                 isLoadingModel: model.isLoadingModel,
                 modelError: model.modelError,
@@ -713,21 +739,6 @@ private struct PhotoSearchViewer: View {
             }
         }
         .onDisappear { player?.pause() }
-    }
-}
-
-private struct PickedMovie: Transferable {
-    let url: URL
-
-    static var transferRepresentation: some TransferRepresentation {
-        FileRepresentation(contentType: .movie) { movie in
-            SentTransferredFile(movie.url)
-        } importing: { received in
-            let ext = received.file.pathExtension.isEmpty ? "mov" : received.file.pathExtension
-            let dest = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).\(ext)")
-            try FileManager.default.copyItem(at: received.file, to: dest)
-            return PickedMovie(url: dest)
-        }
     }
 }
 

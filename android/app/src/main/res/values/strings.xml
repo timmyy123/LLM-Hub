@@ -1048,6 +1048,9 @@
     <string name="media_search_resume">Resume</string>
     <string name="media_search_incomplete_warning">Still analyzing, so some results may be missing.</string>
     <string name="media_search_no_results">No matches found</string>
+    <string name="media_search_vision_off">This model has no vision encoder, so photo and video search is off.</string>
+    <string name="video_moment_vision_off">This model has no vision encoder, so moment search is off.</string>
+    <string name="video_moment_audio_off">This model has no audio encoder, so clips are matched from the frames only.</string>
     <string name="media_search_library">Library</string>
     <string name="media_search_clear">Clear all and start over</string>
     <string name="media_search_grant_access">Allow access</string>

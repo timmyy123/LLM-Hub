@@ -67,7 +67,7 @@ enum MediaSearchConfig {
         return dir
     }
 
-    /// Downloaded multimodal EmbeddingGemma 2 builds.
+    /// Downloaded EmbeddingGemma 2 builds that can see images. Text-only 270M is not offered here.
     static func downloadedModels() -> [AIModel] {
         ModelData.allModels().filter {
             $0.category == .embedding && $0.modelFormat == .litertlm && $0.supportsVision

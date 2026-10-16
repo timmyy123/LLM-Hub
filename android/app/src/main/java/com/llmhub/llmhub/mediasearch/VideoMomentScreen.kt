@@ -159,6 +159,8 @@ fun VideoMomentScreen(
                 onPause = viewModel::pause,
                 onResume = viewModel::resume,
                 onRetryModel = viewModel::loadModel,
+                visionEnabled = selectedModel?.supportsVision == true,
+                audioEnabled = selectedModel?.supportsAudio == true,
                 modifier = Modifier.padding(padding)
             )
         }
@@ -259,6 +261,8 @@ private fun MomentStage(
     onPause: () -> Unit,
     onResume: () -> Unit,
     onRetryModel: () -> Unit,
+    visionEnabled: Boolean,
+    audioEnabled: Boolean,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -325,7 +329,6 @@ private fun MomentStage(
                 OutlinedTextField(
                     value = query,
                     onValueChange = onQueryChange,
-                    enabled = !isSearching,
                     modifier = Modifier.weight(1f),
                     placeholder = { Text(stringResource(R.string.video_moment_hint)) },
                     leadingIcon = {
@@ -344,8 +347,9 @@ private fun MomentStage(
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                     keyboardActions = KeyboardActions(onSearch = {
                         focus.clearFocus()
-                        onSearch()
+                        if (visionEnabled) onSearch()
                     }),
+                    enabled = visionEnabled && !isSearching,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedContainerColor = primary.copy(alpha = 0.85f),
                         unfocusedContainerColor = MaterialTheme.colorScheme.surface,
@@ -356,6 +360,11 @@ private fun MomentStage(
                 )
             }
             MediaSearchStatusCard(isLoadingModel, modelError, progress, isPaused, onPause, onResume, onRetryModel)
+            if (!visionEnabled) {
+                Text(stringResource(R.string.video_moment_vision_off), color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+            } else if (!audioEnabled) {
+                Text(stringResource(R.string.video_moment_audio_off), color = Color.White, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+            }
             if (hits.isNotEmpty()) {
                 Text(
                     stringResource(R.string.video_moment_top),

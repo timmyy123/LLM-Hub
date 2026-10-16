@@ -116,6 +116,13 @@ class PhotoSearchViewModel(application: Application) : MediaSearchViewModel(appl
     }
 
     fun onQueryChange(text: String) {
+        if (selectedModel.value?.supportsVision != true) {
+            _query.value = text
+            searchJob?.cancel()
+            _results.value = null
+            _isSearching.value = false
+            return
+        }
         _query.value = text
         _similarTo.value = null
         searchJob?.cancel()
@@ -135,6 +142,7 @@ class PhotoSearchViewModel(application: Application) : MediaSearchViewModel(appl
     }
 
     fun findSimilar(asset: PhotoAsset) {
+        if (selectedModel.value?.supportsVision != true) return
         searchJob?.cancel()
         _query.value = ""
         _similarTo.value = asset
@@ -254,6 +262,7 @@ class PhotoSearchViewModel(application: Application) : MediaSearchViewModel(appl
     }
 
     private fun startIndexing() {
+        if (selectedModel.value?.supportsVision != true) return
         if (indexJob?.isActive == true || _isPaused.value) return
         indexJob = viewModelScope.launch(Dispatchers.Default) {
             val service = ensureModelLoaded() ?: return@launch

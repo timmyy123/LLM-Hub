@@ -663,7 +663,7 @@ class ChatViewModel: ObservableObject {
     }
 
     private static let defaultGenerationSettings = ModelGenerationSettings(
-        maxTokens: 512,
+        maxTokens: 4096,
         contextWindow: 4096,
         topK: 64,
         topP: 0.95,
@@ -994,7 +994,8 @@ class ChatViewModel: ObservableObject {
         guard let model = chatModel(named: modelName) else {
             var fallback = settings
             fallback.contextWindow = max(1, fallback.contextWindow)
-            fallback.maxTokens = min(max(1, fallback.maxTokens), fallback.contextWindow)
+            // No max-tokens control in the UI: output may use the whole context (see ChatSettingsSheet).
+            fallback.maxTokens = fallback.contextWindow
             fallback.topK = min(max(1, fallback.topK), 256)
             fallback.topP = min(max(0, fallback.topP), 1)
             fallback.temperature = min(max(0, fallback.temperature), 2)
@@ -1004,7 +1005,9 @@ class ChatViewModel: ObservableObject {
         let modelMaxContext = Double(LLMBackend.shared.modelMaxContextWindow(for: model))
         var clamped = settings
         clamped.contextWindow = min(max(1, clamped.contextWindow), modelMaxContext)
-        clamped.maxTokens = min(max(1, clamped.maxTokens), clamped.contextWindow)
+        // No max-tokens control in the UI: output may use the whole context (see ChatSettingsSheet).
+        // Older saved settings carry a 512 cap, which reasoning models exhaust before answering.
+        clamped.maxTokens = clamped.contextWindow
         clamped.topK = min(max(1, clamped.topK), 256)
         clamped.topP = min(max(0, clamped.topP), 1)
         clamped.temperature = min(max(0, clamped.temperature), 2)
@@ -1569,9 +1572,15 @@ class ChatViewModel: ObservableObject {
 
         // Truncate at leaked turn markers — the model should never generate a new
         // "User:" turn. If it does, chop the response there to prevent fake exchanges.
+        // Only check the answer: reasoning often drafts "User: …" / "Assistant: …" lines.
+        let thinkCloseEnd = ["</think>", "\u{200B}\u{200B}ENDTHINK\u{200B}\u{200B}"]
+            .compactMap { normalized.range(of: $0)?.upperBound }
+            .min()
+        let stillThinking = thinkCloseEnd == nil && contentHasThinkingMarkers(normalized)
+        let answerStart = thinkCloseEnd ?? normalized.startIndex
         let turnLeakPatterns = ["\nUser:", "\nuser:", "\nAssistant:", "\nassistant:", "\nHuman:", "\nhuman:"]
-        for pattern in turnLeakPatterns {
-            if let range = normalized.range(of: pattern) {
+        for pattern in turnLeakPatterns where !stillThinking {
+            if let range = normalized.range(of: pattern, range: answerStart..<normalized.endIndex) {
                 normalized = String(normalized[normalized.startIndex..<range.lowerBound])
                     .trimmingCharacters(in: .whitespacesAndNewlines)
                 break

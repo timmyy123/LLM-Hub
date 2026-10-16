@@ -5121,62 +5121,141 @@ object ModelData {
 
     private const val EMBEDDING_GEMMA_2_REPO =
         "https://huggingface.co/litert-community/embeddinggemma-2-740m-litert-lm/resolve/24d962e906c7d332c6428e71c9676855024569e2"
+    private const val EMBEDDING_GEMMA_2_440_REPO =
+        "https://huggingface.co/litert-community/embeddinggemma-2-text-vision-440m-litert-lm/resolve/e301f74d5551b0c2641bd5cb4652a76239d5c5f8"
+    private const val EMBEDDING_GEMMA_2_270_REPO =
+        "https://huggingface.co/litert-community/embeddinggemma-2-text-270m-litert-lm/resolve/9be6e8b90982095dc05c2bd162e4b954ee4dbac7"
+
+    private data class EmbeddingGemma2NpuVariant(
+        val tag: String,
+        val chipName: String,
+        val size740: Long,
+        val size440: Long,
+        val size270: Long,
+    )
 
     private val embeddingGemma2NpuVariants = listOf(
-        Triple("Google_Tensor_G5", "Google Tensor G5", 657656500L),
-        Triple("Google_Tensor_G6", "Google Tensor G6", 615713460L),
-        Triple("MediaTek_MT6991", "MediaTek Dimensity 9400", 895008768L),
-        Triple("MediaTek_MT6993", "MediaTek Dimensity 9500", 864681984L),
-        Triple("Qualcomm_QCS8275", "Qualcomm QCS8275", 562888704L),
-        Triple("Qualcomm_SM8550", "Snapdragon 8 Gen 2", 562905088L),
-        Triple("Qualcomm_SM8650", "Snapdragon 8 Gen 3", 562659328L),
-        Triple("Qualcomm_SM8750", "Snapdragon 8 Elite", 543522816L),
-        Triple("Qualcomm_SM8850", "Snapdragon 8 Elite Gen 5", 559448064L),
+        EmbeddingGemma2NpuVariant("Google_Tensor_G5", "Google Tensor G5", 657656500L, 559418036L, 166007264L),
+        EmbeddingGemma2NpuVariant("Google_Tensor_G6", "Google Tensor G6", 615713460L, 513166004L, 199532256L),
+        EmbeddingGemma2NpuVariant("MediaTek_MT6991", "MediaTek Dimensity 9400", 895008768L, 798097408L, 416350208L),
+        EmbeddingGemma2NpuVariant("MediaTek_MT6993", "MediaTek Dimensity 9500", 864681984L, 767770624L, 385925120L),
+        EmbeddingGemma2NpuVariant("Qualcomm_QCS8275", "Qualcomm QCS8275", 562888704L, 465977344L, 208011264L),
+        EmbeddingGemma2NpuVariant("Qualcomm_SM8550", "Snapdragon 8 Gen 2", 562905088L, 465993728L, 207896576L),
+        EmbeddingGemma2NpuVariant("Qualcomm_SM8650", "Snapdragon 8 Gen 3", 562659328L, 465747968L, 207798272L),
+        EmbeddingGemma2NpuVariant("Qualcomm_SM8750", "Snapdragon 8 Elite", 543522816L, 446611456L, 187596800L),
+        EmbeddingGemma2NpuVariant("Qualcomm_SM8850", "Snapdragon 8 Elite Gen 5", 559448064L, 462536704L, 202293248L),
+    )
+
+    private fun embeddingGemma2Model(
+        name: String,
+        description: String,
+        url: String,
+        sizeBytes: Long,
+        supportsVision: Boolean,
+        supportsAudio: Boolean,
+        supportsGpu: Boolean,
+        minRamGB: Int,
+    ) = LLMModel(
+        name = name,
+        description = description,
+        url = url,
+        category = "embedding",
+        sizeBytes = sizeBytes,
+        source = "Google via LiteRT Community",
+        supportsVision = supportsVision,
+        supportsAudio = supportsAudio,
+        supportsGpu = supportsGpu,
+        requirements = ModelRequirements(minRamGB = minRamGB, recommendedRamGB = minRamGB + 1),
+        contextWindowSize = 8192,
+        modelFormat = "litertlm"
     )
 
     val embeddingGemma2Models: List<LLMModel> = buildList {
         add(
-            LLMModel(
+            embeddingGemma2Model(
                 name = "EmbeddingGemma 2 740M",
                 description = "Google EmbeddingGemma 2 multimodal embedding model (LiteRT-LM). Maps text, images and audio into one 768-dimensional space, so memory can store and search recorded or uploaded audio and images alongside text. Runs on CPU/GPU on any device. (485 MB)",
                 url = "$EMBEDDING_GEMMA_2_REPO/embeddinggemma-2-740m.litertlm?download=true",
-                category = "embedding",
                 sizeBytes = 484622336L,
-                source = "Google via LiteRT Community",
                 supportsVision = true,
                 supportsAudio = true,
                 supportsGpu = true,
-                requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 4),
-                contextWindowSize = 8192,
-                modelFormat = "litertlm"
+                minRamGB = 3,
+            )
+        )
+        add(
+            embeddingGemma2Model(
+                name = "EmbeddingGemma 2 440M",
+                description = "Smaller EmbeddingGemma 2 model for text and images (LiteRT-LM). Maps text and images into one 768-dimensional space. It has no audio encoder. Runs on CPU/GPU on any device. (388 MB)",
+                url = "$EMBEDDING_GEMMA_2_440_REPO/embeddinggemma-2-text-vision-440m.litertlm?download=true",
+                sizeBytes = 387710976L,
+                supportsVision = true,
+                supportsAudio = false,
+                supportsGpu = true,
+                minRamGB = 2,
+            )
+        )
+        add(
+            embeddingGemma2Model(
+                name = "EmbeddingGemma 2 270M",
+                description = "Smallest EmbeddingGemma 2 model (LiteRT-LM). Text only, in a 768-dimensional space, for memory and text search. It does not embed images or audio. Runs on CPU/GPU on any device. (165 MB)",
+                url = "$EMBEDDING_GEMMA_2_270_REPO/embeddinggemma-2-text-270m.litertlm?download=true",
+                sizeBytes = 164626432L,
+                supportsVision = false,
+                supportsAudio = false,
+                supportsGpu = true,
+                minRamGB = 2,
             )
         )
         val deviceTag = DeviceInfo.getEmbeddingGemma2NpuTag()
-        embeddingGemma2NpuVariants
-            .filter { (tag, _, _) -> tag == deviceTag }
-            .forEach { (tag, chipName, size) ->
-                add(
-                    LLMModel(
-                        name = "EmbeddingGemma 2 740M (NPU - $chipName)",
-                        description = "EmbeddingGemma 2 multimodal embedding model compiled for the $chipName NPU. Same text, image and audio memory support as the standard build with lower latency and power use. Only works on $chipName devices. (${size / (1024 * 1024)} MB)",
-                        url = "$EMBEDDING_GEMMA_2_REPO/embeddinggemma-2-740m_$tag.litertlm?download=true",
-                        category = "embedding",
-                        sizeBytes = size,
-                        source = "Google via LiteRT Community",
-                        supportsVision = true,
-                        supportsAudio = true,
-                        supportsGpu = false,
-                        requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 4),
-                        contextWindowSize = 8192,
-                        modelFormat = "litertlm"
-                    )
-                )
-            }
+        val variant = embeddingGemma2NpuVariants.firstOrNull { it.tag == deviceTag } ?: return@buildList
+        val tag = variant.tag
+        val chipName = variant.chipName
+        add(
+            embeddingGemma2Model(
+                name = "EmbeddingGemma 2 740M (NPU - $chipName)",
+                description = "EmbeddingGemma 2 multimodal embedding model compiled for the $chipName NPU. Same text, image and audio memory support as the standard build with lower latency and power use. Only works on $chipName devices. (${variant.size740 / (1024 * 1024)} MB)",
+                url = "$EMBEDDING_GEMMA_2_REPO/embeddinggemma-2-740m_$tag.litertlm?download=true",
+                sizeBytes = variant.size740,
+                supportsVision = true,
+                supportsAudio = true,
+                supportsGpu = false,
+                minRamGB = 3,
+            )
+        )
+        add(
+            embeddingGemma2Model(
+                name = "EmbeddingGemma 2 440M (NPU - $chipName)",
+                description = "EmbeddingGemma 2 text and vision model compiled for the $chipName NPU. No audio encoder. Only works on $chipName devices. (${variant.size440 / (1024 * 1024)} MB)",
+                url = "$EMBEDDING_GEMMA_2_440_REPO/embeddinggemma-2-text-vision-440m_$tag.litertlm?download=true",
+                sizeBytes = variant.size440,
+                supportsVision = true,
+                supportsAudio = false,
+                supportsGpu = false,
+                minRamGB = 2,
+            )
+        )
+        add(
+            embeddingGemma2Model(
+                name = "EmbeddingGemma 2 270M (NPU - $chipName)",
+                description = "EmbeddingGemma 2 text-only model compiled for the $chipName NPU. It does not embed images or audio. Only works on $chipName devices. (${variant.size270 / (1024 * 1024)} MB)",
+                url = "$EMBEDDING_GEMMA_2_270_REPO/embeddinggemma-2-text-270m_$tag.litertlm?download=true",
+                sizeBytes = variant.size270,
+                supportsVision = false,
+                supportsAudio = false,
+                supportsGpu = false,
+                minRamGB = 2,
+            )
+        )
     }
 
     /** True for the chip-specific (NPU-compiled) EmbeddingGemma 2 builds. */
     fun isEmbeddingGemma2NpuModel(model: LLMModel): Boolean =
-        model.modelFormat == "litertlm" && model.url.contains("embeddinggemma-2-740m_")
+        model.modelFormat == "litertlm" && (
+            model.url.contains("embeddinggemma-2-740m_") ||
+                model.url.contains("embeddinggemma-2-text-vision-440m_") ||
+                model.url.contains("embeddinggemma-2-text-270m_")
+            )
 
     val models: List<LLMModel> = baseModels + embeddingGemma2Models + upscalerModels + ttsModels + musicGenerationModels + (if (DeviceInfo.getChipsetSuffix() in setOf("8gen3", "8gen4", "8gen5")) sdxlModels else emptyList())
 

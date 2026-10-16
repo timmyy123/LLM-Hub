@@ -170,6 +170,9 @@ fun PhotoSearchScreen(
                     item(span = { GridItemSpan(maxLineSpan) }) {
                         Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(bottom = 8.dp)) {
                             MediaSearchField(query, viewModel::onQueryChange, stringResource(R.string.photo_search_hint), isSearching)
+                            if (selectedModel != null && selectedModel?.supportsVision != true) {
+                                Text(stringResource(R.string.media_search_vision_off), color = MaterialTheme.colorScheme.error)
+                            }
                             MediaSearchStatusCard(
                                 isLoadingModel = isLoadingModel,
                                 modelError = modelError,

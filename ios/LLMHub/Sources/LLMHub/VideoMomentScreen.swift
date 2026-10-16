@@ -154,6 +154,11 @@ final class VideoMomentModel: ObservableObject {
 
     /// Gallery searches when the query is submitted, not on each keystroke.
     func submitSearch() {
+        if currentModel?.supportsVision == false {
+            results = nil
+            isSearching = false
+            return
+        }
         let text = query.trimmingCharacters(in: .whitespaces)
         searchTask?.cancel()
         guard !text.isEmpty else {
@@ -238,6 +243,7 @@ final class VideoMomentModel: ObservableObject {
     }
 
     private func startIndexing() {
+        guard currentModel?.supportsVision == true else { return }
         guard indexTask == nil || indexTask?.isCancelled == true, !isPaused, currentModel != nil else { return }
         let engine = engine
         indexTask = Task.detached(priority: .utility) { [weak self] in
@@ -265,7 +271,11 @@ final class VideoMomentModel: ObservableObject {
         let already = Set(store.all.filter { $0.id == video.id && !$0.vector.isEmpty }.map(\.startMs))
         var start = 0
         var stored = !already.isEmpty
-        let samples = already.count * Self.windowMs >= limit ? nil : await samples16k(video)
+        let samples = if currentModel?.supportsAudio != true || already.count * Self.windowMs >= limit {
+            nil as [Float]?
+        } else {
+            await samples16k(video)
+        }
         while start < limit {
             if Task.isCancelled { return }
             let end = min(start + Self.windowMs, limit)
@@ -303,7 +313,7 @@ final class VideoMomentModel: ObservableObject {
         guard !frames.isEmpty else { return [] }
         let slices = audioSlices(samples, startMs: startMs, endMs: endMs, count: frames.count)
         let hasAudio = slices.contains { $0 != nil }
-        if !hasAudio { return frames.map { .image($0) } }
+        if !hasAudio || currentModel?.supportsAudio != true { return frames.map { .image($0) } }
         var parts: [MediaEmbedPart] = []
         for (index, jpeg) in frames.enumerated() {
             let stamp = clock(times[index])
@@ -620,6 +630,7 @@ struct VideoMomentScreen: View {
                         .foregroundStyle(.white)
                         .submitLabel(.search)
                         .autocorrectionDisabled()
+                        .disabled(selectedModel?.supportsVision == false)
                         .onSubmit { model.submitSearch() }
                         if model.isSearching {
                             ProgressView().tint(.white)
@@ -633,6 +644,11 @@ struct VideoMomentScreen: View {
                     .frame(height: 48)
                     .background(Color.white.opacity(0.16))
                     .clipShape(Capsule())
+                    if selectedModel?.supportsVision == false {
+                        Text(settings.localized("video_moment_vision_off")).font(.caption).foregroundStyle(.red)
+                    } else if selectedModel?.supportsAudio == false {
+                        Text(settings.localized("video_moment_audio_off")).font(.caption).foregroundStyle(.white)
+                    }
                     MediaSearchStatusCard(
                         isLoadingModel: model.isLoadingModel,
                         modelError: model.modelError,

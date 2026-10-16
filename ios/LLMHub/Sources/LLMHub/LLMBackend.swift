@@ -1040,12 +1040,13 @@ class LLMBackend: ObservableObject {
                 if !strippedPrompt.contains("<|im_start|>") && !strippedPrompt.contains("[INST]") {
                     let sys = (effectiveSystemPrompt ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
                     if !sys.isEmpty {
-                        usePrompt = "<|im_start|>system\n\(sys)\n<|im_end|>\n<|im_start|>user\n\(strippedPrompt)\n<|im_end|>\n<|im_start|>assistant\n<think>\n"
+                        usePrompt = "<|im_start|>system\n\(sys)\n<|im_end|>\n<|im_start|>user\n\(strippedPrompt)\n<|im_end|>\n<|im_start|>assistant\n<think>"
                     } else {
-                        usePrompt = "<|im_start|>user\n\(strippedPrompt)\n<|im_end|>\n<|im_start|>assistant\n<think>\n"
+                        usePrompt = "<|im_start|>user\n\(strippedPrompt)\n<|im_end|>\n<|im_start|>assistant\n<think>"
                     }
                 } else if !strippedPrompt.contains("<think>") {
-                    usePrompt = strippedPrompt + "\n<think>\n"
+                    // Official LFM2.5 generation prompt is exactly "<|im_start|>assistant\n<think>".
+                    usePrompt = strippedPrompt + (strippedPrompt.hasSuffix("\n") ? "<think>" : "\n<think>")
                 } else {
                     usePrompt = strippedPrompt
                 }
@@ -1144,11 +1145,17 @@ class LLMBackend: ObservableObject {
                 maxTokens: effectiveMaxTokens, temperature: temperature,
                 topK: topK, topP: topP, stopSequences: effectiveStops
             )
+            // When the prompt pre-fills an open <think> (LFM, Granite 4.2), the model's output
+            // never contains it. Re-add it so the UI can tell reasoning from the answer even if
+            // generation stops before </think>.
+            let promptOpensThink = usePrompt.trimmingCharacters(in: .whitespacesAndNewlines).hasSuffix("<think>")
             for try await update in stream {
                 try Task.checkCancellation()
+                let rawText = promptOpensThink && !update.text.contains("<think>")
+                    ? "<think>\n" + update.text : update.text
                 let gemmaText = (loadedModelName.range(of: "gemma 4", options: .caseInsensitive) != nil ||
                                  loadedModelName.range(of: "gemma-4", options: .caseInsensitive) != nil)
-                    ? Self.cleanGemma4Output(update.text) : update.text
+                    ? Self.cleanGemma4Output(rawText) : rawText
                 let museText = isMuseGlimmerModel
                     ? Self.normalizeMuseGlimmerOutput(gemmaText, thinkingEnabled: enableThinking)
                     : gemmaText

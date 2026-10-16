@@ -947,6 +947,9 @@
 "video_moment_all" = "Analyze all videos";
 "video_moment_pick" = "Select videos";
 "video_moment_hint" = "Describe a moment, e.g. cutting a cake";
+"media_search_vision_off" = "This model has no vision encoder, so photo and video search is off.";
+"video_moment_vision_off" = "This model has no vision encoder, so moment search is off.";
+"video_moment_audio_off" = "This model has no audio encoder, so clips are matched from the frames only.";
 "video_moment_play" = "Play %@";
 "video_moment_top" = "Showing top 5 results";
 "video_moment_save_edit" = "Save or edit this clip";
