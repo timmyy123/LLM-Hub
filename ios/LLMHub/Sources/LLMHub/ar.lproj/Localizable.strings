@@ -991,3 +991,4 @@
 "music_stop_generation" = "إيقاف التوليد";
 "music_unlimited_duration" = "مدة غير محدودة";
 "music_unlimited_duration_desc" = "يستمر التوليد حتى تضغط على إيقاف. يُحفظ التسجيل عند الإيقاف.";
+"music_locked_screen_supported" = "يدعم إنشاء الموسيقى وتشغيلها أثناء قفل الشاشة.";

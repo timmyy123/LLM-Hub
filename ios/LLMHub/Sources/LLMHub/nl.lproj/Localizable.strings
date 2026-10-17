@@ -998,3 +998,4 @@
 "music_stop_generation" = "Genereren stoppen";
 "music_unlimited_duration" = "Onbeperkte duur";
 "music_unlimited_duration_desc" = "Het genereren gaat door totdat je op Stoppen drukt. De opname wordt opgeslagen zodra je stopt.";
+"music_locked_screen_supported" = "Ondersteunt het genereren en afspelen van muziek terwijl het scherm vergrendeld is.";

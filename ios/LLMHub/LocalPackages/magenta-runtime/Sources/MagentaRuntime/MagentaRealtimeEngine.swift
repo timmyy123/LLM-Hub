@@ -82,6 +82,7 @@ public enum MagentaRealtimeEngine {
         seed: UInt64? = nil,
         collectAudio: Bool = true,
         shouldStop: @Sendable () -> Bool = { false },
+        waitUntilReady: @Sendable () -> Bool = { true },
         onAudioFrame: (@Sendable (Data) throws -> Void)? = nil,
         progress: @Sendable (Double) -> Void
     ) throws -> Data {
@@ -90,6 +91,7 @@ public enum MagentaRealtimeEngine {
 
         let frameCount = durationSeconds.map { max(1, Int(ceil($0 * 25.0))) }
         var pcm = Data(capacity: collectAudio ? (frameCount ?? 0) * frameSamples * 4 : 0)
+        guard waitUntilReady(), !shouldStop() else { return pcm }
         let musicCoCaTokens = try MagentaPromptEncoder.encode(
             prompt: prompt,
             resourceDirectory: resourceDirectory
@@ -119,6 +121,7 @@ public enum MagentaRealtimeEngine {
         let keys = (0..<keyCount).map { MLXRandom.key(generationSeed &+ UInt64($0)) }
         arguments[9 + session.randomKeyIndex] = stacked(keys).reshaped(savedKey.shape)
         print("[LLMHub][MusicGen] seed=\(generationSeed)")
+        guard waitUntilReady(), !shouldStop() else { return pcm }
         eval(arguments)
 
         var modelTime = 0.0
@@ -127,7 +130,7 @@ public enum MagentaRealtimeEngine {
         var frame = 0
         while frameCount.map({ frame < $0 }) ?? true {
             try Task.checkCancellation()
-            if shouldStop() { break }
+            if shouldStop() || !waitUntilReady() || shouldStop() { break }
             let modelStart = ProcessInfo.processInfo.systemUptime
             let outputs = try invoke(function, arguments: arguments, stateCount: stateCount)
             guard outputs.count == stateCount + 1 else {

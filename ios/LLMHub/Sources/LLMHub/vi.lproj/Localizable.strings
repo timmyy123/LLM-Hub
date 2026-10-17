@@ -998,3 +998,4 @@
 "music_stop_generation" = "Dừng tạo nhạc";
 "music_unlimited_duration" = "Thời lượng không giới hạn";
 "music_unlimited_duration_desc" = "Tiếp tục tạo cho đến khi bạn nhấn Dừng. Bản ghi được lưu khi bạn dừng.";
+"music_locked_screen_supported" = "Hỗ trợ tạo và phát nhạc khi màn hình bị khóa.";

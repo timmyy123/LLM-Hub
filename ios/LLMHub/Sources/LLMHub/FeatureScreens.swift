@@ -7471,7 +7471,7 @@ public struct MusicGeneratorScreen: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button {
-                    musicBackend.unloadModel()
+                    musicBackend.unloadModel(reason: "music-back-button")
                     onNavigateBack?()
                 } label: {
                     Image(systemName: "arrow.left")
@@ -7508,7 +7508,7 @@ public struct MusicGeneratorScreen: View {
                     defer { isLoading = false }
                     _ = await ensureModelLoaded(force: true)
                 },
-                onUnload: { musicBackend.unloadModel() },
+                onUnload: { musicBackend.unloadModel(reason: "music-settings-unload") },
                 showsThinkingToggle: false,
                 extraModelConfigsContent: AnyView(musicGenerationSettings)
             )
@@ -7524,12 +7524,22 @@ public struct MusicGeneratorScreen: View {
             }
         }
         .onDisappear {
-            musicBackend.unloadModel()
+            if UIApplication.shared.applicationState == .active {
+                musicBackend.unloadModel(reason: "music-screen-disappeared-active")
+            }
         }
     }
 
     private var musicGenerationSettings: some View {
         VStack(spacing: 8) {
+            if musicBackend.supportsLockedScreenGeneration {
+                Text(settings.localized("music_locked_screen_supported"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
             Toggle(settings.localized("music_live_generation"), isOn: $liveGeneration)
                 .tint(ApolloPalette.accentStrong)
                 .foregroundColor(.white)
@@ -7633,7 +7643,7 @@ public struct MusicGeneratorScreen: View {
                         }
                         .featureActionIconButtonStyle()
                         .accessibilityLabel(settings.localized("save"))
-                        AudioPlaybackButton(url: track.url)
+                        AudioPlaybackButton(url: track.url, allowsBackgroundPlayback: true)
                     }
                 }
                 .padding()

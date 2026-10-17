@@ -948,3 +948,4 @@
 "music_stop_generation" = "Parar a geração";
 "music_unlimited_duration" = "Duração ilimitada";
 "music_unlimited_duration_desc" = "A geração continua até você pressionar Parar. A gravação é salva quando você para.";
+"music_locked_screen_supported" = "Permite gerar e reproduzir música com a tela bloqueada.";

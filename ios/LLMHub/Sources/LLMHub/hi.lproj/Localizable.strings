@@ -1003,3 +1003,4 @@
 "music_stop_generation" = "जनरेशन रोकें";
 "music_unlimited_duration" = "असीमित अवधि";
 "music_unlimited_duration_desc" = "रोकें दबाने तक संगीत बनता रहेगा। रोकने पर रिकॉर्डिंग सहेज दी जाएगी।";
+"music_locked_screen_supported" = "स्क्रीन लॉक होने पर भी संगीत बनाने और चलाने की सुविधा उपलब्ध है।";

@@ -998,3 +998,4 @@
 "music_stop_generation" = "Stop generering";
 "music_unlimited_duration" = "Ubegrænset varighed";
 "music_unlimited_duration_desc" = "Generér, indtil du trykker på Stop. Optagelsen gemmes, når du stopper.";
+"music_locked_screen_supported" = "Understøtter generering og afspilning af musik, mens skærmen er låst.";

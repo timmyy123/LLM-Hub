@@ -999,3 +999,4 @@
 "music_stop_generation" = "停止生成";
 "music_unlimited_duration" = "不限時間";
 "music_unlimited_duration_desc" = "持續生成，直到您按下停止。停止時會儲存錄音。";
+"music_locked_screen_supported" = "支援在螢幕鎖定時生成及播放音樂。";

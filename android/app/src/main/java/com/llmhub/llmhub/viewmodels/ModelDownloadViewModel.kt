@@ -1,5 +1,7 @@
 package com.llmhub.llmhub.viewmodels
 
+import kotlinx.coroutines.flow.retryWhen
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.llmhub.llmhub.data.LLMModel
@@ -113,11 +115,35 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
         
         loadModels()
         loadImportedModels()
+        viewModelScope.launch {
+            var previous = emptyMap<String, LLMModel>()
+            com.llmhub.llmhub.service.ModelDownloadService.downloadStates.collect { snapshots ->
+                snapshots.forEach { (name, snapshot) ->
+                    if (!com.llmhub.llmhub.service.ModelDownloadService.isDownloading(name) &&
+                        previous[name]?.isDownloading != true) return@forEach
+                    updateModel(name) { it.copy(
+                        isDownloaded = snapshot.isDownloaded, isDownloading = snapshot.isDownloading,
+                        isPaused = snapshot.isPaused, isExtracting = snapshot.isExtracting,
+                        downloadProgress = snapshot.downloadProgress, downloadedBytes = snapshot.downloadedBytes,
+                        totalBytes = snapshot.totalBytes, downloadSpeedBytesPerSec = snapshot.downloadSpeedBytesPerSec
+                    ) }
+                }
+                previous = snapshots
+            }
+        }
     }
 
     override fun onCleared() {
         super.onCleared()
-        ktorClient.close()
+        val pending = downloadJobs.values.toList()
+        if (pending.none { !it.isCompleted }) {
+            ktorClient.close()
+        } else {
+            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+                pending.forEach { it.join() }
+                ktorClient.close()
+            }
+        }
     }
 
     fun setHuggingFaceToken(token: String?) {
@@ -624,9 +650,20 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
         modelDownloader = ModelDownloader(ktorClient, context, activeToken)
         android.util.Log.d("ModelDownloadViewModel", "[downloadModel] Using active HF token: ${activeToken?.take(8)}... for model: ${model.name}")
 
-        val job = viewModelScope.launch {
+        _models.value.firstOrNull { it.name == model.name }?.let {
+            com.llmhub.llmhub.service.ModelDownloadService.publishState(it)
+        }
+        val downloader = modelDownloader
+        val job = try { com.llmhub.llmhub.service.ModelDownloadService.launchDownload(context, model.name) {
             var latestStatus: com.llmhub.llmhub.data.DownloadStatus? = null
-            modelDownloader.downloadModel(model)
+            try {
+            downloader.downloadModel(model)
+                .retryWhen { error, attempt ->
+                    if (error is java.io.IOException && attempt < 6) {
+                        kotlinx.coroutines.delay(minOf(30_000L, 1000L shl attempt.toInt()))
+                        true // Each attempt resumes the partial files from disk.
+                    } else false
+                }
                 .catch { exception ->
                     // Handle exceptions with better error reporting
                     val errorMsg = exception.message ?: "Unknown error occurred"
@@ -907,6 +944,7 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
                     }
                 }
                 .collect { status ->
+                    com.llmhub.llmhub.service.ModelDownloadService.reportProgress(model.name, status)
                     latestStatus = status
                     updateModel(model.name, rateLimit = true) {
                         val progress = if (status.totalBytes > 0) {
@@ -925,7 +963,24 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
                             downloadSpeedBytesPerSec = status.downloadSpeedBytesPerSec
                         )
                     }
+                    _models.value.firstOrNull { it.name == model.name }?.let {
+                        com.llmhub.llmhub.service.ModelDownloadService.publishState(it)
+                    }
                 }
+            } finally {
+                _models.value.firstOrNull { it.name == model.name }?.let {
+                    com.llmhub.llmhub.service.ModelDownloadService.publishState(it)
+                }
+            }
+        }
+
+        } catch (error: Exception) {
+            updateModel(model.name) { it.copy(isDownloading = false, isPaused = true) }
+            _models.value.firstOrNull { it.name == model.name }?.let {
+                com.llmhub.llmhub.service.ModelDownloadService.publishState(it)
+            }
+            viewModelScope.launch { _downloadErrors.emit(model.name to (error.message ?: error.toString())) }
+            return
         }
 
         downloadJobs[model.name] = job
@@ -1015,6 +1070,7 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
     }
 
     fun pauseDownload(model: LLMModel) {
+        com.llmhub.llmhub.service.ModelDownloadService.pauseManaged(model.name)
         downloadJobs[model.name]?.cancel()
         downloadJobs.remove(model.name)
 

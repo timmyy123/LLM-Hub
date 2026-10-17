@@ -991,3 +991,4 @@
 "music_stop_generation" = "توقف تولید";
 "music_unlimited_duration" = "مدت نامحدود";
 "music_unlimited_duration_desc" = "تولید تا زمانی که توقف را بزنید ادامه دارد. ضبط هنگام توقف ذخیره می‌شود.";
+"music_locked_screen_supported" = "از تولید و پخش موسیقی با صفحهٔ قفل‌شده پشتیبانی می‌کند.";

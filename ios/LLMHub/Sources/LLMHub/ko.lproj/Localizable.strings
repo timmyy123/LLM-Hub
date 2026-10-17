@@ -991,3 +991,4 @@
 "music_stop_generation" = "생성 중지";
 "music_unlimited_duration" = "시간 제한 없음";
 "music_unlimited_duration_desc" = "중지를 누를 때까지 계속 생성합니다. 중지하면 녹음이 저장됩니다.";
+"music_locked_screen_supported" = "화면이 잠긴 상태에서도 음악을 생성하고 재생할 수 있습니다.";

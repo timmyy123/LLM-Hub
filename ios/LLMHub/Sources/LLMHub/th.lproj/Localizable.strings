@@ -998,3 +998,4 @@
 "music_stop_generation" = "หยุดสร้าง";
 "music_unlimited_duration" = "ไม่จำกัดเวลา";
 "music_unlimited_duration_desc" = "สร้างต่อไปจนกว่าคุณจะกดหยุด ระบบจะบันทึกเสียงไว้เมื่อคุณหยุด";
+"music_locked_screen_supported" = "รองรับการสร้างและเล่นเพลงขณะล็อกหน้าจอ";

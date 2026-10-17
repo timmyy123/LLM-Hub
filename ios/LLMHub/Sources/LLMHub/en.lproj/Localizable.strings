@@ -1010,3 +1010,4 @@
 "music_stop_generation" = "Stop generation";
 "music_unlimited_duration" = "Unlimited duration";
 "music_unlimited_duration_desc" = "Generate until you press Stop. The recording is saved when you stop.";
+"music_locked_screen_supported" = "Supports generating and playing music with the screen locked.";

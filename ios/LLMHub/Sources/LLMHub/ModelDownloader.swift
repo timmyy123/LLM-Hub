@@ -1,4 +1,5 @@
 import Foundation
+import CryptoKit
 import ZIPFoundation
 @preconcurrency import MediaGenerationKit
 import ModelZoo
@@ -36,252 +37,325 @@ private struct ModelInstallMarker: Codable {
     let fileNames: [String]
 }
 
-private final class ThroughputTracker: @unchecked Sendable {
-    private let lock = NSLock()
-    private var throughputSamples: [(time: Date, bytes: Int64)] = []
-    private var lastBytesWritten: Int64 = 0
-    private let window: TimeInterval = 3.0
-
-    func recordTransfer(bytesWritten: Int64) -> Double {
-        lock.lock()
-        defer { lock.unlock() }
-        let now = Date()
-        let diff = bytesWritten - lastBytesWritten
-        if diff > 0 {
-            throughputSamples.append((time: now, bytes: diff))
-            lastBytesWritten = bytesWritten
-        } else if bytesWritten < lastBytesWritten {
-            lastBytesWritten = bytesWritten
-        }
-        
-        let cutoff = now.addingTimeInterval(-window)
-        throughputSamples.removeAll { $0.time < cutoff }
-        
-        guard !throughputSamples.isEmpty else { return 0 }
-        guard let firstTime = throughputSamples.first?.time else { return 0 }
-        let bytes = throughputSamples.reduce(0) { $0 + $1.bytes }
-        let span = max(0.1, now.timeIntervalSince(firstTime))
-        return Double(bytes) / span
-    }
-}
-
-private struct ChunkedDownloadResult: Sendable {
+struct ChunkedDownloadResult: Sendable {
     let statusCode: Int
     let contentRange: String?
     let fileBytes: Int64
 }
 
-/// Streams URLSession-delivered Data chunks directly to disk. URLSession.AsyncBytes
-/// exposes a byte-at-a-time iterator, which is prohibitively expensive for multi-GB
-/// model files. This delegate buffers network chunks into 1 MB writes and limits UI
-/// progress callbacks to five per second.
-private final class ChunkedFileDownloader: NSObject, URLSessionDataDelegate, @unchecked Sendable {
-    private let destinationURL: URL
-    private let requestedOffset: Int64
-    private let progressHandler: @Sendable (Int64, Double) -> Void
-    private let writeBufferSize = 1024 * 1024
-    private let progressInterval: TimeInterval = 0.2
-    private let speedWindow: TimeInterval = 3.0
+/// The OS owns these download tasks, so transfer continues while our process is
+/// suspended. Task descriptions recover destinations after a system relaunch.
+final class BackgroundModelTransfers: NSObject, URLSessionDownloadDelegate, @unchecked Sendable {
+    static let shared = BackgroundModelTransfers()
+    static let identifier = "\(Bundle.main.bundleIdentifier ?? "com.llmhub").model-downloads"
+    @TaskLocal static var owner: String = ""
 
-    private let stateLock = NSLock()
-    private var continuation: CheckedContinuation<ChunkedDownloadResult, Error>?
-    private var session: URLSession?
-    private var task: URLSessionDataTask?
-    private var cancellationRequested = false
-    private var hasFinished = false
+    private struct Location: Codable {
+        let path: String
+        let offset: Int64
+        var owners: Set<String>
+        var url: URL { URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent(path) }
+    }
+    private struct Waiter {
+        let owner: String
+        let continuation: CheckedContinuation<ChunkedDownloadResult, Error>
+        let progress: @Sendable (Int64, Double) -> Void
+    }
+    private final class Entry {
+        let task: URLSessionDownloadTask
+        var location: Location
+        var waiters: [UUID: Waiter] = [:]
+        var result: Result<ChunkedDownloadResult, Error>?
+        var lastTime = Date()
+        var lastBytes: Int64 = 0
+        init(task: URLSessionDownloadTask, location: Location) { self.task = task; self.location = location }
+    }
+    private final class Ticket: @unchecked Sendable {
+        let id = UUID()
+        let lock = NSLock()
+        var cancelled = false
+        func cancel() { lock.lock(); cancelled = true; lock.unlock() }
+        var isCancelled: Bool { lock.lock(); defer { lock.unlock() }; return cancelled }
+    }
+    private let queue: OperationQueue = {
+        let queue = OperationQueue()
+        queue.name = "LLMHub.BackgroundModelDownloads"
+        queue.maxConcurrentOperationCount = 1
+        return queue
+    }()
+    private var session: URLSession!
+    // All entries, results, and event callbacks are confined to queue.
+    private var entries: [String: Entry] = [:]
+    private var recovered: [String: Result<ChunkedDownloadResult, Error>] = [:]
+    private var backgroundCompletion: (() -> Void)?
+    private var eventsFinished = false
+    private let storage: URL
 
-    // Accessed only by the serial URLSession delegate queue.
-    private var fileHandle: FileHandle?
-    private var pendingData = Data()
-    private var baseOffset: Int64 = 0
-    private var receivedBytes: Int64 = 0
-    private var statusCode = 0
-    private var contentRange: String?
-    private var streamError: Error?
-    private var lastProgressTime = Date.distantPast
-    private var throughputSamples: [(time: Date, bytes: Int64)] = []
+    override private init() {
+        storage = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("BackgroundModelDownloads")
+        super.init()
+        try? FileManager.default.createDirectory(at: storage, withIntermediateDirectories: true,
+            attributes: [.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication])
+        let config = URLSessionConfiguration.background(withIdentifier: Self.identifier)
+        config.isDiscretionary = false
+        config.sessionSendsLaunchEvents = true
+        config.waitsForConnectivity = true
+        config.timeoutIntervalForResource = 7 * 24 * 60 * 60
+        config.httpMaximumConnectionsPerHost = 3
+        session = URLSession(configuration: config, delegate: self, delegateQueue: queue)
+        session.getAllTasks { tasks in
+            self.queue.addOperation {
+                for task in tasks {
+                    guard let task = task as? URLSessionDownloadTask, task.state != .canceling && task.state != .completed,
+                          let location = self.location(task), self.entries[location.path] == nil else { continue }
+                    self.entries[location.path] = Entry(task: task, location: location)
+                }
+            }
+        }
+    }
 
-    init(
-        destinationURL: URL,
-        requestedOffset: Int64,
-        progressHandler: @Sendable @escaping (Int64, Double) -> Void
-    ) {
+    private func path(_ url: URL) -> String {
+        let prefix = NSHomeDirectory() + "/"
+        precondition(url.path.hasPrefix(prefix), "Model downloads must stay inside the app container")
+        return String(url.path.dropFirst(prefix.count))
+    }
+    private func location(_ task: URLSessionTask) -> Location? {
+        guard let text = task.taskDescription, let data = text.data(using: .utf8) else { return nil }
+        return try? JSONDecoder().decode(Location.self, from: data)
+    }
+    private func persist(_ entry: Entry) {
+        entry.task.taskDescription = (try? JSONEncoder().encode(entry.location)).flatMap { String(data: $0, encoding: .utf8) }
+    }
+    private func resumeURL(_ path: String) -> URL {
+        let digest = SHA256.hash(data: Data(path.utf8)).map { String(format: "%02x", $0) }.joined()
+        return storage.appendingPathComponent(digest)
+    }
+    private func ensure(request: URLRequest, destination: URL, offset: Int64, owner: String) -> Entry {
+        let key = path(destination)
+        if let entry = entries[key], entry.task.state != .canceling && entry.task.state != .completed {
+            entry.location.owners.insert(owner)
+            persist(entry)
+            return entry
+        }
+        var location = Location(path: key, offset: offset, owners: [owner])
+        let resume = resumeURL(key)
+        let task: URLSessionDownloadTask
+        if let data = try? Data(contentsOf: resume),
+           let saved = try? Data(contentsOf: resume.appendingPathExtension("json")),
+           let old = try? JSONDecoder().decode(Location.self, from: saved), old.offset == offset {
+            location = Location(path: key, offset: old.offset, owners: [owner])
+            task = session.downloadTask(withResumeData: data)
+        } else {
+            task = session.downloadTask(with: request)
+        }
+        let entry = Entry(task: task, location: location)
+        entries[key] = entry
+        persist(entry)
+        task.resume()
+        return entry
+    }
+
+    /// Queue the complete file set before the app can be suspended between files.
+    func prepare(_ items: [(URLRequest, URL, Int64)], owner: String) async {
+        // Wait for reconnection to existing system tasks before creating any.
+        let ticket = Ticket()
+        await withTaskCancellationHandler {
+            guard !Task.isCancelled else { return }
+            let tasks = await session.allTasks
+            guard !Task.isCancelled else { return }
+            await withCheckedContinuation { continuation in
+                queue.addOperation {
+                    guard !ticket.isCancelled else { continuation.resume(); return }
+                    for task in tasks {
+                        guard let task = task as? URLSessionDownloadTask, task.state != .canceling && task.state != .completed,
+                              let location = self.location(task), self.entries[location.path] == nil else { continue }
+                        self.entries[location.path] = Entry(task: task, location: location)
+                    }
+                    for (request, destination, offset) in items {
+                        let key = self.path(destination)
+                        if case .success(let result) = self.recovered[key], (200...299).contains(result.statusCode),
+                           FileManager.default.fileExists(atPath: destination.path), offset == result.fileBytes {
+                            continue
+                        }
+                        self.recovered.removeValue(forKey: key)
+                        _ = self.ensure(request: request, destination: destination, offset: offset, owner: owner)
+                    }
+                    continuation.resume()
+                }
+        }
+        } onCancel: {
+            ticket.cancel()
+            self.cancel(owner: owner)
+        }
+    }
+
+    func download(request: URLRequest, destination: URL, offset: Int64,
+                  progress: @Sendable @escaping (Int64, Double) -> Void) async throws -> ChunkedDownloadResult {
+        let owner = Self.owner
+        let ticket = Ticket()
+        return try await withTaskCancellationHandler {
+            try Task.checkCancellation()
+            return try await withCheckedThrowingContinuation { continuation in
+                queue.addOperation {
+                    if ticket.isCancelled { continuation.resume(throwing: CancellationError()); return }
+                    let key = self.path(destination)
+                    if let result = self.recovered.removeValue(forKey: key) {
+                        continuation.resume(with: result)
+                        return
+                    }
+                    let entry = self.ensure(request: request, destination: destination, offset: offset, owner: owner)
+                    entry.waiters[ticket.id] = Waiter(owner: owner, continuation: continuation, progress: progress)
+                }
+            }
+        } onCancel: {
+            ticket.cancel()
+            self.queue.addOperation {
+                let key = self.path(destination)
+                if let waiter = self.entries[key]?.waiters.removeValue(forKey: ticket.id) {
+                    waiter.continuation.resume(throwing: CancellationError())
+                }
+            }
+        }
+    }
+
+    func cancel(owner: String) {
+        queue.addOperation {
+            for entry in Array(self.entries.values) where entry.location.owners.contains(owner) {
+                entry.location.owners.remove(owner)
+                for (id, waiter) in entry.waiters where waiter.owner == owner {
+                    entry.waiters.removeValue(forKey: id)
+                    waiter.continuation.resume(throwing: CancellationError())
+                }
+                self.persist(entry)
+                if entry.location.owners.isEmpty {
+                    self.entries.removeValue(forKey: entry.location.path)
+                    entry.task.cancel { data in
+                        guard let data else { return }
+                        let file = self.resumeURL(entry.location.path)
+                        try? data.write(to: file, options: .atomic)
+                        try? JSONEncoder().encode(entry.location).write(to: file.appendingPathExtension("json"), options: .atomic)
+                    }
+                }
+            }
+        }
+    }
+
+    func handleEvents(completion: @escaping () -> Void) {
+        queue.addOperation {
+            self.backgroundCompletion = completion
+            self.completeEventsIfReady()
+        }
+    }
+
+    private func completeEventsIfReady() {
+        guard eventsFinished, let completion = backgroundCompletion else { return }
+        backgroundCompletion = nil
+        eventsFinished = false
+        DispatchQueue.main.async { completion() }
+    }
+
+    func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask,
+                    didWriteData bytesWritten: Int64, totalBytesWritten: Int64, totalBytesExpectedToWrite: Int64) {
+        guard let location = location(downloadTask), let entry = entries[location.path] else { return }
+        let now = Date()
+        let interval = now.timeIntervalSince(entry.lastTime)
+        guard interval >= 0.2 else { return }
+        let speed = Double(max(0, totalBytesWritten - entry.lastBytes)) / interval
+        entry.lastTime = now
+        entry.lastBytes = totalBytesWritten
+        for waiter in entry.waiters.values { waiter.progress(location.offset + totalBytesWritten, speed) }
+    }
+
+    func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo temporaryURL: URL) {
+        guard let location = location(downloadTask), let response = downloadTask.response as? HTTPURLResponse else { return }
+        if let current = entries[location.path], current.task.taskIdentifier != downloadTask.taskIdentifier { return }
+        let entry = entries[location.path] ?? Entry(task: downloadTask, location: location)
+        entries[location.path] = entry
+        do {
+            let fm = FileManager.default
+            if (200...299).contains(response.statusCode) {
+                let destination = location.url
+                try fm.createDirectory(at: destination.deletingLastPathComponent(), withIntermediateDirectories: true)
+                if response.statusCode == 206 && location.offset > 0 {
+                    let total = response.value(forHTTPHeaderField: "Content-Range")?
+                        .split(separator: "/").last.flatMap { Int64($0) }
+                    let partSize = (try? fm.attributesOfItem(atPath: temporaryURL.path)[.size] as? Int64) ?? 0
+                    let size = (try? fm.attributesOfItem(atPath: destination.path)[.size] as? Int64) ?? 0
+                    // On a native resume, the response range may describe only
+                    // the last segment; URLSession has reassembled the complete
+                    // remainder in its temp file. Validate its full length.
+                    guard total == location.offset + partSize, size == location.offset else {
+                        throw URLError(.badServerResponse)
+                    }
+                    let input = try FileHandle(forReadingFrom: temporaryURL)
+                    defer { try? input.close() }
+                    let output = try FileHandle(forWritingTo: destination)
+                    defer { try? output.close() }
+                    try output.seekToEnd()
+                    while let data = try input.read(upToCount: 4 * 1024 * 1024), !data.isEmpty {
+                        try output.write(contentsOf: data)
+                    }
+                } else {
+                    if fm.fileExists(atPath: destination.path) { try fm.removeItem(at: destination) }
+                    try fm.moveItem(at: temporaryURL, to: destination)
+                }
+                try fm.setAttributes([.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication],
+                                     ofItemAtPath: destination.path)
+            }
+            let bytes = (try? FileManager.default.attributesOfItem(atPath: location.url.path)[.size] as? Int64) ?? 0
+            entry.result = .success(ChunkedDownloadResult(statusCode: response.statusCode,
+                contentRange: response.value(forHTTPHeaderField: "Content-Range"), fileBytes: bytes))
+        } catch { entry.result = .failure(error) }
+    }
+
+    func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+        guard let location = location(task) else { return }
+        if let current = entries[location.path], current.task.taskIdentifier != task.taskIdentifier { return }
+        let entry = entries.removeValue(forKey: location.path)
+        let resume = resumeURL(location.path)
+        if let data = (error as NSError?)?.userInfo[NSURLSessionDownloadTaskResumeData] as? Data {
+            try? data.write(to: resume, options: .atomic)
+            try? JSONEncoder().encode(location).write(to: resume.appendingPathExtension("json"), options: .atomic)
+        } else if error == nil {
+            try? FileManager.default.removeItem(at: resume)
+            try? FileManager.default.removeItem(at: resume.appendingPathExtension("json"))
+        }
+        let result: Result<ChunkedDownloadResult, Error>
+        if let finished = entry?.result {
+            result = finished
+        } else if let response = task.response as? HTTPURLResponse, response.statusCode >= 400 {
+            let bytes = (try? FileManager.default.attributesOfItem(atPath: location.url.path)[.size] as? Int64) ?? 0
+            result = .success(ChunkedDownloadResult(statusCode: response.statusCode,
+                contentRange: response.value(forHTTPHeaderField: "Content-Range"), fileBytes: bytes))
+        } else {
+            result = .failure(error ?? URLError(.badServerResponse))
+        }
+        if let entry, !entry.waiters.isEmpty {
+            for waiter in entry.waiters.values { waiter.continuation.resume(with: result) }
+        } else if (error as? URLError)?.code != .cancelled {
+            recovered[location.path] = result
+        }
+    }
+
+    func urlSessionDidFinishEvents(forBackgroundURLSession session: URLSession) {
+        eventsFinished = true
+        completeEventsIfReady()
+    }
+}
+
+private final class ChunkedFileDownloader: @unchecked Sendable {
+    let destinationURL: URL
+    let requestedOffset: Int64
+    let progressHandler: @Sendable (Int64, Double) -> Void
+    init(destinationURL: URL, requestedOffset: Int64, progressHandler: @Sendable @escaping (Int64, Double) -> Void) {
         self.destinationURL = destinationURL
         self.requestedOffset = requestedOffset
         self.progressHandler = progressHandler
     }
-
     func start(request: URLRequest, configuration: URLSessionConfiguration) async throws -> ChunkedDownloadResult {
-        try Task.checkCancellation()
-        return try await withTaskCancellationHandler {
-            try await withCheckedThrowingContinuation { continuation in
-                let delegateQueue = OperationQueue()
-                delegateQueue.name = "com.llmhub.model-download"
-                delegateQueue.maxConcurrentOperationCount = 1
-
-                let session = URLSession(
-                    configuration: configuration,
-                    delegate: self,
-                    delegateQueue: delegateQueue
-                )
-                let task = session.dataTask(with: request)
-
-                stateLock.lock()
-                self.continuation = continuation
-                self.session = session
-                self.task = task
-                let shouldCancel = cancellationRequested
-                stateLock.unlock()
-
-                if shouldCancel {
-                    task.cancel()
-                } else {
-                    task.resume()
-                }
-            }
-        } onCancel: {
-            self.cancel()
-        }
-    }
-
-    private func cancel() {
-        stateLock.lock()
-        cancellationRequested = true
-        let task = self.task
-        stateLock.unlock()
-        task?.cancel()
-    }
-
-    func urlSession(
-        _ session: URLSession,
-        dataTask: URLSessionDataTask,
-        didReceive response: URLResponse,
-        completionHandler: @escaping @Sendable (URLSession.ResponseDisposition) -> Void
-    ) {
-        guard let httpResponse = response as? HTTPURLResponse else {
-            streamError = NSError(
-                domain: "ModelDownloader",
-                code: -1,
-                userInfo: [NSLocalizedDescriptionKey: "No HTTP response"]
-            )
-            completionHandler(.cancel)
-            return
-        }
-
-        statusCode = httpResponse.statusCode
-        contentRange = httpResponse.value(forHTTPHeaderField: "Content-Range")
-
-        guard (200...299).contains(statusCode) else {
-            // Preserve any partial file for 4xx/5xx handling and resume logic.
-            completionHandler(.allow)
-            return
-        }
-
-        do {
-            let fileManager = FileManager.default
-            if !fileManager.fileExists(atPath: destinationURL.path) {
-                fileManager.createFile(atPath: destinationURL.path, contents: nil)
-            }
-
-            let handle = try FileHandle(forWritingTo: destinationURL)
-            if statusCode == 206 && requestedOffset > 0 {
-                try handle.seekToEnd()
-                baseOffset = requestedOffset
-            } else {
-                try handle.truncate(atOffset: 0)
-                baseOffset = 0
-            }
-            fileHandle = handle
-            completionHandler(.allow)
-        } catch {
-            streamError = error
-            completionHandler(.cancel)
-        }
-    }
-
-    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
-        guard (200...299).contains(statusCode), streamError == nil else { return }
-
-        receivedBytes += Int64(data.count)
-        pendingData.append(data)
-
-        let now = Date()
-        throughputSamples.append((time: now, bytes: Int64(data.count)))
-        let cutoff = now.addingTimeInterval(-speedWindow)
-        throughputSamples.removeAll { $0.time < cutoff }
-
-        do {
-            if pendingData.count >= writeBufferSize {
-                try fileHandle?.write(contentsOf: pendingData)
-                pendingData.removeAll(keepingCapacity: true)
-            }
-        } catch {
-            streamError = error
-            dataTask.cancel()
-            return
-        }
-
-        if now.timeIntervalSince(lastProgressTime) >= progressInterval {
-            lastProgressTime = now
-            progressHandler(baseOffset + receivedBytes, currentSpeed(at: now))
-        }
-    }
-
-    func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
-        if streamError == nil, (200...299).contains(statusCode), !pendingData.isEmpty {
-            do {
-                try fileHandle?.write(contentsOf: pendingData)
-                pendingData.removeAll(keepingCapacity: true)
-            } catch {
-                streamError = error
-            }
-        }
-
-        try? fileHandle?.close()
-        fileHandle = nil
-
-        let finalError = streamError ?? error
-        if finalError == nil, (200...299).contains(statusCode) {
-            progressHandler(baseOffset + receivedBytes, currentSpeed(at: Date()))
-        }
-
-        finish(
-            with: finalError.map(Result.failure)
-                ?? .success(
-                    ChunkedDownloadResult(
-                        statusCode: statusCode,
-                        contentRange: contentRange,
-                        fileBytes: baseOffset + receivedBytes
-                    )
-                )
-        )
-    }
-
-    private func currentSpeed(at now: Date) -> Double {
-        let cutoff = now.addingTimeInterval(-speedWindow)
-        throughputSamples.removeAll { $0.time < cutoff }
-        guard let first = throughputSamples.first else { return 0 }
-        let bytes = throughputSamples.reduce(Int64(0)) { $0 + $1.bytes }
-        let duration = max(0.1, now.timeIntervalSince(first.time))
-        return Double(bytes) / duration
-    }
-
-    private func finish(with result: Result<ChunkedDownloadResult, Error>) {
-        stateLock.lock()
-        guard !hasFinished else {
-            stateLock.unlock()
-            return
-        }
-        hasFinished = true
-        let continuation = self.continuation
-        self.continuation = nil
-        let session = self.session
-        self.session = nil
-        self.task = nil
-        stateLock.unlock()
-
-        continuation?.resume(with: result)
-        session?.finishTasksAndInvalidate()
+        try await BackgroundModelTransfers.shared.download(request: request, destination: destinationURL,
+            offset: requestedOffset, progress: progressHandler)
     }
 }
 
@@ -398,6 +472,27 @@ public actor ModelDownloader {
         destinationDir: URL,
         onProgress: @Sendable @escaping (DownloadUpdate) -> Void
     ) async throws {
+        try await withTaskCancellationHandler {
+            do {
+                try Task.checkCancellation()
+                try await BackgroundModelTransfers.$owner.withValue(model.id) {
+                    try await downloadModelFiles(model, hfToken: hfToken, destinationDir: destinationDir, onProgress: onProgress)
+                }
+            } catch {
+                BackgroundModelTransfers.shared.cancel(owner: model.id)
+                throw error
+            }
+        } onCancel: {
+            BackgroundModelTransfers.shared.cancel(owner: model.id)
+        }
+    }
+
+    private func downloadModelFiles(
+        _ model: AIModel,
+        hfToken: String?,
+        destinationDir: URL,
+        onProgress: @Sendable @escaping (DownloadUpdate) -> Void
+    ) async throws {
         if model.modelFormat == .drawthings {
             // Upscaler models are standalone .ckpt files hosted at static.libnnc.org.
             // They are NOT in the Draw Things model catalog, so env.ensure() would fail
@@ -421,7 +516,6 @@ public actor ModelDownloader {
                     return
                 }
                 
-                let tracker = ThroughputTracker()
                 let maxRetries = 6
                 var attempt = 0
                 var finished = false
@@ -435,60 +529,17 @@ public actor ModelDownloader {
                             request.addValue("bytes=\(existingBytes)-", forHTTPHeaderField: "Range")
                         }
                         
-                        let (bytes, response) = try await urlSession.bytes(for: request)
-                        guard let httpResponse = response as? HTTPURLResponse else {
-                            throw NSError(domain: "ModelDownloader", code: -1, userInfo: [NSLocalizedDescriptionKey: "No HTTP response"])
-                        }
-                        
-                        if !(200...299).contains(httpResponse.statusCode) {
-                            if httpResponse.statusCode == 416 {
-                                if !restartedAfter416 {
-                                    try? FileManager.default.removeItem(at: destURL)
-                                    restartedAfter416 = true
-                                    continue
-                                }
+                        let result = try await BackgroundModelTransfers.shared.download(request: request,
+                            destination: destURL, offset: existingBytes) { bytes, speed in
+                                onProgress(DownloadUpdate(bytesDownloaded: bytes, totalBytes: model.sizeBytes, speedBytesPerSecond: speed))
                             }
-                            let reason = HTTPURLResponse.localizedString(forStatusCode: httpResponse.statusCode)
-                            throw NSError(domain: "ModelDownloader", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: "HTTP \(httpResponse.statusCode): \(reason)"])
-                        }
-                        
-                        if !FileManager.default.fileExists(atPath: destPath) {
-                            FileManager.default.createFile(atPath: destPath, contents: nil)
-                        }
-                        if existingBytes > 0 && httpResponse.statusCode == 200 {
-                            try? FileManager.default.removeItem(at: destURL)
-                            FileManager.default.createFile(atPath: destPath, contents: nil)
-                            existingBytes = 0
-                        }
-                        
-                        let fileHandle = try FileHandle(forWritingTo: destURL)
-                        defer { try? fileHandle.close() }
-                        if existingBytes > 0 {
-                            try fileHandle.seekToEnd()
-                        } else {
-                            try fileHandle.truncate(atOffset: 0)
-                        }
-                        
-                        var byteCount: Int64 = existingBytes
-                        var buffer = Data()
-                        let chunkSize = 64 * 1024
-                        
-                        for try await byte in bytes {
-                            buffer.append(byte)
-                            byteCount += 1
-                            if buffer.count >= chunkSize {
-                                let flushed = Int64(buffer.count)
-                                try fileHandle.write(contentsOf: buffer)
-                                buffer.removeAll(keepingCapacity: true)
-                                let speed = tracker.recordTransfer(bytesWritten: flushed)
-                                onProgress(DownloadUpdate(bytesDownloaded: byteCount, totalBytes: model.sizeBytes, speedBytesPerSecond: speed))
+                        guard (200...299).contains(result.statusCode) else {
+                            if result.statusCode == 416 && !restartedAfter416 {
+                                try? FileManager.default.removeItem(at: destURL)
+                                restartedAfter416 = true
+                                continue
                             }
-                        }
-                        if !buffer.isEmpty {
-                            let flushed = Int64(buffer.count)
-                            try fileHandle.write(contentsOf: buffer)
-                            let speed = tracker.recordTransfer(bytesWritten: flushed)
-                            onProgress(DownloadUpdate(bytesDownloaded: byteCount, totalBytes: model.sizeBytes, speedBytesPerSecond: speed))
+                            throw URLError(.badServerResponse)
                         }
                         finished = true
                     } catch {
@@ -511,7 +562,6 @@ public actor ModelDownloader {
             }
             // Resolve community metadata so progress and dependency checks include encoders and VAE.
             _ = await EnvWrapper.env.resolveModel(model.id, offline: true)
-            let tracker = ThroughputTracker()
             let drawThingsFileSizes: [String: Int64] = [
                 "svd_i2v_xt_1.0_q6p_q8p.ckpt": 1334681600,
                 "svd_i2v_xt_1.1_q6p_q8p.ckpt": 1525776384,
@@ -545,68 +595,58 @@ public actor ModelDownloader {
                 allFiles = [model.id]
             }
             
-            _ = try await EnvWrapper.env.ensure(model.id, offline: false) { state in
-                switch state {
-                case .resolving:
-                    onProgress(DownloadUpdate(bytesDownloaded: 0, totalBytes: model.sizeBytes, speedBytesPerSecond: 0))
-                case .verifying:
-                    var cumulativeBytes: Int64 = 0
-                    for f in allFiles {
-                        let path = ModelZoo.filePathForModelDownloaded(f)
-                        if FileManager.default.fileExists(atPath: path) {
-                            let attrs = try? FileManager.default.attributesOfItem(atPath: path)
-                            let localSize = attrs?[.size] as? Int64 ?? 0
-                            if localSize > 0 {
-                                cumulativeBytes += localSize
-                            } else if let knownSize = drawThingsFileSizes[f] {
-                                cumulativeBytes += knownSize
-                            }
-                        }
-                    }
-                    let trueTotalSize = allFiles.reduce(Int64(0)) { sum, f in
-                        sum + (drawThingsFileSizes[f] ?? 0)
-                    }
-                    let finalTotalSize = allFiles.allSatisfy { drawThingsFileSizes[$0] != nil }
-                        ? trueTotalSize : model.sizeBytes
-                    let progressProportion = Double(cumulativeBytes) / Double(max(1, finalTotalSize))
-                    let reportedBytes = min(model.sizeBytes, Int64(progressProportion * Double(model.sizeBytes)))
-                    onProgress(DownloadUpdate(bytesDownloaded: reportedBytes, totalBytes: model.sizeBytes, speedBytesPerSecond: 0))
-                case .downloading(let file, _, _, let bytesWritten, _):
-                    let speed = tracker.recordTransfer(bytesWritten: bytesWritten)
-                    
-                    var cumulativeBytes: Int64 = 0
-                    for f in allFiles {
-                        if f == file {
-                            cumulativeBytes += bytesWritten
-                        } else {
-                            let path = ModelZoo.filePathForModelDownloaded(f)
-                            if FileManager.default.fileExists(atPath: path) {
-                                let attrs = try? FileManager.default.attributesOfItem(atPath: path)
-                                let localSize = attrs?[.size] as? Int64 ?? 0
-                                if localSize > 0 {
-                                    cumulativeBytes += localSize
-                                } else if let knownSize = drawThingsFileSizes[f] {
-                                    cumulativeBytes += knownSize
-                                }
-                            }
-                        }
-                    }
-                    
-                    let trueTotalSize = allFiles.reduce(Int64(0)) { sum, f in
-                        sum + (drawThingsFileSizes[f] ?? 0)
-                    }
-                    let finalTotalSize = allFiles.allSatisfy { drawThingsFileSizes[$0] != nil }
-                        ? trueTotalSize : model.sizeBytes
-                    let progressProportion = Double(cumulativeBytes) / Double(max(1, finalTotalSize))
-                    let reportedBytes = min(model.sizeBytes, Int64(progressProportion * Double(model.sizeBytes)))
-                    
-                    onProgress(DownloadUpdate(
-                        bytesDownloaded: reportedBytes,
-                        totalBytes: model.sizeBytes,
-                        speedBytesPerSecond: speed
-                    ))
-                }
+            let needed = allFiles.filter { file in
+                let size = localFileSize(at: URL(fileURLWithPath: ModelZoo.filePathForModelDownloaded(file)))
+                if let expected = drawThingsFileSizes[file] { return size != expected }
+                return !ModelZoo.isModelDownloaded(file)
             }
+            let items: [(URLRequest, URL, Int64)] = needed.map { file in
+                let destination = URL(fileURLWithPath: ModelZoo.filePathForModelDownloaded(file))
+                if let expected = drawThingsFileSizes[file], localFileSize(at: destination) > expected {
+                    try? FileManager.default.removeItem(at: destination)
+                }
+                let offset = localFileSize(at: destination)
+                var request = URLRequest(url: URL(string: "https://static.libnnc.org/\(file)")!)
+                if offset > 0 { request.setValue("bytes=\(offset)-", forHTTPHeaderField: "Range") }
+                return (request, destination, offset)
+            }
+            await BackgroundModelTransfers.shared.prepare(items, owner: model.id)
+            var completed = allFiles.filter { !needed.contains($0) }.reduce(Int64(0)) { sum, file in
+                sum + localFileSize(at: URL(fileURLWithPath: ModelZoo.filePathForModelDownloaded(file)))
+            }
+            let expectedTotal = allFiles.reduce(Int64(0)) { $0 + (drawThingsFileSizes[$1] ?? 0) }
+            let progressTotal = max(model.sizeBytes, expectedTotal)
+            for (request, destination, offset) in items {
+                let base = completed
+                let result = try await BackgroundModelTransfers.shared.download(request: request,
+                    destination: destination, offset: offset) { bytes, speed in
+                        onProgress(DownloadUpdate(bytesDownloaded: base + bytes, totalBytes: progressTotal,
+                                                  speedBytesPerSecond: speed))
+                    }
+                guard (200...299).contains(result.statusCode) || result.statusCode == 416 else {
+                    throw URLError(.badServerResponse)
+                }
+                let file = destination.lastPathComponent
+                if let expected = drawThingsFileSizes[file], result.fileBytes != expected {
+                    throw URLError(.downloadDecodingFailedMidStream)
+                }
+                if let expectedSHA = ModelZoo.fileSHA256ForModelDownloaded(file) {
+                    let handle = try FileHandle(forReadingFrom: destination)
+                    defer { try? handle.close() }
+                    var hash = SHA256()
+                    while let data = try handle.read(upToCount: 4 * 1024 * 1024), !data.isEmpty { hash.update(data: data) }
+                    let actual = hash.finalize().map { String(format: "%02x", $0) }.joined()
+                    guard actual == expectedSHA.lowercased() else {
+                        try? FileManager.default.removeItem(at: destination)
+                        throw URLError(.cannotDecodeContentData)
+                    }
+                }
+                completed += result.fileBytes
+            }
+            // Keep the library's dependency verification/catalog integration;
+            // all network payloads above were handled by the native session.
+            _ = try await EnvWrapper.env.ensure(model.id, offline: true)
+            onProgress(DownloadUpdate(bytesDownloaded: model.sizeBytes, totalBytes: model.sizeBytes, speedBytesPerSecond: 0))
             return
         }
 
@@ -635,6 +675,14 @@ public actor ModelDownloader {
         try? FileManager.default.removeItem(at: markerURL)
         
         let downloadItems = Array(zip(model.requiredFileNames, model.allDownloadURLs))
+
+        await BackgroundModelTransfers.shared.prepare(downloadItems.map { name, url in
+            let destination = destinationDir.appendingPathComponent(name)
+            let offset = localFileSize(at: destination)
+            var request = URLRequest(url: url)
+            if offset > 0 { request.setValue("bytes=\(offset)-", forHTTPHeaderField: "Range") }
+            return (request, destination, offset)
+        }, owner: model.id)
 
         var currentHfToken: String? = nil // Always attempt unauthenticated download first
         for (fileName, fileURL) in downloadItems {
@@ -853,29 +901,10 @@ public actor ModelDownloader {
 
         let tempZipURL = destinationDir.appendingPathComponent("_temp_download.zip")
 
-        // Download the ZIP with resume support
-        let realtimeWindowSeconds: TimeInterval = 3.0
-        var throughputSamples: [(time: Date, bytes: Int64)] = []
-        func recordTransfer(_ bytes: Int64) {
-            let now = Date()
-            throughputSamples.append((time: now, bytes: bytes))
-            let cutoff = now.addingTimeInterval(-realtimeWindowSeconds)
-            throughputSamples.removeAll { $0.time < cutoff }
-        }
-        func realtimeSpeed() -> Double {
-            let now = Date()
-            let cutoff = now.addingTimeInterval(-realtimeWindowSeconds)
-            throughputSamples.removeAll { $0.time < cutoff }
-            guard let firstTime = throughputSamples.first?.time else { return 0 }
-            let bytes = throughputSamples.reduce(Int64(0)) { $0 + $1.bytes }
-            let span = max(0.1, now.timeIntervalSince(firstTime))
-            return Double(bytes) / span
-        }
-
+        // Native background download with resume support.
         let maxRetries = 6
         var attempt = 0
         var downloadComplete = false
-        var downloadedBytes: Int64 = 0
         var currentHfToken: String? = nil // Try unauthenticated first
         while !downloadComplete {
             do {
@@ -888,69 +917,19 @@ public actor ModelDownloader {
                     request.addValue("bytes=\(existingBytes)-", forHTTPHeaderField: "Range")
                 }
 
-                let (bytes, response) = try await urlSession.bytes(for: request)
-                guard let httpResponse = response as? HTTPURLResponse else {
-                    throw NSError(domain: "ModelDownloader", code: -1, userInfo: [NSLocalizedDescriptionKey: "No HTTP response"])
-                }
-
-                if !(200...299).contains(httpResponse.statusCode) {
-                    if (httpResponse.statusCode == 401 || httpResponse.statusCode == 403) && currentHfToken == nil, let hfToken = hfToken, !hfToken.isEmpty {
+                let result = try await BackgroundModelTransfers.shared.download(request: request,
+                    destination: tempZipURL, offset: existingBytes) { bytes, speed in
+                        onProgress(DownloadUpdate(bytesDownloaded: Int64(Double(bytes) * 0.9), totalBytes: totalSize,
+                            speedBytesPerSecond: speed))
+                    }
+                if !(200...299).contains(result.statusCode) {
+                    if (result.statusCode == 401 || result.statusCode == 403) && currentHfToken == nil,
+                       let hfToken, !hfToken.isEmpty {
                         currentHfToken = hfToken
                         continue
                     }
-                    if httpResponse.statusCode == 416 {
-                        // Already complete
-                        existingBytes = localFileSize(at: tempZipURL)
-                        downloadedBytes = existingBytes
-                        onProgress(DownloadUpdate(bytesDownloaded: existingBytes, totalBytes: totalSize, speedBytesPerSecond: 0))
-                        downloadComplete = true
-                        break
-                    }
-                    let reason = HTTPURLResponse.localizedString(forStatusCode: httpResponse.statusCode)
-                    throw NSError(domain: "ModelDownloader", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: "HTTP \(httpResponse.statusCode): \(reason)"])
+                    if result.statusCode != 416 { throw URLError(.badServerResponse) }
                 }
-
-                if !FileManager.default.fileExists(atPath: tempZipURL.path) {
-                    FileManager.default.createFile(atPath: tempZipURL.path, contents: nil)
-                }
-                if existingBytes > 0 && httpResponse.statusCode == 200 {
-                    try? FileManager.default.removeItem(at: tempZipURL)
-                    FileManager.default.createFile(atPath: tempZipURL.path, contents: nil)
-                    existingBytes = 0
-                }
-                let fileHandle = try FileHandle(forWritingTo: tempZipURL)
-                defer { try? fileHandle.close() }
-                if existingBytes > 0 {
-                    try fileHandle.seekToEnd()
-                } else {
-                    try fileHandle.truncate(atOffset: 0)
-                }
-
-                var byteCount: Int64 = existingBytes
-                var buffer = Data()
-                let chunkSize = 64 * 1024
-
-                for try await byte in bytes {
-                    buffer.append(byte)
-                    byteCount += 1
-                    if buffer.count >= chunkSize {
-                        let flushed = Int64(buffer.count)
-                        try fileHandle.write(contentsOf: buffer)
-                        buffer.removeAll(keepingCapacity: true)
-                        recordTransfer(flushed)
-                        downloadedBytes = byteCount
-                        // Report 90% of progress for the download phase
-                        let reportedBytes = Int64(Double(byteCount) * 0.9)
-                        onProgress(DownloadUpdate(bytesDownloaded: reportedBytes, totalBytes: totalSize, speedBytesPerSecond: realtimeSpeed()))
-                    }
-                }
-                if !buffer.isEmpty {
-                    let flushed = Int64(buffer.count)
-                    try fileHandle.write(contentsOf: buffer)
-                    buffer.removeAll()
-                    recordTransfer(flushed)
-                }
-                downloadedBytes = byteCount
                 downloadComplete = true
             } catch let error as URLError where error.code.isTransientDownloadFailure && attempt < maxRetries {
                 attempt += 1

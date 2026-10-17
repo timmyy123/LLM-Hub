@@ -431,8 +431,10 @@ class ModelDownloader(
                     raf.seek(downloadedBytes)
                     val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
                     while (true) {
+                        kotlinx.coroutines.currentCoroutineContext().ensureActive()
                         val read = input.read(buffer)
                         if (read == -1) break
+                        kotlinx.coroutines.currentCoroutineContext().ensureActive()
                         raf.write(buffer, 0, read)
                         downloadedBytes += read
                         bytesSinceLastEmit += read

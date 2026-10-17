@@ -963,3 +963,4 @@
 "music_stop_generation" = "Generierung stoppen";
 "music_unlimited_duration" = "Unbegrenzte Dauer";
 "music_unlimited_duration_desc" = "Die Generierung läuft, bis du auf Stopp drückst. Die Aufnahme wird beim Stoppen gespeichert.";
+"music_locked_screen_supported" = "Unterstützt das Generieren und Abspielen von Musik bei gesperrtem Bildschirm.";
