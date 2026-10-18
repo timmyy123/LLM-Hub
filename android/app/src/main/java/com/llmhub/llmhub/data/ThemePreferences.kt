@@ -55,7 +55,10 @@ class ThemePreferences(private val context: Context) {
         }
 
     val ggufUseVulkan: Flow<Boolean> = context.dataStore.data
-        .map { preferences -> preferences[GGUF_USE_VULKAN_KEY] ?: defaultGgufUseVulkan() }
+        .map { preferences ->
+            !DeviceInfo.isLlamaCppVulkanBlocked() &&
+                (preferences[GGUF_USE_VULKAN_KEY] ?: defaultGgufUseVulkan())
+        }
 
     fun defaultGgufUseVulkan(): Boolean = !isSnapdragonChip()
 

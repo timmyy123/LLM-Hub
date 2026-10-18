@@ -52,6 +52,15 @@ object DeviceInfo {
     )
 
     /**
+     * llama.cpp Vulkan crashes on these Adreno 740/750/830/840 SoCs (pipeline creation
+     * failures and driver faults), so GGUF GPU runs always use OpenCL here.
+     */
+    fun isLlamaCppVulkanBlocked(): Boolean = getDeviceSoc() in setOf(
+        "SM8550", "SM8550P", "SM8650", "SM8650P",
+        "SM8750", "SM8750P", "SM8850", "SM8850P",
+    )
+
+    /**
      * SoC tag used in the chip-specific EmbeddingGemma 2 file names
      * (e.g. `embeddinggemma-2-740m_Qualcomm_SM8650.litertlm`), or null when no
      * NPU build exists for this device.

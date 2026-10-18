@@ -55,6 +55,7 @@ import com.llmhub.llmhub.BuildConfig
 import com.llmhub.llmhub.data.PocketTtsModel
 import com.llmhub.llmhub.data.SupertonicModel
 import com.llmhub.llmhub.data.hasCompleteDownloadedBundle
+import com.llmhub.llmhub.data.DeviceInfo
 import com.llmhub.llmhub.data.ModelData
 import com.llmhub.llmhub.data.ModelDownloader
 import com.llmhub.llmhub.data.ThemeMode
@@ -142,7 +143,7 @@ fun SettingsScreen(
                         onClick = { showHfTokenDialog = true }
                     )
 
-                    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp)) {
+                    if (!DeviceInfo.isLlamaCppVulkanBlocked()) Column(modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp)) {
                         Text(stringResource(R.string.gguf_vulkan_setting), style = MaterialTheme.typography.bodyLarge)
                         Spacer(modifier = Modifier.height(8.dp))
                         Row(
