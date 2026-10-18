@@ -293,7 +293,9 @@ namespace LTXV {
             return false;
         }
 
-        // Passes an output buffer straight to the next graph's input when the element types match.
+        // Passes an output buffer straight to the next graph's input when the element types match and,
+        // for fixed-point tensors, so do the scale and offset (graphs are quantized separately);
+        // otherwise converts through fp32.
         static bool forward_tensor(Graph& from, const std::string& out_name, Graph& to, const std::string& in_name) {
             int oi = -1, ii = -1;
             for (size_t i = 0; i < from.outputs.size(); i++) {
@@ -308,7 +310,12 @@ namespace LTXV {
             }
             auto& src = from.buffers[from.inputs.size() + oi];
             auto& dst = to.buffers[ii];
-            if (tensor_type(from.outputs[oi]) == tensor_type(to.inputs[ii]) && src.size() == dst.size()) {
+            float src_scale = 0.f, dst_scale = 0.f;
+            int32_t src_offset = 0, dst_offset = 0;
+            const bool src_q   = scale_offset(from.outputs[oi], &src_scale, &src_offset);
+            const bool dst_q   = scale_offset(to.inputs[ii], &dst_scale, &dst_offset);
+            const bool same_q  = src_q == dst_q && (!src_q || (src_scale == dst_scale && src_offset == dst_offset));
+            if (tensor_type(from.outputs[oi]) == tensor_type(to.inputs[ii]) && src.size() == dst.size() && same_q) {
                 memcpy(dst.data(), src.data(), src.size());
                 return true;
             }

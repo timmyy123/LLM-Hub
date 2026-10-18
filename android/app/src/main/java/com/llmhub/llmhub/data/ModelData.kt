@@ -5187,7 +5187,7 @@ object ModelData {
 
     // QNN context binaries for the Hexagon NPU, built by android/tools/ltxv_qnn (QAIRT 2.50).
     private const val LTXV_QNN_REPO =
-        "https://huggingface.co/timmyboy26/LTX-Video-2B-0.9.8-distilled-QNN/resolve/e2bcf5bb5faf9becb5672d71a5e20ac9d0f8ff18"
+        "https://huggingface.co/timmyboy26/LTX-Video-2B-0.9.8-distilled-QNN/resolve/fc8e5ed0f1f2877ab58ab1ee1db262e77a5506f6"
 
     private const val LTXV_T5_SIZE = 2896123072L
     private const val LTXV_VAE_GGUF_SIZE = 2493868876L
@@ -5216,6 +5216,14 @@ object ModelData {
         LtxvNpuBuild("Snapdragon 8 Gen 1 and 8+ Gen 1", "v69", setOf("SM8450", "SM8475", "SM8475P"), "512x320x25", listOf(
             "ltxv_chunk0.bin" to 525525856L, "ltxv_chunk1.bin" to 482893728L, "ltxv_chunk2.bin" to 482860960L,
             "ltxv_chunk3.bin" to 483357000L, "ltxv_vae_512x320x25.bin" to 634923064L
+        )),
+        // Integer-only graphs (INT8 weights, INT16 activations) for v73 HTPs without FP16, compiled for
+        // 4 MB VTCM (the 8s Gen 4 has 8 MB, the others 4 MB).
+        LtxvNpuBuild("Snapdragon 8s Gen 4, 8s Gen 3, 7+ Gen 3 and 7 Gen 4", "v73-int", setOf(
+            "SM8735", "SM8735P", "SM8635", "SM8635P", "SM7675", "SM7675P", "SM7750", "SM7750P"
+        ), "512x320x25", listOf(
+            "ltxv_chunk0.bin" to 548604864L, "ltxv_chunk1.bin" to 490940416L, "ltxv_chunk2.bin" to 491026432L,
+            "ltxv_chunk3.bin" to 491534840L, "ltxv_vae_512x320x25.bin" to 656114376L
         )),
         LtxvNpuBuild("Snapdragon 8 Gen 2", "v73", setOf("SM8550", "SM8550P", "QCS8550", "QCM8550"), "512x320x25", listOf(
             "ltxv_chunk0.bin" to 532620128L, "ltxv_chunk1.bin" to 489185184L, "ltxv_chunk2.bin" to 489185184L,
@@ -5258,7 +5266,7 @@ object ModelData {
                 description = "Lightricks LTX-Video 2B distilled compiled for the Hexagon ${build.arch} NPU (${build.chips}). " +
                     "${w}x$h, $f frames per clip. Bundles the NPU transformer and VAE decoder " +
                     "(${"%.1f".format(npuBytes / 1e9)} GB), the T5-XXL Q4_0 text encoder (2.9 GB) and the VAE used for " +
-                    "image-to-video (2.5 GB). Pinned to commit e2bcf5b. LTXV Open Weights License.",
+                    "image-to-video (2.5 GB). Pinned to commit fc8e5ed. LTXV Open Weights License.",
                 url = "$LTXV_QNN_REPO/${build.arch}/${build.files.first().first}",
                 category = "video_generation",
                 sizeBytes = npuBytes + LTXV_QNN_STUB_SIZE + LTXV_T5_SIZE + LTXV_VAE_GGUF_SIZE,
