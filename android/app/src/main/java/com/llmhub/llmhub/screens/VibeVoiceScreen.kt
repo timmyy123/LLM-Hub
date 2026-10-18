@@ -68,6 +68,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -76,6 +77,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.llmhub.llmhub.LlmHubApplication
 import com.llmhub.llmhub.R
 import com.llmhub.llmhub.components.ModelSelectorCard
+import com.llmhub.llmhub.debug.ScreenshotHooks
 import com.llmhub.llmhub.ui.components.AudioInputService
 import com.llmhub.llmhub.ui.components.TtsService
 import com.llmhub.llmhub.viewmodels.VibeVoiceViewModel
@@ -121,6 +123,8 @@ fun VibeVoiceScreen(
     var isChatActive by remember { mutableStateOf(false) }
     var hasAudioPermission by remember { mutableStateOf(false) }
     var showSettingsSheet by remember { mutableStateOf(false) }
+    // Debug screenshot hook: a scripted transcript turn ran, so don't auto re-record afterwards.
+    var isScriptedTurn by remember { mutableStateOf(false) }
     val settingsSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     val micLevelRaw by audioService.audioLevel.collectAsState()
@@ -221,7 +225,8 @@ fun VibeVoiceScreen(
             !isResponding &&
             !isTtsSpeaking &&
             !isAutoStopping &&
-            !showSettingsSheet
+            !showSettingsSheet &&
+            !isScriptedTurn
         ) {
             viewModel.setRecording(true)
         }
@@ -433,8 +438,16 @@ fun VibeVoiceScreen(
                                         )
                                     )
                                 )
+                                .testTag("vibevoice_globe")
                                 .clickable {
-                                    if (!isChatActive) {
+                                    val scriptedTranscript = ScreenshotHooks.activeVibeVoiceTranscript()
+                                    if (!isChatActive && scriptedTranscript != null) {
+                                        // Debug-only: skip recording/ASR, reply to a fixed transcript once.
+                                        isChatActive = true
+                                        isScriptedTurn = true
+                                        viewModel.sendVoiceTurn(transcriptOverride = scriptedTranscript)
+                                    } else if (!isChatActive) {
+                                        isScriptedTurn = false
                                         isChatActive = true
                                         if (hasAudioPermission) {
                                             viewModel.setRecording(true)
@@ -506,7 +519,8 @@ fun VibeVoiceScreen(
                                 ) {
                                     Text(
                                         text = latestAssistantText,
-                                        style = MaterialTheme.typography.bodyLarge
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        modifier = Modifier.testTag("vibevoice_reply")
                                     )
                                 }
                                 Spacer(modifier = Modifier.height(8.dp))

@@ -30,6 +30,7 @@ import com.llmhub.llmhub.viewmodels.ChatViewModelFactory
 import com.llmhub.llmhub.viewmodels.ThemeViewModel
 import com.llmhub.llmhub.utils.LocaleHelper
 import com.llmhub.llmhub.utils.CrashNotice
+import com.llmhub.llmhub.debug.ScreenshotHooks
 
 class MainActivity : ComponentActivity() {
     private lateinit var themeViewModel: ThemeViewModel
@@ -58,7 +59,9 @@ class MainActivity : ComponentActivity() {
             val layoutDirection = if (isRtl) LayoutDirection.Rtl else LayoutDirection.Ltr
 
             LlmHubTheme(themeMode = currentThemeMode) {
-                CompositionLocalProvider(LocalLayoutDirection provides layoutDirection) {
+                // Debug builds wrap the content in ScreenshotHooks' live-locale provider (used only by
+                // the Play Store screenshot test); release builds keep the plain RTL provider.
+                ScreenshotHooks.LocaleOverrideProvider(this@MainActivity, layoutDirection) {
                     var crashNoticeVisible by remember { mutableStateOf(showCrashNotice) }
                     Surface(
                         modifier = Modifier.fillMaxSize(),

@@ -352,7 +352,12 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
-    fun sendVoiceTurn(audioUri: Uri? = null) {
+    /**
+     * [transcriptOverride] (debug screenshot hook only, see ScreenshotHooks.vibeVoiceTranscript)
+     * replaces the recorded audio + ASR step with a fixed transcript; the rest of the turn (LLM reply,
+     * streaming, spoken reply) is the normal ASR path.
+     */
+    fun sendVoiceTurn(audioUri: Uri? = null, transcriptOverride: String? = null) {
         val model = _selectedModel.value ?: return
         respondJob?.cancel()
 
@@ -363,8 +368,8 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
 
             try {
                 val uriToUse = audioUri ?: _audioUri.value
-                val audioBytes = _audioData.value ?: (uriToUse?.let { readAudioBytes(it) })
-                    ?: throw IllegalStateException("Unable to read audio input")
+                val audioBytes = if (transcriptOverride != null) ByteArray(0) else (_audioData.value ?: (uriToUse?.let { readAudioBytes(it) })
+                    ?: throw IllegalStateException("Unable to read audio input"))
 
                 val turnId = UUID.randomUUID().toString()
                 _conversationTurns.value = _conversationTurns.value + VoiceTurn(
@@ -373,19 +378,21 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
                     assistantText = ""
                 )
 
-                if (whisperKitService.isLoaded) {
-                    val pcm16Wav = AudioConversionUtils.float32WavToPcm16Wav(audioBytes)
-                    val pcm16Raw = if (pcm16Wav.size > 44) pcm16Wav.copyOfRange(44, pcm16Wav.size) else pcm16Wav
-                    android.util.Log.d("VibeVoiceViewModel", "ASR transcribe: input=${audioBytes.size}B → pcm16=${pcm16Raw.size}B")
-                    val transcription = try {
-                        val result = withContext(Dispatchers.IO) {
-                            asrMutex.withLock {
-                                whisperKitService.transcribe(pcm16Raw)
+                if (transcriptOverride != null || whisperKitService.isLoaded) {
+                    val transcription = transcriptOverride ?: run {
+                        val pcm16Wav = AudioConversionUtils.float32WavToPcm16Wav(audioBytes)
+                        val pcm16Raw = if (pcm16Wav.size > 44) pcm16Wav.copyOfRange(44, pcm16Wav.size) else pcm16Wav
+                        android.util.Log.d("VibeVoiceViewModel", "ASR transcribe: input=${audioBytes.size}B → pcm16=${pcm16Raw.size}B")
+                        try {
+                            val result = withContext(Dispatchers.IO) {
+                                asrMutex.withLock {
+                                    whisperKitService.transcribe(pcm16Raw)
+                                }
                             }
+                            result ?: throw Exception("ASR Transcription failed")
+                        } catch (e: Exception) {
+                            throw e
                         }
-                        result ?: throw Exception("ASR Transcription failed")
-                    } catch (e: Exception) {
-                        throw e
                     }
 
                     _transcription.value = transcription

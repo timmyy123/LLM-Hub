@@ -37,6 +37,7 @@ import android.os.Build
 import android.provider.MediaStore
 import android.view.ViewGroup
 import androidx.activity.compose.rememberLauncherForActivityResult
+import com.llmhub.llmhub.debug.ScreenshotHooks
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.platform.LocalView
@@ -1056,7 +1057,8 @@ fun ImageGeneratorScreen(
                                 // and we don't already have a next image ready
                                 val shouldPrefetch = currentPage < generatedImages.size && 
                                     currentPage == generatedImages.size - 1 && 
-                                    !isGenerating
+                                    !isGenerating &&
+                                    !ScreenshotHooks.autoVariationDisabled() // debug-only screenshot hook
                                 val swipedToPlaceholder = currentPage == generatedImages.size && !isGenerating
                                 
                                 if (shouldPrefetch || swipedToPlaceholder) {
@@ -1402,7 +1404,8 @@ fun ImageGeneratorScreen(
                                         // and we don't already have a next image ready
                                         val shouldPrefetch = currentPage < generatedImages.size && 
                                             currentPage == generatedImages.size - 1 && 
-                                            !isGenerating
+                                            !isGenerating &&
+                                            !ScreenshotHooks.autoVariationDisabled() // debug-only screenshot hook
                                         val swipedToPlaceholder = currentPage == generatedImages.size && !isGenerating
                                         
                                         if (shouldPrefetch || swipedToPlaceholder) {

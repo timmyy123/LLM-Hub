@@ -1,0 +1,105 @@
+# AWS Device Farm custom test environment spec: Play Store screenshots with real generated results.
+#
+# Upload app-debug.apk as the app and app-debug-androidTest.apk as the "Instrumentation" test package,
+# then use this file as the test spec. Each StoreScreenshotTest method runs as its own `am instrument`
+# so a native crash in one feature only loses that feature. Order matters: s02 (image) saves the
+# image that s05 (upscale) uses as its input.
+#
+# Output (artifacts, under $DEVICEFARM_LOG_DIR):
+#   store_screenshots/<lang>/<NN>_<feature>.png   (22 languages; debug_<feature>_failure.png on failure)
+#   instrument_<method>.log, logcat_<method>.txt, logcat_full.txt, summary.txt
+#
+# Expected device time: ~40-60 min on Galaxy S25 (NPU), ~60-110 min on Galaxy Tab S11 (CPU image, GPU
+# video). Set the Device Farm job timeout to its maximum (150 min). The per-method caps below are upper
+# bounds, not expected durations.
+
+version: 0.1
+
+android_test_host: amazon_linux_2
+
+phases:
+  install:
+    commands:
+      - echo "App and test package are installed by Device Farm"
+      - adb -s $DEVICEFARM_DEVICE_UDID shell pm list instrumentation
+
+  pre_test:
+    commands:
+      - export APP_PKG=com.llmhub.llmhub
+      - adb -s $DEVICEFARM_DEVICE_UDID shell getprop ro.product.model
+      - adb -s $DEVICEFARM_DEVICE_UDID shell getprop ro.soc.model
+      - adb -s $DEVICEFARM_DEVICE_UDID shell wm size
+      # Permissions the features need (the test also grants them through UiAutomation)
+      - adb -s $DEVICEFARM_DEVICE_UDID shell pm grant $APP_PKG android.permission.RECORD_AUDIO || true
+      - adb -s $DEVICEFARM_DEVICE_UDID shell pm grant $APP_PKG android.permission.POST_NOTIFICATIONS || true
+      # Keep the screen on and portrait, no animations (stable Compose idling)
+      - adb -s $DEVICEFARM_DEVICE_UDID shell svc power stayon true || true
+      - adb -s $DEVICEFARM_DEVICE_UDID shell settings put system screen_off_timeout 1800000 || true
+      - adb -s $DEVICEFARM_DEVICE_UDID shell settings put system accelerometer_rotation 0 || true
+      - adb -s $DEVICEFARM_DEVICE_UDID shell settings put system user_rotation 0 || true
+      - adb -s $DEVICEFARM_DEVICE_UDID shell settings put global window_animation_scale 0 || true
+      - adb -s $DEVICEFARM_DEVICE_UDID shell settings put global transition_animation_scale 0 || true
+      - adb -s $DEVICEFARM_DEVICE_UDID shell settings put global animator_duration_scale 0 || true
+      - adb -s $DEVICEFARM_DEVICE_UDID shell input keyevent KEYCODE_WAKEUP || true
+      - adb -s $DEVICEFARM_DEVICE_UDID shell wm dismiss-keyguard || true
+      # System UI demo mode: 09:41, full battery, full wifi, no notifications
+      - adb -s $DEVICEFARM_DEVICE_UDID shell settings put global sysui_demo_allowed 1
+      - adb -s $DEVICEFARM_DEVICE_UDID shell am broadcast -a com.android.systemui.demo -e command enter
+      - adb -s $DEVICEFARM_DEVICE_UDID shell am broadcast -a com.android.systemui.demo -e command clock -e hhmm 0941
+      - adb -s $DEVICEFARM_DEVICE_UDID shell am broadcast -a com.android.systemui.demo -e command battery -e level 100 -e plugged false
+      - adb -s $DEVICEFARM_DEVICE_UDID shell am broadcast -a com.android.systemui.demo -e command network -e wifi show -e level 4 -e fully true
+      - adb -s $DEVICEFARM_DEVICE_UDID shell am broadcast -a com.android.systemui.demo -e command network -e mobile hide
+      - adb -s $DEVICEFARM_DEVICE_UDID shell am broadcast -a com.android.systemui.demo -e command notifications -e visible false
+      - adb -s $DEVICEFARM_DEVICE_UDID shell am broadcast -a com.android.systemui.demo -e command status -e volume hide -e bluetooth hide -e location hide -e alarm hide -e sync hide -e mute hide -e speakerphone hide
+      - adb -s $DEVICEFARM_DEVICE_UDID logcat -c || true
+      - nohup adb -s $DEVICEFARM_DEVICE_UDID logcat -v threadtime > $DEVICEFARM_LOG_DIR/logcat_full.txt 2>&1 &
+
+  test:
+    commands:
+      - echo "Start StoreScreenshotTest"
+      - |
+        CLASS=com.llmhub.llmhub.screenshots.StoreScreenshotTest
+        SUMMARY=$DEVICEFARM_LOG_DIR/summary.txt
+        : > $SUMMARY
+        run_method() {
+          method=$1
+          limit=$2
+          echo "=== $method (cap ${limit}s) ===" | tee -a $SUMMARY
+          start=$(date +%s)
+          timeout $limit adb -s $DEVICEFARM_DEVICE_UDID shell am instrument -r -w \
+            -e store_screenshots true \
+            -e class $CLASS#$method \
+            $DEVICEFARM_TEST_PACKAGE_NAME/$DEVICEFARM_TEST_PACKAGE_RUNNER 2>&1 \
+            | tee $DEVICEFARM_LOG_DIR/instrument_$method.log
+          rc=${PIPESTATUS[0]}
+          end=$(date +%s)
+          adb -s $DEVICEFARM_DEVICE_UDID logcat -d -v threadtime -s StoreScreenshots:V AndroidRuntime:E DEBUG:V \
+            > $DEVICEFARM_LOG_DIR/logcat_$method.txt 2>&1 || true
+          shots=$(grep -c "SHOT_OK" $DEVICEFARM_LOG_DIR/logcat_$method.txt || true)
+          if grep -q "^OK (1 test)" $DEVICEFARM_LOG_DIR/instrument_$method.log; then status=PASSED; else status=FAILED; fi
+          echo "$method: $status rc=$rc duration=$((end - start))s shots=$shots" | tee -a $SUMMARY
+          # Ensure a crashed/timed-out run does not leak into the next method
+          adb -s $DEVICEFARM_DEVICE_UDID shell am force-stop com.llmhub.llmhub || true
+          adb -s $DEVICEFARM_DEVICE_UDID shell input keyevent KEYCODE_WAKEUP || true
+        }
+        run_method s01_vibecode        2400
+        run_method s02_imageGeneration 2400
+        run_method s03_videoGeneration 6000
+        run_method s04_musicGeneration 1800
+        run_method s05_imageUpscale     900
+        run_method s06_vibeVoice       1800
+        run_method s07_translator      1500
+        cat $SUMMARY
+      - adb -s $DEVICEFARM_DEVICE_UDID pull /sdcard/Android/data/com.llmhub.llmhub/files/store_screenshots $DEVICEFARM_LOG_DIR/ || true
+      - find $DEVICEFARM_LOG_DIR/store_screenshots -name "*.png" | sort | tee $DEVICEFARM_LOG_DIR/screenshots.txt | wc -l
+
+  post_test:
+    commands:
+      - adb -s $DEVICEFARM_DEVICE_UDID pull /sdcard/Android/data/com.llmhub.llmhub/files/store_screenshots $DEVICEFARM_LOG_DIR/ || true
+      - adb -s $DEVICEFARM_DEVICE_UDID logcat -d -v threadtime > $DEVICEFARM_LOG_DIR/logcat_end.txt 2>&1 || true
+      - adb -s $DEVICEFARM_DEVICE_UDID shell am broadcast -a com.android.systemui.demo -e command exit || true
+      - adb -s $DEVICEFARM_DEVICE_UDID shell settings put system accelerometer_rotation 1 || true
+      - cat $DEVICEFARM_LOG_DIR/summary.txt || true
+
+artifacts:
+  - $DEVICEFARM_LOG_DIR
