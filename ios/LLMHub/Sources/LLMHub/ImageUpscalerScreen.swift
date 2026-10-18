@@ -33,7 +33,10 @@ struct ImageUpscalerScreen: View {
     }
 
     private var selectedModel: AIModel? {
-        downloadedModels.first(where: { $0.id == selectedModelId }) ?? downloadedModels.first
+        let downloaded = downloadedModels.first(where: { $0.id == selectedModelId }) ?? downloadedModels.first
+        guard downloaded == nil, isInjectingResult else { return downloaded }
+        // Screenshot injection without a downloaded model: show the catalog default.
+        return allUpscaleModels.first(where: { $0.id == "realesrgan_x4plus_f16.ckpt" }) ?? allUpscaleModels.first
     }
 
     // "model selected" = a downloaded model is chosen
@@ -41,9 +44,18 @@ struct ImageUpscalerScreen: View {
         selectedModel != nil
     }
 
+    /// Screenshot automation (Debug only): show an injected upscale result.
+    private var isInjectingResult: Bool {
+        #if DEBUG
+        return ScreenshotHooks.injectUpscaleOutputURL != nil
+        #else
+        return false
+        #endif
+    }
+
     var body: some View {
         Group {
-            if downloadedModels.isEmpty {
+            if downloadedModels.isEmpty && !isInjectingResult {
                 noModelView
             } else if !isModelSelected {
                 selectModelView
@@ -61,12 +73,14 @@ struct ImageUpscalerScreen: View {
                     upscaleTask?.cancel()
                     onNavigateBack()
                 } label: { Image(systemName: "arrow.left") }
+                .accessibilityIdentifier("nav_back_button")
             }
-            if !downloadedModels.isEmpty {
+            if !downloadedModels.isEmpty || isInjectingResult {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button { showSettings = true } label: {
                         Image(systemName: "slider.horizontal.3")
                     }
+                    .accessibilityIdentifier("feature_settings_button")
                 }
             }
         }
@@ -100,6 +114,11 @@ struct ImageUpscalerScreen: View {
             if selectedModelId.isEmpty {
                 selectedModelId = downloadedModels.first?.id ?? ""
             }
+            #if DEBUG
+            if isInjectingResult, inputImage == nil {
+                inputImage = ScreenshotHooks.image(at: ScreenshotHooks.injectUpscaleInputURL)
+            }
+            #endif
         }
         .onDisappear {
             upscaleTask?.cancel()
@@ -248,6 +267,7 @@ struct ImageUpscalerScreen: View {
                             PhotosPicker(selection: $selectedImageItem, matching: .images) {
                                 Color.clear
                             }
+                            .accessibilityIdentifier("upscale_input_picker")
                         }
                     }
                     .frame(maxWidth: .infinity)
@@ -266,6 +286,8 @@ struct ImageUpscalerScreen: View {
                             onClose: {},
                             onTap: nil
                         )
+                        .accessibilityElement(children: .contain)
+                        .accessibilityIdentifier("upscale_output")
                         .frame(maxWidth: .infinity)
                         .frame(height: cardHeight)
                     } else {
@@ -316,6 +338,7 @@ struct ImageUpscalerScreen: View {
                         PhotosPicker(selection: $selectedImageItem, matching: .images) {
                             Color.clear
                         }
+                        .accessibilityIdentifier("upscale_input_picker")
                     }
                 }
                 .frame(maxHeight: .infinity)
@@ -332,6 +355,8 @@ struct ImageUpscalerScreen: View {
                         onClose: {},
                         onTap: nil
                     )
+                    .accessibilityElement(children: .contain)
+                    .accessibilityIdentifier("upscale_output")
                     .frame(maxHeight: .infinity)
                 } else {
                     Spacer()
@@ -357,8 +382,19 @@ struct ImageUpscalerScreen: View {
             upscaleTask = Task {
                 outputImage = nil
                 resetZoom()
+                #if DEBUG
+                if let injected = ScreenshotHooks.image(at: ScreenshotHooks.injectUpscaleOutputURL) {
+                    try? await Task.sleep(nanoseconds: ScreenshotHooks.injectedResultDelay)
+                    outputImage = injected
+                    return
+                }
+                #endif
                 do {
                     outputImage = try await backend.upscale(image: image, model: model)
+                    #if DEBUG
+                    ScreenshotHooks.saveOutput(image, as: "upscale_input.png")
+                    ScreenshotHooks.saveOutput(outputImage, as: "upscale_output.png")
+                    #endif
                 } catch {
                     if !(error is CancellationError) {
                         errorMessage = error.localizedDescription
@@ -386,6 +422,7 @@ struct ImageUpscalerScreen: View {
         }
         .disabled(inputImage == nil || backend.isUpscaling)
         .liquidGlassPrimaryButton(cornerRadius: 12)
+        .accessibilityIdentifier("upscale_button")
     }
 
     private var saveButton: some View {

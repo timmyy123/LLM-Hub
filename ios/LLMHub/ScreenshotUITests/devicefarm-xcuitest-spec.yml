@@ -1,0 +1,90 @@
+version: 0.1
+
+# AWS Device Farm custom test environment spec for the LLMHubScreenshotUITests XCUITest
+# bundle (App Store screenshots with real generated results).
+#
+# Upload:
+#   App:          LLMHub.ipa built from the Debug configuration (premium bypass and the
+#                 Debug-only screenshot hooks are compiled in only there).
+#   Test package: LLMHubScreenshotUITests-Runner.app zipped as Payload/…-Runner.app (.ipa),
+#                 or a .zip holding that .ipa plus extract_attachments.sh.
+#
+# Each test method runs in its own xcodebuild invocation (-only-testing) with its own
+# time allowance, so one crash or timeout does not stop the rest. Order matters: 02_image
+# saves the generated image to Photos, which 03_video and 05_upscale then pick.
+# Models persist on the device between methods, so each model downloads once per job.
+# The whole job needs roughly 3-5 hours; raise the run's job timeout accordingly.
+#
+# Results: every method writes $DEVICEFARM_LOG_DIR/xcresult/<NN>_<feature>.xcresult with
+# screenshot attachments named <lang>/<NN>_<feature>.png and generated files named
+# outputs/<file>. Extract them with:
+#   ios/LLMHub/ScreenshotUITests/extract_attachments.sh <xcresult> <outdir>
+
+# iOS 26 devices (iPhone 17 Pro Max, iPad Pro M5) need an explicit test host.
+ios_test_host: default
+
+phases:
+  install:
+    commands:
+      - xcodebuild -version
+      - xcrun xcresulttool version || true
+
+  pre_test:
+    commands:
+      - echo "Device $DEVICEFARM_DEVICE_NAME ($DEVICEFARM_DEVICE_UDID) iOS $DEVICEFARM_DEVICE_OS_VERSION"
+      - echo "xctestrun $DEVICEFARM_XCUITESTRUN_FILE"
+      - mkdir -p "$DEVICEFARM_LOG_DIR/xcresult"
+
+  test:
+    commands:
+      # Optional overrides for the test runner (xcodebuild forwards TEST_RUNNER_* variables):
+      #   TEST_RUNNER_SCREENSHOT_LLM_MODEL="Gemma 4 E2B (Q3_K_M)"     (VibeVoice + Translator; default LFM-2.5 1.2B Instruct (Q4_0))
+      #   TEST_RUNNER_SCREENSHOT_VIBECODE_MODEL="LFM-2.5 1.2B Instruct (Q4_0)"   (default Gemma 4 E2B (Q3_K_M))
+      #   TEST_RUNNER_SCREENSHOT_LANGUAGES="en,de,ja"
+      #   TEST_RUNNER_SCREENSHOT_TRANSLATOR_TARGET="ja"
+      - |-
+        FAILED=0
+        for ENTRY in 00_home:10 01_vibecode:60 02_image:75 03_video:120 04_music:60 05_upscale:30 06_vibevoice:45 07_translator:30; do
+          NAME="${ENTRY%%:*}"
+          MINUTES="${ENTRY##*:}"
+          echo "=== test${NAME} (allowance ${MINUTES} min) ==="
+          xcodebuild test-without-building \
+            -xctestrun "$DEVICEFARM_XCUITESTRUN_FILE" \
+            -destination "id=$DEVICEFARM_DEVICE_UDID" \
+            -derivedDataPath "$DEVICEFARM_DERIVED_DATA_PATH" \
+            -resultBundlePath "$DEVICEFARM_LOG_DIR/xcresult/${NAME}.xcresult" \
+            -only-testing:"LLMHubScreenshotUITests/StoreScreenshotTests/test${NAME}" \
+            -test-timeouts-enabled YES \
+            -default-test-execution-time-allowance $((MINUTES * 60)) \
+            -maximum-test-execution-time-allowance $((MINUTES * 60)) \
+            > "$DEVICEFARM_LOG_DIR/xcodebuild_${NAME}.log" 2>&1
+          STATUS=$?
+          tail -n 40 "$DEVICEFARM_LOG_DIR/xcodebuild_${NAME}.log"
+          echo "=== test${NAME} exit ${STATUS} ==="
+          if [ $STATUS -ne 0 ]; then FAILED=1; fi
+        done
+        echo "Screenshot tests finished (any failure: $FAILED)"
+        test $FAILED -eq 0
+
+  post_test:
+    commands:
+      # Generated result files (image PNG, video MP4, music WAV, upscale PNGs) are also
+      # attached to the xcresults as outputs/<file>; this copy from the app container is a
+      # best-effort extra.
+      - |-
+        xcrun devicectl device copy from --device "$DEVICEFARM_DEVICE_UDID" \
+          --domain-type appDataContainer --domain-identifier com.llmhub.llmhub \
+          --source Documents/screenshot_outputs \
+          --destination "$DEVICEFARM_LOG_DIR/screenshot_outputs" || echo "devicectl copy of screenshot_outputs failed"
+      # If the test package .zip includes extract_attachments.sh, export the PNGs here too.
+      - |-
+        SCRIPT=$(find "$DEVICEFARM_XCTEST_BUILD_DIRECTORY" -name extract_attachments.sh -maxdepth 3 2>/dev/null | head -n 1)
+        if [ -n "$SCRIPT" ]; then
+          for RESULT in "$DEVICEFARM_LOG_DIR"/xcresult/*.xcresult; do
+            bash "$SCRIPT" "$RESULT" "$DEVICEFARM_LOG_DIR/screenshots" || true
+          done
+        fi
+      - ls -R "$DEVICEFARM_LOG_DIR" | head -n 200
+
+artifacts:
+  - $DEVICEFARM_LOG_DIR

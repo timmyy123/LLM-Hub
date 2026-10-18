@@ -45,11 +45,20 @@ struct VideoGeneratorScreen: View {
         return ModelData.isModelFullyAvailableLocally(model)
     }
 
+    /// Screenshot automation (Debug only): show an injected video as the result.
+    private var isInjectingResult: Bool {
+        #if DEBUG
+        return ScreenshotHooks.injectVideoURL != nil
+        #else
+        return false
+        #endif
+    }
+
     var body: some View {
         Group {
-            if availableModels.isEmpty {
+            if availableModels.isEmpty && !isInjectingResult {
                 noModelView
-            } else if !isModelDownloaded {
+            } else if !isModelDownloaded && !isInjectingResult {
                 loadModelView
             } else {
                 mainGenerationView
@@ -66,10 +75,12 @@ struct VideoGeneratorScreen: View {
                     videoBackend.unloadModel()
                     onNavigateBack()
                 } label: { Image(systemName: "arrow.left") }
+                .accessibilityIdentifier("nav_back_button")
             }
-            if !availableModels.isEmpty {
+            if !availableModels.isEmpty || isInjectingResult {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button { showSettings = true } label: { Image(systemName: "slider.horizontal.3") }
+                        .accessibilityIdentifier("feature_settings_button")
                 }
             }
         }
@@ -110,6 +121,11 @@ struct VideoGeneratorScreen: View {
             if selectedModelId.isEmpty || !availableModels.contains(where: { $0.id == selectedModelId }) {
                 selectedModelId = availableModels.first?.id ?? ""
             }
+            #if DEBUG
+            if isInjectingResult, inputImage == nil {
+                inputImage = ScreenshotHooks.image(at: ScreenshotHooks.injectVideoInputURL)
+            }
+            #endif
         }
         .onDisappear {
             generateTask?.cancel()
@@ -288,6 +304,8 @@ struct VideoGeneratorScreen: View {
             Text(settings.localized("video_generator_prompt_label"))
                 .font(.headline)
             TextEditor(text: $promptText)
+                .accessibilityIdentifier("video_prompt")
+                .screenshotAutocorrectionDisabled()
                 .focused($promptFocused)
                 .frame(minHeight: 100)
                 .scrollContentBackground(.hidden)
@@ -340,6 +358,7 @@ struct VideoGeneratorScreen: View {
                 .clipShape(RoundedRectangle(cornerRadius: 10))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.white.opacity(0.18), lineWidth: 1))
                 .disabled(isGenerating)
+                .accessibilityIdentifier("video_input_picker")
 
                 if let thumb = inputImage {
                     ZStack(alignment: .topTrailing) {
@@ -379,6 +398,8 @@ struct VideoGeneratorScreen: View {
         .background(.ultraThinMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.white.opacity(0.14), lineWidth: 1))
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("video_result")
     }
 
     // MARK: - Generate Button
@@ -417,6 +438,7 @@ struct VideoGeneratorScreen: View {
         .foregroundStyle(.white)
         .liquidGlassPrimaryButton(cornerRadius: 12)
         .disabled(!isGenerating && (promptText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || (inputImage == nil && selectedModel?.supportsPromptOnlyVideoGeneration != true)))
+        .accessibilityIdentifier("video_generate_button")
     }
 
     private var saveButton: some View {
@@ -465,6 +487,14 @@ struct VideoGeneratorScreen: View {
 
         generateTask?.cancel()
         generateTask = Task {
+            #if DEBUG
+            if let injected = ScreenshotHooks.injectVideoURL {
+                try? await Task.sleep(nanoseconds: ScreenshotHooks.injectedResultDelay)
+                generatedVideoURL = injected
+                isGenerating = false
+                return
+            }
+            #endif
             do {
                 guard let model = selectedModel else {
                     errorMessage = settings.localized("video_generator_no_model")
@@ -482,6 +512,10 @@ struct VideoGeneratorScreen: View {
                     motionStrength: strength
                 )
                 generatedVideoURL = url
+                #if DEBUG
+                ScreenshotHooks.saveOutput(copyOf: url, as: "video.\(url.pathExtension.isEmpty ? "mp4" : url.pathExtension)")
+                ScreenshotHooks.saveOutput(startingImage, as: "video_input.png")
+                #endif
             } catch is CancellationError {
                 // ignore
             } catch {

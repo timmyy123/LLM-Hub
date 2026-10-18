@@ -66,7 +66,19 @@
 		VG000001000000000000VG03 /* VideoGeneratorBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = VG000001000000000000VG04 /* VideoGeneratorBackend.swift */; };
 		VM000001000000000000VM01 /* VideoMomentScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = VM000001000000000000VM02 /* VideoMomentScreen.swift */; };
 		WB000001000000000000WB01 /* WhisperBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = WB000001000000000000WB02 /* WhisperBackend.swift */; };
+		SH0000010000000000SH0001 /* ScreenshotHooks.swift in Sources */ = {isa = PBXBuildFile; fileRef = SH0000010000000000SH0002 /* ScreenshotHooks.swift */; };
+		ST0000010000000000ST0001 /* StoreScreenshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = ST0000010000000000ST0002 /* StoreScreenshotTests.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		ST0000010000000000ST0009 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 6E3EE0C4EB7D617243EBAC85 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 4DC2B594A3D4811E50B2A8D3;
+			remoteInfo = LLMHub;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
 		F1A2B3C4D5E6F708192A3B5F /* Embed Frameworks */ = {
@@ -161,6 +173,12 @@
 		VG000001000000000000VG04 /* VideoGeneratorBackend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoGeneratorBackend.swift; sourceTree = "<group>"; };
 		VM000001000000000000VM02 /* VideoMomentScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoMomentScreen.swift; sourceTree = "<group>"; };
 		WB000001000000000000WB02 /* WhisperBackend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhisperBackend.swift; sourceTree = "<group>"; };
+		SH0000010000000000SH0002 /* ScreenshotHooks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotHooks.swift; sourceTree = "<group>"; };
+		ST0000010000000000ST0002 /* StoreScreenshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreScreenshotTests.swift; sourceTree = "<group>"; };
+		ST0000010000000000ST0003 /* LLMHubScreenshotUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LLMHubScreenshotUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		ST0000010000000000ST0014 /* devicefarm-xcuitest-spec.yml */ = {isa = PBXFileReference; lastKnownFileType = text.yaml; path = "devicefarm-xcuitest-spec.yml"; sourceTree = "<group>"; };
+		ST0000010000000000ST0015 /* extract_attachments.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = extract_attachments.sh; sourceTree = "<group>"; };
+		ST0000010000000000ST0016 /* run_duo_simulator.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = run_duo_simulator.sh; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -176,6 +194,13 @@
 				FA001122334455667788AAFF /* ZIPFoundation in Frameworks */,
 				AD000002000000000000BB09 /* LiteRTLM in Frameworks */,
 				MGK00001000000000000MG01 /* MediaGenerationKit in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		ST0000010000000000ST0007 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -246,6 +271,7 @@
 				SS000001000000000000SS02 /* SplashScreenView.swift */,
 				UP000001000000000000UP04 /* ImageUpscalerBackend.swift */,
 				WB000001000000000000WB02 /* WhisperBackend.swift */,
+				SH0000010000000000SH0002 /* ScreenshotHooks.swift */,
 			);
 			name = LLMHub;
 			path = Sources/LLMHub;
@@ -255,6 +281,7 @@
 			isa = PBXGroup;
 			children = (
 				44F5735070D2A88436068B98 /* LLMHub */,
+				ST0000010000000000ST0004 /* ScreenshotUITests */,
 				2C0336DBCA471F0B9ACFE6C9 /* Frameworks */,
 				F9BA2238AD5E6E62D6EC09E6 /* Products */,
 				2461869F2FB9AAE2005E46A3 /* Secrets.debug.xcconfig */,
@@ -266,8 +293,20 @@
 			isa = PBXGroup;
 			children = (
 				5F60B98E5AE21634E4E47E99 /* LLMHub.app */,
+				ST0000010000000000ST0003 /* LLMHubScreenshotUITests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		ST0000010000000000ST0004 /* ScreenshotUITests */ = {
+			isa = PBXGroup;
+			children = (
+				ST0000010000000000ST0002 /* StoreScreenshotTests.swift */,
+				ST0000010000000000ST0014 /* devicefarm-xcuitest-spec.yml */,
+				ST0000010000000000ST0015 /* extract_attachments.sh */,
+				ST0000010000000000ST0016 /* run_duo_simulator.sh */,
+			);
+			path = ScreenshotUITests;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -299,6 +338,24 @@
 			productReference = 5F60B98E5AE21634E4E47E99 /* LLMHub.app */;
 			productType = "com.apple.product-type.application";
 		};
+		ST0000010000000000ST0005 /* LLMHubScreenshotUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = ST0000010000000000ST0011 /* Build configuration list for PBXNativeTarget "LLMHubScreenshotUITests" */;
+			buildPhases = (
+				ST0000010000000000ST0006 /* Sources */,
+				ST0000010000000000ST0007 /* Frameworks */,
+				ST0000010000000000ST0008 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				ST0000010000000000ST0010 /* PBXTargetDependency */,
+			);
+			name = LLMHubScreenshotUITests;
+			productName = LLMHubScreenshotUITests;
+			productReference = ST0000010000000000ST0003 /* LLMHubScreenshotUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -310,6 +367,11 @@
 				TargetAttributes = {
 					4DC2B594A3D4811E50B2A8D3 = {
 						ProvisioningStyle = Automatic;
+					};
+					ST0000010000000000ST0005 = {
+						CreatedOnToolsVersion = 15.0;
+						ProvisioningStyle = Automatic;
+						TestTargetID = 4DC2B594A3D4811E50B2A8D3;
 					};
 				};
 			};
@@ -355,6 +417,7 @@
 			projectRoot = "";
 			targets = (
 				4DC2B594A3D4811E50B2A8D3 /* LLMHub */,
+				ST0000010000000000ST0005 /* LLMHubScreenshotUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -369,6 +432,13 @@
 				5A9D0089FE08164E4232AD63 /* Assets.xcassets in Resources */,
 				BB0639256B9F424CC61F2737 /* Icon.png in Resources */,
 				AFCC035B534D28D50731B66D /* Localizable.strings in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		ST0000010000000000ST0008 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -424,10 +494,27 @@
 				SS000001000000000000SS01 /* SplashScreenView.swift in Sources */,
 				UP000001000000000000UP03 /* ImageUpscalerBackend.swift in Sources */,
 				WB000001000000000000WB01 /* WhisperBackend.swift in Sources */,
+				SH0000010000000000SH0001 /* ScreenshotHooks.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		ST0000010000000000ST0006 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				ST0000010000000000ST0001 /* StoreScreenshotTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		ST0000010000000000ST0010 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 4DC2B594A3D4811E50B2A8D3 /* LLMHub */;
+			targetProxy = ST0000010000000000ST0009 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin PBXVariantGroup section */
 		A69D8D4DF513F8D642F73064 /* Localizable.strings */ = {
@@ -675,6 +762,58 @@
 			};
 			name = Release;
 		};
+		ST0000010000000000ST0012 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 76K65T869A;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.5;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.llmhub.llmhub.screenshotuitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = LLMHub;
+			};
+			name = Debug;
+		};
+		ST0000010000000000ST0013 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 76K65T869A;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.5;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.llmhub.llmhub.screenshotuitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = LLMHub;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -692,6 +831,15 @@
 			buildConfigurations = (
 				5F27A11A650BD7025E6AF037 /* Debug */,
 				EE0D8D09C754D34589382FCA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		ST0000010000000000ST0011 /* Build configuration list for PBXNativeTarget "LLMHubScreenshotUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				ST0000010000000000ST0012 /* Debug */,
+				ST0000010000000000ST0013 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;

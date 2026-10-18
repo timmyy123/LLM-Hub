@@ -769,6 +769,8 @@ struct ModelRowView: View {
                 .contentShape(Rectangle()) // Makes the whole area clickable
             }
             .buttonStyle(.plain)
+            .accessibilityIdentifier("model_row_\(model.name)")
+            .automationValue(state.automationValue)
 
             // Download progress
             if case .downloading(let progress, let downloaded, let speed) = state {
@@ -874,6 +876,7 @@ struct ModelRowView: View {
                                     .foregroundColor(.white)
                                     .clipShape(RoundedRectangle(cornerRadius: 10))
                             }
+                            .accessibilityIdentifier("model_download_\(model.name)")
                         case .error:
                             Button(action: onDownload) {
                                 Label(settings.localized("retry"), systemImage: "arrow.clockwise")
@@ -883,6 +886,7 @@ struct ModelRowView: View {
                                     .foregroundColor(.white)
                                     .clipShape(RoundedRectangle(cornerRadius: 10))
                             }
+                            .accessibilityIdentifier("model_download_\(model.name)")
                         case .downloading:
                             Button(action: onPause) {
                                 Label(settings.localized("pause_download"), systemImage: "pause.circle.fill")
@@ -909,6 +913,7 @@ struct ModelRowView: View {
                                     .foregroundColor(.white)
                                     .clipShape(RoundedRectangle(cornerRadius: 10))
                             }
+                            .accessibilityIdentifier("model_download_\(model.name)")
                             Button(action: onDelete) {
                                 Image(systemName: "trash")
                                     .padding(.vertical, 10)
@@ -1010,6 +1015,7 @@ struct ModelDownloadScreen: View {
             Image(systemName: "arrow.left")
                 .font(.headline)
         }
+        .accessibilityIdentifier("nav_back_button")
     }
 
     private var importButton: some View {
@@ -1051,6 +1057,7 @@ struct ModelDownloadScreen: View {
                                     vm.selectedCategory = cat
                                 }
                             }
+                            .accessibilityIdentifier("model_category_\(cat.titleKey)")
                         }
                     }
                     .padding(.horizontal, 16)
@@ -1111,6 +1118,7 @@ struct ModelDownloadScreen: View {
                                         )
                                     }
                                     .buttonStyle(.plain)
+                                    .accessibilityIdentifier("model_family_\(family.title)")
 
                                     if vm.expandedFamilyTitle == family.title {
                                         ForEach(family.models) { model in

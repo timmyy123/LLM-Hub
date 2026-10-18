@@ -64,6 +64,11 @@ struct LLMHubApp: App {
             await PurchaseManager.shared.loadProduct()
         }
 
+        #if DEBUG
+        // App Store screenshot automation (LLMHubScreenshotUITests); inert unless driven.
+        ScreenshotHooks.installLanguageObservers()
+        ScreenshotHooks.startOutputServerIfRequested()
+        #endif
     }
 
     var body: some Scene {

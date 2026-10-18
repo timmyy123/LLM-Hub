@@ -160,6 +160,7 @@ struct HomeScreen: View {
                                             .font(.system(size: 22))
                                     }
                                     .buttonStyle(ApolloIconButtonStyle())
+                                    .accessibilityIdentifier("home_models_button")
 
                                     Button {
                                         onNavigateToSettings()
@@ -168,6 +169,7 @@ struct HomeScreen: View {
                                             .font(.system(size: 22))
                                     }
                                     .buttonStyle(ApolloIconButtonStyle())
+                                    .accessibilityIdentifier("home_settings_button")
                                 }
                                 .padding(.horizontal, 10)
                                 .padding(.vertical, 7)
@@ -220,6 +222,7 @@ struct HomeScreen: View {
                                             .frame(height: cardHeight)
                                     }
                                     .buttonStyle(.plain)
+                                    .accessibilityIdentifier("home_feature_\(feature.route)")
                                 }
                             }
 
@@ -334,6 +337,7 @@ struct HomeScreen: View {
         } label: {
             Image(systemName: "arrow.down.circle")
         }
+        .accessibilityIdentifier("home_models_button")
     }
 
     private var settingsButton: some View {
@@ -342,6 +346,7 @@ struct HomeScreen: View {
         } label: {
             Image(systemName: "gearshape")
         }
+        .accessibilityIdentifier("home_settings_button")
     }
 
     private func githubButton(stars: Int, showsCount: Bool) -> some View {
