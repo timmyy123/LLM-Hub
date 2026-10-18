@@ -1,0 +1,10 @@
+--- a/mlx/c/ops.cpp
++++ b/mlx/c/ops.cpp
+@@ -1708,6 +1708,7 @@
+             (bits.has_value ? std::make_optional<int>(bits.value)
+                             : std::nullopt),
+             std::string(mode),
++            std::nullopt,
+             sorted_indices,
+             mlx_stream_get_(s)));
+   } catch (std::exception& e) {

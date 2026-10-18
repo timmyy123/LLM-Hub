@@ -1,0 +1,306 @@
+// Copyright © 2023 Apple Inc.
+
+#include "doctest/doctest.h"
+
+#include "mlx/mlx.h"
+#include "mlx/scheduler.h"
+
+using namespace mlx::core;
+
+TEST_CASE("test stream management") {
+  auto s1 = default_stream(default_device());
+  CHECK_EQ(s1.device, default_device());
+
+  auto s2 = new_stream(default_device());
+  CHECK_EQ(s2.device, default_device());
+  CHECK_NE(s1, s2);
+
+  // Check that default streams have the correct devices
+  if (gpu::is_available()) {
+    auto s_gpu = default_stream(Device::gpu);
+    CHECK_EQ(s_gpu.device, Device::gpu);
+  } else {
+    CHECK_THROWS_AS(default_stream(Device::gpu), std::invalid_argument);
+  }
+  auto s_cpu = default_stream(Device::cpu);
+  CHECK_EQ(s_cpu.device, Device::cpu);
+
+  s_cpu = new_stream(Device::cpu);
+  CHECK_EQ(s_cpu.device, Device::cpu);
+
+  if (gpu::is_available()) {
+    auto s_gpu = new_stream(Device::gpu);
+    CHECK_EQ(s_gpu.device, Device::gpu);
+  } else {
+    CHECK_THROWS_AS(new_stream(Device::gpu), std::invalid_argument);
+  }
+}
+
+TEST_CASE("test default stream in threads") {
+  std::set<Stream> thread_streams;
+  std::mutex mtx;
+  std::vector<std::thread> threads;
+
+  auto all_streams = get_streams();
+  size_t num_streams = all_streams.size();
+
+  size_t num_threads = 4;
+  for (size_t i = 0; i < num_threads; ++i) {
+    threads.emplace_back([&thread_streams, &mtx]() {
+      auto s = default_stream(gpu::is_available() ? Device::gpu : Device::cpu);
+      {
+        std::lock_guard lock(mtx);
+        thread_streams.insert(s);
+      }
+      clear_streams();
+    });
+  }
+
+  for (auto& t : threads) {
+    t.join();
+  }
+  CHECK_EQ(thread_streams.size(), num_threads);
+
+  all_streams = get_streams();
+  CHECK_EQ(all_streams.size() - num_streams, num_threads);
+
+  std::set new_streams(all_streams.begin() + num_streams, all_streams.end());
+  CHECK_EQ(new_streams, thread_streams);
+}
+
+TEST_CASE("test access stream in other thread") {
+  auto main_thread_stream = new_stream(default_device());
+  eval(arange(10, main_thread_stream));
+
+  bool error_caught = false;
+  std::thread t([&] {
+    try {
+      eval(arange(10, main_thread_stream));
+    } catch (const std::runtime_error&) {
+      error_caught = true;
+    }
+    clear_streams();
+  });
+  t.join();
+
+  CHECK(error_caught);
+}
+
+TEST_CASE("test new stream in threads") {
+  std::vector<std::thread> threads;
+  for (int i = 0; i < 1; ++i) {
+    threads.emplace_back([]() {
+      auto s = new_stream(default_device());
+      eval(arange(10, s));
+      clear_streams();
+    });
+  }
+  for (auto& t : threads) {
+    t.join();
+  }
+}
+
+TEST_CASE("test thread unsafe stream") {
+  auto s = new_thread_unsafe_stream(default_device());
+  int expected = sum(arange(10, s)).item<int>();
+
+  int actual = 0;
+  std::thread t([&] {
+    actual = sum(arange(10, s)).item<int>();
+    clear_streams();
+  });
+  t.join();
+
+  CHECK_EQ(expected, actual);
+}
+
+TEST_CASE("test eval does not create default stream") {
+  auto s = new_thread_unsafe_stream(default_device());
+  size_t num_streams = get_streams().size();
+
+  std::thread t([&] {
+    async_eval(arange(10, s));
+    eval(arange(10, s));
+  });
+  t.join();
+
+  CHECK_EQ(get_streams().size(), num_streams);
+}
+
+TEST_CASE("test compile does not create default stream") {
+  auto s = new_thread_unsafe_stream(default_device());
+  size_t num_streams = get_streams().size();
+
+  std::function<std::vector<array>(const std::vector<array>&)> fun =
+      [s](const std::vector<array>& inputs) {
+        return std::vector<array>{abs(inputs[0], s)};
+      };
+  auto cfun = compile(fun);
+
+  std::thread t([&] { eval(cfun({array({-1, 2})})); });
+  t.join();
+
+  CHECK_EQ(get_streams().size(), num_streams);
+}
+
+TEST_CASE("test thread local stream") {
+  auto s = new_thread_local_stream(default_device());
+  int result = sum(arange(10, s)).item<int>();
+
+  std::atomic<int> finished = 0;
+  std::vector<std::thread> threads;
+  int num_threads = 4;
+  for (int i = 0; i < 4; ++i) {
+    threads.emplace_back([&]() {
+      int r = sum(arange(10, s)).item<int>();
+      CHECK_EQ(result, r);
+      finished += 1;
+      clear_streams();
+    });
+  }
+
+  for (auto& t : threads) {
+    t.join();
+  }
+  CHECK_EQ(finished, num_threads);
+}
+
+TEST_CASE("test get streams") {
+  // Initialize default CPU stream before querying
+  default_stream(Device::cpu);
+  auto streams = get_streams();
+
+  // At least the default CPU stream exists
+  CHECK(streams.size() >= 1);
+
+  // All default streams should be in the list
+  auto s_cpu = default_stream(Device::cpu);
+  bool found_cpu = false;
+  for (auto& s : streams) {
+    if (s == s_cpu) {
+      found_cpu = true;
+    }
+  }
+  CHECK(found_cpu);
+
+  // New streams show up
+  auto s_new = new_stream(Device::cpu);
+  streams = get_streams();
+  bool found_new = false;
+  for (auto& s : streams) {
+    if (s == s_new) {
+      found_new = true;
+    }
+  }
+  CHECK(found_new);
+}
+
+TEST_CASE("test asynchronous launch") {
+  auto s1 = default_stream(Device::cpu);
+  auto s2 = new_stream(Device::cpu);
+
+  // Make sure streams execute asynchronously
+  int x = 1;
+  auto p1 = std::make_shared<std::promise<void>>();
+  auto p2 = std::make_shared<std::promise<void>>();
+  auto f1 = p1->get_future().share();
+  auto f2 = p2->get_future().share();
+  auto fn1 = [&x, p = std::move(p1)]() {
+    x++;
+    p->set_value();
+  };
+  auto fn2 = [&x, p = std::move(p2), f = std::move(f1)]() {
+    f.wait();
+    x *= 5;
+    p->set_value();
+  };
+
+  // fn2 is launched first and is waiting on fn1 but since
+  // they are on different streams there is no deadlock.
+  scheduler::enqueue(s2, std::move(fn2));
+  scheduler::enqueue(s1, std::move(fn1));
+
+  f2.wait();
+
+  CHECK_EQ(x, 10);
+}
+
+TEST_CASE("test stream placement") {
+  auto s1 = default_stream(Device::cpu);
+  auto s2 = new_stream(Device::cpu);
+
+  {
+    // Wait on stream 1
+    auto p = std::make_shared<std::promise<void>>();
+    auto f = p->get_future().share();
+    scheduler::enqueue(s1, [f = std::move(f)]() { f.wait(); });
+
+    // Do some work on stream 2
+    auto x = zeros({100}, float32, s2);
+    auto y = ones({100}, float32, s2);
+    auto z = add(x, y, s2);
+    eval(z);
+    p->set_value();
+  }
+
+  {
+    // Wait on stream 1
+    auto p = std::make_shared<std::promise<void>>();
+    auto f = p->get_future().share();
+    scheduler::enqueue(s1, [f = std::move(f)]() { f.wait(); });
+
+    // Do some work on stream 2
+    auto fn = [&s2](array a) { return add(a, add(a, a, s2), s2); };
+    auto x = zeros({100}, s2);
+
+    // The whole vjp computation should happen
+    // on the second stream otherwise this will hang.
+    auto [out, dout] = vjp(fn, x, ones({100}, s2));
+
+    // The whole jvp computation should happen on the
+    // second stream.
+    std::tie(out, dout) = jvp(fn, x, ones({100}, s2));
+    eval(out, dout);
+
+    p->set_value();
+  }
+}
+
+TEST_CASE("test scheduler races") {
+  auto x = zeros({1});
+  auto y = zeros({100});
+  eval(x, y);
+  auto a = exp(x);
+  eval(a);
+  a = exp(x);
+  for (int i = 0; i < 10000; ++i) {
+    y = exp(y);
+  }
+  eval(a, y);
+}
+
+// The fence orders work between two streams. Check that the consumer sees the
+// producer result for every combination of producer and consumer device.
+TEST_CASE("test cross stream fence ordering") {
+  if (!gpu::is_available()) {
+    return;
+  }
+  std::vector<Device::DeviceType> devices = {Device::cpu, Device::gpu};
+
+  for (auto pd : devices) {
+    for (auto cd : devices) {
+      auto ps = new_stream(pd);
+      auto cs = new_stream(cd);
+
+      array one = full({1}, 1.0f, float32, ps);
+      array x = full({64, 64}, 1.0f, float32, ps);
+      for (int i = 0; i < 20; ++i) {
+        x = add(x, one, ps);
+      }
+
+      // The consumer is on the other stream, so eval builds a fence.
+      array y = sum(x, cs);
+      CHECK_EQ(y.item<float>(), doctest::Approx(64 * 64 * 21.0f));
+    }
+  }
+}

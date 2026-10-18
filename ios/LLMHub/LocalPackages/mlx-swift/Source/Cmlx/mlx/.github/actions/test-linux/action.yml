@@ -1,0 +1,69 @@
+name: 'Run tests'
+description: 'Run Python and C++ tests on Linux'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Check GPU support
+      id: gpu-check
+      shell: bash
+      run: |
+        if __nvcc_device_query ; then
+          echo "good=true" >> $GITHUB_OUTPUT
+        else
+          echo "good=false" >> $GITHUB_OUTPUT
+        fi
+        echo
+
+    - name: Run MPI tests
+      if: steps.gpu-check.outputs.good == 'false'
+      shell: bash
+      run: mpirun --bind-to none --allow-run-as-root -host localhost:8 -np 8 python python/tests/mpi_test_distributed.py
+
+    - name: Run distributed tests
+      if: steps.gpu-check.outputs.good == 'false'
+      shell: bash
+      run: |
+        mlx.launch --verbose -n 8 python python/tests/ring_test_distributed.py -v 2> >(tee -a stderr.log >&2)
+        if grep -Fq '[WARN]' stderr.log ; then
+          grep -F '[WARN]' stderr.log
+          echo "Distributed ring test failed";
+          exit 1;
+        fi
+
+    - name: Run Python tests - CPU
+      if: steps.gpu-check.outputs.good == 'false'
+      shell: bash
+      env:
+        DEVICE: cpu
+      run: python python/tests/run.py -v
+
+    - name: Run Python tests - GPU
+      if: steps.gpu-check.outputs.good == 'true'
+      shell: bash
+      env:
+        DEVICE: gpu
+      run: python python/tests/run.py -v
+
+    - name: Run CPP tests - CPU
+      shell: bash
+      env:
+        DEVICE: cpu
+      run: ./build/cpp/mlx/tests/tests
+
+    - name: Run CPP tests - GPU
+      if: steps.gpu-check.outputs.good == 'true'
+      shell: bash
+      env:
+        DEVICE: gpu
+      run: ./build/cpp/mlx/tests/tests -sfe="*linalg_tests.cpp"
+
+    - name: Show stack trace on crash
+      if: failure()
+      shell: bash
+      run: |
+        set +e
+        sleep 10
+        if coredumpctl list; then
+          coredumpctl debug --debugger-arguments="-batch -ex 'thread apply all bt'"
+        fi

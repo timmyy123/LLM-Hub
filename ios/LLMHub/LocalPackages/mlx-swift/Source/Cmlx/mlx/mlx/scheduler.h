@@ -1,0 +1,117 @@
+// Copyright © 2023 Apple Inc.
+
+#pragma once
+
+#include <atomic>
+#include <queue>
+#include <shared_mutex>
+#include <unordered_map>
+
+#include "mlx/api.h"
+#include "mlx/backend/gpu/eval.h"
+#include "mlx/device.h"
+#include "mlx/stream.h"
+#include "mlx/utils.h"
+
+namespace mlx::core::scheduler {
+
+class StreamThread;
+
+class MLX_API Scheduler {
+ public:
+  Scheduler();
+  ~Scheduler();
+
+  // Not copyable or moveable
+  Scheduler(const Scheduler&) = delete;
+  Scheduler(Scheduler&&) = delete;
+  Scheduler& operator=(const Scheduler&) = delete;
+  Scheduler& operator=(Scheduler&&) = delete;
+
+  void enqueue(Stream s, std::function<void()> task);
+  void wait_event(Stream s, Event event, std::function<void(Event&)> task);
+  void signal_event(Stream s, Event event, std::function<void(Event&)> task);
+  void check_error(Stream s);
+
+  void notify_new_task(const Stream& stream) {
+    {
+      std::lock_guard<std::mutex> lk(mtx);
+      n_active_tasks_++;
+    }
+    completion_cv.notify_all();
+  }
+
+  void notify_task_completion(const Stream& stream) {
+    {
+      std::lock_guard<std::mutex> lk(mtx);
+      n_active_tasks_--;
+    }
+    completion_cv.notify_all();
+  }
+
+  int n_active_tasks() const {
+    return n_active_tasks_;
+  }
+
+  void wait_for_one() {
+    std::unique_lock<std::mutex> lk(mtx);
+    int n_tasks_old = n_active_tasks();
+    if (n_tasks_old > 1) {
+      completion_cv.wait(lk, [this, n_tasks_old] {
+        return this->n_active_tasks() < n_tasks_old;
+      });
+    }
+  }
+
+ private:
+  friend Stream mlx::core::new_stream(Device d);
+
+  StreamThread& get_thread(Stream s);
+
+  int n_active_tasks_{0};
+  std::unordered_map<int, std::unique_ptr<StreamThread>> threads_;
+  std::shared_mutex threads_mtx_;
+  std::condition_variable completion_cv;
+  std::mutex mtx;
+};
+
+MLX_API Scheduler& scheduler();
+
+template <typename F>
+inline void enqueue(Stream s, F&& f) {
+  scheduler().enqueue(s, std::forward<F>(f));
+}
+
+// Like enqueue but the task is used for processing the passed event.
+template <typename F>
+inline void wait_event(Stream s, Event event, F&& f) {
+  scheduler().wait_event(s, std::move(event), std::forward<F>(f));
+}
+
+template <typename F>
+inline void signal_event(Stream s, Event event, F&& f) {
+  scheduler().signal_event(s, std::move(event), std::forward<F>(f));
+}
+
+// Throw and clear the error stored in the stream, if any.
+inline void check_error(Stream s) {
+  scheduler().check_error(s);
+}
+
+inline int n_active_tasks() {
+  return scheduler().n_active_tasks();
+}
+
+inline void notify_new_task(const Stream& stream) {
+  scheduler().notify_new_task(stream);
+}
+
+inline void notify_task_completion(const Stream& stream) {
+  scheduler().notify_task_completion(stream);
+}
+
+inline void wait_for_one() {
+  scheduler().wait_for_one();
+}
+
+} // namespace mlx::core::scheduler

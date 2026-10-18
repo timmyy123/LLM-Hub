@@ -1,0 +1,387 @@
+# Copyright © 2023 Apple Inc.
+
+import math
+import unittest
+from itertools import combinations, permutations
+
+import mlx.core as mx
+import mlx_tests
+import numpy as np
+
+
+class TestReduce(mlx_tests.MLXTestCase):
+    def test_axis_permutation_sums(self):
+        for shape in [(5, 5, 1, 5, 5), (65, 65, 1, 65)]:
+            with self.subTest(shape=shape):
+                x_npy = (np.random.randn(*shape) * 128).astype(np.int32)
+                x_mlx = mx.array(x_npy)
+                for t in permutations(range(len(shape))):
+                    with self.subTest(t=t):
+                        y_npy = np.transpose(x_npy, t)
+                        y_mlx = mx.transpose(x_mlx, t)
+                        for n in range(1, len(shape) + 1):
+                            for a in combinations(range(len(shape)), n):
+                                with self.subTest(a=a):
+                                    z_npy = np.sum(y_npy, axis=a)
+                                    z_mlx = mx.sum(y_mlx, axis=a)
+                                    mx.eval(z_mlx)
+                                    self.assertTrue(np.all(z_npy == z_mlx))
+
+    def test_expand_sums(self):
+        x_npy = np.random.randn(5, 1, 5, 1, 5, 1).astype(np.float32)
+        x_mlx = mx.array(x_npy)
+        for m in range(1, 4):
+            for ax in combinations([1, 3, 5], m):
+                shape = np.array([5, 1, 5, 1, 5, 1])
+                shape[list(ax)] = 5
+                shape = shape.tolist()
+                with self.subTest(shape=shape):
+                    y_npy = np.broadcast_to(x_npy, shape)
+                    y_mlx = mx.broadcast_to(x_mlx, shape)
+                    for n in range(1, 7):
+                        for a in combinations(range(6), n):
+                            with self.subTest(a=a):
+                                z_npy = np.sum(y_npy, axis=a) / 1000
+                                z_mlx = mx.sum(y_mlx, axis=a) / 1000
+                                mx.eval(z_mlx)
+                                self.assertTrue(
+                                    np.allclose(z_npy, np.array(z_mlx), atol=1e-4)
+                                )
+
+    def test_row_reduce_negative_stride(self):
+        x_npy = np.arange(1, 131).reshape(2, 65)[::-1]
+        x_mlx = mx.arange(1, 131).reshape(2, 65)[::-1]
+
+        for op in ["sum", "max", "min", "mean", "var"]:
+            with self.subTest(op=op):
+                expected = getattr(np, op)(x_npy, axis=-1)
+                actual = getattr(mx, op)(x_mlx, axis=-1)
+                self.assertTrue(np.allclose(expected, actual))
+
+    def test_col_reduce_negative_stride(self):
+        # Exercises each Metal column reduction kernel on a negative-stride view.
+        cases = [
+            ((2, 1024, 16), 1),
+            ((2, 2, 1024, 16), 2),
+            ((2, 512, 2, 2, 16), (1, 3)),
+            ((2, 512, 64), 1),
+            ((2, 64, 512), 1),
+            ((2, 16, 16), 1),
+        ]
+        for shape, axis in cases:
+            size = math.prod(shape)
+            x_npy = np.arange(1, size + 1).reshape(shape)[::-1]
+            x_mlx = mx.arange(1, size + 1).reshape(shape)[::-1]
+            for op in ["sum", "max", "min", "mean", "var"]:
+                with self.subTest(shape=shape, axis=axis, op=op):
+                    expected = getattr(np, op)(x_npy, axis=axis)
+                    actual = getattr(mx, op)(x_mlx, axis=axis)
+                    self.assertTrue(np.allclose(expected, actual))
+            x_ones = mx.ones(shape, dtype=mx.float32)[::-1]
+            with self.subTest(shape=shape, axis=axis, op="prod"):
+                self.assertTrue(mx.all(mx.prod(x_ones, axis=axis) == 1).item())
+            x_bool = mx.ones(shape, dtype=mx.bool_)[::-1]
+            for op in ["all", "any"]:
+                with self.subTest(shape=shape, axis=axis, op=op):
+                    self.assertTrue(mx.all(getattr(mx, op)(x_bool, axis=axis)).item())
+
+    def test_dtypes(self):
+        int_dtypes = [
+            "int8",
+            "int16",
+            "int32",
+            "uint8",
+            "uint16",
+            "uint32",
+            "int64",
+            "uint64",
+            "complex64",
+        ]
+        float_dtypes = ["float32"]
+
+        for dtype in int_dtypes + float_dtypes:
+            with self.subTest(dtype=dtype):
+                x = np.random.uniform(0, 2, size=(3, 3, 3)).astype(getattr(np, dtype))
+                y = mx.array(x)
+
+                for op in ("sum", "prod", "min", "max"):
+                    with self.subTest(op=op):
+                        np_op = getattr(np, op)
+                        mlx_op = getattr(mx, op)
+
+                        for axes in (None, 0, 1, 2, (0, 1), (0, 2), (1, 2), (0, 1, 2)):
+                            with self.subTest(axes=axes):
+                                if op in ("sum", "prod"):
+                                    r_np = np_op(
+                                        x, axis=axes, dtype=(getattr(np, dtype))
+                                    )
+                                else:
+                                    r_np = np_op(x, axis=axes)
+                                r_mlx = mlx_op(y, axis=axes)
+                                mx.eval(r_mlx)
+                                self.assertTrue(np.allclose(r_np, r_mlx, atol=1e-4))
+
+    def test_arg_reduce(self):
+        dtypes = [
+            "uint8",
+            "uint16",
+            "uint32",
+            "uint64",
+            "int8",
+            "int16",
+            "int32",
+            "int64",
+            "float16",
+            "float32",
+        ]
+        for dtype in dtypes:
+            with self.subTest(dtype=dtype):
+                data = np.random.rand(10, 12, 13).astype(getattr(np, dtype))
+                x = mx.array(data)
+                for op in ["argmin", "argmax"]:
+                    for axis in range(3):
+                        for kd in [True, False]:
+                            a = getattr(mx, op)(x, axis, kd)
+                            b = getattr(np, op)(data, axis, keepdims=kd)
+                            self.assertEqual(a.tolist(), b.tolist())
+
+                for op in ["argmin", "argmax"]:
+                    a = getattr(mx, op)(x, keepdims=True)
+                    b = getattr(np, op)(data, keepdims=True)
+                    self.assertEqual(a.tolist(), b.tolist())
+                    a = getattr(mx, op)(x)
+                    b = getattr(np, op)(data)
+                    self.assertEqual(a.item(), b)
+
+    def test_edge_case(self):
+        x = (mx.random.normal((100, 1, 100, 100)) * 128).astype(mx.int32)
+        x = x.transpose(0, 3, 1, 2)
+
+        y = x.sum((0, 2, 3))
+        mx.eval(y)
+        z = np.array(x).sum((0, 2, 3))
+        self.assertTrue(np.all(z == y))
+
+    def test_zero_size(self):
+        # max and min have no identity, so they are only undefined when an axis
+        # being reduced is itself empty. An array that is empty because of some
+        # other axis reduces into an empty result.
+        for shape, axis in [
+            ((0, 2), -1),
+            ((2, 0), 0),
+            ((3, 0, 2), -1),
+            ((0, 3, 2), (1, 2)),
+        ]:
+            a_np = np.zeros(shape, dtype=np.float32)
+            a_mx = mx.array(a_np)
+            for op in ["max", "min"]:
+                out = getattr(mx, op)(
+                    a_mx, axis=list(axis) if isinstance(axis, tuple) else axis
+                )
+                mx.eval(out)
+                self.assertEqual(out.shape, getattr(np, op)(a_np, axis=axis).shape)
+
+        # Reducing an empty axis still raises, like numpy
+        for shape, axis in [((2, 0), -1), ((0, 2), 0), ((0, 0), -1)]:
+            a_mx = mx.zeros(shape)
+            for op in ["max", "min"]:
+                with self.assertRaises(ValueError):
+                    getattr(mx, op)(a_mx, axis=axis)
+
+        # sum and prod have identities, so an empty reduction returns them for
+        # every dtype. The unsigned outputs (uint32, uint64) had no init kernel
+        # on Metal and aborted the process instead.
+        dtypes = [
+            mx.bool_,
+            mx.uint8,
+            mx.uint16,
+            mx.uint32,
+            mx.uint64,
+            mx.int8,
+            mx.int16,
+            mx.int32,
+            mx.int64,
+            mx.float16,
+            mx.float32,
+        ]
+        for dtype in dtypes:
+            a = mx.zeros((0,), dtype=dtype)
+            for op, identity in [("sum", 0), ("prod", 1)]:
+                out = getattr(mx, op)(a)
+                mx.eval(out)
+                self.assertEqual(out.item(), identity, f"{op} of empty {dtype}")
+            # empty because of another axis, reduced over a non-empty one
+            b = mx.zeros((0, 3), dtype=dtype)
+            for op in ["sum", "prod"]:
+                out = getattr(mx, op)(b, axis=-1)
+                mx.eval(out)
+                self.assertEqual(out.shape, (0,))
+
+    def test_sum_bool(self):
+        x = np.random.uniform(0, 1, size=(10, 10, 10)) > 0.5
+        y = mx.array(x)
+        npsum = x.sum().item()
+        mxsum = y.sum().item()
+        self.assertEqual(npsum, mxsum)
+
+    def test_many_reduction_axes(self):
+
+        def check(x, axes):
+            expected = x
+            for ax in axes:
+                expected = mx.sum(expected, axis=ax, keepdims=True)
+            out = mx.sum(x, axis=axes, keepdims=True)
+            self.assertTrue(mx.array_equal(out, expected))
+
+        x = mx.random.randint(0, 10, shape=(4, 4, 4, 4, 4))
+        check(x, (0, 2, 4))
+
+        x = mx.random.randint(0, 10, shape=(4, 4, 4, 4, 4, 4, 4))
+        check(x, (0, 2, 4, 6))
+
+        x = mx.random.randint(0, 10, shape=(4, 4, 4, 4, 4, 4, 4, 4, 4))
+        check(x, (0, 2, 4, 6, 8))
+
+        x = mx.random.randint(0, 10, shape=(4, 4, 4, 4, 4, 4, 4, 4, 4, 128))
+        x = x.transpose(1, 0, 2, 3, 4, 5, 6, 7, 8, 9)
+        check(x, (1, 3, 5, 7, 9))
+
+    def test_nan_propagation(self):
+        dtypes = [
+            "uint8",
+            "uint16",
+            "uint32",
+            "int8",
+            "int16",
+            "int32",
+            "float16",
+            "float32",
+        ]
+
+        for dtype in dtypes:
+            with self.subTest(dtype=dtype):
+                x = (mx.random.normal((4, 4)) * 10).astype(getattr(mx, dtype))
+                indices = mx.random.randint(0, 4, shape=(6,)).reshape(3, 2)
+                for idx in indices:
+                    x[idx[0], idx[1]] = mx.nan
+                x_np = np.array(x)
+
+                for op in ["max", "min"]:
+                    for axis in [0, 1]:
+                        out = getattr(mx, op)(x, axis=axis)
+                        ref = getattr(np, op)(x_np, axis=axis)
+                        self.assertTrue(np.array_equal(out, ref, equal_nan=True))
+
+    def test_nan_propagation_complex64(self):
+        complex_array_1 = mx.array(
+            [1 + 1j, 2 + 2j, 3 + 3j, mx.nan + 4j], dtype=mx.complex64
+        ).reshape(2, 2)
+        complex_array_2 = mx.array(
+            [1 + 1j, 2 + 2j, 3 + mx.nan * 1j, 4 + 4j], dtype=mx.complex64
+        ).reshape(2, 2)
+        complex_array_3 = mx.array(
+            [1 + 1j, 2 + mx.nan * 1j, 3 + 3j, 4 + 4j], dtype=mx.complex64
+        ).reshape(2, 2)
+        complex_array_4 = mx.array(
+            [mx.nan + 1j, 2 + 2j, 3 + 3j, 4 + 4j], dtype=mx.complex64
+        ).reshape(2, 2)
+
+        np_arrays = [
+            np.array(complex_array_1),
+            np.array(complex_array_2),
+            np.array(complex_array_3),
+            np.array(complex_array_4),
+        ]
+
+        for mx_arr, np_arr in zip(
+            [complex_array_1, complex_array_2, complex_array_3, complex_array_4],
+            np_arrays,
+        ):
+            for axis in [0, 1]:
+                for op in ["max", "min"]:
+                    out = getattr(mx, op)(mx_arr, axis=axis)
+                    ref = getattr(np, op)(np_arr, axis=axis)
+                    self.assertTrue(np.array_equal(out, ref, equal_nan=True))
+
+    def test_long_column(self):
+        a = (np.random.randn(8192, 64) * 32).astype(np.int32)
+        b = mx.array(a)
+
+        c1 = a.sum(0)
+        c2 = b.sum(0)
+        self.assertTrue(np.all(c1 == c2))
+
+    def test_and_or_negative_zero(self):
+        # -0.0 equals zero but has its sign bit set, so it must not be treated
+        # as truthy just because its bit pattern is nonzero
+        for dtype in ["float32", "float16", "float64", "complex64"]:
+            with self.subTest(dtype=dtype):
+                for values in [
+                    [0.0, -0.0],
+                    [-0.0, -0.0],
+                    [-0.0] * 70,
+                    [-0.0, 0.0, 1.0],
+                    [0.5, 0.0],
+                ]:
+                    a_np = np.array(values, dtype=getattr(np, dtype))
+                    a_mx = mx.array(a_np)
+                    for op in ["any", "all"]:
+                        self.assertEqual(
+                            getattr(mx, op)(a_mx).item(),
+                            bool(getattr(np, op)(a_np)),
+                            msg=f"{op} {dtype} {values}",
+                        )
+
+        x_np = np.array([[0.0, -0.0], [1.0, 0.0], [-0.0, -0.0]], dtype=np.float32)
+        x_mx = mx.array(x_np)
+        for op in ["any", "all"]:
+            self.assertEqual(
+                getattr(mx, op)(x_mx, axis=1).tolist(),
+                getattr(np, op)(x_np, axis=1).tolist(),
+            )
+
+    def test_large_offsets(self):
+        # Row r holds r % 251 and row 2**15 starts at offset 2**31, so any
+        # reduction that narrows offsets or sizes to 32 bits reads the wrong
+        # rows. The views below have fewer than 2**31 elements themselves.
+        rows, cols = 2**15 + 1, 2**16
+        row_max = (mx.arange(rows) % 251).astype(mx.uint8)
+        x = mx.contiguous(mx.broadcast_to(row_max[:, None], (rows, cols)))
+
+        self.assertTrue(mx.array_equal(x[:, 7:].max(axis=-1), row_max))
+        self.assertTrue(mx.array_equal(x[:, 7:].min(axis=-1), row_max))
+        y = x.reshape(rows, 256, 256)[:, 1:, 1:]
+        self.assertTrue(mx.array_equal(y.max(axis=(1, 2)), row_max))
+        y = x.reshape(rows, 16, 16, 256)[:, 1:, :, 1:]
+        expected = mx.broadcast_to(row_max[:, None], (rows, 16))
+        self.assertTrue(mx.array_equal(y.max(axis=(1, 3)), expected))
+
+        # Reducing all 2**31 + 2**16 elements at once
+        self.assertEqual(x.max().item(), 250)
+        self.assertTrue(x.any().item())
+        self.assertFalse(x.all().item())
+
+    @unittest.skipIf(not mx.metal.is_available(), "requires Metal")
+    def test_init_reduce_large_output(self):
+        out = mx.all(mx.zeros((0, 4, 2**30), dtype=mx.bool_), axis=0)
+        mx.eval(out)
+        self.assertTrue(mx.all(out).item())
+
+    def test_minmax(self):
+        x = mx.array([[3.0, 1.0, 4.0], [2.0, 6.0, 5.0]])
+        out = mx.minmax(x)
+        self.assertIsInstance(out, tuple)
+        self.assertEqual(len(out), 2)
+        self.assertEqual(tuple(a.item() for a in out), (1.0, 6.0))
+        for axis in (None, 0, (0, 1)):
+            for keepdims in (False, True):
+                with self.subTest(axis=axis, keepdims=keepdims):
+                    out = mx.minmax(x, axis=axis, keepdims=keepdims)
+                    for actual, op in zip(out, (mx.min, mx.max)):
+                        expected = op(x, axis=axis, keepdims=keepdims)
+                        self.assertEqual(actual.shape, expected.shape)
+                        self.assertTrue(mx.array_equal(actual, expected))
+
+
+if __name__ == "__main__":
+    mlx_tests.MLXTestRunner(failfast=True)

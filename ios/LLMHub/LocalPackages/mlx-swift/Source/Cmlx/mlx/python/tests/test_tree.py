@@ -1,0 +1,175 @@
+# Copyright © 2023 Apple Inc.
+
+
+import mlx.core as mx
+import mlx.nn as nn
+import mlx.utils
+import mlx_tests
+
+
+class TestTreeUtils(mlx_tests.MLXTestCase):
+    def test_tree_map(self):
+        tree = {"a": 0, "b": 1, "c": 2}
+        tree = mlx.utils.tree_map(lambda x: x + 1, tree)
+
+        expected_tree = {"a": 1, "b": 2, "c": 3}
+        self.assertEqual(tree, expected_tree)
+
+    def test_tree_flatten(self):
+        tree = [{"a": 1, "b": 2}, "c"]
+        vals = (1, 2, "c")
+        flat_tree = mlx.utils.tree_flatten(tree)
+        self.assertEqual(list(zip(*flat_tree))[1], vals)
+        self.assertEqual(mlx.utils.tree_unflatten(flat_tree), tree)
+
+    def test_merge(self):
+        t1 = {"a": 0}
+        t2 = {"b": 1}
+        t = mlx.utils.tree_merge(t1, t2)
+        self.assertEqual({"a": 0, "b": 1}, t)
+        with self.assertRaises(ValueError):
+            mlx.utils.tree_merge(t1, t1)
+        with self.assertRaises(ValueError):
+            mlx.utils.tree_merge(t, t1)
+
+        mod1 = nn.Sequential(nn.Linear(2, 2), nn.Linear(2, 2))
+        mod2 = nn.Sequential(nn.Linear(2, 2), nn.Linear(2, 2))
+        mod = nn.Sequential(mod1, mod2)
+
+        params1 = {"layers": [mod1.parameters()]}
+        params2 = {"layers": [None, mod2.parameters()]}
+        params = mlx.utils.tree_merge(params1, params2)
+        for (k1, v1), (k2, v2) in zip(
+            mlx.utils.tree_flatten(params), mlx.utils.tree_flatten(mod.parameters())
+        ):
+            self.assertEqual(k1, k2)
+            self.assertTrue(mx.array_equal(v1, v2))
+
+    def test_empty_subtree_merge(self):
+        # make sure mlx pytrees treat empty dict {} as an empty node
+        self.assertEqual([], mlx.utils.tree_flatten({"a": {}}))
+
+        # empty dict merging
+        self.assertEqual({}, mlx.utils.tree_merge({}, {}))
+        self.assertEqual(
+            [{"a": 1, "b": 2}, {}], mlx.utils.tree_merge([{"a": 1}, {}], [{"b": 2}, {}])
+        )
+        self.assertEqual({"a": {}}, mlx.utils.tree_merge({"a": {}}, {"a": {}}))
+        self.assertEqual(
+            {"a": 1, "b": {}, "c": 2},
+            mlx.utils.tree_merge(
+                {"a": 1, "b": {}, "c": {}}, {"a": {}, "b": {}, "c": 2}
+            ),
+        )
+
+        # empty list merging
+        self.assertEqual({"a": []}, mlx.utils.tree_merge({"a": []}, {"a": []}))
+
+        # empty tuple merging
+        self.assertEqual({"a": ()}, mlx.utils.tree_merge({"a": ()}, {"a": ()}))
+
+        # merging different empty structures
+        with self.assertRaises(ValueError):
+            mlx.utils.tree_merge({}, [])
+
+        def merge_called(a, b):
+            raise AssertionError("merge_fn called on empty subtrees")
+
+        self.assertEqual(
+            {"a": {}}, mlx.utils.tree_merge({"a": {}}, {"a": {}}, merge_called)
+        )
+
+    def test_supported_trees(self):
+
+        from typing import NamedTuple
+
+        class Vector(tuple):
+            pass
+
+        class Params(NamedTuple):
+            m: mx.array
+            b: mx.array
+
+        list1 = [mx.array([0, 1]), mx.array(2)]
+        tuple1 = (mx.array([0, 1]), mx.array(2))
+        vector1 = Vector([mx.array([0, 1]), mx.array(2)])
+        params1 = Params(m=mx.array([0, 1]), b=mx.array(2))
+        dict1 = {"m": mx.array([0, 1]), "b": mx.array(2)}
+
+        def add_one(x):
+            return x + 1
+
+        list2 = mlx.utils.tree_map(add_one, list1)
+        tuple2 = mlx.utils.tree_map(add_one, tuple1)
+        vector2 = mlx.utils.tree_map(add_one, vector1)
+        params2 = mlx.utils.tree_map(add_one, params1)
+        dict2 = mlx.utils.tree_map(add_one, dict1)
+
+        self.assertTrue(isinstance(list2, list))
+        self.assertTrue(mx.array_equal(list2[0], mx.array([1, 2])))
+        self.assertTrue(mx.array_equal(list2[1], mx.array(3)))
+
+        self.assertTrue(isinstance(tuple2, tuple))
+        self.assertTrue(mx.array_equal(tuple2[0], mx.array([1, 2])))
+        self.assertTrue(mx.array_equal(tuple2[1], mx.array(3)))
+
+        self.assertTrue(isinstance(vector2, Vector))
+        self.assertTrue(mx.array_equal(vector2[0], mx.array([1, 2])))
+        self.assertTrue(mx.array_equal(vector2[1], mx.array(3)))
+
+        self.assertTrue(isinstance(dict2, dict))
+        self.assertTrue(mx.array_equal(dict2["m"], mx.array([1, 2])))
+        self.assertTrue(mx.array_equal(dict2["b"], mx.array(3)))
+
+        self.assertTrue(isinstance(params2, Params))
+        self.assertTrue(mx.array_equal(params2.m, mx.array([1, 2])))
+        self.assertTrue(mx.array_equal(params2.b, mx.array(3)))
+
+        paths = []
+        params3 = mlx.utils.tree_map_with_path(
+            lambda path, x: paths.append(path) or x + 1, params1
+        )
+
+        self.assertEqual(paths, ["0", "1"])
+        self.assertTrue(isinstance(params3, Params))
+        self.assertTrue(mx.array_equal(params3.m, mx.array([1, 2])))
+        self.assertTrue(mx.array_equal(params3.b, mx.array(3)))
+
+        paths = []
+        params4 = mlx.utils.tree_map_with_path(
+            lambda path, x, y: paths.append(path) or x + y, params1, params3
+        )
+
+        self.assertEqual(paths, ["0", "1"])
+        self.assertTrue(isinstance(params4, Params))
+        self.assertTrue(mx.array_equal(params4.m, mx.array([1, 3])))
+        self.assertTrue(mx.array_equal(params4.b, mx.array(5)))
+
+        params5 = mlx.utils.tree_merge(params1, params1, lambda a, b: a + b)
+        self.assertTrue(isinstance(params5, Params))
+        self.assertTrue(mx.array_equal(params5.m, mx.array([0, 2])))
+        self.assertTrue(mx.array_equal(params5.b, mx.array(4)))
+
+        vector3 = mlx.utils.tree_merge(vector1, vector1, lambda a, b: a + b)
+        self.assertTrue(isinstance(vector3, Vector))
+        self.assertTrue(mx.array_equal(vector3[0], mx.array([0, 2])))
+        self.assertTrue(mx.array_equal(vector3[1], mx.array(4)))
+
+    def test_tree_unflatten_integer_key_collision(self):
+        # Non-canonical integer-like keys (e.g. "01") must not silently
+        # collide with "1" and shift later values. Fall back to dict tree.
+        tree = mlx.utils.tree_unflatten([("01", "a"), ("1", "b"), ("2", "c")])
+        self.assertIsInstance(tree, dict)
+        self.assertEqual(tree["01"], "a")
+        self.assertEqual(tree["1"], "b")
+        self.assertEqual(tree["2"], "c")
+
+        # Canonical list keys still unflatten as a list
+        self.assertEqual(
+            mlx.utils.tree_unflatten([("0", "a"), ("1", "b"), ("2", "c")]),
+            ["a", "b", "c"],
+        )
+
+
+if __name__ == "__main__":
+    mlx_tests.MLXTestRunner()

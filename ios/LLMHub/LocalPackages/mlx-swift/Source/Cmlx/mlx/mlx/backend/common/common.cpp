@@ -1,0 +1,263 @@
+// Copyright © 2024 Apple Inc.
+#include <cassert>
+
+#include "mlx/backend/common/broadcasting.h"
+#include "mlx/backend/common/slicing.h"
+#include "mlx/backend/common/utils.h"
+#include "mlx/dtype_utils.h"
+#include "mlx/primitives.h"
+
+namespace mlx::core {
+
+void AsStrided::eval(const std::vector<array>& inputs, array& out) {
+  assert(inputs.size() == 1);
+
+  auto& in = inputs[0];
+
+  if (!in.flags().row_contiguous) {
+    // Just ensuring that inputs[0] came from the ops which would ensure the
+    // input is row contiguous.
+    throw std::runtime_error(
+        "AsStrided must be used with row contiguous arrays only.");
+  }
+
+  auto [_, row_contiguous, col_contiguous] = check_contiguity(shape_, strides_);
+
+  int64_t l = 0, h = 0;
+  std::vector<std::pair<int64_t, int>> dims;
+  for (int i = 0; i < strides_.size(); i++) {
+    auto delta = strides_[i] * (shape_[i] - 1);
+    if (strides_[i] >= 0) {
+      h += delta;
+    } else {
+      l += delta;
+    }
+    if (shape_[i] > 1 && strides_[i] != 0) {
+      dims.emplace_back(strides_[i], shape_[i]);
+    }
+  }
+  size_t data_size = out.size() == 0 ? 0 : (h - l) + 1;
+
+  std::sort(dims.begin(), dims.end());
+  int64_t expected_stride = 1;
+  bool dense = true;
+  for (auto [stride, size] : dims) {
+    dense &= stride == expected_stride;
+    expected_stride *= size;
+  }
+
+  auto flags = in.flags();
+  flags.contiguous = out.size() == 0 || dense;
+  flags.row_contiguous = row_contiguous;
+  flags.col_contiguous = col_contiguous;
+
+  return out.copy_shared_buffer(in, strides_, flags, data_size, offset_);
+}
+
+void Broadcast::eval(const std::vector<array>& inputs, array& out) {
+  broadcast(inputs[0], out);
+}
+
+void BroadcastAxes::eval(const std::vector<array>& inputs, array& out) {
+  broadcast(inputs[0], out);
+}
+
+void Copy::eval(const std::vector<array>& inputs, array& out) {
+  assert(inputs.size() == 1);
+  out.copy_shared_buffer(inputs[0]);
+}
+
+void CustomTransforms::eval(
+    const std::vector<array>& inputs,
+    std::vector<array>& outputs) {
+  assert(inputs.size() > outputs.size());
+  for (int i = 0, j = inputs.size() - outputs.size(); i < outputs.size();
+       i++, j++) {
+    outputs[i].copy_shared_buffer(inputs[j]);
+  }
+}
+
+void Depends::eval(
+    const std::vector<array>& inputs,
+    std::vector<array>& outputs) {
+  assert(inputs.size() > outputs.size());
+  for (int i = 0; i < outputs.size(); i++) {
+    outputs[i].copy_shared_buffer(inputs[i]);
+  }
+}
+
+void ExpandDims::eval(const std::vector<array>& inputs, array& out) {
+  assert(inputs.size() == 1);
+  const auto& in = inputs[0];
+  auto strides = in.strides();
+  for (auto ax : axes_) {
+    strides.insert(strides.begin() + ax, 1);
+  }
+  out.copy_shared_buffer(in, strides, in.flags(), in.data_size());
+}
+
+void NumberOfElements::eval(const std::vector<array>& inputs, array& out) {
+  assert(inputs.size() == 1);
+  out.set_data(allocator::malloc(out.nbytes()));
+
+  double numel = 1;
+  for (auto ax : axes_) {
+    numel *= inputs[0].shape(ax);
+  }
+
+  if (inverted_) {
+    numel = 1.0 / numel;
+  }
+
+  dispatch_all_types(out.dtype(), [&](auto type_tag) {
+    using T = MLX_GET_TYPE(type_tag);
+    *out.data<T>() = static_cast<T>(numel);
+  });
+}
+
+std::pair<bool, Strides> prepare_reshape(const array& in, const array& out) {
+  // Special case for empty arrays or row contiguous arrays
+  if (in.size() == 0 || in.flags().row_contiguous) {
+    return {false, out.strides()};
+  }
+
+  // Special case for scalars
+  if (in.ndim() == 0) {
+    return {false, Strides(out.ndim(), 0)};
+  }
+
+  // Firstly let's collapse all the contiguous dimensions of the input
+  auto [shape, strides] = collapse_contiguous_dims(in);
+
+  // If shapes fit exactly in the contiguous dims then no copy is necessary so
+  // let's check.
+  Strides out_strides;
+  bool copy_necessary = false;
+  int j = 0;
+  for (int i = 0; i < out.ndim(); i++) {
+    int N = out.shape(i);
+    if (j < shape.size() && shape[j] % N == 0) {
+      shape[j] /= N;
+      out_strides.push_back(shape[j] * strides[j]);
+      j += (shape[j] == 1);
+    } else if (N == 1) {
+      // i > 0 because otherwise j < shape.size() && shape[j] % 1 == 0
+      out_strides.push_back(out_strides.back());
+    } else {
+      copy_necessary = true;
+      break;
+    }
+  }
+
+  return {copy_necessary, out_strides};
+}
+
+void shared_buffer_reshape(
+    const array& in,
+    const Strides& out_strides,
+    array& out) {
+  auto flags = in.flags();
+  if (flags.row_contiguous) {
+    // For row contiguous reshapes:
+    // - Shallow copy the buffer
+    // - If reshaping into a vector (all singleton dimensions except one) it
+    //    becomes col contiguous again.
+    auto max_dim = std::max_element(out.shape().begin(), out.shape().end());
+    flags.col_contiguous = out.size() <= 1 || out.size() == *max_dim;
+  } else {
+    // New shape can change contiguity
+    auto [_, row_contiguous, col_contiguous] =
+        check_contiguity(out.shape(), out_strides);
+    flags.row_contiguous = row_contiguous;
+    flags.col_contiguous = col_contiguous;
+  }
+  out.copy_shared_buffer(in, out_strides, flags, in.data_size());
+}
+
+void Split::eval(
+    const std::vector<array>& inputs,
+    std::vector<array>& outputs) {
+  assert(inputs.size() == 1);
+
+  auto& in = inputs[0];
+
+  for (int i = 0; i < outputs.size(); i++) {
+    if (outputs[i].size() == 0) {
+      outputs[i].set_data(allocator::malloc(0));
+      continue;
+    }
+
+    int64_t start = i == 0 ? 0 : indices_[i - 1];
+    int64_t offset = start * in.strides()[axis_];
+
+    // compute the span
+    int64_t low_idx = 0;
+    int64_t high_idx = 0;
+    for (int j = 0; j < in.ndim(); j++) {
+      auto delta = in.strides()[j] * (outputs[i].shape()[j] - 1);
+      if (in.strides()[j] > 0) {
+        high_idx += delta;
+      } else {
+        low_idx += delta;
+      }
+    }
+
+    shared_buffer_slice(
+        in, in.strides(), offset, (high_idx - low_idx) + 1, outputs[i]);
+  }
+}
+
+void Squeeze::eval(const std::vector<array>& inputs, array& out) {
+  assert(inputs.size() == 1);
+  const auto& in = inputs[0];
+  Strides strides;
+  for (int i = 0, j = 0; i < in.ndim(); ++i) {
+    if (j < axes_.size() && i == axes_[j]) {
+      j++;
+    } else {
+      strides.push_back(in.strides(i));
+    }
+  }
+  out.copy_shared_buffer(in, strides, in.flags(), in.data_size());
+}
+
+void StopGradient::eval(const std::vector<array>& inputs, array& out) {
+  assert(inputs.size() == 1);
+  out.copy_shared_buffer(inputs[0]);
+}
+
+void Transpose::eval(const std::vector<array>& inputs, array& out) {
+  assert(inputs.size() == 1);
+  Strides out_strides(out.ndim());
+  auto& in = inputs[0];
+  for (int ax = 0; ax < axes_.size(); ++ax) {
+    out_strides[ax] = in.strides()[axes_[ax]];
+  }
+
+  // Conditions for {row/col}_contiguous
+  // - array must be contiguous (no gaps)
+  // - underlying buffer size should have the same size as the array
+  // - cumulative product of shapes is equal to the strides (we can ignore axes
+  //   with size == 1)
+  //   - in the forward direction (column contiguous)
+  //   - in the reverse direction (row contiguous)
+  // - vectors are both row and col contiguous (hence if both row/col are
+  //   true, they stay true)
+  auto flags = in.flags();
+  if (flags.contiguous && in.data_size() == in.size()) {
+    int64_t f_stride = 1;
+    int64_t b_stride = 1;
+    flags.col_contiguous = true;
+    flags.row_contiguous = true;
+    for (int i = 0, ri = out.ndim() - 1; i < out.ndim(); ++i, --ri) {
+      flags.col_contiguous &= (out_strides[i] == f_stride || out.shape(i) == 1);
+      f_stride *= out.shape(i);
+      flags.row_contiguous &=
+          (out_strides[ri] == b_stride || out.shape(ri) == 1);
+      b_stride *= out.shape(ri);
+    }
+  }
+  out.copy_shared_buffer(in, out_strides, flags, in.data_size());
+}
+
+} // namespace mlx::core

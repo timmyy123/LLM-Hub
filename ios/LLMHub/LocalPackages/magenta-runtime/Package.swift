@@ -9,7 +9,7 @@ let package = Package(
         .library(name: "MagentaRuntime", type: .dynamic, targets: ["MagentaRuntime"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/ml-explore/mlx-swift", .upToNextMinor(from: "0.31.6")),
+        .package(path: "../mlx-swift"),
         .package(url: "https://github.com/liuliu/swift-sentencepiece", revision: "8d17bf2e017c97563e8805545d676be9739b6c0e"),
         .package(path: "../LiteRT-LM"),
     ],

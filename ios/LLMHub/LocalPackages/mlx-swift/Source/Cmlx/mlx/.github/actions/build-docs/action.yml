@@ -1,0 +1,42 @@
+name: 'Build Documentation'
+description: 'Build documentation'
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup machine
+      id: setup
+      uses: ./.github/actions/setup
+      with:
+        ccache-key: 'release'
+        ccache-save: false
+
+    - name: Install dependencies
+      shell: bash
+      env:
+        CMAKE_ARGS: ${{ steps.setup.outputs.cmake-args }}
+      run: |
+        sudo apt-get install -y doxygen
+        uv pip install -r docs/requirements.txt
+        uv pip install . -v
+
+    - name: Build documentation
+      shell: bash
+      run: |
+        cd docs
+        doxygen
+        make html O=-W
+
+    - name: Create artifact tar
+      shell: bash
+      run: tar -cf artifact.tar -C docs --dereference build/html index.html
+
+    # Do it manually because upload-pages-artifact requires gtar
+    - name: Upload artifact
+      id: upload-artifact
+      uses: actions/upload-artifact@v7
+      with:
+        name: github-pages
+        path: artifact.tar
+        retention-days: 1
+        if-no-files-found: error

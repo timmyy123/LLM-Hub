@@ -1,0 +1,318 @@
+// Copyright © 2024 Apple Inc.
+
+import Cmlx
+import Foundation
+
+/// lock to be held while doing any eval or asyncEval.  This is
+/// a recursive lock to handle any cases where a closure might
+/// call back into eval.
+///
+/// Acquire it through ``withEvalLock(_:)`` rather than directly: debug builds
+/// record ownership there so that the `evalLock` → `CompiledFunction.lock`
+/// ordering can be checked.
+///
+/// `evalLock` is the outermost lock in the library.  Nothing may be acquired
+/// before it and then be waited on from inside it; see `CompiledFunction.call`.
+let evalLock = NSRecursiveLock()
+
+#if DEBUG
+
+    /// Per-thread `evalLock` ownership, recorded so the ordering invariant in
+    /// `CompiledFunction.call` can be checked in debug builds.
+    ///
+    /// Explicit bookkeeping is required: `evalLock` is recursive, so a
+    /// successful `try()` cannot distinguish "this thread owns it" from "nobody
+    /// owns it".  The depth is thread-local, so it needs no lock of its own --
+    /// which matters, because this runs while holding `evalLock`.
+    enum EvalLockOwnership {
+
+        private static let depthKey: pthread_key_t = {
+            var key = pthread_key_t()
+            pthread_key_create(&key, nil)
+            return key
+        }()
+
+        static var isHeldByCurrentThread: Bool {
+            depth > 0
+        }
+
+        static var depth: Int {
+            Int(bitPattern: pthread_getspecific(depthKey))
+        }
+
+        static func entered() {
+            pthread_setspecific(depthKey, UnsafeRawPointer(bitPattern: depth + 1))
+        }
+
+        static func exited() {
+            pthread_setspecific(depthKey, UnsafeRawPointer(bitPattern: depth - 1))
+        }
+
+        // Counters, so a test can assert both that the invariant held and that
+        // it was actually exercised -- a check count of zero would mean the test
+        // proved nothing.
+        private static let counterLock = NSLock()
+        nonisolated(unsafe) private static var checkCount = 0
+        nonisolated(unsafe) private static var violationCount = 0
+        nonisolated(unsafe) private static var compileEraseCount = 0
+
+        /// Records, and in debug builds asserts, that `evalLock` is held by the
+        /// current thread at a point where an inner lock is about to be taken.
+        static func requireHeldByCurrentThread(_ message: @autoclosure () -> String) {
+            let held = isHeldByCurrentThread
+            counterLock.withLock {
+                checkCount += 1
+                if !held { violationCount += 1 }
+            }
+            assert(held, message())
+        }
+
+        /// Records a `CompiledFunction.deinit` erase of the compiler cache, so a
+        /// test can tell "the erase ran under the lock" from "the deinit never
+        /// fired".
+        static func recordCompileErase() {
+            counterLock.withLock { compileEraseCount += 1 }
+        }
+
+        /// (checks, violations) since ``resetCounters()``.
+        static var counters: (checks: Int, violations: Int) {
+            counterLock.withLock { (checkCount, violationCount) }
+        }
+
+        /// Compiler-cache erases since ``resetCounters()``.
+        static var compileErases: Int {
+            counterLock.withLock { compileEraseCount }
+        }
+
+        static func resetCounters() {
+            counterLock.withLock {
+                checkCount = 0
+                violationCount = 0
+                compileEraseCount = 0
+            }
+        }
+    }
+
+#endif
+
+/// Acquire ``evalLock`` for the duration of `body`.
+///
+/// This is the single choke point for ``evalLock``; debug builds record
+/// ownership here so that `CompiledFunction` can check that its per-instance
+/// lock is never taken outside it.
+@inline(__always)
+func withEvalLock<R>(_ body: () throws -> R) rethrows -> R {
+    evalLock.lock()
+    #if DEBUG
+        EvalLockOwnership.entered()
+    #endif
+    defer {
+        #if DEBUG
+            EvalLockOwnership.exited()
+        #endif
+        evalLock.unlock()
+    }
+    return try body()
+}
+
+/// Evaluate one or more `MLXArray`
+///
+/// ### See Also
+/// - <doc:lazy-evaluation>
+public func eval(_ arrays: MLXArray...) {
+    let vector_array = new_mlx_vector_array(arrays)
+    _ = withEvalLock {
+        mlx_eval(vector_array)
+    }
+    mlx_vector_array_free(vector_array)
+}
+
+/// Evaluate one or more `MLXArray`
+///
+/// ### See Also
+/// - <doc:lazy-evaluation>
+public func eval(_ arrays: some Collection<MLXArray>) {
+    let vector_array = new_mlx_vector_array(arrays)
+    _ = withEvalLock {
+        mlx_eval(vector_array)
+    }
+    mlx_vector_array_free(vector_array)
+}
+
+/// Evaluate one or more `MLXArray` asynchronously.
+///
+/// ### See Also
+/// - <doc:lazy-evaluation>
+/// - ``asyncEval(_:)-(Collection<MLXArray>)``
+public func asyncEval(_ arrays: some Collection<MLXArray>) {
+    let vector_array = new_mlx_vector_array(arrays)
+    _ = withEvalLock {
+        mlx_async_eval(vector_array)
+    }
+    mlx_vector_array_free(vector_array)
+}
+
+/// Evaluate one or more `MLXArray`.
+///
+/// This variant allows several structured types:
+///
+/// ```swift
+/// let a: MLXArray
+/// let b: [MLXArray]
+/// let c: [String:MLXArray]
+/// let d: [String:[MLXArray]]
+/// let e: (MLXArray, MLXArray)
+/// let f: [(String, MLXArray)]
+/// let nested: [(MLXArray, [MLXArray])]
+///
+/// eval(a, b, c, d, e, f)
+/// ```
+///
+/// Other structured types may be supported -- check the implementation.
+///
+/// ### See Also
+/// - <doc:lazy-evaluation>
+/// - ``asyncEval(_:)-(Collection<MLXArray>)``
+public func eval(_ values: Any...) {
+    var arrays = [MLXArray]()
+
+    for item in values {
+        collect(item, into: &arrays)
+    }
+
+    eval(arrays)
+}
+
+/// Evaluate one or more `MLXArray`.
+///
+/// See ``eval(_:)``
+public func eval(_ values: some Sequence<Any>) {
+    var arrays = [MLXArray]()
+
+    for item in values {
+        collect(item, into: &arrays)
+    }
+
+    eval(arrays)
+}
+
+/// Variant of ``eval(_:)-(Collection<MLXArray>)`` that checks for errors in MLX and throws.
+///
+/// ### See Also
+/// - <doc:lazy-evaluation>
+public func checkedEval(_ values: Any...) throws {
+    var arrays = [MLXArray]()
+
+    for item in values {
+        collect(item, into: &arrays)
+    }
+
+    try withError {
+        eval(arrays)
+    }
+}
+
+/// Variant of ``eval(_:)-(MLXArray...)`` that checks for errors in MLX and throws.
+///
+/// ### See Also
+/// - <doc:lazy-evaluation>
+public func checkedEval(_ values: some Sequence<Any>) throws {
+    var arrays = [MLXArray]()
+
+    for item in values {
+        collect(item, into: &arrays)
+    }
+
+    try withError {
+        eval(arrays)
+    }
+}
+
+/// Evaluate one or more `MLXArray` asynchronously.
+///
+/// This variant allows several structured types:
+///
+/// ```swift
+/// let a: MLXArray
+/// let b: [MLXArray]
+/// let c: [String:MLXArray]
+/// let d: [String:[MLXArray]]
+/// let e: (MLXArray, MLXArray)
+/// let f: [(String, MLXArray)]
+/// let nested: [(MLXArray, [MLXArray])]
+///
+/// asyncEval(a, b, c, d, e, f)
+/// ```
+///
+/// Other structured types may be supported -- check the implementation.
+///
+/// ### See Also
+/// - <doc:lazy-evaluation>
+public func asyncEval(_ values: Any...) {
+    var arrays = [MLXArray]()
+
+    for item in values {
+        collect(item, into: &arrays)
+    }
+
+    asyncEval(arrays)
+}
+
+/// Evaluate one or more `MLXArray` asynchronously.
+///
+/// See ``asyncEval(_:)-(Collection<MLXArray>)``
+public func asyncEval(_ values: some Sequence<Any>) {
+    var arrays = [MLXArray]()
+
+    for item in values {
+        collect(item, into: &arrays)
+    }
+
+    asyncEval(arrays)
+}
+
+private func collect(_ item: Any, into arrays: inout [MLXArray]) {
+    switch item {
+    case let v as Evaluatable:
+        arrays.append(contentsOf: v.innerState())
+
+    case let v as NestedDictionary<String, MLXArray>:
+        arrays.append(contentsOf: v.flattened().map { $0.1 })
+
+    case let v as MLXArray:
+        arrays.append(v)
+    case let v as [MLXArray]:
+        arrays.append(contentsOf: v)
+    case let v as [Any]:
+        for item in v {
+            collect(item, into: &arrays)
+        }
+    case let v as [AnyHashable: Any]:
+        for item in v.values {
+            collect(item, into: &arrays)
+        }
+    case let v as (Any, Any):
+        collect(v.0, into: &arrays)
+        collect(v.1, into: &arrays)
+    case let v as (Any, Any, Any):
+        collect(v.0, into: &arrays)
+        collect(v.1, into: &arrays)
+        collect(v.2, into: &arrays)
+    case let v as (Any, Any, Any, Any):
+        collect(v.0, into: &arrays)
+        collect(v.1, into: &arrays)
+        collect(v.2, into: &arrays)
+        collect(v.3, into: &arrays)
+    case let v as (Any, Any, Any, Any, Any):
+        collect(v.0, into: &arrays)
+        collect(v.1, into: &arrays)
+        collect(v.2, into: &arrays)
+        collect(v.3, into: &arrays)
+        collect(v.4, into: &arrays)
+    case is String, is any BinaryInteger, is any BinaryFloatingPoint:
+        // ignore, e.g. (String, MLXArray)
+        break
+    default:
+        fatalError("Unable to extract MLXArray from \(item)")
+    }
+}

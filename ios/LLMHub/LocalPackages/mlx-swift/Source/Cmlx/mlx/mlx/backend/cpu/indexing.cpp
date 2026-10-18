@@ -1,0 +1,753 @@
+// Copyright © 2023 Apple Inc.
+#include <algorithm>
+#include <cassert>
+#include <cmath>
+
+#include "mlx/allocator.h"
+#include "mlx/backend/common/utils.h"
+#include "mlx/backend/cpu/binary.h"
+#include "mlx/backend/cpu/binary_ops.h"
+#include "mlx/backend/cpu/copy.h"
+#include "mlx/backend/cpu/encoder.h"
+#include "mlx/backend/cpu/slicing.h"
+#include "mlx/dtype_utils.h"
+#include "mlx/primitives.h"
+
+namespace mlx::core {
+
+template <typename IdxT>
+inline size_t offset_neg_idx(IdxT idx, size_t size) {
+  return (idx < 0) ? idx + size : idx;
+}
+
+template <>
+inline size_t offset_neg_idx(uint32_t idx, size_t) {
+  return idx;
+}
+
+struct None {
+  template <typename T>
+  void operator()(T x, T* y) {
+    (*y) = x;
+  }
+};
+struct Sum {
+  template <typename T>
+  void operator()(T x, T* y) {
+    (*y) += x;
+  }
+};
+
+struct Prod {
+  template <typename T>
+  void operator()(T x, T* y) {
+    (*y) *= x;
+  }
+};
+
+struct Max {
+  template <typename T>
+  void operator()(T x, T* y) {
+    (*y) = (*y > x) ? *y : x;
+  }
+};
+
+struct Min {
+  template <typename T>
+  void operator()(T x, T* y) {
+    (*y) = (*y < x) ? *y : x;
+  }
+};
+
+template <typename T, typename IdxT>
+void gather(
+    const array& src,
+    const std::vector<array>& inds,
+    array& out,
+    const std::vector<int>& axes,
+    const Shape& slice_sizes) {
+  // Each gathered slice is written into the (row-contiguous) output as a
+  // sequential block. We can therefore replace the per-element strided read
+  // with a single contiguous copy only when the slice is itself laid out
+  // contiguously in row-major order within the source.
+  bool can_copy = true;
+  int64_t expected_stride = 1;
+  for (int i = src.ndim() - 1; i >= 0 && can_copy; --i) {
+    if (slice_sizes[i] == 1) {
+      continue;
+    }
+    can_copy = (src.strides()[i] == expected_stride);
+    expected_stride *= slice_sizes[i];
+  }
+  size_t slice_size = 1;
+  for (auto s : slice_sizes) {
+    slice_size *= s;
+  }
+  size_t ind_size = slice_size == 0 ? 0 : out.size() / slice_size;
+  const T* src_ptr = src.data<T>();
+  T* dst_ptr = out.data<T>();
+
+  std::vector<ContiguousIterator> its(inds.begin(), inds.end());
+  ContiguousIterator src_it;
+  if (!can_copy && src.ndim() > 0) {
+    src_it = ContiguousIterator(slice_sizes, src.strides(), src.ndim());
+  }
+
+  size_t out_idx = 0;
+  for (int idx = 0; idx < ind_size; idx++) {
+    size_t src_idx = 0;
+    for (int ii = 0; ii < inds.size(); ++ii) {
+      auto ax = axes[ii];
+      auto idx_loc = its[ii].loc;
+      its[ii].step();
+      auto idx_val =
+          offset_neg_idx(inds[ii].data<IdxT>()[idx_loc], src.shape(ax));
+      src_idx += (idx_val * src.strides()[ax]);
+    }
+
+    if (slice_size == 1) {
+      dst_ptr[out_idx++] = src_ptr[src_idx];
+    } else if (can_copy) {
+      std::copy(
+          src_ptr + src_idx, src_ptr + src_idx + slice_size, dst_ptr + out_idx);
+      out_idx += slice_size;
+    } else {
+      for (int jj = 0; jj < slice_size; jj++) {
+        dst_ptr[out_idx++] = src_ptr[src_idx + src_it.loc];
+        src_it.step();
+      }
+      src_it.reset();
+    }
+  }
+}
+
+template <typename IdxT>
+void dispatch_gather(
+    const array& src,
+    const std::vector<array>& inds,
+    array& out,
+    const std::vector<int>& axes,
+    const Shape& size) {
+  dispatch_all_types(out.dtype(), [&](auto type_tag) {
+    using T = MLX_GET_TYPE(type_tag);
+    gather<T, IdxT>(src, inds, out, axes, size);
+  });
+}
+
+void Gather::eval_cpu(const std::vector<array>& inputs, array& out) {
+  out.set_data(allocator::malloc(out.nbytes()));
+
+  auto& src = inputs[0];
+  std::vector<array> inds;
+  for (auto it = inputs.begin() + 1; it < inputs.end(); ++it) {
+    inds.push_back(array::unsafe_weak_copy(*it));
+  }
+  auto& encoder = cpu::get_command_encoder(stream());
+  for (auto& in : inputs) {
+    encoder.set_input_array(in);
+  }
+  encoder.set_output_array(out);
+  encoder.dispatch([axes_ = axes_,
+                    slice_sizes_ = slice_sizes_,
+                    src = array::unsafe_weak_copy(src),
+                    inds = std::move(inds),
+                    out = array::unsafe_weak_copy(out)]() mutable {
+    if (inds.empty()) {
+      dispatch_gather<uint8_t>(src, inds, out, axes_, slice_sizes_);
+      return;
+    }
+
+    switch (inds[0].dtype()) {
+      case uint8:
+        dispatch_gather<uint8_t>(src, inds, out, axes_, slice_sizes_);
+        break;
+      case uint16:
+        dispatch_gather<uint16_t>(src, inds, out, axes_, slice_sizes_);
+        break;
+      case uint32:
+        dispatch_gather<uint32_t>(src, inds, out, axes_, slice_sizes_);
+        break;
+      case uint64:
+        dispatch_gather<uint64_t>(src, inds, out, axes_, slice_sizes_);
+        break;
+      case int8:
+        dispatch_gather<int8_t>(src, inds, out, axes_, slice_sizes_);
+        break;
+      case int16:
+        dispatch_gather<int16_t>(src, inds, out, axes_, slice_sizes_);
+        break;
+      case int32:
+        dispatch_gather<int32_t>(src, inds, out, axes_, slice_sizes_);
+        break;
+      case int64:
+        dispatch_gather<int64_t>(src, inds, out, axes_, slice_sizes_);
+        break;
+      default:
+        throw std::runtime_error(
+            "[Gather::eval_cpu] Cannot gather with indices type.");
+        break;
+    }
+  });
+}
+template <typename T, typename IdxT>
+void gather_axis(
+    const array& src,
+    const array& ind,
+    array& out,
+    const int axis) {
+  auto shape = remove_index(ind.shape(), axis);
+  ContiguousIterator ind_it(
+      shape, remove_index(ind.strides(), axis), src.ndim() - 1);
+  ContiguousIterator src_it(
+      shape, remove_index(src.strides(), axis), src.ndim() - 1);
+
+  auto ind_ptr = ind.data<IdxT>();
+  auto src_ptr = src.data<T>();
+  auto dst_ptr = out.data<T>();
+  auto ind_ax_stride = ind.strides(axis);
+  auto src_ax_stride = src.strides(axis);
+  auto dst_ax_stride = out.strides(axis);
+  auto ind_ax_size = ind.shape(axis);
+  auto src_ax_size = src.shape(axis);
+
+  size_t size_pre = 1;
+  size_t size_post = 1;
+  for (int i = 0; i < axis; ++i) {
+    size_pre *= ind.shape(i);
+  }
+  for (int i = axis + 1; i < ind.ndim(); ++i) {
+    size_post *= ind.shape(i);
+  }
+
+  size_t stride_pre = size_post * ind_ax_size;
+  for (size_t i = 0; i < size_pre; i++) {
+    for (size_t k = 0; k < size_post; k++) {
+      for (int j = 0; j < ind_ax_size; ++j) {
+        auto ind_val = offset_neg_idx(
+            ind_ptr[ind_it.loc + j * ind_ax_stride], src_ax_size);
+        dst_ptr[k + j * dst_ax_stride] =
+            src_ptr[src_it.loc + ind_val * src_ax_stride];
+      }
+      ind_it.step();
+      src_it.step();
+    }
+    dst_ptr += stride_pre;
+  }
+}
+
+template <typename IdxT>
+void dispatch_gather_axis(
+    const array& src,
+    const array& inds,
+    array& out,
+    const int axis) {
+  dispatch_all_types(out.dtype(), [&](auto type_tag) {
+    using T = MLX_GET_TYPE(type_tag);
+    gather_axis<T, IdxT>(src, inds, out, axis);
+  });
+}
+
+void GatherAxis::eval_cpu(const std::vector<array>& inputs, array& out) {
+  out.set_data(allocator::malloc(out.nbytes()));
+
+  auto& src = inputs[0];
+  auto& inds = inputs[1];
+  auto& encoder = cpu::get_command_encoder(stream());
+  encoder.set_input_array(src);
+  encoder.set_input_array(inds);
+  encoder.set_output_array(out);
+  encoder.dispatch([axis_ = axis_,
+                    src = array::unsafe_weak_copy(src),
+                    inds = array::unsafe_weak_copy(inds),
+                    out = array::unsafe_weak_copy(out)]() mutable {
+    switch (inds.dtype()) {
+      case uint8:
+        dispatch_gather_axis<uint8_t>(src, inds, out, axis_);
+        break;
+      case uint16:
+        dispatch_gather_axis<uint16_t>(src, inds, out, axis_);
+        break;
+      case uint32:
+        dispatch_gather_axis<uint32_t>(src, inds, out, axis_);
+        break;
+      case uint64:
+        dispatch_gather_axis<uint64_t>(src, inds, out, axis_);
+        break;
+      case int8:
+        dispatch_gather_axis<int8_t>(src, inds, out, axis_);
+        break;
+      case int16:
+        dispatch_gather_axis<int16_t>(src, inds, out, axis_);
+        break;
+      case int32:
+        dispatch_gather_axis<int32_t>(src, inds, out, axis_);
+        break;
+      case int64:
+        dispatch_gather_axis<int64_t>(src, inds, out, axis_);
+        break;
+      default:
+        throw std::runtime_error(
+            "[GatherAxis::eval_cpu] Cannot gather with indices type.");
+        break;
+    }
+  });
+}
+
+template <typename InT, typename IdxT, typename OpT>
+void scatter(
+    const array& updates,
+    array& out,
+    const std::vector<array>& inds,
+    const std::vector<int>& axes) {
+  int nind = inds.size();
+  auto inds_ndim = updates.ndim() - out.ndim();
+  size_t n_updates = nind ? inds[0].size() : 1;
+
+  Shape update_shape(
+      updates.shape().begin() + inds_ndim, updates.shape().end());
+  size_t update_size = 1;
+  for (auto us : update_shape) {
+    update_size *= us;
+  }
+
+  std::vector<ContiguousIterator> its(inds.begin(), inds.end());
+  ContiguousIterator update_it(updates);
+  ContiguousIterator out_it(update_shape, out.strides(), out.ndim());
+
+  auto out_ptr = out.data<InT>();
+  auto upd_ptr = updates.data<InT>();
+  for (int i = 0; i < n_updates; ++i) {
+    size_t out_offset = 0;
+    for (int j = 0; j < inds.size(); ++j) {
+      auto ax = axes[j];
+      auto idx_loc = its[j].loc;
+      its[j].step();
+      auto idx_val =
+          offset_neg_idx(inds[j].data<IdxT>()[idx_loc], out.shape(ax));
+      out_offset += (idx_val * out.strides()[ax]);
+    }
+    update_it.seek(i * update_size);
+    for (int j = 0; j < update_size; ++j) {
+      OpT{}(upd_ptr[update_it.loc], out_ptr + out_offset + out_it.loc);
+      update_it.step();
+      out_it.step();
+    }
+    out_it.reset();
+    update_it.reset();
+  }
+}
+
+template <typename InT, typename IdxT>
+void dispatch_scatter_inds(
+    array& out,
+    const std::vector<array>& indices,
+    const array& updates,
+    const std::vector<int>& axes,
+    Scatter::ReduceType rtype) {
+  switch (rtype) {
+    case Scatter::None:
+      scatter<InT, IdxT, None>(updates, out, indices, axes);
+      break;
+    case Scatter::Sum:
+      scatter<InT, IdxT, Sum>(updates, out, indices, axes);
+      break;
+    case Scatter::Prod:
+      scatter<InT, IdxT, Prod>(updates, out, indices, axes);
+      break;
+    case Scatter::Max:
+      scatter<InT, IdxT, Max>(updates, out, indices, axes);
+      break;
+    case Scatter::Min:
+      scatter<InT, IdxT, Min>(updates, out, indices, axes);
+      break;
+  }
+}
+
+template <typename InT>
+void dispatch_scatter(
+    array& out,
+    const std::vector<array>& inds,
+    const array& updates,
+    const std::vector<int>& axes,
+    Scatter::ReduceType rtype) {
+  if (inds.empty()) {
+    dispatch_scatter_inds<InT, uint8_t>(out, inds, updates, axes, rtype);
+    return;
+  }
+
+  switch (inds[0].dtype()) {
+    case uint8:
+      dispatch_scatter_inds<InT, uint8_t>(out, inds, updates, axes, rtype);
+      break;
+    case uint16:
+      dispatch_scatter_inds<InT, uint16_t>(out, inds, updates, axes, rtype);
+      break;
+    case uint32:
+      dispatch_scatter_inds<InT, uint32_t>(out, inds, updates, axes, rtype);
+      break;
+    case uint64:
+      dispatch_scatter_inds<InT, uint64_t>(out, inds, updates, axes, rtype);
+      break;
+    case int8:
+      dispatch_scatter_inds<InT, int8_t>(out, inds, updates, axes, rtype);
+      break;
+    case int16:
+      dispatch_scatter_inds<InT, int16_t>(out, inds, updates, axes, rtype);
+      break;
+    case int32:
+      dispatch_scatter_inds<InT, int32_t>(out, inds, updates, axes, rtype);
+      break;
+    case int64:
+      dispatch_scatter_inds<InT, int64_t>(out, inds, updates, axes, rtype);
+      break;
+    default:
+      throw std::runtime_error(
+          "[Scatter::eval_cpu] Cannot scatter with indices type.");
+  }
+}
+
+void Scatter::eval_cpu(const std::vector<array>& inputs, array& out) {
+  assert(inputs.size() >= 2);
+
+  auto& src = inputs[0];
+  auto& updates = inputs.back();
+
+  // Copy src into out (copy allocates memory for out)
+  auto ctype =
+      src.flags().row_contiguous ? CopyType::Vector : CopyType::General;
+  copy_cpu(src, out, ctype, stream());
+
+  auto& encoder = cpu::get_command_encoder(stream());
+  std::vector<array> inds;
+  for (auto it = inputs.begin() + 1; it < inputs.end() - 1; ++it) {
+    encoder.set_input_array(*it);
+    inds.push_back(array::unsafe_weak_copy(*it));
+  }
+  encoder.set_input_array(updates);
+  encoder.set_output_array(out);
+  encoder.dispatch([axes_ = axes_,
+                    reduce_type_ = reduce_type_,
+                    updates = array::unsafe_weak_copy(updates),
+                    inds = std::move(inds),
+                    out = array::unsafe_weak_copy(out)]() mutable {
+    dispatch_all_types(out.dtype(), [&](auto type_tag) {
+      using T = MLX_GET_TYPE(type_tag);
+      dispatch_scatter<T>(out, inds, updates, axes_, reduce_type_);
+    });
+  });
+}
+
+template <typename T, typename IdxT, typename OpT>
+void scatter_axis(array& out, const array idx, const array& upd, int axis) {
+  auto shape = remove_index(idx.shape(), axis);
+  ContiguousIterator idx_it(
+      shape, remove_index(idx.strides(), axis), upd.ndim() - 1);
+  ContiguousIterator upd_it(
+      shape, remove_index(upd.strides(), axis), upd.ndim() - 1);
+
+  auto idx_ptr = idx.data<IdxT>();
+  auto upd_ptr = upd.data<T>();
+  auto dst_ptr = out.data<T>();
+  auto idx_ax_stride = idx.strides(axis);
+  auto upd_ax_stride = upd.strides(axis);
+  auto dst_ax_stride = out.strides(axis);
+  auto idx_ax_size = idx.shape(axis);
+  auto dst_ax_size = out.shape(axis);
+
+  size_t size_pre = 1;
+  size_t size_post = 1;
+  for (int i = 0; i < axis; ++i) {
+    size_pre *= idx.shape(i);
+  }
+  for (int i = axis + 1; i < idx.ndim(); ++i) {
+    size_post *= idx.shape(i);
+  }
+  size_t stride_pre = size_post * dst_ax_size;
+  for (size_t i = 0; i < size_pre; i++) {
+    for (size_t k = 0; k < size_post; k++) {
+      for (int j = 0; j < idx_ax_size; ++j) {
+        auto ind_val = offset_neg_idx(
+            idx_ptr[idx_it.loc + j * idx_ax_stride], dst_ax_size);
+        OpT{}(
+            upd_ptr[upd_it.loc + j * upd_ax_stride],
+            dst_ptr + k + ind_val * dst_ax_stride);
+      }
+      idx_it.step();
+      upd_it.step();
+    }
+    dst_ptr += stride_pre;
+  }
+}
+
+template <typename InT, typename IdxT>
+void dispatch_scatter_axis_op(
+    array& out,
+    const array& idx,
+    const array& updates,
+    int axis,
+    ScatterAxis::ReduceType rtype) {
+  switch (rtype) {
+    case ScatterAxis::None:
+      scatter_axis<InT, IdxT, None>(out, idx, updates, axis);
+      break;
+    case ScatterAxis::Sum:
+      scatter_axis<InT, IdxT, Sum>(out, idx, updates, axis);
+      break;
+  }
+}
+
+template <typename InT>
+void dispatch_scatter_axis(
+    array& out,
+    const array& idx,
+    const array& updates,
+    int axis,
+    ScatterAxis::ReduceType rtype) {
+  switch (idx.dtype()) {
+    case uint8:
+      dispatch_scatter_axis_op<InT, uint8_t>(out, idx, updates, axis, rtype);
+      break;
+    case uint16:
+      dispatch_scatter_axis_op<InT, uint16_t>(out, idx, updates, axis, rtype);
+      break;
+    case uint32:
+      dispatch_scatter_axis_op<InT, uint32_t>(out, idx, updates, axis, rtype);
+      break;
+    case uint64:
+      dispatch_scatter_axis_op<InT, uint64_t>(out, idx, updates, axis, rtype);
+      break;
+    case int8:
+      dispatch_scatter_axis_op<InT, int8_t>(out, idx, updates, axis, rtype);
+      break;
+    case int16:
+      dispatch_scatter_axis_op<InT, int16_t>(out, idx, updates, axis, rtype);
+      break;
+    case int32:
+      dispatch_scatter_axis_op<InT, int32_t>(out, idx, updates, axis, rtype);
+      break;
+    case int64:
+      dispatch_scatter_axis_op<InT, int64_t>(out, idx, updates, axis, rtype);
+      break;
+    default:
+      throw std::runtime_error(
+          "[ScatterAxis::eval_cpu] Cannot scatter with indices type.");
+  }
+}
+
+void ScatterAxis::eval_cpu(const std::vector<array>& inputs, array& out) {
+  assert(inputs.size() >= 2);
+
+  auto& src = inputs[0];
+  auto& idx = inputs[1];
+  auto& updates = inputs[2];
+
+  // Copy src into out (copy allocates memory for out)
+  auto ctype =
+      src.flags().row_contiguous ? CopyType::Vector : CopyType::General;
+  copy_cpu(src, out, ctype, stream());
+
+  auto& encoder = cpu::get_command_encoder(stream());
+  encoder.set_input_array(idx);
+  encoder.set_input_array(updates);
+  encoder.set_output_array(out);
+  encoder.dispatch([axis_ = axis_,
+                    reduce_type_ = reduce_type_,
+                    idx = array::unsafe_weak_copy(idx),
+                    updates = array::unsafe_weak_copy(updates),
+                    out = array::unsafe_weak_copy(out)]() mutable {
+    dispatch_all_types(out.dtype(), [&](auto type_tag) {
+      using T = MLX_GET_TYPE(type_tag);
+      dispatch_scatter_axis<T>(out, idx, updates, axis_, reduce_type_);
+    });
+  });
+}
+
+template <typename T>
+void masked_scatter_impl(const array& mask, const array& src, array& out) {
+  ContiguousIterator mask_it(mask);
+  ContiguousIterator src_it(src);
+  ContiguousIterator out_it(out);
+
+  const bool* mask_ptr = mask.data<bool>();
+  const T* src_ptr = src.data<T>();
+  T* dst_ptr = out.data<T>();
+
+  const size_t batch_count = mask.shape(0);
+  const size_t mask_batch_size = mask.size() / batch_count;
+  const size_t src_batch_size = src.size() / batch_count;
+
+  for (size_t b = 0; b < batch_count; ++b) {
+    size_t src_consumed = 0;
+    src_it.seek(b * src_batch_size);
+
+    for (size_t i = 0; i < mask_batch_size; ++i) {
+      if (mask_ptr[mask_it.loc]) {
+        if (src_consumed >= src_batch_size) {
+          throw std::runtime_error(
+              "[MaskedScatter::eval_cpu] Source does not have enough elements for mask.");
+        }
+        dst_ptr[out_it.loc] = src_ptr[src_it.loc];
+        src_it.step();
+        ++src_consumed;
+      }
+      mask_it.step();
+      out_it.step();
+    }
+  }
+}
+
+void MaskedScatter::eval_cpu(const std::vector<array>& inputs, array& out) {
+  assert(inputs.size() == 3);
+
+  auto& dst = inputs[0];
+  auto& mask = inputs[1];
+  auto& src = inputs[2];
+
+  // Copy dst into out (copy allocates memory for out)
+  auto ctype =
+      dst.flags().row_contiguous ? CopyType::Vector : CopyType::General;
+  copy_cpu(dst, out, ctype, stream());
+
+  if (mask.size() == 0) {
+    return;
+  }
+
+  auto& encoder = cpu::get_command_encoder(stream());
+  encoder.set_input_array(mask);
+  encoder.set_input_array(src);
+  encoder.set_output_array(out);
+  encoder.dispatch([mask = array::unsafe_weak_copy(mask),
+                    src = array::unsafe_weak_copy(src),
+                    out = array::unsafe_weak_copy(out)]() mutable {
+    dispatch_all_types(out.dtype(), [&](auto type_tag) {
+      using T = MLX_GET_TYPE(type_tag);
+      masked_scatter_impl<T>(mask, src, out);
+    });
+  });
+}
+
+template <typename T, typename Op>
+void slice_update_impl(
+    array& out,
+    const array& upd,
+    int64_t data_offset,
+    const Strides& out_strides) {
+  ContiguousIterator out_it(upd.shape(), out_strides, upd.ndim());
+  ContiguousIterator upd_it(upd);
+  Op op;
+
+  constexpr int SIMD_START = 32;
+
+  T* out_ptr = out.data<T>() + data_offset;
+  const T* upd_ptr = upd.data<T>();
+  int64_t size = upd.size();
+  int64_t suffix = out_it.contiguous_suffix();
+
+  if (upd.data_size() == 1) {
+    if (suffix >= SIMD_START) {
+      for (int64_t i = 0; i < size; i += suffix) {
+        VectorScalar<Op>{}(
+            out_ptr + out_it.loc, upd_ptr, out_ptr + out_it.loc, suffix);
+        out_it.step(suffix);
+      }
+    } else {
+      T update = upd_ptr[0];
+      for (int64_t i = 0; i < size; i++) {
+        out_ptr[out_it.loc] = op(out_ptr[out_it.loc], update);
+        out_it.step();
+      }
+    }
+  } else if (suffix == upd_it.contiguous_suffix() && suffix >= SIMD_START) {
+    for (int64_t i = 0; i < size; i += suffix) {
+      VectorVector<Op>{}(
+          out_ptr + out_it.loc,
+          upd_ptr + upd_it.loc,
+          out_ptr + out_it.loc,
+          suffix);
+      out_it.step(suffix);
+      upd_it.step(suffix);
+    }
+  } else {
+    for (int64_t i = 0; i < size; i++) {
+      out_ptr[out_it.loc] = op(out_ptr[out_it.loc], upd_ptr[upd_it.loc]);
+      out_it.step();
+      upd_it.step();
+    }
+  }
+}
+
+void SliceUpdate::eval_cpu(const std::vector<array>& inputs, array& out) {
+  assert(inputs.size() == 2);
+  if (out.size() == 0) {
+    out.set_data(allocator::malloc(0));
+    return;
+  }
+
+  auto& in = inputs[0];
+  auto& upd = inputs[1];
+
+  if (upd.size() == 0) {
+    out.copy_shared_buffer(in);
+    return;
+  }
+
+  // Check if materialization is needed
+  auto ctype = in.flags().contiguous && in.size() == in.data_size()
+      ? CopyType::Vector
+      : CopyType::General;
+  copy_cpu(in, out, in.data_size() == 1 ? CopyType::Scalar : ctype, stream());
+
+  // Calculate out strides, initial offset and if copy needs to be made
+  auto [data_offset, out_strides] =
+      prepare_slice(out, start_indices_, strides_);
+
+  // Do copy
+  if (reduce_type_ == SliceUpdate::None) {
+    copy_cpu_inplace(
+        /* const array& src = */ upd,
+        /* array& dst = */ out,
+        /* const std::vector<int>& data_shape = */ upd.shape(),
+        /* const std::vector<stride_t>& i_strides = */ upd.strides(),
+        /* const std::vector<stride_t>& o_strides = */ out_strides,
+        /* int64_t i_offset = */ 0,
+        /* int64_t o_offset = */ data_offset,
+        /* CopyType ctype = */ CopyType::GeneralGeneral,
+        stream());
+    return;
+  }
+
+  auto& encoder = cpu::get_command_encoder(stream());
+  encoder.set_input_array(upd);
+  encoder.set_output_array(out);
+  encoder.dispatch([upd = array::unsafe_weak_copy(upd),
+                    out = array::unsafe_weak_copy(out),
+                    data_offset = data_offset,
+                    out_strides = std::move(out_strides),
+                    reduce_type = reduce_type_]() mutable {
+    dispatch_all_types(out.dtype(), [&](auto type_tag) {
+      using T = MLX_GET_TYPE(type_tag);
+      switch (reduce_type) {
+        case SliceUpdate::Sum:
+          slice_update_impl<T, detail::Add>(out, upd, data_offset, out_strides);
+          break;
+        case SliceUpdate::Prod:
+          slice_update_impl<T, detail::Multiply>(
+              out, upd, data_offset, out_strides);
+          break;
+        case SliceUpdate::Max:
+          slice_update_impl<T, detail::Maximum>(
+              out, upd, data_offset, out_strides);
+          break;
+        case SliceUpdate::Min:
+          slice_update_impl<T, detail::Minimum>(
+              out, upd, data_offset, out_strides);
+          break;
+        case SliceUpdate::None:
+          // Should never be here
+          break;
+      }
+    });
+  });
+}
+
+} // namespace mlx::core

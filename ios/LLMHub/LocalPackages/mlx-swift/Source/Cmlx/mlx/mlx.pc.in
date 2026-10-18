@@ -1,0 +1,70 @@
+# Find MLX
+#
+# Defines the following variables:
+#
+#   MLX_FOUND            : True if MLX is found
+#   MLX_INCLUDE_DIRS     : Include directory
+#   MLX_LIBRARIES        : Libraries to link against
+#   MLX_CXX_FLAGS        : Additional compiler flags
+#   MLX_BUILD_ACCELERATE : True if MLX was built with accelerate 
+#   MLX_BUILD_METAL      : True if MLX was built with metal 
+
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+
+if(WIN32 AND @MLX_BUILD_CPU@ AND NOT TARGET MLX::OpenBLAS)
+    add_library(MLX::OpenBLAS UNKNOWN IMPORTED)
+    set_target_properties(MLX::OpenBLAS PROPERTIES
+        IMPORTED_LOCATION "@PACKAGE_CMAKE_INSTALL_LIBDIR@/@OPENBLAS_LIB@.lib"
+    )
+endif()
+
+if(@MLX_BUILD_CUDA@)
+    find_dependency(CUDAToolkit REQUIRED)
+
+    set(_MLX_SAVED_CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}")
+    list(PREPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}")
+    find_dependency(CUDNN REQUIRED)
+    set(CMAKE_MODULE_PATH "${_MLX_SAVED_CMAKE_MODULE_PATH}")
+    unset(_MLX_SAVED_CMAKE_MODULE_PATH)
+endif()
+
+include(@PACKAGE_MLX_CMAKE_INSTALL_MODULE_DIR@/MLXTargets.cmake)
+include(@PACKAGE_MLX_CMAKE_INSTALL_MODULE_DIR@/extension.cmake)
+
+set_and_check(MLX_LIBRARY_DIRS @PACKAGE_CMAKE_INSTALL_LIBDIR@)
+set_and_check(MLX_INCLUDE_DIRS @PACKAGE_CMAKE_INSTALL_INCLUDEDIR@)
+set(MLX_LIBRARIES mlx)
+
+find_library(MLX_LIBRARY mlx PATHS ${MLX_LIBRARY_DIRS})
+
+if (@MLX_BUILD_ACCELERATE@)
+    set(MLX_BUILD_ACCELERATE @MLX_BUILD_ACCELERATE@)
+    set(MLX_CXX_FLAGS ${MLX_CXX_FLAGS} -DACCELERATE_NEW_LAPACK)
+endif()
+
+if (@MLX_BUILD_METAL@)
+    set(MLX_BUILD_METAL @MLX_BUILD_METAL@)
+    set(MLX_CXX_FLAGS ${MLX_CXX_FLAGS} -D_METAL_)
+    set(MLX_INCLUDE_DIRS 
+        "${MLX_INCLUDE_DIRS};"
+        @PACKAGE_CMAKE_INSTALL_INCLUDEDIR@/metal_cpp
+    )
+    if(@MLX_METAL_VERSION@ GREATER_EQUAL 310)
+      set(MLX_INCLUDE_DIRS
+        "${MLX_INCLUDE_DIRS};"
+        @PACKAGE_CMAKE_INSTALL_INCLUDEDIR@/mlx/backend/metal/kernels/metal_3_1)
+    else()
+      set(MLX_INCLUDE_DIRS
+        "${MLX_INCLUDE_DIRS};"
+        @PACKAGE_CMAKE_INSTALL_INCLUDEDIR@/mlx/backend/metal/kernels/metal_3_0)
+    endif()
+endif()
+
+set_target_properties(mlx PROPERTIES
+    INTERFACE_COMPILE_OPTIONS "${MLX_CXX_FLAGS}"
+)
+
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(MLX DEFAULT_MSG MLX_LIBRARY MLX_INCLUDE_DIRS)
