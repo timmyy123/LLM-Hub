@@ -17,7 +17,9 @@ for i in 0 1 2 3; do
   # 16-bit activation ranges from onnxruntime (multi-threaded; qairt-quantizer calibrates on one thread).
   [ -f $OUT/act$i.json ] || python make_vae_encodings.py onnx/$G.onnx $CALIB/chunk$i/input_list.txt $OUT/act$i.json
   [ -f $OUT/enc$i.json ] || python make_vae_encodings.py --merge $OUT/act$i.json overrides/$G.json $OUT/enc$i.json onnx/$G.onnx
-  [ -f $OUT/raw/$G.dlc ] || qairt-converter --input_network onnx/$G.onnx --output_path $OUT/raw/$G.dlc \
+  # Attention projections' inputs become extra outputs (see add_attn_outputs.py).
+  [ -f onnx/${G}_w8.onnx ] || python add_attn_outputs.py onnx/$G.onnx onnx/${G}_w8.onnx
+  [ -f $OUT/raw/$G.dlc ] || qairt-converter --input_network onnx/${G}_w8.onnx --output_path $OUT/raw/$G.dlc \
       --quantization_overrides $OUT/enc$i.json > $OUT/conv$i.log 2>&1 || { tail -5 $OUT/conv$i.log; exit 1; }
   # No --enable_float_fallback: tensors without an override are calibrated on one sample, so nothing is
   # left in floating point. IO stays quantized (UFIXED_POINT_16); the runtime converts it.

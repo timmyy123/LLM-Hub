@@ -5203,9 +5203,8 @@ object ModelData {
     // A getter, not a stored property: videoGenerationModels (declared above) reads it while the
     // object is still initializing.
     private val ltxvNpuBuilds: List<LtxvNpuBuild> get() = listOf(
-        LtxvNpuBuild("Snapdragon 8 Gen 1, 8+ Gen 1 and 7 Gen 1", "v69", setOf(
-            "SM8450", "SM8475", "SM8475P", "SM7450"
-        ), "512x320x25", listOf(
+        // SM7450 (7 Gen 1) is v69 too but has 2 MB VTCM; these graphs are compiled for 8 MB.
+        LtxvNpuBuild("Snapdragon 8 Gen 1 and 8+ Gen 1", "v69", setOf("SM8450", "SM8475", "SM8475P"), "512x320x25", listOf(
             "ltxv_chunk0.bin" to 525525856L, "ltxv_chunk1.bin" to 482893728L, "ltxv_chunk2.bin" to 482860960L,
             "ltxv_chunk3.bin" to 483357000L, "ltxv_vae_512x320x25.bin" to 634923064L
         )),
@@ -5227,8 +5226,21 @@ object ModelData {
         ))
     )
 
+    // Debug builds only: `adb shell setprop debug.llmhub.soc SM8735` offers another SoC's NPU build,
+    // so a build for a chip without a test device can be run on a compatible one (same Hexagon arch).
+    private fun ltxvSocForMatching(): String {
+        if (com.llmhub.llmhub.BuildConfig.DEBUG) {
+            val forced = runCatching {
+                Class.forName("android.os.SystemProperties").getMethod("get", String::class.java)
+                    .invoke(null, "debug.llmhub.soc") as String
+            }.getOrDefault("")
+            if (forced.isNotBlank()) return forced.uppercase()
+        }
+        return DeviceInfo.getDeviceSoc().uppercase()
+    }
+
     private fun ltxvNpuModels(): List<LLMModel> {
-        val soc = DeviceInfo.getDeviceSoc().uppercase()
+        val soc = ltxvSocForMatching()
         return ltxvNpuBuilds.filter { soc in it.socs }.map { build ->
             val npuBytes = build.files.sumOf { it.second }
             val (w, h, f) = build.shape.split("x")
