@@ -181,8 +181,11 @@ Java_com_llmhub_llmhub_videogen_SdCppNative_nativeCreate(JNIEnv* env,
     params.diffusion_flash_attn = flash_attn;
     params.backend              = backend_s.empty() ? nullptr : backend_s.c_str();
     // Text encoder weights are only needed for one pass per prompt: keep them on disk and stream
-    // them in, so the T5 encoder and the DiT never have to be resident at the same time.
-    params.params_backend = "te=disk";
+    // them in, so the T5 encoder and the DiT never have to be resident at the same time. On the NPU
+    // the CPU VAE only encodes image-to-video start frames (decoding runs on the HTP), so its weights
+    // are streamed the same way instead of holding 2.4 GB for the whole session.
+    const bool npu        = args_s.find("ltxv_qnn_dir=") != std::string::npos;
+    params.params_backend = npu ? "te=disk,vae=disk" : "te=disk";
     params.auto_fit       = true;
     params.model_args     = args_s.empty() ? nullptr : args_s.c_str();
 

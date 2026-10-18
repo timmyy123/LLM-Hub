@@ -22,19 +22,16 @@ import onnx
 from onnxruntime.quantization.calibrate import CalibrationDataReader, CalibrationMethod, create_calibrator
 
 
-class RawReader(CalibrationDataReader):
-    def __init__(self, input_list, shapes):
-        self.items = []
-        for line in open(input_list):
-            entries = dict(part.split(":=") for part in line.split())
-            self.items.append({name: np.fromfile(path, dtype=np.float32).reshape(shapes[name]) for name, path in entries.items()})
-        self.pos = 0
+class OneSample(CalibrationDataReader):
+    """Yields a single sample, loaded from the raw files of one input-list line."""
+
+    def __init__(self, line, shapes):
+        entries = dict(part.split(":=") for part in line.split())
+        self.item = {name: np.fromfile(path, dtype=np.float32).reshape(shapes[name]) for name, path in entries.items()}
 
     def get_next(self):
-        if self.pos >= len(self.items):
-            return None
-        self.pos += 1
-        return self.items[self.pos - 1]
+        item, self.item = self.item, None
+        return item
 
 
 def main():
@@ -47,8 +44,13 @@ def main():
                                        augmented_model_path=os.path.join(tmp, "augmented.onnx"),
                                        use_external_data_format=True,
                                        extra_options={"symmetric": False})
-        calibrator.collect_data(RawReader(input_list, shapes))
-        ranges = calibrator.compute_data()
+        # One sample per collect_data call: each call merges its min/max into the running ranges, so
+        # only one sample's intermediate tensors (several GB for a transformer chunk) are held at a time.
+        lines = [l for l in open(input_list) if l.strip()]
+        for n, line in enumerate(lines):
+            calibrator.collect_data(OneSample(line, shapes))
+            print(f"calibrated {n + 1}/{len(lines)}", flush=True)
+        ranges = calibrator.calibrate_tensors_range
 
     activation = {}
     for name, rng in ranges.items():
@@ -96,6 +98,45 @@ def tie_passthrough_encodings(model_path, act):
                     shared = encode(min(act[n][0]["min"] for n in names), max(act[n][0]["max"] for n in names))
                     for n in names:
                         act[n] = shared
+    return symmetrize_activation_matmuls(graph, act)
+
+
+def symmetrize_activation_matmuls(graph, act):
+    """The HTP's 16-bit activation x activation MatMul (attention Q.K^T and P.V) needs symmetric inputs
+    (uint16 offset -32768). Give those inputs, and every tensor tied to them through data-movement ops
+    or Concat, one symmetric range."""
+    params = {t.name for t in graph.initializer} | {o for n in graph.node if n.op_type == "Constant" for o in n.output}
+    parent = {}
+
+    def find(a):
+        parent.setdefault(a, a)
+        while parent[a] != a:
+            parent[a] = parent[parent[a]]
+            a = parent[a]
+        return a
+
+    for node in graph.node:
+        if node.op_type in PASSTHROUGH_OPS and node.input:
+            for out in node.output:
+                parent[find(out)] = find(node.input[0])
+        elif node.op_type == "Concat":
+            for name in list(node.input[1:]) + list(node.output):
+                parent[find(name)] = find(node.input[0])
+    needs = {name for node in graph.node if node.op_type == "MatMul" and not set(node.input) & params
+             for name in node.input}
+    roots = {find(n) for n in needs}
+    groups = {}
+    for name in act:
+        if find(name) in roots:
+            groups.setdefault(find(name), []).append(name)
+    for names in groups.values():
+        m = max(max(abs(act[n][0]["min"]), abs(act[n][0]["max"])) for n in names)
+        scale = max(m, 1e-8) / 32767.0
+        enc = [{"bitwidth": 16, "dtype": "int", "is_symmetric": "True",
+                "min": -32768 * scale, "max": 32767 * scale, "offset": -32768, "scale": scale}]
+        for n in names:
+            act[n] = enc
+    print(f"symmetric encodings for {sum(len(v) for v in groups.values())} tensors feeding activation MatMuls")
     return act
 
 
@@ -115,3 +156,6 @@ if __name__ == "__main__":
         merge_encodings(*sys.argv[2:6])
     else:
         main()
+    # The output is complete here; onnx/onnxruntime can crash while tearing down at interpreter exit.
+    sys.stdout.flush()
+    os._exit(0)

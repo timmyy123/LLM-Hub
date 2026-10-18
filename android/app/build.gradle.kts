@@ -537,6 +537,8 @@ val extractLitertQnnLibs = tasks.register<Copy>("extractLitertQnnLibs") {
         include(
             "jni/arm64-v8a/libQnnSystem.so",
             "jni/arm64-v8a/libQnnHtp.so",
+            "jni/arm64-v8a/libQnnHtpV69Skel.so",
+            "jni/arm64-v8a/libQnnHtpV69Stub.so",
             "jni/arm64-v8a/libQnnHtpV73Skel.so",
             "jni/arm64-v8a/libQnnHtpV73Stub.so",
             "jni/arm64-v8a/libQnnHtpV75Skel.so",

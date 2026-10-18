@@ -605,29 +605,64 @@ namespace LTXV {
 
         static std::string chunk_name(int i) { return "ltxv_chunk" + std::to_string(i); }
 
+        // Chunks [0, resident) stay loaded. When the whole transformer does not fit the HTP address
+        // space (Hexagon v69), the remaining chunks take turns in one slot, loaded on every step.
+        int resident        = kChunks;
+        bool streaming      = false;
+        uint64_t spill_fill = 0;
+
+        std::string chunk_path(int i) const { return qnn_dir + "/" + chunk_name(i) + ".bin"; }
+
         bool ensure_loaded() {
             bool all = true;
-            for (int i = 0; i < kChunks; i++) {
+            for (int i = 0; i < resident; i++) {
                 all = all && qnn->graph(chunk_name(i)) != nullptr;
             }
-            if (all) {
+            if (all && (streaming || resident == kChunks)) {
                 return true;
             }
             release();  // (re)load the whole group so the shared spill-fill buffer is registered first
-            uint64_t spill_fill = 0;
-            for (int i = 0; i < kChunks; i++) {
-                spill_fill = std::max(spill_fill, qnn->spill_fill_size(qnn_dir + "/" + chunk_name(i) + ".bin"));
+            if (spill_fill == 0) {
+                for (int i = 0; i < kChunks; i++) {
+                    spill_fill = std::max(spill_fill, qnn->spill_fill_size(chunk_path(i)));
+                }
+                LOG_INFO("ltxv qnn: largest chunk spill-fill buffer %" PRIu64 " MB", spill_fill >> 20);
             }
-            LOG_INFO("ltxv qnn: largest chunk spill-fill buffer %" PRIu64 " MB", spill_fill >> 20);
-            for (int i = 0; i < kChunks; i++) {
-                if (!qnn->load_graph(qnn_dir + "/" + chunk_name(i) + ".bin", chunk_name(i), false, "ltxv_dit", spill_fill)) {
+            const int want = streaming ? resident : kChunks;
+            for (int i = 0; i < want; i++) {
+                if (qnn->load_graph(chunk_path(i), chunk_name(i), i > 0 && !streaming, "ltxv_dit", spill_fill)) {
+                    continue;
+                }
+                if (i == 0 || streaming) {
+                    LOG_ERROR("ltxv qnn: failed to load %s", chunk_name(i).c_str());
                     return false;
                 }
+                // Out of HTP address space: keep [0, i-1) resident and stream the rest through one slot.
+                qnn->unload(chunk_name(i - 1));
+                resident  = i - 1;
+                streaming = true;
+                LOG_WARN("ltxv qnn: the transformer does not fit the HTP at once; %d chunk(s) stay loaded, %d stream per step",
+                         resident, kChunks - resident);
+                return true;
             }
             if (spill_fill > 0) {
                 LOG_INFO("ltxv qnn: transformer chunks share a %" PRIu64 " MB spill-fill buffer", spill_fill >> 20);
             }
             return true;
+        }
+
+        // The graph for chunk i, loading it into the streaming slot when it is not resident.
+        QnnRuntime::Graph* chunk(int i) {
+            if (auto* g = qnn->graph(chunk_name(i))) {
+                return g;
+            }
+            for (int j = resident; j < kChunks; j++) {
+                qnn->unload(chunk_name(j));
+            }
+            if (!qnn->load_graph(chunk_path(i), chunk_name(i), false, "ltxv_dit", spill_fill)) {
+                return nullptr;
+            }
+            return qnn->graph(chunk_name(i));
         }
 
         void release() {
@@ -726,9 +761,6 @@ namespace LTXV {
                 return {};
             }
 
-            auto& g0 = *qnn->graph(chunk_name(0));
-            auto& g3 = *qnn->graph(chunk_name(kChunks - 1));
-
             // ggml [W, H, F, C] -> token-major [T, C]
             std::vector<float> latent(static_cast<size_t>(T * C));
             const float* xs = x.data();
@@ -754,27 +786,51 @@ namespace LTXV {
             }
             build_rope(W, H, F, extra->frame_rate > 0.f ? extra->frame_rate : 24.f);
 
-            bool ok = QnnRuntime::set_input(g0, "latent", latent.data(), latent.size()) &&
-                      QnnRuntime::set_input(g0, "t_freq", freq.data(), freq.size()) &&
-                      QnnRuntime::set_input(g0, "caption", p.context->data(), p.context->numel());
-            for (int i = 0; ok && i < kChunks; i++) {
-                auto& g = *qnn->graph(chunk_name(i));
-                ok      = QnnRuntime::set_input(g, "mask", mask.data(), mask.size()) &&
-                     QnnRuntime::set_input(g, "cos", rope_cos.data(), rope_cos.size()) &&
-                     QnnRuntime::set_input(g, "sin", rope_sin.data(), rope_sin.size());
-            }
-            ok = ok && qnn->execute(g0);
-            for (int i = 1; ok && i < kChunks; i++) {
-                auto& prev = *qnn->graph(chunk_name(i - 1));
-                auto& g    = *qnn->graph(chunk_name(i));
-                ok         = QnnRuntime::forward_tensor(prev, i == 1 ? "x" : "x_out", g, "x") &&
-                     QnnRuntime::forward_tensor(g0, "tmod", g, "tmod") &&
-                     QnnRuntime::forward_tensor(g0, "context", g, "context") &&
-                     (i != kChunks - 1 || QnnRuntime::forward_tensor(g0, "emb", g, "emb")) &&
-                     qnn->execute(g);
-            }
+            auto set_common = [&](QnnRuntime::Graph& g) {
+                return QnnRuntime::set_input(g, "mask", mask.data(), mask.size()) &&
+                       QnnRuntime::set_input(g, "cos", rope_cos.data(), rope_cos.size()) &&
+                       QnnRuntime::set_input(g, "sin", rope_sin.data(), rope_sin.size());
+            };
+            QnnRuntime::Graph* g0 = chunk(0);
+            bool ok               = g0 != nullptr &&
+                      QnnRuntime::set_input(*g0, "latent", latent.data(), latent.size()) &&
+                      QnnRuntime::set_input(*g0, "t_freq", freq.data(), freq.size()) &&
+                      QnnRuntime::set_input(*g0, "caption", p.context->data(), p.context->numel()) &&
+                      set_common(*g0) && qnn->execute(*g0);
             std::vector<float> out(static_cast<size_t>(T * C));
-            ok = ok && QnnRuntime::get_output(g3, "out", out.data(), out.size());
+            if (!streaming) {
+                // All chunks resident: hand device buffers straight from graph to graph.
+                for (int i = 1; ok && i < kChunks; i++) {
+                    auto& prev = *qnn->graph(chunk_name(i - 1));
+                    auto& g    = *qnn->graph(chunk_name(i));
+                    ok         = set_common(g) && QnnRuntime::forward_tensor(prev, i == 1 ? "x" : "x_out", g, "x") &&
+                         QnnRuntime::forward_tensor(*g0, "tmod", g, "tmod") &&
+                         QnnRuntime::forward_tensor(*g0, "context", g, "context") &&
+                         (i != kChunks - 1 || QnnRuntime::forward_tensor(*g0, "emb", g, "emb")) &&
+                         qnn->execute(g);
+                }
+                ok = ok && QnnRuntime::get_output(*qnn->graph(chunk_name(kChunks - 1)), "out", out.data(), out.size());
+            } else {
+                // Streamed chunks lose their buffers when unloaded, so pass activations through host memory.
+                std::vector<float> h(static_cast<size_t>(T * D)), tmod(static_cast<size_t>(T * 6 * D));
+                std::vector<float> emb(static_cast<size_t>(T * D)), ctx(static_cast<size_t>(kTextTokens * D));
+                ok = ok && QnnRuntime::get_output(*g0, "x", h.data(), h.size()) &&
+                     QnnRuntime::get_output(*g0, "tmod", tmod.data(), tmod.size()) &&
+                     QnnRuntime::get_output(*g0, "emb", emb.data(), emb.size()) &&
+                     QnnRuntime::get_output(*g0, "context", ctx.data(), ctx.size());
+                for (int i = 1; ok && i < kChunks; i++) {
+                    const bool last      = i == kChunks - 1;
+                    QnnRuntime::Graph* g = chunk(i);
+                    ok                   = g != nullptr && set_common(*g) &&
+                         QnnRuntime::set_input(*g, "x", h.data(), h.size()) &&
+                         QnnRuntime::set_input(*g, "tmod", tmod.data(), tmod.size()) &&
+                         QnnRuntime::set_input(*g, "context", ctx.data(), ctx.size()) &&
+                         (!last || QnnRuntime::set_input(*g, "emb", emb.data(), emb.size())) &&
+                         qnn->execute(*g) &&
+                         (last ? QnnRuntime::get_output(*g, "out", out.data(), out.size())
+                               : QnnRuntime::get_output(*g, "x_out", h.data(), h.size()));
+                }
+            }
             if (!ok) {
                 return {};
             }
@@ -813,6 +869,22 @@ struct LTXVideoQnnVAE : public LTXVideoVAE {
 
     std::string get_desc() override {
         return "ltx_video_vae_qnn";
+    }
+
+    using LTXVideoVAE::encode;
+
+    // Image-to-video start frames are encoded on the CPU, followed by the T5 pass. Together with the
+    // resident transformer chunks that exceeds the RAM of 12 GB phones, so free the transformer
+    // first; it reloads lazily before sampling (a few seconds).
+    sd::Tensor<float> encode(int n_threads,
+                             const sd::Tensor<float>& x,
+                             sd_tiling_params_t tiling_params,
+                             bool circular_x,
+                             bool circular_y) override {
+        if (auto* dit = LTXV::LTXVQnnRunner::active()) {
+            dit->release();
+        }
+        return LTXVideoVAE::encode(n_threads, x, tiling_params, circular_x, circular_y);
     }
 
     sd::Tensor<float> decode(int n_threads,

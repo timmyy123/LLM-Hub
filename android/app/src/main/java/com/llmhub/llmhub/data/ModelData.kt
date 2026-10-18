@@ -5178,17 +5178,23 @@ object ModelData {
 
     // QNN context binaries for the Hexagon NPU, built by android/tools/ltxv_qnn (QAIRT 2.50).
     private const val LTXV_QNN_REPO =
-        "https://huggingface.co/timmyboy26/LTX-Video-2B-0.9.8-distilled-QNN/resolve/16a6b92a22e11350b1acaaf7c7d30e0c00f71a00"
+        "https://huggingface.co/timmyboy26/LTX-Video-2B-0.9.8-distilled-QNN/resolve/e2bcf5bb5faf9becb5672d71a5e20ac9d0f8ff18"
 
     private const val LTXV_T5_SIZE = 2896123072L
     private const val LTXV_VAE_GGUF_SIZE = 2493868876L
     private const val LTXV_QNN_STUB_SIZE = 26911008L
 
-    /** One NPU build: Hexagon arch folder, the chipset suffixes it serves, and exact file sizes. */
+    /**
+     * One NPU build: Hexagon arch folder, the SoCs (Build.SOC_MODEL) it runs on, and exact file
+     * sizes. Context binaries run on any SoC of the same Hexagon arch (QAIRT 2.50 "Supported
+     * Snapdragon devices") whose HTP has FP16, which the transformer's activations need.
+     * qnn-context-binary-generator reports no FP16 for SM8635 (8s Gen 3), SM7675 (7+ Gen 3),
+     * SM6450 (6 Gen 1), SM7475 (7+ Gen 2), SM8735 (8s Gen 4) and SM7750 (7 Gen 4).
+     */
     private data class LtxvNpuBuild(
-        val chipName: String,
+        val chips: String,
         val arch: String,
-        val chipsets: Set<String>,
+        val socs: Set<String>,
         val shape: String,
         val files: List<Pair<String, Long>>
     )
@@ -5197,35 +5203,41 @@ object ModelData {
     // A getter, not a stored property: videoGenerationModels (declared above) reads it while the
     // object is still initializing.
     private val ltxvNpuBuilds: List<LtxvNpuBuild> get() = listOf(
-        LtxvNpuBuild("8 Gen 2", "v73", setOf("8gen2"), "512x320x25", listOf(
+        LtxvNpuBuild("Snapdragon 8 Gen 1, 8+ Gen 1 and 7 Gen 1", "v69", setOf(
+            "SM8450", "SM8475", "SM8475P", "SM7450"
+        ), "512x320x25", listOf(
+            "ltxv_chunk0.bin" to 525525856L, "ltxv_chunk1.bin" to 482893728L, "ltxv_chunk2.bin" to 482860960L,
+            "ltxv_chunk3.bin" to 483357000L, "ltxv_vae_512x320x25.bin" to 634923064L
+        )),
+        LtxvNpuBuild("Snapdragon 8 Gen 2", "v73", setOf("SM8550", "SM8550P", "QCS8550", "QCM8550"), "512x320x25", listOf(
             "ltxv_chunk0.bin" to 532620128L, "ltxv_chunk1.bin" to 489185184L, "ltxv_chunk2.bin" to 489185184L,
             "ltxv_chunk3.bin" to 490160456L, "ltxv_vae_512x320x25.bin" to 635607096L
         )),
-        LtxvNpuBuild("8 Gen 3", "v75", setOf("8gen3"), "768x512x25", listOf(
+        LtxvNpuBuild("Snapdragon 8 Gen 3", "v75", setOf("SM8650", "SM8650P", "QCS8625"), "768x512x25", listOf(
             "ltxv_chunk0.bin" to 607126368L, "ltxv_chunk1.bin" to 542375840L, "ltxv_chunk2.bin" to 542400416L,
             "ltxv_chunk3.bin" to 544665928L, "ltxv_vae_768x512x25.bin" to 697722936L
         )),
-        LtxvNpuBuild("8 Elite", "v79", setOf("8gen4"), "768x512x25", listOf(
+        LtxvNpuBuild("Snapdragon 8 Elite", "v79", setOf("SM8750", "SM8750P"), "768x512x25", listOf(
             "ltxv_chunk0.bin" to 608211808L, "ltxv_chunk1.bin" to 542859168L, "ltxv_chunk2.bin" to 542863264L,
             "ltxv_chunk3.bin" to 545222984L, "ltxv_vae_768x512x25.bin" to 683989048L
         )),
-        LtxvNpuBuild("8 Elite Gen 5", "v81", setOf("8gen5"), "768x512x25", listOf(
+        LtxvNpuBuild("Snapdragon 8 Elite Gen 5", "v81", setOf("SM8850", "SM8850P"), "768x512x25", listOf(
             "ltxv_chunk0.bin" to 589058912L, "ltxv_chunk1.bin" to 545005472L, "ltxv_chunk2.bin" to 545009568L,
             "ltxv_chunk3.bin" to 547479880L, "ltxv_vae_768x512x25.bin" to 712386616L
         ))
     )
 
     private fun ltxvNpuModels(): List<LLMModel> {
-        val chipset = DeviceInfo.getChipsetSuffix()
-        return ltxvNpuBuilds.filter { chipset in it.chipsets }.map { build ->
+        val soc = DeviceInfo.getDeviceSoc().uppercase()
+        return ltxvNpuBuilds.filter { soc in it.socs }.map { build ->
             val npuBytes = build.files.sumOf { it.second }
             val (w, h, f) = build.shape.split("x")
             LLMModel(
-                name = "LTX-Video 2B 0.9.8 Distilled (NPU ${build.chipName})",
-                description = "Lightricks LTX-Video 2B distilled compiled for the Snapdragon ${build.chipName} Hexagon NPU. " +
+                name = "LTX-Video 2B 0.9.8 Distilled (NPU ${build.arch})",
+                description = "Lightricks LTX-Video 2B distilled compiled for the Hexagon ${build.arch} NPU (${build.chips}). " +
                     "${w}x$h, $f frames per clip. Bundles the NPU transformer and VAE decoder " +
                     "(${"%.1f".format(npuBytes / 1e9)} GB), the T5-XXL Q4_0 text encoder (2.9 GB) and the VAE used for " +
-                    "image-to-video (2.5 GB). Pinned to commit 16a6b92. LTXV Open Weights License.",
+                    "image-to-video (2.5 GB). Pinned to commit e2bcf5b. LTXV Open Weights License.",
                 url = "$LTXV_QNN_REPO/${build.arch}/${build.files.first().first}",
                 category = "video_generation",
                 sizeBytes = npuBytes + LTXV_QNN_STUB_SIZE + LTXV_T5_SIZE + LTXV_VAE_GGUF_SIZE,

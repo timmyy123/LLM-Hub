@@ -13,6 +13,18 @@ import kotlin.random.Random
 
 private const val TAG = "LtxVideoRuntime"
 
+/**
+ * Cores clocked within 75% of the fastest one. ggml splits every op evenly across its threads, so
+ * scheduling work on the efficiency cores makes the big cores wait for them.
+ */
+private fun performanceCoreCount(): Int {
+    val maxFreqs = (0 until Runtime.getRuntime().availableProcessors()).mapNotNull { cpu ->
+        runCatching { File("/sys/devices/system/cpu/cpu$cpu/cpufreq/cpuinfo_max_freq").readText().trim().toLong() }.getOrNull()
+    }
+    val fastest = maxFreqs.maxOrNull() ?: return Runtime.getRuntime().availableProcessors()
+    return maxFreqs.count { it >= fastest * 3 / 4 }
+}
+
 /** Sigma schedule of LTX-Video 0.9.8 distilled ("allowed_inference_steps" in the checkpoint config). */
 internal object LtxvSchedule {
     private val distilled = floatArrayOf(1.0f, 0.9937f, 0.9875f, 0.9812f, 0.975f, 0.9094f, 0.725f, 0.4219f)
@@ -83,7 +95,7 @@ internal open class SdCppLtxVideoRuntime(
                 ""
             }
             Log.i(TAG, "devices: ${SdCppNative.nativeListDevices().trim()}; using $device ${if (npu) "+ Hexagon NPU" else ""}")
-            val threads = Runtime.getRuntime().availableProcessors().coerceIn(2, 8)
+            val threads = performanceCoreCount().coerceIn(2, 8)
             val created = SdCppNative.nativeCreate(dit.absolutePath, t5.absolutePath, vae.absolutePath, device, threads, !npu && backend == VideoGenBackend.CPU, modelArgs)
             if (created == 0L) {
                 error(SdCppNative.nativeLastError().ifBlank { "Failed to load LTX-Video" })
