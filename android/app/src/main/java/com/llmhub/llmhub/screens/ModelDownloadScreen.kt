@@ -51,6 +51,8 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import android.net.Uri
 import com.llmhub.llmhub.data.localFileName
+import com.llmhub.llmhub.data.isVideoGenerationModel
+import com.llmhub.llmhub.data.bundleDirectory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.FileInputStream
@@ -66,7 +68,7 @@ enum class ModelFormat {
 }
 
 enum class DownloadCategory {
-    MULTIMODAL, TEXT, ASR, TTS, EMBEDDING, IMAGE_GENERATION, IMAGE_UPSCALE, MUSIC_GENERATION
+    MULTIMODAL, TEXT, ASR, TTS, EMBEDDING, IMAGE_GENERATION, IMAGE_UPSCALE, MUSIC_GENERATION, VIDEO_GENERATION
 }
 
 /**
@@ -94,6 +96,8 @@ private fun shouldShowNpuBadge(model: LLMModel): Boolean {
         // QNN models (listed + imported) on 8 Gen 1/2/3/4-class devices
         "qnn_npu" -> is8GenFamilyDeviceForQnn()
         "litertlm" -> ModelData.isEmbeddingGemma2NpuModel(model)
+        // LTX-Video QNN bundles always run on the Hexagon NPU
+        "ltxv_qnn" -> true
         else -> false
     }
 }
@@ -103,7 +107,8 @@ private fun shouldShowNpuBadge(model: LLMModel): Boolean {
 fun ModelDownloadScreen(
     onNavigateBack: () -> Unit = {},
     onNavigateToPremium: () -> Unit = {},
-    viewModel: ModelDownloadViewModel? = null
+    viewModel: ModelDownloadViewModel? = null,
+    initialCategory: DownloadCategory? = null
 ) {
     val context = LocalContext.current
     val activity = context as ComponentActivity
@@ -137,10 +142,11 @@ fun ModelDownloadScreen(
     val imageUpscaleGrouped = imageUpscaleModels.groupBy { it.name.substringBefore("(").trim() }
     val musicGenModels = models.filter { it.category == "music_generation" }
     val musicGenGrouped = musicGenModels.groupBy { it.name.substringBefore("(").trim() }
+    val videoGenModels = models.filter { it.isVideoGenerationModel() }
+    val videoGenGrouped = videoGenModels.groupBy { it.name.substringBefore("(").trim() }
 
     var showImportDialog by remember { mutableStateOf(false) }
     var errorDialogInfo by remember { mutableStateOf<Pair<String, String>?>(null) }
-    var selectedTab by remember { mutableStateOf(0) }
     val tabs = listOf(
         DownloadCategory.MULTIMODAL,
         DownloadCategory.TEXT,
@@ -149,8 +155,10 @@ fun ModelDownloadScreen(
         DownloadCategory.EMBEDDING,
         DownloadCategory.IMAGE_GENERATION,
         DownloadCategory.IMAGE_UPSCALE,
-        DownloadCategory.MUSIC_GENERATION
+        DownloadCategory.MUSIC_GENERATION,
+        DownloadCategory.VIDEO_GENERATION
     )
+    var selectedTab by remember { mutableStateOf(initialCategory?.let { tabs.indexOf(it) }?.takeIf { it >= 0 } ?: 0) }
 
     LaunchedEffect(downloadViewModel) {
         downloadViewModel.downloadErrors.collect { errorInfo ->
@@ -237,6 +245,7 @@ fun ModelDownloadScreen(
                         DownloadCategory.IMAGE_GENERATION -> stringResource(R.string.image_generation_models)
                         DownloadCategory.IMAGE_UPSCALE -> stringResource(R.string.image_upscale_models_title)
                         DownloadCategory.MUSIC_GENERATION -> stringResource(R.string.music_generation_models)
+                        DownloadCategory.VIDEO_GENERATION -> stringResource(R.string.video_generation_models)
                     }
                     val count = when (category) {
                         DownloadCategory.MULTIMODAL -> multimodalModels.size
@@ -247,6 +256,7 @@ fun ModelDownloadScreen(
                         DownloadCategory.IMAGE_GENERATION -> imageGenerationModels.size
                         DownloadCategory.IMAGE_UPSCALE -> imageUpscaleModels.size
                         DownloadCategory.MUSIC_GENERATION -> musicGenModels.size
+                        DownloadCategory.VIDEO_GENERATION -> videoGenModels.size
                     }
                     Tab(
                         selected = selectedTab == index,
@@ -395,6 +405,23 @@ fun ModelDownloadScreen(
                             Text(stringResource(R.string.music_generation_models_description), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         musicGenGrouped.forEach { (family, variants) ->
+                            item {
+                                ModelFamilyCard(
+                                    family = family,
+                                    variants = variants,
+                                    context = context,
+                                    viewModel = downloadViewModel,
+                                    isMultimodal = false,
+                                    onDownload = { downloadViewModel.downloadModel(it) }
+                                )
+                            }
+                        }
+                    }
+                    DownloadCategory.VIDEO_GENERATION -> {
+                        item {
+                            Text(stringResource(R.string.video_generation_models_description), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        videoGenGrouped.forEach { (family, variants) ->
                             item {
                                 ModelFamilyCard(
                                     family = family,
@@ -992,6 +1019,14 @@ private fun resolveLocalModelFiles(model: LLMModel, context: Context): List<File
     val files = mutableListOf<File>()
     val modelsDir = File(context.filesDir, "models")
     val sdModelsDir = File(context.filesDir, "sd_models")
+
+    if (model.isVideoGenerationModel()) {
+        val dir = model.bundleDirectory(context)
+        if (dir.exists() && dir.isDirectory) {
+            files += dir.listFiles()?.filter { it.isFile } ?: emptyList()
+        }
+        return files.sortedBy { it.name.lowercase() }
+    }
 
     if (model.category == "image_upscale") {
         val upscalerModelsDir = File(context.filesDir, "upscaler_models")

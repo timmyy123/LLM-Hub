@@ -1,0 +1,202 @@
+<p align="center">
+  <img src="./assets/logo.png" width="360x">
+</p>
+
+# stable-diffusion.cpp
+
+<div align="center">
+<a href="https://trendshift.io/repositories/9714" target="_blank"><img src="https://trendshift.io/api/badge/repositories/9714" alt="leejet%2Fstable-diffusion.cpp | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
+</div>
+
+Diffusion model(SD,Flux,Wan,...) inference in pure C/C++
+
+***Note that this project is under active development. \
+API and command-line option may change frequently.***
+
+## 🔥Important News
+
+* **2026/10/16** 🚀 stable-diffusion.cpp adds **Day-0 support for FLUX.3 Image Klein / Klein Base**
+* **2026/09/20** 🚀 stable-diffusion.cpp adds **Day-0 support for Qwen-Image-2.1**
+* **2026/08/20** 🚀 stable-diffusion.cpp now supports **LTX-2.5**
+* **2026/08/04** 🚀 stable-diffusion.cpp adds **Day-1 support for MiniMax-H3**
+* **2026/06/25** 🚀 stable-diffusion.cpp now supports **Krea2**
+* **2026/06/04** 🚀 stable-diffusion.cpp now supports **Ideogram4**
+* **2026/05/31** 🚀 stable-diffusion.cpp now supports **PiD**
+* **2026/05/27** 🚀 stable-diffusion.cpp now supports **Lens**
+* **2026/05/17** 🚀 stable-diffusion.cpp now supports **LTX-2.3**
+* **2026/04/11** 🚀 stable-diffusion.cpp now uses a brand-new embedded web UI.  
+* **2026/01/18** 🚀 stable-diffusion.cpp now supports **FLUX.2-klein**  
+* **2025/12/01** 🚀 stable-diffusion.cpp now supports **Z-Image**  
+* **2025/11/30** 🚀 stable-diffusion.cpp now supports **FLUX.2-dev**  
+* **2025/10/13** 🚀 stable-diffusion.cpp now supports **Qwen-Image-Edit / Qwen-Image-Edit 2509**  
+* **2025/10/12** 🚀 stable-diffusion.cpp now supports **Qwen-Image**  
+* **2025/09/14** 🚀 stable-diffusion.cpp now supports **Wan2.1 Vace**  
+* **2025/09/06** 🚀 stable-diffusion.cpp now supports **Wan2.1 / Wan2.2**  
+
+## Features
+
+- Plain C/C++ implementation based on [ggml](https://github.com/ggml-org/ggml), working in the same way as [llama.cpp](https://github.com/ggml-org/llama.cpp)
+- Super lightweight and without external dependencies
+- Supported models
+  - Image Models
+    - [SD1.x, SD2.x, SD-Turbo](./docs/sd.md)
+    - [SDXL, SDXL-Turbo](./docs/sd.md)
+    - [Some SD1.x and SDXL distilled models](./docs/distilled_sd.md)
+    - [SD3/SD3.5](./docs/sd3.md)
+    - [FLUX.1-dev/FLUX.1-schnell](./docs/flux.md)
+    - [FLUX.2-dev/FLUX.2-klein](./docs/flux2.md)
+    - [FLUX.3 Image Klein / Klein Base](./docs/flux3.md)
+    - [MOSS-Image-Base / MOSS-Image-SFT](./docs/moss_image.md)
+    - [Lens](./docs/lens.md)
+    - [Chroma](./docs/chroma.md)
+    - [Chroma1-Radiance](./docs/chroma_radiance.md)
+    - [Qwen Image](./docs/qwen_image.md)
+    - [Qwen Image 2.1](./docs/qwen_image_2.1.md)
+    - [PiD](./docs/pid.md)
+    - [LongCat Image](./docs/longcat_image.md)
+    - [Z-Image](./docs/z_image.md)
+    - [Z-Image L2P](./docs/z_image_l2p.md)
+    - [MiniT2I](./docs/minit2i.md)
+    - [SenseNova U1.5](./docs/sensenova_u1.md)
+    - [Ovis-Image](./docs/ovis_image.md)
+    - [Anima](./docs/anima.md)
+    - [ERNIE-Image](./docs/ernie_image.md)
+    - [Boogu Image](./docs/boogu_image.md)
+    - [Krea2](./docs/krea2.md)
+    - [Mage-Flow](./docs/mage_flow.md)
+    - [SeFi-Image](./docs/sefi_image.md)
+    - [HiDream-O1-Image](./docs/hidream_o1_image.md)
+    - [Ideogram4](./docs/ideogram4.md)
+    - [LLaDA-Image](./docs/llada_image.md)
+    - [Ming-Image Design](./docs/ming_image.md)
+    - [PixArt](./docs/pixart.md)
+    - [Iris-3B](./docs/iris.md)
+  - [Image Edit Models](./docs/edit.md)
+    - [FLUX.1-Kontext-dev](./docs/kontext.md)
+    - [Qwen Image Edit series](./docs/qwen_image_edit.md)
+    - [LongCat Image Edit](./docs/longcat_image.md)
+    - [Boogu Image Edit](./docs/boogu_image.md)
+    - [Mage-Flow-Edit](./docs/mage_flow.md#image-editing)
+    - [LLaDA-Image Edit](./docs/llada_image.md#image-editing)
+  - Video Models
+    - [Wan2.1/Wan2.2](./docs/wan.md)
+    - [MiniMax-H3](./docs/minimax_h3.md)
+    - [LTX-2.3/LTX-2.5](./docs/ltx2.md)
+    - [HunyuanVideo 1.5](./docs/hunyuan_video.md)
+    - [LingBot-Video](./docs/lingbot_video.md)
+  - [PhotoMaker](./docs/photo_maker.md) support.
+  - [IP-Adapter](./docs/ip_adapter.md) support (SD 1.5 and SDXL, including Plus)
+  - Control Net support with SD 1.5
+  - [ADetailer](./docs/adetailer.md)
+  - LoRA support, same as [stable-diffusion-webui](https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/Features#lora)
+  - Latent Consistency Models support (LCM/LCM-LoRA)
+  - Faster and memory efficient latent decoding with [TAESD](./docs/taesd.md)
+  - Upscale images generated with [ESRGAN](./docs/esrgan.md)
+- Supported backends
+  - CPU (AVX, AVX2 and AVX512 support for x86 architectures)
+  - CUDA
+  - Vulkan
+  - Metal
+  - OpenCL
+  - SYCL
+- Supported weight formats
+  - Pytorch checkpoint (`.ckpt` or `.pth` or `.pt`)
+  - Safetensors (`.safetensors`)
+  - GGUF (`.gguf`)
+- Convert mode supports converting model weights to `.gguf` or `.safetensors`
+- Supported platforms
+    - Linux
+    - Mac OS
+    - Windows
+    - Android (via Termux, [Local Diffusion](https://github.com/rmatif/Local-Diffusion))
+- Flash Attention for memory usage optimization
+- Negative prompt
+- [stable-diffusion-webui](https://github.com/AUTOMATIC1111/stable-diffusion-webui) style tokenizer (not all the features, only token weighting for now)
+- VAE tiling processing for reduce memory usage
+- Sampling method
+    - `Euler A`
+    - `Euler`
+    - `Heun`
+    - `DPM2`
+    - `DPM++ 2M`
+    - [`DPM++ 2M v2`](https://github.com/AUTOMATIC1111/stable-diffusion-webui/discussions/8457)
+    - `DPM++ 2S a`
+    - `ER-SDE`
+    - [`LCM`](https://github.com/AUTOMATIC1111/stable-diffusion-webui/issues/13952)
+- Cross-platform reproducibility
+    - `--rng cuda`, default, consistent with the `stable-diffusion-webui GPU RNG`
+    - `--rng cpu`, consistent with the `comfyui RNG`
+- Embedds generation parameters into png output as webui-compatible text string
+
+## Quick Start
+
+### Get the sd executable
+
+- Download pre-built binaries from the [releases page](https://github.com/leejet/stable-diffusion.cpp/releases)
+- Or build from source by following the [build guide](./docs/build.md)
+
+### Download model weights
+
+- download weights(.ckpt or .safetensors or .gguf). For example
+    - Stable Diffusion v1.5 from https://huggingface.co/stable-diffusion-v1-5/stable-diffusion-v1-5 
+
+    ```sh
+    curl -L -O https://huggingface.co/stable-diffusion-v1-5/stable-diffusion-v1-5/resolve/main/v1-5-pruned-emaonly.safetensors
+    ```
+
+### Generate an image with just one command
+
+```sh
+./bin/sd-cli -m ../models/v1-5-pruned-emaonly.safetensors -p "a lovely cat"
+```
+
+***For detailed command-line arguments, check out [cli doc](./examples/cli/README.md).***
+
+## Performance
+
+If you want to improve performance or reduce VRAM/RAM usage, please refer to [performance guide](./docs/performance.md).
+For runtime and parameter backend placement, see the [backend selection guide](./docs/backend.md).
+
+## More Guides
+
+- [Troubleshooting](./docs/troubleshooting.md)
+- [Backend selection](./docs/backend.md)
+- [RPC](./docs/rpc.md)
+- [LoRA](./docs/lora.md)
+- [LCM/LCM-LoRA](./docs/lcm.md)
+- [Docker](./docs/docker.md)
+- [Quantization and GGUF](./docs/quantization_and_gguf.md)
+- [INT8 convrot safetensors](./docs/int8_convrot.md)
+- [Inference acceleration via caching](./docs/caching.md)
+
+## Bindings
+
+These projects wrap `stable-diffusion.cpp` for easier use in other languages/frameworks.
+
+* Golang (non-cgo): [seasonjs/stable-diffusion](https://github.com/seasonjs/stable-diffusion)
+* Golang (cgo): [Binozo/GoStableDiffusion](https://github.com/Binozo/GoStableDiffusion)
+* Golang (non-cgo): [l8bloom/gosd](https://github.com/l8bloom/gosd)
+* C#: [DarthAffe/StableDiffusion.NET](https://github.com/DarthAffe/StableDiffusion.NET)
+* Python: [william-murray1204/stable-diffusion-cpp-python](https://github.com/william-murray1204/stable-diffusion-cpp-python)
+* Rust: [newfla/diffusion-rs](https://github.com/newfla/diffusion-rs)
+* Flutter/Dart: [rmatif/Local-Diffusion](https://github.com/rmatif/Local-Diffusion)
+
+## UIs
+
+These projects use `stable-diffusion.cpp` as a backend for their image generation.
+
+- [GIMP Plugins](https://github.com/themanyone/gimp-plugins)
+- [Stable Diffusion GUI](https://github.com/fszontagh/sd.cpp.gui.wx)
+- [Stable Diffusion CLI-GUI](https://github.com/piallai/stable-diffusion.cpp)
+- [Local Diffusion](https://github.com/rmatif/Local-Diffusion)
+- [sd.cpp-webui](https://github.com/daniandtheweb/sd.cpp-webui)
+- [LocalAI](https://github.com/mudler/LocalAI)
+- [Neural-Pixel](https://github.com/Luiz-Alcantara/Neural-Pixel)
+- [KoboldCpp](https://github.com/LostRuins/koboldcpp)
+- [Kokon](https://github.com/GabrieleLozupone/kokon)
+
+## Contributors
+
+Thank you to all the people who have already contributed to stable-diffusion.cpp!
+
+[![Contributors](https://contrib.rocks/image?repo=leejet/stable-diffusion.cpp)](https://github.com/leejet/stable-diffusion.cpp/graphs/contributors)

@@ -1,0 +1,7 @@
+build*/
+docs/
+test/
+
+.cache/
+*.swp
+models/

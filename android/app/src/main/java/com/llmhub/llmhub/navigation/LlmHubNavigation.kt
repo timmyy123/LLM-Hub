@@ -36,6 +36,7 @@ sealed class Screen(val route: String) {
     object Transcriber : Screen("transcriber")
     object ScamDetector : Screen("scam_detector")
     object ImageGenerator : Screen("image_generator")
+    object VideoGenerator : Screen("video_generator")
     object VibeCoder : Screen("vibe_coder")
     object VibeVoice : Screen("vibevoice")
     object ImageUpscale : Screen("image_upscale")
@@ -45,6 +46,10 @@ sealed class Screen(val route: String) {
     }
     object Settings : Screen("settings")
     object Models : Screen("models")
+    /** Model download screen opened on a specific category tab (e.g. from a feature's download gate). */
+    object ModelsCategory : Screen("models/{category}") {
+        fun createRoute(category: DownloadCategory) = "models/${category.name}"
+    }
     object About : Screen("about")
     object Terms : Screen("terms")
     object CreatorGeneration : Screen("creator_generation")
@@ -107,6 +112,7 @@ fun LlmHubNavigation(
                         "transcriber" -> navController.navigate(Screen.Transcriber.route)
                         "scam_detector" -> navController.navigate(Screen.ScamDetector.route)
                         "image_generator" -> navigateIfPremium(Screen.ImageGenerator.route)
+                        "video_generator" -> navigateIfPremium(Screen.VideoGenerator.route)
                         "vibe_coder" -> navigateIfPremium(Screen.VibeCoder.route)
                         "creator_generation" -> navigateIfPremium(Screen.CreatorGeneration.route)
                         "vibevoice" -> navigateIfPremium(Screen.VibeVoice.route)
@@ -230,6 +236,15 @@ fun LlmHubNavigation(
             )
         }
         
+        composable(Screen.VideoGenerator.route) {
+            VideoGeneratorScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToModels = {
+                    navController.navigate(Screen.ModelsCategory.createRoute(DownloadCategory.VIDEO_GENERATION))
+                }
+            )
+        }
+        
         composable(Screen.VibeCoder.route) {
             VibeCoderScreen(
                 onNavigateBack = { navController.popBackStack() },
@@ -300,6 +315,25 @@ fun LlmHubNavigation(
                 onNavigateToPremium = {
                     navController.navigate(Screen.Premium.route)
                 }
+            )
+        }
+        
+        composable(
+            route = Screen.ModelsCategory.route,
+            arguments = listOf(
+                androidx.navigation.navArgument("category") { type = androidx.navigation.NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val category = backStackEntry.arguments?.getString("category")
+                ?.let { name -> DownloadCategory.entries.firstOrNull { it.name == name } }
+            ModelDownloadScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onNavigateToPremium = {
+                    navController.navigate(Screen.Premium.route)
+                },
+                initialCategory = category
             )
         }
         

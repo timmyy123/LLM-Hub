@@ -1,6 +1,7 @@
 package com.llmhub.llmhub.data
 
 import android.content.Context
+import com.llmhub.llmhub.videogen.VideoGenFormats
 import java.io.File
 
 /**
@@ -14,6 +15,9 @@ fun LLMModel.localFileName(): String {
     val candidate = url.substringAfterLast('/')
         .substringBefore('?')
         .substringBefore('#')
+
+    // Video generation bundles keep every file under its original name (see VideoGenEngine.modelDir).
+    if (isVideoGenerationModel() && candidate.isNotBlank()) return candidate
     
     // Determine the appropriate extension based on model format
     val extension = when (modelFormat.lowercase()) {
@@ -43,6 +47,19 @@ fun LLMModel.localFileName(): String {
         "${name.replace(" ", "_").replace("[^a-zA-Z0-9_-]".toRegex(), "")}${extension}"
     }
 }
+
+/**
+ * True for LTX-Video models (any runtime format: "ltxv_gguf" for Vulkan/CPU, "ltxv_qnn" for the NPU).
+ * These are always multi-file bundles stored in filesDir/models/<sanitized name>/.
+ */
+fun LLMModel.isVideoGenerationModel(): Boolean =
+    category == VideoGenFormats.CATEGORY ||
+        modelFormat == VideoGenFormats.GGUF ||
+        modelFormat == VideoGenFormats.QNN
+
+/** Directory that holds a multi-file model bundle (same sanitizing rule as ModelDownloader). */
+fun LLMModel.bundleDirectory(context: Context): File =
+    File(File(context.filesDir, "models"), name.replace(" ", "_").replace(Regex("[^a-zA-Z0-9_.-]"), ""))
 
 /**
  * True for this model's own file or a partial download of it (`.part`, `.tmp`).
@@ -75,7 +92,7 @@ fun LLMModel.hasCompleteDownloadedBundle(context: Context): Boolean {
     if (name == PocketTtsModel.NAME) return PocketTtsModel.isComplete(context)
     if (SupertonicModel.isModel(name)) return SupertonicModel.isComplete(context, name)
     val modelsDir = File(context.filesDir, "models")
-    val targetDir = if (additionalFiles.isNotEmpty()) {
+    val targetDir = if (additionalFiles.isNotEmpty() || isVideoGenerationModel()) {
         val safeName = name.replace(" ", "_").replace(Regex("[^a-zA-Z0-9_.-]"), "")
         File(modelsDir, safeName)
     } else {

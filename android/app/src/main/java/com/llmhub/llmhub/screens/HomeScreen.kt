@@ -51,6 +51,7 @@ data class FeatureCard(
 /** Routes that require a Premium subscription. */
 private val PREMIUM_ROUTES = setOf(
     "image_generator",
+    "video_generator",
     "vibe_coder",
     "agent",
     "creator_generation",
@@ -123,6 +124,14 @@ fun HomeScreen(
                 gradient = Pair(Color(0xFF6a11cb), Color(0xFF2575fc)),
                 darkColor = Color(0xFF2A1854),
                 route = "image_generator"
+            ),
+            FeatureCard(
+                title = R.string.feature_video_generator,
+                description = R.string.feature_video_generator_desc,
+                icon = Icons.Filled.Movie,
+                gradient = Pair(Color(0xFFFF512F), Color(0xFFDD2476)),
+                darkColor = Color(0xFF5A1A2E),
+                route = "video_generator"
             ),
             FeatureCard(
                 title = R.string.feature_vibe_coder,

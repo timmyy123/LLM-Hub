@@ -19,6 +19,7 @@ object ModelAvailabilityProvider {
                 model.category != "embedding" &&
                 model.category != "imageGeneration" &&
                 model.category != "videoGeneration" &&
+                model.category != "video_generation" &&
                 model.category != "imageUpscale" &&
                 model.category != "image_upscale" &&
                 model.category != "tts" &&

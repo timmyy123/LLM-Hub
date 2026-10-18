@@ -29,6 +29,8 @@ import android.content.Context
 import com.llmhub.llmhub.BuildConfig
 import com.llmhub.llmhub.data.isModelFileValid
 import com.llmhub.llmhub.data.hasCompleteDownloadedBundle
+import com.llmhub.llmhub.data.isVideoGenerationModel
+import com.llmhub.llmhub.data.bundleDirectory
 import com.google.gson.Gson
 import android.net.Uri
 import com.google.gson.JsonParser
@@ -391,8 +393,9 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
                 } else {
                     model.copy(isDownloaded = false, isDownloading = false, downloadProgress = 0f, downloadedBytes = 0, totalBytes = model.sizeBytes)
                 }
-            } else if ((model.modelFormat == "gguf" || model.modelFormat == "tflite") && model.additionalFiles.isNotEmpty()) {
-                // GGUF or TFLite models with additional files
+            } else if (((model.modelFormat == "gguf" || model.modelFormat == "tflite") && model.additionalFiles.isNotEmpty()) ||
+                model.isVideoGenerationModel()) {
+                // GGUF or TFLite models with additional files, and video generation bundles (ltxv_gguf / ltxv_qnn)
                 val modelDirName = model.name.replace(" ", "_").replace(Regex("[^a-zA-Z0-9_.-]"), "")
                 val modelDir = File(modelsDir, modelDirName)
                 if (!modelDir.exists()) modelDir.mkdirs()
@@ -623,7 +626,10 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
     fun downloadModel(model: LLMModel) {
         val modelsDir = File(context.filesDir, "models")
         val existingFile = File(modelsDir, model.localFileName())
-        val startingBytes = if (existingFile.exists()) existingFile.length() else 0L
+        val startingBytes = if (model.isVideoGenerationModel()) {
+            // Multi-file video bundles resume from the files already in their directory
+            model.bundleDirectory(context).listFiles()?.filter { it.isFile }?.sumOf { it.length() } ?: 0L
+        } else if (existingFile.exists()) existingFile.length() else 0L
         val total = if (model.sizeBytes > 0) model.sizeBytes else model.totalBytes ?: 0L
 
         android.util.Log.d("ModelDownloadViewModel", "[downloadModel] Starting download for ${model.name}, file exists: ${existingFile.exists()}, size: $startingBytes, expected: $total")
@@ -839,8 +845,9 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
                         return@onCompletion
                     }
                     
-                    // GGUF or TFLite models with additional files
-                    if ((model.modelFormat == "gguf" || model.modelFormat == "tflite") && model.additionalFiles.isNotEmpty()) {
+                    // GGUF or TFLite models with additional files, and video generation bundles (ltxv_gguf / ltxv_qnn)
+                    if (((model.modelFormat == "gguf" || model.modelFormat == "tflite") && model.additionalFiles.isNotEmpty()) ||
+                        model.isVideoGenerationModel()) {
                         val modelsDir = File(context.filesDir, "models")
                         val modelDirName = model.name.replace(" ", "_").replace(Regex("[^a-zA-Z0-9_.-]"), "")
                         val modelDir = File(modelsDir, modelDirName)
@@ -1005,7 +1012,8 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
         if (modelsDir.exists() && modelsDir.isDirectory) {
             try {
                 // Determine if this is a directory-based model (ONNX, WhisperKit, GGUF, or Music Generation multi-file)
-                if ((model.modelFormat == "onnx" || model.modelFormat == "whisperkit" || model.modelFormat == "gguf" || model.category == "music_generation") && model.additionalFiles.isNotEmpty()) {
+                if (((model.modelFormat == "onnx" || model.modelFormat == "whisperkit" || model.modelFormat == "gguf" || model.category == "music_generation") && model.additionalFiles.isNotEmpty()) ||
+                    model.isVideoGenerationModel()) {
                     val modelDirName = model.name.replace(" ", "_").replace(Regex("[^a-zA-Z0-9_.-]"), "")
                     val modelDir = File(modelsDir, modelDirName)
                     if (modelDir.exists() && modelDir.isDirectory) {
@@ -1130,10 +1138,10 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
                 val modelsDir = File(context.filesDir, "models")
 
                 // Delete subdirectory for multi-file formats (onnx, whisperkit, gguf, or music_generation with additionalFiles)
-                if ((model.modelFormat == "onnx" || model.modelFormat == "whisperkit" ||
+                if (((model.modelFormat == "onnx" || model.modelFormat == "whisperkit" ||
                             (model.modelFormat == "gguf" && model.additionalFiles.isNotEmpty()) ||
                             (model.category == "music_generation" && model.additionalFiles.isNotEmpty())) &&
-                    model.additionalFiles.isNotEmpty()) {
+                    model.additionalFiles.isNotEmpty()) || model.isVideoGenerationModel()) {
                     val modelDirName = model.name.replace(" ", "_").replace(Regex("[^a-zA-Z0-9_.-]"), "")
                     val modelSubDir = File(modelsDir, modelDirName)
                     if (modelSubDir.exists() && modelSubDir.isDirectory) {

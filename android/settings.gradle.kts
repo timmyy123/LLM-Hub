@@ -27,5 +27,6 @@ dependencyResolutionManagement {
 
 rootProject.name = "Llm Hub"
 include(":app")
+include(":sdcpp")
 include(":qnn_pack")
 include(":sd_pack")

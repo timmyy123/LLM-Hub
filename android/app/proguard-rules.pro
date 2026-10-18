@@ -130,3 +130,8 @@
 -keep class com.llmhub.llmhub.ui.components.PocketTtsEngine { *; }
 -keep interface com.llmhub.llmhub.ui.components.PocketTtsEngine$CancellationProbe { *; }
 -keep class * implements com.llmhub.llmhub.ui.components.PocketTtsEngine$CancellationProbe { *; }
+
+# LTX-Video (stable-diffusion.cpp) JNI entry points and progress callback.
+-keep class com.llmhub.llmhub.videogen.SdCppNative { *; }
+-keep interface com.llmhub.llmhub.videogen.SdCppNative$Callback { *; }
+-keep class * implements com.llmhub.llmhub.videogen.SdCppNative$Callback { *; }

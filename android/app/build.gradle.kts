@@ -354,6 +354,9 @@ dependencies {
     // OkHttp for SD backend communication
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
+    // LTX-Video engine (stable-diffusion.cpp + Hexagon NPU runner), libllmhub_sdcpp.so
+    implementation(project(":sdcpp"))
+
     // MediaPipe Tasks (updated to latest as of Oct 2025)
     // NOTE: Version 0.10.29 has slower initial load for multimodal models due to eager
     // vision/audio component initialization. Disable vision/audio when not needed for faster loading.

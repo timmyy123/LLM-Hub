@@ -48,7 +48,7 @@
 | **🎞️ Video Moment Finder** | **[NEW]** Describe a moment in a video and jump to matching timestamps using visual and audio embeddings on Android and iOS |
 | **🔊 Text to Speech & Voice Cloning** | Android supports Kokoro, multilingual Supertonic 3 with voice-profile import, and Pocket TTS with on-device voice cloning |
 | **🔍 Image Upscale** | **[NEW]** Upscale images up to 4× using AI super-resolution models (RealESRGAN, UltraSharp) with NPU acceleration |
-| **🎥 Video Generator** | **[NEW]** Generate videos from text prompts or images using Stable Video Diffusion on iOS |
+| **🎥 Video Generator** | **[NEW]** Generate videos from text prompts or images: LTX-Video on Android (Snapdragon NPU, Vulkan GPU or CPU), Stable Video Diffusion on iOS |
 | **🌍 Translator** | Translate text, images (OCR), and audio across 50+ languages - offline |
 | **🎙️ Transcriber** | Convert speech to text with on-device processing using Whisper models |
 | **🛡️ Scam Detector** | Analyze messages and images for phishing with risk assessment |
@@ -77,6 +77,13 @@ On Android and iOS, **Instant Media Search** uses EmbeddingGemma 2 to index phot
 
 ### 💻 Android Vibe Coder & Codex
 Enable **Codex mode** in Vibe Coder's model settings to use the selected on-device model with the Codex app server running in Termux. Codex can inspect project files, edit code and run project commands, with streamed activity and terminal output in the app. This mode requires an ARM64 device running Android 10 or newer and does not require an OpenAI login. Install Termux, allow external app commands, grant LLM Hub permission to run Termux commands, and use the in-app **Install Codex** action before starting.
+
+### 🎥 Android Video Generation
+The Android Video Generator runs [Lightricks LTX-Video 2B 0.9.8 distilled](https://huggingface.co/Lightricks/LTX-Video) fully on-device, from a text prompt or a starting image, in 8 denoising steps.
+- **Snapdragon NPU**: The transformer and VAE decoder run on the Hexagon NPU as QNN context binaries, compiled for the Snapdragon 8 Gen 2, 8 Gen 3, 8 Elite and 8 Elite Gen 5. A 25-frame 768x512 clip takes about 25 seconds on a Snapdragon 8 Elite. The 8 Gen 2 generates at 512x320. Models: [timmyboy26/LTX-Video-2B-0.9.8-distilled-QNN](https://huggingface.co/timmyboy26/LTX-Video-2B-0.9.8-distilled-QNN).
+- **Other chips**: GGUF models (Q4_0 / Q8_0) run through stable-diffusion.cpp with Vulkan on the GPU, or on the CPU.
+- Open **Video Generator**, download a model from the Video Generation tab, and choose the model and backend in the settings sheet. Detailed prompts that describe the subject, action, camera and lighting work best.
+- The scripts that build the NPU models are in [android/tools/ltxv_qnn](android/tools/ltxv_qnn).
 
 ### 🎵 iOS Live Music Generation
 The iOS Music Generator supports **Live generation** with Magenta Realtime 2: hear audio as it is generated while the app writes it to a local file. Enable **Unlimited duration** to keep generating until you press Stop, or use a fixed duration. Fixed-duration output uses WAV; unlimited sessions use CAF for long recordings.
@@ -112,7 +119,7 @@ Technology
 - **Android**: Kotlin + Jetpack Compose (Material 3), [GenieX SDK](https://github.com/qualcomm/GenieX) (for LLM and VLM inference), [WhisperKit](https://github.com/argmaxinc/WhisperKitAndroid) (for ASR)
 - **iOS**: Swift + SwiftUI, [Run Anywhere SDK](https://github.com/RunanywhereAI/runanywhere-sdks), [Draw Things (MediaGenerationKit)](https://drawthings.ai/), Apple Foundation Model, [whisper.cpp](https://github.com/ggml-org/whisper.cpp) for on-device ASR
 - **LLM & ASR Runtime**: MediaPipe, LiteRT, GenieX SDK (GGUF on Android), WhisperKit (ASR with TFLite + QNN NPU on Android), Llama.cpp (via [Run Anywhere SDK](https://github.com/RunanywhereAI/runanywhere-sdks) on iOS), whisper.cpp on iOS for transcription
-- **Image & Video Gen**: [Draw Things (MediaGenerationKit)](https://drawthings.ai/) (iOS), Qualcomm QNN (Android)
+- **Image & Video Gen**: [Draw Things (MediaGenerationKit)](https://drawthings.ai/) (iOS), Qualcomm QNN (Android), [stable-diffusion.cpp](https://github.com/leejet/stable-diffusion.cpp) with LTX-Video on the Hexagon NPU (QNN), Vulkan or CPU (Android video)
 - **Music Gen**: Magenta Realtime 2 with MLX/LiteRT (iOS), SoundGen with LiteRT (Android)
 - **Media Search**: EmbeddingGemma 2 for local media indexing and video moment retrieval (Android and iOS)
 - **Android TTS**: Kokoro, Supertonic 3 with ONNX Runtime, and PocketTTS.cpp with an NDK/JNI integration for local voice cloning
@@ -127,6 +134,9 @@ Acknowledgments
 - [Draw Things](https://drawthings.ai/) — iOS image and video generation engine (MediaGenerationKit) 🎨
 - [PocketTTS.cpp](https://github.com/VolgaGerm/PocketTTS.cpp) — Android local speech and voice cloning integration
 - [Supertone Supertonic 3](https://huggingface.co/Supertone/supertonic-3) — Multilingual on-device TTS and voice presets
+- [Lightricks LTX-Video](https://huggingface.co/Lightricks/LTX-Video) — Android video generation model (LTX-Video Open Weights License)
+- [stable-diffusion.cpp](https://github.com/leejet/stable-diffusion.cpp) — Android video generation runtime, extended with LTX-Video 0.9 and a QNN backend
+- [calcuis/ltxv-gguf](https://huggingface.co/calcuis/ltxv-gguf) — GGUF builds of LTX-Video, T5-XXL and the VAE
 - **Google, OpenAI, Meta, Microsoft, IBM, LiquidAI, Mistral, Primsm ML, HuggingFace** — model and tooling contributions
 
 Development Setup

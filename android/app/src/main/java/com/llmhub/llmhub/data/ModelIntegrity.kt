@@ -26,7 +26,7 @@ fun isModelFileValid(file: File, modelFormat: String): Boolean {
     // Perform format-specific validation
     val valid = when (modelFormat) {
         "task", "litertlm" -> isTaskLikelyValid(file)
-        "gguf" -> isGgufValid(file)
+        "gguf", "ltxv_gguf" -> isGgufValid(file)
         "bin" -> isBinValid(file)
         "onnx" -> true // ONNX validation is complex (protobuf), we rely on size check in caller or basic existence
         else -> true // Fallback for unknown formats

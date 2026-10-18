@@ -1,0 +1,145 @@
+#include "log.h"
+
+#include <vector>
+
+sd_log_level_t log_level = SD_LOG_INFO;
+bool log_color           = false;
+
+std::string sd_basename(const std::string& path) {
+    size_t pos = path.find_last_of('/');
+    if (pos != std::string::npos) {
+        return path.substr(pos + 1);
+    }
+    pos = path.find_last_of('\\');
+    if (pos != std::string::npos) {
+        return path.substr(pos + 1);
+    }
+    return path;
+}
+
+void print_utf8(FILE* stream, const char* utf8) {
+    if (!utf8) {
+        return;
+    }
+
+#ifdef _WIN32
+    HANDLE h = (stream == stderr)
+                   ? GetStdHandle(STD_ERROR_HANDLE)
+                   : GetStdHandle(STD_OUTPUT_HANDLE);
+
+    DWORD mode;
+    BOOL is_console = GetConsoleMode(h, &mode);
+
+    if (is_console) {
+        int wlen = MultiByteToWideChar(CP_UTF8, 0, utf8, -1, NULL, 0);
+        if (wlen <= 0) {
+            return;
+        }
+
+        std::vector<wchar_t> wbuf(static_cast<size_t>(wlen));
+
+        MultiByteToWideChar(CP_UTF8, 0, utf8, -1, wbuf.data(), wlen);
+
+        DWORD written;
+        WriteConsoleW(h, wbuf.data(), wlen - 1, &written, NULL);
+    } else {
+        DWORD written;
+        WriteFile(h, utf8, (DWORD)strlen(utf8), &written, NULL);
+    }
+#else
+    fputs(utf8, stream);
+#endif
+}
+
+const char* log_level_name(sd_log_level_t level) {
+    switch (level) {
+        case SD_LOG_DEBUG:
+            return "debug";
+        case SD_LOG_VERBOSE:
+            return "verbose";
+        case SD_LOG_INFO:
+            return "info";
+        case SD_LOG_WARN:
+            return "warn";
+        case SD_LOG_ERROR:
+            return "error";
+        default:
+            return "unknown";
+    }
+}
+
+bool parse_log_level(const std::string& name, sd_log_level_t& level) {
+    const sd_log_level_t levels[] = {SD_LOG_DEBUG, SD_LOG_VERBOSE, SD_LOG_INFO, SD_LOG_WARN, SD_LOG_ERROR};
+    for (sd_log_level_t candidate : levels) {
+        if (name == log_level_name(candidate)) {
+            level = candidate;
+            return true;
+        }
+    }
+    return false;
+}
+
+void log_print(enum sd_log_level_t level, const char* log, sd_log_level_t min_level, bool color) {
+    int tag_color;
+    const char* level_str;
+    FILE* out_stream = (level == SD_LOG_ERROR) ? stderr : stdout;
+
+    if (!log || level < min_level) {
+        return;
+    }
+
+    switch (level) {
+        case SD_LOG_DEBUG:
+            tag_color = 37;
+            level_str = "D";
+            break;
+        case SD_LOG_VERBOSE:
+            tag_color = 37;
+            level_str = "V";
+            break;
+        case SD_LOG_INFO:
+            tag_color = 34;
+            level_str = "I";
+            break;
+        case SD_LOG_WARN:
+            tag_color = 35;
+            level_str = "W";
+            break;
+        case SD_LOG_ERROR:
+            tag_color = 31;
+            level_str = "E";
+            break;
+        default:
+            tag_color = 33;
+            level_str = "?";
+            break;
+    }
+
+    if (color) {
+        fprintf(out_stream, "\033[%d;1m[%s]\033[0m ", tag_color, level_str);
+    } else {
+        fprintf(out_stream, "[%s] ", level_str);
+    }
+    fflush(out_stream);
+    print_utf8(out_stream, log);
+    fflush(out_stream);
+}
+
+void example_log_printf(sd_log_level_t level, const char* file, int line, const char* format, ...) {
+    constexpr size_t LOG_BUFFER_SIZE = 4096;
+
+    va_list args;
+    va_start(args, format);
+
+    char log_buffer[LOG_BUFFER_SIZE + 1] = {};
+    vsnprintf(log_buffer, sizeof(log_buffer), format, args);
+    va_end(args);
+
+    std::string message = log_buffer;
+    while (!message.empty() && (message.back() == '\n' || message.back() == '\r')) {
+        message.pop_back();
+    }
+    message += " --- " + sd_basename(file) + ":" + std::to_string(line) + '\n';
+
+    log_print(level, message.c_str(), log_level, log_color);
+}

@@ -306,6 +306,13 @@ class ModelDownloader(
             return@flow
         }
 
+        // Video Generation bundles (LTX-Video "ltxv_gguf" / "ltxv_qnn"): every file goes into
+        // models/<sanitized name>/ under its original file name, even without additional files.
+        if (model.isVideoGenerationModel()) {
+            downloadGgufMultiFile(model).collect { emit(it) }
+            return@flow
+        }
+
         // Handle Music Generation multi-file models (e.g. SoundGen)
         if (model.category == "music_generation" && model.additionalFiles.isNotEmpty()) {
             downloadGgufMultiFile(model).collect { emit(it) }
@@ -1169,7 +1176,8 @@ class ModelDownloader(
                              val elapsed = currentTime - lastEmitTime
                              if (elapsed > 500) {
                                   val speed = if (elapsed > 0) (bytesSinceLastEmit * 1000 / elapsed) else 0L
-                                  val reportedTotal = if (reportedTotalAcrossFiles > 0) reportedTotalAcrossFiles else model.sizeBytes
+                                  // reportedTotalAcrossFiles only covers files started so far; model.sizeBytes is the whole bundle.
+                                  val reportedTotal = maxOf(reportedTotalAcrossFiles, model.sizeBytes)
                                   emit(DownloadStatus(cumulativeDownloaded, reportedTotal, speed))
                                   lastEmitTime = currentTime
                                   bytesSinceLastEmit = 0L

@@ -5130,6 +5130,120 @@ object ModelData {
         )
     )
 
+    private const val LTXV_GGUF_REPO =
+        "https://huggingface.co/calcuis/ltxv-gguf/resolve/0990265881485e3419312141f6a1974ab2f7a4c6"
+
+    // All files of a video model are downloaded into filesDir/models/<sanitized name>/ with their
+    // original file names (see VideoGenEngine.modelDir). sizeBytes is the sum of every file.
+    val videoGenerationModels = listOf(
+        // Per-file sizes (x-linked-size): ltxv-2b-0.9.8-distilled-q4_0.gguf 1263727104,
+        // t5xxl_fp16-q4_0.gguf 2896123072, ltxv_0.9.5_vae_fp16.safetensors 2493868876
+        LLMModel(
+            name = "LTX-Video 2B 0.9.8 Distilled (Q4_0)",
+            description = "Lightricks LTX-Video 2B distilled for on-device text-to-video and image-to-video. Generates short clips in ~8 denoising steps. Bundles the Q4_0 transformer (1.3 GB), T5-XXL Q4_0 text encoder (2.9 GB) and VAE (2.5 GB). Pinned to commit 0990265. LTXV Open Weights License. ~6.7 GB download.",
+            url = "$LTXV_GGUF_REPO/ltxv-2b-0.9.8-distilled-q4_0.gguf",
+            category = "video_generation",
+            sizeBytes = 6653719052L,
+            source = "Lightricks (GGUF by calcuis)",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 8, recommendedRamGB = 12),
+            contextWindowSize = 0,
+            modelFormat = "ltxv_gguf",
+            additionalFiles = listOf(
+                "$LTXV_GGUF_REPO/t5xxl_fp16-q4_0.gguf",
+                "$LTXV_GGUF_REPO/ltxv_0.9.5_vae_fp16.safetensors"
+            )
+        ),
+        // Per-file sizes (x-linked-size): ltxv-2b-0.9.8-distilled-q8_0.gguf 2173891072,
+        // t5xxl_fp16-q4_0.gguf 2896123072, ltxv_0.9.5_vae_fp16.safetensors 2493868876
+        LLMModel(
+            name = "LTX-Video 2B 0.9.8 Distilled (Q8_0)",
+            description = "Higher quality Lightricks LTX-Video 2B distilled for on-device text-to-video and image-to-video. Generates short clips in ~8 denoising steps. Bundles the Q8_0 transformer (2.2 GB), T5-XXL Q4_0 text encoder (2.9 GB) and VAE (2.5 GB). Pinned to commit 0990265. LTXV Open Weights License. ~7.6 GB download.",
+            url = "$LTXV_GGUF_REPO/ltxv-2b-0.9.8-distilled-q8_0.gguf",
+            category = "video_generation",
+            sizeBytes = 7563883020L,
+            source = "Lightricks (GGUF by calcuis)",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 8, recommendedRamGB = 12),
+            contextWindowSize = 0,
+            modelFormat = "ltxv_gguf",
+            additionalFiles = listOf(
+                "$LTXV_GGUF_REPO/t5xxl_fp16-q4_0.gguf",
+                "$LTXV_GGUF_REPO/ltxv_0.9.5_vae_fp16.safetensors"
+            )
+        )
+    ) + ltxvNpuModels()
+
+    // QNN context binaries for the Hexagon NPU, built by android/tools/ltxv_qnn (QAIRT 2.50).
+    private const val LTXV_QNN_REPO =
+        "https://huggingface.co/timmyboy26/LTX-Video-2B-0.9.8-distilled-QNN/resolve/16a6b92a22e11350b1acaaf7c7d30e0c00f71a00"
+
+    private const val LTXV_T5_SIZE = 2896123072L
+    private const val LTXV_VAE_GGUF_SIZE = 2493868876L
+    private const val LTXV_QNN_STUB_SIZE = 26911008L
+
+    /** One NPU build: Hexagon arch folder, the chipset suffixes it serves, and exact file sizes. */
+    private data class LtxvNpuBuild(
+        val chipName: String,
+        val arch: String,
+        val chipsets: Set<String>,
+        val shape: String,
+        val files: List<Pair<String, Long>>
+    )
+
+    // Sizes of the files in tools/ltxv_qnn's hf_upload/ layout (transformer: INT8 weights, VAE: W8A16).
+    // A getter, not a stored property: videoGenerationModels (declared above) reads it while the
+    // object is still initializing.
+    private val ltxvNpuBuilds: List<LtxvNpuBuild> get() = listOf(
+        LtxvNpuBuild("8 Gen 2", "v73", setOf("8gen2"), "512x320x25", listOf(
+            "ltxv_chunk0.bin" to 532620128L, "ltxv_chunk1.bin" to 489185184L, "ltxv_chunk2.bin" to 489185184L,
+            "ltxv_chunk3.bin" to 490160456L, "ltxv_vae_512x320x25.bin" to 635607096L
+        )),
+        LtxvNpuBuild("8 Gen 3", "v75", setOf("8gen3"), "768x512x25", listOf(
+            "ltxv_chunk0.bin" to 607126368L, "ltxv_chunk1.bin" to 542375840L, "ltxv_chunk2.bin" to 542400416L,
+            "ltxv_chunk3.bin" to 544665928L, "ltxv_vae_768x512x25.bin" to 697722936L
+        )),
+        LtxvNpuBuild("8 Elite", "v79", setOf("8gen4"), "768x512x25", listOf(
+            "ltxv_chunk0.bin" to 608211808L, "ltxv_chunk1.bin" to 542859168L, "ltxv_chunk2.bin" to 542863264L,
+            "ltxv_chunk3.bin" to 545222984L, "ltxv_vae_768x512x25.bin" to 683989048L
+        )),
+        LtxvNpuBuild("8 Elite Gen 5", "v81", setOf("8gen5"), "768x512x25", listOf(
+            "ltxv_chunk0.bin" to 589058912L, "ltxv_chunk1.bin" to 545005472L, "ltxv_chunk2.bin" to 545009568L,
+            "ltxv_chunk3.bin" to 547479880L, "ltxv_vae_768x512x25.bin" to 712386616L
+        ))
+    )
+
+    private fun ltxvNpuModels(): List<LLMModel> {
+        val chipset = DeviceInfo.getChipsetSuffix()
+        return ltxvNpuBuilds.filter { chipset in it.chipsets }.map { build ->
+            val npuBytes = build.files.sumOf { it.second }
+            val (w, h, f) = build.shape.split("x")
+            LLMModel(
+                name = "LTX-Video 2B 0.9.8 Distilled (NPU ${build.chipName})",
+                description = "Lightricks LTX-Video 2B distilled compiled for the Snapdragon ${build.chipName} Hexagon NPU. " +
+                    "${w}x$h, $f frames per clip. Bundles the NPU transformer and VAE decoder " +
+                    "(${"%.1f".format(npuBytes / 1e9)} GB), the T5-XXL Q4_0 text encoder (2.9 GB) and the VAE used for " +
+                    "image-to-video (2.5 GB). Pinned to commit 16a6b92. LTXV Open Weights License.",
+                url = "$LTXV_QNN_REPO/${build.arch}/${build.files.first().first}",
+                category = "video_generation",
+                sizeBytes = npuBytes + LTXV_QNN_STUB_SIZE + LTXV_T5_SIZE + LTXV_VAE_GGUF_SIZE,
+                source = "Lightricks (QNN build by LLM Hub)",
+                supportsVision = false,
+                supportsGpu = false,
+                requirements = ModelRequirements(minRamGB = 8, recommendedRamGB = 12),
+                contextWindowSize = 0,
+                modelFormat = "ltxv_qnn",
+                additionalFiles = build.files.drop(1).map { "$LTXV_QNN_REPO/${build.arch}/${it.first}" } + listOf(
+                    "$LTXV_QNN_REPO/ltxv_qnn_stub.safetensors",
+                    "$LTXV_GGUF_REPO/t5xxl_fp16-q4_0.gguf",
+                    "$LTXV_GGUF_REPO/ltxv_0.9.5_vae_fp16.safetensors"
+                )
+            )
+        }
+    }
+
     private const val EMBEDDING_GEMMA_2_REPO =
         "https://huggingface.co/litert-community/embeddinggemma-2-740m-litert-lm/resolve/24d962e906c7d332c6428e71c9676855024569e2"
     private const val EMBEDDING_GEMMA_2_440_REPO =
@@ -5268,7 +5382,7 @@ object ModelData {
                 model.url.contains("embeddinggemma-2-text-270m_")
             )
 
-    val models: List<LLMModel> = baseModels + embeddingGemma2Models + upscalerModels + ttsModels + musicGenerationModels + (if (DeviceInfo.getChipsetSuffix() in setOf("8gen3", "8gen4", "8gen5")) sdxlModels else emptyList())
+    val models: List<LLMModel> = baseModels + embeddingGemma2Models + upscalerModels + ttsModels + musicGenerationModels + videoGenerationModels + (if (DeviceInfo.getChipsetSuffix() in setOf("8gen3", "8gen4", "8gen5")) sdxlModels else emptyList())
 
 
     /**
