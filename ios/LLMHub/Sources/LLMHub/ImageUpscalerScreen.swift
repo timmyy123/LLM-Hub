@@ -295,55 +295,60 @@ struct ImageUpscalerScreen: View {
                 }
             }
 
+            // Each column keeps its button under its image, so both split at the hinge:
+            // input + Upscale on the leading side, result + Save on the trailing side.
             ApolloHingeSplit {
-                ZoomableImageCard(
-                    image: inputImage,
-                    label: inputImage.map { "\(Int($0.size.width))×\(Int($0.size.height))" } ?? "",
-                    placeholderIcon: "photo.on.rectangle",
-                    placeholderText: settings.localized("image_upscale_select_image"),
-                    showClose: !backend.isUpscaling && inputImage != nil,
-                    zoomScale: $zoomScale,
-                    zoomOffset: $zoomOffset,
-                    onClose: {
-                        inputImage = nil
-                        outputImage = nil
-                        resetZoom()
-                    },
-                    onTap: nil
-                )
-                .overlay {
-                    if inputImage == nil {
-                        PhotosPicker(selection: $selectedImageItem, matching: .images) {
-                            Color.clear
-                        }
-                    }
-                }
-                .frame(maxHeight: .infinity)
-            } trailing: {
-                if let out = outputImage {
+                VStack(spacing: 12) {
                     ZoomableImageCard(
-                        image: out,
-                        label: "\(Int(out.size.width))×\(Int(out.size.height))",
-                        placeholderIcon: "sparkles",
-                        placeholderText: "",
-                        showClose: false,
+                        image: inputImage,
+                        label: inputImage.map { "\(Int($0.size.width))×\(Int($0.size.height))" } ?? "",
+                        placeholderIcon: "photo.on.rectangle",
+                        placeholderText: settings.localized("image_upscale_select_image"),
+                        showClose: !backend.isUpscaling && inputImage != nil,
                         zoomScale: $zoomScale,
                         zoomOffset: $zoomOffset,
-                        onClose: {},
+                        onClose: {
+                            inputImage = nil
+                            outputImage = nil
+                            resetZoom()
+                        },
                         onTap: nil
                     )
+                    .overlay {
+                        if inputImage == nil {
+                            PhotosPicker(selection: $selectedImageItem, matching: .images) {
+                                Color.clear
+                            }
+                        }
+                    }
                     .frame(maxHeight: .infinity)
-                } else {
-                    Spacer()
+
+                    upscaleButton
+                }
+            } trailing: {
+                VStack(spacing: 12) {
+                    if let out = outputImage {
+                        ZoomableImageCard(
+                            image: out,
+                            label: "\(Int(out.size.width))×\(Int(out.size.height))",
+                            placeholderIcon: "sparkles",
+                            placeholderText: "",
+                            showClose: false,
+                            zoomScale: $zoomScale,
+                            zoomOffset: $zoomOffset,
+                            onClose: {},
+                            onTap: nil
+                        )
                         .frame(maxHeight: .infinity)
+
+                        saveButton
+                    } else {
+                        Spacer()
+                            .frame(maxHeight: .infinity)
+                    }
                 }
             }
             .frame(maxWidth: .infinity)
-
-            HStack(spacing: 12) {
-                if outputImage != nil { saveButton }
-                upscaleButton
-            }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
