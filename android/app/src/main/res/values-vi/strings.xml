@@ -578,6 +578,7 @@
     <string name="image_generator_download_model_desc">Tải xuống mô hình Thực tế tuyệt đối (NPU hoặc CPU) từ màn hình Mô hình để bắt đầu tạo hình ảnh</string>
     <string name="image_generator_model_not_available">Mô hình tạo hình ảnh không có sẵn</string>
     <string name="image_generator_error">Không tạo được hình ảnh</string>
+    <string name="image_generator_npu_crashed">NPU của thiết bị này đã dừng khi đang tạo ảnh. Hãy thử lại sau khi cập nhật hệ thống hoặc dùng mô hình khác.</string>
     <string name="image_generation_models">Mô hình tạo hình ảnh</string>
     <string name="image_generation_models_description">Các mô hình Khuếch tán ổn định để tạo văn bản thành hình ảnh</string>
     <string name="image_generator_success">Hình ảnh được tạo thành công</string>
@@ -934,6 +935,7 @@
     <string name="media_search_download_model_desc">Tính năng này chạy EmbeddingGemma 2 trên thiết bị của bạn. Hãy tải từ danh sách mô hình để bắt đầu.</string>
     <string name="media_search_loading_model">Đang tải EmbeddingGemma 2…</string>
     <string name="media_search_model_failed">Không thể tải EmbeddingGemma 2</string>
+    <string name="media_search_npu_unavailable">NPU của thiết bị này không chạy được mô hình này. Hãy tải bản EmbeddingGemma 2 tiêu chuẩn thay thế.</string>
     <string name="media_search_analyzing">Đang phân tích…</string>
     <string name="media_search_paused">Đã tạm dừng phân tích</string>
     <string name="media_search_progress">Đã phân tích %1$d/%2$d (%3$d%%)</string>
@@ -1064,4 +1066,20 @@
     <string name="video_generator_random_seed">Hạt giống ngẫu nhiên</string>
     <string name="video_generator_negative_prompt">Lời nhắc phủ định (tùy chọn)</string>
     <string name="video_generator_negative_prompt_hint">Những điều cần tránh, ví dụ: mờ, méo, chất lượng thấp</string>
+    <string name="image_extras_title">Bộ điều chỉnh hình ảnh</string>
+    <string name="image_extras_negative">Lời nhắc phủ định</string>
+    <string name="image_extras_guidance">Mức hướng dẫn</string>
+    <string name="image_extras_clip_skip">Bỏ qua lớp CLIP</string>
+    <string name="image_extras_weight">Trọng số</string>
+    <string name="image_extras_text_encoder">Bộ mã hóa văn bản</string>
+    <string name="image_extras_embedding">Đảo ngược văn bản</string>
+    <string name="image_extras_tags">Danh sách thẻ</string>
+    <string name="image_extras_definitions">Định nghĩa</string>
+    <string name="image_extras_translations">Danh sách bản dịch</string>
+    <string name="image_extras_checkpoint">Checkpoint cơ sở</string>
+    <string name="image_extras_invalid">Tệp đã chọn không hợp lệ hoặc không tương thích với mô hình.</string>
+    <string name="image_extras_resource_hint">Thẻ: mỗi dòng một thẻ hoặc mảng JSON. Định nghĩa/bản dịch: đối tượng JSON hoặc key=value. Nhấn thẻ/định nghĩa để thêm; bản dịch được áp dụng cục bộ.</string>
+    <string name="image_extras_ios_help">LoRA: SafeTensors hoặc .ckpt của Draw Things. Bộ mã hóa/VAE: .ckpt tương thích của Draw Things. Embedding: SafeTensors. Hãy chọn mô hình phù hợp trước.</string>
+    <string name="image_extras_android_help">LoRA, bỏ qua lớp CLIP và bộ mã hóa tùy chỉnh cần checkpoint GGUF/SafeTensors đã nhập. Trọng số QNN/MNN là cố định. LoRA/embedding: SafeTensors.</string>
+    <string name="image_extras_import_location">Nhập checkpoint, LoRA, bộ mã hóa và danh sách prompt tại %1$s → %2$s.</string>
 </resources>

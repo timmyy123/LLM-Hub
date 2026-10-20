@@ -217,7 +217,7 @@ LLAMA_JNI(nativeInit)(JNIEnv * env, jobject, jstring library_dir, jstring htp_di
 extern "C" JNIEXPORT jint JNICALL
 LLAMA_JNI(nativeLoadModel)(
     JNIEnv * env, jobject, jstring model_path, jstring mmproj_path,
-    jint context_size, jint thread_count, jstring device_name, jint gpu_layers) {
+    jint context_size, jint thread_count, jstring device_name, jint gpu_layers, jint flash_attention) {
     unload_model();
     const std::string path = from_jstring(env, model_path);
 
@@ -246,6 +246,8 @@ LLAMA_JNI(nativeLoadModel)(
     context_params.n_ubatch = context_params.n_batch;
     context_params.n_threads = thread_count;
     context_params.n_threads_batch = thread_count;
+    context_params.flash_attn_type = flash_attention < 0 ? LLAMA_FLASH_ATTN_TYPE_AUTO
+        : flash_attention == 0 ? LLAMA_FLASH_ATTN_TYPE_DISABLED : LLAMA_FLASH_ATTN_TYPE_ENABLED;
     g_context = llama_init_from_model(g_model, context_params);
     if (g_context == nullptr) {
         unload_model();

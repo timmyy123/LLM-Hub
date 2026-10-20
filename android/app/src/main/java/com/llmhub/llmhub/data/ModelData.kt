@@ -14,6 +14,27 @@ object DeviceInfo {
         }
     }
 
+    /** The Tensor G5's PowerVR driver runs ggml's Vulkan graphs but returns noise. */
+    fun isTensorG5(): Boolean =
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && Build.SOC_MODEL.equals("Tensor G5", ignoreCase = true)
+
+    /** Snapdragon (Adreno) devices, where ggml's Vulkan backend is not usable. */
+    fun isSnapdragon(): Boolean {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+            Build.SOC_MANUFACTURER.contains("qualcomm", ignoreCase = true)
+        ) return true
+        val soc = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) Build.SOC_MODEL else ""
+        return listOf(soc, Build.HARDWARE, Build.BOARD).any { identifier ->
+            identifier.startsWith("SM", ignoreCase = true) ||
+                identifier.startsWith("SDM", ignoreCase = true) ||
+                identifier.startsWith("MSM", ignoreCase = true) ||
+                identifier.startsWith("QCS", ignoreCase = true) ||
+                identifier.startsWith("QCM", ignoreCase = true) ||
+                identifier.contains("qcom", ignoreCase = true) ||
+                identifier.contains("qualcomm", ignoreCase = true)
+        }
+    }
+
     private val chipsetModelSuffixes = mapOf(
         "SM8350" to "888",    // Snapdragon 888
         "SM8350P" to "888",   // Snapdragon 888+
@@ -5085,7 +5106,7 @@ object ModelData {
             description = "Fast local sound effects and music generation. Pinned to commit e50bf9d. ~1.1 GB download.",
             url = "https://huggingface.co/jegly/audio/resolve/e50bf9dff759c8622371a9c43ede989ea2d04b32/dit_model.tflite",
             category = "music_generation",
-            sizeBytes = 1097863704L,
+            sizeBytes = 1101795872L,
             source = "jegly/audio via HuggingFace",
             supportsVision = false,
             supportsAudio = true,
@@ -5094,7 +5115,9 @@ object ModelData {
             contextWindowSize = 0,
             modelFormat = "tflite",
             additionalFiles = listOf(
-                "https://huggingface.co/jegly/audio/resolve/e50bf9dff759c8622371a9c43ede989ea2d04b32/autoencoder_model.tflite",
+                // The decoder with its two largest dilated convolutions rewritten as undilated ones (same output), which
+                // LiteRT 2.3.0 compiles for the GPU; see timmyboy26/soundgen-quick-litert-gpu.
+                "https://huggingface.co/timmyboy26/soundgen-quick-litert-gpu/resolve/610d2ad5b7058f53da8465b584d042b6ee8ed6f9/autoencoder_model_undilated_1g.tflite",
                 "https://huggingface.co/jegly/audio/resolve/e50bf9dff759c8622371a9c43ede989ea2d04b32/conditioners_float32.tflite",
                 "https://huggingface.co/jegly/audio/resolve/e50bf9dff759c8622371a9c43ede989ea2d04b32/spiece.model"
             )
@@ -5285,6 +5308,48 @@ object ModelData {
         }
     }
 
+    // Stable Diffusion 1.5 LiteRT builds, AOT-compiled per Google Tensor TPU with the Tensor SDK beta.
+    private const val SD15_LITERT_REPO =
+        "https://huggingface.co/timmyboy26/stable-diffusion-v1-5-LiteRT-NPU/resolve/f71417cd334e9cee78571412782b91a0be1b78e1"
+    private const val SD15_LITERT_TOKENIZER_SIZE = 1059962L + 524619L
+
+    /** One per-SoC build: the Build.SOC_MODEL values it runs on and its (path, size) files. */
+    private data class SdLiteRtNpuBuild(val chip: String, val folder: String, val socs: Set<String>, val files: List<Pair<String, Long>>)
+
+    // A getter: `models` (declared below) reads it while the object is still initializing.
+    private val sdLiteRtNpuBuilds: List<SdLiteRtNpuBuild> get() = listOf(
+        SdLiteRtNpuBuild("Google Tensor G5", "tensor_g5", setOf("TENSOR G5"), listOf(
+            "tensor_g5/diffusion.tflite" to 1811265200L, "tensor_g5/decoder.tflite" to 123913648L, "tensor_g5/clip.tflite" to 129846528L
+        )),
+        SdLiteRtNpuBuild("Google Tensor G6", "tensor_g6", setOf("TENSOR G6"), listOf(
+            "tensor_g6/diffusion.tflite" to 1861651888L, "tensor_g6/decoder.tflite" to 131456176L, "tensor_g6/clip.tflite" to 133277696L
+        ))
+    )
+
+    private fun sdLiteRtNpuModels(): List<LLMModel> {
+        val soc = ltxvSocForMatching()
+        return sdLiteRtNpuBuilds.filter { soc in it.socs }.map { build ->
+            LLMModel(
+                name = "Stable Diffusion 1.5 (NPU ${build.chip.removePrefix("Google ")})",
+                description = "Stable Diffusion 1.5 compiled for the ${build.chip} TPU with LiteRT. 512x512 text-to-image. " +
+                    "FP16 UNet and image decoder, INT8 text encoder. CreativeML OpenRAIL-M license.",
+                url = "$SD15_LITERT_REPO/${build.files.first().first}",
+                category = "image_generation",
+                sizeBytes = build.files.sumOf { it.second } + SD15_LITERT_TOKENIZER_SIZE,
+                source = "Stable Diffusion v1.5 (LiteRT build by LLM Hub)",
+                supportsVision = false,
+                supportsGpu = false,
+                requirements = ModelRequirements(minRamGB = 8, recommendedRamGB = 12),
+                contextWindowSize = 0,
+                modelFormat = "litert_npu",
+                additionalFiles = build.files.drop(1).map { "$SD15_LITERT_REPO/${it.first}" } + listOf(
+                    "$SD15_LITERT_REPO/tokenizer/vocab.json",
+                    "$SD15_LITERT_REPO/tokenizer/merges.txt"
+                )
+            )
+        }
+    }
+
     private const val EMBEDDING_GEMMA_2_REPO =
         "https://huggingface.co/litert-community/embeddinggemma-2-740m-litert-lm/resolve/24d962e906c7d332c6428e71c9676855024569e2"
     private const val EMBEDDING_GEMMA_2_440_REPO =
@@ -5423,7 +5488,7 @@ object ModelData {
                 model.url.contains("embeddinggemma-2-text-270m_")
             )
 
-    val models: List<LLMModel> = baseModels + embeddingGemma2Models + upscalerModels + ttsModels + musicGenerationModels + videoGenerationModels + (if (DeviceInfo.getChipsetSuffix() in setOf("8gen3", "8gen4", "8gen5")) sdxlModels else emptyList())
+    val models: List<LLMModel> = baseModels + embeddingGemma2Models + upscalerModels + ttsModels + musicGenerationModels + videoGenerationModels + sdLiteRtNpuModels() + (if (DeviceInfo.getChipsetSuffix() in setOf("8gen3", "8gen4", "8gen5")) sdxlModels else emptyList())
 
 
     /**

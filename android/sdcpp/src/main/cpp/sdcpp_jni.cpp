@@ -1,5 +1,6 @@
 // JNI bridge for LTX-Video generation through stable-diffusion.cpp (Vulkan / CPU ggml backends).
 #include <android/log.h>
+#include <android/set_abort_message.h>
 #include <jni.h>
 #include <sys/system_properties.h>
 
@@ -10,6 +11,7 @@
 #include <string>
 #include <vector>
 
+#include "ggml.h"
 #include "stable-diffusion.h"
 
 #define LOG_TAG "SdCppJni"
@@ -161,6 +163,11 @@ extern "C" JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void*) {
     g_vm = vm;
     apply_debug_ggml_env();
     sd_set_log_callback(on_sd_log, nullptr);
+    // ggml prints abort reasons to stderr, which Android discards; keep them in logcat and tombstones.
+    ggml_set_abort_callback([](const char* message) {
+        __android_log_print(ANDROID_LOG_FATAL, LOG_TAG, "ggml abort: %s", message);
+        android_set_abort_message(message);
+    });
     sd_set_progress_callback(on_sd_progress, nullptr);
     return JNI_VERSION_1_6;
 }

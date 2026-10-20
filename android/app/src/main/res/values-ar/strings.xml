@@ -517,6 +517,7 @@
     <string name="image_generator_download_model_desc">قم بتنزيل نموذج توليد الصور لبدء إنشاء الصور</string>
     <string name="image_generator_model_not_available">نموذج توليد الصور غير متاح</string>
     <string name="image_generator_error">فشل إنشاء الصورة</string>
+    <string name="image_generator_npu_crashed">توقفت وحدة NPU في هذا الجهاز أثناء الإنشاء. أعد المحاولة بعد تحديث النظام، أو استخدم نموذجًا آخر.</string>
     <string name="image_generator_success">تم إنشاء الصورة بنجاح</string>
     <string name="image_generator_saved">تم حفظ الصورة في المعرض</string>
     <string name="stable_diffusion_model">Stable Diffusion v1.5</string>
@@ -1027,6 +1028,7 @@
     <string name="media_search_download_model_desc">تعمل هذه الميزة بنموذج EmbeddingGemma 2 على جهازك. نزّله من قائمة النماذج للبدء.</string>
     <string name="media_search_loading_model">جارٍ تحميل EmbeddingGemma 2…</string>
     <string name="media_search_model_failed">تعذّر تحميل EmbeddingGemma 2</string>
+    <string name="media_search_npu_unavailable">لا تستطيع وحدة NPU في هذا الجهاز تشغيل هذا النموذج. نزّل نسخة EmbeddingGemma 2 القياسية بدلًا منه.</string>
     <string name="media_search_analyzing">جارٍ التحليل…</string>
     <string name="media_search_paused">التحليل متوقف مؤقتًا</string>
     <string name="media_search_progress">تم تحليل %1$d من %2$d (%3$d%%)</string>
@@ -1157,4 +1159,20 @@
     <string name="video_generator_random_seed">بذرة عشوائية</string>
     <string name="video_generator_negative_prompt">الوصف السلبي (اختياري)</string>
     <string name="video_generator_negative_prompt_hint">أشياء يجب تجنبها، مثل: ضبابي، مشوّه، جودة منخفضة</string>
+    <string name="image_extras_title">معدّلات الصور</string>
+    <string name="image_extras_negative">الموجّه السلبي</string>
+    <string name="image_extras_guidance">مقياس التوجيه</string>
+    <string name="image_extras_clip_skip">تخطي CLIP</string>
+    <string name="image_extras_weight">الوزن</string>
+    <string name="image_extras_text_encoder">مُرمّز النص</string>
+    <string name="image_extras_embedding">التضمين النصي</string>
+    <string name="image_extras_tags">قائمة الوسوم</string>
+    <string name="image_extras_definitions">التعريفات</string>
+    <string name="image_extras_translations">قائمة الترجمات</string>
+    <string name="image_extras_checkpoint">ملف النموذج الأساسي</string>
+    <string name="image_extras_invalid">الملف المحدد غير صالح أو غير متوافق مع النموذج.</string>
+    <string name="image_extras_resource_hint">الوسوم: وسم في كل سطر أو مصفوفة JSON. التعريفات والترجمات: كائن JSON أو key=value. اضغط لإضافة الوسوم أو التعريفات؛ تُطبَّق الترجمات محليًا.</string>
+    <string name="image_extras_ios_help">LoRA: ملفات SafeTensors أو ‎.ckpt من Draw Things. المُرمّزات وVAE: ملفات ‎.ckpt متوافقة من Draw Things. التضمينات: SafeTensors. اختر النموذج المتوافق أولًا.</string>
+    <string name="image_extras_android_help">تتطلب LoRA وتخطي CLIP واستبدال المُرمّزات استيراد ملف نموذج GGUF أو SafeTensors. أوزان QNN/MNN ثابتة. LoRA والتضمينات: SafeTensors.</string>
+    <string name="image_extras_import_location">استورد نقاط التحقق وملفات LoRA والمرمّزات وقوائم الأوامر من %1$s ← %2$s.</string>
 </resources>

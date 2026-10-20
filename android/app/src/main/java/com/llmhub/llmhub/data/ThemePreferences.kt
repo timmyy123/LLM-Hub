@@ -1,7 +1,6 @@
 package com.llmhub.llmhub.data
 
 import android.content.Context
-import android.os.Build
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
@@ -60,23 +59,7 @@ class ThemePreferences(private val context: Context) {
                 (preferences[GGUF_USE_VULKAN_KEY] ?: defaultGgufUseVulkan())
         }
 
-    fun defaultGgufUseVulkan(): Boolean = !isSnapdragonChip()
-
-    private fun isSnapdragonChip(): Boolean {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
-            Build.SOC_MANUFACTURER.contains("qualcomm", ignoreCase = true)
-        ) return true
-        val soc = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) Build.SOC_MODEL else ""
-        return listOf(soc, Build.HARDWARE, Build.BOARD).any { identifier ->
-            identifier.startsWith("SM", ignoreCase = true) ||
-                identifier.startsWith("SDM", ignoreCase = true) ||
-                identifier.startsWith("MSM", ignoreCase = true) ||
-                identifier.startsWith("QCS", ignoreCase = true) ||
-                identifier.startsWith("QCM", ignoreCase = true) ||
-                identifier.contains("qcom", ignoreCase = true) ||
-                identifier.contains("qualcomm", ignoreCase = true)
-        }
-    }
+    fun defaultGgufUseVulkan(): Boolean = !DeviceInfo.isSnapdragon()
 
     suspend fun setGgufUseVulkan(enabled: Boolean) {
         context.dataStore.edit { preferences -> preferences[GGUF_USE_VULKAN_KEY] = enabled }

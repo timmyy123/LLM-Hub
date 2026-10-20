@@ -621,6 +621,7 @@
     <string name="image_generator_download_model_desc">从模型列表下载Absolute Reality（NPU 或 CPU）模型，开始创建图像</string>
     <string name="image_generator_model_not_available">图像生成模型不可用</string>
     <string name="image_generator_error">无法生成图片</string>
+    <string name="image_generator_npu_crashed">此设备的 NPU 在生成过程中停止运行。请在系统更新后重试，或改用其他模型。</string>
     <string name="image_generation_models">图像生成模型</string>
     <string name="image_generation_models_description">用于文本到图像生成的 Stable Diffusion 模型</string>
     <string name="image_generator_success">图像已生成</string>
@@ -1035,6 +1036,7 @@
     <string name="media_search_download_model_desc">此功能在设备上运行 EmbeddingGemma 2。请先从模型列表下载。</string>
     <string name="media_search_loading_model">正在加载 EmbeddingGemma 2…</string>
     <string name="media_search_model_failed">无法加载 EmbeddingGemma 2</string>
+    <string name="media_search_npu_unavailable">此设备的 NPU 无法运行该模型。请改为下载标准版 EmbeddingGemma 2。</string>
     <string name="media_search_analyzing">正在分析…</string>
     <string name="media_search_paused">分析已暂停</string>
     <string name="media_search_progress">已分析 %1$d / %2$d（%3$d%%）</string>
@@ -1165,4 +1167,20 @@
     <string name="video_generator_random_seed">随机种子</string>
     <string name="video_generator_negative_prompt">反向提示词（可选）</string>
     <string name="video_generator_negative_prompt_hint">需要避免的内容，例如：模糊、变形、低质量</string>
+    <string name="image_extras_title">图像修改器</string>
+    <string name="image_extras_negative">负面提示词</string>
+    <string name="image_extras_guidance">引导强度</string>
+    <string name="image_extras_clip_skip">CLIP 跳过层数</string>
+    <string name="image_extras_weight">权重</string>
+    <string name="image_extras_text_encoder">文本编码器</string>
+    <string name="image_extras_embedding">文本反演</string>
+    <string name="image_extras_tags">标签列表</string>
+    <string name="image_extras_definitions">定义</string>
+    <string name="image_extras_translations">翻译列表</string>
+    <string name="image_extras_checkpoint">基础模型权重</string>
+    <string name="image_extras_invalid">所选文件无效或与模型不兼容。</string>
+    <string name="image_extras_resource_hint">标签：每行一个或 JSON 数组。定义／翻译：JSON 对象或 key=value。点击标签或定义即可加入提示词；翻译会在本地应用。</string>
+    <string name="image_extras_ios_help">LoRA：SafeTensors 或 Draw Things .ckpt。编码器／VAE：兼容的 Draw Things .ckpt。嵌入：SafeTensors。请先选择对应的模型。</string>
+    <string name="image_extras_android_help">LoRA、CLIP 跳过层数及自定义编码器需要导入 GGUF／SafeTensors 基础模型。QNN／MNN 权重固定。LoRA／嵌入：SafeTensors。</string>
+    <string name="image_extras_import_location">在 %1$s → %2$s 中导入检查点、LoRA、编码器和提示词列表。</string>
 </resources>

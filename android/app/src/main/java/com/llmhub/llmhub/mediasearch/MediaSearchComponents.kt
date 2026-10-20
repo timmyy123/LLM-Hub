@@ -131,7 +131,8 @@ internal fun MediaSearchStatusCard(
     isPaused: Boolean,
     onPause: () -> Unit,
     onResume: () -> Unit,
-    onRetryModel: () -> Unit
+    onRetryModel: () -> Unit,
+    npuUnavailable: Boolean = false
 ) {
     if (!isLoadingModel && !modelError && progress.isComplete) return
     Card(
@@ -147,7 +148,7 @@ internal fun MediaSearchStatusCard(
                 }
                 modelError -> Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        stringResource(R.string.media_search_model_failed),
+                        stringResource(if (npuUnavailable) R.string.media_search_npu_unavailable else R.string.media_search_model_failed),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.error,
                         modifier = Modifier.weight(1f)

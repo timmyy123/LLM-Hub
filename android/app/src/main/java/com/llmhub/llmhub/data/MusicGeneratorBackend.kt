@@ -217,7 +217,7 @@ object MusicGeneratorBackend {
         onProgress(0.92f)
 
         // Stage 3: Audio Decoder (Float32, ~298MB). Compiled, executed, and immediately released.
-        val audio = createModelQuick(bundle.decodeFile, "Quick decoder").useModel { decodeModel ->
+        val audio = createModelQuick(bundle.decodeFile, "Quick decoder", textureStorage = true).useModel { decodeModel ->
             decodeModel.buffers { inputs, outputs ->
                 inputs[0].writeFloat(latent)
                 Log.i(TAG, "Running Quick decoder")
@@ -335,13 +335,18 @@ object MusicGeneratorBackend {
         }
     }
 
-    private fun createModelQuick(file: File, stage: String = file.name): CompiledModel {
+    /**
+     * [textureStorage] keeps GPU tensors in 2D textures. The decoder needs it on Pixel's PowerVR GPU, whose OpenCL
+     * driver crashes compiling it with buffer storage, and it is as fast or faster on Adreno, Mali and Xclipse.
+     */
+    private fun createModelQuick(file: File, stage: String = file.name, textureStorage: Boolean = false): CompiledModel {
         return try {
             Log.i(TAG, "Compiling $stage with GPU: ${file.name}")
-            CompiledModel.create(
-                file.absolutePath,
-                CompiledModel.Options(Accelerator.GPU, Accelerator.CPU)
-            ).also { Log.i(TAG, "$stage GPU compilation complete") }
+            val options = CompiledModel.Options(Accelerator.GPU, Accelerator.CPU)
+            if (textureStorage) {
+                options.gpuOptions = CompiledModel.GpuOptions(bufferStorageType = CompiledModel.GpuOptions.BufferStorageType.TEXTURE_2D)
+            }
+            CompiledModel.create(file.absolutePath, options).also { Log.i(TAG, "$stage GPU compilation complete") }
         } catch (t: Throwable) {
             Log.w(TAG, "GPU load failed for $stage (${file.name}), CPU fallback", t)
             CompiledModel.create(
@@ -394,7 +399,7 @@ object MusicGeneratorBackend {
             } else {
                 val textFile = requireFile(modelDir, "conditioners_float32.tflite", "sg_text.litert")
                 val coreFile = requireFile(modelDir, "dit_model.tflite", "dit_model.litert", "sg_core.litert")
-                val decodeFile = requireFile(modelDir, "autoencoder_model.tflite", "sg_decode.litert")
+                val decodeFile = requireFile(modelDir, "autoencoder_model_undilated_1g.tflite", "autoencoder_model.tflite", "sg_decode.litert")
                 val tokenizer = SentencePieceTokenizer.load(requireFile(modelDir, "spiece.model", "sg_vocab.spm"))
                 QuickBundle(
                     modelName = modelName,

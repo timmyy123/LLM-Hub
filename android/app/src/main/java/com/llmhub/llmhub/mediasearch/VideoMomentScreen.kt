@@ -65,6 +65,7 @@ fun VideoMomentScreen(
     val isLoadingModel by viewModel.isLoadingModel.collectAsState()
     val isModelLoaded by viewModel.isModelLoaded.collectAsState()
     val modelError by viewModel.modelError.collectAsState()
+    val npuUnavailable by viewModel.npuUnavailable.collectAsState()
     val videos by viewModel.videos.collectAsState()
     val open by viewModel.open.collectAsState()
     val progress by viewModel.progress.collectAsState()
@@ -154,6 +155,7 @@ fun VideoMomentScreen(
                 editorOpen = editing != null,
                 isLoadingModel = isLoadingModel,
                 modelError = modelError,
+                npuUnavailable = npuUnavailable,
                 progress = progress,
                 isPaused = isPaused,
                 onPause = viewModel::pause,
@@ -256,6 +258,7 @@ private fun MomentStage(
     editorOpen: Boolean,
     isLoadingModel: Boolean,
     modelError: Boolean,
+    npuUnavailable: Boolean,
     progress: IndexingProgress,
     isPaused: Boolean,
     onPause: () -> Unit,
@@ -359,7 +362,7 @@ private fun MomentStage(
                     )
                 )
             }
-            MediaSearchStatusCard(isLoadingModel, modelError, progress, isPaused, onPause, onResume, onRetryModel)
+            MediaSearchStatusCard(isLoadingModel, modelError, progress, isPaused, onPause, onResume, onRetryModel, npuUnavailable)
             if (!visionEnabled) {
                 Text(stringResource(R.string.video_moment_vision_off), color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
             } else if (!audioEnabled) {

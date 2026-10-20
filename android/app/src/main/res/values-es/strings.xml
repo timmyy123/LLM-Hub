@@ -521,6 +521,7 @@
     <string name="image_generator_download_model_desc">Descarga el modelo de generación de imágenes para comenzar a crear imágenes</string>
     <string name="image_generator_model_not_available">Modelo de generación de imágenes no disponible</string>
     <string name="image_generator_error">Error al generar la imagen</string>
+    <string name="image_generator_npu_crashed">La NPU de este dispositivo se detuvo durante la generación. Vuelve a intentarlo tras una actualización del sistema o usa otro modelo.</string>
     <string name="image_generator_success">Imagen generada exitosamente</string>
     <string name="image_generator_saved">Imagen guardada en la galería</string>
     <string name="stable_diffusion_model">Stable Diffusion v1.5</string>
@@ -1030,6 +1031,7 @@
     <string name="media_search_download_model_desc">Esta función ejecuta EmbeddingGemma 2 en tu dispositivo. Descárgalo de la lista de modelos para empezar.</string>
     <string name="media_search_loading_model">Cargando EmbeddingGemma 2…</string>
     <string name="media_search_model_failed">No se pudo cargar EmbeddingGemma 2</string>
+    <string name="media_search_npu_unavailable">La NPU de este dispositivo no puede ejecutar este modelo. Descarga en su lugar la versión estándar de EmbeddingGemma 2.</string>
     <string name="media_search_analyzing">Analizando…</string>
     <string name="media_search_paused">Análisis en pausa</string>
     <string name="media_search_progress">%1$d de %2$d analizados (%3$d%%)</string>
@@ -1160,4 +1162,20 @@
     <string name="video_generator_random_seed">Semilla aleatoria</string>
     <string name="video_generator_negative_prompt">Prompt negativo (opcional)</string>
     <string name="video_generator_negative_prompt_hint">Cosas que evitar, p. ej. borroso, distorsionado, baja calidad</string>
+    <string name="image_extras_title">Modificadores de imagen</string>
+    <string name="image_extras_negative">Prompt negativo</string>
+    <string name="image_extras_guidance">Escala de guía</string>
+    <string name="image_extras_clip_skip">Salto de CLIP</string>
+    <string name="image_extras_weight">Peso</string>
+    <string name="image_extras_text_encoder">Codificador de texto</string>
+    <string name="image_extras_embedding">Inversión textual</string>
+    <string name="image_extras_tags">Lista de etiquetas</string>
+    <string name="image_extras_definitions">Definiciones</string>
+    <string name="image_extras_translations">Lista de traducciones</string>
+    <string name="image_extras_checkpoint">Checkpoint base</string>
+    <string name="image_extras_invalid">El archivo seleccionado no es válido o es incompatible con el modelo.</string>
+    <string name="image_extras_resource_hint">Etiquetas: una por línea o un array JSON. Definiciones/traducciones: un objeto JSON o key=value. Toca etiquetas/definiciones; las traducciones se aplican localmente.</string>
+    <string name="image_extras_ios_help">LoRA: SafeTensors o .ckpt de Draw Things. Codificadores/VAE: .ckpt compatibles de Draw Things. Embeddings: SafeTensors. Selecciona primero el modelo correspondiente.</string>
+    <string name="image_extras_android_help">LoRA, el salto de CLIP y los codificadores personalizados requieren un checkpoint GGUF/SafeTensors importado. Los pesos QNN/MNN son fijos. LoRA/embeddings: SafeTensors.</string>
+    <string name="image_extras_import_location">Importa checkpoints, LoRA, codificadores y listas de prompts en %1$s → %2$s.</string>
 </resources>

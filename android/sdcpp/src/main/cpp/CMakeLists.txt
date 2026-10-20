@@ -49,7 +49,8 @@ add_subdirectory("${ANDROID_ROOT}/stable-diffusion.cpp" "${CMAKE_CURRENT_BINARY_
 target_compile_definitions(stable-diffusion PRIVATE SD_LTXV_QNN=1)
 target_include_directories(stable-diffusion PRIVATE "${CMAKE_CURRENT_LIST_DIR}/qnn/include/QNN")
 
-add_library(llmhub_sdcpp SHARED sdcpp_jni.cpp)
+add_library(llmhub_sdcpp SHARED sdcpp_jni.cpp imagegen_sdcpp_jni.cpp)
+target_include_directories(llmhub_sdcpp PRIVATE "${ANDROID_ROOT}/stable-diffusion.cpp/thirdparty")
 target_compile_options(llmhub_sdcpp PRIVATE -fvisibility=hidden)
 target_link_options(llmhub_sdcpp PRIVATE "-Wl,--exclude-libs,ALL" "-Wl,-Bsymbolic")
 target_link_libraries(llmhub_sdcpp PRIVATE stable-diffusion android log)

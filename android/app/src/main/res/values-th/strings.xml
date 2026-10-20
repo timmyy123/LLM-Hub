@@ -578,6 +578,7 @@
     <string name="image_generator_download_model_desc">ดาวน์โหลดโมเดล Absolute Reality (NPU หรือ CPU) จากหน้าจอโมเดลเพื่อเริ่มสร้างภาพ</string>
     <string name="image_generator_model_not_available">ไม่มีโมเดลการสร้างรูปภาพ</string>
     <string name="image_generator_error">ไม่สามารถสร้างภาพ</string>
+    <string name="image_generator_npu_crashed">NPU ของอุปกรณ์นี้หยุดทำงานระหว่างสร้างภาพ ลองอีกครั้งหลังอัปเดตระบบ หรือใช้โมเดลอื่น</string>
     <string name="image_generation_models">โมเดลการสร้างภาพ</string>
     <string name="image_generation_models_description">โมเดลการแพร่กระจายที่เสถียรสำหรับการสร้างข้อความเป็นรูปภาพ</string>
     <string name="image_generator_success">สร้างภาพสำเร็จ</string>
@@ -934,6 +935,7 @@
     <string name="media_search_download_model_desc">ฟีเจอร์นี้รัน EmbeddingGemma 2 บนอุปกรณ์ของคุณ ดาวน์โหลดจากรายการโมเดลเพื่อเริ่มต้น</string>
     <string name="media_search_loading_model">กำลังโหลด EmbeddingGemma 2…</string>
     <string name="media_search_model_failed">โหลด EmbeddingGemma 2 ไม่สำเร็จ</string>
+    <string name="media_search_npu_unavailable">NPU ของอุปกรณ์นี้เรียกใช้โมเดลนี้ไม่ได้ โปรดดาวน์โหลด EmbeddingGemma 2 รุ่นมาตรฐานแทน</string>
     <string name="media_search_analyzing">กำลังวิเคราะห์…</string>
     <string name="media_search_paused">หยุดการวิเคราะห์ชั่วคราว</string>
     <string name="media_search_progress">วิเคราะห์แล้ว %1$d จาก %2$d (%3$d%%)</string>
@@ -1064,4 +1066,20 @@
     <string name="video_generator_random_seed">ซีดแบบสุ่ม</string>
     <string name="video_generator_negative_prompt">พรอมต์เชิงลบ (ไม่บังคับ)</string>
     <string name="video_generator_negative_prompt_hint">สิ่งที่ต้องการหลีกเลี่ยง เช่น เบลอ บิดเบี้ยว คุณภาพต่ำ</string>
+    <string name="image_extras_title">ตัวปรับแต่งภาพ</string>
+    <string name="image_extras_negative">พรอมต์เชิงลบ</string>
+    <string name="image_extras_guidance">ระดับการชี้นำ</string>
+    <string name="image_extras_clip_skip">ข้ามชั้น CLIP</string>
+    <string name="image_extras_weight">น้ำหนัก</string>
+    <string name="image_extras_text_encoder">ตัวเข้ารหัสข้อความ</string>
+    <string name="image_extras_embedding">เท็กซ์ชวลอินเวอร์ชัน</string>
+    <string name="image_extras_tags">รายการแท็ก</string>
+    <string name="image_extras_definitions">คำจำกัดความ</string>
+    <string name="image_extras_translations">รายการคำแปล</string>
+    <string name="image_extras_checkpoint">เช็กพอยต์หลัก</string>
+    <string name="image_extras_invalid">ไฟล์ที่เลือกไม่ถูกต้องหรือไม่เข้ากันกับโมเดล</string>
+    <string name="image_extras_resource_hint">แท็ก: หนึ่งรายการต่อบรรทัดหรืออาร์เรย์ JSON คำจำกัดความ/คำแปล: ออบเจ็กต์ JSON หรือ key=value แตะแท็ก/คำจำกัดความเพื่อเพิ่ม คำแปลจะใช้ภายในอุปกรณ์</string>
+    <string name="image_extras_ios_help">LoRA: SafeTensors หรือ .ckpt ของ Draw Things ตัวเข้ารหัส/VAE: .ckpt ของ Draw Things ที่เข้ากันได้ เอ็มเบดดิง: SafeTensors เลือกโมเดลที่ตรงกันก่อน</string>
+    <string name="image_extras_android_help">LoRA การข้ามชั้น CLIP และตัวเข้ารหัสกำหนดเองต้องใช้เช็กพอยต์ GGUF/SafeTensors ที่นำเข้า น้ำหนัก QNN/MNN เปลี่ยนไม่ได้ LoRA/เอ็มเบดดิง: SafeTensors</string>
+    <string name="image_extras_import_location">นำเข้าเช็กพอยต์ LoRA ตัวเข้ารหัส และรายการพรอมต์ได้ที่ %1$s → %2$s</string>
 </resources>

@@ -325,6 +325,12 @@ class ModelDownloader(
             return@flow
         }
 
+        // Per-SoC LiteRT Stable Diffusion builds: plain files into sd_models/<model name>/
+        if (model.modelFormat == "litert_npu") {
+            downloadLiteRtSdModel(model).collect { emit(it) }
+            return@flow
+        }
+
         // Handle stable_diffusion models (ZIP extraction) - check by category
         if (model.category == "image_generation") {
             Log.i(TAG, "Routing to Stable Diffusion downloader for: ${model.name}")
@@ -1024,6 +1030,54 @@ class ModelDownloader(
      * Downloads GGUF models with additional files (like mmproj)
      * All files are downloaded to the root models directory.
      */
+    /**
+     * Downloads a LiteRT Stable Diffusion build (the URL plus additionalFiles) into sd_models/<model name>/,
+     * keeping each file's base name, which is what StableDiffusionHelper detects. Partial files resume.
+     */
+    private fun downloadLiteRtSdModel(model: LLMModel): Flow<DownloadStatus> = flow {
+        val modelDir = File(File(context.filesDir, "sd_models"), model.name.replace(" ", "_")).apply { mkdirs() }
+        val urls = listOf(model.url) + model.additionalFiles
+        var completed = urls.sumOf { url -> File(modelDir, url.substringAfterLast("/").substringBefore("?")).length() }
+        var lastEmit = System.currentTimeMillis()
+        var bytesSinceEmit = 0L
+        for (url in urls) {
+            val target = File(modelDir, url.substringAfterLast("/").substringBefore("?"))
+            val existing = target.length()
+            val connection = openConnectionWithAuthRedirects(url, existing.takeIf { it > 0 })
+            try {
+                val code = connection.responseCode
+                if (code == 416) continue // Already complete.
+                if (code !in 200..299) throw RuntimeException("Download failed for ${target.name}: HTTP $code")
+                if (code == 200 && existing > 0) {
+                    // The server ignored the range; start this file again.
+                    completed -= existing
+                    target.delete()
+                }
+                connection.inputStream.use { input ->
+                    java.io.FileOutputStream(target, code == 206).use { output ->
+                        val buffer = ByteArray(1 shl 16)
+                        while (true) {
+                            val read = input.read(buffer)
+                            if (read < 0) break
+                            output.write(buffer, 0, read)
+                            completed += read
+                            bytesSinceEmit += read
+                            val now = System.currentTimeMillis()
+                            if (now - lastEmit >= 500) {
+                                emit(DownloadStatus(completed, model.sizeBytes, bytesSinceEmit * 1000 / (now - lastEmit)))
+                                lastEmit = now
+                                bytesSinceEmit = 0
+                            }
+                        }
+                    }
+                }
+            } finally {
+                connection.disconnect()
+            }
+        }
+        emit(DownloadStatus(model.sizeBytes, model.sizeBytes, 0))
+    }.flowOn(Dispatchers.IO)
+
     private fun downloadGgufMultiFile(model: LLMModel): Flow<DownloadStatus> = flow {
         Log.i(TAG, "Downloading GGUF multi-file model: ${model.name}")
 

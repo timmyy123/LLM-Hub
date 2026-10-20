@@ -3,11 +3,13 @@ package com.llmhub.llmhub.imagegen
 import android.content.ContentValues
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
+import com.llmhub.llmhub.R
 import com.llmhub.llmhub.service.SDBackendService
 import com.llmhub.llmhub.data.ModelData
 import kotlinx.coroutines.Dispatchers
@@ -25,6 +27,8 @@ class ImageGeneratorHelper(private val context: Context) {
     private val TAG = "ImageGeneratorHelper"
     private val sdHelper = StableDiffusionHelper(context)
     private var currentModelType: ModelType? = null
+    private var checkpointRuntime: SdCppImageRuntime? = null
+    private var liteRt: LiteRtSdClient? = null
     private var isSdxlModel = false
     private var isAnimaModel = false
     
@@ -48,6 +52,29 @@ class ImageGeneratorHelper(private val context: Context) {
                 return@withContext false
             }
 
+            checkpointRuntime?.close()
+            checkpointRuntime = null
+            liteRt?.close()
+            liteRt = null
+            if (modelInfo.type == ModelType.LITERT_NPU) {
+                SDBackendService.stop(context)
+                val client = LiteRtSdClient(context)
+                if (!client.load(File(modelInfo.path))) {
+                    client.close()
+                    return@withContext false
+                }
+                liteRt = client
+                currentModelType = ModelType.LITERT_NPU
+                return@withContext true
+            }
+            if (modelInfo.type == ModelType.SDCPP) {
+                SDBackendService.stop(context)
+                val runtime = SdCppImageRuntime()
+                runtime.load(modelInfo.path, ImageExtrasStore(context).load(), useGpu)
+                checkpointRuntime = runtime
+                currentModelType = ModelType.SDCPP
+                return@withContext true
+            }
             currentModelType = modelInfo.type
             
             // Check if SDXL using ModelData centralized detection
@@ -103,7 +130,12 @@ class ImageGeneratorHelper(private val context: Context) {
         denoiseStrength: Float = 0.7f,
         useGpu: Boolean = false
     ): Bitmap? = withContext(Dispatchers.IO) {
+        liteRt?.let { return@withContext generateLiteRt(it, prompt, iterations, seed, inputImage) }
         try {
+            val extras = ImageExtrasStore(context).load()
+            checkpointRuntime?.let { runtime ->
+                return@withContext runtime.generate(prompt, extras, width, height, iterations, if (seed == 0) -1L else seed.toLong(), inputImage, denoiseStrength)
+            }
             val img2imgInfo = if (inputImage != null) " [img2img, denoise: $denoiseStrength]" else ""
             val targetWidth = if (currentModelType == ModelType.QNN_NPU) {
                 if (isSdxlModel || isAnimaModel) 1024 else 512
@@ -118,7 +150,9 @@ class ImageGeneratorHelper(private val context: Context) {
             )
             
             val bitmap = sdHelper.generateImage(
-                prompt = prompt,
+                prompt = extras.translatedPrompt(prompt),
+                negativePrompt = extras.translatedPrompt(extras.negativePrompt),
+                cfg = extras.guidance,
                 steps = iterations,
                 seed = if (seed == 0) null else seed.toLong(),
                 inputImage = inputImage,
@@ -142,6 +176,22 @@ class ImageGeneratorHelper(private val context: Context) {
             Log.e(TAG, "Failed to generate image: ${e.message}", e)
             null
         }
+    }
+
+    /**
+     * Fixed 512x512 text-to-image on a LiteRT NPU build; the screen hides image-to-image for these models.
+     * Throws with a readable message when the NPU process crashes, which the screen shows as the error.
+     */
+    private suspend fun generateLiteRt(client: LiteRtSdClient, prompt: String, steps: Int, seed: Int, inputImage: Bitmap?): Bitmap? {
+        if (inputImage != null) Log.w(TAG, "LiteRT NPU models have no image encoder; ignoring the input image")
+        val extras = ImageExtrasStore(context).load()
+        val output = File(context.cacheDir, "litert_sd_output.png").apply { delete() }
+        val ok = client.generate(
+            extras.translatedPrompt(prompt), extras.translatedPrompt(extras.negativePrompt),
+            steps, extras.guidance, if (seed == 0) System.nanoTime() else seed.toLong(), output
+        ) { step, total -> Log.d(TAG, "Generation progress: $step/$total") }
+        if (!ok && client.crashed) throw IllegalStateException(context.getString(R.string.image_generator_npu_crashed))
+        return if (ok) BitmapFactory.decodeFile(output.path).also { output.delete() } else null
     }
 
     /**
@@ -190,6 +240,10 @@ class ImageGeneratorHelper(private val context: Context) {
     fun close() {
         try {
             SDBackendService.stop(context)
+            checkpointRuntime?.close()
+            checkpointRuntime = null
+            liteRt?.close()
+            liteRt = null
             currentModelType = null
             isSdxlModel = false
             isAnimaModel = false

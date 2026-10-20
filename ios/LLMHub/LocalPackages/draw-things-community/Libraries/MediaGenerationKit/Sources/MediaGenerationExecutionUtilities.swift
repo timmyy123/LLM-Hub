@@ -74,14 +74,18 @@ internal enum MediaGenerationExecutionUtilities {
     let configurations = workspace.fetch(for: GenerationConfiguration.self).where(
       GenerationConfiguration.id == 0, limit: .limit(0))
 
+    // Imported embeddings must be recognized as tokens, rather than ordinary prompt text.
+    let textualInversions = Array(Set(TextualInversionZoo.availableSpecifications.filter {
+      TextualInversionZoo.isModelDownloaded($0.file, memorizedBy: [])
+    }.map { $0.keyword.lowercased() })).sorted()
     let tokenizerV1 = TextualInversionAttentionCLIPTokenizer(
       vocabulary: BinaryResources.vocab_json,
       merges: BinaryResources.merges_txt,
-      textualInversions: [])
+      textualInversions: textualInversions)
     let tokenizerV2 = TextualInversionAttentionCLIPTokenizer(
       vocabulary: BinaryResources.vocab_16e6_json,
       merges: BinaryResources.bpe_simple_vocab_16e6_txt,
-      textualInversions: [])
+      textualInversions: textualInversions)
     let tokenizerKandinsky = SentencePieceTokenizer(
       data: BinaryResources.xlmroberta_bpe_model, startToken: 0,
       endToken: 2, tokenShift: 1)

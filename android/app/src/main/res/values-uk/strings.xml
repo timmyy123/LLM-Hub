@@ -520,6 +520,7 @@
     <string name="image_generator_download_model_desc">Завантажте модель генерації зображень, щоб почати створення зображень</string>
     <string name="image_generator_model_not_available">Модель генерації зображень недоступна</string>
     <string name="image_generator_error">Не вдалося створити зображення</string>
+    <string name="image_generator_npu_crashed">NPU цього пристрою зупинився під час генерації. Спробуйте ще раз після оновлення системи або виберіть іншу модель.</string>
     <string name="image_generator_success">Зображення успішно створено</string>
     <string name="image_generator_saved">Зображення збережено в галереї</string>
     <string name="stable_diffusion_model">Stable Diffusion v1.5</string>
@@ -1027,6 +1028,7 @@
     <string name="media_search_download_model_desc">Ця функція запускає EmbeddingGemma 2 на пристрої. Завантажте модель зі списку моделей, щоб почати.</string>
     <string name="media_search_loading_model">Завантаження EmbeddingGemma 2…</string>
     <string name="media_search_model_failed">Не вдалося завантажити EmbeddingGemma 2</string>
+    <string name="media_search_npu_unavailable">NPU цього пристрою не може запустити цю модель. Натомість завантажте стандартну версію EmbeddingGemma 2.</string>
     <string name="media_search_analyzing">Аналіз…</string>
     <string name="media_search_paused">Аналіз призупинено</string>
     <string name="media_search_progress">Проаналізовано %1$d з %2$d (%3$d%%)</string>
@@ -1157,4 +1159,20 @@
     <string name="video_generator_random_seed">Випадковий сід</string>
     <string name="video_generator_negative_prompt">Негативний запит (необов’язково)</string>
     <string name="video_generator_negative_prompt_hint">Чого уникати, наприклад: розмито, спотворено, низька якість</string>
+    <string name="image_extras_title">Модифікатори зображення</string>
+    <string name="image_extras_negative">Негативний промпт</string>
+    <string name="image_extras_guidance">Сила дотримання промпту</string>
+    <string name="image_extras_clip_skip">Пропуск шарів CLIP</string>
+    <string name="image_extras_weight">Вага</string>
+    <string name="image_extras_text_encoder">Кодувальник тексту</string>
+    <string name="image_extras_embedding">Текстова інверсія</string>
+    <string name="image_extras_tags">Список тегів</string>
+    <string name="image_extras_definitions">Визначення</string>
+    <string name="image_extras_translations">Список перекладів</string>
+    <string name="image_extras_checkpoint">Базовий чекпойнт</string>
+    <string name="image_extras_invalid">Вибраний файл некоректний або несумісний із моделлю.</string>
+    <string name="image_extras_resource_hint">Теги: по одному в рядку або масив JSON. Визначення/переклади: об’єкт JSON або key=value. Торкніться тегу/визначення, щоб додати; переклади застосовуються локально.</string>
+    <string name="image_extras_ios_help">LoRA: SafeTensors або .ckpt Draw Things. Кодувальники/VAE: сумісні .ckpt Draw Things. Ембеддинги: SafeTensors. Спочатку виберіть відповідну модель.</string>
+    <string name="image_extras_android_help">Для LoRA, пропуску шарів CLIP і власних кодувальників потрібен імпортований чекпойнт GGUF/SafeTensors. Ваги QNN/MNN фіксовані. LoRA/ембеддинги: SafeTensors.</string>
+    <string name="image_extras_import_location">Імпортуйте чекпойнти, LoRA, енкодери та списки промптів у розділі %1$s → %2$s.</string>
 </resources>
