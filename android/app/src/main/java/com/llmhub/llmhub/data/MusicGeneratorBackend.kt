@@ -54,18 +54,22 @@ object MusicGeneratorBackend {
         }
     }
 
+    /**
+     * Like [QuickBundle], HD compiles one stage at a time and closes it before the next. Keeping
+     * all three CPU models alive at once (and after generation) ran a 12 GB Galaxy Tab S9+ out of
+     * memory with SoundGen HD Long: lmkd killed the app once the audio was written on LiteRT 2.1.6,
+     * and before it finished on 2.3.0.
+     */
     private class HdBundle(
         modelName: String,
-        val textModel: CompiledModel,
-        val coreModel: CompiledModel,
-        val decodeModel: CompiledModel,
+        val textFile: File,
+        val coreFile: File,
+        val decodeFile: File,
         val tokenizer: BpeTokenizer,
         val longModel: Boolean
     ) : LoadedBundle(modelName) {
         override fun close() {
-            runCatching { decodeModel.close() }
-            runCatching { coreModel.close() }
-            runCatching { textModel.close() }
+            // Models are compiled per stage in generateHd and closed right after use.
         }
     }
 
@@ -248,91 +252,92 @@ object MusicGeneratorBackend {
         val latentSize = frameCount * 256
         val channelSamples = frameCount * HD_SAMPLES_PER_LATENT_FRAME
 
-        bundle.textModel.let { textModel ->
-            bundle.coreModel.let { coreModel ->
-                bundle.decodeModel.let { decodeModel ->
-                    val tokenIds = tokenizer.encode(prompt)
-                    val ids = LongArray(256)
-                    val mask = LongArray(256)
-                    repeat(min(tokenIds.size, 256)) { index ->
-                        ids[index] = tokenIds[index].toLong()
-                        mask[index] = 1L
-                    }
+        val tokenIds = tokenizer.encode(prompt)
+        val ids = LongArray(256)
+        val mask = LongArray(256)
+        repeat(min(tokenIds.size, 256)) { index ->
+            ids[index] = tokenIds[index].toLong()
+            mask[index] = 1L
+        }
 
-                    val conditioning = textModel.buffers { inputs, outputs ->
-                        inputs[0].writeLong(ids)
-                        inputs[1].writeLong(mask)
-                        textModel.run(inputs, outputs)
-                        require(outputs.size == 1) {
-                            "SoundGen HD encoder returned ${outputs.size} outputs; expected 1"
-                        }
-                        outputs[0].readFloat()
-                    }
-                    // The pinned T5Gemma encoder exports only the hidden states.
-                    // The DiT's [1, 256] conditioning mask is the encoder attention
-                    // mask converted from INT64 to FLOAT32, not a second encoder output.
-                    val conditioningMask = FloatArray(mask.size) { mask[it].toFloat() }
-                    onProgress(0.05f)
-
-                    val shift = exp(-((((frameCount - 256) * 0.65f) / 3840f) + 0.5f).toDouble()).toFloat()
-                    val schedule = FloatArray(9) { index ->
-                        val raw = 1f - index / 8f
-                        when {
-                            raw >= 1f -> 1f
-                            raw <= 0f -> 0f
-                            else -> 1f - shift / ((1f / (1f - raw) - 1f) + shift)
-                        }
-                    }
-                    schedule[0] = 1f
-
-                    var latent = gaussian(seed, latentSize)
-                    val nextLatent = FloatArray(latentSize)
-                    val noise = FloatArray(latentSize)
-                    val timeArray = FloatArray(1)
-                    val durationArray = floatArrayOf(durationSeconds)
-                    val zerosArray = FloatArray(frameCount * 257)
-
-                    coreModel.buffers { inputs, outputs ->
-                        inputs[2].writeFloat(conditioning)
-                        inputs[3].writeFloat(conditioningMask)
-                        inputs[4].writeFloat(durationArray)
-                        inputs[5].writeFloat(zerosArray)
-                        repeat(8) { step ->
-                            val time = schedule[step]
-                            val nextTime = schedule[step + 1]
-                            inputs[0].writeFloat(latent)
-                            timeArray[0] = time
-                            inputs[1].writeFloat(timeArray)
-                            coreModel.run(inputs, outputs)
-                            val velocity = outputs[0].readFloat()
-                            if (step < 7) {
-                                fillGaussian(seed + step + 1L, noise)
-                                for (i in 0 until latentSize) {
-                                    val predicted = latent[i] - velocity[i] * time
-                                    nextLatent[i] = noise[i] * nextTime + (1f - nextTime) * predicted
-                                }
-                            } else {
-                                for (i in 0 until latentSize) {
-                                    nextLatent[i] = latent[i] - velocity[i] * time
-                                }
-                            }
-                            System.arraycopy(nextLatent, 0, latent, 0, latentSize)
-                            onProgress(0.05f + ((step + 1) * 0.8f / 8f))
-                        }
-                    }
-
-                    val audio = decodeModel.buffers { inputs, outputs ->
-                        inputs[0].writeFloat(latent)
-                        decodeModel.run(inputs, outputs)
-                        outputs[0].readFloat()
-                    }
-                    onProgress(0.97f)
-                    val frames = min(channelSamples, max(1, (durationSeconds * SAMPLE_RATE).roundToInt()))
-                    return writeStereoWav(context, if (longModel) "soundgenhd_long" else "soundgenhd", audio, channelSamples, frames, normalize = true)
-                        .also { onProgress(1f) }
+        // Stage 1: text encoder. Compiled, executed, and released before the DiT loads.
+        val conditioning = createModelHd(bundle.textFile, "SoundGen HD conditioner").useModel { textModel ->
+            textModel.buffers { inputs, outputs ->
+                inputs[0].writeLong(ids)
+                inputs[1].writeLong(mask)
+                textModel.run(inputs, outputs)
+                require(outputs.size == 1) {
+                    "SoundGen HD encoder returned ${outputs.size} outputs; expected 1"
                 }
+                outputs[0].readFloat()
             }
         }
+        // The pinned T5Gemma encoder exports only the hidden states.
+        // The DiT's [1, 256] conditioning mask is the encoder attention
+        // mask converted from INT64 to FLOAT32, not a second encoder output.
+        val conditioningMask = FloatArray(mask.size) { mask[it].toFloat() }
+        onProgress(0.05f)
+
+        val shift = exp(-((((frameCount - 256) * 0.65f) / 3840f) + 0.5f).toDouble()).toFloat()
+        val schedule = FloatArray(9) { index ->
+            val raw = 1f - index / 8f
+            when {
+                raw >= 1f -> 1f
+                raw <= 0f -> 0f
+                else -> 1f - shift / ((1f / (1f - raw) - 1f) + shift)
+            }
+        }
+        schedule[0] = 1f
+
+        var latent = gaussian(seed, latentSize)
+        val nextLatent = FloatArray(latentSize)
+        val noise = FloatArray(latentSize)
+        val timeArray = FloatArray(1)
+        val durationArray = floatArrayOf(durationSeconds)
+        val zerosArray = FloatArray(frameCount * 257)
+
+        // Stage 2: DiT, 8 steps, then released before the decoder loads.
+        createModelHd(bundle.coreFile, "SoundGen HD DiT").useModel { coreModel -> coreModel.buffers { inputs, outputs ->
+            inputs[2].writeFloat(conditioning)
+            inputs[3].writeFloat(conditioningMask)
+            inputs[4].writeFloat(durationArray)
+            inputs[5].writeFloat(zerosArray)
+            repeat(8) { step ->
+                val time = schedule[step]
+                val nextTime = schedule[step + 1]
+                inputs[0].writeFloat(latent)
+                timeArray[0] = time
+                inputs[1].writeFloat(timeArray)
+                coreModel.run(inputs, outputs)
+                val velocity = outputs[0].readFloat()
+                if (step < 7) {
+                    fillGaussian(seed + step + 1L, noise)
+                    for (i in 0 until latentSize) {
+                        val predicted = latent[i] - velocity[i] * time
+                        nextLatent[i] = noise[i] * nextTime + (1f - nextTime) * predicted
+                    }
+                } else {
+                    for (i in 0 until latentSize) {
+                        nextLatent[i] = latent[i] - velocity[i] * time
+                    }
+                }
+                System.arraycopy(nextLatent, 0, latent, 0, latentSize)
+                onProgress(0.05f + ((step + 1) * 0.8f / 8f))
+            }
+        } }
+
+        // Stage 3: audio decoder, released before the WAV is written.
+        val audio = createModelHd(bundle.decodeFile, "SoundGen HD decoder").useModel { decodeModel ->
+            decodeModel.buffers { inputs, outputs ->
+                inputs[0].writeFloat(latent)
+                decodeModel.run(inputs, outputs)
+                outputs[0].readFloat()
+            }
+        }
+        onProgress(0.97f)
+        val frames = min(channelSamples, max(1, (durationSeconds * SAMPLE_RATE).roundToInt()))
+        return writeStereoWav(context, if (longModel) "soundgenhd_long" else "soundgenhd", audio, channelSamples, frames, normalize = true)
+            .also { onProgress(1f) }
     }
 
     /**
@@ -368,56 +373,43 @@ object MusicGeneratorBackend {
         loadedBundle = null
 
         val modelDir = modelDirectory(context, modelName)
-        var textModel: CompiledModel? = null
-        var coreModel: CompiledModel? = null
-        var decodeModel: CompiledModel? = null
-        try {
-            val bundle = if (modelName.contains("HD", ignoreCase = true)) {
-                val longModel = modelName.contains("Long", ignoreCase = true)
-                val coreOriginal = if (longModel) "dit_L2048_int8.tflite" else "dit_L256_int8.tflite"
-                val decodeOriginal = if (longModel) "ae_dec_L2048_int8.tflite" else "ae_dec_L256_int8.tflite"
-                val textFile = requireFile(modelDir, "t5gemma_enc_int8.tflite", "sghd_text.litert")
-                val coreFile = requireFile(
-                    modelDir,
-                    coreOriginal,
-                    coreOriginal.removeSuffix(".tflite") + ".litert",
-                    "sghd_core.litert"
-                )
-                val decodeFile = requireFile(modelDir, decodeOriginal, "sghd_decode.litert")
-                val tokenizer = BpeTokenizer.load(requireFile(modelDir, "tokenizer.model", "sghd_vocab.spm"))
-                textModel = createModelHd(textFile, "SoundGen HD conditioner")
-                coreModel = createModelHd(coreFile, "SoundGen HD DiT")
-                decodeModel = createModelHd(decodeFile, "SoundGen HD decoder")
-                HdBundle(
-                    modelName,
-                    requireNotNull(textModel),
-                    requireNotNull(coreModel),
-                    requireNotNull(decodeModel),
-                    tokenizer,
-                    longModel
-                )
-            } else {
-                val textFile = requireFile(modelDir, "conditioners_float32.tflite", "sg_text.litert")
-                val coreFile = requireFile(modelDir, "dit_model.tflite", "dit_model.litert", "sg_core.litert")
-                val decodeFile = requireFile(modelDir, "autoencoder_model_undilated_1g.tflite", "autoencoder_model.tflite", "sg_decode.litert")
-                val tokenizer = SentencePieceTokenizer.load(requireFile(modelDir, "spiece.model", "sg_vocab.spm"))
-                QuickBundle(
-                    modelName = modelName,
-                    textFile = textFile,
-                    coreFile = coreFile,
-                    decodeFile = decodeFile,
-                    tokenizer = tokenizer
-                )
-            }
-            loadedBundle = bundle
-            Log.i(TAG, "Local SoundGen model loaded: $modelName")
-            return bundle
-        } catch (t: Throwable) {
-            runCatching { decodeModel?.close() }
-            runCatching { coreModel?.close() }
-            runCatching { textModel?.close() }
-            throw t
+        val bundle = if (modelName.contains("HD", ignoreCase = true)) {
+            val longModel = modelName.contains("Long", ignoreCase = true)
+            val coreOriginal = if (longModel) "dit_L2048_int8.tflite" else "dit_L256_int8.tflite"
+            val decodeOriginal = if (longModel) "ae_dec_L2048_int8.tflite" else "ae_dec_L256_int8.tflite"
+            val textFile = requireFile(modelDir, "t5gemma_enc_int8.tflite", "sghd_text.litert")
+            val coreFile = requireFile(
+                modelDir,
+                coreOriginal,
+                coreOriginal.removeSuffix(".tflite") + ".litert",
+                "sghd_core.litert"
+            )
+            val decodeFile = requireFile(modelDir, decodeOriginal, "sghd_decode.litert")
+            val tokenizer = BpeTokenizer.load(requireFile(modelDir, "tokenizer.model", "sghd_vocab.spm"))
+            HdBundle(
+                modelName = modelName,
+                textFile = textFile,
+                coreFile = coreFile,
+                decodeFile = decodeFile,
+                tokenizer = tokenizer,
+                longModel = longModel
+            )
+        } else {
+            val textFile = requireFile(modelDir, "conditioners_float32.tflite", "sg_text.litert")
+            val coreFile = requireFile(modelDir, "dit_model.tflite", "dit_model.litert", "sg_core.litert")
+            val decodeFile = requireFile(modelDir, "autoencoder_model_undilated_1g.tflite", "autoencoder_model.tflite", "sg_decode.litert")
+            val tokenizer = SentencePieceTokenizer.load(requireFile(modelDir, "spiece.model", "sg_vocab.spm"))
+            QuickBundle(
+                modelName = modelName,
+                textFile = textFile,
+                coreFile = coreFile,
+                decodeFile = decodeFile,
+                tokenizer = tokenizer
+            )
         }
+        loadedBundle = bundle
+        Log.i(TAG, "Local SoundGen model loaded: $modelName")
+        return bundle
     }
 
     private inline fun <T> CompiledModel.useModel(block: (CompiledModel) -> T): T =
