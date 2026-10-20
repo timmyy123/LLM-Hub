@@ -3673,6 +3673,10 @@ struct TranslatorScreen: View {
             }
         }
         .onAppear {
+            #if DEBUG
+            // Screenshot automation: prefill the text to translate.
+            if inputText.isEmpty, let text = ScreenshotHooks.translatorInput { inputText = text }
+            #endif
             Task {
                 await refreshDownloadedModelStatus()
                 let available = downloadableFeatureModels().filter(isTranslatorSupportedModel)
@@ -6752,7 +6756,22 @@ struct ImageGeneratorScreen: View {
                 }
             }
         }
+        #if DEBUG
+        .task {
+            guard ScreenshotHooks.autotest == "image" else { return }
+            try? await Task.sleep(nanoseconds: 3_000_000_000)
+            ScreenshotHooks.autotestLog("generating image with \(selectedModelId), prompt: \(promptText)")
+            startGeneration(clearAll: true)
+        }
+        .onChange(of: generatedImages.count) { _, count in
+            if ScreenshotHooks.autotest == "image" { ScreenshotHooks.autotestLog("images generated: \(count)") }
+        }
+        #endif
         .onAppear {
+            #if DEBUG
+            // Screenshot automation: prefill the prompt.
+            if promptText.isEmpty, let prompt = ScreenshotHooks.imagePrompt { promptText = prompt }
+            #endif
             if selectedModelId.isEmpty || !availableModels.contains(where: { $0.id == selectedModelId }) {
                 selectedModelId = availableModels.first?.id ?? ""
             }
@@ -6898,9 +6917,6 @@ struct ImageGeneratorScreen: View {
                 img2imgCard
             }
             generateButton
-            if !generatedImages.isEmpty {
-                saveButton
-            }
         }
     }
 
@@ -7645,7 +7661,27 @@ public struct MusicGeneratorScreen: View {
             )
             .environmentObject(settings)
         }
+        #if DEBUG
+        .task {
+            guard ScreenshotHooks.autotest == "music" else { return }
+            try? await Task.sleep(nanoseconds: 3_000_000_000)
+            ScreenshotHooks.autotestLog("generating with \(selectedModelName), prompt: \(prompt)")
+            generateMusic()
+        }
+        .onChange(of: errorMessage) { _, message in
+            if ScreenshotHooks.autotest == "music", let message { ScreenshotHooks.autotestLog("music error: \(message)") }
+        }
+        .onChange(of: generatedTracks.count) { _, count in
+            guard ScreenshotHooks.autotest == "music", let track = generatedTracks.last else { return }
+            let bytes = (try? FileManager.default.attributesOfItem(atPath: track.url.path)[.size] as? Int) ?? 0
+            ScreenshotHooks.autotestLog("music tracks: \(count), last \(track.url.lastPathComponent) \(bytes) bytes")
+        }
+        #endif
         .onAppear {
+            #if DEBUG
+            // Screenshot automation: prefill the prompt.
+            if prompt.isEmpty, let text = ScreenshotHooks.musicPrompt { prompt = text }
+            #endif
             Task {
                 await refreshDownloadedModelStatus()
                 let available = downloadableFeatureModels().filter(isMusicGenerationFeatureModel)
@@ -7914,6 +7950,13 @@ public struct MusicGeneratorScreen: View {
         let requestedSeed: UInt64? = randomSeed ? nil : UInt64(min(999_999, max(0, musicSeed)))
         #if DEBUG
         if let injected = ScreenshotHooks.injectMusicURL {
+            if requestedUnlimited {
+                // Live generation in progress (Duo simulator): a running timer, no audio.
+                generationStartedAt = Date().addingTimeInterval(-24)
+                isGenerating = true
+                errorMessage = nil
+                return
+            }
             generationStartedAt = Date()
             isGenerating = true
             errorMessage = nil

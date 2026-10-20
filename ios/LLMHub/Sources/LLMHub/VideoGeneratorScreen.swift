@@ -122,8 +122,11 @@ struct VideoGeneratorScreen: View {
                 selectedModelId = availableModels.first?.id ?? ""
             }
             #if DEBUG
-            if isInjectingResult, inputImage == nil {
-                inputImage = ScreenshotHooks.image(at: ScreenshotHooks.injectVideoInputURL)
+            // Screenshot automation: prefill the prompt.
+            if promptText.isEmpty, let prompt = ScreenshotHooks.videoPrompt { promptText = prompt }
+            // Input image only (real generation) or together with an injected result.
+            if inputImage == nil, let injected = ScreenshotHooks.image(at: ScreenshotHooks.injectVideoInputURL) {
+                inputImage = injected
             }
             #endif
         }

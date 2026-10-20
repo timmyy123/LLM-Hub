@@ -38,7 +38,37 @@ RESULT="$OUTDIR/duo-$POSE.xcresult"
 rm -rf "$RESULT"
 mkdir -p "$OUTDIR"
 TEST_FILTER="LLMHubScreenshotUITests/StoreScreenshotTests${ONLY:+/$ONLY}"
-TEST_RUNNER_SCREENSHOT_DUO_INJECT=1 TEST_RUNNER_SCREENSHOT_DUO_POSE="$POSE" \
+
+# XCUITest cannot capture either display correctly (the inner one is not listed, the outer
+# one comes back sideways): the test asks for each shot through $CAPTURE/request and this
+# loop takes it with simctl, answering in $CAPTURE/done. Display 1 is the outer display.
+HOST_ENV=()
+DISPLAY_ARG=()
+[ "$POSE" = "outer-portrait" ] && DISPLAY_ARG=(--display=1)
+if true; then
+  CAPTURE="$OUTDIR/host-capture"
+  rm -rf "$CAPTURE"; mkdir -p "$CAPTURE"
+  HOST_ENV=(TEST_RUNNER_SCREENSHOT_HOST_CAPTURE_DIR="$CAPTURE")
+  (
+    last=""
+    while true; do
+      if [ -f "$CAPTURE/request" ]; then
+        name="$(cat "$CAPTURE/request")"
+        if [ -n "$name" ] && [ "$name" != "$last" ]; then
+          mkdir -p "$OUTDIR/screenshots/$(dirname "$name")"
+          xcrun simctl io "$UDID" screenshot ${DISPLAY_ARG[@]+"${DISPLAY_ARG[@]}"} --type=png "$OUTDIR/screenshots/$name" >/dev/null 2>&1
+          printf '%s' "$name" > "$CAPTURE/done"
+          last="$name"
+        fi
+      fi
+      sleep 0.2
+    done
+  ) &
+  CAPTURE_PID=$!
+  trap 'kill $CAPTURE_PID 2>/dev/null' EXIT
+fi
+
+env ${HOST_ENV[@]+"${HOST_ENV[@]}"} TEST_RUNNER_SCREENSHOT_DUO_INJECT=1 TEST_RUNNER_SCREENSHOT_DUO_POSE="$POSE" \
   xcodebuild test-without-building -xctestrun "$XCTESTRUN" -destination "id=$UDID" \
   -only-testing:"$TEST_FILTER" -resultBundlePath "$RESULT" || echo "Some tests failed; extracting what was captured"
 

@@ -37,6 +37,11 @@ final class StoreScreenshotTests: XCTestCase {
 
     static let outputPort: UInt16 = 47_861
     static let vibecodePrompt = "Build a neon Snake game with a score counter, arrow-key and swipe controls, and a glowing grid background."
+    static let musicPrompt = "Upbeat 80s synthwave with punchy drums, warm analog bass and a soaring lead"
+    // Same scene as the Play Store screenshots.
+    static let imagePrompt = "a cozy cabin in a snowy forest at night, warm lights, cinematic, highly detailed"
+    static let videoPrompt = "Slow cinematic push-in, snow gently falling, warm window lights flickering"
+    static let translatorInput = "Good morning! Could you recommend a quiet café nearby where I can work for a few hours?"
     static let vibeVoiceTranscript = "What are three fun things to do in Tokyo on a rainy day?"
 
     private var app: XCUIApplication!
@@ -105,7 +110,7 @@ final class StoreScreenshotTests: XCTestCase {
     // MARK: - 01 Vibecode
 
     func test01_vibecode() throws {
-        let llm = vibecodeModel
+        let llm = llmModel
         launch([
             "-feature_vibecoder_model_name", llm.name,
             "-feature_vibecoder_enable_thinking", "NO",
@@ -116,18 +121,11 @@ final class StoreScreenshotTests: XCTestCase {
         ensureDownloaded(llm)
         openFeature("vibe_coder")
 
-        // The app opens snake.html in an empty chat and prefills the request
-        // (-screenshot_vibecode_file / -screenshot_vibecode_prompt), so no typing is needed.
+        // Editor and chat box only: the app opens snake.html in an empty chat and prefills
+        // the request (-screenshot_vibecode_file / -screenshot_vibecode_prompt); it is not sent.
         XCTAssertTrue(element("vibecode_chat_input").waitForExistence(timeout: 20))
-        let send = element("vibecode_send_button")
-        XCTAssertTrue(waitUntil(timeout: 10) { send.isEnabled }, "Send button stayed disabled")
-        send.tap()
-
-        XCTAssertTrue(waitUntil(timeout: 120) { (send.value as? String) != "idle" }, "Vibecode generation did not start")
-        XCTAssertTrue(waitUntil(timeout: 30 * 60, poll: 5) { (send.value as? String) == "idle" }, "Vibecode generation did not finish")
-        let editor = element("vibecode_editor")
-        XCTAssertTrue(waitUntil(timeout: 30) { !((editor.value as? String) ?? "").isEmpty }, "Editor stayed empty")
         dismissKeyboardIfNeeded()
+        sleep(1)
 
         captureAllLanguages(number: "01", feature: "vibecode")
     }
@@ -135,13 +133,13 @@ final class StoreScreenshotTests: XCTestCase {
     // MARK: - 02 Image generation
 
     func test02_image() throws {
-        var args = ["-sd_selected_model_id", Self.imageModel.id ?? ""]
+        var args = ["-sd_selected_model_id", Self.imageModel.id ?? "", "-screenshot_image_prompt", Self.imagePrompt]
         if injectMode { args += ["-screenshot_inject_image", "screenshot_outputs/image.png"] }
         launch(args)
         if !injectMode { ensureDownloaded(Self.imageModel) }
         openFeature("image_generator")
 
-        typeInto("image_prompt", "A cozy floating island village at sunset, glowing lanterns, waterfalls, whimsical fantasy art, highly detailed")
+        typeIfEmpty("image_prompt", Self.imagePrompt)
         tap("image_generate_button")
 
         let result = element("image_result")
@@ -149,13 +147,6 @@ final class StoreScreenshotTests: XCTestCase {
         waitForIdleProgress()
 
         if !injectMode {
-            // Put the image in Photos for the video and upscale tests.
-            tap("image_save_button")
-            handleSystemAlerts(timeout: 10)
-            let saved = app.alerts.firstMatch
-            if saved.waitForExistence(timeout: 20) {
-                saved.buttons.firstMatch.tap()
-            }
             attachOutputs(["image.png"])
         }
         reveal(result)
@@ -166,22 +157,21 @@ final class StoreScreenshotTests: XCTestCase {
     // MARK: - 03 Video generation
 
     func test03_video() throws {
-        var args = ["-sd_video_model_id", Self.videoModel.id ?? "", "-sd_video_steps", "6"]
+        var args = ["-sd_video_model_id", Self.videoModel.id ?? "", "-sd_video_steps", "6", "-screenshot_video_prompt", Self.videoPrompt]
         if injectMode {
             args += [
                 "-screenshot_inject_video", "screenshot_outputs/video.mp4",
                 "-screenshot_inject_video_input", "screenshot_outputs/video_input.png",
             ]
         }
+        // Real generation: the start image is the one test02 generated on this device (the
+        // Photos picker is unreliable on Device Farm).
+        if !injectMode { args += ["-screenshot_inject_video_input", "screenshot_outputs/image.png"] }
         launch(args)
         if !injectMode { ensureDownloaded(Self.videoModel) }
         openFeature("video_generator")
 
-        typeInto("video_prompt", "Slow cinematic push-in, lanterns flickering, waterfalls flowing, clouds drifting")
-        if !injectMode {
-            tap("video_input_picker")
-            pickMostRecentPhoto()
-        }
+        typeIfEmpty("video_prompt", Self.videoPrompt)
         let generate = element("video_generate_button")
         XCTAssertTrue(waitUntil(timeout: 30) { generate.isEnabled }, "Generate stayed disabled (no input image?)")
         generate.tap()
@@ -197,21 +187,36 @@ final class StoreScreenshotTests: XCTestCase {
     // MARK: - 04 Music generation
 
     func test04_music() throws {
-        var args = ["-feature_music_model_name", Self.musicModel.name]
+        // Live generation: the track plays while it is generated, with no fixed length.
+        var args = ["-feature_music_model_name", Self.musicModel.name, "-screenshot_music_prompt", Self.musicPrompt,
+                    "-feature_music_live_generation", "YES", "-feature_music_unlimited_duration", "YES"]
         if injectMode { args += ["-screenshot_inject_music", "screenshot_outputs/music.wav"] }
         launch(args)
         if !injectMode { ensureDownloaded(Self.musicModel) }
         openFeature("music_generator")
 
-        typeInto("music_prompt", "Upbeat 80s synthwave with punchy drums, warm analog bass and a soaring lead")
-        dismissKeyboardIfNeeded()
+        if typeIfEmpty("music_prompt", Self.musicPrompt) { dismissKeyboardIfNeeded() }
         tap("music_generate_button")
+        // Record the screen shortly after the tap so a stalled run shows why (error, loading...).
+        pause(20)
+        let afterTap = XCTAttachment(screenshot: XCUIScreen.main.screenshot(), quality: .medium)
+        afterTap.name = "debug/04_music_after_generate.png"; afterTap.lifetime = .keepAlways; add(afterTap)
+        let error = app.staticTexts.containing(NSPredicate(format: "label CONTAINS[c] 'error'")).firstMatch
+        if error.exists { XCTFail("Music generation failed: \(error.label)"); return }
 
-        let track = element("music_track")
-        XCTAssertTrue(waitForElement(track, timeout: 45 * 60), "No generated track")
-        if !injectMode { attachOutputs(["music.wav"]) }
-
+        // While live, the Generate button shows "Stop · mm:ss". Capture it playing.
+        let button = element("music_generate_button")
+        let live = waitUntil(timeout: 10 * 60, poll: 2) { button.label.range(of: #"\d\d:\d\d"#, options: .regularExpression) != nil }
+        XCTAssertTrue(live, "Live generation did not start (button: \(button.label))")
+        if !injectMode { pause(10) }
         captureAllLanguages(number: "04", feature: "music")
+
+        if !injectMode {
+            // Stop, so the generated audio is saved for the Duo simulator screenshots.
+            button.tap()
+            XCTAssertTrue(waitForElement(element("music_track"), timeout: 5 * 60), "No track after stopping live generation")
+            attachOutputs(["music.wav"])
+        }
     }
 
     // MARK: - 05 Image upscale
@@ -224,14 +229,12 @@ final class StoreScreenshotTests: XCTestCase {
                 "-screenshot_inject_upscale_output", "screenshot_outputs/upscale_output.png",
             ]
         }
+        // Real upscale: the input is the image test02 generated on this device (the Photos
+        // picker is unreliable on Device Farm).
+        if !injectMode { args += ["-screenshot_inject_upscale_input", "screenshot_outputs/image.png"] }
         launch(args)
         if !injectMode { ensureDownloaded(Self.upscaleModel) }
         openFeature("image_upscaler")
-
-        if !injectMode {
-            tap("upscale_input_picker")
-            pickMostRecentPhoto()
-        }
         let upscale = element("upscale_button")
         XCTAssertTrue(waitUntil(timeout: 30) { upscale.isEnabled }, "Upscale stayed disabled (no input image?)")
         upscale.tap()
@@ -278,12 +281,15 @@ final class StoreScreenshotTests: XCTestCase {
             "-feature_translator_source_lang", "en",
             "-feature_translator_target_lang", environment["SCREENSHOT_TRANSLATOR_TARGET"] ?? "es",
             "-feature_translator_auto_detect", "NO",
+            "-screenshot_translator_input", Self.translatorInput,
         ] + llmArguments(llm))
         ensureDownloaded(llm)
         openFeature("translator")
 
-        typeInto("translator_input", "Good morning! Could you recommend a quiet café nearby where I can work for a few hours?")
-        dismissKeyboardIfNeeded(tapping: "Text to translate")
+        // The app prefills the text (-screenshot_translator_input); type it only if that failed.
+        if typeIfEmpty("translator_input", Self.translatorInput) {
+            dismissKeyboardIfNeeded(tapping: "Text to translate")
+        }
         tap("translator_translate_button")
 
         let output = element("translator_output")
@@ -301,7 +307,14 @@ final class StoreScreenshotTests: XCTestCase {
     private func launch(_ extraArguments: [String]) {
         app = XCUIApplication()
         if let duoPose {
-            XCUIDevice.shared.orientation = duoPose.orientation
+            // SCREENSHOT_DUO_ORIENTATION (portrait|landscapeLeft|landscapeRight|portraitUpsideDown)
+            // overrides the pose's rotation: folded, the simulator's orientations are relative to
+            // the inner display.
+            let overrides: [String: UIDeviceOrientation] = [
+                "portrait": .portrait, "landscapeLeft": .landscapeLeft,
+                "landscapeRight": .landscapeRight, "portraitUpsideDown": .portraitUpsideDown,
+            ]
+            XCUIDevice.shared.orientation = environment["SCREENSHOT_DUO_ORIENTATION"].flatMap { overrides[$0] } ?? duoPose.orientation
         }
         app.launchArguments = [
             "-app_language", "en",
@@ -334,18 +347,44 @@ final class StoreScreenshotTests: XCTestCase {
     }
 
     /// Downloads a catalog model through the AI Models screen unless it is already there.
+    /// Selects a model category chip, scrolling the chip row as needed.
+    private func selectCategory(_ key: String) {
+        let category = element("model_category_\(key)")
+        XCTAssertTrue(category.waitForExistence(timeout: 15), "Missing category \(key)")
+        // The chip row is wider than the screen (iPhone and iPad), and asking an off-screen chip
+        // for isHittable fails the test. Compare frames instead and drag the row by coordinates
+        // along its own y until the chip is fully on screen.
+        let window = app.windows.firstMatch.frame
+        let rowY = category.frame.midY
+        func chipOnScreen() -> Bool {
+            let frame = category.frame
+            return !frame.isEmpty && frame.minX >= window.minX && frame.maxX <= window.maxX
+        }
+        let origin = app.coordinate(withNormalizedOffset: .zero)
+        var chipSwipes = 0
+        while !chipOnScreen() && chipSwipes < 8 {
+            // Drag exactly the distance needed (slow drag, then hold: no momentum).
+            let frame = category.frame
+            let shift = frame.maxX > window.maxX ? -(frame.maxX - window.maxX + 16) : (window.minX + 16 - frame.minX)
+            let distance = max(-window.width * 0.7, min(window.width * 0.7, shift))
+            let startX = distance < 0 ? window.width * 0.85 : window.width * 0.15
+            let from = origin.withOffset(CGVector(dx: startX, dy: rowY))
+            let to = origin.withOffset(CGVector(dx: startX + distance, dy: rowY))
+            from.press(forDuration: 0.05, thenDragTo: to, withVelocity: .slow, thenHoldForDuration: 0.3)
+            pause(0.5)
+            chipSwipes += 1
+        }
+        XCTAssertTrue(chipOnScreen(), "Category \(key) chip stayed off screen")
+        category.tap()
+    }
+
     private func ensureDownloaded(_ model: CatalogModel) {
+        // Built into the OS (e.g. the iPhone Duo simulator): nothing to download.
+        if model.name == "Apple Foundation Model" { return }
         tap("home_models_button")
         XCTAssertTrue(app.navigationBars["AI Models"].waitForExistence(timeout: 15) || element("model_category_text_models").exists)
 
-        let category = element("model_category_\(model.categoryKey)")
-        XCTAssertTrue(category.waitForExistence(timeout: 15), "Missing category \(model.categoryKey)")
-        var chipSwipes = 0
-        while !category.isHittable && chipSwipes < 8 {
-            element("model_category_vision_models").swipeLeft()
-            chipSwipes += 1
-        }
-        category.tap()
+        selectCategory(model.categoryKey)
 
         let row = element("model_row_\(model.name)")
         if !row.waitForExistence(timeout: 3) {
@@ -386,9 +425,14 @@ final class StoreScreenshotTests: XCTestCase {
         for language in languages {
             postLanguage(language)
             pause(wait)
-            let attachment = XCTAttachment(screenshot: captureScreen(), quality: .original)
             let suffix = duoPose.map { "_duo-\($0.rawValue)" } ?? ""
-            attachment.name = "\(language)/\(number)_\(feature)\(suffix).png"
+            let name = "\(language)/\(number)_\(feature)\(suffix).png"
+            if let hostDir = hostCaptureDirectory {
+                requestHostCapture(name, in: hostDir)
+                continue
+            }
+            let attachment = XCTAttachment(screenshot: captureScreen(), quality: .original)
+            attachment.name = name
             attachment.lifetime = .keepAlways
             add(attachment)
         }
@@ -396,11 +440,28 @@ final class StoreScreenshotTests: XCTestCase {
         pause(0.5)
     }
 
+    /// `SCREENSHOT_HOST_CAPTURE_DIR`: XCUIScreen cannot capture the unfolded iPhone Duo's inner
+    /// display, so the Mac captures it with `simctl io screenshot` (run_duo_simulator.sh). The
+    /// test writes the file name to `<dir>/request` and waits for the same name in `<dir>/done`.
+    private var hostCaptureDirectory: URL? {
+        environment["SCREENSHOT_HOST_CAPTURE_DIR"].map { URL(fileURLWithPath: $0, isDirectory: true) }
+    }
+
+    private func requestHostCapture(_ name: String, in directory: URL) {
+        let done = directory.appendingPathComponent("done")
+        try? FileManager.default.removeItem(at: done)
+        XCTAssertNoThrow(try name.write(to: directory.appendingPathComponent("request"), atomically: true, encoding: .utf8))
+        let captured = waitUntil(timeout: 60, poll: 0.25) { (try? String(contentsOf: done, encoding: .utf8)) == name }
+        XCTAssertTrue(captured, "Host did not capture \(name)")
+    }
+
     /// The screen to capture. Real iPhones and iPads have one; the iPhone Duo simulator
     /// reports several, of which only the display of the current pose shows the app.
     private func captureScreen() -> XCUIScreenshot {
+        // Device Farm iPhones list an extra screen that cannot be captured, so only the Duo
+        // simulator (a pose is set) looks beyond the main screen.
         let screens = XCUIScreen.screens
-        guard screens.count > 1 else { return XCUIScreen.main.screenshot() }
+        guard duoPose != nil, screens.count > 1 else { return XCUIScreen.main.screenshot() }
         let shots = screens.map { $0.screenshot() }
         if let expected = duoPose?.pixelSize {
             if let match = shots.first(where: { Self.pixelSize(of: $0) == expected }) { return match }
@@ -467,6 +528,17 @@ final class StoreScreenshotTests: XCTestCase {
         XCTAssertTrue(target.waitForExistence(timeout: timeout), "Missing element \(identifier)")
         reveal(target)
         target.tap()
+    }
+
+    /// Types `text` unless the app already prefilled it through a screenshot hook (typing is
+    /// unreliable on Device Farm iPads). Returns true when it had to type.
+    @discardableResult
+    private func typeIfEmpty(_ identifier: String, _ text: String) -> Bool {
+        let field = element(identifier)
+        XCTAssertTrue(field.waitForExistence(timeout: 20), "Missing text input \(identifier)")
+        if ((field.value as? String) ?? "").contains(text.prefix(12)) { return false }
+        typeInto(identifier, text)
+        return true
     }
 
     private func typeInto(_ identifier: String, _ text: String) {

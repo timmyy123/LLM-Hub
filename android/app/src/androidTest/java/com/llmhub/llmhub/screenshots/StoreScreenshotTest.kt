@@ -152,6 +152,15 @@ class StoreScreenshotTest {
     // ---------------------------------------------------------------------------------------------
 
     @Test
+    fun s00_home() {
+        runFeature("home") {
+            launchApp()
+            sleep(2_000) // entrance animations
+            captureAllLanguages("00_home", settleMs = 800)
+        }
+    }
+
+    @Test
     fun s01_vibecode() {
         runFeature("vibecode") {
             val llm = llmName
@@ -173,32 +182,10 @@ class StoreScreenshotTest {
             openFeature(R.string.feature_vibe_coder)
 
             val chatInput = waitForChatInput(str(R.string.vibe_coder_ask_ai_edit))
+            // Editor and chat box only: the request is typed but not sent (no generation).
             chatInput.performTextInput(VIBE_PROMPT)
-            clickFirst(hasContentDescription(str(R.string.send)) and hasClickAction() and isEnabled())
             hideKeyboard()
-
-            val applied = "Applied AI edit automatically"
-            val stop = hasContentDescription(str(R.string.vibe_coder_stop_generation))
-            val idleSend = hasContentDescription(str(R.string.send))
-            waitForResult("AI edit applied", timeoutMs = 20 * MIN,
-                done = {
-                    exists(hasText(applied, substring = true)) || exists(hasText(str(R.string.vibe_coder_discard)) and hasClickAction())
-                },
-                idle = { !exists(stop) && exists(idleSend) })
-            sleep(3_000)
-            hideKeyboard()
-            captureAllLanguages("01_vibecode_editor", settleMs = 800)
-
-            val preview = hasText(str(R.string.vibe_coder_preview)) and hasClickAction()
-            clickFirst(preview, scroll = true)
-            // CodeCanvas: WebView renders the page (may pull CDN assets such as Tailwind)
-            waitUntil("code preview screen", timeoutMs = 30_000) {
-                !exists(hasText(str(R.string.vibe_coder_discard)) and hasClickAction())
-            }
-            runCatching {
-                waitUntil("preview WebView", timeoutMs = 20_000) { device.hasObject(By.clazz("android.webkit.WebView")) }
-            }.onFailure { Log.w(TAG, "WebView not visible to UiAutomator: ${it.message}") }
-            sleep(10_000) // page load, CDN assets and entrance animations
+            sleep(1_500)
             captureAllLanguages("01_vibecode", settleMs = 800)
         }
     }
@@ -276,7 +263,7 @@ class StoreScreenshotTest {
             loadModelFromSettingsSheet("video", loadTimeoutMs = 15 * MIN)
 
             val field = waitForNode("prompt field", hasSetTextAction(), 60_000)
-            field.performTextInput(VIDEO_PROMPT)
+            field.performTextInput(args.getString("video_prompt") ?: VIDEO_PROMPT)
             hideKeyboard()
             clickFirst(hasText(str(R.string.video_generator_generate)) and hasClickAction() and isEnabled(), scroll = true)
 

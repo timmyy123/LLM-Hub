@@ -48,7 +48,8 @@ public enum MagentaRealtimeEngine {
         guard keyIndices.count == 1 else {
             throw EngineError.invalidRandomKeyCount(keyIndices.count)
         }
-        eval(state)
+        // MLX errors become Swift errors (shown in the UI) instead of a fatalError crash.
+        try withError { eval(state) }
         return Session(function: function, initialState: state, randomKeyIndex: keyIndices[0])
     }
 
@@ -122,7 +123,7 @@ public enum MagentaRealtimeEngine {
         arguments[9 + session.randomKeyIndex] = stacked(keys).reshaped(savedKey.shape)
         print("[LLMHub][MusicGen] seed=\(generationSeed)")
         guard waitUntilReady(), !shouldStop() else { return pcm }
-        eval(arguments)
+        try withError { eval(arguments) }
 
         var modelTime = 0.0
         var conversionTime = 0.0
@@ -136,7 +137,7 @@ public enum MagentaRealtimeEngine {
             guard outputs.count == stateCount + 1 else {
                 throw EngineError.invalidOutputCount(outputs.count, stateCount + 1)
             }
-            eval(outputs)
+            try withError { eval(outputs) }
             let conversionStart = ProcessInfo.processInfo.systemUptime
             modelTime += conversionStart - modelStart
             var framePCM = Data(count: frameSamples * 4)

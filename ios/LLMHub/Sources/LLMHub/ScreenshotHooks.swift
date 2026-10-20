@@ -60,6 +60,9 @@ import UIKit
 ///   workspace instead of asking for one through the Files picker.
 /// - `-screenshot_vibecode_file <name>` / `-screenshot_vibecode_prompt "<text>"`: Vibecode
 ///   opens that new file with an empty chat and prefills the chat input.
+/// - `-screenshot_translator_input "<text>"`: the Translator opens with this text.
+/// - `-screenshot_image_prompt` / `-screenshot_video_prompt` / `-screenshot_music_prompt "<text>"`: prefilled prompts.
+/// - `-screenshot_autotest music`: unattended music generation test (see `autotest`).
 /// - `-screenshot_save_outputs YES`: generated results are copied into
 ///   Documents/screenshot_outputs/.
 /// - `-screenshot_output_port <port>`: serves Documents/screenshot_outputs/ on
@@ -90,6 +93,50 @@ enum ScreenshotHooks {
 
     static let vibeCodeFileName: String? = string("screenshot_vibecode_file")
     static let vibeCodePrompt: String? = string("screenshot_vibecode_prompt")
+    /// Translator input text, prefilled instead of typed (typing is unreliable on some iPads).
+    static let translatorInput: String? = string("screenshot_translator_input")
+    /// Image and video prompts, prefilled for the same reason.
+    static let imagePrompt: String? = string("screenshot_image_prompt")
+    static let videoPrompt: String? = string("screenshot_video_prompt")
+    static let musicPrompt: String? = string("screenshot_music_prompt")
+    /// `-screenshot_autotest music`: download the music model if needed, open Music Generator
+    /// and generate once, logging each step to the unified log ("[LLMHubAutotest]"). For Mac
+    /// "Designed for iPad" runs, where UI tests cannot drive the app.
+    static let autotest: String? = string("screenshot_autotest")
+
+    static func autotestLog(_ message: String) {
+        NSLog("[LLMHubAutotest] %@", message)
+    }
+
+    /// Downloads `modelName` through the regular download path unless it is already installed.
+    @MainActor static func ensureModelDownloaded(named modelName: String) async -> Bool {
+        let vm = ModelDownloadViewModel.shared
+        vm.refreshStatuses()
+        guard let model = vm.models.first(where: { $0.name == modelName }) else {
+            autotestLog("model not in catalog: \(modelName)"); return false
+        }
+        if vm.downloadStates[model.id] == .downloaded {
+            autotestLog("model already downloaded: \(modelName)"); return true
+        }
+        autotestLog("downloading \(modelName)")
+        vm.startDownload(model)
+        var lastLog = Date.distantPast
+        while true {
+            try? await Task.sleep(nanoseconds: 2_000_000_000)
+            switch vm.downloadStates[model.id] {
+            case .downloaded:
+                autotestLog("download finished: \(modelName)"); return true
+            case .error(let message):
+                autotestLog("download failed: \(message)"); return false
+            case .downloading(let progress, let downloaded, _):
+                if Date().timeIntervalSince(lastLog) > 20 {
+                    autotestLog("download \(Int(progress * 100))% (\(downloaded))"); lastLog = Date()
+                }
+            default:
+                break
+            }
+        }
+    }
     /// Set once Vibecode has opened the scripted file in this launch.
     @MainActor static var vibeCodePrepared = false
 
