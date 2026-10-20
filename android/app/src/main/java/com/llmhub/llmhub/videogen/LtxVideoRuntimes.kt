@@ -81,10 +81,14 @@ internal open class SdCppLtxVideoRuntime(
             // fail to build compute pipelines for its K-quant matmuls.
             // Debug builds: `touch files/debug_vae_vulkan` decodes on the GPU in NPU mode (Adreno test).
             val vaeOnGpu = com.llmhub.llmhub.BuildConfig.DEBUG && File(context.filesDir, "debug_vae_vulkan").exists()
+            val gpus = if (npu || backend != VideoGenBackend.GPU) "" else SdCppNative.nativeListDevices()
+            // PowerVR (Tensor G5/G6) runs the transformer but its Vulkan driver rejects the VAE decoder's
+            // largest conv weights, which ggml cannot move off the GPU once allocated: decode on the CPU.
+            val vaeDevice = if (gpus.contains("PowerVR", ignoreCase = true)) "CPU" else "Vulkan0"
             val device = when {
                 npu && vaeOnGpu -> "te=CPU,diffusion=CPU,vae=Vulkan0"
                 npu -> "CPU"
-                backend == VideoGenBackend.GPU -> "te=CPU,diffusion=Vulkan0,vae=Vulkan0"
+                backend == VideoGenBackend.GPU -> "te=CPU,diffusion=Vulkan0,vae=$vaeDevice"
                 else -> "CPU"
             }
             val modelArgs = if (npu) {

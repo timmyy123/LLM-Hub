@@ -520,6 +520,7 @@
     <string name="image_generator_download_model_desc">Pobierz model generowania obrazów, aby rozpocząć tworzenie obrazów</string>
     <string name="image_generator_model_not_available">Model generowania obrazów niedostępny</string>
     <string name="image_generator_error">Nie udało się wygenerować obrazu</string>
+    <string name="image_generator_npu_crashed">NPU tego urządzenia zatrzymał się podczas generowania. Spróbuj ponownie po aktualizacji systemu lub użyj innego modelu.</string>
     <string name="image_generator_success">Obraz wygenerowany pomyślnie</string>
     <string name="image_generator_saved">Obraz zapisany w galerii</string>
     <string name="stable_diffusion_model">Stable Diffusion v1.5</string>
@@ -1031,6 +1032,7 @@
     <string name="media_search_download_model_desc">Ta funkcja uruchamia EmbeddingGemma 2 na urządzeniu. Pobierz model z listy modeli, aby zacząć.</string>
     <string name="media_search_loading_model">Ładowanie EmbeddingGemma 2…</string>
     <string name="media_search_model_failed">Nie udało się załadować EmbeddingGemma 2</string>
+    <string name="media_search_npu_unavailable">NPU tego urządzenia nie może uruchomić tego modelu. Zamiast niego pobierz standardową wersję EmbeddingGemma 2.</string>
     <string name="media_search_analyzing">Analizowanie…</string>
     <string name="media_search_paused">Analiza wstrzymana</string>
     <string name="media_search_progress">Przeanalizowano %1$d z %2$d (%3$d%%)</string>
@@ -1161,4 +1163,20 @@
     <string name="video_generator_random_seed">Losowe ziarno</string>
     <string name="video_generator_negative_prompt">Prompt negatywny (opcjonalnie)</string>
     <string name="video_generator_negative_prompt_hint">Czego unikać, np. rozmyte, zniekształcone, niska jakość</string>
+    <string name="image_extras_title">Modyfikatory obrazu</string>
+    <string name="image_extras_negative">Negatywny prompt</string>
+    <string name="image_extras_guidance">Skala prowadzenia</string>
+    <string name="image_extras_clip_skip">Pomijanie warstw CLIP</string>
+    <string name="image_extras_weight">Waga</string>
+    <string name="image_extras_text_encoder">Enkoder tekstu</string>
+    <string name="image_extras_embedding">Inwersja tekstowa</string>
+    <string name="image_extras_tags">Lista tagów</string>
+    <string name="image_extras_definitions">Definicje</string>
+    <string name="image_extras_translations">Lista tłumaczeń</string>
+    <string name="image_extras_checkpoint">Bazowy checkpoint</string>
+    <string name="image_extras_invalid">Wybrany plik jest nieprawidłowy lub niezgodny z modelem.</string>
+    <string name="image_extras_resource_hint">Tagi: po jednym w wierszu lub tablica JSON. Definicje/tłumaczenia: obiekt JSON lub key=value. Dotknij tagu/definicji, aby je dodać; tłumaczenia są stosowane lokalnie.</string>
+    <string name="image_extras_ios_help">LoRA: SafeTensors lub .ckpt Draw Things. Enkodery/VAE: zgodne pliki .ckpt Draw Things. Embeddingi: SafeTensors. Najpierw wybierz pasujący model.</string>
+    <string name="image_extras_android_help">LoRA, pomijanie warstw CLIP i własne enkodery wymagają zaimportowanego checkpointu GGUF/SafeTensors. Wagi QNN/MNN są stałe. LoRA/embeddingi: SafeTensors.</string>
+    <string name="image_extras_import_location">Importuj checkpointy, LoRA, enkodery i listy promptów w %1$s → %2$s.</string>
 </resources>

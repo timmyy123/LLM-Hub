@@ -11,10 +11,7 @@ struct ContentView: View {
                 SplashScreenView(onFinished: {
                     isShowingSplash = false
                 })
-                .transition(.asymmetric(
-                    insertion: .identity,
-                    removal: .opacity.combined(with: .scale(scale: 0.95))
-                ))
+                .transition(.asymmetric(insertion: .identity, removal: .opacity))
             } else {
                 NavigationStack(path: $path) {
                     HomeScreen(

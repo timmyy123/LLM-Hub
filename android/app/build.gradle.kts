@@ -287,6 +287,7 @@ configurations.all {
 dependencies {
 
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
@@ -376,10 +377,14 @@ dependencies {
     implementation("com.google.ai.edge.litert:litert-npu-runtime-mediatek:2.3.0")
     implementation("com.google.ai.edge.litert:litert-npu-runtime-google-tensor:2.3.0")
 
-    // CompiledModel API used by the local SoundGen text/core/decoder pipeline.
-    // CompiledModel runtime used by SoundGen. Keep this pinned to the latest
-    // tested LiteRT release; 2.1.0 fails while invoking the DiT on Samsung OpenCL.
-    implementation("com.google.ai.edge.litert:litert:2.1.6")
+    // CompiledModel runtime used by SoundGen and the LiteRT Stable Diffusion NPU builds.
+    // Keep it on the version of the litert-npu-runtime dispatch libraries above (older
+    // runtimes reject them as an unsupported dispatch version) and on a release tested
+    // with SoundGen; 2.1.0 fails while invoking the DiT on Samsung OpenCL.
+    implementation("com.google.ai.edge.litert:litert:2.3.0")
+    // From 2.3.0 the GPU accelerator (libLiteRtClGlAccelerator.so) is a separate artifact; without it
+    // CompiledModel's GPU option silently runs on CPU.
+    implementation("com.google.ai.edge.litert:litert-gpu:2.3.0")
 
     // TensorFlow Lite interpreter used by other legacy TFLite features.
     implementation("org.tensorflow:tensorflow-lite:2.17.0")

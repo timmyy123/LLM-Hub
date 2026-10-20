@@ -515,6 +515,7 @@
     <string name="image_generator_download_model_desc">画像生成モデルをダウンロードして、画像の作成を開始します</string>
     <string name="image_generator_model_not_available">画像生成モデルは利用できません</string>
     <string name="image_generator_error">画像の生成に失敗しました</string>
+    <string name="image_generator_npu_crashed">生成中にこの端末の NPU が停止しました。システムアップデート後にもう一度お試しいただくか、別のモデルをご利用ください。</string>
     <string name="image_generator_success">画像が正常に生成されました</string>
     <string name="image_generator_saved">画像がギャラリーに保存されました</string>
     <string name="stable_diffusion_model">Stable Diffusion v1.5</string>
@@ -1024,6 +1025,7 @@
     <string name="media_search_download_model_desc">この機能はデバイス上で EmbeddingGemma 2 を実行します。モデル一覧からダウンロードして始めましょう。</string>
     <string name="media_search_loading_model">EmbeddingGemma 2 を読み込んでいます…</string>
     <string name="media_search_model_failed">EmbeddingGemma 2 を読み込めませんでした</string>
+    <string name="media_search_npu_unavailable">この端末の NPU ではこのモデルを実行できません。代わりに標準版の EmbeddingGemma 2 をダウンロードしてください。</string>
     <string name="media_search_analyzing">分析中…</string>
     <string name="media_search_paused">分析を一時停止中</string>
     <string name="media_search_progress">%2$d 件中 %1$d 件を分析済み（%3$d%%）</string>
@@ -1154,4 +1156,20 @@
     <string name="video_generator_random_seed">ランダムシード</string>
     <string name="video_generator_negative_prompt">ネガティブプロンプト（任意）</string>
     <string name="video_generator_negative_prompt_hint">避けたい要素（例: ぼやけ、歪み、低品質）</string>
+    <string name="image_extras_title">画像の追加設定</string>
+    <string name="image_extras_negative">ネガティブプロンプト</string>
+    <string name="image_extras_guidance">ガイダンススケール</string>
+    <string name="image_extras_clip_skip">CLIP スキップ</string>
+    <string name="image_extras_weight">重み</string>
+    <string name="image_extras_text_encoder">テキストエンコーダー</string>
+    <string name="image_extras_embedding">Textual Inversion</string>
+    <string name="image_extras_tags">タグリスト</string>
+    <string name="image_extras_definitions">定義</string>
+    <string name="image_extras_translations">翻訳リスト</string>
+    <string name="image_extras_checkpoint">ベースチェックポイント</string>
+    <string name="image_extras_invalid">選択したファイルが無効か、モデルに対応していません。</string>
+    <string name="image_extras_resource_hint">タグ：1行に1つ、またはJSON配列。定義・翻訳：JSONオブジェクトまたはkey=value形式。タグや定義をタップして追加できます。翻訳はローカルで適用されます。</string>
+    <string name="image_extras_ios_help">LoRA：SafeTensorsまたはDraw Thingsの.ckpt。エンコーダー・VAE：対応するDraw Thingsの.ckpt。埋め込み：SafeTensors。先に対応するモデルを選択してください。</string>
+    <string name="image_extras_android_help">LoRA、CLIPスキップ、エンコーダーの変更には、GGUF/SafeTensorsチェックポイントのインポートが必要です。QNN/MNNの重みは固定です。LoRA・埋め込み：SafeTensors。</string>
+    <string name="image_extras_import_location">チェックポイント、LoRA、エンコーダー、プロンプトリストは %1$s → %2$s からインポートします。</string>
 </resources>

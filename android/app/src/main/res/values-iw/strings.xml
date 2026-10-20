@@ -520,6 +520,7 @@
     <string name="image_generator_download_model_desc">הורד את מודל יצירת התמונות כדי להתחיל ליצור תמונות</string>
     <string name="image_generator_model_not_available">מודל יצירת תמונות לא זמין</string>
     <string name="image_generator_error">נכשל ביצירת התמונה</string>
+    <string name="image_generator_npu_crashed">ה-NPU של המכשיר נעצר במהלך היצירה. נסו שוב אחרי עדכון מערכת, או השתמשו במודל אחר.</string>
     <string name="image_generator_success">התמונה נוצרה בהצלחה</string>
     <string name="image_generator_saved">התמונה נשמרה בגלריה</string>
     <string name="stable_diffusion_model">Stable Diffusion v1.5</string>
@@ -1027,6 +1028,7 @@
     <string name="media_search_download_model_desc">התכונה הזו מריצה את EmbeddingGemma 2 במכשיר. הורידו אותו מרשימת המודלים כדי להתחיל.</string>
     <string name="media_search_loading_model">טוען את EmbeddingGemma 2…</string>
     <string name="media_search_model_failed">לא ניתן לטעון את EmbeddingGemma 2</string>
+    <string name="media_search_npu_unavailable">ה-NPU של המכשיר הזה לא יכול להריץ את המודל. הורידו במקומו את הגרסה הרגילה של EmbeddingGemma 2.</string>
     <string name="media_search_analyzing">מנתח…</string>
     <string name="media_search_paused">הניתוח הושהה</string>
     <string name="media_search_progress">נותחו %1$d מתוך %2$d (%3$d%%)</string>
@@ -1157,4 +1159,20 @@
     <string name="video_generator_random_seed">זרע אקראי</string>
     <string name="video_generator_negative_prompt">הנחיה שלילית (אופציונלי)</string>
     <string name="video_generator_negative_prompt_hint">דברים שיש להימנע מהם, למשל: מטושטש, מעוות, איכות נמוכה</string>
+    <string name="image_extras_title">משני תמונה</string>
+    <string name="image_extras_negative">הנחיה שלילית</string>
+    <string name="image_extras_guidance">עוצמת הנחיה</string>
+    <string name="image_extras_clip_skip">דילוג CLIP</string>
+    <string name="image_extras_weight">משקל</string>
+    <string name="image_extras_text_encoder">מקודד טקסט</string>
+    <string name="image_extras_embedding">היפוך טקסטואלי</string>
+    <string name="image_extras_tags">רשימת תגיות</string>
+    <string name="image_extras_definitions">הגדרות</string>
+    <string name="image_extras_translations">רשימת תרגומים</string>
+    <string name="image_extras_checkpoint">מודל בסיס</string>
+    <string name="image_extras_invalid">הקובץ שנבחר אינו תקין או אינו תואם למודל.</string>
+    <string name="image_extras_resource_hint">תגיות: אחת בכל שורה או מערך JSON. הגדרות ותרגומים: אובייקט JSON או key=value. לחצו על תגיות או הגדרות להוספה; תרגומים מוחלים מקומית.</string>
+    <string name="image_extras_ios_help">LoRA: קובצי SafeTensors או ‎.ckpt של Draw Things. מקודדים ו-VAE: קובצי ‎.ckpt תואמים של Draw Things. הטמעות: SafeTensors. בחרו תחילה את המודל המתאים.</string>
+    <string name="image_extras_android_help">LoRA, דילוג CLIP ומקודדים מותאמים דורשים מודל GGUF/SafeTensors מיובא. משקלי QNN/MNN קבועים. LoRA והטמעות: SafeTensors.</string>
+    <string name="image_extras_import_location">ייבאו נקודות ביקורת, קובצי LoRA, מקודדים ורשימות הנחיות דרך %1$s ← %2$s.</string>
 </resources>

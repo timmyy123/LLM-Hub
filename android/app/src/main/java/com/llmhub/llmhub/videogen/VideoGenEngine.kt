@@ -111,9 +111,15 @@ class VideoGenEngine(context: Context) {
         fun supportedBackends(model: LLMModel): List<VideoGenBackend> = when (model.modelFormat) {
             VideoGenFormats.QNN -> listOf(VideoGenBackend.NPU)
             // Adreno's Vulkan driver crashes compiling ggml's video shaders; Snapdragon devices use
-            // the NPU models instead, so GGUF models run on the CPU there.
-            else -> if (isAdreno()) listOf(VideoGenBackend.CPU) else listOf(VideoGenBackend.GPU, VideoGenBackend.CPU)
+            // the NPU models instead, so GGUF models run on the CPU there. The Tensor G5's PowerVR
+            // D-Series driver runs the transformer but computes noise (with or without ggml's
+            // integer-dot, cooperative-matrix and FP16 paths), so it gets the CPU too.
+            else -> if (isAdreno() || isTensorG5()) listOf(VideoGenBackend.CPU) else listOf(VideoGenBackend.GPU, VideoGenBackend.CPU)
         }
+
+        private fun isTensorG5(): Boolean =
+            android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S &&
+                android.os.Build.SOC_MODEL.equals("Tensor G5", ignoreCase = true)
 
         private fun isAdreno(): Boolean {
             val soc = com.llmhub.llmhub.data.DeviceInfo.getDeviceSoc()

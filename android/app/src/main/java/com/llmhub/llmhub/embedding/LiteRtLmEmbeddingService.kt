@@ -28,7 +28,9 @@ class LiteRtLmEmbeddingService(
     private val model: LLMModel,
     private val enableMedia: Boolean = false,
     private val visionTokensPerImage: Int? = null,
-    private val maxInputLength: Int? = null
+    private val maxInputLength: Int? = null,
+    /** Set by [EmbeddingNpuProbeService] to initialize with one NPU configuration without probing again. */
+    private val npuBackend: String? = null
 ) : EmbeddingService {
 
     private var engine: EmbeddingEngine? = null
@@ -39,6 +41,9 @@ class LiteRtLmEmbeddingService(
         private const val MAX_TEXT_CHARS = 6000
         private const val QUERY_PREFIX = "task: search result | query: "
         private const val DOCUMENT_PREFIX = "title: none | text: "
+        private const val NPU = "NPU"
+        private const val NPU_GPU_VISION = "NPU + GPU vision"
+        private const val NPU_CPU_VISION = "NPU + CPU vision"
     }
 
     val supportsImageEmbedding: Boolean get() = enableMedia && model.supportsVision
@@ -46,6 +51,10 @@ class LiteRtLmEmbeddingService(
 
     /** Short label of the backend the engine was initialized with, e.g. "GPU". */
     var activeBackendLabel: String? = null
+        private set
+
+    /** True when [initialize] failed because this device's NPU can't run this chip-specific build. */
+    var npuUnavailable = false
         private set
 
     override suspend fun initialize(): Boolean = withContext(Dispatchers.IO) {
@@ -58,7 +67,23 @@ class LiteRtLmEmbeddingService(
                 return@withLock false
             }
 
-            for ((label, config) in candidateConfigs(modelFile.absolutePath)) {
+            val isNpuModel = ModelData.isEmbeddingGemma2NpuModel(model)
+            val backend = when {
+                !isNpuModel -> null
+                npuBackend != null -> npuBackend
+                else -> EmbeddingNpuProbe.verifiedBackend(
+                    context, model, modelFile,
+                    if (supportsImageEmbedding) listOf(NPU, NPU_GPU_VISION, NPU_CPU_VISION) else listOf(NPU),
+                    enableMedia, visionTokensPerImage, maxInputLength
+                )
+            }
+            if (isNpuModel && backend == null) {
+                npuUnavailable = true
+                Log.e(TAG, "This device's NPU can't run ${model.name}")
+                return@withLock false
+            }
+
+            for ((label, config) in candidateConfigs(modelFile.absolutePath).filter { backend == null || it.first == backend }) {
                 var candidate: EmbeddingEngine? = null
                 try {
                     candidate = EmbeddingEngine(config).also { it.initialize() }
@@ -95,9 +120,9 @@ class LiteRtLmEmbeddingService(
         if (ModelData.isEmbeddingGemma2NpuModel(model)) {
             val libDir = prepareNpuLibraryDir()
             return listOf(
-                "NPU" to config(Backend.NPU(libDir), Backend.NPU(libDir), Backend.CPU()),
-                "NPU + GPU vision" to config(Backend.NPU(libDir), Backend.GPU(), Backend.CPU()),
-                "NPU + CPU vision" to config(Backend.NPU(libDir), Backend.CPU(), Backend.CPU()),
+                NPU to config(Backend.NPU(libDir), Backend.NPU(libDir), Backend.CPU()),
+                NPU_GPU_VISION to config(Backend.NPU(libDir), Backend.GPU(), Backend.CPU()),
+                NPU_CPU_VISION to config(Backend.NPU(libDir), Backend.CPU(), Backend.CPU()),
             )
         }
         return buildList {
@@ -114,7 +139,9 @@ class LiteRtLmEmbeddingService(
      */
     private fun prepareNpuLibraryDir(): String {
         val nativeDir = context.applicationInfo.nativeLibraryDir
-        if (DeviceInfo.getEmbeddingGemma2NpuTag()?.startsWith("Qualcomm") != true) return nativeDir
+        val tag = DeviceInfo.getEmbeddingGemma2NpuTag()
+        if (tag?.startsWith("MediaTek") == true) return mediaTekLibraryDir(nativeDir)
+        if (tag?.startsWith("Qualcomm") != true) return nativeDir
 
         val dispatchLib = File(nativeDir, "libLiteRtDispatch_Qualcomm.so")
         if (!dispatchLib.exists()) return nativeDir
@@ -141,6 +168,24 @@ class LiteRtLmEmbeddingService(
             Log.w(TAG, "Failed to stage QNN libraries: ${e.message}")
             nativeDir
         }
+    }
+
+    /**
+     * LiteRT loads the first dispatch library in the directory, and Google Tensor's sorts first in the native
+     * library directory, so MediaTek gets a directory with only its own dispatch library and compiler plugin.
+     */
+    private fun mediaTekLibraryDir(nativeDir: String): String = try {
+        val dir = File(context.filesDir, "litert_npu_mediatek").apply { mkdirs() }
+        val names = listOf("libLiteRtDispatch_MediaTek.so", "libLiteRtCompilerPlugin_MediaTek.so")
+        if (names.all { File(nativeDir, it).exists() }) {
+            names.forEach { copyIfChanged(File(nativeDir, it), File(dir, it)) }
+            dir.absolutePath
+        } else {
+            nativeDir
+        }
+    } catch (e: Exception) {
+        Log.w(TAG, "Failed to stage MediaTek NPU libraries: ${e.message}")
+        nativeDir
     }
 
     private fun copyIfChanged(source: File, target: File) {

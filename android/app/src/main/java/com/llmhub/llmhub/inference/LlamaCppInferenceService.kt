@@ -30,7 +30,8 @@ import java.util.Locale
 
 internal interface LlamaCppRuntime {
     fun nativeInit(libraryDir: String, htpDir: String?): Int
-    fun nativeLoadModel(modelPath: String, mmprojPath: String?, contextSize: Int, threadCount: Int, deviceName: String?, gpuLayers: Int): Int
+    /** [flashAttention]: -1 lets llama.cpp decide, 0 disables it, 1 enables it. */
+    fun nativeLoadModel(modelPath: String, mmprojPath: String?, contextSize: Int, threadCount: Int, deviceName: String?, gpuLayers: Int, flashAttention: Int): Int
     fun nativeSupportsVision(): Boolean
     fun nativeMediaMarker(): String
     fun nativeFormatChat(roles: Array<String>, contents: Array<String>): String?
@@ -57,6 +58,7 @@ internal object LlamaCppNative : LlamaCppRuntime {
         threadCount: Int,
         deviceName: String?,
         gpuLayers: Int,
+        flashAttention: Int,
     ): Int
     external override fun nativeSupportsVision(): Boolean
     external override fun nativeMediaMarker(): String
@@ -76,12 +78,12 @@ internal object LlamaCppNative : LlamaCppRuntime {
     external override fun nativeDecodeSpeed(): Double
 }
 
-/** Official b11683 Snapdragon OpenCL/Hexagon runtime, loaded only for GPU/NPU selection. */
+/** Official b11738 Snapdragon OpenCL/Hexagon runtime, loaded only for GPU/NPU selection. */
 internal object LlamaCppSnapdragonNative : LlamaCppRuntime {
     init { System.loadLibrary("llmhub_llama_snapdragon") }
 
     external override fun nativeInit(libraryDir: String, htpDir: String?): Int
-    external override fun nativeLoadModel(modelPath: String, mmprojPath: String?, contextSize: Int, threadCount: Int, deviceName: String?, gpuLayers: Int): Int
+    external override fun nativeLoadModel(modelPath: String, mmprojPath: String?, contextSize: Int, threadCount: Int, deviceName: String?, gpuLayers: Int, flashAttention: Int): Int
     external override fun nativeSupportsVision(): Boolean
     external override fun nativeMediaMarker(): String
     external override fun nativeFormatChat(roles: Array<String>, contents: Array<String>): String?
@@ -98,7 +100,7 @@ internal object LlamaCppVulkanNative : LlamaCppRuntime {
     init { System.loadLibrary("llmhub_llama_vulkan") }
 
     external override fun nativeInit(libraryDir: String, htpDir: String?): Int
-    external override fun nativeLoadModel(modelPath: String, mmprojPath: String?, contextSize: Int, threadCount: Int, deviceName: String?, gpuLayers: Int): Int
+    external override fun nativeLoadModel(modelPath: String, mmprojPath: String?, contextSize: Int, threadCount: Int, deviceName: String?, gpuLayers: Int, flashAttention: Int): Int
     external override fun nativeSupportsVision(): Boolean
     external override fun nativeMediaMarker(): String
     external override fun nativeFormatChat(roles: Array<String>, contents: Array<String>): String?
@@ -131,6 +133,9 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
     private var loadedDeviceId: String? = null
     private var loadedRuntimeName: String? = null
     private var overrideGpuLayers: Int? = null
+
+    /** llama.cpp flash attention: -1 lets llama.cpp decide, 0 disables it, 1 enables it. */
+    internal var flashAttention = -1
     private var currentModel: LLMModel? = null
     private var contextSize = 4096
     private var lastDecodeSpeed: Double? = null
@@ -153,7 +158,7 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
     private var overrideEnableThinking: Boolean? = null
 
     private fun prepareHtpLibraries(): String {
-        val directory = File(context.filesDir, "llama_htp_b11683")
+        val directory = File(context.filesDir, "llama_htp_b11738")
         check(directory.isDirectory || directory.mkdirs()) { "Cannot create Hexagon library directory" }
         for (architecture in listOf("v73", "v75", "v79", "v81")) {
             val name = "libggml-htp-$architecture.so"
@@ -256,6 +261,7 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
                         threads,
                         attemptAccelerator,
                         if (attemptAccelerator == null) 0 else overrideGpuLayers ?: 999,
+                        flashAttention,
                     )
                     check(result == 0) { "llama.cpp model load failed on $attemptName with code $result" }
 

@@ -19,6 +19,8 @@ import coil.size.Scale
 import com.llmhub.llmhub.data.LLMModel
 import com.llmhub.llmhub.data.ModelData
 import com.llmhub.llmhub.data.hasCompleteDownloadedBundle
+import com.llmhub.llmhub.data.localFileName
+import com.llmhub.llmhub.embedding.EmbeddingNpuProbe
 import com.llmhub.llmhub.embedding.LiteRtLmEmbeddingService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
@@ -348,6 +350,10 @@ abstract class MediaSearchViewModel(application: Application, private val prefsN
     private val _modelError = MutableStateFlow(false)
     val modelError: StateFlow<Boolean> = _modelError.asStateFlow()
 
+    /** The selected NPU build can't run on this device's NPU and no standard build is downloaded. */
+    private val _npuUnavailable = MutableStateFlow(false)
+    val npuUnavailable: StateFlow<Boolean> = _npuUnavailable.asStateFlow()
+
     protected var embedder: LiteRtLmEmbeddingService? = null
         private set
     private val modelMutex = Mutex()
@@ -359,8 +365,8 @@ abstract class MediaSearchViewModel(application: Application, private val prefsN
         val current = _selectedModel.value
         _selectedModel.value = models.firstOrNull { it.name == current?.name }
             ?: models.firstOrNull { it.name == saved }
-            // Prefer the chip-specific NPU build when it is downloaded.
-            ?: models.firstOrNull { ModelData.isEmbeddingGemma2NpuModel(it) }
+            // Prefer the chip-specific NPU build when it is downloaded and this device's NPU can run it.
+            ?: models.firstOrNull { ModelData.isEmbeddingGemma2NpuModel(it) && !EmbeddingNpuProbe.knownUnsupported(context, modelFile(it)) }
             ?: models.firstOrNull()
     }
 
@@ -390,13 +396,21 @@ abstract class MediaSearchViewModel(application: Application, private val prefsN
         val model = _selectedModel.value ?: return@withLock null
         _isLoadingModel.value = true
         _modelError.value = false
-        val service = LiteRtLmEmbeddingService(
-            context, model,
-            enableMedia = true,
-            visionTokensPerImage = MEDIA_SEARCH_VISION_TOKENS,
-            maxInputLength = maxInputTokens
-        )
-        val ok = service.initialize()
+        _npuUnavailable.value = false
+        var service = createService(model)
+        var ok = service.initialize()
+        if (!ok && service.npuUnavailable) {
+            // This device's NPU can't run the chip-specific build, so use a downloaded standard build instead.
+            val fallback = _downloadedModels.value.firstOrNull { !ModelData.isEmbeddingGemma2NpuModel(it) }
+            if (fallback != null) {
+                prefs.edit().putString(KEY_MODEL, fallback.name).apply()
+                _selectedModel.value = fallback
+                service = createService(fallback)
+                ok = service.initialize()
+            } else {
+                _npuUnavailable.value = true
+            }
+        }
         _isLoadingModel.value = false
         if (ok) {
             embedder = service
@@ -408,6 +422,15 @@ abstract class MediaSearchViewModel(application: Application, private val prefsN
             null
         }
     }
+
+    private fun createService(model: LLMModel) = LiteRtLmEmbeddingService(
+        context, model,
+        enableMedia = true,
+        visionTokensPerImage = MEDIA_SEARCH_VISION_TOKENS,
+        maxInputLength = maxInputTokens
+    )
+
+    private fun modelFile(model: LLMModel) = File(File(context.filesDir, "models"), model.localFileName())
 
     private suspend fun unloadModelInternal() = modelMutex.withLock {
         embedder?.close()

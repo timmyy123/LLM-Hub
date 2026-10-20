@@ -667,6 +667,7 @@
     <string name="image_generator_download_model_desc">छवियां बनाना शुरू करने के लिए मॉडल स्क्रीन से Stable Diffusion मॉडल डाउनलोड करें।</string>
     <string name="image_generator_model_not_available">छवि जनरेशन मॉडल उपलब्ध नहीं है</string>
     <string name="image_generator_error">छवि उत्पन्न करने में विफल</string>
+    <string name="image_generator_npu_crashed">इमेज बनाते समय इस डिवाइस का NPU रुक गया। सिस्टम अपडेट के बाद फिर कोशिश करें या कोई दूसरा मॉडल इस्तेमाल करें।</string>
     <string name="image_generation_models">इमेज जनरेशन मॉडल</string>
     <string name="image_generation_models_description">टेक्स्ट से छवि जनरेशन के लिए Stable Diffusion मॉडल</string>
     <string name="image_generator_success">छवि सफलतापूर्वक उत्पन्न हुई</string>
@@ -1053,6 +1054,7 @@
     <string name="media_search_download_model_desc">यह सुविधा आपके डिवाइस पर EmbeddingGemma 2 चलाती है। शुरू करने के लिए इसे मॉडल सूची से डाउनलोड करें।</string>
     <string name="media_search_loading_model">EmbeddingGemma 2 लोड हो रहा है…</string>
     <string name="media_search_model_failed">EmbeddingGemma 2 लोड नहीं हो सका</string>
+    <string name="media_search_npu_unavailable">इस डिवाइस का NPU यह मॉडल नहीं चला सकता। इसकी जगह सामान्य EmbeddingGemma 2 डाउनलोड करें।</string>
     <string name="media_search_analyzing">विश्लेषण हो रहा है…</string>
     <string name="media_search_paused">विश्लेषण रुका हुआ है</string>
     <string name="media_search_progress">%2$d में से %1$d का विश्लेषण हुआ (%3$d%%)</string>
@@ -1183,4 +1185,20 @@
     <string name="video_generator_random_seed">रैंडम सीड</string>
     <string name="video_generator_negative_prompt">नेगेटिव प्रॉम्प्ट (वैकल्पिक)</string>
     <string name="video_generator_negative_prompt_hint">किन चीज़ों से बचना है, जैसे धुंधला, विकृत, कम गुणवत्ता</string>
+    <string name="image_extras_title">छवि संशोधक</string>
+    <string name="image_extras_negative">नकारात्मक प्रॉम्प्ट</string>
+    <string name="image_extras_guidance">मार्गदर्शन स्तर</string>
+    <string name="image_extras_clip_skip">CLIP स्किप</string>
+    <string name="image_extras_weight">वज़न</string>
+    <string name="image_extras_text_encoder">टेक्स्ट एनकोडर</string>
+    <string name="image_extras_embedding">टेक्स्चुअल इनवर्ज़न</string>
+    <string name="image_extras_tags">टैग सूची</string>
+    <string name="image_extras_definitions">परिभाषाएँ</string>
+    <string name="image_extras_translations">अनुवाद सूची</string>
+    <string name="image_extras_checkpoint">बेस चेकपॉइंट</string>
+    <string name="image_extras_invalid">चुनी गई फ़ाइल अमान्य है या मॉडल के अनुकूल नहीं है।</string>
+    <string name="image_extras_resource_hint">टैग: हर पंक्ति में एक या JSON ऐरे। परिभाषाएँ/अनुवाद: JSON ऑब्जेक्ट या key=value। टैग/परिभाषाएँ जोड़ने के लिए टैप करें; अनुवाद स्थानीय रूप से लागू होते हैं।</string>
+    <string name="image_extras_ios_help">LoRA: SafeTensors या Draw Things .ckpt। एनकोडर/VAE: संगत Draw Things .ckpt। एम्बेडिंग: SafeTensors। पहले उपयुक्त मॉडल चुनें।</string>
+    <string name="image_extras_android_help">LoRA, CLIP स्किप और कस्टम एनकोडर के लिए आयात किया गया GGUF/SafeTensors चेकपॉइंट आवश्यक है। QNN/MNN के वज़न स्थिर हैं। LoRA/एम्बेडिंग: SafeTensors।</string>
+    <string name="image_extras_import_location">चेकपॉइंट, LoRA, एन्कोडर और प्रॉम्प्ट सूचियाँ %1$s → %2$s में इम्पोर्ट करें।</string>
 </resources>

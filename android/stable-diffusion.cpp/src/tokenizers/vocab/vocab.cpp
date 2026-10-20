@@ -1,11 +1,12 @@
 #include "vocab.h"
 #include "t5.hpp"
+#include "clip_merges.hpp"
 
-// LLM Hub only ships LTX-Video (T5-XXL tokenizer); the other embedded vocabularies (~120 MB of
-// source) were removed from this vendored copy. Their loaders return empty strings.
+// CLIP supports SD image checkpoints; T5 supports LTX-Video. The other embedded
+// vocabularies are omitted from this vendored copy.
 
 std::string load_clip_merges() {
-    return {};
+    return std::string(reinterpret_cast<const char*>(clip_merges_utf8_c_str), sizeof(clip_merges_utf8_c_str));
 }
 
 std::string load_qwen2_merges() {

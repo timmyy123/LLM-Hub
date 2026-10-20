@@ -578,6 +578,7 @@
     <string name="image_generator_download_model_desc">Download het Absolute Reality-model (NPU of CPU) vanuit het scherm Modellen om te beginnen met het maken van afbeeldingen</string>
     <string name="image_generator_model_not_available">Model voor het genereren van afbeeldingen is niet beschikbaar</string>
     <string name="image_generator_error">Kan afbeelding</string>
+    <string name="image_generator_npu_crashed">De NPU van dit apparaat is tijdens het genereren gestopt. Probeer het opnieuw na een systeemupdate of gebruik een ander model.</string>
     <string name="image_generation_models">niet genereren Modellen voor het genereren van afbeeldingen</string>
     <string name="image_generation_models_description">Stabiele diffusiemodellen voor het genereren van tekst naar beeld</string>
     <string name="image_generator_success">Afbeelding succesvol gegenereerd</string>
@@ -934,6 +935,7 @@
     <string name="media_search_download_model_desc">Deze functie draait EmbeddingGemma 2 op je apparaat. Download het via de modellenlijst om te beginnen.</string>
     <string name="media_search_loading_model">EmbeddingGemma 2 laden…</string>
     <string name="media_search_model_failed">Kan EmbeddingGemma 2 niet laden</string>
+    <string name="media_search_npu_unavailable">De NPU van dit apparaat kan dit model niet uitvoeren. Download in plaats daarvan de standaardversie van EmbeddingGemma 2.</string>
     <string name="media_search_analyzing">Analyseren…</string>
     <string name="media_search_paused">Analyse gepauzeerd</string>
     <string name="media_search_progress">%1$d van %2$d geanalyseerd (%3$d%%)</string>
@@ -1064,4 +1066,20 @@
     <string name="video_generator_random_seed">Willekeurige seed</string>
     <string name="video_generator_negative_prompt">Negatieve prompt (optioneel)</string>
     <string name="video_generator_negative_prompt_hint">Dingen om te vermijden, bijv. wazig, vervormd, lage kwaliteit</string>
+    <string name="image_extras_title">Afbeeldingsmodificaties</string>
+    <string name="image_extras_negative">Negatieve prompt</string>
+    <string name="image_extras_guidance">Sturingsschaal</string>
+    <string name="image_extras_clip_skip">CLIP overslaan</string>
+    <string name="image_extras_weight">Gewicht</string>
+    <string name="image_extras_text_encoder">Tekstencoder</string>
+    <string name="image_extras_embedding">Tekstuele inversie</string>
+    <string name="image_extras_tags">Taglijst</string>
+    <string name="image_extras_definitions">Definities</string>
+    <string name="image_extras_translations">Vertaallijst</string>
+    <string name="image_extras_checkpoint">Basischeckpoint</string>
+    <string name="image_extras_invalid">Het geselecteerde bestand is ongeldig of niet compatibel met het model.</string>
+    <string name="image_extras_resource_hint">Tags: één per regel of een JSON-array. Definities/vertalingen: een JSON-object of key=value. Tik op tags/definities om ze toe te voegen; vertalingen worden lokaal toegepast.</string>
+    <string name="image_extras_ios_help">LoRA: SafeTensors of Draw Things .ckpt. Encoders/VAE: compatibele Draw Things .ckpt-bestanden. Embeddings: SafeTensors. Selecteer eerst het bijpassende model.</string>
+    <string name="image_extras_android_help">LoRA, CLIP overslaan en eigen encoders vereisen een geïmporteerd GGUF/SafeTensors-checkpoint. QNN/MNN-gewichten staan vast. LoRA/embeddings: SafeTensors.</string>
+    <string name="image_extras_import_location">Importeer checkpoints, LoRA\'s, encoders en promptlijsten via %1$s → %2$s.</string>
 </resources>

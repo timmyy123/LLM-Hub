@@ -47,6 +47,9 @@ struct LLMHubApp: App {
             FileHandle.standardError.write(data)
         }
         NSLog("[LLMHub] App launched")
+        #if DEBUG
+        Task { @MainActor in DeviceSelfTests.runFromLaunchArguments() }
+        #endif
         UISwitch.appearance().onTintColor = UIColor(ApolloPalette.accentStrong)
 
         // Register upscaler hashes so EnvWrapper.env.ensure can verify them

@@ -9,7 +9,7 @@ its own calibration.
 
 Usage: python make_vae_encodings.py onnx/ltxv_vae_512x320x25.onnx calib_512/input_list.txt act.json
        python make_overrides.py onnx/ltxv_vae_512x320x25.onnx params.json
-       python make_vae_encodings.py --merge act.json params.json out.json model.onnx
+       python make_vae_encodings.py --merge act.json params.json out.json model.onnx [--complete]
 """
 
 import json
@@ -140,11 +140,52 @@ def symmetrize_activation_matmuls(graph, act):
     return act
 
 
-def merge_encodings(activation_path, params_path, out_path, model_path=None):
+def complete_param_encodings(model_path, act, params):
+    """Encodings for everything --enable_float_fallback would otherwise leave in FP16, for HTPs
+    without FP16 (8s Gen 4 and other v73 parts): remaining float initializers (e.g. the VAE's
+    scale_shift_table) get 16-bit ranges from their values, Cast outputs share their input's range,
+    and the weight/bias the converter generates when it fuses x / sqrt(mean(x^2) + eps) into
+    RmsNorm (no learned scale: ones and zeros) get exact encodings."""
+    from onnx import numpy_helper
+    model = onnx.load(model_path, load_external_data=True)
+    graph = model.graph
+    consts = {o for n in graph.node if n.op_type == "Constant" for o in n.output}
+    for _ in range(4):
+        for node in graph.node:
+            if node.op_type == "Cast" and node.input[0] in act:
+                act[node.output[0]] = act[node.input[0]]
+            # Mul by a constant inserted by unfuse_rms_norm.py (x * 1.0001): same range as its input.
+            if node.op_type == "Mul" and node.output[0] not in act and node.input[1] in consts and node.input[0] in act:
+                act[node.output[0]] = act[node.input[0]]
+    # Biases of Conv/Gemm/MatMul stay with the quantizer (32-bit, --bias_bitwidth).
+    biases = {n.input[2] for n in graph.node if n.op_type in ("Conv", "Gemm", "ConvTranspose") and len(n.input) > 2}
+    for init in graph.initializer:
+        if init.name in params or init.name in biases or init.data_type != onnx.TensorProto.FLOAT:
+            continue
+        v = numpy_helper.to_array(init)
+        lo, hi = min(float(v.min()), 0.0), max(float(v.max()), 0.0)
+        scale = max(hi - lo, 1e-8) / 65535.0
+        offset = int(round(lo / scale))
+        params[init.name] = [{"bitwidth": 16, "dtype": "int", "is_symmetric": "False",
+                              "min": offset * scale, "max": (offset + 65535) * scale, "offset": offset, "scale": scale}]
+    for node in graph.node:
+        if node.op_type == "Div" and "/norm" in node.name:
+            prefix = node.name.rsplit("/", 1)[0]
+            params[f"{prefix}/Div_weight"] = [{"bitwidth": 8, "dtype": "int", "is_symmetric": "True",
+                                               "min": -128 / 127.0, "max": 1.0, "offset": -128, "scale": 1 / 127.0}]
+            s = 1e-6
+            params[f"{prefix}/Div_weight_bias"] = [{"bitwidth": 32, "dtype": "int", "is_symmetric": "True",
+                                                    "min": -2147483648 * s, "max": 2147483647 * s, "offset": -2147483648, "scale": s}]
+    return act, params
+
+
+def merge_encodings(activation_path, params_path, out_path, model_path=None, complete=None):
     act = json.load(open(activation_path))["activation_encodings"]
     if model_path:
         act = tie_passthrough_encodings(model_path, act)
     params = json.load(open(params_path))["param_encodings"]
+    if model_path and complete == "--complete":
+        act, params = complete_param_encodings(model_path, act, params)
     with open(out_path, "w") as fh:
         json.dump({"activation_encodings": act, "param_encodings": params}, fh)
     print(f"{out_path}: {len(act)} activation + {len(params)} weight encodings")
@@ -153,7 +194,7 @@ def merge_encodings(activation_path, params_path, out_path, model_path=None):
 
 if __name__ == "__main__":
     if sys.argv[1] == "--merge":
-        merge_encodings(*sys.argv[2:6])
+        merge_encodings(*sys.argv[2:7])
     else:
         main()
     # The output is complete here; onnx/onnxruntime can crash while tearing down at interpreter exit.

@@ -517,6 +517,7 @@
     <string name="image_generator_download_model_desc">Görsel oluşturmaya başlamak için görsel oluşturma modelini indirin</string>
     <string name="image_generator_model_not_available">Görsel oluşturma modeli mevcut değil</string>
     <string name="image_generator_error">Görsel oluşturulamadı</string>
+    <string name="image_generator_npu_crashed">Bu cihazın NPU\'su oluşturma sırasında durdu. Sistem güncellemesinden sonra tekrar deneyin veya başka bir model kullanın.</string>
     <string name="image_generator_success">Görsel başarıyla oluşturuldu</string>
     <string name="image_generator_saved">Görsel galeriye kaydedildi</string>
     <string name="stable_diffusion_model">Stable Diffusion v1.5</string>
@@ -1025,6 +1026,7 @@
     <string name="media_search_download_model_desc">Bu özellik EmbeddingGemma 2\'yi cihazınızda çalıştırır. Başlamak için model listesinden indirin.</string>
     <string name="media_search_loading_model">EmbeddingGemma 2 yükleniyor…</string>
     <string name="media_search_model_failed">EmbeddingGemma 2 yüklenemedi</string>
+    <string name="media_search_npu_unavailable">Bu cihazın NPU\'su bu modeli çalıştıramıyor. Bunun yerine standart EmbeddingGemma 2 modelini indirin.</string>
     <string name="media_search_analyzing">Analiz ediliyor…</string>
     <string name="media_search_paused">Analiz duraklatıldı</string>
     <string name="media_search_progress">%2$d öğeden %1$d tanesi analiz edildi (%%%3$d)</string>
@@ -1155,4 +1157,20 @@
     <string name="video_generator_random_seed">Rastgele tohum</string>
     <string name="video_generator_negative_prompt">Negatif istem (isteğe bağlı)</string>
     <string name="video_generator_negative_prompt_hint">Kaçınılacaklar, ör. bulanık, bozuk, düşük kalite</string>
+    <string name="image_extras_title">Görsel değiştiricileri</string>
+    <string name="image_extras_negative">Negatif istem</string>
+    <string name="image_extras_guidance">Yönlendirme ölçeği</string>
+    <string name="image_extras_clip_skip">CLIP atlama</string>
+    <string name="image_extras_weight">Ağırlık</string>
+    <string name="image_extras_text_encoder">Metin kodlayıcı</string>
+    <string name="image_extras_embedding">Metinsel tersine çevirme</string>
+    <string name="image_extras_tags">Etiket listesi</string>
+    <string name="image_extras_definitions">Tanımlar</string>
+    <string name="image_extras_translations">Çeviri listesi</string>
+    <string name="image_extras_checkpoint">Temel kontrol noktası</string>
+    <string name="image_extras_invalid">Seçilen dosya geçersiz veya modelle uyumlu değil.</string>
+    <string name="image_extras_resource_hint">Etiketler: her satıra bir tane veya JSON dizisi. Tanımlar/çeviriler: JSON nesnesi veya key=value. Eklemek için etiketlere/tanımlara dokunun; çeviriler yerel olarak uygulanır.</string>
+    <string name="image_extras_ios_help">LoRA: SafeTensors veya Draw Things .ckpt. Kodlayıcılar/VAE: uyumlu Draw Things .ckpt. Gömüler: SafeTensors. Önce eşleşen modeli seçin.</string>
+    <string name="image_extras_android_help">LoRA, CLIP atlama ve özel kodlayıcılar için içe aktarılan bir GGUF/SafeTensors kontrol noktası gerekir. QNN/MNN ağırlıkları sabittir. LoRA/gömüler: SafeTensors.</string>
+    <string name="image_extras_import_location">Checkpoint, LoRA, kodlayıcı ve istem listelerini %1$s → %2$s bölümünden içe aktarın.</string>
 </resources>

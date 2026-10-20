@@ -974,7 +974,7 @@ struct SD3CLIPEmbedder : public Conditioner {
             } else {
                 chunk_hidden_states_l = sd::Tensor<float>::zeros({768, static_cast<int64_t>(chunk_len), 1});
                 if (chunk_idx == 0) {
-                    pooled_l = sd::Tensor<float>::zeros({768, 1});
+                    pooled_l = sd::Tensor<float>::zeros({768});  // Rank 1, like the pooled CLIP output it replaces.
                 }
             }
 
@@ -1017,7 +1017,7 @@ struct SD3CLIPEmbedder : public Conditioner {
             } else {
                 chunk_hidden_states_g = sd::Tensor<float>::zeros({1280, static_cast<int64_t>(chunk_len), 1});
                 if (chunk_idx == 0) {
-                    pooled_g = sd::Tensor<float>::zeros({1280, 1});
+                    pooled_g = sd::Tensor<float>::zeros({1280});  // Rank 1, like the pooled CLIP output it replaces.
                 }
             }
 

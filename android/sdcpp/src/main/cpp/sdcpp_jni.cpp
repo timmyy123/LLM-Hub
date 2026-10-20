@@ -1,13 +1,17 @@
 // JNI bridge for LTX-Video generation through stable-diffusion.cpp (Vulkan / CPU ggml backends).
 #include <android/log.h>
+#include <android/set_abort_message.h>
 #include <jni.h>
+#include <sys/system_properties.h>
 
 #include <atomic>
+#include <cstdlib>
 #include <cstring>
 #include <mutex>
 #include <string>
 #include <vector>
 
+#include "ggml.h"
 #include "stable-diffusion.h"
 
 #define LOG_TAG "SdCppJni"
@@ -134,9 +138,36 @@ struct Session {
 
 }  // namespace
 
+// Diagnostics: `adb shell setprop debug.llmhub.ggml_vk_env "GGML_VK_DISABLE_COOPMAT=1;GGML_VK_DISABLE_F16=1"`
+// sets ggml-vulkan switches before the backend initializes, to find a broken driver feature.
+static void apply_debug_ggml_env() {
+    char spec[PROP_VALUE_MAX];
+    if (__system_property_get("debug.llmhub.ggml_vk_env", spec) <= 0) {
+        return;
+    }
+    std::string all(spec);
+    for (size_t start = 0; start < all.size();) {
+        size_t end = all.find(';', start);
+        std::string item = all.substr(start, end == std::string::npos ? std::string::npos : end - start);
+        size_t eq = item.find('=');
+        if (eq != std::string::npos) {
+            setenv(item.substr(0, eq).c_str(), item.substr(eq + 1).c_str(), 1);
+            LOGI("debug env %s", item.c_str());
+        }
+        if (end == std::string::npos) break;
+        start = end + 1;
+    }
+}
+
 extern "C" JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void*) {
     g_vm = vm;
+    apply_debug_ggml_env();
     sd_set_log_callback(on_sd_log, nullptr);
+    // ggml prints abort reasons to stderr, which Android discards; keep them in logcat and tombstones.
+    ggml_set_abort_callback([](const char* message) {
+        __android_log_print(ANDROID_LOG_FATAL, LOG_TAG, "ggml abort: %s", message);
+        android_set_abort_message(message);
+    });
     sd_set_progress_callback(on_sd_progress, nullptr);
     return JNI_VERSION_1_6;
 }
@@ -187,6 +218,15 @@ Java_com_llmhub_llmhub_videogen_SdCppNative_nativeCreate(JNIEnv* env,
     const bool npu        = args_s.find("ltxv_qnn_dir=") != std::string::npos;
     params.params_backend = npu ? "te=disk,vae=disk" : "te=disk";
     params.auto_fit       = true;
+    // Diagnostics: `adb shell setprop debug.llmhub.flash_attn_mode off` (or conv_direct_mode) overrides
+    // the per-backend automatic choice, to find GPU drivers that compute an optimized kernel wrongly.
+    static char fa_mode[PROP_VALUE_MAX], conv_mode[PROP_VALUE_MAX];
+    if (__system_property_get("debug.llmhub.flash_attn_mode", fa_mode) > 0) {
+        params.flash_attn_mode = fa_mode;
+    }
+    if (__system_property_get("debug.llmhub.conv_direct_mode", conv_mode) > 0) {
+        params.conv_direct_mode = conv_mode;
+    }
     params.model_args     = args_s.empty() ? nullptr : args_s.c_str();
 
     LOGI("creating sd context: backend=%s threads=%d flash_attn=%d", backend_s.c_str(), params.n_threads, (int)flash_attn);

@@ -80,8 +80,8 @@ Enable **Codex mode** in Vibe Coder's model settings to use the selected on-devi
 
 ### 🎥 Android Video Generation
 The Android Video Generator runs [Lightricks LTX-Video 2B 0.9.8 distilled](https://huggingface.co/Lightricks/LTX-Video) fully on-device, from a text prompt or a starting image, in 8 denoising steps.
-- **Snapdragon NPU**: The transformer and VAE decoder run on the Hexagon NPU as QNN context binaries, one build per Hexagon generation: v69 (8 Gen 1, 8+ Gen 1), v73 (8 Gen 2), v75 (8 Gen 3), v79 (8 Elite) and v81 (8 Elite Gen 5). Snapdragon chips whose NPU has no FP16 support (8s Gen 3, 7+ Gen 3, 6 Gen 1, 7+ Gen 2, 8s Gen 4, 7 Gen 4) run the GGUF models on the CPU. A 25-frame 768x512 clip takes about 25 seconds on a Snapdragon 8 Elite. v69 and v73 chips generate at 512x320. Models: [timmyboy26/LTX-Video-2B-0.9.8-distilled-QNN](https://huggingface.co/timmyboy26/LTX-Video-2B-0.9.8-distilled-QNN).
-- **Other chips**: GGUF models (Q4_0 / Q8_0) run through stable-diffusion.cpp with Vulkan on the GPU, or on the CPU.
+- **Snapdragon NPU**: The transformer and VAE decoder run on the Hexagon NPU as QNN context binaries, one build per Hexagon generation: v69 (8 Gen 1, 8+ Gen 1), v73 (8 Gen 2), v75 (8 Gen 3), v79 (8 Elite) and v81 (8 Elite Gen 5), plus an integer-only v73 build for chips whose NPU has no FP16 (8s Gen 4, 8s Gen 3, 7+ Gen 3, 7 Gen 4). A 25-frame 768x512 clip takes about 25 seconds on a Snapdragon 8 Elite; v69 and v73 chips generate at 512x320. Models: [timmyboy26/LTX-Video-2B-0.9.8-distilled-QNN](https://huggingface.co/timmyboy26/LTX-Video-2B-0.9.8-distilled-QNN).
+- **Other chips**: GGUF models (Q4_0 / Q8_0) run through stable-diffusion.cpp with Vulkan on the GPU, or on the CPU. A 25-frame 512x320 clip takes about 3 minutes on an Exynos 1580 (Galaxy A56) and about 20 minutes on a Tensor G3 (Pixel 8 Pro).
 - Open **Video Generator**, download a model from the Video Generation tab, and choose the model and backend in the settings sheet. Detailed prompts that describe the subject, action, camera and lighting work best.
 - The scripts that build the NPU models are in [android/tools/ltxv_qnn](android/tools/ltxv_qnn).
 

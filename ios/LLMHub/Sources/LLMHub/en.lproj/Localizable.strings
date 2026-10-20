@@ -1011,3 +1011,21 @@
 "music_unlimited_duration" = "Unlimited duration";
 "music_unlimited_duration_desc" = "Generate until you press Stop. The recording is saved when you stop.";
 "music_locked_screen_supported" = "Supports generating and playing music with the screen locked.";
+
+/* Image generation modifiers */
+"image_extras_title" = "Image modifiers";
+"image_extras_negative" = "Negative prompt";
+"image_extras_guidance" = "Guidance scale";
+"image_extras_clip_skip" = "CLIP skip";
+"image_extras_weight" = "Weight";
+"image_extras_text_encoder" = "Text encoder";
+"image_extras_embedding" = "Textual inversion";
+"image_extras_tags" = "Tag list";
+"image_extras_definitions" = "Definitions";
+"image_extras_translations" = "Translation list";
+"image_extras_checkpoint" = "Base checkpoint";
+"image_extras_invalid" = "The selected file is invalid or incompatible with the model.";
+"image_extras_resource_hint" = "Tags: one per line or a JSON array. Definitions/translations: a JSON object or key=value. Tap tags/definitions; translations apply locally.";
+"image_extras_ios_help" = "LoRA: SafeTensors or Draw Things .ckpt. Encoders/VAE: compatible Draw Things .ckpt. Embeddings: SafeTensors. Select the matching model first.";
+"image_extras_android_help" = "LoRA, CLIP skip and encoder overrides require an imported GGUF/SafeTensors checkpoint. QNN/MNN weights are fixed. LoRA/embeddings: SafeTensors.";
+"image_extras_import_location" = "Import checkpoints, LoRAs, encoders and prompt lists in %1$@ → %2$@.";

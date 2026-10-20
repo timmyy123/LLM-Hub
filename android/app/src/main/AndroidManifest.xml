@@ -86,7 +86,7 @@
             android:name=".MainActivity"
             android:exported="true"
             android:label="@string/app_name"
-            android:theme="@style/Theme.LlmHub"
+            android:theme="@style/Theme.LlmHub.Starting"
             android:windowSoftInputMode="adjustResize"
             android:configChanges="orientation|screenSize|keyboardHidden|screenLayout">
             <intent-filter>
@@ -112,6 +112,18 @@
         <service
             android:name=".agent.TermuxResultService"
             android:enabled="true"
+            android:exported="false" />
+
+        <!-- Loads NPU embedding builds in a separate process, so a vendor NPU library crash can't take down the app. -->
+        <service
+            android:name=".embedding.EmbeddingNpuProbeService"
+            android:process=":npu_probe"
+            android:exported="false" />
+
+        <!-- Runs LiteRT Stable Diffusion NPU builds in a separate process; a vendor NPU driver crash fails one image. -->
+        <service
+            android:name=".imagegen.LiteRtSdService"
+            android:process=":litert_sd"
             android:exported="false" />
 
         <provider

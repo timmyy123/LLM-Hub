@@ -1,7 +1,7 @@
 import Foundation
 import CoreML
 import MediaGenerationKit
-import ModelZoo
+@preconcurrency import ModelZoo
 #if canImport(UIKit)
 import UIKit
 #endif
@@ -40,6 +40,9 @@ final class StableDiffusionBackend: ObservableObject {
     @Published var loadedModelId: String? = nil
 
     private var pipeline: MediaGenerationPipeline?
+    private var encoderFingerprint = ""
+    private var overriddenModelID: String?
+    private var previousOverride: ModelZoo.Specification?
 
     private init() {}
 
@@ -58,7 +61,18 @@ final class StableDiffusionBackend: ObservableObject {
         guard model.isDrawThingsImageGeneration else { throw SDError.notDrawThingsModel }
         guard Self.isModelDownloaded(modelId: model.id) else { throw SDError.modelNotDownloaded }
 
-        if loadedModelId == model.id && isLoaded { return }
+        let extras = ImageExtrasStore.shared.options
+        if loadedModelId == model.id && isLoaded && encoderFingerprint == extras.encoderFingerprint { return }
+        unloadModel()
+        if var specification = ModelZoo.specificationForModel(model.id) {
+            let overrides = extras.assets.filter { $0.enabled && $0.kind.isEncoder }
+            if !overrides.isEmpty {
+                overriddenModelID = model.id
+                previousOverride = ModelZoo.overrideMapping[model.id]
+                specification = Self.applyingEncoderOverrides(overrides, to: specification)
+                ModelZoo.overrideMapping[model.id] = specification
+            }
+        }
 
         isLoading = true
         isLoaded = false
@@ -83,7 +97,9 @@ final class StableDiffusionBackend: ObservableObject {
             self.pipeline = loadedPipeline
             self.loadedModelId = model.id
             self.isLoaded = true
+            encoderFingerprint = extras.encoderFingerprint
         } catch {
+            unloadModel()
             isLoading = false
             throw error
         }
@@ -91,10 +107,35 @@ final class StableDiffusionBackend: ObservableObject {
     }
 
     func unloadModel() {
+        if let modelID = overriddenModelID {
+            ModelZoo.overrideMapping[modelID] = previousOverride
+            overriddenModelID = nil
+            previousOverride = nil
+        }
+        encoderFingerprint = ""
         pipeline = nil
         loadedModelId = nil
         isLoaded = false
         isGenerating = false
+    }
+
+    static func applyingEncoderOverrides(_ assets: [ImageExtra], to original: ModelZoo.Specification) -> ModelZoo.Specification {
+        var specification = original
+        for asset in assets where asset.enabled {
+            switch asset.kind {
+            case .clipL:
+                // Draw Things stores a supplementary CLIP-L in clipEncoder; SD1 uses its primary slot.
+                if original.clipEncoder != nil { specification.clipEncoder = asset.file }
+                else { specification.textEncoder = asset.file }
+            case .clipG: specification.textEncoder = asset.file
+            case .textEncoder:
+                if original.t5Encoder != nil { specification.t5Encoder = asset.file }
+                else { specification.textEncoder = asset.file }
+            case .vae: specification.autoencoder = asset.file
+            default: break
+            }
+        }
+        return specification
     }
 
     func generateImage(
@@ -104,8 +145,19 @@ final class StableDiffusionBackend: ObservableObject {
         inputImage: UIImage? = nil,
         denoiseStrength: Float = 0.7
     ) async throws -> UIImage? {
+        let extras = ImageExtrasStore.shared.options
+        if encoderFingerprint != extras.encoderFingerprint,
+           let model = ModelData.allModels().first(where: { $0.id == loadedModelId }) {
+            try await loadModel(model)
+        }
         guard isLoaded, let pipeline = pipeline else { throw SDError.pipelineNotLoaded }
 
+        if let modelID = loadedModelId {
+            let version = ModelZoo.versionForModel(modelID)
+            guard extras.assets.filter({ $0.enabled && $0.kind == .lora }).allSatisfy({ LoRAZoo.versionForModel($0.file) == version }) else {
+                throw CocoaError(.fileReadCorruptFile)
+            }
+        }
         generationStep = 0
         generationTotalSteps = steps
         isGenerating = true
@@ -118,16 +170,18 @@ final class StableDiffusionBackend: ObservableObject {
             config.guidanceScale = 1
         }
         config.seed = seed
-        if inputImage != nil {
-            config.strength = denoiseStrength
-        }
+        config.guidanceScale = loadedModelId?.hasPrefix("sd_xl_turbo") == true ? 1 : extras.guidance
+        config.clipSkip = extras.clipSkip
+        config.loras = extras.assets.filter { $0.enabled && $0.kind == .lora }
+            .map { .init(file: $0.file, weight: $0.weight) }
+        config.strength = inputImage == nil ? 1 : denoiseStrength
         configuredPipeline.configuration = config
         self.pipeline = configuredPipeline
 
         let inputs: [MediaGenerationPipeline.Input] = inputImage.map { [$0] } ?? []
         let results = try await configuredPipeline.generate(
-            prompt: prompt,
-            negativePrompt: "ugly, blurry, bad anatomy, bad quality",
+            prompt: extras.translatedPrompt(prompt),
+            negativePrompt: extras.translatedPrompt(extras.negativePrompt),
             inputs: inputs
         ) { @Sendable state, _ in
             if case .generating(let step, let total) = state {

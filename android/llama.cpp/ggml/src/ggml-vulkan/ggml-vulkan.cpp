@@ -771,7 +771,7 @@ static void ggml_vk_create_pipeline_func(vk_device& device, vk_pipeline& pipelin
     try {
         pipeline->pipeline = device->device.createComputePipeline(VK_NULL_HANDLE, compute_pipeline_create_info).value;
     } catch (const vk::SystemError& e) {
-        std::cerr << "ggml_vulkan: compute pipeline creation failed for " << pipeline->name << ": " << e.what() << std::endl;
+        GGML_LOG_ERROR("ggml_vulkan: compute pipeline creation failed for %s: %s\n", pipeline->name.c_str(), e.what());
         throw;
     }
 
@@ -3972,18 +3972,38 @@ void ggml_vk_load_shaders(vk_device& device, vk_pipeline requested) {
     // at the end to flip compile_pending/compiled and notify waiters.
     if (has_claimed_task) {
         auto & task = claimed_task;
-        ggml_vk_create_pipeline_func(device, task.pipeline, task.spv_size, task.spv_data,
-                                     task.entrypoint, task.parameter_count, task.wg_denoms,
-                                     task.specialization_constants, task.disable_robustness,
-                                     task.require_full_subgroups, task.required_subgroup_size);
+        try {
+            ggml_vk_create_pipeline_func(device, task.pipeline, task.spv_size, task.spv_data,
+                                         task.entrypoint, task.parameter_count, task.wg_denoms,
+                                         task.specialization_constants, task.disable_robustness,
+                                         task.require_full_subgroups, task.required_subgroup_size);
+        } catch (...) {
+            // Release failed claims so later probes do not wait for a compiler that has exited.
+            {
+                std::lock_guard<std::mutex> guard(device->compile_mutex);
+                device->device.destroyPipeline(task.pipeline->pipeline);
+                device->device.destroyPipelineLayout(task.pipeline->layout);
+                device->device.destroyShaderModule(task.pipeline->shader_module);
+                task.pipeline->pipeline = vk::Pipeline{};
+                task.pipeline->layout = vk::PipelineLayout{};
+                task.pipeline->shader_module = vk::ShaderModule{};
+                task.pipeline->compiled = false;
+                task.pipeline->compile_pending = false;
+            }
+            device->compile_cv.notify_all();
+            throw;
+        }
     }
 
     // Another thread may be compiling the pipeline we need; block on it here.
     if (wait_pipeline) {
         std::unique_lock<std::mutex> wait_lock(device->compile_mutex);
         device->compile_cv.wait(wait_lock, [&] {
-            return wait_pipeline->compiled.load();
+            return wait_pipeline->compiled.load() || !wait_pipeline->compile_pending;
         });
+        if (!wait_pipeline->compiled) {
+            throw std::runtime_error("Vulkan pipeline compilation failed: " + wait_pipeline->name);
+        }
     }
 }
 
@@ -15873,6 +15893,7 @@ static bool ggml_backend_vk_device_supports_op(ggml_backend_dev_t dev, const ggm
             return ggml_is_contiguous(op->src[0]) && op->src[0]->type == GGML_TYPE_F32
                 && ggml_is_contiguous(op->src[1]) && op->src[1]->type == GGML_TYPE_F32;
         case GGML_OP_SUM:
+            return op->src[0]->type == GGML_TYPE_F32 && ggml_is_contiguously_allocated(op->src[0]);
         case GGML_OP_SUM_ROWS:
         case GGML_OP_MEAN:
             return op->src[0]->type == GGML_TYPE_F32 && ggml_is_contiguous_rows(op->src[0]);

@@ -655,7 +655,6 @@ private fun VideoProgressCard(
 @Composable
 private fun VideoResultSection(viewModel: VideoGeneratorViewModel) {
     val result = viewModel.result ?: return
-    val context = LocalContext.current
     val (resultWidth, resultHeight) = viewModel.resultSize
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -693,27 +692,14 @@ private fun VideoResultSection(viewModel: VideoGeneratorViewModel) {
         }
     }
 
-    // Save / Share actions (outside Card for equal width with Generate button)
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    // Save action (outside Card for equal width with Generate button)
+    Button(
+        onClick = { viewModel.saveToGallery() },
+        modifier = Modifier.fillMaxWidth()
     ) {
-        Button(
-            onClick = { viewModel.saveToGallery() },
-            modifier = Modifier.weight(1f)
-        ) {
-            Icon(Icons.Default.Save, contentDescription = null)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(stringResource(R.string.video_generator_save))
-        }
-        OutlinedButton(
-            onClick = { viewModel.shareIntent()?.let { context.startActivity(it) } },
-            modifier = Modifier.weight(1f)
-        ) {
-            Icon(Icons.Default.Share, contentDescription = null)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(stringResource(R.string.video_generator_share))
-        }
+        Icon(Icons.Default.Save, contentDescription = null)
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(stringResource(R.string.video_generator_save))
     }
 }
 

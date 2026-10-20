@@ -520,6 +520,7 @@
     <string name="image_generator_download_model_desc">Unduh model pembuatan gambar untuk mulai membuat gambar</string>
     <string name="image_generator_model_not_available">Model pembuatan gambar tidak tersedia</string>
     <string name="image_generator_error">Gagal menghasilkan gambar</string>
+    <string name="image_generator_npu_crashed">NPU perangkat ini berhenti saat membuat gambar. Coba lagi setelah pembaruan sistem, atau gunakan model lain.</string>
     <string name="image_generator_success">Gambar berhasil dihasilkan</string>
     <string name="image_generator_saved">Gambar disimpan ke galeri</string>
     <string name="stable_diffusion_model">Stable Diffusion v1.5</string>
@@ -1029,6 +1030,7 @@
     <string name="media_search_download_model_desc">Fitur ini menjalankan EmbeddingGemma 2 di perangkat Anda. Unduh dari daftar model untuk memulai.</string>
     <string name="media_search_loading_model">Memuat EmbeddingGemma 2…</string>
     <string name="media_search_model_failed">Tidak dapat memuat EmbeddingGemma 2</string>
+    <string name="media_search_npu_unavailable">NPU perangkat ini tidak dapat menjalankan model ini. Unduh EmbeddingGemma 2 versi standar sebagai gantinya.</string>
     <string name="media_search_analyzing">Menganalisis…</string>
     <string name="media_search_paused">Analisis dijeda</string>
     <string name="media_search_progress">%1$d dari %2$d dianalisis (%3$d%%)</string>
@@ -1159,4 +1161,20 @@
     <string name="video_generator_random_seed">Benih acak</string>
     <string name="video_generator_negative_prompt">Prompt negatif (opsional)</string>
     <string name="video_generator_negative_prompt_hint">Hal yang dihindari, mis. buram, terdistorsi, kualitas rendah</string>
+    <string name="image_extras_title">Pengubah gambar</string>
+    <string name="image_extras_negative">Prompt negatif</string>
+    <string name="image_extras_guidance">Skala panduan</string>
+    <string name="image_extras_clip_skip">CLIP skip</string>
+    <string name="image_extras_weight">Bobot</string>
+    <string name="image_extras_text_encoder">Encoder teks</string>
+    <string name="image_extras_embedding">Inversi tekstual</string>
+    <string name="image_extras_tags">Daftar tag</string>
+    <string name="image_extras_definitions">Definisi</string>
+    <string name="image_extras_translations">Daftar terjemahan</string>
+    <string name="image_extras_checkpoint">Checkpoint dasar</string>
+    <string name="image_extras_invalid">File yang dipilih tidak valid atau tidak kompatibel dengan model.</string>
+    <string name="image_extras_resource_hint">Tag: satu per baris atau array JSON. Definisi/terjemahan: objek JSON atau key=value. Ketuk tag/definisi untuk menambahkannya; terjemahan diterapkan secara lokal.</string>
+    <string name="image_extras_ios_help">LoRA: SafeTensors atau .ckpt Draw Things. Encoder/VAE: .ckpt Draw Things yang kompatibel. Embedding: SafeTensors. Pilih model yang sesuai terlebih dahulu.</string>
+    <string name="image_extras_android_help">LoRA, CLIP skip, dan encoder kustom memerlukan checkpoint GGUF/SafeTensors yang diimpor. Bobot QNN/MNN bersifat tetap. LoRA/embedding: SafeTensors.</string>
+    <string name="image_extras_import_location">Impor checkpoint, LoRA, encoder, dan daftar prompt di %1$s → %2$s.</string>
 </resources>

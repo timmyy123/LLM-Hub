@@ -40,8 +40,10 @@ class StableDiffusionHelper(private val context: Context) {
             it.name.equals("unet.mnn", ignoreCase = true) ||
                 (it.name.contains("unet", ignoreCase = true) && it.name.endsWith(".mnn", ignoreCase = true))
         }
+        val hasLiteRtModels = LITERT_FILES.all { name -> files.any { it.name == name } }
 
         return when {
+            hasLiteRtModels -> ModelType.LITERT_NPU
             hasQnnModels -> ModelType.QNN_NPU
             hasMnnModels -> ModelType.MNN_CPU
             else -> null
@@ -95,9 +97,8 @@ class StableDiffusionHelper(private val context: Context) {
      */
     fun listModels(): List<ModelInfo> {
         val modelDir = getModelDirectory()
-        if (!modelDir.exists()) return emptyList()
-        
-        val models = mutableListOf<ModelInfo>()
+        val models = ImageExtrasStore(context).checkpoints().toMutableList()
+        if (!modelDir.exists()) return models
         val seenPaths = HashSet<String>()
         
         // Recursive search for model files
@@ -360,6 +361,8 @@ class StableDiffusionHelper(private val context: Context) {
     }
     
     companion object {
+        /** Files of a LiteRT NPU build, as laid out by ModelData's per-SoC downloads. */
+        val LITERT_FILES = listOf("diffusion.tflite", "decoder.tflite", "clip.tflite", "vocab.json", "merges.txt")
         const val DEFAULT_NEGATIVE_PROMPT = "lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry"
     }
 
@@ -437,5 +440,7 @@ data class ModelInfo(
  */
 enum class ModelType {
     QNN_NPU,    // Qualcomm NPU acceleration
-    MNN_CPU     // CPU inference
+    MNN_CPU,    // CPU inference
+    SDCPP,      // Imported checkpoint with runtime LoRA/encoder controls
+    LITERT_NPU  // Per-SoC LiteRT build (Google Tensor TPU), fixed 512x512
 }

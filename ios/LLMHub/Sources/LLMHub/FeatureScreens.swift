@@ -6724,8 +6724,10 @@ struct ImageGeneratorScreen: View {
                 selectedModelId: $selectedModelId,
                 steps: $storedSteps,
                 denoiseStrength: $storedDenoiseStrength,
+                promptText: $promptText,
                 isLoaded: sdBackend.isLoaded,
                 isLoading: sdBackend.isLoading,
+                isGenerating: isGenerating,
                 onLoad: {
                     guard let model = selectedModel else { return }
                     Task {
@@ -6883,10 +6885,9 @@ struct ImageGeneratorScreen: View {
     private var mainGenerationView: some View {
         GeometryReader { geo in
             let isLandscape = geo.size.width > geo.size.height
-            let hasOutput = !generatedImages.isEmpty || isGenerating
             if isLandscape {
                 landscapeLayout
-            } else if isUnfolded && hasOutput {
+            } else if isUnfolded {
                 hingePortraitLayout
             } else {
                 portraitLayout
@@ -6903,8 +6904,9 @@ struct ImageGeneratorScreen: View {
                 generationControls
                     .padding(.vertical, 12)
             }
+            .accessibilityIdentifier("imageGenerator.inputPanel")
         } bottom: {
-            imageSwipeView
+            generationOutput
                 .padding(.bottom, 12)
         }
         .padding(.horizontal)
@@ -6918,6 +6920,19 @@ struct ImageGeneratorScreen: View {
             }
             generateButton
         }
+    }
+
+    private var generationOutput: some View {
+        Group {
+            if !generatedImages.isEmpty || isGenerating {
+                imageSwipeView
+            } else {
+                ApolloOutputPlaceholder(systemImage: "photo")
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .clipped()
+        .accessibilityIdentifier("imageGenerator.outputPanel")
     }
 
     // MARK: - Portrait Layout
@@ -6947,16 +6962,10 @@ struct ImageGeneratorScreen: View {
                 generationControls
                     .padding(.vertical, 12)
             }
+            .accessibilityIdentifier("imageGenerator.inputPanel")
         } trailing: {
-            // Landscape always uses two columns; the output side waits empty until
-            // the first image starts generating.
-            if !generatedImages.isEmpty || isGenerating {
-                imageSwipeView
-                    .padding(.vertical, 12)
-            } else {
-                ApolloOutputPlaceholder(systemImage: "photo")
-                    .padding(.vertical, 12)
-            }
+            generationOutput
+                .padding(.vertical, 12)
         }
         .padding(.horizontal)
     }
@@ -7049,6 +7058,7 @@ struct ImageGeneratorScreen: View {
                         .font(.caption2)
                         .foregroundStyle(.white.opacity(0.6))
                     Slider(value: $storedDenoiseStrength, in: 0.1...1.0)
+                        .tint(ApolloPalette.accentStrong)
                         .disabled(isGenerating)
                 }
             }
@@ -7341,8 +7351,10 @@ private struct ImageGeneratorSettingsSheet: View {
     @Binding var selectedModelId: String
     @Binding var steps: Double
     @Binding var denoiseStrength: Double
+    @Binding var promptText: String
     let isLoaded: Bool
     let isLoading: Bool
+    let isGenerating: Bool
     let onLoad: () -> Void
     let onUnload: () -> Void
 
@@ -7375,15 +7387,20 @@ private struct ImageGeneratorSettingsSheet: View {
                     .clipShape(RoundedRectangle(cornerRadius: 14))
 
                     // Steps Slider
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("\(settings.localized("image_generator_iterations")): \(Int(steps))")
-                            .font(.headline)
-                        Slider(value: $steps, in: 1...50, step: 1)
-                            .tint(ApolloPalette.accentStrong)
-                    }
+                    ImageGenerationSettingsSlider(
+                        title: "\(settings.localized("image_generator_iterations")): \(Int(steps))",
+                        value: $steps, range: 1...50, step: 1,
+                        identifier: "imageGenerator.steps"
+                    )
                     .padding()
                     .background(.regularMaterial)
                     .clipShape(RoundedRectangle(cornerRadius: 14))
+
+                    ImageExtrasEditor(prompt: $promptText)
+                        .disabled(isGenerating || isLoading)
+                        .padding()
+                        .background(.regularMaterial)
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
 
                     // Load / Unload
                     VStack(spacing: 12) {

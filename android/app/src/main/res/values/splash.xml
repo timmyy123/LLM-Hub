@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Launch splash: the app icon in its navy circle on the app's own background, then
+         MainActivity animates it out. splash_background follows light/dark (and Material You
+         neutrals on Android 12+, see values-v31) like the app's colour scheme. -->
+    <color name="splash_background">#FFFBFF</color>
+    <color name="splash_icon_background">#00051C</color>
+
+    <style name="Theme.LlmHub.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/splash_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_foreground</item>
+        <item name="windowSplashScreenIconBackgroundColor">@color/splash_icon_background</item>
+        <item name="postSplashScreenTheme">@style/Theme.LlmHub</item>
+    </style>
+</resources>

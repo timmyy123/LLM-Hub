@@ -518,6 +518,7 @@
     <string name="image_generator_download_model_desc">이미지 생성 모델을 다운로드하여 이미지 생성을 시작하세요</string>
     <string name="image_generator_model_not_available">이미지 생성 모델을 사용할 수 없습니다</string>
     <string name="image_generator_error">이미지 생성 실패</string>
+    <string name="image_generator_npu_crashed">이미지를 생성하는 중에 이 기기의 NPU가 중지되었습니다. 시스템 업데이트 후 다시 시도하거나 다른 모델을 사용하세요.</string>
     <string name="image_generator_success">이미지가 성공적으로 생성되었습니다</string>
     <string name="image_generator_saved">이미지가 갤러리에 저장되었습니다</string>
     <string name="stable_diffusion_model">Stable Diffusion v1.5</string>
@@ -1027,6 +1028,7 @@
     <string name="media_search_download_model_desc">이 기능은 기기에서 EmbeddingGemma 2를 실행합니다. 시작하려면 모델 목록에서 다운로드하세요.</string>
     <string name="media_search_loading_model">EmbeddingGemma 2 불러오는 중…</string>
     <string name="media_search_model_failed">EmbeddingGemma 2를 불러오지 못했습니다</string>
+    <string name="media_search_npu_unavailable">이 기기의 NPU에서는 이 모델을 실행할 수 없습니다. 대신 일반 EmbeddingGemma 2를 다운로드하세요.</string>
     <string name="media_search_analyzing">분석 중…</string>
     <string name="media_search_paused">분석 일시중지됨</string>
     <string name="media_search_progress">%2$d개 중 %1$d개 분석됨(%3$d%%)</string>
@@ -1157,4 +1159,20 @@
     <string name="video_generator_random_seed">무작위 시드</string>
     <string name="video_generator_negative_prompt">네거티브 프롬프트(선택 사항)</string>
     <string name="video_generator_negative_prompt_hint">피할 요소, 예: 흐림, 왜곡, 저화질</string>
+    <string name="image_extras_title">이미지 수정 설정</string>
+    <string name="image_extras_negative">네거티브 프롬프트</string>
+    <string name="image_extras_guidance">가이던스 스케일</string>
+    <string name="image_extras_clip_skip">CLIP 스킵</string>
+    <string name="image_extras_weight">가중치</string>
+    <string name="image_extras_text_encoder">텍스트 인코더</string>
+    <string name="image_extras_embedding">텍스추얼 인버전</string>
+    <string name="image_extras_tags">태그 목록</string>
+    <string name="image_extras_definitions">정의</string>
+    <string name="image_extras_translations">번역 목록</string>
+    <string name="image_extras_checkpoint">기본 체크포인트</string>
+    <string name="image_extras_invalid">선택한 파일이 유효하지 않거나 모델과 호환되지 않습니다.</string>
+    <string name="image_extras_resource_hint">태그: 한 줄에 하나 또는 JSON 배열. 정의/번역: JSON 객체 또는 key=value 형식. 태그/정의를 탭하여 추가합니다. 번역은 기기에서 적용됩니다.</string>
+    <string name="image_extras_ios_help">LoRA: SafeTensors 또는 Draw Things .ckpt. 인코더/VAE: 호환되는 Draw Things .ckpt. 임베딩: SafeTensors. 먼저 호환되는 모델을 선택하세요.</string>
+    <string name="image_extras_android_help">LoRA, CLIP 스킵, 인코더 변경에는 가져온 GGUF/SafeTensors 체크포인트가 필요합니다. QNN/MNN 가중치는 고정되어 있습니다. LoRA/임베딩: SafeTensors.</string>
+    <string name="image_extras_import_location">체크포인트, LoRA, 인코더, 프롬프트 목록은 %1$s → %2$s에서 가져옵니다.</string>
 </resources>

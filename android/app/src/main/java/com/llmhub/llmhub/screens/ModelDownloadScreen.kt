@@ -55,6 +55,8 @@ import com.llmhub.llmhub.data.isVideoGenerationModel
 import com.llmhub.llmhub.data.bundleDirectory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import com.llmhub.llmhub.imagegen.ImageExtrasStore
+import com.llmhub.llmhub.imagegen.imageExtraLabel
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.util.zip.ZipEntry
@@ -96,6 +98,8 @@ private fun shouldShowNpuBadge(model: LLMModel): Boolean {
         // QNN models (listed + imported) on 8 Gen 1/2/3/4-class devices
         "qnn_npu" -> is8GenFamilyDeviceForQnn()
         "litertlm" -> ModelData.isEmbeddingGemma2NpuModel(model)
+        // Per-SoC LiteRT Stable Diffusion builds (Google Tensor TPU)
+        "litert_npu" -> true
         // LTX-Video QNN bundles always run on the Hexagon NPU
         "ltxv_qnn" -> true
         else -> false
@@ -1039,7 +1043,7 @@ private fun resolveLocalModelFiles(model: LLMModel, context: Context): List<File
     }
 
     when (model.modelFormat.lowercase()) {
-        "qnn_npu", "mnn_cpu" -> {
+        "qnn_npu", "mnn_cpu", "litert_npu" -> {
             val modelDir = File(sdModelsDir, model.name.replace(" ", "_"))
             if (modelDir.exists() && modelDir.isDirectory) {
                 files += modelDir.walkTopDown().filter { it.isFile }.toList()
@@ -1171,7 +1175,7 @@ private fun getModelDisplayName(model: LLMModel, context: Context): String {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ImportExternalModelDialog(
+internal fun ImportExternalModelDialog(
     onDismiss: () -> Unit,
     onSearchHuggingFace: suspend (String, String, Int) -> List<com.llmhub.llmhub.viewmodels.HuggingFaceModelFile>,
     onDownloadHuggingFace: (String, String, com.llmhub.llmhub.viewmodels.HuggingFaceModelFile, com.llmhub.llmhub.viewmodels.HuggingFaceModelFile?, Boolean, Int, Boolean) -> Unit,
@@ -1188,6 +1192,9 @@ private fun ImportExternalModelDialog(
     var supportsGpu by remember { mutableStateOf(false) }
     var supportsMtp by remember { mutableStateOf(false) }
     var modelFormat by remember { mutableStateOf(ModelFormat.GGUF) }
+    // Image generation files (checkpoints, LoRAs, encoders, prompt lists) import into ImageExtrasStore instead.
+    var imageKind by remember { mutableStateOf<String?>(null) }
+    var importingImageFile by remember { mutableStateOf(false) }
     var contextWindowSize by remember { mutableStateOf("2048") }
     var huggingFaceQuery by remember { mutableStateOf("") }
     var huggingFaceResults by remember { mutableStateOf<List<com.llmhub.llmhub.viewmodels.HuggingFaceModelFile>>(emptyList()) }
@@ -1224,13 +1231,15 @@ private fun ImportExternalModelDialog(
             Log.d("ModelImport", "Derived fileExtension: $fileExtension")
             
             // Validate file format
-            if (fileExtension != "task" && fileExtension != "litertlm" && fileExtension != "gguf" && fileExtension != "zip") {
+            val allowedExtensions = imageKind?.let { kind -> ImageExtrasStore.extensions(kind) } ?: setOf("task", "litertlm", "gguf", "zip")
+            if (fileExtension !in allowedExtensions) {
                 showError = true
                 errorMessage = context.getString(R.string.unsupported_file_format)
                 return@let
             }
             
             selectedFileUri = it
+            if (imageKind != null && modelName.isBlank()) modelName = fileName.substringBeforeLast('.')
             // Show first few words of filename, max 20 characters
             selectedFileName = if (fileName.length > 20) {
                 fileName.take(20) + "..."
@@ -1283,6 +1292,7 @@ private fun ImportExternalModelDialog(
         
         AlertDialog(
             onDismissRequest = {
+                if (importingImageFile) return@AlertDialog
                 keyboardController?.hide()
                 onDismiss()
             },
@@ -1313,7 +1323,7 @@ private fun ImportExternalModelDialog(
                     )
                 }
 
-                if (modelFormat == ModelFormat.GGUF || modelFormat == ModelFormat.LITERTLM) item {
+                if (imageKind == null && (modelFormat == ModelFormat.GGUF || modelFormat == ModelFormat.LITERTLM)) item {
                     OutlinedTextField(
                         value = huggingFaceQuery,
                         onValueChange = { huggingFaceQuery = it },
@@ -1339,7 +1349,7 @@ private fun ImportExternalModelDialog(
                     )
                 }
 
-                if (modelFormat == ModelFormat.GGUF || modelFormat == ModelFormat.LITERTLM) {
+                if (imageKind == null && (modelFormat == ModelFormat.GGUF || modelFormat == ModelFormat.LITERTLM)) {
                 val nonProjectorResults = huggingFaceResults.filter { !it.isProjector }
                 val pageSize = 10
                 val totalPages = ((nonProjectorResults.size + pageSize - 1) / pageSize).coerceAtLeast(1)
@@ -1396,6 +1406,8 @@ private fun ImportExternalModelDialog(
                             )
                         }
                     }
+
+                    if (importingImageFile) item { LinearProgressIndicator(modifier = Modifier.fillMaxWidth()) }
 
                     // If user enabled Supports Vision, show a file selector for the Vision Projector
                     if (modelFormat == ModelFormat.GGUF && supportsVision) {
@@ -1497,7 +1509,24 @@ private fun ImportExternalModelDialog(
                 
                 // Show Vision option for GGUF and other text formats.
                 // For GGUF: show only the "Supports Vision" toggle (no GPU/audio toggles).
-                if (modelFormat == ModelFormat.GGUF) {
+                if (imageKind != null) {
+                    item {
+                        Text(
+                            text = stringResource(R.string.image_extras_android_help),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                    if (imageKind in setOf("tags", "definitions", "translations")) item {
+                        Text(
+                            text = stringResource(R.string.image_extras_resource_hint),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                } else if (modelFormat == ModelFormat.GGUF) {
                     item {
                         Row(
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -1600,7 +1629,7 @@ private fun ImportExternalModelDialog(
                                 .clickable { showFormatMenu = true }
                         ) {
                             OutlinedTextField(
-                                value = modelFormat.name.lowercase(),
+                                value = imageKind?.let { imageExtraLabel(it) } ?: modelFormat.name.lowercase(),
                                 onValueChange = { },
                                 label = { Text(stringResource(R.string.model_format)) },
                                 readOnly = true,
@@ -1626,6 +1655,7 @@ private fun ImportExternalModelDialog(
                                         text = { Text(format.name.lowercase()) },
                                         onClick = {
                                         modelFormat = format
+                                        imageKind = null
                                         huggingFaceResults = emptyList()
                                         huggingFacePage = 0
                                         if (format != ModelFormat.GGUF) {
@@ -1637,11 +1667,29 @@ private fun ImportExternalModelDialog(
                                         }
                                     )
                                 }
+                                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                                ImageExtrasStore.kinds.forEach { kind ->
+                                    DropdownMenuItem(
+                                        text = { Text(imageExtraLabel(kind)) },
+                                        onClick = {
+                                            imageKind = kind
+                                            huggingFaceResults = emptyList()
+                                            huggingFacePage = 0
+                                            selectedHuggingFaceModel = null
+                                            selectedFileUri = null
+                                            selectedFileName = ""
+                                            supportsVision = false
+                                            selectedVisionProjectorUri = null
+                                            selectedHuggingFaceProjector = null
+                                            showFormatMenu = false
+                                        }
+                                    )
+                                }
                             }
                         }
                         
                         // GGUF context length comes from its file header after import/download.
-                        if (modelFormat == ModelFormat.TASK || modelFormat == ModelFormat.LITERTLM) {
+                        if (imageKind == null && (modelFormat == ModelFormat.TASK || modelFormat == ModelFormat.LITERTLM)) {
                             val contextWindowError = contextWindowSize.toIntOrNull() == null || contextWindowSize.toIntOrNull()!! <= 0
                             val contextWindowErrorText = stringResource(R.string.context_window_size_invalid)
                             
@@ -1664,6 +1712,24 @@ private fun ImportExternalModelDialog(
         confirmButton = {
             Button(
                 onClick = {
+                    imageKind?.let { kind ->
+                        val uri = selectedFileUri ?: return@Button
+                        importingImageFile = true
+                        coroutineScope.launch {
+                            try {
+                                val store = ImageExtrasStore(context)
+                                store.add(withContext(Dispatchers.IO) { store.importFile(uri, kind, modelName) })
+                                onDismiss()
+                            } catch (e: Exception) {
+                                Log.w("ModelImport", "Image file import failed: ${e.message}")
+                                showError = true
+                                errorMessage = context.getString(R.string.image_extras_invalid)
+                            } finally {
+                                importingImageFile = false
+                            }
+                        }
+                        return@Button
+                    }
                     selectedHuggingFaceModel?.let { remote ->
                         if (modelName.isNotBlank()) {
                             val contextSize = if (modelFormat == ModelFormat.GGUF) 4096 else contextWindowSize.toIntOrNull() ?: 4096
@@ -1773,13 +1839,13 @@ private fun ImportExternalModelDialog(
                         }
                     }
                 },
-                enabled = modelName.isNotBlank() && (selectedFileUri != null || selectedHuggingFaceModel != null)
+                enabled = !importingImageFile && modelName.isNotBlank() && (selectedFileUri != null || selectedHuggingFaceModel != null)
             ) {
                 Text(stringResource(R.string.import_model))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(onClick = onDismiss, enabled = !importingImageFile) {
                 Text(stringResource(R.string.cancel))
             }
         }

@@ -129,6 +129,7 @@ fun AudioSearchScreen(
     val isLoadingModel by viewModel.isLoadingModel.collectAsState()
     val isModelLoaded by viewModel.isModelLoaded.collectAsState()
     val modelError by viewModel.modelError.collectAsState()
+    val npuUnavailable by viewModel.npuUnavailable.collectAsState()
     val source by viewModel.source.collectAsState()
     val assets by viewModel.assets.collectAsState()
     val progress by viewModel.progress.collectAsState()
@@ -250,7 +251,8 @@ fun AudioSearchScreen(
                         isPaused = isPaused,
                         onPause = viewModel::pauseIndexing,
                         onResume = viewModel::resumeIndexing,
-                        onRetryModel = viewModel::loadModel
+                        onRetryModel = viewModel::loadModel,
+                        npuUnavailable = npuUnavailable
                     )
                 }
                 if (results != null && !progress.isComplete) {
