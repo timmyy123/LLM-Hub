@@ -9,6 +9,9 @@
 #include "mlx/utils.h"
 #include "mlx/version.h"
 
+#include <cstdio>
+#include <optional>
+
 // clang-format off
 #define SERIALIZE_PRIMITIVE(primitive, ...)  \
   {                                          \
@@ -32,6 +35,31 @@ using namespace mlx::core::fast;
 
 using Reader = io::ParallelFileReader;
 using Writer = io::FileWriter;
+
+// LLMHub patch: backward-compatible import of .mlxfn files written by older MLX releases.
+// The format gained fields after 0.31.1 (header metadata, and new state on FFT, SliceUpdate,
+// ScaledDotProductAttention and CustomKernel), and upstream reads them unconditionally, so
+// older exports such as Magenta RealTime 2 (written by 0.31.1) failed with
+// "[import_function] Invalid string size". The importing file's version is kept here while
+// ImportedFunction parses it; 0 means "current format".
+constexpr int mlx_version_code(int major, int minor, int patch) {
+  return 100000 * major + 1000 * minor + patch;
+}
+
+int parse_mlx_version(const std::string& version) {
+  int major = 0, minor = 0, patch = 0;
+  if (std::sscanf(version.c_str(), "%d.%d.%d", &major, &minor, &patch) < 2) {
+    return 0;
+  }
+  return mlx_version_code(major, minor, patch);
+}
+
+thread_local int import_file_version = 0;
+
+bool imported_file_older_than(int major, int minor, int patch) {
+  return import_file_version != 0 &&
+      import_file_version < mlx_version_code(major, minor, patch);
+}
 
 struct PrimitiveSerializer {
   using Serializer = std::function<void(Writer&, const Primitive&)>;
@@ -320,6 +348,45 @@ std::vector<StateT> primitive_state(const Primitive& p) {
 
 template <typename T>
 std::shared_ptr<T> deserialize_primitive(Reader& is, Stream s) {
+  // Older files store these primitives without the state fields added later; read the old
+  // layout and use the defaults that reproduce the old behaviour.
+  if constexpr (std::is_same_v<T, SliceUpdate>) {
+    if (imported_file_older_than(0, 31, 2)) { // reduce_type_ added first in 0.31.2
+      auto [start, end, strides] = deserialize<std::tuple<Shape, Shape, Shape>>(is);
+      return std::make_shared<T>(s, SliceUpdate::None, start, end, strides);
+    }
+  } else if constexpr (std::is_same_v<T, CustomKernel>) {
+    if (imported_file_older_than(0, 32, 0)) { // compile_options_ added in 0.32.0
+      auto args = deserialize<std::tuple<
+          std::string,
+          std::string,
+          std::tuple<int, int, int>,
+          std::tuple<int, int, int>,
+          std::vector<std::tuple<bool, bool, bool>>,
+          bool,
+          std::optional<float>,
+          std::vector<ScalarArg>,
+          bool,
+          int>>(is);
+      auto fn = [s](auto&&... args) {
+        return std::make_shared<T>(s, std::move(args)...);
+      };
+      return std::apply(fn, std::move(args));
+    }
+  } else if constexpr (std::is_same_v<T, ScaledDotProductAttention>) {
+    if (imported_file_older_than(0, 32, 2)) { // force_fused_ added in 0.32.2
+      auto [fallback, scale, causal, sinks, logsumexp] =
+          deserialize<std::tuple<std::nullptr_t, float, bool, bool, bool>>(is);
+      return std::make_shared<T>(
+          s, fallback, scale, causal, sinks, logsumexp, /* force_fused */ false);
+    }
+  } else if constexpr (std::is_same_v<T, FFT>) {
+    if (imported_file_older_than(0, 32, 4)) { // odd_out_ added in 0.32.4
+      auto [axes, inverse, real] =
+          deserialize<std::tuple<std::vector<size_t>, bool, bool>>(is);
+      return std::make_shared<T>(s, axes, inverse, real, /* odd_out */ false);
+    }
+  }
   if constexpr (has_state<T>) {
     auto args = deserialize<decltype(std::declval<T>().state())>(is);
     if constexpr (is_pair<decltype(args)> || is_tuple<decltype(args)>) {
@@ -497,15 +564,18 @@ struct PrimitiveFactory {
     if (auto it = stream_map.find(stream.index); it != stream_map.end()) {
       return it->second;
     }
-    // Try to find an existing stream on the same device
-    for (auto& s : get_streams()) {
+    // LLMHub patch: streams are thread affine since MLX 0.32, and an imported function is
+    // usually called from a different thread than the one that imported it (Swift tasks,
+    // mlx-swift's own streams). Run imported primitives on a thread-unsafe stream, which
+    // any thread may use; callers serialize evaluation (mlx-swift's eval lock).
+    std::optional<Stream> same_device;
+    for (auto& [index, s] : stream_map) {
       if (s.device == stream.device) {
-        stream_map.emplace(stream.index, s);
-        return s;
+        same_device = s;
+        break;
       }
     }
-    // No stream on that device, make a new one
-    Stream s = new_stream(stream.device);
+    Stream s = same_device ? *same_device : new_thread_unsafe_stream(stream.device);
     stream_map.emplace(stream.index, s);
     return s;
   }
@@ -1086,10 +1156,24 @@ ImportedFunction::ImportedFunction(const std::string& file)
 
   // Parse header
   auto mlx_version = deserialize<std::string>(is);
+  // LLMHub patch: remember the file's version while parsing (see import_file_version).
+  struct ImportVersionScope {
+    explicit ImportVersionScope(int version) {
+      import_file_version = version;
+    }
+    ~ImportVersionScope() {
+      import_file_version = 0;
+    }
+  } version_scope(parse_mlx_version(mlx_version));
   auto function_count = deserialize<int>(is);
   ftable->shapeless = deserialize<bool>(is);
-  metadata_ = deserialize<std::string>(is);
+  if (!imported_file_older_than(0, 32, 1)) { // header metadata added in 0.32.1
+    metadata_ = deserialize<std::string>(is);
+  }
   std::unordered_map<std::uintptr_t, array> constants;
+  // LLMHub patch: constants load on a thread-unsafe CPU stream so the function can be
+  // evaluated from any thread (see PrimitiveFactory::resolve_stream).
+  Stream load_stream = new_thread_unsafe_stream(Device::cpu);
 
   auto import_one = [&]() {
     auto kwarg_keys = deserialize<std::vector<std::string>>(is);
@@ -1153,8 +1237,7 @@ ImportedFunction::ImportedFunction(const std::string& file)
             tape.push_back(array(
                 std::move(shape),
                 type,
-                std::make_shared<Load>(
-                    default_stream(Device::cpu), is_ptr, offset),
+                std::make_shared<Load>(load_stream, is_ptr, offset),
                 {}));
             is.seek(offset + tape.back().nbytes());
             constants.insert({id, tape.back()});
