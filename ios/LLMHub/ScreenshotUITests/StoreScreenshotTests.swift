@@ -164,10 +164,10 @@ final class StoreScreenshotTests: XCTestCase {
                 "-screenshot_inject_video_input", "screenshot_outputs/video_input.png",
             ]
         }
-        // Real generation: the start image is the one test02 generated on this device (the
-        // Photos picker is unreliable on Device Farm).
-        if !injectMode { args += ["-screenshot_inject_video_input", "screenshot_outputs/image.png"] }
-        launch(args)
+        // Real generation from the FLUX cabin shown in the Image Generator screenshot (passed
+        // at launch; FLUX is too large to generate on the phone). The Photos picker is
+        // unreliable on Device Farm.
+        launch(args, environment: injectMode ? [:] : ["SCREENSHOT_INPUT_IMAGE_B64": FluxFixture.jpegBase64])
         if !injectMode { ensureDownloaded(Self.videoModel) }
         openFeature("video_generator")
 
@@ -229,10 +229,8 @@ final class StoreScreenshotTests: XCTestCase {
                 "-screenshot_inject_upscale_output", "screenshot_outputs/upscale_output.png",
             ]
         }
-        // Real upscale: the input is the image test02 generated on this device (the Photos
-        // picker is unreliable on Device Farm).
-        if !injectMode { args += ["-screenshot_inject_upscale_input", "screenshot_outputs/image.png"] }
-        launch(args)
+        // Real upscale of the FLUX cabin shown in the Image Generator screenshot (passed at launch).
+        launch(args, environment: injectMode ? [:] : ["SCREENSHOT_INPUT_IMAGE_B64": FluxFixture.jpegBase64])
         if !injectMode { ensureDownloaded(Self.upscaleModel) }
         openFeature("image_upscaler")
         let upscale = element("upscale_button")
@@ -304,8 +302,9 @@ final class StoreScreenshotTests: XCTestCase {
 
     // MARK: - Launch and navigation
 
-    private func launch(_ extraArguments: [String]) {
+    private func launch(_ extraArguments: [String], environment launchEnv: [String: String] = [:]) {
         app = XCUIApplication()
+        app.launchEnvironment.merge(launchEnv) { _, new in new }
         if let duoPose {
             // SCREENSHOT_DUO_ORIENTATION (portrait|landscapeLeft|landscapeRight|portraitUpsideDown)
             // overrides the pose's rotation: folded, the simulator's orientations are relative to

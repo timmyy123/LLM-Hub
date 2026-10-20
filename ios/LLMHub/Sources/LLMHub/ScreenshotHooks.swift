@@ -169,6 +169,12 @@ enum ScreenshotHooks {
     /// How long an injected "generation" shows its progress UI before the result appears.
     static let injectedResultDelay: UInt64 = 1_500_000_000
 
+    /// `SCREENSHOT_INPUT_IMAGE_B64` (launch environment): a base64 image that Video and Upscale
+    /// start from, for devices where no file can be copied into the app first.
+    static let environmentInputImage: UIImage? = ProcessInfo.processInfo.environment["SCREENSHOT_INPUT_IMAGE_B64"]
+        .flatMap { Data(base64Encoded: $0, options: .ignoreUnknownCharacters) }
+        .flatMap(UIImage.init(data:))
+
     static func image(at url: URL?) -> UIImage? {
         guard let url, let data = try? Data(contentsOf: url) else { return nil }
         return UIImage(data: data)

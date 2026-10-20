@@ -116,7 +116,7 @@ struct ImageUpscalerScreen: View {
             }
             #if DEBUG
             // Input image only (real upscale) or together with an injected result.
-            if inputImage == nil, let injected = ScreenshotHooks.image(at: ScreenshotHooks.injectUpscaleInputURL) {
+            if inputImage == nil, let injected = ScreenshotHooks.image(at: ScreenshotHooks.injectUpscaleInputURL) ?? ScreenshotHooks.environmentInputImage {
                 inputImage = injected
             }
             #endif

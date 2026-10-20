@@ -125,7 +125,7 @@ struct VideoGeneratorScreen: View {
             // Screenshot automation: prefill the prompt.
             if promptText.isEmpty, let prompt = ScreenshotHooks.videoPrompt { promptText = prompt }
             // Input image only (real generation) or together with an injected result.
-            if inputImage == nil, let injected = ScreenshotHooks.image(at: ScreenshotHooks.injectVideoInputURL) {
+            if inputImage == nil, let injected = ScreenshotHooks.image(at: ScreenshotHooks.injectVideoInputURL) ?? ScreenshotHooks.environmentInputImage {
                 inputImage = injected
             }
             #endif

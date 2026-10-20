@@ -68,6 +68,7 @@
 		WB000001000000000000WB01 /* WhisperBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = WB000001000000000000WB02 /* WhisperBackend.swift */; };
 		SH0000010000000000SH0001 /* ScreenshotHooks.swift in Sources */ = {isa = PBXBuildFile; fileRef = SH0000010000000000SH0002 /* ScreenshotHooks.swift */; };
 		ST0000010000000000ST0001 /* StoreScreenshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = ST0000010000000000ST0002 /* StoreScreenshotTests.swift */; };
+		ST0000010000000000ST0017 /* FluxFixture.swift in Sources */ = {isa = PBXBuildFile; fileRef = ST0000010000000000ST0018 /* FluxFixture.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -175,6 +176,7 @@
 		WB000001000000000000WB02 /* WhisperBackend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhisperBackend.swift; sourceTree = "<group>"; };
 		SH0000010000000000SH0002 /* ScreenshotHooks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotHooks.swift; sourceTree = "<group>"; };
 		ST0000010000000000ST0002 /* StoreScreenshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreScreenshotTests.swift; sourceTree = "<group>"; };
+		ST0000010000000000ST0018 /* FluxFixture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FluxFixture.swift; sourceTree = "<group>"; };
 		ST0000010000000000ST0003 /* LLMHubScreenshotUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LLMHubScreenshotUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		ST0000010000000000ST0014 /* devicefarm-xcuitest-spec.yml */ = {isa = PBXFileReference; lastKnownFileType = text.yaml; path = "devicefarm-xcuitest-spec.yml"; sourceTree = "<group>"; };
 		ST0000010000000000ST0015 /* extract_attachments.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = extract_attachments.sh; sourceTree = "<group>"; };
@@ -302,6 +304,7 @@
 			isa = PBXGroup;
 			children = (
 				ST0000010000000000ST0002 /* StoreScreenshotTests.swift */,
+				ST0000010000000000ST0018 /* FluxFixture.swift */,
 				ST0000010000000000ST0014 /* devicefarm-xcuitest-spec.yml */,
 				ST0000010000000000ST0015 /* extract_attachments.sh */,
 				ST0000010000000000ST0016 /* run_duo_simulator.sh */,
@@ -503,6 +506,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				ST0000010000000000ST0001 /* StoreScreenshotTests.swift in Sources */,
+				ST0000010000000000ST0017 /* FluxFixture.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
