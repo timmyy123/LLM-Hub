@@ -2,7 +2,9 @@ package com.llmhub.llmhub
 
 import android.content.Context
 import android.os.Bundle
+import android.view.animation.PathInterpolator
 import androidx.activity.ComponentActivity
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.activity.compose.setContent
 import androidx.core.view.WindowCompat
 import androidx.compose.foundation.layout.fillMaxSize
@@ -35,6 +37,20 @@ class MainActivity : ComponentActivity() {
     private lateinit var themeViewModel: ThemeViewModel
     
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Launch splash (Theme.LlmHub.Starting): ease the icon forward and fade it out while the
+        // splash background dissolves into the app, matching the iOS launch animation.
+        installSplashScreen().setOnExitAnimationListener { splash ->
+            val easing = PathInterpolator(0.4f, 0f, 0.2f, 1f)
+            splash.iconView.animate()
+                .scaleX(1.12f).scaleY(1.12f).alpha(0f)
+                .setDuration(320L).setInterpolator(easing)
+                .start()
+            splash.view.animate()
+                .alpha(0f)
+                .setStartDelay(120L).setDuration(380L).setInterpolator(easing)
+                .withEndAction { splash.remove() }
+                .start()
+        }
         super.onCreate(savedInstanceState)
 
         val app = application as LlmHubApplication
