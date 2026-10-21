@@ -910,8 +910,11 @@ struct LTXVideoQnnVAE : public LTXVideoVAE {
         }
         int64_t t0 = ggml_time_ms();
         bool borrowed = false;
-        if (qnn->graph(name) == nullptr && !qnn->load_graph(path, name, true)) {
-            // Not enough HTP address space next to the transformer: free it, it reloads lazily.
+        if (qnn->graph(name) == nullptr) {
+            // Free the transformer first; it reloads lazily before the next sampling. Trying the
+            // decoder next to it copies the 600+ MB binary into shared memory at the point of the
+            // run with the least free RAM, which got the app killed on 12 GB phones (Snapdragon
+            // 7 Gen 4: freeze and close at "Decoding frames"), and on the v73 HTP it never fits.
             if (auto* dit = LTXV::LTXVQnnRunner::active()) {
                 dit->release();
                 borrowed = true;

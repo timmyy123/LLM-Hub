@@ -325,8 +325,13 @@ Java_com_llmhub_llmhub_videogen_SdCppNative_nativeGenerate(JNIEnv* env,
                              3,
                              init_pixels.data()};
     }
-    // Decode the video in short temporal tiles so the VAE activations fit in phone memory.
-    params.vae_tiling_params.enabled = true;
+    // Decode the video in short temporal tiles so the VAE activations fit in phone memory. Spatial
+    // tiles alone still decode all frames at once, which got the app killed by the low-memory killer
+    // at "Decoding frames" on CPU (e.g. Snapdragon 7s Gen 4); sd.cpp only adds temporal tiles after a
+    // failed allocation, and Android kills the process before an allocation fails. The NPU decoder
+    // ignores these settings (one compiled graph for the whole clip).
+    params.vae_tiling_params.enabled         = true;
+    params.vae_tiling_params.temporal_tiling = true;
 
     g_expected_steps = sigma_values.empty() ? steps : static_cast<int>(sigma_values.size()) - 1;
     emit_stage(STAGE_ENCODING_PROMPT);

@@ -43,10 +43,12 @@ class MainActivity : ComponentActivity() {
         // splash background dissolves into the app, matching the iOS launch animation.
         installSplashScreen().setOnExitAnimationListener { splash ->
             val easing = PathInterpolator(0.4f, 0f, 0.2f, 1f)
-            splash.iconView.animate()
-                .scaleX(1.12f).scaleY(1.12f).alpha(0f)
-                .setDuration(320L).setInterpolator(easing)
-                .start()
+            // Some Android 16 builds (Galaxy S23/S26 Ultra, A17, Lenovo tablets) hand over a splash
+            // without an icon view, and AndroidX's iconView then throws a NullPointerException.
+            runCatching { splash.iconView }.getOrNull()?.animate()
+                ?.scaleX(1.12f)?.scaleY(1.12f)?.alpha(0f)
+                ?.setDuration(320L)?.setInterpolator(easing)
+                ?.start()
             splash.view.animate()
                 .alpha(0f)
                 .setStartDelay(120L).setDuration(380L).setInterpolator(easing)
