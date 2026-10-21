@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <mutex>
 #include <cstdlib>
 #include <cstdint>
 #include <string>
@@ -34,6 +35,13 @@ llama_context * g_context = nullptr;
 llama_sampler * g_sampler = nullptr;
 mtmd_context * g_mtmd = nullptr;
 std::atomic_bool g_stop{false};
+// One model per library, shared by every Kotlin service that uses it (Chat and Agent each have
+// their own LlamaCppInferenceService and thread). The lock keeps a load, free or decode on one
+// thread from running into another's (concurrent unloads double-freed g_model); nativeStop
+// stays lock-free so it can interrupt a running decode. g_epoch changes on every load/unload so
+// a service can tell that another one replaced its model.
+std::recursive_mutex g_mutex;
+std::atomic_int g_epoch{0};
 int32_t g_generated = 0;
 int32_t g_max_tokens = 0;
 int64_t g_decode_start_us = 0;
@@ -104,6 +112,7 @@ void unload_model() {
     g_utf8_buffer.clear();
     g_generated = 0;
     g_max_tokens = 0;
+    g_epoch.fetch_add(1);
 }
 
 std::string format_chat(
@@ -179,6 +188,7 @@ LLAMA_JNI(nativeHasIlrcpc)(JNIEnv *, jobject) {
 
 extern "C" JNIEXPORT jint JNICALL
 LLAMA_JNI(nativeInit)(JNIEnv * env, jobject, jstring library_dir, jstring htp_dir) {
+    std::lock_guard<std::recursive_mutex> lock(g_mutex);
     if (!g_backend_initialized) {
         llama_log_set(log_callback, nullptr);
 #ifdef LLMHUB_SNAPDRAGON
@@ -218,6 +228,7 @@ extern "C" JNIEXPORT jint JNICALL
 LLAMA_JNI(nativeLoadModel)(
     JNIEnv * env, jobject, jstring model_path, jstring mmproj_path,
     jint context_size, jint thread_count, jstring device_name, jint gpu_layers, jint flash_attention) {
+    std::lock_guard<std::recursive_mutex> lock(g_mutex);
     unload_model();
     const std::string path = from_jstring(env, model_path);
 
@@ -291,17 +302,20 @@ LLAMA_JNI(nativeLoadModel)(
 
 extern "C" JNIEXPORT jboolean JNICALL
 LLAMA_JNI(nativeSupportsVision)(JNIEnv *, jobject) {
+    std::lock_guard<std::recursive_mutex> lock(g_mutex);
     return g_mtmd != nullptr && mtmd_support_vision(g_mtmd) ? JNI_TRUE : JNI_FALSE;
 }
 
 extern "C" JNIEXPORT jstring JNICALL
 LLAMA_JNI(nativeMediaMarker)(JNIEnv * env, jobject) {
+    std::lock_guard<std::recursive_mutex> lock(g_mutex);
     return env->NewStringUTF(mtmd_default_marker());
 }
 
 extern "C" JNIEXPORT jstring JNICALL
 LLAMA_JNI(nativeFormatChat)(
     JNIEnv * env, jobject, jobjectArray role_array, jobjectArray content_array) {
+    std::lock_guard<std::recursive_mutex> lock(g_mutex);
     if (g_model == nullptr) return nullptr;
     std::vector<std::string> roles;
     std::vector<std::string> contents;
@@ -315,6 +329,7 @@ extern "C" JNIEXPORT jint JNICALL
 LLAMA_JNI(nativeStartCompletion)(
     JNIEnv * env, jobject, jstring formatted_prompt, jobjectArray image_path_array,
     jint max_tokens, jfloat temperature, jint top_k, jfloat top_p) {
+    std::lock_guard<std::recursive_mutex> lock(g_mutex);
     if (g_model == nullptr || g_context == nullptr) return 1;
 
     g_stop.store(false);
@@ -469,6 +484,7 @@ LLAMA_JNI(nativeStartCompletion)(
 
 extern "C" JNIEXPORT jstring JNICALL
 LLAMA_JNI(nativeNextToken)(JNIEnv * env, jobject) {
+    std::lock_guard<std::recursive_mutex> lock(g_mutex);
     if (g_context == nullptr || g_sampler == nullptr || g_stop.load() || g_generated >= g_max_tokens) {
         return nullptr;
     }
@@ -502,6 +518,7 @@ LLAMA_JNI(nativeStop)(JNIEnv *, jobject) {
 extern "C" JNIEXPORT void JNICALL
 LLAMA_JNI(nativeReset)(JNIEnv *, jobject) {
     g_stop.store(true);
+    std::lock_guard<std::recursive_mutex> lock(g_mutex);
     if (g_context != nullptr) llama_memory_clear(llama_get_memory(g_context), false);
     if (g_sampler != nullptr) llama_sampler_reset(g_sampler);
 }
@@ -509,11 +526,18 @@ LLAMA_JNI(nativeReset)(JNIEnv *, jobject) {
 extern "C" JNIEXPORT void JNICALL
 LLAMA_JNI(nativeUnload)(JNIEnv *, jobject) {
     g_stop.store(true);
+    std::lock_guard<std::recursive_mutex> lock(g_mutex);
     unload_model();
 }
 
 extern "C" JNIEXPORT jdouble JNICALL
 LLAMA_JNI(nativeDecodeSpeed)(JNIEnv *, jobject) {
+    std::lock_guard<std::recursive_mutex> lock(g_mutex);
     const int64_t elapsed = now_us() - g_decode_start_us;
     return elapsed > 0 ? static_cast<double>(g_generated) * 1000000.0 / static_cast<double>(elapsed) : 0.0;
+}
+
+extern "C" JNIEXPORT jint JNICALL
+LLAMA_JNI(nativeModelEpoch)(JNIEnv *, jobject) {
+    return g_epoch.load();
 }

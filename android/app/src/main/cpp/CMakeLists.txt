@@ -45,6 +45,17 @@ set(SPIRV-Headers_DIR "${CMAKE_CURRENT_LIST_DIR}/cmake" CACHE PATH "" FORCE)
 set(NDK_SPIRV_HEADERS "${CMAKE_ANDROID_NDK}/sources/third_party/shaderc/third_party/spirv-tools/external/spirv-headers/include")
 
 set(LLAMA_CPP_DIR "${CMAKE_CURRENT_LIST_DIR}/../../../../llama.cpp")
+# Every compile command carries the vendored llama.cpp version, so a version bump rebuilds all of
+# llama.cpp/ggml. Upgrades unpack upstream archives whose file dates can be older than existing
+# objects; without this, Ninja kept a stale llama-model.cpp.o across the b11738 bump, whose
+# llama_model layout no longer matched the rest of the build (SIGSEGV in llama_vocab::n_tokens on
+# every CPU model load in 4.5.2/4.5.3).
+file(STRINGS "${LLAMA_CPP_DIR}/LLMHUB_VERSION.md" LLMHUB_LLAMA_VERSION_LINE REGEX "^- Version: ")
+string(REGEX MATCH "b[0-9]+" LLMHUB_LLAMA_VERSION "${LLMHUB_LLAMA_VERSION_LINE}")
+if(NOT LLMHUB_LLAMA_VERSION)
+    message(FATAL_ERROR "No llama.cpp version in ${LLAMA_CPP_DIR}/LLMHUB_VERSION.md")
+endif()
+add_compile_definitions(LLMHUB_LLAMA_SOURCE_VERSION="${LLMHUB_LLAMA_VERSION}")
 add_subdirectory("${LLAMA_CPP_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/llama.cpp")
 target_include_directories(ggml-vulkan PRIVATE "${NDK_SPIRV_HEADERS}")
 
@@ -77,7 +88,7 @@ target_include_directories(llmhub_llama_vulkan PRIVATE
     "${LLAMA_CPP_DIR}/tools/mtmd")
 target_link_libraries(llmhub_llama_vulkan PRIVATE llama mtmd android log)
 
-# The official b11738 Snapdragon release is packaged alongside the app, not fetched
+# The official b11797 Snapdragon release is packaged alongside the app, not fetched
 # by Gradle. It is loaded only when the user selects Adreno GPU or Hexagon NPU.
 set(LLAMA_PREBUILT_LIB_DIR "${CMAKE_CURRENT_LIST_DIR}/../jniLibs/arm64-v8a")
 foreach(prebuilt IN ITEMS ggml llama mtmd)
