@@ -98,6 +98,9 @@ struct ApolloStaticRender<Content: View>: View {
                         .allowsHitTesting(false)
                 }
             }
+            // The live content is at opacity 0, and SwiftUI skips hit testing for invisible
+            // views: keep the whole frame tappable so Buttons around this still receive taps.
+            .contentShape(Rectangle())
             .onGeometryChange(for: CGSize.self) { $0.size } action: { size = $0 }
             .task(id: renderKey) { render() }
     }
