@@ -789,19 +789,9 @@ class ChatViewModel: ObservableObject {
     var approximateContextTokensUsed: Double {
         let startIndex = max(0, min(messages.count, contextResetStartBySessionId[currentSessionId] ?? 0))
         let visibleMessages = Array(messages.dropFirst(startIndex))
-        // Strip thinking blocks — they are NOT re-sent as history in multi-turn prompts,
-        // so they should not count toward the context window budget.
-        // During the streaming thinking phase (no answer yet), count 0 for that message.
-        let messageChars = visibleMessages.reduce(0) { acc, msg in
-            if msg.isFromUser {
-                return acc + msg.content.count
-            }
-            if contentHasThinkingMarkers(msg.content) {
-                let answer = getDisplayContentWithoutThinking(msg.content)
-                return acc + answer.count     // 0 while still thinking
-            }
-            return acc + msg.content.count
-        }
+        // Thinking counts too: the model generates it into the same context window as the
+        // answer, so the ring and the reset check include it, also while it is still streaming.
+        let messageChars = visibleMessages.reduce(0) { acc, msg in acc + msg.content.count }
         let composerChars = inputText.count
         // When RAG is disabled the attached doc is stuffed into system prompt — count it.
         let docChars = isRagEnabled ? 0 : pendingAttachedDocumentChars

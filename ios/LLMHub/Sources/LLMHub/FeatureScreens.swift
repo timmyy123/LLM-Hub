@@ -5245,19 +5245,9 @@ struct VibeCoderScreen: View {
     }
 
     private var approximateContextTokensUsed: Double {
-        // Strip thinking blocks from assistant messages — only answer text is re-sent
-        // in the multi-turn prompt, so thinking should not count toward the budget.
-        // During the streaming thinking phase (no answer yet), count 0 for that message.
-        let activeTextChars = activeMessages.reduce(0) { acc, msg in
-            if msg.role == "user" {
-                return acc + msg.text.count
-            }
-            if contentHasThinkingMarkers(msg.text) {
-                let answer = getDisplayContentWithoutThinking(msg.text)
-                return acc + answer.count     // 0 while still thinking
-            }
-            return acc + msg.text.count
-        }
+        // Thinking counts too: the model generates it into the same context window as the
+        // answer, so the ring and the reset check include it, also while it is still streaming.
+        let activeTextChars = activeMessages.reduce(0) { acc, msg in acc + msg.text.count }
         let codeChars = generatedCode.count
         let inputChars = chatInput.count
         let totalChars = activeTextChars + codeChars + inputChars
