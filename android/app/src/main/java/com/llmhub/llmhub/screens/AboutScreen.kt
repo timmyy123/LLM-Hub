@@ -54,45 +54,16 @@ fun AboutScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item {
-                // App Logo and Title
+                // App title
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                        Surface(
-                            modifier = Modifier.size(64.dp),
-                            shape = MaterialTheme.shapes.medium,
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            tonalElevation = 8.dp
-                        ) {
-                            Box(
-                                contentAlignment = Alignment.Center,
-                                modifier = Modifier.clip(MaterialTheme.shapes.medium)
-                            ) {
-                                Icon(
-                                    painter = painterResource(id = R.mipmap.ic_launcher_foreground),
-                                    contentDescription = "App Logo",
-                                    modifier = Modifier
-                                        .size(54.dp)
-                                        .scale(2.0f),
-                                    tint = Color.Unspecified
-                                )
-                            }
-                        }
-                    
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
                     Text(
                         text = "LLM Hub",
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
-                    )
-                    
-                    Text(
-                        text = stringResource(R.string.version_number),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
