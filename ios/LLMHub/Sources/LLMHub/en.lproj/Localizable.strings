@@ -1014,6 +1014,7 @@
 
 /* Image generation modifiers */
 "image_extras_title" = "Image modifiers";
+"image_extras_add" = "Add modifier";
 "image_extras_negative" = "Negative prompt";
 "image_extras_guidance" = "Guidance scale";
 "image_extras_clip_skip" = "CLIP skip";

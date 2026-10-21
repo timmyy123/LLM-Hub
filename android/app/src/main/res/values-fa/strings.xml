@@ -421,7 +421,7 @@
     <string name="please_fix_errors">لطفاً خطاهای بالا را برطرف کنید</string>
     <string name="remove">حذف</string>
     <string name="ready_to_use">آماده استفاده</string>
-    <string name="unsupported_file_format">فرمت فایل پشتیبانی نمی‌شود. لطفاً یک فایل .task، .litertlm یا .zip انتخاب کنید.</string>
+    <string name="unsupported_file_format">قالب فایل پشتیبانی نمی‌شود.</string>
     <string name="download_models_from_litert_community">می‌توانید مدل‌های LLM سازگار را از اینجا دانلود کنید:</string>
     <string name="litert_community_link">LiteRT Community در Hugging Face</string>
     <string name="download_image_models_from">می‌توانید مدل‌های تصویر سازگار را از اینجا دانلود کنید:</string>
@@ -1160,6 +1160,7 @@
     <string name="video_generator_negative_prompt">پرامپت منفی (اختیاری)</string>
     <string name="video_generator_negative_prompt_hint">مواردی که باید از آن‌ها پرهیز شود، مثلاً تار، کج‌شده، کیفیت پایین</string>
     <string name="image_extras_title">اصلاح‌کننده‌های تصویر</string>
+    <string name="image_extras_add">افزودن اصلاح‌گر</string>
     <string name="image_extras_negative">پرامپت منفی</string>
     <string name="image_extras_guidance">مقیاس هدایت</string>
     <string name="image_extras_clip_skip">رد کردن لایه‌های CLIP</string>
@@ -1173,6 +1174,6 @@
     <string name="image_extras_invalid">فایل انتخاب‌شده نامعتبر است یا با مدل سازگار نیست.</string>
     <string name="image_extras_resource_hint">برچسب‌ها: یکی در هر خط یا آرایه JSON. تعریف‌ها و ترجمه‌ها: شیء JSON یا key=value. برای افزودن روی برچسب‌ها یا تعریف‌ها بزنید؛ ترجمه‌ها به‌صورت محلی اعمال می‌شوند.</string>
     <string name="image_extras_ios_help">LoRA: فایل SafeTensors یا ‎.ckpt متعلق به Draw Things. رمزگذارها و VAE: فایل ‎.ckpt سازگار با Draw Things. امبدینگ‌ها: SafeTensors. ابتدا مدل سازگار را انتخاب کنید.</string>
-    <string name="image_extras_android_help">LoRA، رد کردن لایه‌های CLIP و رمزگذارهای سفارشی به چک‌پوینت GGUF یا SafeTensors واردشده نیاز دارند. وزن‌های QNN/MNN ثابت‌اند. LoRA و امبدینگ‌ها: SafeTensors.</string>
+    <string name="image_extras_android_help">فایل‌های پشتیبانی‌شده: SafeTensors, GGUF, CKPT, PT, PTH, BIN. LoRA، پرش CLIP و رمزگذارها فقط با چک‌پوینت واردشده کار می‌کنند، نه با مدل‌های داخلی NPU/CPU.</string>
     <string name="image_extras_import_location">چک‌پوینت‌ها، LoRAها، رمزگذارها و فهرست‌های پرامپت را از %1$s ← %2$s وارد کنید.</string>
 </resources>

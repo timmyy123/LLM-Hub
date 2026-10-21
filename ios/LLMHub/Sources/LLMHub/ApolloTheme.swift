@@ -18,33 +18,117 @@ enum ApolloLayout {
 
 struct ApolloLiquidBackground: View {
     var body: some View {
+        GeometryReader { geo in
+            let insets = geo.safeAreaInsets
+            let full = CGSize(width: geo.size.width + insets.leading + insets.trailing,
+                              height: geo.size.height + insets.top + insets.bottom)
+            // The gradient covers the whole screen and the glows centre on the safe area, as before.
+            let shift = CGSize(width: (insets.leading - insets.trailing) / 2, height: (insets.top - insets.bottom) / 2)
+            ApolloStaticRender(key: "liquid|\(shift.width),\(shift.height)", padding: 0) {
+                Self.layers(shift: shift)
+            }
+            .frame(width: full.width, height: full.height)
+            .position(x: geo.size.width / 2 - shift.width, y: geo.size.height / 2 - shift.height)
+        }
+    }
+
+    private static func layers(shift: CGSize) -> some View {
         ZStack {
             LinearGradient(
                 colors: [Color.black, Color(hex: "0b0f19"), Color(hex: "131a2a")],
                 startPoint: .top,
                 endPoint: .bottom
             )
-            .ignoresSafeArea()
 
             Circle()
                 .fill(ApolloPalette.accentSoft.opacity(0.06))
                 .frame(width: 260, height: 260)
                 .blur(radius: 80)
-                .offset(x: 130, y: -260)
+                .offset(x: 130 + shift.width, y: -260 + shift.height)
 
             Circle()
                 .fill(ApolloPalette.accent.opacity(0.18))
                 .frame(width: 220, height: 220)
                 .blur(radius: 90)
-                .offset(x: -140, y: -220)
+                .offset(x: -140 + shift.width, y: -220 + shift.height)
 
             Circle()
                 .fill(ApolloPalette.accentMuted.opacity(0.16))
                 .frame(width: 300, height: 300)
                 .blur(radius: 110)
-                .offset(x: 160, y: 260)
+                .offset(x: 160 + shift.width, y: 260 + shift.height)
         }
     }
+}
+
+/// Draws `content` once into an image and shows the image. Live blur, shadow and material
+/// effects are redrawn by the GPU when the app returns to the foreground; with the iOS 27.1
+/// SDK that showed as cards appearing in pieces on a warm open. An image is only composited.
+/// Layout still comes from `content` (kept in place at zero opacity), so sizing is unchanged.
+struct ApolloStaticRender<Content: View>: View {
+    var key: String
+    var padding: CGFloat = 24
+    @ViewBuilder var content: Content
+
+    @Environment(\.displayScale) private var displayScale
+    @Environment(\.locale) private var locale
+    @Environment(\.layoutDirection) private var layoutDirection
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @State private var size: CGSize = .zero
+    @State private var rendered: UIImage?
+
+    private static var cache: NSCache<NSString, UIImage> {
+        ApolloStaticRenderCache.shared
+    }
+
+    private var renderKey: String {
+        "\(key)|\(size.width)x\(size.height)|\(displayScale)|\(locale.identifier)|\(layoutDirection)|\(dynamicTypeSize)"
+    }
+
+    var body: some View {
+        let image = Self.cache.object(forKey: renderKey as NSString) ?? rendered
+        content
+            .opacity(image == nil ? 1 : 0)
+            .overlay {
+                if let image {
+                    Image(uiImage: image)
+                        .resizable()
+                        .frame(width: size.width + padding * 2, height: size.height + padding * 2)
+                        .allowsHitTesting(false)
+                }
+            }
+            .onGeometryChange(for: CGSize.self) { $0.size } action: { size = $0 }
+            .task(id: renderKey) { render() }
+    }
+
+    private func render() {
+        let renderKey = renderKey
+        guard size.width > 0, size.height > 0 else { return }
+        if let cached = Self.cache.object(forKey: renderKey as NSString) {
+            rendered = cached
+            return
+        }
+        let renderer = ImageRenderer(content:
+            content
+                .frame(width: size.width, height: size.height)
+                .padding(padding)
+                .environment(\.locale, locale)
+                .environment(\.layoutDirection, layoutDirection)
+                .environment(\.colorScheme, colorScheme)
+                .environment(\.dynamicTypeSize, dynamicTypeSize)
+        )
+        renderer.scale = displayScale
+        renderer.isOpaque = false
+        guard let image = renderer.uiImage else { return }
+        Self.cache.setObject(image, forKey: renderKey as NSString)
+        rendered = image
+    }
+}
+
+@MainActor
+enum ApolloStaticRenderCache {
+    static let shared = NSCache<NSString, UIImage>()
 }
 
 struct ApolloIconButtonStyle: ButtonStyle {

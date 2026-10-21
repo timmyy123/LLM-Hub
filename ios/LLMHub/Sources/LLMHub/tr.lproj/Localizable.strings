@@ -993,6 +993,7 @@
 "music_unlimited_duration_desc" = "Durdur düğmesine basana kadar üretim devam eder. Durdurduğunuzda kayıt kaydedilir.";
 "music_locked_screen_supported" = "Ekran kilitliyken müzik oluşturmayı ve çalmayı destekler.";
 "image_extras_title" = "Görsel değiştiricileri";
+"image_extras_add" = "Değiştirici ekle";
 "image_extras_negative" = "Negatif istem";
 "image_extras_guidance" = "Yönlendirme ölçeği";
 "image_extras_clip_skip" = "CLIP atlama";

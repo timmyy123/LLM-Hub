@@ -442,7 +442,7 @@
     <string name="please_fix_errors">Please fix the errors above</string>
     <string name="remove">Remove</string>
     <string name="ready_to_use">Ready to use</string>
-    <string name="unsupported_file_format">Unsupported file format. Please select a .task, .litertlm, or .zip file.</string>
+    <string name="unsupported_file_format">Unsupported file format.</string>
     <string name="download_models_from_litert_community">You can download compatible LLM models from:</string>
     <string name="litert_community_link">LiteRT Community on Hugging Face</string>
     <string name="download_image_models_from">You can download compatible image models from:</string>
@@ -1141,7 +1141,7 @@
     <string name="video_generator_prompt_label">Video Description</string>
     <string name="video_generator_prompt_hint">Describe the scene and the motion you want to see...</string>
     <string name="video_generator_prompt_tip">Tip: detailed prompts work best. Describe the subject, the action, the camera movement, the lighting and the style in 2–4 sentences.</string>
-    <string name="video_generator_image_to_video">Image to video</string>
+    <string name="video_generator_image_to_video">Image-to-Video</string>
     <string name="video_generator_image_to_video_desc">Animate a start image instead of generating from text alone</string>
     <string name="video_generator_select_image">Select Start Image</string>
     <string name="video_generator_change_image">Change Start Image</string>
@@ -1180,6 +1180,7 @@
 
     <!-- Image generation modifiers -->
     <string name="image_extras_title">Image modifiers</string>
+    <string name="image_extras_add">Add modifier</string>
     <string name="image_extras_negative">Negative prompt</string>
     <string name="image_extras_guidance">Guidance scale</string>
     <string name="image_extras_clip_skip">CLIP skip</string>
@@ -1193,6 +1194,6 @@
     <string name="image_extras_invalid">The selected file is invalid or incompatible with the model.</string>
     <string name="image_extras_resource_hint">Tags: one per line or a JSON array. Definitions/translations: a JSON object or key=value. Tap tags/definitions; translations apply locally.</string>
     <string name="image_extras_ios_help">LoRA: SafeTensors or Draw Things .ckpt. Encoders/VAE: compatible Draw Things .ckpt. Embeddings: SafeTensors. Select the matching model first.</string>
-    <string name="image_extras_android_help">LoRA, CLIP skip and encoder overrides require an imported GGUF/SafeTensors checkpoint. QNN/MNN weights are fixed. LoRA/embeddings: SafeTensors.</string>
+    <string name="image_extras_android_help">Supported files: SafeTensors, GGUF, CKPT, PT, PTH, BIN. LoRA, CLIP skip and encoders only work with an imported checkpoint, not the built-in NPU/CPU models.</string>
     <string name="image_extras_import_location">Import checkpoints, LoRAs, encoders and prompt lists in %1$s → %2$s.</string>
 </resources>

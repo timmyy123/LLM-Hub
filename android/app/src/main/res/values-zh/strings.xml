@@ -434,7 +434,7 @@
     <string name="please_fix_errors">请修复上面的错误</string>
     <string name="remove">移除</string>
     <string name="ready_to_use">准备就绪</string>
-    <string name="unsupported_file_format">不支持的文件格式。请选择 .task、.litertlm 或 .zip 格式的文件。</string>
+    <string name="unsupported_file_format">不支持的文件格式。</string>
     <string name="download_models_from_litert_community">你可以在以下地址下载 LLM 模型：</string>
     <string name="litert_community_link">Hugging Face 上的 LiteRT 社区</string>
     <string name="download_image_models_from">您可以从以下位置下载兼容的图像模型：</string>
@@ -1168,6 +1168,7 @@
     <string name="video_generator_negative_prompt">反向提示词（可选）</string>
     <string name="video_generator_negative_prompt_hint">需要避免的内容，例如：模糊、变形、低质量</string>
     <string name="image_extras_title">图像修改器</string>
+    <string name="image_extras_add">添加修饰项</string>
     <string name="image_extras_negative">负面提示词</string>
     <string name="image_extras_guidance">引导强度</string>
     <string name="image_extras_clip_skip">CLIP 跳过层数</string>
@@ -1181,6 +1182,6 @@
     <string name="image_extras_invalid">所选文件无效或与模型不兼容。</string>
     <string name="image_extras_resource_hint">标签：每行一个或 JSON 数组。定义／翻译：JSON 对象或 key=value。点击标签或定义即可加入提示词；翻译会在本地应用。</string>
     <string name="image_extras_ios_help">LoRA：SafeTensors 或 Draw Things .ckpt。编码器／VAE：兼容的 Draw Things .ckpt。嵌入：SafeTensors。请先选择对应的模型。</string>
-    <string name="image_extras_android_help">LoRA、CLIP 跳过层数及自定义编码器需要导入 GGUF／SafeTensors 基础模型。QNN／MNN 权重固定。LoRA／嵌入：SafeTensors。</string>
+    <string name="image_extras_android_help">支持的文件：SafeTensors, GGUF, CKPT, PT, PTH, BIN。LoRA、CLIP 跳过和编码器仅适用于导入的检查点，不适用于内置 NPU/CPU 模型。</string>
     <string name="image_extras_import_location">在 %1$s → %2$s 中导入检查点、LoRA、编码器和提示词列表。</string>
 </resources>

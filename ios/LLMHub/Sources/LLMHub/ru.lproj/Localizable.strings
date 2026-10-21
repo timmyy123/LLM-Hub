@@ -965,6 +965,7 @@
 "music_unlimited_duration_desc" = "Генерация продолжается, пока вы не нажмёте «Остановить». Запись сохраняется при остановке.";
 "music_locked_screen_supported" = "Поддерживает создание и воспроизведение музыки при заблокированном экране.";
 "image_extras_title" = "Модификаторы изображения";
+"image_extras_add" = "Добавить модификатор";
 "image_extras_negative" = "Негативный промпт";
 "image_extras_guidance" = "Сила следования промпту";
 "image_extras_clip_skip" = "Пропуск слоёв CLIP";

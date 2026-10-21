@@ -1,10 +1,15 @@
 package com.llmhub.llmhub.imagegen
 
+import android.net.Uri
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -14,6 +19,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.font.FontWeight
 import com.llmhub.llmhub.R
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @Composable
 fun imageExtraLabel(kind: String): String = when (kind) {
@@ -35,6 +43,24 @@ fun ImageExtrasEditor(enabled: Boolean, nativeCheckpointSelected: Boolean, onCha
     val store = remember { ImageExtrasStore(context) }
     var options by remember { mutableStateOf(store.load()) }
     fun save(value: ImageGenerationOptions) { options = value; store.save(value); onChanged() }
+    val scope = rememberCoroutineScope()
+    var addMenuOpen by remember { mutableStateOf(false) }
+    var pendingKind by remember { mutableStateOf<String?>(null) }
+    val invalidMessage = stringResource(R.string.image_extras_invalid)
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
+        val kind = pendingKind
+        pendingKind = null
+        if (uri == null || kind == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            try {
+                store.add(withContext(Dispatchers.IO) { store.importFile(uri, kind) })
+                options = store.load()
+                onChanged()
+            } catch (e: Exception) {
+                Toast.makeText(context, invalidMessage, Toast.LENGTH_LONG).show()
+            }
+        }
+    }
     Card(
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
@@ -52,8 +78,32 @@ fun ImageExtrasEditor(enabled: Boolean, nativeCheckpointSelected: Boolean, onCha
             style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
         Slider(value = options.clipSkip.toFloat(), onValueChange = { save(options.copy(clipSkip = it.toInt())) },
             valueRange = 1f..12f, steps = 10, enabled = enabled && nativeCheckpointSelected)
-        Text(stringResource(R.string.image_extras_import_location, stringResource(R.string.ai_models), stringResource(R.string.import_external_model)),
-            style = MaterialTheme.typography.bodySmall)
+        // Add-ons are imported here, next to the model they modify. LoRA, encoders, VAE and
+        // textual inversion need an imported checkpoint selected; prompt lists work with any model.
+        Box {
+            OutlinedButton(onClick = { addMenuOpen = true }, enabled = enabled, modifier = Modifier.fillMaxWidth()) {
+                Icon(Icons.Default.Add, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text(stringResource(R.string.image_extras_add))
+            }
+            DropdownMenu(expanded = addMenuOpen, onDismissRequest = { addMenuOpen = false }) {
+                ImageExtrasStore.addOnKinds.forEach { kind ->
+                    DropdownMenuItem(
+                        text = { Text(imageExtraLabel(kind)) },
+                        enabled = nativeCheckpointSelected || kind !in ImageExtrasStore.checkpointOnlyKinds,
+                        onClick = {
+                            addMenuOpen = false
+                            pendingKind = kind
+                            picker.launch(arrayOf("*/*"))
+                        }
+                    )
+                }
+            }
+        }
+        if (!nativeCheckpointSelected) {
+            Text(stringResource(R.string.image_extras_android_help), style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
         options.assets.forEach { asset ->
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {

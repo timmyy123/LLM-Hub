@@ -417,7 +417,7 @@
     <string name="please_fix_errors">Lütfen yukarıdaki hataları düzeltin</string>
     <string name="remove">Kaldır</string>
     <string name="ready_to_use">Kullanıma hazır</string>
-    <string name="unsupported_file_format">Desteklenmeyen dosya formatı. Lütfen .task, .litertlm veya .zip dosyası seçin.</string>
+    <string name="unsupported_file_format">Desteklenmeyen dosya biçimi.</string>
     <string name="download_models_from_litert_community">Uyumlu LLM modellerini şuradan indirebilirsiniz:</string>
     <string name="litert_community_link">Hugging Face\'te LiteRT Topluluğu</string>
     <string name="download_image_models_from">Uyumlu görüntü modellerini şuradan indirebilirsiniz:</string>
@@ -1158,6 +1158,7 @@
     <string name="video_generator_negative_prompt">Negatif istem (isteğe bağlı)</string>
     <string name="video_generator_negative_prompt_hint">Kaçınılacaklar, ör. bulanık, bozuk, düşük kalite</string>
     <string name="image_extras_title">Görsel değiştiricileri</string>
+    <string name="image_extras_add">Değiştirici ekle</string>
     <string name="image_extras_negative">Negatif istem</string>
     <string name="image_extras_guidance">Yönlendirme ölçeği</string>
     <string name="image_extras_clip_skip">CLIP atlama</string>
@@ -1171,6 +1172,6 @@
     <string name="image_extras_invalid">Seçilen dosya geçersiz veya modelle uyumlu değil.</string>
     <string name="image_extras_resource_hint">Etiketler: her satıra bir tane veya JSON dizisi. Tanımlar/çeviriler: JSON nesnesi veya key=value. Eklemek için etiketlere/tanımlara dokunun; çeviriler yerel olarak uygulanır.</string>
     <string name="image_extras_ios_help">LoRA: SafeTensors veya Draw Things .ckpt. Kodlayıcılar/VAE: uyumlu Draw Things .ckpt. Gömüler: SafeTensors. Önce eşleşen modeli seçin.</string>
-    <string name="image_extras_android_help">LoRA, CLIP atlama ve özel kodlayıcılar için içe aktarılan bir GGUF/SafeTensors kontrol noktası gerekir. QNN/MNN ağırlıkları sabittir. LoRA/gömüler: SafeTensors.</string>
+    <string name="image_extras_android_help">Desteklenen dosyalar: SafeTensors, GGUF, CKPT, PT, PTH, BIN. LoRA, CLIP atlama ve kodlayıcılar yalnızca içe aktarılan bir checkpoint ile çalışır, yerleşik NPU/CPU modelleriyle çalışmaz.</string>
     <string name="image_extras_import_location">Checkpoint, LoRA, kodlayıcı ve istem listelerini %1$s → %2$s bölümünden içe aktarın.</string>
 </resources>

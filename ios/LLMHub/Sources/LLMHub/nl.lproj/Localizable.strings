@@ -1000,6 +1000,7 @@
 "music_unlimited_duration_desc" = "Het genereren gaat door totdat je op Stoppen drukt. De opname wordt opgeslagen zodra je stopt.";
 "music_locked_screen_supported" = "Ondersteunt het genereren en afspelen van muziek terwijl het scherm vergrendeld is.";
 "image_extras_title" = "Afbeeldingsmodificaties";
+"image_extras_add" = "Modifier toevoegen";
 "image_extras_negative" = "Negatieve prompt";
 "image_extras_guidance" = "Sturingsschaal";
 "image_extras_clip_skip" = "CLIP overslaan";

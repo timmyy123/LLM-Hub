@@ -7396,7 +7396,7 @@ private struct ImageGeneratorSettingsSheet: View {
                     .background(.regularMaterial)
                     .clipShape(RoundedRectangle(cornerRadius: 14))
 
-                    ImageExtrasEditor(prompt: $promptText)
+                    ImageExtrasEditor(prompt: $promptText, modelID: selectedModelId)
                         .disabled(isGenerating || isLoading)
                         .padding()
                         .background(.regularMaterial)

@@ -993,6 +993,7 @@
 "music_unlimited_duration_desc" = "Pembuatan berlanjut sampai Anda menekan Hentikan. Rekaman disimpan saat Anda berhenti.";
 "music_locked_screen_supported" = "Mendukung pembuatan dan pemutaran musik saat layar terkunci.";
 "image_extras_title" = "Pengubah gambar";
+"image_extras_add" = "Tambah pengubah";
 "image_extras_negative" = "Prompt negatif";
 "image_extras_guidance" = "Skala panduan";
 "image_extras_clip_skip" = "CLIP skip";

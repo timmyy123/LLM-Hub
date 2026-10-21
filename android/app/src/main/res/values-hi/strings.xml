@@ -454,7 +454,7 @@
     <string name="please_fix_errors">कृपया ऊपर दी गई त्रुटियों को ठीक करें</string>
     <string name="remove">हटाएं</string>
     <string name="ready_to_use">उपयोग के लिए तैयार</string>
-    <string name="unsupported_file_format">असमर्थित फ़ाइल प्रारूप। कृपया .task, .litertlm या .zip फ़ाइल चुनें।</string>
+    <string name="unsupported_file_format">असमर्थित फ़ाइल फ़ॉर्मेट।</string>
     <string name="download_models_from_litert_community">आप अनुकूल LLM मॉडल यहाँ से डाउनलोड कर सकते हैं:</string>
     <string name="litert_community_link">Hugging Face पर LiteRT कम्युनिटी</string>
     <string name="download_image_models_from">आप अनुकूल छवि मॉडल यहाँ से डाउनलोड कर सकते हैं:</string>
@@ -1186,6 +1186,7 @@
     <string name="video_generator_negative_prompt">नेगेटिव प्रॉम्प्ट (वैकल्पिक)</string>
     <string name="video_generator_negative_prompt_hint">किन चीज़ों से बचना है, जैसे धुंधला, विकृत, कम गुणवत्ता</string>
     <string name="image_extras_title">छवि संशोधक</string>
+    <string name="image_extras_add">संशोधक जोड़ें</string>
     <string name="image_extras_negative">नकारात्मक प्रॉम्प्ट</string>
     <string name="image_extras_guidance">मार्गदर्शन स्तर</string>
     <string name="image_extras_clip_skip">CLIP स्किप</string>
@@ -1199,6 +1200,6 @@
     <string name="image_extras_invalid">चुनी गई फ़ाइल अमान्य है या मॉडल के अनुकूल नहीं है।</string>
     <string name="image_extras_resource_hint">टैग: हर पंक्ति में एक या JSON ऐरे। परिभाषाएँ/अनुवाद: JSON ऑब्जेक्ट या key=value। टैग/परिभाषाएँ जोड़ने के लिए टैप करें; अनुवाद स्थानीय रूप से लागू होते हैं।</string>
     <string name="image_extras_ios_help">LoRA: SafeTensors या Draw Things .ckpt। एनकोडर/VAE: संगत Draw Things .ckpt। एम्बेडिंग: SafeTensors। पहले उपयुक्त मॉडल चुनें।</string>
-    <string name="image_extras_android_help">LoRA, CLIP स्किप और कस्टम एनकोडर के लिए आयात किया गया GGUF/SafeTensors चेकपॉइंट आवश्यक है। QNN/MNN के वज़न स्थिर हैं। LoRA/एम्बेडिंग: SafeTensors।</string>
+    <string name="image_extras_android_help">समर्थित फ़ाइलें: SafeTensors, GGUF, CKPT, PT, PTH, BIN. LoRA, CLIP skip और एन्कोडर केवल इम्पोर्ट किए गए चेकपॉइंट के साथ काम करते हैं, बिल्ट-इन NPU/CPU मॉडल के साथ नहीं।</string>
     <string name="image_extras_import_location">चेकपॉइंट, LoRA, एन्कोडर और प्रॉम्प्ट सूचियाँ %1$s → %2$s में इम्पोर्ट करें।</string>
 </resources>

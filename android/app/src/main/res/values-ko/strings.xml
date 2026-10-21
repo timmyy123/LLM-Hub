@@ -418,7 +418,7 @@
     <string name="please_fix_errors">위의 오류를 수정하세요</string>
     <string name="remove">제거</string>
     <string name="ready_to_use">사용 준비됨</string>
-    <string name="unsupported_file_format">지원되지 않는 파일 형식입니다. .task, .litertlm 또는 .zip 파일을 선택하세요.</string>
+    <string name="unsupported_file_format">지원되지 않는 파일 형식입니다.</string>
     <string name="download_models_from_litert_community">다음에서 호환 LLM 모델을 다운로드할 수 있습니다:</string>
     <string name="litert_community_link">Hugging Face의 LiteRT 커뮤니티</string>
     <string name="download_image_models_from">호환 가능한 이미지 모델은 다음에서 다운로드할 수 있습니다:</string>
@@ -1160,6 +1160,7 @@
     <string name="video_generator_negative_prompt">네거티브 프롬프트(선택 사항)</string>
     <string name="video_generator_negative_prompt_hint">피할 요소, 예: 흐림, 왜곡, 저화질</string>
     <string name="image_extras_title">이미지 수정 설정</string>
+    <string name="image_extras_add">수정자 추가</string>
     <string name="image_extras_negative">네거티브 프롬프트</string>
     <string name="image_extras_guidance">가이던스 스케일</string>
     <string name="image_extras_clip_skip">CLIP 스킵</string>
@@ -1173,6 +1174,6 @@
     <string name="image_extras_invalid">선택한 파일이 유효하지 않거나 모델과 호환되지 않습니다.</string>
     <string name="image_extras_resource_hint">태그: 한 줄에 하나 또는 JSON 배열. 정의/번역: JSON 객체 또는 key=value 형식. 태그/정의를 탭하여 추가합니다. 번역은 기기에서 적용됩니다.</string>
     <string name="image_extras_ios_help">LoRA: SafeTensors 또는 Draw Things .ckpt. 인코더/VAE: 호환되는 Draw Things .ckpt. 임베딩: SafeTensors. 먼저 호환되는 모델을 선택하세요.</string>
-    <string name="image_extras_android_help">LoRA, CLIP 스킵, 인코더 변경에는 가져온 GGUF/SafeTensors 체크포인트가 필요합니다. QNN/MNN 가중치는 고정되어 있습니다. LoRA/임베딩: SafeTensors.</string>
+    <string name="image_extras_android_help">지원 파일: SafeTensors, GGUF, CKPT, PT, PTH, BIN. LoRA, CLIP 스킵, 인코더는 가져온 체크포인트에서만 작동하며 기본 제공 NPU/CPU 모델에서는 작동하지 않습니다.</string>
     <string name="image_extras_import_location">체크포인트, LoRA, 인코더, 프롬프트 목록은 %1$s → %2$s에서 가져옵니다.</string>
 </resources>

@@ -415,7 +415,7 @@
     <string name="please_fix_errors">上記のエラーを修正してください</string>
     <string name="remove">削除</string>
     <string name="ready_to_use">使用準備完了</string>
-    <string name="unsupported_file_format">サポートされていないファイル形式です。.task、.litertlm、または.zipファイルを選択してください。</string>
+    <string name="unsupported_file_format">サポートされていないファイル形式です。</string>
     <string name="download_models_from_litert_community">互換性のあるLLMモデルは以下からダウンロードできます：</string>
     <string name="litert_community_link">Hugging FaceのLiteRTコミュニティ</string>
     <string name="download_image_models_from">互換性のある画像モデルは以下からダウンロードできます：</string>
@@ -1157,6 +1157,7 @@
     <string name="video_generator_negative_prompt">ネガティブプロンプト（任意）</string>
     <string name="video_generator_negative_prompt_hint">避けたい要素（例: ぼやけ、歪み、低品質）</string>
     <string name="image_extras_title">画像の追加設定</string>
+    <string name="image_extras_add">修飾子を追加</string>
     <string name="image_extras_negative">ネガティブプロンプト</string>
     <string name="image_extras_guidance">ガイダンススケール</string>
     <string name="image_extras_clip_skip">CLIP スキップ</string>
@@ -1170,6 +1171,6 @@
     <string name="image_extras_invalid">選択したファイルが無効か、モデルに対応していません。</string>
     <string name="image_extras_resource_hint">タグ：1行に1つ、またはJSON配列。定義・翻訳：JSONオブジェクトまたはkey=value形式。タグや定義をタップして追加できます。翻訳はローカルで適用されます。</string>
     <string name="image_extras_ios_help">LoRA：SafeTensorsまたはDraw Thingsの.ckpt。エンコーダー・VAE：対応するDraw Thingsの.ckpt。埋め込み：SafeTensors。先に対応するモデルを選択してください。</string>
-    <string name="image_extras_android_help">LoRA、CLIPスキップ、エンコーダーの変更には、GGUF/SafeTensorsチェックポイントのインポートが必要です。QNN/MNNの重みは固定です。LoRA・埋め込み：SafeTensors。</string>
+    <string name="image_extras_android_help">対応ファイル: SafeTensors, GGUF, CKPT, PT, PTH, BIN。LoRA、CLIPスキップ、エンコーダーはインポートしたチェックポイントでのみ使え、内蔵のNPU/CPUモデルでは使えません。</string>
     <string name="image_extras_import_location">チェックポイント、LoRA、エンコーダー、プロンプトリストは %1$s → %2$s からインポートします。</string>
 </resources>

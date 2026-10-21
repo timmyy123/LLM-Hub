@@ -420,7 +420,7 @@
     <string name="please_fix_errors">Proszę naprawić powyższe błędy</string>
     <string name="remove">Usuń</string>
     <string name="ready_to_use">Gotowy do użycia</string>
-    <string name="unsupported_file_format">Nieobsługiwany format pliku. Wybierz plik .task, .litertlm lub .zip.</string>
+    <string name="unsupported_file_format">Nieobsługiwany format pliku.</string>
     <string name="download_models_from_litert_community">Możesz pobrać kompatybilne modele LLM z:</string>
     <string name="litert_community_link">Społeczność LiteRT na Hugging Face</string>
     <string name="download_image_models_from">Możesz pobrać kompatybilne modele obrazów z:</string>
@@ -1164,6 +1164,7 @@
     <string name="video_generator_negative_prompt">Prompt negatywny (opcjonalnie)</string>
     <string name="video_generator_negative_prompt_hint">Czego unikać, np. rozmyte, zniekształcone, niska jakość</string>
     <string name="image_extras_title">Modyfikatory obrazu</string>
+    <string name="image_extras_add">Dodaj modyfikator</string>
     <string name="image_extras_negative">Negatywny prompt</string>
     <string name="image_extras_guidance">Skala prowadzenia</string>
     <string name="image_extras_clip_skip">Pomijanie warstw CLIP</string>
@@ -1177,6 +1178,6 @@
     <string name="image_extras_invalid">Wybrany plik jest nieprawidłowy lub niezgodny z modelem.</string>
     <string name="image_extras_resource_hint">Tagi: po jednym w wierszu lub tablica JSON. Definicje/tłumaczenia: obiekt JSON lub key=value. Dotknij tagu/definicji, aby je dodać; tłumaczenia są stosowane lokalnie.</string>
     <string name="image_extras_ios_help">LoRA: SafeTensors lub .ckpt Draw Things. Enkodery/VAE: zgodne pliki .ckpt Draw Things. Embeddingi: SafeTensors. Najpierw wybierz pasujący model.</string>
-    <string name="image_extras_android_help">LoRA, pomijanie warstw CLIP i własne enkodery wymagają zaimportowanego checkpointu GGUF/SafeTensors. Wagi QNN/MNN są stałe. LoRA/embeddingi: SafeTensors.</string>
+    <string name="image_extras_android_help">Obsługiwane pliki: SafeTensors, GGUF, CKPT, PT, PTH, BIN. LoRA, CLIP skip i enkodery działają tylko z zaimportowanym checkpointem, nie z wbudowanymi modelami NPU/CPU.</string>
     <string name="image_extras_import_location">Importuj checkpointy, LoRA, enkodery i listy promptów w %1$s → %2$s.</string>
 </resources>

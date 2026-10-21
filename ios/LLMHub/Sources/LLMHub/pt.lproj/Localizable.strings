@@ -950,6 +950,7 @@
 "music_unlimited_duration_desc" = "A geração continua até você pressionar Parar. A gravação é salva quando você para.";
 "music_locked_screen_supported" = "Permite gerar e reproduzir música com a tela bloqueada.";
 "image_extras_title" = "Modificadores de imagem";
+"image_extras_add" = "Adicionar modificador";
 "image_extras_negative" = "Prompt negativo";
 "image_extras_guidance" = "Escala de orientação";
 "image_extras_clip_skip" = "Salto de camadas CLIP";

@@ -180,6 +180,11 @@ struct ImageExtrasEditor: View {
     @EnvironmentObject private var settings: AppSettings
     @ObservedObject private var store = ImageExtrasStore.shared
     @Binding var prompt: String
+    /// The image model add-ons attach to (the one selected in Image Generator).
+    var modelID: String
+    @State private var pendingKind: ImageExtra.Kind?
+    @State private var showImporter = false
+    @State private var importFailed = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -203,9 +208,38 @@ struct ImageExtrasEditor: View {
                 value: Binding(get: { Double(store.options.clipSkip) }, set: { store.options.clipSkip = Int($0) }),
                 range: 1...12, step: 1, identifier: "imageModifiers.clipSkip"
             )
-            // Files are imported from the model import sheet; this panel adjusts what is installed.
-            Text(String(format: settings.localized("image_extras_import_location"),
-                        settings.localized("ai_models"), settings.localized("import_external_model")))
+            // Add-ons are imported here, attached to the selected model: they do nothing on their
+            // own. Prompt lists work with every model.
+            Menu {
+                ForEach(ImageExtra.Kind.allCases) { kind in
+                    Button(settings.localized(kind.label)) {
+                        pendingKind = kind
+                        showImporter = true
+                    }
+                    .disabled(!kind.isPromptResource && modelID.isEmpty)
+                }
+            } label: {
+                Label(settings.localized("image_extras_add"), systemImage: "plus")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .accessibilityIdentifier("imageModifiers.add")
+            .fileImporter(isPresented: $showImporter, allowedContentTypes: [.item]) { result in
+                guard let kind = pendingKind, case .success(let url) = result else { return }
+                pendingKind = nil
+                Task {
+                    do {
+                        try await store.importFile(url, kind: kind, modelID: kind.isPromptResource ? nil : modelID)
+                    } catch {
+                        NSLog("[ImageExtras] Import failed: %@", error.localizedDescription)
+                        importFailed = true
+                    }
+                }
+            }
+            .alert(settings.localized("image_extras_invalid"), isPresented: $importFailed) {
+                Button(settings.localized("ok"), role: .cancel) {}
+            }
+            Text(settings.localized("image_extras_ios_help"))
                 .font(.caption).foregroundStyle(.secondary)
             ImagePromptResources(prompt: $prompt)
             ForEach($store.options.assets) { $asset in

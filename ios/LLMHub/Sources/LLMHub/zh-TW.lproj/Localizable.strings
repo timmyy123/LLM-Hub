@@ -1001,6 +1001,7 @@
 "music_unlimited_duration_desc" = "持續生成，直到您按下停止。停止時會儲存錄音。";
 "music_locked_screen_supported" = "支援在螢幕鎖定時生成及播放音樂。";
 "image_extras_title" = "圖片修改器";
+"image_extras_add" = "新增修飾器";
 "image_extras_negative" = "負面提示詞";
 "image_extras_guidance" = "引導強度";
 "image_extras_clip_skip" = "CLIP 跳過層數";

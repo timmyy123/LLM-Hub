@@ -321,7 +321,7 @@ class StableDiffusionHelper(private val context: Context) {
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to copy pixels: ${e.message}")
                 // Fallback: try standard decoding just in case it WAS an encoded image
-                val decodedBitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
+                val decodedBitmap = BoundedBitmapDecoder.decodeByteArray(imageBytes)
                 if (decodedBitmap != null) return@withContext decodedBitmap
                 return@withContext null
             }

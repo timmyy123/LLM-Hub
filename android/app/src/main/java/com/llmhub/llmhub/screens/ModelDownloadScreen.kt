@@ -1668,7 +1668,9 @@ internal fun ImportExternalModelDialog(
                                     )
                                 }
                                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                                ImageExtrasStore.kinds.forEach { kind ->
+                                // Only imports that run on their own; add-ons (LoRA, encoders, prompt
+                                // lists) are added in Image Generator, next to the checkpoint they modify.
+                                ImageExtrasStore.modelKinds.forEach { kind ->
                                     DropdownMenuItem(
                                         text = { Text(imageExtraLabel(kind)) },
                                         onClick = {

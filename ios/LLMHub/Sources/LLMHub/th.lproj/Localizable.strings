@@ -1000,6 +1000,7 @@
 "music_unlimited_duration_desc" = "สร้างต่อไปจนกว่าคุณจะกดหยุด ระบบจะบันทึกเสียงไว้เมื่อคุณหยุด";
 "music_locked_screen_supported" = "รองรับการสร้างและเล่นเพลงขณะล็อกหน้าจอ";
 "image_extras_title" = "ตัวปรับแต่งภาพ";
+"image_extras_add" = "เพิ่มตัวปรับแต่ง";
 "image_extras_negative" = "พรอมต์เชิงลบ";
 "image_extras_guidance" = "ระดับการชี้นำ";
 "image_extras_clip_skip" = "ข้ามชั้น CLIP";

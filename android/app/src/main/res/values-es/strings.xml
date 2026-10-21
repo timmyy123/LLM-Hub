@@ -421,7 +421,7 @@
     <string name="please_fix_errors">Corrige los errores arriba</string>
     <string name="remove">Eliminar</string>
     <string name="ready_to_use">Listo para usar</string>
-    <string name="unsupported_file_format">Formato de archivo no compatible. Por favor selecciona un archivo .task, .litertlm o .zip.</string>
+    <string name="unsupported_file_format">Formato de archivo no compatible.</string>
     <string name="download_models_from_litert_community">Puedes descargar modelos LLM compatibles desde:</string>
     <string name="litert_community_link">LiteRT Community en Hugging Face</string>
     <string name="download_image_models_from">Puedes descargar modelos de imágenes compatibles desde:</string>
@@ -1163,6 +1163,7 @@
     <string name="video_generator_negative_prompt">Prompt negativo (opcional)</string>
     <string name="video_generator_negative_prompt_hint">Cosas que evitar, p. ej. borroso, distorsionado, baja calidad</string>
     <string name="image_extras_title">Modificadores de imagen</string>
+    <string name="image_extras_add">Añadir modificador</string>
     <string name="image_extras_negative">Prompt negativo</string>
     <string name="image_extras_guidance">Escala de guía</string>
     <string name="image_extras_clip_skip">Salto de CLIP</string>
@@ -1176,6 +1177,6 @@
     <string name="image_extras_invalid">El archivo seleccionado no es válido o es incompatible con el modelo.</string>
     <string name="image_extras_resource_hint">Etiquetas: una por línea o un array JSON. Definiciones/traducciones: un objeto JSON o key=value. Toca etiquetas/definiciones; las traducciones se aplican localmente.</string>
     <string name="image_extras_ios_help">LoRA: SafeTensors o .ckpt de Draw Things. Codificadores/VAE: .ckpt compatibles de Draw Things. Embeddings: SafeTensors. Selecciona primero el modelo correspondiente.</string>
-    <string name="image_extras_android_help">LoRA, el salto de CLIP y los codificadores personalizados requieren un checkpoint GGUF/SafeTensors importado. Los pesos QNN/MNN son fijos. LoRA/embeddings: SafeTensors.</string>
+    <string name="image_extras_android_help">Archivos compatibles: SafeTensors, GGUF, CKPT, PT, PTH, BIN. LoRA, CLIP skip y los codificadores solo funcionan con un checkpoint importado, no con los modelos NPU/CPU integrados.</string>
     <string name="image_extras_import_location">Importa checkpoints, LoRA, codificadores y listas de prompts en %1$s → %2$s.</string>
 </resources>

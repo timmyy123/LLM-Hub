@@ -421,7 +421,7 @@
     <string name="please_fix_errors">אנא תקן את השגיאות למעלה</string>
     <string name="remove">הסר</string>
     <string name="ready_to_use">מוכן לשימוש</string>
-    <string name="unsupported_file_format">פורמט קובץ לא נתמך. אנא בחר קובץ .task, .litertlm או .zip.</string>
+    <string name="unsupported_file_format">פורמט קובץ לא נתמך.</string>
     <string name="download_models_from_litert_community">ניתן להוריד מודלי LLM תואמים מ-:</string>
     <string name="litert_community_link">LiteRT Community ב-Hugging Face</string>
     <string name="download_image_models_from">ניתן להוריד מודלים תואמים של תמונות מ:</string>
@@ -1160,6 +1160,7 @@
     <string name="video_generator_negative_prompt">הנחיה שלילית (אופציונלי)</string>
     <string name="video_generator_negative_prompt_hint">דברים שיש להימנע מהם, למשל: מטושטש, מעוות, איכות נמוכה</string>
     <string name="image_extras_title">משני תמונה</string>
+    <string name="image_extras_add">הוספת מתאם</string>
     <string name="image_extras_negative">הנחיה שלילית</string>
     <string name="image_extras_guidance">עוצמת הנחיה</string>
     <string name="image_extras_clip_skip">דילוג CLIP</string>
@@ -1173,6 +1174,6 @@
     <string name="image_extras_invalid">הקובץ שנבחר אינו תקין או אינו תואם למודל.</string>
     <string name="image_extras_resource_hint">תגיות: אחת בכל שורה או מערך JSON. הגדרות ותרגומים: אובייקט JSON או key=value. לחצו על תגיות או הגדרות להוספה; תרגומים מוחלים מקומית.</string>
     <string name="image_extras_ios_help">LoRA: קובצי SafeTensors או ‎.ckpt של Draw Things. מקודדים ו-VAE: קובצי ‎.ckpt תואמים של Draw Things. הטמעות: SafeTensors. בחרו תחילה את המודל המתאים.</string>
-    <string name="image_extras_android_help">LoRA, דילוג CLIP ומקודדים מותאמים דורשים מודל GGUF/SafeTensors מיובא. משקלי QNN/MNN קבועים. LoRA והטמעות: SafeTensors.</string>
+    <string name="image_extras_android_help">קבצים נתמכים: SafeTensors, GGUF, CKPT, PT, PTH, BIN. LoRA, דילוג CLIP ומקודדים פועלים רק עם נקודת ביקורת מיובאת, לא עם דגמי NPU/CPU המובנים.</string>
     <string name="image_extras_import_location">ייבאו נקודות ביקורת, קובצי LoRA, מקודדים ורשימות הנחיות דרך %1$s ← %2$s.</string>
 </resources>

@@ -1434,29 +1434,8 @@ struct ImportExternalModelSheet: View {
             selectedHuggingFaceProjector = nil
         }
 
-        if importKind == .image {
-            importField(label: settings.localized("model_format")) {
-                Picker(settings.localized("model_format"), selection: $imageAddonKind) {
-                    Text(settings.localized("image_extras_checkpoint")).tag(ImageExtra.Kind?.none)
-                    ForEach(ImageExtra.Kind.allCases) { kind in
-                        Text(settings.localized(kind.label)).tag(Optional(kind))
-                    }
-                }
-                .pickerStyle(.menu)
-                .tint(.white)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .disabled(isImporting)
-                .accessibilityIdentifier("import.imageType")
-                .onChange(of: imageAddonKind) { _, _ in
-                    selectedFileURL = nil
-                    selectedFileName = ""
-                    modelName = ""
-                    selectedDrawThingsModel = nil
-                    showError = false
-                }
-            }
-        }
-
+        // Image imports are full models only; add-ons (LoRA, encoders, prompt lists) are added in
+        // Image Generator's Image modifiers, attached to the model they modify.
         if importKind == .image, let addonKind = imageAddonKind {
             imageAddonFields(addonKind)
         } else if importKind.isMedia {

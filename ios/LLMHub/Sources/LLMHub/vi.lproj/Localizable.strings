@@ -1000,6 +1000,7 @@
 "music_unlimited_duration_desc" = "Tiếp tục tạo cho đến khi bạn nhấn Dừng. Bản ghi được lưu khi bạn dừng.";
 "music_locked_screen_supported" = "Hỗ trợ tạo và phát nhạc khi màn hình bị khóa.";
 "image_extras_title" = "Bộ điều chỉnh hình ảnh";
+"image_extras_add" = "Thêm bộ điều chỉnh";
 "image_extras_negative" = "Lời nhắc phủ định";
 "image_extras_guidance" = "Mức hướng dẫn";
 "image_extras_clip_skip" = "Bỏ qua lớp CLIP";

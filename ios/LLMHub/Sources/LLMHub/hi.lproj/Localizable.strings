@@ -1005,6 +1005,7 @@
 "music_unlimited_duration_desc" = "रोकें दबाने तक संगीत बनता रहेगा। रोकने पर रिकॉर्डिंग सहेज दी जाएगी।";
 "music_locked_screen_supported" = "स्क्रीन लॉक होने पर भी संगीत बनाने और चलाने की सुविधा उपलब्ध है।";
 "image_extras_title" = "छवि संशोधक";
+"image_extras_add" = "मॉडिफ़ायर जोड़ें";
 "image_extras_negative" = "नकारात्मक प्रॉम्प्ट";
 "image_extras_guidance" = "मार्गदर्शन स्तर";
 "image_extras_clip_skip" = "CLIP स्किप";

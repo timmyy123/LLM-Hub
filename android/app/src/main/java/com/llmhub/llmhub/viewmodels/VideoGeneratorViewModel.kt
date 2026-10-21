@@ -109,7 +109,6 @@ class VideoGeneratorViewModel(application: Application) : AndroidViewModel(appli
     var seed by mutableLongStateOf(prefs.getLong("seed", (0..999999).random().toLong()))
         private set
 
-    var useInitImage by mutableStateOf(false)
     var initImage by mutableStateOf<Bitmap?>(null)
 
     var isLoading by mutableStateOf(false)
@@ -132,22 +131,22 @@ class VideoGeneratorViewModel(application: Application) : AndroidViewModel(appli
     /** NPU models run graphs compiled for a single resolution and length. */
     val sizeLocked: Boolean get() = selectedModel?.let(VideoGenEngine::fixedShape) != null
 
+    /**
+     * Same as Music Generator: the downloaded video models are found synchronously (file checks
+     * only), so the main screen is there on the first frame with the last used model selected.
+     */
     fun refreshModels() {
-        viewModelScope.launch {
-            val models = withContext(Dispatchers.IO) {
-                ModelData.models.filter { it.isVideoGenerationModel() && it.hasCompleteDownloadedBundle(appContext) }
-            }
-            _availableModels.value = models
-            val current = selectedModel
-            if (current == null || models.none { it.name == current.name }) {
-                val lastName = prefs.getString("last_model", null)
-                selectModel(models.find { it.name == lastName } ?: models.firstOrNull())
-            }
-            // A deleted model must not stay loaded
-            val loaded = loadedModel.value
-            if (loaded != null && models.none { it.name == loaded.name } && !isBusy) {
-                engine.unload()
-            }
+        val models = ModelData.videoGenerationModels.filter { it.hasCompleteDownloadedBundle(appContext) }
+        _availableModels.value = models
+        val current = selectedModel
+        if (current == null || models.none { it.name == current.name }) {
+            val lastName = prefs.getString("last_model", null)
+            selectModel(models.find { it.name == lastName } ?: models.firstOrNull())
+        }
+        // A deleted model must not stay loaded
+        val loaded = loadedModel.value
+        if (loaded != null && models.none { it.name == loaded.name } && !isBusy) {
+            engine.unload()
         }
     }
 
@@ -254,11 +253,15 @@ class VideoGeneratorViewModel(application: Application) : AndroidViewModel(appli
         loadError = null
     }
 
+    /** Generate does not need a loaded model: [generate] loads the selected one first (like Image Generator). */
     fun canGenerate(): Boolean =
-        loadedModel.value != null && !isBusy && prompt.isNotBlank() && (!useInitImage || initImage != null)
+        selectedModel != null && !isBusy && prompt.isNotBlank()
 
     fun generate() {
         if (!canGenerate()) return
+        val model = selectedModel ?: return
+        val backend = selectedBackend ?: VideoGenEngine.supportedBackends(model).first()
+        val needsLoad = loadedModel.value?.name != model.name || loadedBackend.value != backend
         val request = VideoGenRequest(
             prompt = prompt.trim(),
             negativePrompt = negativePrompt.trim(),
@@ -268,13 +271,27 @@ class VideoGeneratorViewModel(application: Application) : AndroidViewModel(appli
             fps = fps,
             steps = steps,
             seed = seed,
-            initImage = if (useInitImage) initImage else null
+            initImage = initImage
         )
         cancelRequested = false
+        loadError = null
         isGenerating = true
-        _progress.value = VideoGenProgress.EncodingPrompt
+        _progress.value = if (needsLoad) VideoGenProgress.LoadingModel(0f) else VideoGenProgress.EncodingPrompt
         workJob = viewModelScope.launch {
             try {
+                // Lazy load: the last used model and backend load on the first Generate.
+                if (needsLoad) {
+                    val loaded = withContext(Dispatchers.IO) { engine.load(model, backend) { _progress.value = it } }
+                    loaded.onFailure { error ->
+                        if (error is CancellationException) throw error
+                        Log.e(TAG, "Failed to load ${model.name} on $backend", error)
+                        val message = if (cancelRequested) appContext.getString(R.string.video_generator_cancelled)
+                        else appContext.getString(R.string.video_generator_load_failed, error.message ?: error.toString())
+                        if (!cancelRequested) loadError = message
+                        _messages.tryEmit(message)
+                        return@launch
+                    }
+                }
                 val outcome = withContext(Dispatchers.IO) {
                     engine.generate(request) { _progress.value = it }
                 }
@@ -366,6 +383,11 @@ class VideoGeneratorViewModel(application: Application) : AndroidViewModel(appli
         }
     }
 
+    // Last: every property above is initialized before the first refresh.
+    init {
+        refreshModels()
+    }
+
     override fun onCleared() {
         val running = workJob?.takeIf { it.isActive }
         if (running != null) {
@@ -376,7 +398,8 @@ class VideoGeneratorViewModel(application: Application) : AndroidViewModel(appli
                 engine.unload()
             }
         } else {
-            engine.unload()
+            // Freeing the native model takes a moment; off the main thread the exit animation stays smooth.
+            CoroutineScope(SupervisorJob() + Dispatchers.IO).launch { engine.unload() }
         }
         super.onCleared()
     }

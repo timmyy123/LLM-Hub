@@ -980,6 +980,7 @@
 "music_unlimited_duration_desc" = "La génération continue jusqu’à ce que vous appuyiez sur Arrêter. L’enregistrement est sauvegardé à l’arrêt.";
 "music_locked_screen_supported" = "Permet de générer et de lire de la musique lorsque l’écran est verrouillé.";
 "image_extras_title" = "Modificateurs d’image";
+"image_extras_add" = "Ajouter un modificateur";
 "image_extras_negative" = "Prompt négatif";
 "image_extras_guidance" = "Échelle de guidage";
 "image_extras_clip_skip" = "Saut de couches CLIP";

@@ -993,6 +993,7 @@
 "music_unlimited_duration_desc" = "تولید تا زمانی که توقف را بزنید ادامه دارد. ضبط هنگام توقف ذخیره می‌شود.";
 "music_locked_screen_supported" = "از تولید و پخش موسیقی با صفحهٔ قفل‌شده پشتیبانی می‌کند.";
 "image_extras_title" = "اصلاح‌کننده‌های تصویر";
+"image_extras_add" = "افزودن اصلاح‌کننده";
 "image_extras_negative" = "پرامپت منفی";
 "image_extras_guidance" = "مقیاس هدایت";
 "image_extras_clip_skip" = "رد کردن لایه‌های CLIP";

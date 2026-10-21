@@ -387,7 +387,7 @@
     <string name="please_fix_errors">โปรดแก้ไขข้อผิดพลาดข้างต้น</string>
     <string name="remove">ลบ</string>
     <string name="ready_to_use">พร้อมใช้</string>
-    <string name="unsupported_file_format">รูปแบบไฟล์ที่ไม่รองรับ โปรดเลือกไฟล์ .task, .litertlm หรือ .zip</string>
+    <string name="unsupported_file_format">ไม่รองรับรูปแบบไฟล์นี้</string>
     <string name="download_models_from_litert_community">คุณสามารถดาวน์โหลดโมเดล LLM ที่เข้ากันได้ได้จาก:</string>
     <string name="litert_community_link">ชุมชน LiteRT บน Hugging Face</string>
     <string name="download_image_models_from">คุณสามารถดาวน์โหลดโมเดลรูปภาพที่เข้ากันได้ได้จาก:</string>
@@ -1067,6 +1067,7 @@
     <string name="video_generator_negative_prompt">พรอมต์เชิงลบ (ไม่บังคับ)</string>
     <string name="video_generator_negative_prompt_hint">สิ่งที่ต้องการหลีกเลี่ยง เช่น เบลอ บิดเบี้ยว คุณภาพต่ำ</string>
     <string name="image_extras_title">ตัวปรับแต่งภาพ</string>
+    <string name="image_extras_add">เพิ่มตัวปรับแต่ง</string>
     <string name="image_extras_negative">พรอมต์เชิงลบ</string>
     <string name="image_extras_guidance">ระดับการชี้นำ</string>
     <string name="image_extras_clip_skip">ข้ามชั้น CLIP</string>
@@ -1080,6 +1081,6 @@
     <string name="image_extras_invalid">ไฟล์ที่เลือกไม่ถูกต้องหรือไม่เข้ากันกับโมเดล</string>
     <string name="image_extras_resource_hint">แท็ก: หนึ่งรายการต่อบรรทัดหรืออาร์เรย์ JSON คำจำกัดความ/คำแปล: ออบเจ็กต์ JSON หรือ key=value แตะแท็ก/คำจำกัดความเพื่อเพิ่ม คำแปลจะใช้ภายในอุปกรณ์</string>
     <string name="image_extras_ios_help">LoRA: SafeTensors หรือ .ckpt ของ Draw Things ตัวเข้ารหัส/VAE: .ckpt ของ Draw Things ที่เข้ากันได้ เอ็มเบดดิง: SafeTensors เลือกโมเดลที่ตรงกันก่อน</string>
-    <string name="image_extras_android_help">LoRA การข้ามชั้น CLIP และตัวเข้ารหัสกำหนดเองต้องใช้เช็กพอยต์ GGUF/SafeTensors ที่นำเข้า น้ำหนัก QNN/MNN เปลี่ยนไม่ได้ LoRA/เอ็มเบดดิง: SafeTensors</string>
+    <string name="image_extras_android_help">ไฟล์ที่รองรับ: SafeTensors, GGUF, CKPT, PT, PTH, BIN LoRA, CLIP skip และตัวเข้ารหัสใช้ได้กับเช็กพอยต์ที่นำเข้าเท่านั้น ใช้กับโมเดล NPU/CPU ในตัวไม่ได้</string>
     <string name="image_extras_import_location">นำเข้าเช็กพอยต์ LoRA ตัวเข้ารหัส และรายการพรอมต์ได้ที่ %1$s → %2$s</string>
 </resources>

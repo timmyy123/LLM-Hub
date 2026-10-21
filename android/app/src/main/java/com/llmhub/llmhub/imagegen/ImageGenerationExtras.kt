@@ -58,11 +58,17 @@ class ImageExtrasStore(context: Context) {
     companion object {
         /** Import types offered in the model import dialog, in menu order. */
         val kinds = listOf("checkpoint", "lora", "clipL", "clipG", "textEncoder", "vae", "embedding", "tags", "definitions", "translations")
+        /** Imports that work on their own (Import External Model): only a full checkpoint. */
+        val modelKinds = listOf("checkpoint")
+        /** Add-ons, imported in Image Generator's Image modifiers panel. */
+        val addOnKinds = kinds - "checkpoint"
+        /** Add-ons that need an imported checkpoint selected; prompt lists work with every model. */
+        val checkpointOnlyKinds = setOf("lora", "clipL", "clipG", "textEncoder", "vae", "embedding")
         private val encoderKinds = setOf("clipL", "clipG", "textEncoder", "vae")
         fun extensions(kind: String): Set<String> = when (kind) {
             "tags", "definitions", "translations" -> setOf("txt", "json")
-            "lora", "embedding" -> setOf("safetensors")
-            else -> setOf("safetensors", "gguf")
+            // stable-diffusion.cpp detects the format from the file contents (ModelLoader).
+            else -> setOf("safetensors", "gguf", "ckpt", "pt", "pth", "bin")
         }
     }
     private val app = context.applicationContext

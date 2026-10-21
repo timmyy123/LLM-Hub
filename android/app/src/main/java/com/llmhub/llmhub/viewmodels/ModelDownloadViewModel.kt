@@ -1078,21 +1078,14 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
 
         // Also remove any temp SD zip downloads for Stable Diffusion models (check both cache and files dirs)
         try {
-            val sdTempCache = File(context.cacheDir, "sd_downloads")
-            if (sdTempCache.exists() && sdTempCache.isDirectory) {
-                sdTempCache.listFiles()?.forEach { f ->
-                    if (f.name.contains(model.name.replace(" ", "_")).or(f.name.endsWith(".zip"))) {
-                        try { f.delete() } catch (_: Exception) { }
-                    }
-                }
-            }
-
-            val sdTempFiles = File(context.filesDir, "sd_downloads")
-            if (sdTempFiles.exists() && sdTempFiles.isDirectory) {
-                sdTempFiles.listFiles()?.forEach { f ->
-                    if (f.name.contains(model.name.replace(" ", "_")).or(f.name.endsWith(".zip"))) {
-                        try { f.delete() } catch (_: Exception) { }
-                    }
+            // Only this model's own ZIP (ModelDownloader names it "<name with _>.zip"). Matching
+            // every ".zip" deleted other models' in-progress downloads, which then "finished" with
+            // a missing file and failed to extract.
+            val ownZip = "${model.name.replace(" ", "_")}.zip"
+            for (dir in listOf(File(context.cacheDir, "sd_downloads"), File(context.filesDir, "sd_downloads"))) {
+                val zip = File(dir, ownZip)
+                if (zip.exists()) {
+                    try { zip.delete() } catch (_: Exception) { }
                 }
             }
         } catch (_: Exception) { }

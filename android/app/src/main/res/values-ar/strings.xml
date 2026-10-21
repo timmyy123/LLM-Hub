@@ -417,7 +417,7 @@
     <string name="please_fix_errors">يرجى تصحيح الأخطاء أعلاه</string>
     <string name="remove">إزالة</string>
     <string name="ready_to_use">جاهز للاستخدام</string>
-    <string name="unsupported_file_format">تنسيق ملف غير مدعوم. يرجى تحديد ملف .task أو .litertlm أو .zip.</string>
+    <string name="unsupported_file_format">تنسيق ملف غير مدعوم.</string>
     <string name="download_models_from_litert_community">يمكنك تنزيل نماذج LLM متوافقة من:</string>
     <string name="litert_community_link">مجتمع LiteRT على Hugging Face</string>
     <string name="download_image_models_from">يمكنك تنزيل نماذج الصور المتوافقة من:</string>
@@ -1160,6 +1160,7 @@
     <string name="video_generator_negative_prompt">الوصف السلبي (اختياري)</string>
     <string name="video_generator_negative_prompt_hint">أشياء يجب تجنبها، مثل: ضبابي، مشوّه، جودة منخفضة</string>
     <string name="image_extras_title">معدّلات الصور</string>
+    <string name="image_extras_add">إضافة معدِّل</string>
     <string name="image_extras_negative">الموجّه السلبي</string>
     <string name="image_extras_guidance">مقياس التوجيه</string>
     <string name="image_extras_clip_skip">تخطي CLIP</string>
@@ -1173,6 +1174,6 @@
     <string name="image_extras_invalid">الملف المحدد غير صالح أو غير متوافق مع النموذج.</string>
     <string name="image_extras_resource_hint">الوسوم: وسم في كل سطر أو مصفوفة JSON. التعريفات والترجمات: كائن JSON أو key=value. اضغط لإضافة الوسوم أو التعريفات؛ تُطبَّق الترجمات محليًا.</string>
     <string name="image_extras_ios_help">LoRA: ملفات SafeTensors أو ‎.ckpt من Draw Things. المُرمّزات وVAE: ملفات ‎.ckpt متوافقة من Draw Things. التضمينات: SafeTensors. اختر النموذج المتوافق أولًا.</string>
-    <string name="image_extras_android_help">تتطلب LoRA وتخطي CLIP واستبدال المُرمّزات استيراد ملف نموذج GGUF أو SafeTensors. أوزان QNN/MNN ثابتة. LoRA والتضمينات: SafeTensors.</string>
+    <string name="image_extras_android_help">الملفات المدعومة: SafeTensors, GGUF, CKPT, PT, PTH, BIN. تعمل LoRA وتخطي CLIP والمشفّرات مع نقطة تحقق مستوردة فقط، وليس مع نماذج NPU/CPU المدمجة.</string>
     <string name="image_extras_import_location">استورد نقاط التحقق وملفات LoRA والمرمّزات وقوائم الأوامر من %1$s ← %2$s.</string>
 </resources>

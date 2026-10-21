@@ -387,7 +387,7 @@
     <string name="please_fix_errors">Hãy sửa các lỗi trên</string>
     <string name="remove">Xóa</string>
     <string name="ready_to_use">Sẵn sàng sử dụng</string>
-    <string name="unsupported_file_format">Định dạng tệp không được hỗ trợ. Vui lòng chọn tệp .task, .litertlm hoặc .zip.</string>
+    <string name="unsupported_file_format">Định dạng tệp không được hỗ trợ.</string>
     <string name="download_models_from_litert_community">Bạn có thể tải xuống các mô hình LLM tương thích từ:</string>
     <string name="litert_community_link">Cộng đồng LiteRT trên Hugging Face</string>
     <string name="download_image_models_from">Bạn có thể tải xuống các mẫu hình ảnh tương thích từ:</string>
@@ -1067,6 +1067,7 @@
     <string name="video_generator_negative_prompt">Lời nhắc phủ định (tùy chọn)</string>
     <string name="video_generator_negative_prompt_hint">Những điều cần tránh, ví dụ: mờ, méo, chất lượng thấp</string>
     <string name="image_extras_title">Bộ điều chỉnh hình ảnh</string>
+    <string name="image_extras_add">Thêm bộ điều chỉnh</string>
     <string name="image_extras_negative">Lời nhắc phủ định</string>
     <string name="image_extras_guidance">Mức hướng dẫn</string>
     <string name="image_extras_clip_skip">Bỏ qua lớp CLIP</string>
@@ -1080,6 +1081,6 @@
     <string name="image_extras_invalid">Tệp đã chọn không hợp lệ hoặc không tương thích với mô hình.</string>
     <string name="image_extras_resource_hint">Thẻ: mỗi dòng một thẻ hoặc mảng JSON. Định nghĩa/bản dịch: đối tượng JSON hoặc key=value. Nhấn thẻ/định nghĩa để thêm; bản dịch được áp dụng cục bộ.</string>
     <string name="image_extras_ios_help">LoRA: SafeTensors hoặc .ckpt của Draw Things. Bộ mã hóa/VAE: .ckpt tương thích của Draw Things. Embedding: SafeTensors. Hãy chọn mô hình phù hợp trước.</string>
-    <string name="image_extras_android_help">LoRA, bỏ qua lớp CLIP và bộ mã hóa tùy chỉnh cần checkpoint GGUF/SafeTensors đã nhập. Trọng số QNN/MNN là cố định. LoRA/embedding: SafeTensors.</string>
+    <string name="image_extras_android_help">Tệp được hỗ trợ: SafeTensors, GGUF, CKPT, PT, PTH, BIN. LoRA, CLIP skip và bộ mã hóa chỉ hoạt động với checkpoint đã nhập, không dùng được với các mô hình NPU/CPU tích hợp.</string>
     <string name="image_extras_import_location">Nhập checkpoint, LoRA, bộ mã hóa và danh sách prompt tại %1$s → %2$s.</string>
 </resources>

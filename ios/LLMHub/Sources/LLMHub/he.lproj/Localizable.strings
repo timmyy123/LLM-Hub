@@ -993,6 +993,7 @@
 "music_unlimited_duration_desc" = "היצירה נמשכת עד ללחיצה על עצירה. ההקלטה נשמרת בעת העצירה.";
 "music_locked_screen_supported" = "תומך ביצירה ובהשמעה של מוזיקה כשהמסך נעול.";
 "image_extras_title" = "משני תמונה";
+"image_extras_add" = "הוספת משנה";
 "image_extras_negative" = "הנחיה שלילית";
 "image_extras_guidance" = "עוצמת הנחיה";
 "image_extras_clip_skip" = "דילוג CLIP";

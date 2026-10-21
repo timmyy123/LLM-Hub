@@ -993,6 +993,7 @@
 "music_unlimited_duration_desc" = "Генерація триває, доки ви не натиснете «Зупинити». Запис зберігається після зупинки.";
 "music_locked_screen_supported" = "Підтримує створення та відтворення музики, коли екран заблоковано.";
 "image_extras_title" = "Модифікатори зображення";
+"image_extras_add" = "Додати модифікатор";
 "image_extras_negative" = "Негативний промпт";
 "image_extras_guidance" = "Сила дотримання промпту";
 "image_extras_clip_skip" = "Пропуск шарів CLIP";

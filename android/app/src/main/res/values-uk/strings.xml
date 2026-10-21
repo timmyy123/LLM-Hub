@@ -421,7 +421,7 @@
     <string name="please_fix_errors">Будь ласка, виправте помилки вище</string>
     <string name="remove">Видалити</string>
     <string name="ready_to_use">Готово до використання</string>
-    <string name="unsupported_file_format">Непідтримуваний формат файлу. Будь ласка, виберіть файл .task, .litertlm або .zip.</string>
+    <string name="unsupported_file_format">Непідтримуваний формат файлу.</string>
     <string name="download_models_from_litert_community">Сумісні LLM моделі можна завантажити з:</string>
     <string name="litert_community_link">LiteRT Community на Hugging Face</string>
     <string name="download_image_models_from">Ви можете завантажити сумісні моделі зображень з:</string>
@@ -1160,6 +1160,7 @@
     <string name="video_generator_negative_prompt">Негативний запит (необов’язково)</string>
     <string name="video_generator_negative_prompt_hint">Чого уникати, наприклад: розмито, спотворено, низька якість</string>
     <string name="image_extras_title">Модифікатори зображення</string>
+    <string name="image_extras_add">Додати модифікатор</string>
     <string name="image_extras_negative">Негативний промпт</string>
     <string name="image_extras_guidance">Сила дотримання промпту</string>
     <string name="image_extras_clip_skip">Пропуск шарів CLIP</string>
@@ -1173,6 +1174,6 @@
     <string name="image_extras_invalid">Вибраний файл некоректний або несумісний із моделлю.</string>
     <string name="image_extras_resource_hint">Теги: по одному в рядку або масив JSON. Визначення/переклади: об’єкт JSON або key=value. Торкніться тегу/визначення, щоб додати; переклади застосовуються локально.</string>
     <string name="image_extras_ios_help">LoRA: SafeTensors або .ckpt Draw Things. Кодувальники/VAE: сумісні .ckpt Draw Things. Ембеддинги: SafeTensors. Спочатку виберіть відповідну модель.</string>
-    <string name="image_extras_android_help">Для LoRA, пропуску шарів CLIP і власних кодувальників потрібен імпортований чекпойнт GGUF/SafeTensors. Ваги QNN/MNN фіксовані. LoRA/ембеддинги: SafeTensors.</string>
+    <string name="image_extras_android_help">Підтримувані файли: SafeTensors, GGUF, CKPT, PT, PTH, BIN. LoRA, пропуск CLIP і енкодери працюють лише з імпортованим чекпоінтом, а не з вбудованими моделями NPU/CPU.</string>
     <string name="image_extras_import_location">Імпортуйте чекпойнти, LoRA, енкодери та списки промптів у розділі %1$s → %2$s.</string>
 </resources>

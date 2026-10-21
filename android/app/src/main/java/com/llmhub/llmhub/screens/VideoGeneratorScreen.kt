@@ -6,7 +6,10 @@ import android.os.Build
 import android.provider.MediaStore
 import android.view.ViewGroup
 import android.widget.FrameLayout
-import android.widget.VideoView
+import android.graphics.SurfaceTexture
+import android.media.MediaPlayer
+import android.view.Surface
+import android.view.TextureView
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
@@ -191,68 +194,6 @@ fun VideoGeneratorScreen(
                     }
                 }
             }
-            loadedModel == null -> {
-                // "Load a model" prompt
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .verticalScroll(rememberScrollState())
-                        .padding(paddingValues)
-                        .padding(32.dp),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.ModelTraining,
-                        contentDescription = null,
-                        modifier = Modifier.size(80.dp),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(modifier = Modifier.height(24.dp))
-                    Text(
-                        text = stringResource(R.string.video_generator_load_model_title),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        text = stringResource(R.string.video_generator_load_model_desc),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center
-                    )
-                    viewModel.loadError?.let { error ->
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = error,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.error,
-                            textAlign = TextAlign.Center
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(32.dp))
-                    if (viewModel.isLoading) {
-                        VideoProgressCard(
-                            progress = progress,
-                            onCancel = { viewModel.cancel() },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    } else {
-                        FilledTonalButton(
-                            onClick = { showModelSheet = true },
-                            modifier = Modifier.fillMaxWidth(0.6f)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Tune,
-                                contentDescription = null
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(stringResource(R.string.feature_settings_title))
-                        }
-                    }
-                }
-            }
             else -> {
                 // Main content - use BoxWithConstraints for landscape detection
                 BoxWithConstraints(
@@ -271,7 +212,9 @@ fun VideoGeneratorScreen(
                             onShowImage = { showInputImageFullscreen = true }
                         )
                         VideoGenerateButton(viewModel)
-                        if (viewModel.isBusy) {
+                        // Only for a generation (which may load the model first). A load started
+                        // from the settings sheet shows its progress in the sheet only.
+                        if (viewModel.isGenerating) {
                             VideoProgressCard(
                                 progress = progress,
                                 onCancel = { viewModel.cancel() },
@@ -439,63 +382,41 @@ private fun VideoImageToVideoCard(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            // Same as Image Generator's Image-to-Image: picking a start image switches to image to video.
+            Text(
+                text = stringResource(R.string.video_generator_image_to_video),
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold
+            )
+
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(enabled = enabled) { viewModel.useInitImage = !viewModel.useInitImage },
-                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(modifier = Modifier.weight(1f)) {
+                OutlinedButton(
+                    onClick = onPickImage,
+                    enabled = enabled,
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(Icons.Default.Image, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = stringResource(R.string.video_generator_image_to_video),
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = stringResource(R.string.video_generator_image_to_video_desc),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        stringResource(
+                            if (viewModel.initImage != null) R.string.video_generator_change_image
+                            else R.string.video_generator_select_image
+                        )
                     )
                 }
-                Spacer(modifier = Modifier.width(12.dp))
-                Switch(
-                    checked = viewModel.useInitImage,
-                    onCheckedChange = { viewModel.useInitImage = it },
-                    enabled = enabled
-                )
-            }
 
-            if (viewModel.useInitImage) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    OutlinedButton(
-                        onClick = onPickImage,
+                viewModel.initImage?.let { bitmap ->
+                    StartImageThumbnail(
+                        bitmap = bitmap,
                         enabled = enabled,
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Icon(Icons.Default.Image, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            stringResource(
-                                if (viewModel.initImage != null) R.string.video_generator_change_image
-                                else R.string.video_generator_select_image
-                            )
-                        )
-                    }
-
-                    viewModel.initImage?.let { bitmap ->
-                        StartImageThumbnail(
-                            bitmap = bitmap,
-                            enabled = enabled,
-                            onClick = onShowImage,
-                            onRemoveClick = { viewModel.initImage = null }
-                        )
-                    }
+                        onClick = onShowImage,
+                        onRemoveClick = { viewModel.initImage = null }
+                    )
                 }
             }
         }
@@ -711,7 +632,9 @@ private fun LoopingVideoPlayer(
     modifier: Modifier = Modifier
 ) {
     var isPrepared by remember(file.absolutePath) { mutableStateOf(false) }
-    var videoView by remember { mutableStateOf<VideoView?>(null) }
+    // TextureView, not VideoView: a SurfaceView sits outside the Compose layer, so it stayed on
+    // screen during the exit animation instead of fading with the rest of the screen.
+    val player = remember(file.absolutePath, file.lastModified()) { MediaPlayer() }
 
     Box(
         modifier = modifier.background(androidx.compose.ui.graphics.Color.Black),
@@ -720,21 +643,37 @@ private fun LoopingVideoPlayer(
         key(file.absolutePath, file.lastModified()) {
             AndroidView(
                 factory = { ctx ->
-                    VideoView(ctx).apply {
+                    TextureView(ctx).apply {
                         layoutParams = FrameLayout.LayoutParams(
                             ViewGroup.LayoutParams.MATCH_PARENT,
                             ViewGroup.LayoutParams.MATCH_PARENT
                         )
-                        setOnPreparedListener { player ->
-                            player.isLooping = true
-                            player.setVolume(0f, 0f)
-                            isPrepared = true
-                            start()
+                        surfaceTextureListener = object : TextureView.SurfaceTextureListener {
+                            override fun onSurfaceTextureAvailable(texture: SurfaceTexture, width: Int, height: Int) {
+                                runCatching {
+                                    player.setSurface(Surface(texture))
+                                    player.setDataSource(file.absolutePath)
+                                    player.isLooping = true
+                                    player.setVolume(0f, 0f)
+                                    player.setOnVideoSizeChangedListener { _, w, h -> fitVideo(this@apply, w, h) }
+                                    player.setOnPreparedListener {
+                                        fitVideo(this@apply, it.videoWidth, it.videoHeight)
+                                        isPrepared = true
+                                        it.start()
+                                    }
+                                    player.setOnErrorListener { _, _, _ -> true }
+                                    player.prepareAsync()
+                                }
+                            }
+                            override fun onSurfaceTextureSizeChanged(texture: SurfaceTexture, width: Int, height: Int) {
+                                runCatching { fitVideo(this@apply, player.videoWidth, player.videoHeight) }
+                            }
+                            override fun onSurfaceTextureDestroyed(texture: SurfaceTexture): Boolean = true
+                            override fun onSurfaceTextureUpdated(texture: SurfaceTexture) {}
                         }
-                        setOnErrorListener { _, _, _ -> true }
-                        setOnClickListener { if (isPlaying) pause() else start() }
-                        setVideoPath(file.absolutePath)
-                        videoView = this
+                        setOnClickListener {
+                            if (isPrepared) { if (player.isPlaying) player.pause() else player.start() }
+                        }
                     }
                 },
                 modifier = Modifier.fillMaxSize()
@@ -750,11 +689,20 @@ private fun LoopingVideoPlayer(
         }
     }
 
-    DisposableEffect(file.absolutePath) {
-        onDispose {
-            videoView?.stopPlayback()
-        }
+    DisposableEffect(player) {
+        onDispose { player.release() }
     }
+}
+
+/** Letterboxes the video inside the TextureView (VideoView did this itself). */
+private fun fitVideo(view: TextureView, videoWidth: Int, videoHeight: Int) {
+    if (videoWidth <= 0 || videoHeight <= 0 || view.width <= 0 || view.height <= 0) return
+    val viewWidth = view.width.toFloat()
+    val viewHeight = view.height.toFloat()
+    val scale = minOf(viewWidth / videoWidth, viewHeight / videoHeight)
+    val matrix = android.graphics.Matrix()
+    matrix.setScale(videoWidth * scale / viewWidth, videoHeight * scale / viewHeight, viewWidth / 2, viewHeight / 2)
+    view.setTransform(matrix)
 }
 
 private fun backendLabelRes(backend: VideoGenBackend): Int = when (backend) {

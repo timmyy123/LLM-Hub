@@ -1000,6 +1000,7 @@
 "music_unlimited_duration_desc" = "Generér, indtil du trykker på Stop. Optagelsen gemmes, når du stopper.";
 "music_locked_screen_supported" = "Understøtter generering og afspilning af musik, mens skærmen er låst.";
 "image_extras_title" = "Billedmodifikatorer";
+"image_extras_add" = "Tilføj modifikator";
 "image_extras_negative" = "Negativ prompt";
 "image_extras_guidance" = "Vejledningsskala";
 "image_extras_clip_skip" = "CLIP-skip";

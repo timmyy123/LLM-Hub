@@ -993,6 +993,7 @@
 "music_unlimited_duration_desc" = "停止を押すまで生成を続けます。停止すると録音が保存されます。";
 "music_locked_screen_supported" = "画面をロックしたまま音楽を生成・再生できます。";
 "image_extras_title" = "画像の追加設定";
+"image_extras_add" = "モディファイアを追加";
 "image_extras_negative" = "ネガティブプロンプト";
 "image_extras_guidance" = "ガイダンススケール";
 "image_extras_clip_skip" = "CLIP スキップ";

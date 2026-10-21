@@ -191,7 +191,7 @@ class ImageGeneratorHelper(private val context: Context) {
             steps, extras.guidance, if (seed == 0) System.nanoTime() else seed.toLong(), output
         ) { step, total -> Log.d(TAG, "Generation progress: $step/$total") }
         if (!ok && client.crashed) throw IllegalStateException(context.getString(R.string.image_generator_npu_crashed))
-        return if (ok) BitmapFactory.decodeFile(output.path).also { output.delete() } else null
+        return if (ok) BoundedBitmapDecoder.decodeFile(output.path).also { output.delete() } else null
     }
 
     /**

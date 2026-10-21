@@ -39,7 +39,6 @@ final class LLMHubAppDelegate: NSObject, UIApplicationDelegate {
 struct LLMHubApp: App {
     @UIApplicationDelegateAdaptor(LLMHubAppDelegate.self) private var appDelegate
     @StateObject private var settings = AppSettings.shared
-    @Environment(\.scenePhase) private var scenePhase
 
     init() {
         let line = "[LLMHub] App launched\n"
@@ -80,13 +79,16 @@ struct LLMHubApp: App {
                 .environmentObject(settings)
                 .preferredColorScheme(.dark)
                 .environment(\.locale, settings.selectedLanguage.locale)
-                .onChange(of: scenePhase) { _, phase in
-                    switch phase {
-                    case .active: MusicGeneratorBackend.shared.applicationDidBecomeActive()
-                    case .inactive: MusicGeneratorBackend.shared.applicationWillResignActive()
-                    case .background: MusicGeneratorBackend.shared.applicationDidEnterBackground()
-                    @unknown default: break
-                    }
+                // App notifications, not `scenePhase`: reading scenePhase here re-evaluated the
+                // whole view tree on every inactive/active switch, mid warm-open animation.
+                .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+                    MusicGeneratorBackend.shared.applicationDidBecomeActive()
+                }
+                .onReceive(NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)) { _ in
+                    MusicGeneratorBackend.shared.applicationWillResignActive()
+                }
+                .onReceive(NotificationCenter.default.publisher(for: UIApplication.didEnterBackgroundNotification)) { _ in
+                    MusicGeneratorBackend.shared.applicationDidEnterBackground()
                 }
                 .ifLet(layoutDirectionOverride) { view, dir in
                     view.environment(\.layoutDirection, dir)

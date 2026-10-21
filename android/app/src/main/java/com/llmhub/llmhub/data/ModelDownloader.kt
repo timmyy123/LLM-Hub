@@ -820,6 +820,11 @@ class ModelDownloader(
                         }
                     }
                 }
+                if (zipFile.length() != downloadedBytes) {
+                    // The file was removed or truncated while downloading (for example by another
+                    // model's cleanup); extracting it would only fail with a confusing error.
+                    throw java.io.IOException("Download of ${model.name} was interrupted: ZIP is ${zipFile.length()} of $downloadedBytes bytes")
+                }
                 Log.i(TAG, "Downloaded ZIP: ${zipFile.length()} bytes")
                 Log.d(TAG, "Post-download zip size: ${zipFile.length()} bytes (path=${zipFile.absolutePath})")
             } catch (e: Exception) {

@@ -387,7 +387,7 @@
     <string name="please_fix_errors">Los de bovenstaande fouten op</string>
     <string name="remove">Verwijder</string>
     <string name="ready_to_use">Klaar voor gebruik</string>
-    <string name="unsupported_file_format">Niet-ondersteunde bestandsindeling. Selecteer een .task-, .litertlm- of .zip-bestand.</string>
+    <string name="unsupported_file_format">Niet-ondersteund bestandsformaat.</string>
     <string name="download_models_from_litert_community">U kunt compatibele LLM-modellen downloaden van:</string>
     <string name="litert_community_link">LiteRT-community op Hugging Face</string>
     <string name="download_image_models_from">U kunt compatibele afbeeldingsmodellen downloaden van:</string>
@@ -1067,6 +1067,7 @@
     <string name="video_generator_negative_prompt">Negatieve prompt (optioneel)</string>
     <string name="video_generator_negative_prompt_hint">Dingen om te vermijden, bijv. wazig, vervormd, lage kwaliteit</string>
     <string name="image_extras_title">Afbeeldingsmodificaties</string>
+    <string name="image_extras_add">Modifier toevoegen</string>
     <string name="image_extras_negative">Negatieve prompt</string>
     <string name="image_extras_guidance">Sturingsschaal</string>
     <string name="image_extras_clip_skip">CLIP overslaan</string>
@@ -1080,6 +1081,6 @@
     <string name="image_extras_invalid">Het geselecteerde bestand is ongeldig of niet compatibel met het model.</string>
     <string name="image_extras_resource_hint">Tags: één per regel of een JSON-array. Definities/vertalingen: een JSON-object of key=value. Tik op tags/definities om ze toe te voegen; vertalingen worden lokaal toegepast.</string>
     <string name="image_extras_ios_help">LoRA: SafeTensors of Draw Things .ckpt. Encoders/VAE: compatibele Draw Things .ckpt-bestanden. Embeddings: SafeTensors. Selecteer eerst het bijpassende model.</string>
-    <string name="image_extras_android_help">LoRA, CLIP overslaan en eigen encoders vereisen een geïmporteerd GGUF/SafeTensors-checkpoint. QNN/MNN-gewichten staan vast. LoRA/embeddings: SafeTensors.</string>
+    <string name="image_extras_android_help">Ondersteunde bestanden: SafeTensors, GGUF, CKPT, PT, PTH, BIN. LoRA, CLIP skip en encoders werken alleen met een geïmporteerd checkpoint, niet met de ingebouwde NPU/CPU-modellen.</string>
     <string name="image_extras_import_location">Importeer checkpoints, LoRA\'s, encoders en promptlijsten via %1$s → %2$s.</string>
 </resources>

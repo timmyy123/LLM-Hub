@@ -9,6 +9,27 @@ struct FeatureCard {
     let route: String
 }
 
+/// iPhone Duo moves Home's buttons into the system navigation bar. Everywhere else the bar
+/// stays hidden with no title settings at all: a large-title mode on the hidden bar re-ran
+/// its layout when the app became active, so the cards visibly unfolded on a warm open.
+private struct HomeNavigationBar<Items: ToolbarContent>: ViewModifier {
+    let usesSystemBar: Bool
+    let bar: () -> (title: String, items: Items)
+
+    func body(content: Content) -> some View {
+        if usesSystemBar {
+            let bar = bar()
+            content
+                .toolbar(.visible, for: .navigationBar)
+                .navigationTitle(bar.title)
+                .toolbarTitleDisplayMode(.inlineLarge)
+                .toolbar { bar.items }
+        } else {
+            content.toolbar(.hidden, for: .navigationBar)
+        }
+    }
+}
+
 private extension View {
     /// The soft top edge effect blurs content that starts at the screen's top edge,
     /// which Home does when the iPhone Duo vertical bar holds its buttons.
@@ -23,6 +44,10 @@ private extension View {
 }
 
 struct HomeScreen: View {
+    /// Stand-in for `.ultraThinMaterial` on the cards, matched to the material's colour measured
+    /// on device. Cards are drawn into images (ApolloStaticRender), where a live material can't render.
+    static let glassFill = Color(red: 134 / 255, green: 127 / 255, blue: 114 / 255).opacity(0.2)
+
     @Environment(\.openURL) private var openURL
     @Environment(\.displayScale) private var displayScale
     @EnvironmentObject var settings: AppSettings
@@ -89,7 +114,6 @@ struct HomeScreen: View {
             }()
 
             let toolsColumnsCount = isLandscape ? 4 : 2
-            let toolsColumns = Array(repeating: GridItem(.flexible(), spacing: spacing), count: toolsColumnsCount)
             let cardHeight: CGFloat = isLandscape ? 85 : 100
             let gridTopPadding: CGFloat = isLandscape ? 20 : 24
             let gridBottomPadding: CGFloat = 12
@@ -196,9 +220,13 @@ struct HomeScreen: View {
                         Button {
                             onNavigateToChat()
                         } label: {
-                            HomeHeroCardView(feature: heroFeature)
+                            ApolloStaticRender(key: "hero|\(settings.selectedLanguage)") {
+                                HomeHeroCardView(feature: heroFeature)
+                                    .environmentObject(settings)
+                            }
                         }
                         .buttonStyle(.plain)
+                        .accessibilityLabel(settings.localized(heroFeature.titleKey))
                         
                         // Tools section
                         VStack(alignment: .leading, spacing: 10) {
@@ -207,22 +235,34 @@ struct HomeScreen: View {
                                 .foregroundColor(.white)
                                 .padding(.horizontal, 4)
                             
-                            LazyVGrid(columns: toolsColumns, spacing: spacing) {
-                                ForEach(toolsFeatures + utilityFeatures, id: \.route) { feature in
-                                    let lockedRoutes: Set<String> = ["agent", "vibe_voice", "vibe_coder", "image_generator", "video_generator", "music_generator"]
-                                    let isLocked = !purchases.isPremium && lockedRoutes.contains(feature.route)
-                                    Button {
-                                        if isLocked {
-                                            showPremium = true
-                                        } else {
-                                            onNavigateToRoute(feature.route)
+                            // Eager grid: a LazyVGrid builds its cells in batches, so on a warm open the
+                            // first rows appeared before the rest. All cards now render in one pass.
+                            let features = toolsFeatures + utilityFeatures
+                            Grid(horizontalSpacing: spacing, verticalSpacing: spacing) {
+                                ForEach(Array(stride(from: 0, to: features.count, by: toolsColumnsCount)), id: \.self) { rowStart in
+                                    GridRow {
+                                        ForEach(rowStart..<min(rowStart + toolsColumnsCount, features.count), id: \.self) { index in
+                                            let feature = features[index]
+                                            let lockedRoutes: Set<String> = ["agent", "vibe_voice", "vibe_coder", "image_generator", "video_generator", "music_generator"]
+                                            let isLocked = !purchases.isPremium && lockedRoutes.contains(feature.route)
+                                            Button {
+                                                if isLocked {
+                                                    showPremium = true
+                                                } else {
+                                                    onNavigateToRoute(feature.route)
+                                                }
+                                            } label: {
+                                                ApolloStaticRender(key: "card|\(feature.route)|\(isLocked)|\(settings.selectedLanguage)") {
+                                                    SmallFeatureCardView(feature: feature, isLocked: isLocked)
+                                                        .environmentObject(settings)
+                                                }
+                                                .frame(height: cardHeight)
+                                            }
+                                            .buttonStyle(.plain)
+                                            .accessibilityLabel(settings.localized(feature.titleKey))
+                                            .accessibilityIdentifier("home_feature_\(feature.route)")
                                         }
-                                    } label: {
-                                        SmallFeatureCardView(feature: feature, isLocked: isLocked)
-                                            .frame(height: cardHeight)
                                     }
-                                    .buttonStyle(.plain)
-                                    .accessibilityIdentifier("home_feature_\(feature.route)")
                                 }
                             }
 
@@ -248,16 +288,11 @@ struct HomeScreen: View {
         .ignoresSafeArea(.container, edges: hasVerticalBar ? .top : [])
         .apolloScreenBackground()
         .apolloNavigationBackground()
-        .toolbar(usesSystemBar ? .visible : .hidden, for: .navigationBar)
-        // The top bar shows the app name as a leading title; the vertical bar has no
-        // room for one.
-        .navigationTitle(usesSystemBar && !hasVerticalBar ? settings.localized("app_name") : "")
-        .toolbarTitleDisplayMode(.inlineLarge)
-        .toolbar {
-            if usesSystemBar {
-                systemBarItems(hasVerticalBar: hasVerticalBar)
-            }
-        }
+        .modifier(HomeNavigationBar(usesSystemBar: usesSystemBar) {
+            // The top bar shows the app name as a leading title; the vertical bar has no
+            // room for one.
+            (title: hasVerticalBar ? "" : settings.localized("app_name"), items: systemBarItems(hasVerticalBar: hasVerticalBar))
+        })
         .apolloSheet(isPresented: $showPremium) {
             PremiumScreen()
                 .environmentObject(settings)
@@ -430,7 +465,7 @@ struct SmallFeatureCardView: View {
             HStack {
                 ZStack {
                     Circle()
-                        .fill(.ultraThinMaterial)
+                        .fill(HomeScreen.glassFill)
                         .frame(width: 36, height: 36)
                         .overlay(
                             Circle()
@@ -470,7 +505,7 @@ struct SmallFeatureCardView: View {
             )
             .opacity(0.18)
         )
-        .background(.ultraThinMaterial)
+        .background(HomeScreen.glassFill)
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .overlay(
             RoundedRectangle(cornerRadius: 16)
@@ -505,7 +540,7 @@ struct HomeHeroCardView: View {
                 HStack(spacing: 12) {
                     ZStack {
                         RoundedRectangle(cornerRadius: 14)
-                            .fill(.ultraThinMaterial)
+                            .fill(HomeScreen.glassFill)
                             .frame(width: 50, height: 50)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 14)
@@ -548,7 +583,7 @@ struct HomeHeroCardView: View {
             )
             .opacity(0.3)
         )
-        .background(.ultraThinMaterial)
+        .background(HomeScreen.glassFill)
         .clipShape(RoundedRectangle(cornerRadius: 24))
         .overlay(
             RoundedRectangle(cornerRadius: 24)

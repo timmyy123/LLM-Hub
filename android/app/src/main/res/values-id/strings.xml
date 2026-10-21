@@ -420,7 +420,7 @@
     <string name="please_fix_errors">Harap perbaiki kesalahan di atas</string>
     <string name="remove">Hapus</string>
     <string name="ready_to_use">Siap digunakan</string>
-    <string name="unsupported_file_format">Format file tidak didukung. Pilih file .task, .litertlm, atau .zip.</string>
+    <string name="unsupported_file_format">Format file tidak didukung.</string>
     <string name="download_models_from_litert_community">Anda dapat mengunduh model LLM yang kompatibel dari:</string>
     <string name="litert_community_link">Komunitas LiteRT di Hugging Face</string>
     <string name="download_image_models_from">Anda dapat mengunduh model gambar yang kompatibel dari:</string>
@@ -1162,6 +1162,7 @@
     <string name="video_generator_negative_prompt">Prompt negatif (opsional)</string>
     <string name="video_generator_negative_prompt_hint">Hal yang dihindari, mis. buram, terdistorsi, kualitas rendah</string>
     <string name="image_extras_title">Pengubah gambar</string>
+    <string name="image_extras_add">Tambah pengubah</string>
     <string name="image_extras_negative">Prompt negatif</string>
     <string name="image_extras_guidance">Skala panduan</string>
     <string name="image_extras_clip_skip">CLIP skip</string>
@@ -1175,6 +1176,6 @@
     <string name="image_extras_invalid">File yang dipilih tidak valid atau tidak kompatibel dengan model.</string>
     <string name="image_extras_resource_hint">Tag: satu per baris atau array JSON. Definisi/terjemahan: objek JSON atau key=value. Ketuk tag/definisi untuk menambahkannya; terjemahan diterapkan secara lokal.</string>
     <string name="image_extras_ios_help">LoRA: SafeTensors atau .ckpt Draw Things. Encoder/VAE: .ckpt Draw Things yang kompatibel. Embedding: SafeTensors. Pilih model yang sesuai terlebih dahulu.</string>
-    <string name="image_extras_android_help">LoRA, CLIP skip, dan encoder kustom memerlukan checkpoint GGUF/SafeTensors yang diimpor. Bobot QNN/MNN bersifat tetap. LoRA/embedding: SafeTensors.</string>
+    <string name="image_extras_android_help">File yang didukung: SafeTensors, GGUF, CKPT, PT, PTH, BIN. LoRA, CLIP skip, dan encoder hanya berfungsi dengan checkpoint yang diimpor, bukan model NPU/CPU bawaan.</string>
     <string name="image_extras_import_location">Impor checkpoint, LoRA, encoder, dan daftar prompt di %1$s → %2$s.</string>
 </resources>

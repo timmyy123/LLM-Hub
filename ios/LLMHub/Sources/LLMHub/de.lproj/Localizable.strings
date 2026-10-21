@@ -965,6 +965,7 @@
 "music_unlimited_duration_desc" = "Die Generierung läuft, bis du auf Stopp drückst. Die Aufnahme wird beim Stoppen gespeichert.";
 "music_locked_screen_supported" = "Unterstützt das Generieren und Abspielen von Musik bei gesperrtem Bildschirm.";
 "image_extras_title" = "Bildmodifikatoren";
+"image_extras_add" = "Modifikator hinzufügen";
 "image_extras_negative" = "Negativer Prompt";
 "image_extras_guidance" = "Steuerungsskala";
 "image_extras_clip_skip" = "CLIP überspringen";

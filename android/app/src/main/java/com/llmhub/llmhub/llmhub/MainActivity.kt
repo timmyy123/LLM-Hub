@@ -1,6 +1,7 @@
 package com.llmhub.llmhub
 
 import android.content.Context
+import android.os.Build
 import android.os.Bundle
 import android.view.animation.PathInterpolator
 import androidx.activity.ComponentActivity
@@ -62,7 +63,13 @@ class MainActivity : ComponentActivity() {
         // Initialize ThemeViewModel
         themeViewModel = ThemeViewModel(this)
 
-        WindowCompat.enableEdgeToEdge(window)
+        // Edge-to-edge without Window.setStatusBarColor/setNavigationBarColor (deprecated in
+        // Android 15, and still called by AndroidX's enableEdgeToEdge helpers): Android 15+ draws
+        // edge-to-edge by itself; below that Theme.LlmHub makes the bars transparent and the
+        // window stops fitting system windows. Compose screens handle the insets.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+            WindowCompat.setDecorFitsSystemWindows(window, false)
+        }
         setContent {
             val currentThemeMode by themeViewModel.themeMode.collectAsState()
             val currentLanguage by themeViewModel.appLanguage.collectAsState()

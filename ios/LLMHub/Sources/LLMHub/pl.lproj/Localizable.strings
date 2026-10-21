@@ -993,6 +993,7 @@
 "music_unlimited_duration_desc" = "Generowanie trwa do naciśnięcia przycisku Zatrzymaj. Nagranie zostanie zapisane po zatrzymaniu.";
 "music_locked_screen_supported" = "Obsługuje generowanie i odtwarzanie muzyki przy zablokowanym ekranie.";
 "image_extras_title" = "Modyfikatory obrazu";
+"image_extras_add" = "Dodaj modyfikator";
 "image_extras_negative" = "Negatywny prompt";
 "image_extras_guidance" = "Skala prowadzenia";
 "image_extras_clip_skip" = "Pomijanie warstw CLIP";

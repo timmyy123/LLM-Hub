@@ -993,6 +993,7 @@
 "music_unlimited_duration_desc" = "يستمر التوليد حتى تضغط على إيقاف. يُحفظ التسجيل عند الإيقاف.";
 "music_locked_screen_supported" = "يدعم إنشاء الموسيقى وتشغيلها أثناء قفل الشاشة.";
 "image_extras_title" = "معدّلات الصور";
+"image_extras_add" = "إضافة معدِّل";
 "image_extras_negative" = "الموجّه السلبي";
 "image_extras_guidance" = "مقياس التوجيه";
 "image_extras_clip_skip" = "تخطي CLIP";

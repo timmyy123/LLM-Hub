@@ -983,6 +983,7 @@
 "music_unlimited_duration_desc" = "La generazione continua finché non premi Interrompi. La registrazione viene salvata quando la interrompi.";
 "music_locked_screen_supported" = "Supporta la generazione e la riproduzione di musica con lo schermo bloccato.";
 "image_extras_title" = "Modificatori immagine";
+"image_extras_add" = "Aggiungi modificatore";
 "image_extras_negative" = "Prompt negativo";
 "image_extras_guidance" = "Scala di guida";
 "image_extras_clip_skip" = "Salto CLIP";

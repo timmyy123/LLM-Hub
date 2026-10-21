@@ -399,7 +399,7 @@
     <string name="please_fix_errors">Ret venligst fejlene ovenfor</string>
     <string name="remove">Fjern</string>
     <string name="ready_to_use">Klar til brug</string>
-    <string name="unsupported_file_format">Ikke-understøttet filformat. Vælg venligst en .task-, .litertlm- eller .zip-fil.</string>
+    <string name="unsupported_file_format">Filformatet understøttes ikke.</string>
     <string name="download_models_from_litert_community">Du kan downloade kompatible LLM-modeller fra:</string>
     <string name="litert_community_link">LiteRT-fællesskab på Hugging Face</string>
     <string name="download_image_models_from">Du kan downloade kompatible billedmodeller fra:</string>
@@ -1128,6 +1128,7 @@ Du forsøger at sende et billede, men den nuværende model er **kun-tekst**:
     <string name="video_generator_negative_prompt">Negativ prompt (valgfri)</string>
     <string name="video_generator_negative_prompt_hint">Ting at undgå, f.eks. sløret, forvrænget, lav kvalitet</string>
     <string name="image_extras_title">Billedmodifikatorer</string>
+    <string name="image_extras_add">Tilføj modifikator</string>
     <string name="image_extras_negative">Negativ prompt</string>
     <string name="image_extras_guidance">Vejledningsskala</string>
     <string name="image_extras_clip_skip">CLIP-skip</string>
@@ -1141,6 +1142,6 @@ Du forsøger at sende et billede, men den nuværende model er **kun-tekst**:
     <string name="image_extras_invalid">Den valgte fil er ugyldig eller ikke kompatibel med modellen.</string>
     <string name="image_extras_resource_hint">Tags: ét pr. linje eller et JSON-array. Definitioner/oversættelser: et JSON-objekt eller key=value. Tryk på tags/definitioner; oversættelser anvendes lokalt.</string>
     <string name="image_extras_ios_help">LoRA: SafeTensors eller Draw Things .ckpt. Encodere/VAE: kompatible Draw Things .ckpt-filer. Embeddings: SafeTensors. Vælg først den matchende model.</string>
-    <string name="image_extras_android_help">LoRA, CLIP-skip og egne encodere kræver en importeret GGUF/SafeTensors-model. QNN/MNN-vægte er faste. LoRA/embeddings: SafeTensors.</string>
+    <string name="image_extras_android_help">Understøttede filer: SafeTensors, GGUF, CKPT, PT, PTH, BIN. LoRA, CLIP skip og encodere virker kun med et importeret checkpoint, ikke med de indbyggede NPU/CPU-modeller.</string>
     <string name="image_extras_import_location">Importér checkpoints, LoRA\'er, encodere og promptlister under %1$s → %2$s.</string>
 </resources>
