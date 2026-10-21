@@ -16,6 +16,10 @@ struct VideoGeneratorScreen: View {
     @State private var generatedVideoURL: URL?
     @State private var isGenerating = false
     @State private var isUnfolded = false
+    // Portrait: heights of the controls above and below the video, so the video fills the rest.
+    @State private var portraitTopHeight: CGFloat = 0
+    @State private var portraitBottomHeight: CGFloat = 0
+    @State private var hasHinge = false
     @State private var isSaving = false
     @State private var showSettings = false
     @State private var errorMessage: String?
@@ -229,10 +233,11 @@ struct VideoGeneratorScreen: View {
             } else if isUnfolded, let url = generatedVideoURL {
                 hingePortraitLayout(url: url)
             } else {
-                portraitLayout
+                portraitLayout(height: geo.size.height)
             }
         }
         .apolloDetectsUnfoldedHinge($isUnfolded)
+        .apolloDetectsHinge($hasHinge)
     }
 
     // MARK: - Hinge Portrait Layout (stacked, divided at the iPhone Duo hinge)
@@ -263,16 +268,30 @@ struct VideoGeneratorScreen: View {
 
     // MARK: - Portrait Layout
 
-    private var portraitLayout: some View {
-        ScrollView {
-            VStack(spacing: 14) {
-                promptCard
-                img2vidCard
+    private func portraitLayout(height: CGFloat) -> some View {
+        // The video takes all the height left below the controls (at least 300 pt), instead of
+        // a fixed 300 pt that left the bottom of a tall screen (iPad) empty. iPhone Duo keeps
+        // its own layouts unchanged (hinge splits; 300 pt here).
+        let spacing: CGFloat = 14
+        let playerHeight: CGFloat? = hasHinge ? nil : max(300, height - 24 - portraitTopHeight - portraitBottomHeight - spacing * 2)
+        return ScrollView {
+            VStack(spacing: spacing) {
+                VStack(spacing: spacing) {
+                    promptCard
+                    img2vidCard
+                }
+                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { portraitTopHeight = $0 }
                 if let url = generatedVideoURL {
                     videoPlayerCard(url: url)
-                    saveButton
+                        .frame(height: playerHeight)
+                    VStack(spacing: spacing) {
+                        saveButton
+                        generateButton
+                    }
+                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { portraitBottomHeight = $0 }
+                } else {
+                    generateButton
                 }
-                generateButton
             }
             .padding(.horizontal)
             .padding(.vertical, 12)
