@@ -20,6 +20,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.draw.alpha
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.luminance
@@ -37,6 +42,68 @@ import com.llmhub.llmhub.repository.GithubRepository
 import kotlinx.coroutines.delay
 import androidx.compose.ui.platform.LocalContext
 import com.llmhub.llmhub.data.ThemePreferences
+
+/** Home card look, matching the iOS Home screen (HomeScreen.swift SmallFeatureCardView / HomeHeroCardView). */
+private data class HomeCardStyle(
+    val container: Color,
+    val overlay: Brush,
+    val stroke: Brush,
+    val tile: Color,
+    val tileStroke: Color,
+    val accent: Color,
+    val cta: Color,
+    val onCta: Color,
+    val title: Color,
+    val body: Color,
+    val decor: Color,
+    val elevation: Dp,
+)
+
+/**
+ * As on iOS: a frosted "glass" card, the feature's two-colour gradient over it (18% on tool cards,
+ * 30% on AI Chat), a 1dp stroke fading from the top-left, and a white icon in a glass ring. Dark
+ * theme uses iOS's values; light theme puts the same tinted glass on white with dark text.
+ */
+@Composable
+private fun homeCardStyle(feature: FeatureCard): HomeCardStyle {
+    val scheme = MaterialTheme.colorScheme
+    val isDark = scheme.background.luminance() < 0.5f
+    val hero = feature.route == "chat"
+    val tint = if (hero) 0.30f else 0.18f
+    val overlay = Brush.linearGradient(listOf(feature.gradient.first.copy(alpha = tint), feature.gradient.second.copy(alpha = tint)))
+    return if (isDark) {
+        HomeCardStyle(
+            // iOS glassFill measured over its dark background.
+            container = lerp(scheme.background, Color(0xFF867F72), 0.2f).let { lerp(it, Color.White, 0.06f) },
+            overlay = overlay,
+            stroke = Brush.linearGradient(listOf(Color.White.copy(alpha = 0.35f), Color.White.copy(alpha = 0.06f))),
+            tile = Color.White.copy(alpha = 0.12f),
+            tileStroke = Color.White.copy(alpha = 0.24f),
+            accent = Color.White,
+            cta = Color.White.copy(alpha = 0.75f),
+            onCta = Color(0xFF233E88),
+            title = Color.White,
+            body = Color.White.copy(alpha = 0.9f),
+            decor = Color.White.copy(alpha = 0.08f),
+            elevation = if (hero) 6.dp else 4.dp,
+        )
+    } else {
+        HomeCardStyle(
+            container = Color.White,
+            overlay = overlay,
+            stroke = Brush.linearGradient(listOf(Color.Black.copy(alpha = 0.10f), Color.Black.copy(alpha = 0.03f))),
+            tile = Color.White.copy(alpha = 0.7f),
+            tileStroke = Color.Black.copy(alpha = 0.06f),
+            accent = Color(0xFF1B1E24),
+            cta = Color(0xFF233E88),
+            onCta = Color.White,
+            title = Color(0xFF1B1E24),
+            body = Color(0xFF1B1E24).copy(alpha = 0.72f),
+            decor = Color(0xFF233E88).copy(alpha = 0.08f),
+            elevation = if (hero) 3.dp else 2.dp,
+        )
+    }
+}
 
 data class FeatureCard(
     val title: Int,
@@ -81,7 +148,7 @@ fun HomeScreen(
                 title = R.string.feature_ai_chat,
                 description = R.string.feature_ai_chat_desc,
                 icon = Icons.Filled.Chat,
-                gradient = Pair(Color(0xFF667eea), Color(0xFF764ba2)),
+                gradient = Pair(Color(0xFF7EA3FF), Color(0xFF5E79DA)),
                 darkColor = Color(0xFF2B225E),
                 route = "chat"
             ),
@@ -89,7 +156,7 @@ fun HomeScreen(
                 title = R.string.feature_writing_aid,
                 description = R.string.feature_writing_aid_desc,
                 icon = Icons.Filled.Edit,
-                gradient = Pair(Color(0xFFf093fb), Color(0xFFf5576c)),
+                gradient = Pair(Color(0xFF91D4FF), Color(0xFF4E86D5)),
                 darkColor = Color(0xFF7B2D4E),
                 route = "writing_aid"
             ),
@@ -97,7 +164,7 @@ fun HomeScreen(
                 title = R.string.feature_translator,
                 description = R.string.feature_translator_desc,
                 icon = Icons.Filled.Language,
-                gradient = Pair(Color(0xFF4facfe), Color(0xFF00f2fe)),
+                gradient = Pair(Color(0xFF84F1CF), Color(0xFF4AA897)),
                 darkColor = Color(0xFF1A4971),
                 route = "translator"
             ),
@@ -105,7 +172,7 @@ fun HomeScreen(
                 title = R.string.feature_transcriber,
                 description = R.string.feature_transcriber_desc,
                 icon = Icons.Filled.Mic,
-                gradient = Pair(Color(0xFF43e97b), Color(0xFF38f9d7)),
+                gradient = Pair(Color(0xFFB4B2FF), Color(0xFF6F77CF)),
                 darkColor = Color(0xFF1B5E3A),
                 route = "transcriber"
             ),
@@ -113,7 +180,7 @@ fun HomeScreen(
                 title = R.string.feature_scam_detector,
                 description = R.string.feature_scam_detector_desc,
                 icon = Icons.Filled.Security,
-                gradient = Pair(Color(0xFFfa709a), Color(0xFFfee140)),
+                gradient = Pair(Color(0xFFFFB08A), Color(0xFFD77C59)),
                 darkColor = Color(0xFF6E3028),
                 route = "scam_detector"
             ),
@@ -121,7 +188,7 @@ fun HomeScreen(
                 title = R.string.feature_image_generator,
                 description = R.string.feature_image_generator_desc,
                 icon = Icons.Filled.Palette,
-                gradient = Pair(Color(0xFF6a11cb), Color(0xFF2575fc)),
+                gradient = Pair(Color(0xFF9CC3FF), Color(0xFF5B86D2)),
                 darkColor = Color(0xFF2A1854),
                 route = "image_generator"
             ),
@@ -129,7 +196,7 @@ fun HomeScreen(
                 title = R.string.feature_video_generator,
                 description = R.string.feature_video_generator_desc,
                 icon = Icons.Filled.Movie,
-                gradient = Pair(Color(0xFFFF512F), Color(0xFFDD2476)),
+                gradient = Pair(Color(0xFFFF99C8), Color(0xFFFC4B93)),
                 darkColor = Color(0xFF5A1A2E),
                 route = "video_generator"
             ),
@@ -137,7 +204,7 @@ fun HomeScreen(
                 title = R.string.feature_vibe_coder,
                 description = R.string.feature_vibe_coder_desc,
                 icon = Icons.Filled.Code,
-                gradient = Pair(Color(0xFFf794a4), Color(0xFFfdd6bd)),
+                gradient = Pair(Color(0xFFA8BCFF), Color(0xFF5F76BE)),
                 darkColor = Color(0xFF4A2D3A),
                 route = "vibe_coder"
             ),
@@ -145,7 +212,7 @@ fun HomeScreen(
                 title = R.string.feature_creator_generation,
                 description = R.string.feature_creator_generation_desc,
                 icon = Icons.Filled.AutoAwesome,
-                gradient = Pair(Color(0xFF8EC5FC), Color(0xFFE0C3FC)),
+                gradient = Pair(Color(0xFFC4B5FD), Color(0xFF8B6FD6)),
                 darkColor = Color(0xFF2E3D5C),
                 route = "creator_generation"
             ),
@@ -153,7 +220,7 @@ fun HomeScreen(
                 title = R.string.feature_image_upscale,
                 description = R.string.feature_image_upscale_desc,
                 icon = Icons.Filled.AutoFixHigh,
-                gradient = Pair(Color(0xFF11998e), Color(0xFF38ef7d)),
+                gradient = Pair(Color(0xFF8FD3FF), Color(0xFF3F7DD8)),
                 darkColor = Color(0xFF14403A),
                 route = "image_upscale"
             ),
@@ -161,7 +228,7 @@ fun HomeScreen(
                 title = R.string.feature_vibevoice,
                 description = R.string.feature_vibevoice_desc,
                 icon = Icons.Filled.GraphicEq,
-                gradient = Pair(Color(0xFF7BC6CC), Color(0xFF8A82FB)),
+                gradient = Pair(Color(0xFF89D3F7), Color(0xFF3A68CC)),
                 darkColor = Color(0xFF263F4A),
                 route = "vibevoice"
             ),
@@ -177,7 +244,7 @@ fun HomeScreen(
                 title = R.string.feature_text_to_speech,
                 description = R.string.feature_text_to_speech_desc,
                 icon = Icons.Filled.VolumeUp,
-                gradient = Pair(Color(0xFFF093FB), Color(0xFFF5576C)),
+                gradient = Pair(Color(0xFF9EE6F0), Color(0xFF4A96D4)),
                 darkColor = Color(0xFF5E2B48),
                 route = "text_to_speech"
             ),
@@ -193,7 +260,7 @@ fun HomeScreen(
                 title = R.string.feature_photo_search,
                 description = R.string.feature_photo_search_desc,
                 icon = Icons.Filled.ImageSearch,
-                gradient = Pair(Color(0xFF4FACFE), Color(0xFF8E7CFF)),
+                gradient = Pair(Color(0xFF7FB6FF), Color(0xFF8E7CFF)),
                 darkColor = Color(0xFF243A6B),
                 route = "photo_search"
             ),
@@ -201,7 +268,7 @@ fun HomeScreen(
                 title = R.string.feature_video_moment,
                 description = R.string.feature_video_moment_desc,
                 icon = Icons.Filled.VideoLibrary,
-                gradient = Pair(Color(0xFF43CEA2), Color(0xFF185A9D)),
+                gradient = Pair(Color(0xFF6FE3C1), Color(0xFF3A7BD5)),
                 darkColor = Color(0xFF15404A),
                 route = "video_moment"
             )
@@ -436,31 +503,23 @@ private fun HomeHeroCard(
     onClick: () -> Unit
 ) {
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val style = homeCardStyle(feature)
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .height(cardHeight)
             .clickable { onClick() },
-        shape = RoundedCornerShape(28.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = style.container),
+        border = BorderStroke(1.dp, style.stroke),
+        elevation = CardDefaults.cardElevation(defaultElevation = style.elevation)
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    if (isDark) {
-                        Brush.linearGradient(listOf(
-                            feature.darkColor.copy(alpha = if (isLocked) 0.45f else 1f),
-                            feature.darkColor.copy(alpha = if (isLocked) 0.45f else 1f)
-                        ))
-                    } else {
-                        Brush.linearGradient(listOf(
-                            feature.gradient.first.copy(alpha = if (isLocked) 0.45f else 1f),
-                            feature.gradient.second.copy(alpha = if (isLocked) 0.45f else 1f)
-                        ))
-                    }
-                )
+                .background(style.overlay)
+                .alpha(if (isLocked) 0.55f else 1f)
                 .padding(if (compact) 12.dp else 18.dp)
         ) {
             Column(
@@ -472,21 +531,22 @@ private fun HomeHeroCard(
                         modifier = Modifier
                             .size(if (compact) 42.dp else 54.dp)
                             .clip(RoundedCornerShape(14.dp))
-                            .background(Color.White.copy(alpha = 0.28f)),
+                            .background(style.tile)
+                            .border(1.dp, style.tileStroke, RoundedCornerShape(14.dp)),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = feature.icon,
                             contentDescription = null,
-                            tint = Color.White,
+                            tint = style.accent,
                             modifier = Modifier.size(if (compact) 24.dp else 30.dp)
                         )
                     }
                     Text(
                         text = stringResource(feature.title),
                         style = if (compact) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        color = style.title,
                         maxLines = 1
                     )
                 }
@@ -495,14 +555,14 @@ private fun HomeHeroCard(
                     Text(
                         text = stringResource(feature.description),
                         style = if (compact) MaterialTheme.typography.bodySmall else MaterialTheme.typography.bodyLarge,
-                        color = Color.White.copy(alpha = 0.92f),
+                        color = style.body,
                         maxLines = if (compact) 1 else 2
                     )
                 }
 
                 Surface(
                     shape = RoundedCornerShape(24.dp),
-                    color = Color.White.copy(alpha = 0.65f),
+                    color = style.cta,
                     modifier = Modifier.widthIn(min = if (compact) 124.dp else 160.dp)
                 ) {
                     Text(
@@ -511,7 +571,7 @@ private fun HomeHeroCard(
                         textAlign = TextAlign.Center,
                         style = if (compact) MaterialTheme.typography.titleSmall else MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF233E88)
+                        color = style.onCta
                     )
                 }
             }
@@ -519,7 +579,7 @@ private fun HomeHeroCard(
             Icon(
                 imageVector = Icons.Filled.ChatBubbleOutline,
                 contentDescription = null,
-                tint = Color.White.copy(alpha = 0.28f),
+                tint = style.decor,
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
                     .size(if (compact) 72.dp else 120.dp)
@@ -530,14 +590,14 @@ private fun HomeHeroCard(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .clip(RoundedCornerShape(bottomStart = 10.dp))
-                        .background(Color(0xFFFFD700))
+                        .background(MaterialTheme.colorScheme.tertiaryContainer)
                         .padding(horizontal = 6.dp, vertical = 3.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Default.Lock,
                         contentDescription = stringResource(R.string.premium_locked_feature),
-                        tint = Color(0xFF1A0533),
+                        tint = MaterialTheme.colorScheme.onTertiaryContainer,
                         modifier = Modifier.size(14.dp)
                     )
                 }
@@ -555,31 +615,25 @@ private fun SmallFeatureCard(
     onClick: () -> Unit
 ) {
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val style = homeCardStyle(feature)
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .height(cardHeight)
             .clickable { onClick() },
-        shape = RoundedCornerShape(20.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = style.container),
+        border = BorderStroke(1.dp, style.stroke),
+        elevation = CardDefaults.cardElevation(defaultElevation = style.elevation)
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(
-                    if (isDark) {
-                        Brush.linearGradient(listOf(
-                            feature.darkColor.copy(alpha = if (isLocked) 0.45f else 1f),
-                            feature.darkColor.copy(alpha = if (isLocked) 0.45f else 1f)
-                        ))
-                    } else {
-                        Brush.linearGradient(listOf(
-                            feature.gradient.first.copy(alpha = if (isLocked) 0.45f else 0.95f),
-                            feature.gradient.second.copy(alpha = if (isLocked) 0.45f else 0.95f)
-                        ))
-                    }
+                    style.overlay
                 )
+                .alpha(if (isLocked) 0.55f else 1f)
                 .padding(if (compact) 8.dp else 12.dp)
         ) {
             Column(
@@ -590,13 +644,14 @@ private fun SmallFeatureCard(
                     modifier = Modifier
                         .size(if (compact) 28.dp else 40.dp)
                         .clip(CircleShape)
-                        .background(Color.White.copy(alpha = 0.25f)),
+                        .background(style.tile)
+                        .border(1.dp, style.tileStroke, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = feature.icon,
                         contentDescription = null,
-                        tint = Color.White,
+                        tint = style.accent,
                         modifier = Modifier.size(if (compact) 16.dp else 22.dp)
                     )
                 }
@@ -604,7 +659,7 @@ private fun SmallFeatureCard(
                 Text(
                     text = stringResource(feature.title),
                     style = if (compact) MaterialTheme.typography.titleSmall else MaterialTheme.typography.titleLarge,
-                    color = Color.White,
+                    color = style.title,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1
                 )
@@ -615,14 +670,14 @@ private fun SmallFeatureCard(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .clip(RoundedCornerShape(bottomStart = 10.dp))
-                        .background(Color(0xFFFFD700))
+                        .background(MaterialTheme.colorScheme.tertiaryContainer)
                         .padding(horizontal = 6.dp, vertical = 3.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Default.Lock,
                         contentDescription = stringResource(R.string.premium_locked_feature),
-                        tint = Color(0xFF1A0533),
+                        tint = MaterialTheme.colorScheme.onTertiaryContainer,
                         modifier = Modifier.size(14.dp)
                     )
                 }
@@ -643,6 +698,7 @@ fun AnimatedFeatureCard(
     onClick: () -> Unit
 ) {
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val style = homeCardStyle(feature)
 
     val initialDelay = index * 80L
     val timePassed = System.currentTimeMillis() - startTime
@@ -691,28 +747,21 @@ fun AnimatedFeatureCard(
                 }
                 m
             },
-            shape = RoundedCornerShape(24.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = style.container),
+            border = BorderStroke(1.dp, style.stroke),
             elevation = CardDefaults.cardElevation(
-                defaultElevation = 4.dp,
-                pressedElevation = 8.dp
+                defaultElevation = style.elevation,
+                pressedElevation = style.elevation + 2.dp
             )
         ) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(
-                        if (isDark) {
-                            Brush.linearGradient(listOf(
-                                feature.darkColor.copy(alpha = if (isLocked) 0.45f else 1f),
-                                feature.darkColor.copy(alpha = if (isLocked) 0.45f else 1f)
-                            ))
-                        } else {
-                            Brush.linearGradient(listOf(
-                                feature.gradient.first.copy(alpha = if (isLocked) 0.45f else 0.9f),
-                                feature.gradient.second.copy(alpha = if (isLocked) 0.45f else 0.9f)
-                            ))
-                        }
+                        style.overlay
                     )
+                    .alpha(if (isLocked) 0.55f else 1f)
                     .padding(12.dp),
                 contentAlignment = Alignment.Center
             ) {
@@ -725,14 +774,15 @@ fun AnimatedFeatureCard(
                         modifier = Modifier
                             .size(56.dp)
                             .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.3f)),
+                            .background(style.tile)
+                            .border(1.dp, style.tileStroke, CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = feature.icon,
                             contentDescription = null,
                             modifier = Modifier.size(32.dp),
-                            tint = Color.White
+                            tint = style.accent
                         )
                     }
                     
@@ -743,7 +793,7 @@ fun AnimatedFeatureCard(
                         text = stringResource(id = feature.title),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White,
+                        color = style.title,
                         textAlign = TextAlign.Center
                     )
                     Spacer(modifier = Modifier.height(4.dp))
@@ -751,7 +801,7 @@ fun AnimatedFeatureCard(
                     Text(
                         text = stringResource(id = feature.description),
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color.White.copy(alpha = 0.8f),
+                        color = style.body,
                         textAlign = TextAlign.Center,
                         lineHeight = 16.sp,
                         modifier = Modifier.padding(horizontal = 8.dp)
@@ -764,14 +814,14 @@ fun AnimatedFeatureCard(
                         modifier = Modifier
                             .align(Alignment.TopEnd)
                             .clip(RoundedCornerShape(bottomStart = 10.dp))
-                            .background(Color(0xFFFFD700))
+                            .background(MaterialTheme.colorScheme.tertiaryContainer)
                             .padding(horizontal = 6.dp, vertical = 3.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.Lock,
                             contentDescription = stringResource(R.string.premium_locked_feature),
-                            tint = Color(0xFF1A0533),
+                            tint = MaterialTheme.colorScheme.onTertiaryContainer,
                             modifier = Modifier.size(14.dp)
                         )
                     }

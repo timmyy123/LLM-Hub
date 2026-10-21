@@ -46,6 +46,22 @@ fun PremiumScreen(
     var restoreMessage by remember { mutableStateOf<String?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
 
+    // The paywall is always dark: show white status/navigation bar icons while it is open (the light
+    // app theme sets dark ones) and put the previous appearance back when it closes.
+    val view = androidx.compose.ui.platform.LocalView.current
+    DisposableEffect(activity) {
+        val window = activity?.window
+        val controller = window?.let { androidx.core.view.WindowCompat.getInsetsController(it, view) }
+        val lightStatus = controller?.isAppearanceLightStatusBars
+        val lightNavigation = controller?.isAppearanceLightNavigationBars
+        controller?.isAppearanceLightStatusBars = false
+        controller?.isAppearanceLightNavigationBars = false
+        onDispose {
+            if (lightStatus != null) controller.isAppearanceLightStatusBars = lightStatus
+            if (lightNavigation != null) controller.isAppearanceLightNavigationBars = lightNavigation
+        }
+    }
+
     // Auto-restore on screen open using server-side query — catches new devices
     LaunchedEffect(Unit) {
         if (!isPremium) {

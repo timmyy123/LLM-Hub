@@ -1,6 +1,7 @@
 package com.llmhub.llmhub
 
 import android.content.Context
+import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
 import android.view.animation.PathInterpolator
@@ -27,6 +28,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.flow.first
+import com.llmhub.llmhub.data.ThemeMode
 import com.llmhub.llmhub.navigation.LlmHubNavigation
 import com.llmhub.llmhub.ui.theme.LlmHubTheme
 import com.llmhub.llmhub.viewmodels.ChatViewModelFactory
@@ -37,6 +39,25 @@ import com.llmhub.llmhub.debug.ScreenshotHooks
 
 class MainActivity : ComponentActivity() {
     private lateinit var themeViewModel: ThemeViewModel
+
+    /**
+     * Dark status/navigation bar icons on a light app theme, light icons on a dark one. LlmHubTheme
+     * sets this on composition, but on Android 12+ AndroidX's splash remove() re-applies the XML
+     * theme's windowLightStatusBar (unset = light icons) afterwards, which left white icons on the
+     * light theme's white top bar (only the battery outline visible).
+     */
+    private fun applySystemBarAppearance() {
+        if (!::themeViewModel.isInitialized) return
+        val dark = when (themeViewModel.themeMode.value) {
+            ThemeMode.LIGHT -> false
+            ThemeMode.DARK -> true
+            ThemeMode.SYSTEM -> (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+        }
+        WindowCompat.getInsetsController(window, window.decorView).apply {
+            isAppearanceLightStatusBars = !dark
+            isAppearanceLightNavigationBars = !dark
+        }
+    }
     
     override fun onCreate(savedInstanceState: Bundle?) {
         // Launch splash (Theme.LlmHub.Starting): ease the icon forward and fade it out while the
@@ -52,7 +73,10 @@ class MainActivity : ComponentActivity() {
             splash.view.animate()
                 .alpha(0f)
                 .setStartDelay(120L).setDuration(380L).setInterpolator(easing)
-                .withEndAction { splash.remove() }
+                .withEndAction {
+                    splash.remove()
+                    applySystemBarAppearance()
+                }
                 .start()
         }
         super.onCreate(savedInstanceState)
