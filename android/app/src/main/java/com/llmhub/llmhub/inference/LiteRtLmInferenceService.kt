@@ -230,7 +230,9 @@ class LiteRtLmInferenceService(private val applicationContext: Context) : Infere
         }
     }
 
-    override suspend fun unloadModel() {
+    // Engine.close() frees the native engine and can take seconds; off the main thread, or leaving
+    // a screen that unloads froze the app (ANR in LiteRtLmJni.nativeDeleteEngine, 4.5.5).
+    override suspend fun unloadModel(): Unit = withContext(Dispatchers.IO) {
         engineMutex.withLock {
             engine?.let {
                 try { it.close() } catch (e: Exception) { Log.w(TAG, "Error unloading engine: ${e.message}") }

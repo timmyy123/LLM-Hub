@@ -8,6 +8,8 @@
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:enforceStatusBarContrast">false</item>
         <item name="android:enforceNavigationBarContrast">false</item>
-        <item name="android:windowLayoutInDisplayCutoutMode">always</item>
+        <!-- shortEdges, not always: "always" (3) only exists from API 30, and API 28/29 threw
+             "Unknown windowLayoutInDisplayCutoutMode: 3" on launch (4.5.3-4.5.5). values-v30 uses always. -->
+        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
     </style>
 </resources>

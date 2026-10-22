@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Edge-to-edge on Android 12-14 (Android 15+ enforces it): transparent bars drawn over
+         by the Compose content, which applies the window insets. -->
+    <style name="Theme.LlmHub" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:enforceStatusBarContrast">false</item>
+        <item name="android:enforceNavigationBarContrast">false</item>
+        <!-- Android 11+: lay out into the cutout on every edge (see values/themes.xml). -->
+        <item name="android:windowLayoutInDisplayCutoutMode">always</item>
+    </style>
+</resources>

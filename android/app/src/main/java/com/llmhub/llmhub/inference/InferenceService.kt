@@ -548,6 +548,12 @@ class MediaPipeInferenceService(private val applicationContext: Context) : Infer
         } catch (e: Exception) {
             Log.e(TAG, "Failed to load model: ${model.name}", e)
             throw RuntimeException("Failed to load model: ${e.message}", e)
+        } catch (e: LinkageError) {
+            // MediaPipe's native library missing or unloadable (UnsatisfiedLinkError, e.g. a 32-bit
+            // Android 8.1 phone), and NoClassDefFoundError on later attempts: an Error, not an
+            // Exception, so it crashed the app (4.5.5). Report it as a load failure instead.
+            Log.e(TAG, "MediaPipe runtime unavailable for ${model.name}", e)
+            throw RuntimeException("This model format isn't supported on this device", e)
         }
     }
 

@@ -389,7 +389,10 @@ class VideoGeneratorViewModel(application: Application) : AndroidViewModel(appli
     }
 
     override fun onCleared() {
-        val running = workJob?.takeIf { it.isActive }
+        // isCompleted, not isActive: viewModelScope is cancelled before onCleared(), so a running
+        // generation is already "not active" while its native call still runs, and freeing then
+        // aborted in nativeFree (GGML_ASSERT(!graph_active_), Play vitals 4.5.2-4.5.3).
+        val running = workJob?.takeIf { !it.isCompleted }
         if (running != null) {
             // Native work cannot be interrupted mid-call: signal cancel, then unload once it returns.
             engine.cancel()
