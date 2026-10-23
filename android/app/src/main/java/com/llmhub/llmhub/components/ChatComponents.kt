@@ -2201,7 +2201,7 @@ fun MessageInput(
                                     DropdownMenuItem(
                                         text = { 
                                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                                Text("🖼️", style = MaterialTheme.typography.headlineSmall)
+                                                Icon(Icons.Outlined.Image, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(26.dp))
                                                 Spacer(modifier = Modifier.width(12.dp))
                                                 Column {
                                                     Text(stringResource(R.string.images))
@@ -2223,7 +2223,7 @@ fun MessageInput(
                                 DropdownMenuItem(
                                     text = { 
                                         Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Text("📄", style = MaterialTheme.typography.headlineSmall)
+                                            Icon(Icons.Outlined.Description, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(26.dp))
                                             Spacer(modifier = Modifier.width(12.dp))
                                             Column {
                                                 Text(stringResource(R.string.documents))
@@ -2243,7 +2243,7 @@ fun MessageInput(
                                 DropdownMenuItem(
                                     text = { 
                                         Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Text("📝", style = MaterialTheme.typography.headlineSmall)
+                                            Icon(Icons.Outlined.Article, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(26.dp))
                                             Spacer(modifier = Modifier.width(12.dp))
                                             Column {
                                                 Text(stringResource(R.string.text_files))
@@ -2266,7 +2266,7 @@ fun MessageInput(
                                     DropdownMenuItem(
                                         text = {
                                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                                Text("🎵", style = MaterialTheme.typography.headlineSmall)
+                                                Icon(Icons.Outlined.AudioFile, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(26.dp))
                                                 Spacer(modifier = Modifier.width(12.dp))
                                                 Column {
                                                     Text(stringResource(R.string.audio_file))
@@ -2287,7 +2287,7 @@ fun MessageInput(
                                     DropdownMenuItem(
                                         text = { 
                                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                                Text("🎙️", style = MaterialTheme.typography.headlineSmall)
+                                                Icon(Icons.Outlined.Mic, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(26.dp))
                                                 Spacer(modifier = Modifier.width(12.dp))
                                                 Column {
                                                     Text(stringResource(R.string.audio_recording))

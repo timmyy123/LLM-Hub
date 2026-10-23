@@ -95,8 +95,9 @@ private fun homeCardStyle(feature: FeatureCard): HomeCardStyle {
             tile = Color.White.copy(alpha = 0.7f),
             tileStroke = Color.Black.copy(alpha = 0.06f),
             accent = Color(0xFF1B1E24),
-            cta = Color(0xFF233E88),
-            onCta = Color.White,
+            // As on iOS: a white pill with navy text, matching the white icon tiles on the tinted card.
+            cta = Color.White.copy(alpha = 0.9f),
+            onCta = Color(0xFF233E88),
             title = Color(0xFF1B1E24),
             body = Color(0xFF1B1E24).copy(alpha = 0.72f),
             decor = Color(0xFF233E88).copy(alpha = 0.08f),
