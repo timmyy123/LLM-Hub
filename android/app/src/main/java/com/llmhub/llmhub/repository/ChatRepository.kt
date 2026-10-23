@@ -112,13 +112,23 @@ class ChatRepository(
             attachmentFileName = attachmentFileName,
             attachmentFileSize = attachmentFileSize
         )
-        messageDao.insertMessage(message)
-        
-        // Update chat's updatedAt timestamp
+        // The chat can be deleted while a reply is still generating; inserting into it then failed
+        // the messages -> chats foreign key and crashed the app (SQLiteConstraintException, 4.5.6).
+        // Drop the message instead; the constraint catch covers a delete racing this insert.
         val chat = chatDao.getChatById(chatId)
-        chat?.let {
-            chatDao.updateChat(it.copy(updatedAt = System.currentTimeMillis()))
+        if (chat == null) {
+            android.util.Log.w("ChatRepository", "Dropping message for deleted chat $chatId")
+            return message.id
         }
+        try {
+            messageDao.insertMessage(message)
+        } catch (e: android.database.sqlite.SQLiteConstraintException) {
+            android.util.Log.w("ChatRepository", "Dropping message for chat $chatId deleted during insert", e)
+            return message.id
+        }
+
+        // Update chat's updatedAt timestamp
+        chatDao.updateChat(chat.copy(updatedAt = System.currentTimeMillis()))
         return message.id
     }
 

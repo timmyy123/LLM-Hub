@@ -228,7 +228,9 @@ class MediaPipeInferenceService(private val applicationContext: Context) : Infer
         }
     }
 
-    override suspend fun resetChatSession(chatId: String) {
+    // Off the main thread: a new session builds MediaPipe's GPU vision executor for vision models,
+    // which took seconds on the caller's (main) thread (ANR in LlmTaskRunner.nativeCreateSession, 4.5.5).
+    override suspend fun resetChatSession(chatId: String): Unit = withContext(Dispatchers.IO) {
         sessionMutex.withLock {
             Log.d(TAG, "Resetting session for chat $chatId")
 

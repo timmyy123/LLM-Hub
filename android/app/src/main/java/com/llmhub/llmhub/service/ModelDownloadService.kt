@@ -76,7 +76,18 @@ class ModelDownloadService : Service() {
 
         fun pauseManaged(name: String) { managedJobs[name]?.cancel() }
 
+        // Last posted (time, percent) per download. Every progress update posted a notification, a
+        // binder call into system_server, on the main thread; under load they queued up into an ANR
+        // (NotificationManager.notify from reportProgress, Play vitals). Post only when the percent
+        // changes, at most twice a second.
+        private val lastProgressPost = java.util.concurrent.ConcurrentHashMap<String, Pair<Long, Int>>()
+
         fun reportProgress(name: String, status: DownloadStatus) {
+            val percent = if (status.totalBytes > 0) (status.downloadedBytes * 100 / status.totalBytes).toInt() else -1
+            val now = android.os.SystemClock.elapsedRealtime()
+            val last = lastProgressPost[name]
+            if (last != null && percent < 100 && (last.second == percent || now - last.first < 500L)) return
+            lastProgressPost[name] = now to percent
             runningService?.showNotification(name, status)
         }
 
