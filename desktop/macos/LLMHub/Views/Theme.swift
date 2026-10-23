@@ -15,6 +15,12 @@ enum Theme {
     static let success = dynamic(light: 0x1E8A4C, dark: 0x5FD38D)
     static let warning = dynamic(light: 0x9A6400, dark: 0xE8B04A)
     static let danger = dynamic(light: 0xB3261E, dark: 0xFF9A9A)
+    static let accent = dynamic(light: 0x2F6FE4, dark: 0x8AB4FF)
+    static let textFaint = dynamic(light: 0x8A8983, dark: 0x8F8E88)
+    static let diffAddedBackground = dynamic(light: 0xE3F5E8, dark: 0x1E3326)
+    static let diffAddedText = dynamic(light: 0x1C6B3A, dark: 0xC5F0D3)
+    static let diffRemovedBackground = dynamic(light: 0xFBE6E6, dark: 0x3A2222)
+    static let diffRemovedText = dynamic(light: 0x9E2A2A, dark: 0xFFB4B4)
 
     private static func dynamic(light: UInt32, dark: UInt32) -> Color {
         Color(nsColor: NSColor(name: nil) { appearance in

@@ -8,6 +8,7 @@ struct SettingsView: View {
         case .general: GeneralSettings()
         case .models: ModelsSettings()
         case .api: LocalApiSettings()
+        default: PlaceholderView(section: "Studio", symbol: section.symbol)
         }
     }
 }

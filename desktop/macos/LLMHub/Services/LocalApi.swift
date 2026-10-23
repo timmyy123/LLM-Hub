@@ -133,7 +133,8 @@ final class LocalApiServer {
         }
         let stream = body["stream"] as? Bool ?? false
         do {
-            try await app.engines.load(model)
+            // Claude Code and other API clients send long system prompts: load with the larger API context.
+            try await app.engines.load(model, contextLength: max(AppSettings.current.contextLength, AppSettings.current.apiContextLength))
             if model.format == "gguf", let base = app.engine.baseURL {
                 body["model"] = model.id
                 try await proxy(req, body, base, out)

@@ -7,7 +7,7 @@ enum AppSection: Hashable {
 }
 
 enum SettingsSection: String, CaseIterable, Hashable {
-    case general, models, api
+    case general, models, engines, api, speech, studio, agent, websearch, storage
 }
 
 /// App-wide state and services.
@@ -25,6 +25,10 @@ final class AppModel {
     let chatStore = ChatStore()
     let chat: ChatViewModel
     let models: ModelsViewModel
+    let speech = SpeechService()
+    let agent = AgentService()
+    let design = DesignService()
+    let studio = StudioService()
     private(set) var api: LocalApiServer!
 
     var section: AppSection = .chat
@@ -37,9 +41,15 @@ final class AppModel {
         models = ModelsViewModel()
         chat.attach(self)
         models.attach(self)
+        agent.attach(self)
+        design.attach(self)
+        studio.attach(self)
         api = LocalApiServer(app: self)
         api.restart()
     }
+
+    /// Design and Studio collapse the sidebar to the design's 64pt icon rail so the canvas gets the room.
+    var isCompact: Bool { section == .design || section == .studio }
 
     var isSettings: Bool {
         if case .settings = section { return true }

@@ -3,7 +3,8 @@ import AppKit
 
 /// Debug builds only, same flags as Windows:
 /// `LLMHub [--selftest catalogId|apple [--format litertlm] [--quant label] [--prompt text]] [--capture out.png]
-/// [--page chat|settings|models] [--wait ms] [--theme dark|light] [--exit]`
+/// [--page chat|agent|design|studio|settings|models|<settings section>] [--wait ms] [--theme dark|light] [--exit]`
+/// Feature end-to-end runs (--agenttest, --designtest, --studiotest, --speechtest) live in DevTools+<Feature>.swift.
 @MainActor
 enum DevTools {
     static func runIfRequested() {
@@ -16,10 +17,20 @@ enum DevTools {
             if let id = value("--selftest", args) {
                 await selfTest(id, format: value("--format", args) ?? "gguf", quant: value("--quant", args), prompt: value("--prompt", args))
             }
+            await agentTest(args)
+            await designTest(args)
+            await studioTest(args)
+            await speechTest(args)
             switch value("--page", args) {
             case "settings": AppModel.shared.section = .settings(.general)
             case "models": AppModel.shared.section = .settings(.models)
-            default: AppModel.shared.section = .chat
+            case "agent": AppModel.shared.section = .agent
+            case "design": AppModel.shared.section = .design
+            case "studio": AppModel.shared.section = .studio
+            case let page? where SettingsSection(rawValue: page.replacingOccurrences(of: "settings", with: "")) != nil && page != "settings":
+                AppModel.shared.section = .settings(SettingsSection(rawValue: page.replacingOccurrences(of: "settings", with: ""))!)
+            case nil, "chat": AppModel.shared.section = .chat
+            default: break
             }
             try? await Task.sleep(for: .milliseconds(Int(value("--wait", args) ?? "") ?? 2500))
             if let path = value("--capture", args) { capture(to: path) }
@@ -27,7 +38,7 @@ enum DevTools {
         }
     }
 
-    private static func value(_ name: String, _ args: [String]) -> String? {
+    static func value(_ name: String, _ args: [String]) -> String? {
         guard let i = args.firstIndex(of: name), i + 1 < args.count else { return nil }
         return args[i + 1]
     }

@@ -31,9 +31,19 @@ struct LLMHubApp: App {
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
+        MainActor.assumeIsolated { Self.applyAppearance() }
         #if DEBUG
         DevTools.runIfRequested()
         #endif
+    }
+
+    /// Dark is the designed look; light and system are in Settings › General.
+    @MainActor static func applyAppearance() {
+        switch AppSettings.current.appearance {
+        case "light": NSApp.appearance = NSAppearance(named: .aqua)
+        case "system": NSApp.appearance = nil
+        default: NSApp.appearance = NSAppearance(named: .darkAqua)
+        }
     }
 
     func applicationWillTerminate(_ notification: Notification) {

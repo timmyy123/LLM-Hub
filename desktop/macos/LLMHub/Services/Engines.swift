@@ -34,16 +34,19 @@ final class EngineHub {
         }
     }
 
-    func isReady(_ model: InstalledModel) -> Bool {
+    func isReady(_ model: InstalledModel, contextLength: Int? = nil) -> Bool {
         switch model.format {
         case "litertlm": return activeFormat == "litertlm" && liteRtLoaded?.id == model.id && liteRt.loadedWithMtp == model.mtpEnabled
         case "apple": return activeFormat == "apple" && appleActive
-        default: return activeFormat == "gguf" && llama.loadedModel?.id == model.id && llama.baseURL != nil
+        default:
+            let wanted = LlamaEngine.context(for: model, wanted: contextLength ?? AppSettings.current.contextLength)
+            return activeFormat == "gguf" && llama.loadedModel?.id == model.id && llama.baseURL != nil && llama.loadedContext >= wanted
         }
     }
 
-    func load(_ model: InstalledModel) async throws {
-        if isReady(model) { return }
+    /// <paramref name="contextLength"/>: a larger window than the chat setting (Agent, Design, Local API); llama.cpp only.
+    func load(_ model: InstalledModel, contextLength: Int? = nil) async throws {
+        if isReady(model, contextLength: contextLength) { return }
         switch model.format {
         case "litertlm":
             llama.stop()
@@ -74,15 +77,15 @@ final class EngineHub {
             liteRtLoaded = nil
             appleActive = false
             activeFormat = "gguf"
-            try await llama.load(model)
+            try await llama.load(model, contextLength: contextLength)
         }
     }
 
-    func stream(_ model: InstalledModel, turns: [ChatTurn]) -> AsyncThrowingStream<ChatClient.Delta, Error> {
+    func stream(_ model: InstalledModel, turns: [ChatTurn], options: ChatOptions = .init()) -> AsyncThrowingStream<ChatClient.Delta, Error> {
         switch model.format {
         case "litertlm": return liteRt.stream(turns: turns)
         case "apple": return AppleModel.stream(turns: turns)
-        default: return ChatClient.stream(baseURL: llama.baseURL!, model: model.id, turns: turns)
+        default: return ChatClient.stream(baseURL: llama.baseURL!, model: model.id, turns: turns, options: options)
         }
     }
 

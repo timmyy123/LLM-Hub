@@ -14,6 +14,9 @@ enum AppPaths {
     }()
 
     static var models: URL { directory("models") }
+    static var attachments: URL { directory("attachments") }
+    static var design: URL { directory("design") }
+    static var agent: URL { directory("agent") }
     static var engines: URL { directory("engines") }
     static var logs: URL { directory("logs") }
     static var database: URL { root.appendingPathComponent("llmhub.sqlite") }
@@ -93,6 +96,17 @@ struct AppSettings: Codable {
     var apiAllowLan = false
     var apiRequireKey = true
     var apiKey = ""
+    /// dark (the designed look), light or system.
+    var appearance = "dark"
+    /// New chats start with web search on.
+    var webSearch = false
+    var thinking = false
+    /// Supertonic voice for read aloud and Studio › Voice.
+    var voice = "F1"
+    var agentModelId: String?
+    var designModelId: String?
+    /// Context for the Agent and the Local API (Claude Code's own prompt is about 18K tokens).
+    var apiContextLength = 65536
 
     init() {}
 
@@ -108,6 +122,13 @@ struct AppSettings: Codable {
         apiAllowLan = try c.decodeIfPresent(Bool.self, forKey: .apiAllowLan) ?? false
         apiRequireKey = try c.decodeIfPresent(Bool.self, forKey: .apiRequireKey) ?? true
         apiKey = try c.decodeIfPresent(String.self, forKey: .apiKey) ?? ""
+        appearance = try c.decodeIfPresent(String.self, forKey: .appearance) ?? "dark"
+        webSearch = try c.decodeIfPresent(Bool.self, forKey: .webSearch) ?? false
+        thinking = try c.decodeIfPresent(Bool.self, forKey: .thinking) ?? false
+        voice = try c.decodeIfPresent(String.self, forKey: .voice) ?? "F1"
+        agentModelId = try c.decodeIfPresent(String.self, forKey: .agentModelId)
+        designModelId = try c.decodeIfPresent(String.self, forKey: .designModelId)
+        apiContextLength = try c.decodeIfPresent(Int.self, forKey: .apiContextLength) ?? 65536
     }
 
     static var current: AppSettings = load()

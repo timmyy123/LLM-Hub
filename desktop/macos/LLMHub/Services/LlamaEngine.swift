@@ -42,13 +42,22 @@ final class LlamaEngine {
 
     init() { killStaleServer() }
 
-    func load(_ model: InstalledModel) async throws {
-        if loadedModel?.id == model.id, process?.isRunning == true { return }
+    /// Context window of the running server; asking for a larger one reloads the model.
+    private(set) var loadedContext = 0
+
+    static func context(for model: InstalledModel, wanted: Int) -> Int { min(model.contextLength > 0 ? model.contextLength : 8192, wanted) }
+
+    /// Loads <paramref name="model"/> with the chat context, or <paramref name="contextLength"/> for the Agent, Design
+    /// and the Local API (Claude Code's own prompt is about 18K tokens).
+    func load(_ model: InstalledModel, contextLength: Int? = nil) async throws {
+        let wanted = Self.context(for: model, wanted: contextLength ?? AppSettings.current.contextLength)
+        if loadedModel?.id == model.id, process?.isRunning == true, loadedContext >= wanted { return }
         stopProcess()
         do {
             let server = try await ensureInstalled()
             set(.loading, L.f("LoadingModel", model.name))
-            try await startServer(server, model)
+            try await startServer(server, model, context: wanted)
+            loadedContext = wanted
             loadedModel = model
             set(.ready, L.f("EngineReady", model.name))
         } catch is CancellationError {
@@ -155,9 +164,8 @@ final class LlamaEngine {
         }
     }
 
-    private func startServer(_ server: URL, _ model: InstalledModel) async throws {
+    private func startServer(_ server: URL, _ model: InstalledModel, context: Int) async throws {
         let port = Self.freePort()
-        let context = min(model.contextLength > 0 ? model.contextLength : 8192, AppSettings.current.contextLength)
         var args = ["-m", model.primaryPath.path, "--host", "127.0.0.1", "--port", "\(port)", "--alias", model.id,
                     "-ngl", "999", "-c", "\(context)", "--jinja"]
         if let mmproj = model.mmprojPath, FileManager.default.fileExists(atPath: mmproj.path) {
@@ -228,9 +236,47 @@ final class LlamaEngine {
     }
 }
 
+/// One message. Images (vision models) are sent as OpenAI image_url parts with data URLs.
 struct ChatTurn: Encodable {
     let role: String
     let content: String
+    var images: [URL] = []
+
+    init(role: String, content: String, images: [URL] = []) {
+        self.role = role
+        self.content = content
+        self.images = images
+    }
+
+    private enum CodingKeys: String, CodingKey { case role, content }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(role, forKey: .role)
+        guard !images.isEmpty else {
+            try c.encode(content, forKey: .content)
+            return
+        }
+        struct Part: Encodable {
+            struct Image: Encodable { let url: String }
+            let type: String
+            var text: String?
+            var image_url: Image?
+        }
+        var parts = images.compactMap { url -> Part? in
+            guard let data = try? Data(contentsOf: url) else { return nil }
+            let mime = url.pathExtension.lowercased() == "png" ? "image/png" : url.pathExtension.lowercased() == "webp" ? "image/webp" : "image/jpeg"
+            return Part(type: "image_url", image_url: .init(url: "data:\(mime);base64,\(data.base64EncodedString())"))
+        }
+        parts.append(Part(type: "text", text: content))
+        try c.encode(parts, forKey: .content)
+    }
+}
+
+/// Per-request switches from the composer.
+struct ChatOptions {
+    /// Extended thinking: models with a reasoning switch in their chat template think first.
+    var thinking = false
 }
 
 /// Streams replies from llama-server's OpenAI-compatible /v1/chat/completions endpoint.
@@ -239,9 +285,11 @@ enum ChatClient {
         var content: String?
         var reasoning: String?
         var tokensPerSecond: Double?
+        /// Prompt plus generated tokens after this reply, for the composer's context meter.
+        var contextTokens: Int?
     }
 
-    static func stream(baseURL: URL, model: String, turns: [ChatTurn]) -> AsyncThrowingStream<Delta, Error> {
+    static func stream(baseURL: URL, model: String, turns: [ChatTurn], options: ChatOptions = .init()) -> AsyncThrowingStream<Delta, Error> {
         AsyncThrowingStream { continuation in
             let task = Task {
                 do {
@@ -249,12 +297,18 @@ enum ChatClient {
                     request.httpMethod = "POST"
                     request.setValue("application/json", forHTTPHeaderField: "Content-Type")
                     request.timeoutInterval = 3600
+                    struct Kwargs: Encodable {
+                        let enable_thinking: Bool
+                        let thinking: Bool
+                    }
                     struct Body: Encodable {
                         let model: String
                         let stream = true
                         let messages: [ChatTurn]
+                        let chat_template_kwargs: Kwargs
                     }
-                    request.httpBody = try JSONEncoder().encode(Body(model: model, messages: turns))
+                    request.httpBody = try JSONEncoder().encode(Body(model: model, messages: turns,
+                                                                     chat_template_kwargs: .init(enable_thinking: options.thinking, thinking: options.thinking)))
                     let (bytes, response) = try await URLSession.shared.bytes(for: request)
                     try HuggingFaceClient.check(response)
                     for try await line in bytes.lines {
@@ -264,7 +318,8 @@ enum ChatClient {
                         guard let json = try JSONSerialization.jsonObject(with: Data(payload.utf8)) as? [String: Any] else { continue }
                         if let error = json["error"] { throw NSError(domain: "LLMHub", code: 6, userInfo: [NSLocalizedDescriptionKey: "\(error)"]) }
                         if let timings = json["timings"] as? [String: Any], let speed = timings["predicted_per_second"] as? Double {
-                            continuation.yield(Delta(tokensPerSecond: speed))
+                            let used = ["prompt_n", "cache_n", "predicted_n"].compactMap { timings[$0] as? Int }.reduce(0, +)
+                            continuation.yield(Delta(tokensPerSecond: speed, contextTokens: used > 0 ? used : nil))
                         }
                         guard let choices = json["choices"] as? [[String: Any]], let delta = choices.first?["delta"] as? [String: Any] else { continue }
                         let d = Delta(content: delta["content"] as? String, reasoning: delta["reasoning_content"] as? String)
