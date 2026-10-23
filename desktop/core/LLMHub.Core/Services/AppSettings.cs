@@ -15,9 +15,13 @@ public sealed class AppSettings
     public bool Thinking { get; set; }
     /// <summary>Supertonic voice for Read aloud: F1, F2, M1 or M2.</summary>
     public string Voice { get; set; } = "F1";
+    /// <summary>Model new Agent sessions use (defaults to the catalog's agent pick, Gemma 4 26B-A4B).</summary>
+    public string? AgentModelId { get; set; }
     public string HuggingFaceToken { get; set; } = "";
     public string? LastChatModelId { get; set; }
     public int ContextLength { get; set; } = 16384;
+    /// <summary>Context window for Local API and Agent requests (capped by the model). Claude Code alone sends about 18k tokens.</summary>
+    public int ApiContextLength { get; set; } = 65536;
     /// <summary>Models where the user turned multi-token prediction off (it is on by default where supported).</summary>
     public List<string> MtpOff { get; set; } = [];
 

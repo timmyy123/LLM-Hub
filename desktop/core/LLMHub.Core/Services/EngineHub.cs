@@ -31,17 +31,19 @@ public sealed partial class EngineHub : ObservableObject
     /// <summary>"win-cuda-13.4-x64", "LiteRT-LM gpu", ...</summary>
     public string? Backend => _liteRtActive ? $"LiteRT-LM {_liteRt.Backend}" : _llama.Variant;
 
-    public bool IsReady(InstalledModel model) =>
+    public bool IsReady(InstalledModel model, int? contextLength = null) =>
         LoadedModel?.Id == model.Id && (_liteRtActive
             ? _liteRt.LoadedModel is not null && _liteRt.LoadedWithMtp == model.MtpEnabled
-            : _llama.BaseUrl is not null);
+            : _llama.BaseUrl is not null && _llama.LoadedContext >= LlamaEngine.ContextFor(model, contextLength ?? AppSettings.Current.ContextLength));
 
-    public async Task LoadAsync(InstalledModel model, CancellationToken ct)
+    /// <param name="contextLength">Context window to run with; null uses Settings › Context length. The Local API asks for more
+    /// because agents such as Claude Code send long system prompts.</param>
+    public async Task LoadAsync(InstalledModel model, CancellationToken ct, int? contextLength = null)
     {
         await _gate.WaitAsync(ct);
         try
         {
-            if (IsReady(model))
+            if (IsReady(model, contextLength))
                 return;
             if (model.Format == "litertlm")
             {
@@ -63,7 +65,7 @@ public sealed partial class EngineHub : ObservableObject
             {
                 _liteRt.Unload();
                 _liteRtActive = false;
-                await _llama.LoadAsync(model, ct);
+                await _llama.LoadAsync(model, ct, contextLength);
             }
         }
         finally

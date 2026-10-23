@@ -16,10 +16,16 @@ public static class Ioc
     public static ChatStore Chats { get; } = new();
     public static LocalApiServer Api { get; } = new();
     public static Speech.SpeechService Speech { get; } = new();
+    /// <summary>Private API instance the Agent's Claude Code talks to (see <see cref="LocalApiServer(bool)"/>).</summary>
+    public static LocalApiServer AgentBridge { get; } = new(agentBridge: true);
+    public static Agent.AgentService Agent { get; } = new();
 
     private static ChatViewModel? _chat;
     private static ModelsViewModel? _modelsVm;
 
     public static ChatViewModel Chat => _chat ??= new ChatViewModel();
     public static ModelsViewModel ModelsVm => _modelsVm ??= new ModelsViewModel();
+
+    private static AgentViewModel? _agentVm;
+    public static AgentViewModel AgentVm => _agentVm ??= new AgentViewModel();
 }

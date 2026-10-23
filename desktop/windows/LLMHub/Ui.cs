@@ -38,6 +38,53 @@ public static class Ui
         return App.Window?.Content is FrameworkElement root ? ThemeBrush(root, key) : null;
     }
 
+    public static Visibility ShowObject(object? value) => value is null ? Visibility.Collapsed : Visibility.Visible;
+    public static Visibility ShowCount(int count) => count > 0 ? Visibility.Visible : Visibility.Collapsed;
+    public static Visibility HideCount(int count) => count > 0 ? Visibility.Collapsed : Visibility.Visible;
+
+    // Agent: diff lines, task checklist, changed-file badges (colours from the design's diff block).
+    private static Brush Solid(byte r, byte g, byte b, byte a = 255) => new SolidColorBrush(Windows.UI.Color.FromArgb(a, r, g, b));
+    public static Brush DiffBackground(char kind) => kind switch
+    {
+        '+' => Solid(0x1E, 0x33, 0x26),
+        '-' => Solid(0x3A, 0x22, 0x22),
+        '@' => Solid(0x26, 0x2C, 0x38),
+        _ => Solid(0, 0, 0, 0),
+    };
+    public static Brush DiffForeground(char kind) => kind switch
+    {
+        '+' => Solid(0xC5, 0xF0, 0xD3),
+        '-' => Solid(0xFF, 0xB4, 0xB4),
+        '@' => Solid(0xB8, 0xCD, 0xF5),
+        _ => Solid(0xA5, 0xA4, 0x9E),
+    };
+    public static string DiffText(char kind, string text) => kind == '@' ? text : $"{kind} {text}";
+    public static string TaskGlyph(string status) => status switch { "completed" => "\uE73E", "in_progress" => "\uEA3A", _ => "\uEA3A" };
+    public static Brush TaskBrush(string status) => status switch
+    {
+        "completed" => Solid(0x5F, 0xD3, 0x8D),
+        "in_progress" => Solid(0x8A, 0xB4, 0xFF),
+        _ => Solid(0x8F, 0x8E, 0x88),
+    };
+    public static Brush TaskTextBrush(string status) => status == "completed" ? Solid(0x8F, 0x8E, 0x88) : Solid(0xEC, 0xEB, 0xE7);
+    public static Windows.UI.Text.TextDecorations TaskDecoration(string status) =>
+        status == "completed" ? Windows.UI.Text.TextDecorations.Strikethrough : Windows.UI.Text.TextDecorations.None;
+    public static string ChangeBadge(char kind) => kind.ToString();
+    public static Brush ChangeBrush(char kind) => kind switch
+    {
+        'A' => Solid(0x5F, 0xD3, 0x8D),
+        'D' => Solid(0xFF, 0x9A, 0x9A),
+        _ => Solid(0xE8, 0xB0, 0x4A),
+    };
+
+    public static Brush AgentDot(Services.Agent.AgentStatus status) => status switch
+    {
+        Services.Agent.AgentStatus.Working => Solid(0x8A, 0xB4, 0xFF),
+        Services.Agent.AgentStatus.NeedsYou => Solid(0xE8, 0xB0, 0x4A),
+        Services.Agent.AgentStatus.Error => Solid(0xFF, 0x9A, 0x9A),
+        _ => Solid(0x5A, 0x59, 0x55),
+    };
+
     public static string StarLabel(bool starred) => Services.Loc.S(starred ? "Unstar" : "Star");
     public static string StarGlyph(bool starred) => starred ? "\uE735" : "\uE734";
     public static string ReadGlyph(bool reading) => reading ? "\uE71A" : "\uE767";

@@ -24,16 +24,32 @@ public sealed partial class LocalApiServer : ObservableObject
 {
     private static readonly HttpClient Proxy = new() { Timeout = Timeout.InfiniteTimeSpan };
     private readonly SemaphoreSlim _liteRtGate = new(1, 1);
+    private readonly SemaphoreSlim _startGate = new(1, 1);
+    private readonly bool _bridge;
     private WebApplication? _app;
 
-    public LocalApiServer() => Error = "";
+    /// <param name="agentBridge">
+    /// A private instance for the Agent: loopback only, a random port and key of its own, always available even when the
+    /// user's Local API is off, plus the /mcp endpoint Claude Code asks for permission through.
+    /// </param>
+    public LocalApiServer(bool agentBridge = false)
+    {
+        _bridge = agentBridge;
+        Error = "";
+    }
+
+    /// <summary>Port and key the server runs with (the settings' for the Local API, random ones for the bridge).</summary>
+    public int Port { get; private set; }
+    /// <remarks>The Local API reads the setting live, so "New key" applies without a restart.</remarks>
+    public string Key => _bridge ? _bridgeKey : AppSettings.Current.ApiKey;
+    private string _bridgeKey = "";
 
     public ObservableCollection<ApiRequestLog> Requests { get; } = [];
 
     [ObservableProperty] public partial bool IsRunning { get; set; }
     [ObservableProperty] public partial string Error { get; set; }
 
-    public string BaseUrl => $"http://127.0.0.1:{AppSettings.Current.ApiPort}";
+    public string BaseUrl => $"http://127.0.0.1:{(_bridge ? Port : AppSettings.Current.ApiPort)}";
 
     public static string NewKey() => "llmhub-" + Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(18));
 
@@ -53,23 +69,49 @@ public sealed partial class LocalApiServer : ObservableObject
             await StartAsync();
     }
 
+    /// <summary>Starts the Agent bridge if it is not running (see the constructor).</summary>
+    public async Task EnsureBridgeAsync()
+    {
+        await _startGate.WaitAsync();
+        try
+        {
+            if (_app is null)
+                await StartAsync();
+        }
+        finally
+        {
+            _startGate.Release();
+        }
+        if (_app is null)
+            throw new InvalidOperationException(Error);
+    }
+
     private async Task StartAsync()
     {
         var settings = AppSettings.Current;
-        if (string.IsNullOrEmpty(settings.ApiKey))
+        if (_bridge)
         {
-            settings.ApiKey = NewKey();
-            AppSettings.Save();
+            Port = FreePort();
+            _bridgeKey = NewKey();
+        }
+        else
+        {
+            if (string.IsNullOrEmpty(settings.ApiKey))
+            {
+                settings.ApiKey = NewKey();
+                AppSettings.Save();
+            }
+            Port = settings.ApiPort;
         }
         try
         {
             var builder = WebApplication.CreateEmptyBuilder(new WebApplicationOptions { ContentRootPath = AppContext.BaseDirectory });
             builder.WebHost.UseKestrelCore().ConfigureKestrel(k =>
             {
-                if (settings.ApiAllowLan)
-                    k.ListenAnyIP(settings.ApiPort);
+                if (settings.ApiAllowLan && !_bridge)
+                    k.ListenAnyIP(Port);
                 else
-                    k.ListenLocalhost(settings.ApiPort);
+                    k.ListenLocalhost(Port);
             });
             builder.Services.AddRouting();
             builder.Logging.ClearProviders();
@@ -81,6 +123,8 @@ public sealed partial class LocalApiServer : ObservableObject
             app.MapPost("/v1/messages", ctx => Handle(ctx, Api.Anthropic));
             app.MapPost("/v1/messages/count_tokens", ctx => Handle(ctx, Api.AnthropicCount));
             app.MapGet("/", () => Results.Text("LLM Hub local API"));
+            if (_bridge)
+                app.MapPost("/mcp", ctx => Ioc.Agent.Permissions.HandleMcpAsync(ctx));
             await app.StartAsync();
             _app = app;
             UiThread.Run(() =>
@@ -88,7 +132,7 @@ public sealed partial class LocalApiServer : ObservableObject
                 IsRunning = true;
                 Error = "";
             });
-            Log.Info($"Local API on port {settings.ApiPort} (LAN={settings.ApiAllowLan})");
+            Log.Info(_bridge ? $"Agent bridge on port {Port}" : $"Local API on port {Port} (LAN={settings.ApiAllowLan})");
         }
         catch (Exception e)
         {
@@ -113,14 +157,14 @@ public sealed partial class LocalApiServer : ObservableObject
 
     private enum Api { OpenAi, Anthropic, AnthropicCount }
 
-    private static async Task Authorize(HttpContext ctx, Func<Task> next)
+    private async Task Authorize(HttpContext ctx, Func<Task> next)
     {
-        var s = AppSettings.Current;
-        if (ctx.Request.Path.StartsWithSegments("/v1") && s.ApiRequireKey)
+        var guarded = ctx.Request.Path.StartsWithSegments("/v1") || ctx.Request.Path.StartsWithSegments("/mcp");
+        if (guarded && (_bridge || AppSettings.Current.ApiRequireKey))
         {
             var bearer = ctx.Request.Headers.Authorization.ToString();
             var key = bearer.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase) ? bearer[7..].Trim() : ctx.Request.Headers["x-api-key"].ToString();
-            if (!CryptographicOperations.FixedTimeEquals(Encoding.UTF8.GetBytes(key), Encoding.UTF8.GetBytes(s.ApiKey)))
+            if (!CryptographicOperations.FixedTimeEquals(Encoding.UTF8.GetBytes(key), Encoding.UTF8.GetBytes(Key)))
             {
                 await WriteError(ctx, 401, "authentication_error", "Missing or wrong API key");
                 return;
@@ -158,7 +202,7 @@ public sealed partial class LocalApiServer : ObservableObject
 
         try
         {
-            await Ioc.Engines.LoadAsync(model, ctx.RequestAborted);
+            await Ioc.Engines.LoadAsync(model, ctx.RequestAborted, Math.Max(AppSettings.Current.ContextLength, AppSettings.Current.ApiContextLength));
             if (model.Format != "litertlm")
                 await ProxyToLlama(ctx, body, model);
             else if (api == Api.AnthropicCount)
@@ -354,5 +398,14 @@ public sealed partial class LocalApiServer : ObservableObject
             while (Requests.Count > 50)
                 Requests.RemoveAt(Requests.Count - 1);
         });
+    }
+
+    private static int FreePort()
+    {
+        var listener = new System.Net.Sockets.TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+        listener.Stop();
+        return port;
     }
 }

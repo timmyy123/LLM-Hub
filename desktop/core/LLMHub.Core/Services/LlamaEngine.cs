@@ -113,12 +113,18 @@ public sealed partial class LlamaEngine : ObservableObject
         return index > 0 ? list.Skip(index).ToList() : list;
     }
 
-    public async Task LoadAsync(InstalledModel model, CancellationToken ct)
+    /// <summary>Context window of the running server; a request for a larger one reloads the model.</summary>
+    public int LoadedContext { get; private set; }
+
+    public static int ContextFor(InstalledModel model, int wanted) => Math.Min(model.ContextLength > 0 ? model.ContextLength : 8192, wanted);
+
+    public async Task LoadAsync(InstalledModel model, CancellationToken ct, int? contextLength = null)
     {
+        var context = ContextFor(model, contextLength ?? AppSettings.Current.ContextLength);
         await _gate.WaitAsync(ct);
         try
         {
-            if (LoadedModel?.Id == model.Id && _process is { HasExited: false })
+            if (LoadedModel?.Id == model.Id && _process is { HasExited: false } && LoadedContext >= context)
                 return;
 
             StopProcess();
@@ -131,7 +137,8 @@ public sealed partial class LlamaEngine : ObservableObject
                 try
                 {
                     SetState(EngineState.Loading, Loc.F("LoadingModel", model.Name));
-                    await StartServerAsync(engine, model, ct);
+                    await StartServerAsync(engine, model, context, ct);
+                    LoadedContext = context;
                     await File.WriteAllTextAsync(WorkingFile, variant, ct);
                     Variant = variant;
                     UiThread.Run(() => LoadedModel = model);
@@ -336,7 +343,7 @@ public sealed partial class LlamaEngine : ObservableObject
         }
     }
 
-    private async Task StartServerAsync(InstalledEngine engine, InstalledModel model, CancellationToken ct)
+    private async Task StartServerAsync(InstalledEngine engine, InstalledModel model, int context, CancellationToken ct)
     {
 #if DEBUG
         // Lets the UI tests check that a failing GPU backend falls back to the next build.
@@ -344,7 +351,6 @@ public sealed partial class LlamaEngine : ObservableObject
             throw new EngineStartException($"forced failure of {engine.Variant} (LLMHUB_FAIL_VARIANT)");
 #endif
         var port = FreePort();
-        var context = Math.Min(model.ContextLength > 0 ? model.ContextLength : 8192, AppSettings.Current.ContextLength);
         var args = new List<string>
         {
             "-m", model.PrimaryPath,

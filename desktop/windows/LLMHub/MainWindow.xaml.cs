@@ -26,7 +26,7 @@ public sealed partial class MainWindow : Window
         AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "Assets", "llmhub.ico"));
         ApplyAppearance();
 
-        HardwareLine.Text = Ioc.Hardware.Summary(withRam: false);
+        UpdateEngineCard();
         Engine.PropertyChanged += OnEnginePropertyChanged;
         Root.ActualThemeChanged += (_, _) => UpdateEngineDot();
         UpdateEngineDot();
@@ -64,6 +64,8 @@ public sealed partial class MainWindow : Window
     private static partial uint GetDpiForWindow(IntPtr hwnd);
 
     public ChatViewModel Chat => Ioc.Chat;
+    public AgentViewModel AgentVm => Ioc.AgentVm;
+    public CollectionViewSource AgentGroupsSource { get; } = new() { IsSourceGrouped = true, Source = Ioc.AgentVm.Groups };
     public EngineHub Engine => Ioc.Engines;
     public CollectionViewSource ChatGroupsSource { get; }
 
@@ -107,6 +109,13 @@ public sealed partial class MainWindow : Window
         NavList.SelectedIndex = 0;
     }
 
+    /// <summary>Shows an app section by tag: chat, agent, design or studio.</summary>
+    public void ShowSection(string tag)
+    {
+        SetSettingsMode(false);
+        NavList.SelectedItem = NavList.Items.Cast<ListViewItem>().First(i => (string)i.Tag == tag);
+    }
+
     private void OnNavChanged(object sender, SelectionChangedEventArgs e)
     {
         if (NavList.SelectedItem is not ListViewItem { Tag: string tag })
@@ -121,7 +130,8 @@ public sealed partial class MainWindow : Window
                 break;
             case "agent":
                 SectionTitle.Text = Loc.S("NavAgent");
-                ContentFrame.Navigate(typeof(PlaceholderPage), "Agent");
+                if (ContentFrame.Content is not AgentPage)
+                    ContentFrame.Navigate(typeof(AgentPage));
                 break;
             case "design":
                 SectionTitle.Text = Loc.S("NavDesign");
@@ -139,12 +149,42 @@ public sealed partial class MainWindow : Window
         var v = visible ? Visibility.Visible : Visibility.Collapsed;
         SearchField.Visibility = v;
         ChatList.Visibility = v;
+        var agent = NavList.SelectedItem is ListViewItem { Tag: "agent" };
+        AgentSessionList.Visibility = agent ? Visibility.Visible : Visibility.Collapsed;
+        NewButtonLabel.Text = Loc.S(agent ? "NewSession" : "NewChat");
+        UpdateEngineCard();
     }
 
-    private void OnNewChat(object sender, RoutedEventArgs e)
+    private async void OnNewChat(object sender, RoutedEventArgs e)
     {
+        if (NavList.SelectedItem is ListViewItem { Tag: "agent" })
+        {
+            await AgentPage.PickFolderAndStartAsync();
+            return;
+        }
         Chat.NewChatCommand.Execute(null);
         ShowChat();
+    }
+
+    private void OnDeleteSession(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { Tag: Services.Agent.AgentSession session })
+            AgentVm.DeleteSessionCommand.Execute(session);
+    }
+
+    /// <summary>In Agent mode the card names the engine (as in the design); elsewhere it shows the loaded model.</summary>
+    private void UpdateEngineCard()
+    {
+        if (NavList.SelectedItem is ListViewItem { Tag: "agent" })
+        {
+            EngineStatus.Text = Loc.S("AgentEngine");
+            HardwareLine.Text = AgentVm.EngineLine;
+        }
+        else
+        {
+            EngineStatus.Text = Engine.StatusText;
+            HardwareLine.Text = Ioc.Hardware.Summary(withRam: false);
+        }
     }
 
     private void OnStarChat(object sender, RoutedEventArgs e)
@@ -165,6 +205,8 @@ public sealed partial class MainWindow : Window
     {
         if (e.PropertyName == nameof(EngineHub.State))
             UpdateEngineDot();
+        if (e.PropertyName == nameof(EngineHub.StatusText))
+            UpdateEngineCard();
     }
 
     private void UpdateEngineDot()

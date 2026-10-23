@@ -6,6 +6,7 @@
     xmlns:local="using:LLMHub"
     xmlns:services="using:LLMHub.Services"
     xmlns:vm="using:LLMHub.ViewModels"
+    xmlns:agent="using:LLMHub.Services.Agent"
     Title="LLM Hub">
 
     <Grid x:Name="Root" Background="{ThemeResource AppBackgroundBrush}">
@@ -153,6 +154,61 @@
                     </ListView.ItemTemplate>
                 </ListView>
 
+                <!-- Agent mode: sessions grouped by project folder, with Working / Needs you. -->
+                <ListView x:Name="AgentSessionList" Grid.Row="2" Grid.RowSpan="2" Margin="0,12,0,0" SelectionMode="Single" Visibility="Collapsed"
+                          ItemContainerStyle="{StaticResource ChatItemStyle}"
+                          ItemsSource="{x:Bind AgentGroupsSource.View, Mode=OneWay}"
+                          SelectedItem="{x:Bind AgentVm.Selected, Mode=TwoWay}">
+                    <ListView.GroupStyle>
+                        <GroupStyle HidesIfEmpty="True">
+                            <GroupStyle.HeaderContainerStyle>
+                                <Style TargetType="ListViewHeaderItem">
+                                    <Setter Property="MinHeight" Value="0" />
+                                    <Setter Property="Padding" Value="12,14,12,4" />
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="ListViewHeaderItem">
+                                                <ContentPresenter Margin="{TemplateBinding Padding}" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}" />
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </GroupStyle.HeaderContainerStyle>
+                            <GroupStyle.HeaderTemplate>
+                                <DataTemplate x:DataType="vm:AgentGroup">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <FontIcon Glyph="&#xE8B7;" FontSize="12" Foreground="{ThemeResource TextFaintBrush}" />
+                                        <TextBlock Text="{x:Bind Key}" FontSize="12" FontWeight="Medium" Foreground="{ThemeResource TextFaintBrush}" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </GroupStyle.HeaderTemplate>
+                        </GroupStyle>
+                    </ListView.GroupStyle>
+                    <ListView.ItemTemplate>
+                        <DataTemplate x:DataType="agent:AgentSession">
+                            <Grid ColumnSpacing="8" Background="Transparent">
+                                <Grid.ContextFlyout>
+                                    <MenuFlyout>
+                                        <MenuFlyoutItem Text="{x:Bind services:Loc.S('Delete')}" Click="OnDeleteSession" Tag="{x:Bind}" AutomationProperties.AutomationId="DeleteSessionMenuItem">
+                                            <MenuFlyoutItem.Icon>
+                                                <FontIcon Glyph="&#xE74D;" />
+                                            </MenuFlyoutItem.Icon>
+                                        </MenuFlyoutItem>
+                                    </MenuFlyout>
+                                </Grid.ContextFlyout>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <Ellipse Width="7" Height="7" VerticalAlignment="Center" Fill="{x:Bind local:Ui.AgentDot(Status), Mode=OneWay}" />
+                                <TextBlock Grid.Column="1" Text="{x:Bind Title, Mode=OneWay}" TextTrimming="CharacterEllipsis" FontSize="14" AutomationProperties.AutomationId="AgentSessionTitle" />
+                                <TextBlock Grid.Column="2" Text="{x:Bind StatusText, Mode=OneWay}" FontSize="11" Foreground="{x:Bind local:Ui.AgentDot(Status), Mode=OneWay}" VerticalAlignment="Center" />
+                            </Grid>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+
                 <!-- Settings mode: the same sidebar shows a Back button and the settings sections. -->
                 <StackPanel x:Name="SettingsNav" Grid.Row="0" Grid.RowSpan="4" Spacing="6" Visibility="Collapsed">
                     <Button x:Name="BackButton" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Height="36" Padding="12,0" CornerRadius="8"
@@ -197,7 +253,7 @@
                         </Grid.ColumnDefinitions>
                         <Ellipse x:Name="EngineDot" Width="8" Height="8" Fill="{ThemeResource TextFaintBrush}" VerticalAlignment="Center" />
                         <StackPanel Grid.Column="1">
-                            <TextBlock x:Name="EngineStatus" Text="{x:Bind Engine.StatusText, Mode=OneWay}" FontSize="13" FontWeight="Medium" TextTrimming="CharacterEllipsis" />
+                            <TextBlock x:Name="EngineStatus" FontSize="13" FontWeight="Medium" TextTrimming="CharacterEllipsis" />
                             <TextBlock x:Name="HardwareLine" FontSize="12" Foreground="{ThemeResource TextMutedBrush}" TextTrimming="CharacterEllipsis" />
                         </StackPanel>
                         <FontIcon Grid.Column="2" Glyph="&#xE713;" FontSize="15" Foreground="{ThemeResource TextMutedBrush}" />
