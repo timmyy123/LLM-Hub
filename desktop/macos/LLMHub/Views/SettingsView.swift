@@ -8,7 +8,12 @@ struct SettingsView: View {
         case .general: GeneralSettings()
         case .models: ModelsSettings()
         case .api: LocalApiSettings()
-        default: PlaceholderView(section: "Studio", symbol: section.symbol)
+        case .engines: EnginesSettings()
+        case .speech: SpeechSettings()
+        case .studio: StudioSettings()
+        case .agent: AgentSettings()
+        case .websearch: WebSearchSettings()
+        case .storage: StorageSettings()
         }
     }
 }
@@ -18,6 +23,7 @@ private struct GeneralSettings: View {
     @State private var languageChanged = false
     @State private var context = AppSettings.current.contextLength
     @State private var token = AppSettings.current.huggingFaceToken
+    @State private var appearance = AppSettings.current.appearance
 
     var body: some View {
         Form {
@@ -32,6 +38,17 @@ private struct GeneralSettings: View {
             }
             if languageChanged {
                 Text(L.s("LanguageRestart")).foregroundStyle(Theme.textMuted).accessibilityIdentifier("RestartHint")
+            }
+            Picker(L.s("Appearance"), selection: $appearance) {
+                Text(L.s("AppearanceDark")).tag("dark")
+                Text(L.s("AppearanceLight")).tag("light")
+                Text(L.s("AppearanceSystem")).tag("system")
+            }
+            .accessibilityIdentifier("AppearanceBox")
+            .onChange(of: appearance) {
+                AppSettings.current.appearance = appearance
+                AppSettings.save()
+                AppDelegate.applyAppearance()
             }
             Picker(L.s("ContextLength"), selection: $context) {
                 ForEach([4096, 8192, 16384, 32768, 65536, 131072], id: \.self) { Text("\($0 / 1024)K").tag($0) }

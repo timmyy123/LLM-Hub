@@ -1,0 +1,18 @@
+{
+  "apiAllowLan" : false,
+  "apiContextLength" : 65536,
+  "apiEnabled" : false,
+  "apiKey" : "",
+  "apiPort" : 8642,
+  "apiRequireKey" : true,
+  "appearance" : "dark",
+  "contextLength" : 16384,
+  "huggingFaceToken" : "",
+  "lastChatModelId" : "apple.foundation.system",
+  "mtpOff" : [
+
+  ],
+  "thinking" : false,
+  "voice" : "F1",
+  "webSearch" : false
+}
