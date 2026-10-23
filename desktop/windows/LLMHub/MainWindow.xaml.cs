@@ -65,6 +65,7 @@ public sealed partial class MainWindow : Window
 
     public ChatViewModel Chat => Ioc.Chat;
     public AgentViewModel AgentVm => Ioc.AgentVm;
+    public DesignViewModel DesignVm => Ioc.DesignVm;
     public CollectionViewSource AgentGroupsSource { get; } = new() { IsSourceGrouped = true, Source = Ioc.AgentVm.Groups };
     public EngineHub Engine => Ioc.Engines;
     public CollectionViewSource ChatGroupsSource { get; }
@@ -135,11 +136,13 @@ public sealed partial class MainWindow : Window
                 break;
             case "design":
                 SectionTitle.Text = Loc.S("NavDesign");
-                ContentFrame.Navigate(typeof(PlaceholderPage), "Design");
+                if (ContentFrame.Content is not DesignPage)
+                    ContentFrame.Navigate(typeof(DesignPage));
                 break;
             case "studio":
                 SectionTitle.Text = Loc.S("NavStudio");
-                ContentFrame.Navigate(typeof(PlaceholderPage), "Studio");
+                if (ContentFrame.Content is not StudioPage)
+                    ContentFrame.Navigate(typeof(StudioPage));
                 break;
         }
     }
@@ -149,9 +152,11 @@ public sealed partial class MainWindow : Window
         var v = visible ? Visibility.Visible : Visibility.Collapsed;
         SearchField.Visibility = v;
         ChatList.Visibility = v;
-        var agent = NavList.SelectedItem is ListViewItem { Tag: "agent" };
-        AgentSessionList.Visibility = agent ? Visibility.Visible : Visibility.Collapsed;
-        NewButtonLabel.Text = Loc.S(agent ? "NewSession" : "NewChat");
+        var section = NavList.SelectedItem is ListViewItem { Tag: string tag } ? tag : "chat";
+        AgentSessionList.Visibility = section == "agent" ? Visibility.Visible : Visibility.Collapsed;
+        DesignProjectList.Visibility = section == "design" ? Visibility.Visible : Visibility.Collapsed;
+        NewButtonLabel.Text = Loc.S(section switch { "agent" => "NewSession", "design" => "DesignNewProject", _ => "NewChat" });
+        NewChatButton.Visibility = section == "studio" ? Visibility.Collapsed : Visibility.Visible;
         UpdateEngineCard();
     }
 
@@ -162,8 +167,19 @@ public sealed partial class MainWindow : Window
             await AgentPage.PickFolderAndStartAsync();
             return;
         }
+        if (NavList.SelectedItem is ListViewItem { Tag: "design" })
+        {
+            DesignVm.NewProjectCommand.Execute(null);
+            return;
+        }
         Chat.NewChatCommand.Execute(null);
         ShowChat();
+    }
+
+    private void OnDeleteDesign(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { Tag: Services.Design.DesignProject project })
+            DesignVm.DeleteProjectCommand.Execute(project);
     }
 
     private void OnDeleteSession(object sender, RoutedEventArgs e)

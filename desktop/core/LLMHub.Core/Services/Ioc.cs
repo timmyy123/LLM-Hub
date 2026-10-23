@@ -19,6 +19,8 @@ public static class Ioc
     /// <summary>Private API instance the Agent's Claude Code talks to (see <see cref="LocalApiServer(bool)"/>).</summary>
     public static LocalApiServer AgentBridge { get; } = new(agentBridge: true);
     public static Agent.AgentService Agent { get; } = new();
+    public static Studio.ComfyService Comfy { get; } = new();
+    public static Design.DesignService Design { get; } = new();
 
     private static ChatViewModel? _chat;
     private static ModelsViewModel? _modelsVm;
@@ -28,4 +30,10 @@ public static class Ioc
 
     private static AgentViewModel? _agentVm;
     public static AgentViewModel AgentVm => _agentVm ??= new AgentViewModel();
+
+    private static StudioViewModel? _studioVm;
+    public static StudioViewModel StudioVm => _studioVm ??= new StudioViewModel();
+
+    private static DesignViewModel? _designVm;
+    public static DesignViewModel DesignVm => _designVm ??= new DesignViewModel();
 }

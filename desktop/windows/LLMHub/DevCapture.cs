@@ -10,45 +10,11 @@ namespace LLMHub;
 /// <summary>
 /// Debug builds only: `LLMHub.exe [--selftest catalogId] --capture out.png [--page settings|models|chat] [--exit]`
 /// optionally downloads a catalog model and sends a chat message through the real UI, then renders
-/// the window's own XAML to a PNG so changes can be checked from a build script.
+/// the window's own XAML to a PNG so changes can be checked from a build script. The Agent, Design and
+/// Studio end-to-end runs live in <see cref="DevTests"/>.
 /// </summary>
 internal static class DevCapture
 {
-    /// <summary>
-    /// Runs one Agent turn in "ask before edits" mode, approving each permission request (and logging it), so the whole
-    /// Claude Code → bridge → MCP permission → model path is exercised.
-    /// </summary>
-    private static async Task AgentTestAsync(string folder, string prompt, string? modelId)
-    {
-        try
-        {
-            var agent = Ioc.Agent;
-            var model = Ioc.Models.Installed.FirstOrDefault(m => m.Id == modelId || m.CatalogId == modelId) ?? Ioc.Models.Installed.First(m => m.Format == "gguf");
-            var session = agent.CreateSession(folder, model.Id, "default");
-            session.PropertyChanged += (_, e) =>
-            {
-                if (e.PropertyName == nameof(Services.Agent.AgentSession.Pending) && session.Pending is { } p)
-                {
-                    Log.Info($"AGENTTEST permission: {p.Question} {p.Summary}");
-                    agent.Answer(session, allow: true);
-                }
-            };
-            var clock = System.Diagnostics.Stopwatch.StartNew();
-            await agent.SendAsync(session, prompt);
-            foreach (var item in session.Items)
-                Log.Info($"AGENTTEST {item.Kind} {item.Detail} {item.Title[..Math.Min(item.Title.Length, 160)].Replace('\n', ' ')} {item.Meta}");
-            foreach (var task in session.Tasks)
-                Log.Info($"AGENTTEST task [{task.Status}] {task.Text}");
-            foreach (var change in session.Changes)
-                Log.Info($"AGENTTEST change {change.Kind} {change.Path} {change.Stats}");
-            Log.Info($"AGENTTEST done in {clock.Elapsed.TotalSeconds:F1}s status={session.Status}");
-        }
-        catch (Exception e)
-        {
-            Log.Error("AGENTTEST failed", e);
-        }
-    }
-
     public static async void RunIfRequested(MainWindow window)
     {
         var args = Environment.GetCommandLineArgs();
@@ -58,8 +24,16 @@ internal static class DevCapture
 
         if (ValueOf(args, "--selftest") is { } catalogId)
             await SelfTestAsync(catalogId, ValueOf(args, "--format") ?? "gguf", ValueOf(args, "--quant"), ValueOf(args, "--prompt"));
+        if (ValueOf(args, "--studiotest") is { } workflowId)
+            await DevTests.StudioAsync(workflowId, ValueOf(args, "--prompt") ?? "a cozy cafe interior in morning light, film photo", ValueOf(args, "--image"));
+        if (ValueOf(args, "--designtest") is { } request)
+        {
+            await DevTests.DesignAsync(request, ValueOf(args, "--kind"), ValueOf(args, "--model"), ValueOf(args, "--followup"));
+            window.ShowSection("design");
+            await Task.Delay(4000);
+        }
         if (ValueOf(args, "--agenttest") is { } folder)
-            await AgentTestAsync(folder, ValueOf(args, "--prompt") ?? "Describe this project in one sentence.", ValueOf(args, "--model"));
+            await DevTests.AgentAsync(folder, ValueOf(args, "--prompt") ?? "Describe this project in one sentence.", ValueOf(args, "--model"));
 
         try
         {

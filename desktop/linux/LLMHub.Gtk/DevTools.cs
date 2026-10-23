@@ -33,17 +33,32 @@ internal static class DevTools
 
         if (Value(args, "--selftest") is { } id)
             await SelfTest(window, id, Value(args, "--format") ?? "gguf", Value(args, "--quant"), Value(args, "--prompt"));
+        if (Value(args, "--studiotest") is { } workflow)
+            await DevTests.StudioAsync(workflow, Value(args, "--prompt") ?? "a cozy cafe interior in morning light, film photo", Value(args, "--image"));
+        if (Value(args, "--designtest") is { } request)
+            await DevTests.DesignAsync(request, Value(args, "--kind"), Value(args, "--model"), Value(args, "--followup"));
+        if (Value(args, "--agenttest") is { } folder)
+            await DevTests.AgentAsync(folder, Value(args, "--prompt") ?? "Describe this project in one sentence.", Value(args, "--model"));
 
         switch (Value(args, "--page"))
         {
             case "settings": window.ShowSettings("general"); break;
             case "models": window.ShowSettings("models"); break;
             case "api": window.ShowSettings("api"); break;
+            case "agent" or "design" or "studio": window.ShowSection(Value(args, "--page")!); break;
+            case "voice" or "music" or "video":
+                Ioc.StudioVm.Mode = Value(args, "--page")!;
+                window.ShowSection("studio");
+                break;
             default: window.ShowChat(); break;
         }
         await Task.Delay(int.TryParse(Value(args, "--wait"), out var ms) ? ms : 2500);
         if (Value(args, "--capture") is { } path)
+        {
             Capture(window.Window, path);
+            if (Value(args, "--page") == "design")
+                await window.Design.ProbePreviewAsync();
+        }
         if (args.Contains("--exit"))
             window.Window.Close();
     }

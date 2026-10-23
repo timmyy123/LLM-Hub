@@ -5,19 +5,25 @@ using LLMHub.ViewModels;
 
 namespace LLMHub.Linux;
 
-/// <summary>Messages, empty state and composer, bound to the shared ChatViewModel.</summary>
+/// <summary>Messages, empty state and composer, bound to the shared ChatViewModel (layout from the Claude Design canvas).</summary>
 internal sealed class ChatPage
 {
     private readonly MainWindow _main;
     private readonly ChatViewModel _vm = Ioc.Chat;
     private readonly Gtk.Stack _body = Gtk.Stack.New();
-    private readonly Gtk.Box _messages = Gtk.Box.New(Gtk.Orientation.Vertical, 24);
+    private readonly Gtk.Box _messages = Gtk.Box.New(Gtk.Orientation.Vertical, 28);
     private readonly Gtk.ScrolledWindow _scroll = Gtk.ScrolledWindow.New();
     private readonly Gtk.TextView _input = Gtk.TextView.New();
     private readonly Gtk.DropDown _models = Gtk.DropDown.NewFromStrings([]);
     private readonly Gtk.ToggleButton _mtp = Gtk.ToggleButton.NewWithLabel(Loc.S("Mtp"));
+    private readonly Gtk.ToggleButton _webSearch = Gtk.ToggleButton.New();
+    private readonly Gtk.ToggleButton _thinking = Gtk.ToggleButton.NewWithLabel(Loc.S("ExtendedThinking"));
+    private readonly Gtk.Label _context = Ui.Label("", "caption", "dim-label");
+    private readonly Gtk.Box _pending = Gtk.Box.New(Gtk.Orientation.Horizontal, 8);
+    private readonly Gtk.Label _attachError = Ui.Label("", "caption", "error");
     private readonly Gtk.Button _send;
     private readonly Gtk.Button _stop;
+    private readonly Gtk.Button _dictate;
     private readonly Adw.StatusPage _empty = Adw.StatusPage.New();
     private readonly Gtk.Button _getModel;
     private bool _syncingModels;
@@ -36,7 +42,7 @@ internal sealed class ChatPage
 
         var clamp = Adw.Clamp.New();
         clamp.SetMaximumSize(760);
-        clamp.SetChild(_messages.Margins(28, 24, 12, 24).Named("MessageList"));
+        clamp.SetChild(_messages.Margins(32, 24, 16, 24).Named("MessageList"));
         _scroll.SetChild(clamp);
         _scroll.SetPolicy(Gtk.PolicyType.Never, Gtk.PolicyType.Automatic);
         _body.AddNamed(_empty, "empty");
@@ -66,31 +72,60 @@ internal sealed class ChatPage
 
         _models.Named("ModelPicker");
         _models.SetHalign(Gtk.Align.End);
+        _models.AddCssClass("flat");
         _models.OnNotify += (_, e) =>
         {
             if (!_syncingModels && e.Pspec.GetName() == "selected" && _models.GetSelected() is var i and < uint.MaxValue && i < _vm.Models.Count)
                 _vm.SelectedModel = _vm.Models[(int)i];
         };
-        _send = Ui.IconButton("go-up-symbolic", Loc.S("Send"), Send, "circular", "suggested-action").Named("SendButton");
-        _stop = Ui.IconButton("media-playback-stop-symbolic", Loc.S("Stop"), () => _vm.StopCommand.Execute(null), "circular").Named("StopButton");
-        var spacer = Gtk.Box.New(Gtk.Orientation.Horizontal, 0).Expand(true, false);
+
+        var attach = Ui.IconButton("mail-attachment-symbolic", Loc.S("Attach"), PickFiles, "composer-icon").Named("AttachButton");
+        _webSearch.SetChild(Ui.HBox(6, Gtk.Image.NewFromIconName("web-browser-symbolic"), Gtk.Label.New(Loc.S("WebSearch"))));
+        _webSearch.AddCssClass("composer-toggle");
+        _webSearch.Named("WebSearchToggle");
+        _webSearch.SetActive(_vm.WebSearchEnabled);
+        _webSearch.OnToggled += (_, _) => _vm.WebSearchEnabled = _webSearch.GetActive();
+        _thinking.AddCssClass("composer-toggle");
+        _thinking.Named("ThinkingToggle");
+        _thinking.SetActive(_vm.ThinkingEnabled);
+        _thinking.OnToggled += (_, _) => _vm.ThinkingEnabled = _thinking.GetActive();
+        _mtp.AddCssClass("composer-toggle");
         _mtp.SetTooltipText(Loc.S("MtpHelp"));
         _mtp.Named("MtpToggle");
         _mtp.OnToggled += (_, _) => _vm.MtpEnabled = _mtp.GetActive();
-        var actions = Ui.HBox(8, spacer, _mtp, _models, _send, _stop);
-        var composer = Ui.VBox(8, inputScroll, actions);
+        _context.Named("ContextMeter");
+        _context.SetValign(Gtk.Align.Center);
+        _context.SetWrap(false);
+        _dictate = Ui.IconButton("audio-input-microphone-symbolic", Loc.S("Dictate"), Dictate, "composer-icon").Named("DictateButton");
+        _send = Ui.IconButton("go-up-symbolic", Loc.S("Send"), Send, "suggested-action", "composer-send").Named("SendButton");
+        _stop = Ui.IconButton("media-playback-stop-symbolic", Loc.S("Stop"), () => _vm.StopCommand.Execute(null), "composer-send").Named("StopButton");
+        var spacer = Gtk.Box.New(Gtk.Orientation.Horizontal, 0).Expand(true, false);
+        var actions = Ui.HBox(6, attach, _webSearch, _thinking, _mtp, spacer, _context, _models, _dictate, _send, _stop);
+        _pending.Named("PendingAttachments");
+        _attachError.Named("AttachError");
+        var composer = Ui.VBox(10, _pending, _attachError, inputScroll, actions);
         composer.AddCssClass("composer");
+        var note = Ui.Label(Loc.S("PrivacyNote"), "caption", "dim-label");
+        note.SetXalign(0.5f);
+        var composerBox = Ui.VBox(8, composer, note);
         var composerClamp = Adw.Clamp.New();
         composerClamp.SetMaximumSize(760);
-        composerClamp.SetChild(composer);
+        composerClamp.SetChild(composerBox);
 
-        Root = Ui.VBox(0, _body, composerClamp.Margins(8, 24, 20, 24));
+        Root = Ui.VBox(0, _body, composerClamp.Margins(8, 24, 18, 24));
 
         _vm.Messages.CollectionChanged += OnMessagesChanged;
         _vm.PropertyChanged += OnVmChanged;
         _vm.Models.CollectionChanged += (_, _) => SyncModels(rebuild: true);
+        _vm.PendingAttachments.CollectionChanged += (_, _) => RebuildPending();
+        Ioc.Speech.PropertyChanged += (_, _) => GLib.Functions.IdleAdd(GLib.Constants.PRIORITY_DEFAULT, () =>
+        {
+            UpdateDictation();
+            return false;
+        });
         SyncModels(rebuild: true);
         RebuildMessages();
+        RebuildPending();
         UpdateState();
         _mtp.SetVisible(_vm.MtpVisible);
         _mtp.SetActive(_vm.MtpEnabled);
@@ -112,6 +147,58 @@ internal sealed class ChatPage
         }
     }
 
+    private async void PickFiles()
+    {
+        try
+        {
+            var dialog = Gtk.FileDialog.New();
+            dialog.SetTitle(Loc.S("Attach"));
+            if (await dialog.OpenMultipleAsync(_main.Window) is { } list)
+            {
+                var paths = new List<string>();
+                for (uint i = 0; i < list.GetNItems(); i++)
+                    if (list.GetObject(i) is Gio.File file && file.GetPath() is { } path)
+                        paths.Add(path);
+                _vm.AttachFiles(paths);
+            }
+        }
+        catch (GLib.GException)
+        {
+            // Dismissed.
+        }
+    }
+
+    private async void Dictate()
+    {
+        var speech = Ioc.Speech;
+        try
+        {
+            if (!speech.IsRecording)
+            {
+                speech.StartDictation();
+                return;
+            }
+            var text = await speech.StopDictationAsync();
+            if (text.Length > 0)
+                InputText = InputText.Length == 0 ? text : InputText.TrimEnd() + " " + text;
+        }
+        catch (Exception e)
+        {
+            Log.Error("Dictation failed", e);
+            _vm.AttachError = Loc.F("ErrorPrefix", e.Message);
+        }
+    }
+
+    private void UpdateDictation()
+    {
+        var speech = Ioc.Speech;
+        _dictate.SetIconName(speech.IsRecording ? "media-playback-stop-symbolic" : "audio-input-microphone-symbolic");
+        _dictate.SetTooltipText(speech.IsRecording ? Loc.S("Listening") : speech.IsTranscribing ? Loc.S("Transcribing") : Loc.S("Dictate"));
+        _dictate.SetSensitive(!speech.IsTranscribing);
+        if (speech.Status.Length > 0)
+            _vm.AttachError = speech.Status;
+    }
+
     private void OnVmChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName is nameof(ChatViewModel.IsGenerating) or nameof(ChatViewModel.HasMessages) or nameof(ChatViewModel.HasModels))
@@ -129,6 +216,15 @@ internal sealed class ChatPage
             _mtp.SetVisible(_vm.MtpVisible);
             _mtp.SetActive(_vm.MtpEnabled);
         }
+        if (e.PropertyName is nameof(ChatViewModel.ContextText))
+            _context.SetText(_vm.ContextText);
+        if (e.PropertyName is nameof(ChatViewModel.AttachError))
+        {
+            _attachError.SetText(_vm.AttachError);
+            _attachError.SetVisible(_vm.AttachError.Length > 0);
+        }
+        if (e.PropertyName is nameof(ChatViewModel.CurrentTitle) or nameof(ChatViewModel.IsCurrentStarred) or nameof(ChatViewModel.HasOpenChat))
+            _main.UpdateChatHeader();
     }
 
     private void UpdateState()
@@ -138,6 +234,8 @@ internal sealed class ChatPage
         _getModel.SetVisible(!_vm.HasModels);
         _send.SetVisible(!_vm.IsGenerating);
         _stop.SetVisible(_vm.IsGenerating);
+        _attachError.SetVisible(_vm.AttachError.Length > 0);
+        _main.UpdateChatHeader();
     }
 
     private void SyncModels(bool rebuild)
@@ -151,6 +249,35 @@ internal sealed class ChatPage
             _models.SetSelected(selected);
         _models.SetVisible(_vm.HasModels);
         _syncingModels = false;
+    }
+
+    private void RebuildPending()
+    {
+        _pending.Clear();
+        foreach (var a in _vm.PendingAttachments)
+        {
+            var remove = Ui.IconButton("window-close-symbolic", Loc.S("Delete"), () => _vm.RemoveAttachmentCommand.Execute(a), "flat", "circular").Named("RemoveAttachmentButton");
+            remove.SetValign(Gtk.Align.Start);
+            _pending.Append(Ui.HBox(0, Chip(a), remove));
+        }
+        _pending.SetVisible(_vm.PendingAttachments.Count > 0);
+    }
+
+    /// <summary>File chip: coloured badge (PDF, PNG…), name and detail.</summary>
+    private static Gtk.Widget Chip(Attachment a)
+    {
+        var badge = Ui.Label(a.Badge, "badge", a.IsImage ? "badge-image" : "badge-doc");
+        badge.SetXalign(0.5f);
+        badge.SetValign(Gtk.Align.Center);
+        var name = Ui.Label(a.Name, "caption-heading");
+        name.SetWrap(false);
+        name.SetEllipsize(Pango.EllipsizeMode.Middle);
+        name.SetMaxWidthChars(24);
+        var chip = Ui.HBox(10, badge, Ui.VBox(0, name, Ui.Label(a.Detail, "caption", "dim-label")));
+        chip.AddCssClass("file-chip");
+        chip.Named("AttachmentChip");
+        chip.SetTooltipText(a.Name);
+        return chip;
     }
 
     private void OnMessagesChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -181,34 +308,79 @@ internal sealed class ChatPage
             var text = Ui.Label(item.Content, "message", "user-bubble").Named("UserMessage");
             text.SetSelectable(true);
             text.SetHalign(Gtk.Align.End);
-            text.SetMarginStart(120);
-            return text;
+            var chips = Ui.HBox(8);
+            chips.SetHalign(Gtk.Align.End);
+            foreach (var a in item.Attachments)
+                chips.Append(Chip(a));
+            chips.SetVisible(item.HasAttachments);
+            var column = Ui.VBox(8, chips, text);
+            column.SetHalign(Gtk.Align.End);
+            column.SetMarginStart(120);
+            return column;
         }
 
-        var content = Ui.Label(item.Content, "message").Named("AssistantMessage");
-        content.SetSelectable(true);
-        var thinkingText = Ui.Label(item.Reasoning, "dim-label");
+        var activityText = Ui.Label("", "caption");
+        activityText.SetWrap(false);
+        var activity = Ui.HBox(8, Gtk.Image.NewFromIconName("web-browser-symbolic"), activityText);
+        activity.AddCssClass("activity-pill");
+        activity.Named("ActivityPill");
+        var thinkingText = Ui.Label(item.Reasoning, "dim-label", "reasoning");
         thinkingText.SetSelectable(true);
-        var thinking = Gtk.Expander.New(Loc.S("Thinking"));
-        thinking.SetChild(thinkingText.Margins(6, 0, 6, 12));
-        thinking.Named("ThinkingExpander");
+        var reasoning = Gtk.Revealer.New();
+        reasoning.SetChild(thinkingText);
+        var thinkingPill = Gtk.ToggleButton.NewWithLabel(Loc.S("Thinking"));
+        thinkingPill.AddCssClass("activity-pill");
+        thinkingPill.Named("ThinkingExpander");
+        thinkingPill.OnToggled += (_, _) => reasoning.SetRevealChild(thinkingPill.GetActive());
+        var pills = Ui.HBox(8, activity, thinkingPill);
+
         var spinner = Gtk.Spinner.New();
         var status = Ui.Label(item.Status, "dim-label").Named("MessageStatus");
         var statusRow = Ui.HBox(10, spinner, status);
+        var content = new MarkdownView("AssistantMessage");
+        var sources = Ui.VBox(6);
+        sources.Named("Sources");
+
+        var copy = Ui.IconButton("edit-copy-symbolic", Loc.S("Copy"), () => Ui.Copy(_messages, item.Content), "flat").Named("CopyMessageButton");
+        var read = Ui.IconButton("audio-speakers-symbolic", Loc.S("ReadAloud"), () => _ = Ioc.Speech.ToggleSpeakAsync(item.Id, item.Content), "flat").Named("ReadAloudButton");
+        var regenerate = Ui.IconButton("view-refresh-symbolic", Loc.S("Regenerate"), () => _vm.RegenerateCommand.Execute(item), "flat").Named("RegenerateButton");
         var footer = Ui.Label(item.Footer, "caption", "dim-label").Named("MessageFooter");
-        var box = Ui.VBox(10, thinking, statusRow, content, footer);
+        footer.SetValign(Gtk.Align.Center);
+        footer.SetMarginStart(8);
+        footer.SetWrap(false);
+        var actionRow = Ui.HBox(4, copy, read, regenerate, footer);
+        var box = Ui.VBox(14, pills, reasoning, statusRow, content.Widget, sources, actionRow);
 
         void Update()
         {
             content.SetText(item.Content);
-            content.SetVisible(item.Content.Length > 0);
+            content.Widget.SetVisible(item.Content.Length > 0);
+            activityText.SetText(item.Activity);
+            activity.SetVisible(item.Activity.Length > 0);
             thinkingText.SetText(item.Reasoning);
-            thinking.SetVisible(item.Reasoning.Length > 0);
+            thinkingPill.SetLabel(Loc.S(item.IsDone ? "ThoughtLabel" : "Thinking"));
+            thinkingPill.SetVisible(item.Reasoning.Length > 0);
+            pills.SetVisible(item.Activity.Length > 0 || item.Reasoning.Length > 0);
             status.SetText(item.Status);
             statusRow.SetVisible(item.Status.Length > 0);
             spinner.SetSpinning(item.Status.Length > 0);
             footer.SetText(item.Footer);
-            footer.SetVisible(item.Footer.Length > 0);
+            actionRow.SetVisible(item.ShowActions);
+            if (sources.GetFirstChild() is null && item.HasSources)
+            {
+                foreach (var s in item.Sources)
+                {
+                    var link = Gtk.LinkButton.NewWithLabel(s.Url, s.Host);
+                    link.AddCssClass("source-chip");
+                    link.Named("SourceLink");
+                    var title = Ui.Label($"{s.Number}.  {s.Title}", "caption");
+                    title.SetWrap(false);
+                    title.SetEllipsize(Pango.EllipsizeMode.End);
+                    title.SetMaxWidthChars(60);
+                    sources.Append(Ui.HBox(8, title, link));
+                }
+            }
+            sources.SetVisible(item.HasSources);
         }
         Update();
         item.PropertyChanged += (_, _) =>
@@ -216,6 +388,7 @@ internal sealed class ChatPage
             Update();
             ScrollToEnd();
         };
+        item.Sources.CollectionChanged += (_, _) => Update();
         return box;
     }
 

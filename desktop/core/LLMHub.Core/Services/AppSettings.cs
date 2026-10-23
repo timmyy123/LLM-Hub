@@ -17,6 +17,7 @@ public sealed class AppSettings
     public string Voice { get; set; } = "F1";
     /// <summary>Model new Agent sessions use (defaults to the catalog's agent pick, Gemma 4 26B-A4B).</summary>
     public string? AgentModelId { get; set; }
+    public string? DesignModelId { get; set; }
     public string HuggingFaceToken { get; set; } = "";
     public string? LastChatModelId { get; set; }
     public int ContextLength { get; set; } = 16384;

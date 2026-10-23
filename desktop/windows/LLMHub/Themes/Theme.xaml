@@ -206,6 +206,23 @@
         <Setter Property="Foreground" Value="{ThemeResource TextSecondaryBrush}" />
     </Style>
 
+    <!-- Studio mode tabs (Image, Video, Music, Voice): 32 px, filled when selected. -->
+    <Style x:Key="StudioTabStyle" TargetType="ToggleButton" BasedOn="{StaticResource DefaultToggleButtonStyle}">
+        <Setter Property="Height" Value="32" />
+        <Setter Property="Padding" Value="14,0" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{ThemeResource TextMutedBrush}" />
+    </Style>
+
+    <Style x:Key="FieldLabelStyle" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="Foreground" Value="{ThemeResource TextMutedBrush}" />
+    </Style>
+
     <!-- Pill above a reply: "Searched the web · 5 results", "Thought for a few seconds". -->
     <Style x:Key="ActivityPillStyle" TargetType="Border">
         <Setter Property="Height" Value="30" />

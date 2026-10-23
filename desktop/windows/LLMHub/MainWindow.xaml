@@ -7,6 +7,7 @@
     xmlns:services="using:LLMHub.Services"
     xmlns:vm="using:LLMHub.ViewModels"
     xmlns:agent="using:LLMHub.Services.Agent"
+    xmlns:design="using:LLMHub.Services.Design"
     Title="LLM Hub">
 
     <Grid x:Name="Root" Background="{ThemeResource AppBackgroundBrush}">
@@ -204,6 +205,28 @@
                                 <Ellipse Width="7" Height="7" VerticalAlignment="Center" Fill="{x:Bind local:Ui.AgentDot(Status), Mode=OneWay}" />
                                 <TextBlock Grid.Column="1" Text="{x:Bind Title, Mode=OneWay}" TextTrimming="CharacterEllipsis" FontSize="14" AutomationProperties.AutomationId="AgentSessionTitle" />
                                 <TextBlock Grid.Column="2" Text="{x:Bind StatusText, Mode=OneWay}" FontSize="11" Foreground="{x:Bind local:Ui.AgentDot(Status), Mode=OneWay}" VerticalAlignment="Center" />
+                            </Grid>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+
+                <!-- Design mode: design projects, newest first. -->
+                <ListView x:Name="DesignProjectList" Grid.Row="2" Grid.RowSpan="2" Margin="0,12,0,0" SelectionMode="Single" Visibility="Collapsed"
+                          ItemContainerStyle="{StaticResource ChatItemStyle}" ItemsSource="{x:Bind DesignVm.Projects}"
+                          SelectedItem="{x:Bind DesignVm.Selected, Mode=TwoWay}">
+                    <ListView.ItemTemplate>
+                        <DataTemplate x:DataType="design:DesignProject">
+                            <Grid Background="Transparent">
+                                <Grid.ContextFlyout>
+                                    <MenuFlyout>
+                                        <MenuFlyoutItem Text="{x:Bind services:Loc.S('Delete')}" Click="OnDeleteDesign" Tag="{x:Bind}">
+                                            <MenuFlyoutItem.Icon>
+                                                <FontIcon Glyph="&#xE74D;" />
+                                            </MenuFlyoutItem.Icon>
+                                        </MenuFlyoutItem>
+                                    </MenuFlyout>
+                                </Grid.ContextFlyout>
+                                <TextBlock Text="{x:Bind Name, Mode=OneWay}" TextTrimming="CharacterEllipsis" FontSize="14" AutomationProperties.AutomationId="DesignProjectTitle" />
                             </Grid>
                         </DataTemplate>
                     </ListView.ItemTemplate>

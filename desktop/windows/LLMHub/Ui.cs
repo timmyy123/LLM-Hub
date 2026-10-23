@@ -3,6 +3,9 @@ using Microsoft.UI.Xaml.Media;
 
 namespace LLMHub;
 
+/// <summary>A design-system colour for the swatch row.</summary>
+public sealed record Swatch(string Hex, Brush Fill);
+
 /// <summary>Small helpers for x:Bind function bindings.</summary>
 public static class Ui
 {
@@ -84,6 +87,39 @@ public static class Ui
         Services.Agent.AgentStatus.Error => Solid(0xFF, 0x9A, 0x9A),
         _ => Solid(0x5A, 0x59, 0x55),
     };
+
+    // Studio
+    public static Brush RunningBrush(bool running) => running ? Solid(0x5F, 0xD3, 0x8D) : Solid(0x8F, 0x8E, 0x88);
+    public static object Box(int value) => value;
+    public static double ToDouble(int value) => value;
+    public static string ReferenceLabel(string path) => string.IsNullOrEmpty(path) ? Services.Loc.S("StudioReference") : System.IO.Path.GetFileName(path);
+    public static string SavedTo() => Services.Loc.F("StudioSavedTo", Services.Studio.ComfyService.Gallery);
+    public static ImageSource? Thumbnail(string path)
+    {
+        try
+        {
+            return new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(new Uri(path)) { DecodePixelWidth = 480 };
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
+    // Design
+    public static Visibility IsRole(string role, string wanted) => role == wanted ? Visibility.Visible : Visibility.Collapsed;
+    public static string DesignPlaceholder(bool hasPreview) => Services.Loc.S(hasPreview ? "DesignPlaceholder" : "DesignStartPlaceholder");
+    public static string SelectedLabel(string element) => string.IsNullOrEmpty(element) ? Services.Loc.S("DesignSelectHint") : element;
+    /// <summary>"Editing the hours section" while a change runs, or "Designing… (2.1k characters)".</summary>
+    public static string DesignProgress(string element, string live) =>
+        Services.Loc.S("DesignWorking") + (live.Length > 0 ? $" ({live.Length / 1000.0:F1}k)" : "") + (string.IsNullOrEmpty(element) ? "" : " · " + element);
+    public static Brush Hex(string hex)
+    {
+        var h = hex.TrimStart('#');
+        return Solid(Convert.ToByte(h[..2], 16), Convert.ToByte(h[2..4], 16), Convert.ToByte(h[4..6], 16));
+    }
+
+    public static List<Swatch> Swatches(Services.Design.DesignSystem system) => system.Colors.Select(c => new Swatch(c, Hex(c))).ToList();
 
     public static string StarLabel(bool starred) => Services.Loc.S(starred ? "Unstar" : "Star");
     public static string StarGlyph(bool starred) => starred ? "\uE735" : "\uE734";

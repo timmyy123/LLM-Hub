@@ -188,6 +188,16 @@
                         </TextBox.Resources>
                     </TextBox>
                     <Grid ColumnSpacing="6">
+                        <Grid.Resources>
+                            <!-- Composer switches when on: the design's blue-tinted pill. -->
+                            <StaticResource x:Key="ToggleButtonBackgroundChecked" ResourceKey="ToggleOnBrush" />
+                            <StaticResource x:Key="ToggleButtonBackgroundCheckedPointerOver" ResourceKey="ToggleOnBrush" />
+                            <StaticResource x:Key="ToggleButtonBackgroundCheckedPressed" ResourceKey="ToggleOnBrush" />
+                            <StaticResource x:Key="ToggleButtonBorderBrushChecked" ResourceKey="ToggleOnBorderBrush" />
+                            <StaticResource x:Key="ToggleButtonBorderBrushCheckedPointerOver" ResourceKey="ToggleOnBorderBrush" />
+                            <StaticResource x:Key="ToggleButtonForegroundChecked" ResourceKey="LinkBrush" />
+                            <StaticResource x:Key="ToggleButtonForegroundCheckedPointerOver" ResourceKey="LinkBrush" />
+                        </Grid.Resources>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />

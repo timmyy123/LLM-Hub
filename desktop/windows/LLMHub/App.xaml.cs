@@ -27,6 +27,7 @@ public partial class App : Application
         {
             Ioc.Engines.Stop();
             Ioc.Speech.Stop();
+            Ioc.Comfy.Stop();
         };
         Window.Activate();
         _ = Ioc.Api.RestartAsync();

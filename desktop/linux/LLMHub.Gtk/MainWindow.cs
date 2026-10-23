@@ -20,12 +20,25 @@ internal sealed class MainWindow
     private readonly Gtk.ListBox _chats = Gtk.ListBox.New();
     private readonly Gtk.SearchEntry _search = Gtk.SearchEntry.New();
     private readonly Gtk.Box _chatsArea;
+    private readonly Gtk.ListBox _agentList = Gtk.ListBox.New();
+    private readonly Gtk.ListBox _designList = Gtk.ListBox.New();
+    private readonly Gtk.Widget _agentArea;
+    private readonly Gtk.Widget _designArea;
+    private string _section = "chat";
+    private bool _syncingLists;
+    private readonly List<(Services.Agent.AgentSession Session, System.ComponentModel.PropertyChangedEventHandler Handler)> _agentRowHandlers = [];
     private readonly Gtk.Label _engineText = Ui.Label("", "heading");
     private readonly Gtk.Box _dot = Gtk.Box.New(Gtk.Orientation.Horizontal, 0);
     private readonly SettingsPages _settings;
+    private readonly Gtk.Button _star;
+    private readonly Gtk.Label _newLabel = Ui.Label(Loc.S("NewChat"), "heading");
+    private readonly Gtk.Button _share;
     private bool _syncingChats;
 
     public ChatPage Chat { get; }
+    public AgentPage Agent { get; }
+    public DesignPage Design { get; }
+    public StudioPage Studio { get; }
     public Gtk.Window Window => _window;
 
     public MainWindow(Adw.Application app)
@@ -37,14 +50,20 @@ internal sealed class MainWindow
 
         Chat = new ChatPage(this);
         _settings = new SettingsPages(this);
+        Agent = new AgentPage(this);
+        Design = new DesignPage(this);
+        Studio = new StudioPage(this);
         _content.AddNamed(Chat.Root, "chat");
-        foreach (var section in new[] { "Agent", "Design", "Studio" })
-            _content.AddNamed(Placeholder(section), section.ToLowerInvariant());
+        _content.AddNamed(Agent.Root, "agent");
+        _content.AddNamed(Design.Root, "design");
+        _content.AddNamed(Studio.Root, "studio");
         _content.AddNamed(_settings.General, "general");
         _content.AddNamed(_settings.Models, "models");
         _content.AddNamed(_settings.Api, "api");
 
         _chatsArea = BuildChatsArea();
+        _agentArea = BuildAgentArea();
+        _designArea = BuildDesignArea();
         _sidebarModes.AddNamed(BuildAppSidebar(), "app");
         _sidebarModes.AddNamed(BuildSettingsSidebar(), "settings");
         _sidebarModes.SetVexpand(true);
@@ -56,6 +75,11 @@ internal sealed class MainWindow
 
         var contentHeader = Adw.HeaderBar.New();
         contentHeader.SetTitleWidget(_title);
+        // Chat header actions from the design: star the chat, share it as Markdown.
+        _share = Ui.Button(Loc.S("Share"), ShareChat).Named("ShareButton");
+        _star = Ui.IconButton("non-starred-symbolic", Loc.S("Star"), () => Ioc.Chat.ToggleStarCommand.Execute(null), "flat").Named("StarButton");
+        contentHeader.PackEnd(_share);
+        contentHeader.PackEnd(_star);
         var contentView = Adw.ToolbarView.New();
         contentView.AddTopBar(contentHeader);
         contentView.SetContent(_content);
@@ -70,12 +94,55 @@ internal sealed class MainWindow
         Ioc.Chat.Groups.CollectionChanged += (_, _) => RebuildChats();
         Ioc.Chat.PropertyChanged += OnChatChanged;
         Ioc.Engines.PropertyChanged += (_, _) => UpdateEngine();
+        Ioc.AgentVm.Groups.CollectionChanged += (_, _) => UiThread.Run(RebuildAgentList);
+        Ui.Watch(Ioc.AgentVm, p =>
+        {
+            if (p == nameof(AgentViewModel.Selected))
+                SyncAgentSelection();
+        });
+        Ioc.DesignVm.Projects.CollectionChanged += (_, _) => UiThread.Run(RebuildDesignList);
+        Ui.Watch(Ioc.DesignVm, p =>
+        {
+            if (p == nameof(DesignViewModel.Selected))
+                SyncDesignSelection();
+        });
+        RebuildAgentList();
+        RebuildDesignList();
         RebuildChats();
         UpdateEngine();
         ShowChat();
     }
 
     public void Present() => _window.Present();
+
+    /// <summary>Star and Share show for an open chat on the Chat page.</summary>
+    public void UpdateChatHeader()
+    {
+        if (_star is null)
+            return;
+        var onChat = _content.GetVisibleChildName() == "chat";
+        _star.SetVisible(onChat && Ioc.Chat.HasOpenChat);
+        _share.SetVisible(onChat && Ioc.Chat.HasMessages);
+        _star.SetIconName(Ioc.Chat.IsCurrentStarred ? "starred-symbolic" : "non-starred-symbolic");
+        _star.SetTooltipText(Loc.S(Ioc.Chat.IsCurrentStarred ? "Unstar" : "Star"));
+        if (onChat)
+            _title.SetTitle(Ioc.Chat.CurrentTitle.Length > 0 ? Ioc.Chat.CurrentTitle : Loc.S("NavChat"));
+    }
+
+    private async void ShareChat()
+    {
+        try
+        {
+            var dialog = Gtk.FileDialog.New();
+            dialog.SetInitialName(Ioc.Chat.ExportFileName());
+            if (await dialog.SaveAsync(_window) is { } file && file.GetPath() is { } path)
+                await File.WriteAllTextAsync(path, Ioc.Chat.ExportMarkdown());
+        }
+        catch (GLib.GException)
+        {
+            // Dismissed.
+        }
+    }
 
     public void ShowChat()
     {
@@ -94,10 +161,25 @@ internal sealed class MainWindow
             _ = Ioc.ModelsVm.LoadCatalogAsync();
     }
 
+    /// <summary>Shows an app section (chat, agent, design, studio) with its sidebar list.</summary>
+    public void ShowSection(string section)
+    {
+        _sidebarModes.SetVisibleChildName("app");
+        var index = section switch { "agent" => 1, "design" => 2, "studio" => 3, _ => 0 };
+        _nav.SelectRow(_nav.GetRowAtIndex(index));
+        Show(section, Loc.S(section switch { "agent" => "NavAgent", "design" => "NavDesign", "studio" => "NavStudio", _ => "NavChat" }));
+    }
+
     private void Show(string page, string title)
     {
         _content.SetVisibleChildName(page);
+        if (page is "chat" or "agent" or "design" or "studio")
+            _section = page;
+        UpdateChatHeader();
         _chatsArea.SetVisible(page == "chat");
+        _agentArea.SetVisible(page == "agent");
+        _designArea.SetVisible(page == "design");
+        _newLabel.SetText(Loc.S(page switch { "agent" => "NewSession", "design" => "DesignNewProject", _ => "NewChat" }));
         _title.SetTitle(page == "chat" && Ioc.Chat.CurrentTitle.Length > 0 ? Ioc.Chat.CurrentTitle : title);
     }
 
@@ -105,18 +187,43 @@ internal sealed class MainWindow
 
     private Gtk.Widget BuildAppSidebar()
     {
+        // Left-aligned with the shortcut on the right, as in the design.
         var newChat = Gtk.Button.New();
-        var content = Adw.ButtonContent.New();
-        content.SetIconName("list-add-symbolic");
-        content.SetLabel(Loc.S("NewChat"));
-        newChat.SetChild(content);
-        newChat.AddCssClass("pill");
+        var shortcut = Ui.Label("Ctrl+N", "caption", "dim-label");
+        shortcut.SetHexpand(true);
+        shortcut.SetXalign(1);
+        _newLabel.SetXalign(0);
+        _newLabel.SetWrap(false);
+        newChat.SetChild(Ui.HBox(10, Gtk.Image.NewFromIconName("list-add-symbolic"), _newLabel, shortcut));
+        newChat.AddCssClass("new-button");
         newChat.Named("NewChatButton").Margins(6, 10, 6, 10);
         newChat.OnClicked += (_, _) =>
         {
-            Ioc.Chat.NewChatCommand.Execute(null);
-            ShowChat();
+            switch (_section)
+            {
+                case "agent":
+                    AgentPage.PickFolderAndStart(_window);
+                    break;
+                case "design":
+                    Ioc.DesignVm.NewProjectCommand.Execute(null);
+                    break;
+                default:
+                    Ioc.Chat.NewChatCommand.Execute(null);
+                    ShowChat();
+                    break;
+            }
         };
+        var keys = Gtk.EventControllerKey.New();
+        keys.OnKeyPressed += (_, e) =>
+        {
+            if ((e.Keyval is 0x6e or 0x4e) && (e.State & Gdk.ModifierType.ControlMask) != 0)
+            {
+                newChat.Activate();
+                return true;
+            }
+            return false;
+        };
+        _window.AddController(keys);
 
         _nav.AddCssClass("navigation-sidebar");
         foreach (var (key, icon) in new[] { ("NavChat", "chat-message-new-symbolic"), ("NavAgent", "utilities-terminal-symbolic"),
@@ -133,7 +240,7 @@ internal sealed class MainWindow
             }
         };
 
-        return Ui.VBox(4, newChat, _nav, _chatsArea);
+        return Ui.VBox(4, newChat, _nav, _chatsArea, _agentArea, _designArea);
     }
 
     private Gtk.Box BuildChatsArea()
@@ -291,13 +398,143 @@ internal sealed class MainWindow
         _syncingChats = false;
     }
 
-    private static Gtk.Widget Placeholder(string section)
+    // ---------------------------------------------------------------- agent sessions and design projects
+
+    private Gtk.Widget BuildAgentArea()
     {
-        var page = Adw.StatusPage.New();
-        page.SetIconName(section switch { "Agent" => "utilities-terminal-symbolic", "Design" => "applications-graphics-symbolic", _ => "image-x-generic-symbolic" });
-        page.SetTitle(Loc.F("ComingSoonTitle", Loc.S($"Nav{section}")));
-        page.SetDescription(Loc.S($"{section}Description"));
-        page.Named("PlaceholderHeading");
-        return page;
+        _agentList.AddCssClass("navigation-sidebar");
+        _agentList.Named("AgentSessionList");
+        _agentList.OnRowActivated += (_, e) =>
+        {
+            if (!_syncingLists && e.Row.GetName() is { } id && id.StartsWith("agent:"))
+                Ioc.AgentVm.Selected = Ioc.Agent.FindSession(id[6..]);
+        };
+        var scroll = Ui.Scroll(_agentList);
+        scroll.SetVisible(false);
+        return scroll;
+    }
+
+    private Gtk.Widget BuildDesignArea()
+    {
+        _designList.AddCssClass("navigation-sidebar");
+        _designList.Named("DesignProjectList");
+        _designList.OnRowActivated += (_, e) =>
+        {
+            if (!_syncingLists && e.Row.GetIndex() < Ioc.DesignVm.Projects.Count)
+                Ioc.DesignVm.Selected = Ioc.DesignVm.Projects[e.Row.GetIndex()];
+        };
+        var scroll = Ui.Scroll(_designList);
+        scroll.SetVisible(false);
+        return scroll;
+    }
+
+    private void RebuildAgentList()
+    {
+        _syncingLists = true;
+        _agentList.RemoveAll();
+        foreach (var (s, h) in _agentRowHandlers)
+            s.PropertyChanged -= h;
+        _agentRowHandlers.Clear();
+        foreach (var group in Ioc.AgentVm.Groups)
+        {
+            var header = Gtk.ListBoxRow.New();
+            header.SetChild(Ui.HBox(8, Gtk.Image.NewFromIconName("folder-symbolic"), Ui.Label(group.Key, "caption-heading", "dim-label")).Margins(12, 8, 2, 8));
+            header.SetSelectable(false);
+            header.SetActivatable(false);
+            _agentList.Append(header);
+            foreach (var session in group)
+            {
+                var dot = Gtk.Box.New(Gtk.Orientation.Horizontal, 0);
+                dot.AddCssClass("dot");
+                dot.SetValign(Gtk.Align.Center);
+                var title = Ui.Label("");
+                title.SetWrap(false);
+                title.SetEllipsize(Pango.EllipsizeMode.End);
+                title.SetHexpand(true);
+                var status = Ui.Label("", "caption", "dim-label");
+                status.SetWrap(false);
+                void Update()
+                {
+                    title.SetText(session.Title.Length > 0 ? session.Title : session.FolderName);
+                    status.SetText(session.StatusText);
+                    foreach (var c in new[] { "ready", "busy", "error" })
+                        dot.RemoveCssClass(c);
+                    dot.AddCssClass(session.Status switch
+                    {
+                        Services.Agent.AgentStatus.Working or Services.Agent.AgentStatus.NeedsYou => "busy",
+                        Services.Agent.AgentStatus.Error => "error",
+                        _ => "ready",
+                    });
+                }
+                Update();
+                System.ComponentModel.PropertyChangedEventHandler handler = (_, _) => UiThread.Run(Update);
+                session.PropertyChanged += handler;
+                _agentRowHandlers.Add((session, handler));
+                var row = Gtk.ListBoxRow.New();
+                row.SetChild(Ui.HBox(8, dot, title, status).Margins(6, 6, 6, 6));
+                row.SetName("agent:" + session.Id);
+                AddContextMenu(row, Loc.S("Delete"), () => Ioc.AgentVm.DeleteSessionCommand.Execute(session));
+                _agentList.Append(row);
+            }
+        }
+        _syncingLists = false;
+        SyncAgentSelection();
+    }
+
+    private void SyncAgentSelection()
+    {
+        _syncingLists = true;
+        var id = Ioc.AgentVm.Selected is { } s ? "agent:" + s.Id : null;
+        var index = 0;
+        _agentList.UnselectAll();
+        while (_agentList.GetRowAtIndex(index++) is { } row)
+            if (row.GetName() == id)
+                _agentList.SelectRow(row);
+        _syncingLists = false;
+    }
+
+    private void RebuildDesignList()
+    {
+        _syncingLists = true;
+        _designList.RemoveAll();
+        foreach (var project in Ioc.DesignVm.Projects)
+        {
+            var title = Ui.Label(project.Name.Length > 0 ? project.Name : Loc.S("DesignUntitled"));
+            title.SetWrap(false);
+            title.SetEllipsize(Pango.EllipsizeMode.End);
+            var row = Gtk.ListBoxRow.New();
+            row.SetChild(Ui.HBox(10, Gtk.Image.NewFromIconName("applications-graphics-symbolic"), title).Margins(6, 6, 6, 6));
+            AddContextMenu(row, Loc.S("Delete"), () => Ioc.DesignVm.DeleteProjectCommand.Execute(project));
+            project.PropertyChanged += (_, _) => UiThread.Run(() => title.SetText(project.Name));
+            _designList.Append(row);
+        }
+        _syncingLists = false;
+        SyncDesignSelection();
+    }
+
+    private void SyncDesignSelection()
+    {
+        _syncingLists = true;
+        var index = Ioc.DesignVm.Selected is { } p ? Ioc.DesignVm.Projects.IndexOf(p) : -1;
+        if (index >= 0 && _designList.GetRowAtIndex(index) is { } row)
+            _designList.SelectRow(row);
+        else
+            _designList.UnselectAll();
+        _syncingLists = false;
+    }
+
+    private static void AddContextMenu(Gtk.ListBoxRow row, string label, Action action)
+    {
+        var popover = Gtk.Popover.New();
+        popover.SetParent(row);
+        popover.SetChild(Ui.Button(label, () =>
+        {
+            popover.Popdown();
+            action();
+        }, "flat", "destructive-action"));
+        var click = Gtk.GestureClick.New();
+        click.SetButton(3);
+        click.OnPressed += (_, _) => popover.Popup();
+        row.AddController(click);
     }
 }

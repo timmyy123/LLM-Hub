@@ -8,6 +8,19 @@ if (args is ["--litert-probe", .. var probe])
 AppSettings.Load();
 Loc.ApplyLanguage(AppSettings.Current.Language);
 Adw.Module.Initialize();
+// WebKitGTK's bubblewrap sandbox starts under WSL but its web process never receives page content, so the Design
+// preview stays blank; real Linux desktops keep the sandbox.
+if (Environment.GetEnvironmentVariable("WSL_DISTRO_NAME") is { Length: > 0 })
+    Native.setenv("WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS", "1", 1);
+try
+{
+    WebKit.Module.Initialize();
+}
+catch (Exception e)
+{
+    // The Design preview says what to install; everything else works without WebKitGTK.
+    Log.Error("WebKitGTK 6.0 not available", e);
+}
 
 var mainThread = Environment.CurrentManagedThreadId;
 UiThread.Initialize(
@@ -37,5 +50,13 @@ app.OnShutdown += (_, _) =>
 {
     Ioc.Engines.Stop();
     Ioc.Speech.Stop();
+    Ioc.Comfy.Stop();
 };
 return app.RunWithSynchronizationContext(null);
+
+internal static partial class Native
+{
+    // Environment.SetEnvironmentVariable only changes .NET's copy; WebKit reads the process environment.
+    [System.Runtime.InteropServices.LibraryImport("libc", StringMarshalling = System.Runtime.InteropServices.StringMarshalling.Utf8)]
+    internal static partial int setenv(string name, string value, int overwrite);
+}

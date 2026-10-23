@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="LLMHub.Views.DesignPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:LLMHub"
+    xmlns:views="using:LLMHub.Views"
+    xmlns:services="using:LLMHub.Services"
+    xmlns:design="using:LLMHub.Services.Design"
+    xmlns:vm="using:LLMHub.ViewModels"
+    Background="{ThemeResource AppBackgroundBrush}">
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="340" />
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="260" />
+        </Grid.ColumnDefinitions>
+
+        <!-- Conversation -->
+        <Grid BorderBrush="{ThemeResource DividerBrush}" BorderThickness="0,0,1,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <StackPanel x:Name="KindTabs" Orientation="Horizontal" Spacing="4" Padding="12,10" BorderBrush="{ThemeResource DividerBrush}" BorderThickness="0,0,0,1">
+                <StackPanel.Resources>
+                    <StaticResource x:Key="ToggleButtonBackgroundChecked" ResourceKey="NavSelectedBrush" />
+                    <StaticResource x:Key="ToggleButtonBackgroundCheckedPointerOver" ResourceKey="NavSelectedBrush" />
+                    <StaticResource x:Key="ToggleButtonBackgroundCheckedPressed" ResourceKey="NavSelectedBrush" />
+                    <StaticResource x:Key="ToggleButtonForegroundChecked" ResourceKey="TextPrimaryBrush" />
+                    <StaticResource x:Key="ToggleButtonForegroundCheckedPointerOver" ResourceKey="TextPrimaryBrush" />
+                </StackPanel.Resources>
+                <ToggleButton x:Name="KindPrototype" Tag="Prototype" Content="{x:Bind services:Loc.S('DesignPrototype')}" Click="OnKindClick" Style="{StaticResource StudioTabStyle}" />
+                <ToggleButton x:Name="KindSlides" Tag="Slides" Content="{x:Bind services:Loc.S('DesignSlides')}" Click="OnKindClick" Style="{StaticResource StudioTabStyle}" />
+                <ToggleButton x:Name="KindImage" Tag="Image" Content="{x:Bind services:Loc.S('DesignImage')}" Click="OnKindClick" Style="{StaticResource StudioTabStyle}" />
+                <ToggleButton x:Name="KindMotion" Tag="Motion" Content="{x:Bind services:Loc.S('DesignMotion')}" Click="OnKindClick" Style="{StaticResource StudioTabStyle}" />
+            </StackPanel>
+
+            <ScrollViewer x:Name="ConversationScroll" Grid.Row="1" Padding="16">
+                <StackPanel Spacing="14">
+                    <StackPanel Spacing="8" Visibility="{x:Bind local:Ui.HideCount(ViewModel.Messages.Count), Mode=OneWay}">
+                        <TextBlock Text="{x:Bind services:Loc.S('DesignEmptyTitle')}" FontSize="17" FontWeight="SemiBold" TextWrapping="Wrap" AutomationProperties.AutomationId="DesignEmptyTitle" />
+                        <TextBlock Text="{x:Bind services:Loc.S('DesignEmptyBody')}" Style="{StaticResource MutedTextStyle}" FontSize="13" />
+                    </StackPanel>
+                    <ItemsRepeater ItemsSource="{x:Bind ViewModel.Messages}">
+                        <ItemsRepeater.Layout>
+                            <StackLayout Spacing="14" />
+                        </ItemsRepeater.Layout>
+                        <ItemsRepeater.ItemTemplate>
+                            <DataTemplate x:DataType="design:DesignMessage">
+                                <Grid>
+                                    <Border Visibility="{x:Bind local:Ui.IsRole(Role, 'user')}" HorizontalAlignment="Right" MaxWidth="290" Background="{ThemeResource UserBubbleBrush}"
+                                            CornerRadius="14" Padding="14,10">
+                                        <TextBlock Text="{x:Bind Text}" TextWrapping="Wrap" IsTextSelectionEnabled="True" AutomationProperties.AutomationId="DesignUserMessage" />
+                                    </Border>
+                                    <TextBlock Visibility="{x:Bind local:Ui.IsRole(Role, 'assistant')}" Text="{x:Bind Text}" TextWrapping="Wrap" IsTextSelectionEnabled="True"
+                                               Foreground="{ThemeResource BodyTextBrush}" AutomationProperties.AutomationId="DesignAssistantMessage" />
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsRepeater.ItemTemplate>
+                    </ItemsRepeater>
+                    <StackPanel Orientation="Horizontal" Spacing="8" Visibility="{x:Bind local:Ui.Show(ViewModel.IsGenerating), Mode=OneWay}">
+                        <Ellipse Width="7" Height="7" Fill="{ThemeResource AccentFillBrush}" VerticalAlignment="Center" />
+                        <TextBlock Text="{x:Bind local:Ui.DesignProgress(ViewModel.SelectedElement, ViewModel.LiveText), Mode=OneWay}" FontSize="13"
+                                   Foreground="{ThemeResource TextMutedBrush}" TextWrapping="Wrap" AutomationProperties.AutomationId="DesignProgress" />
+                    </StackPanel>
+                    <TextBlock Text="{x:Bind ViewModel.Status, Mode=OneWay}" FontSize="12" Foreground="{ThemeResource TextMutedBrush}" TextWrapping="Wrap"
+                               Visibility="{x:Bind local:Ui.ShowText(ViewModel.Status), Mode=OneWay}" AutomationProperties.AutomationId="DesignStatus" />
+                </StackPanel>
+            </ScrollViewer>
+
+            <Border Grid.Row="2" Margin="12" CornerRadius="14" BorderThickness="1" BorderBrush="{ThemeResource ControlBorderBrush}" Background="{ThemeResource SurfaceBrush}" Padding="10">
+                <StackPanel Spacing="8">
+                    <TextBox x:Name="DesignComposer" Text="{x:Bind ViewModel.Draft, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap"
+                             PlaceholderText="{x:Bind local:Ui.DesignPlaceholder(ViewModel.HasPreview), Mode=OneWay}" MinHeight="44" MaxHeight="160" BorderThickness="0" Background="Transparent"
+                             PreviewKeyDown="OnComposerKeyDown">
+                        <TextBox.Resources>
+                            <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="Transparent" />
+                            <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="Transparent" />
+                            <Thickness x:Key="TextControlBorderThemeThicknessFocused">0</Thickness>
+                        </TextBox.Resources>
+                    </TextBox>
+                    <Grid ColumnSpacing="6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <ComboBox x:Name="DesignModelPicker" ItemsSource="{x:Bind ViewModel.Models}" SelectedItem="{x:Bind ViewModel.SelectedModel, Mode=TwoWay}" FontSize="12"
+                                  BorderThickness="0" Background="Transparent" MaxWidth="230">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate x:DataType="services:InstalledModel">
+                                    <TextBlock Text="{x:Bind DisplayName}" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                        <Button x:Name="DesignSend" Grid.Column="1" Width="34" Height="34" Padding="0" CornerRadius="9" Background="{ThemeResource AccentFillBrush}"
+                                Foreground="{ThemeResource OnAccentBrush}" BorderThickness="0" Command="{x:Bind ViewModel.SendCommand}" AutomationProperties.Name="{x:Bind services:Loc.S('Send')}"
+                                Visibility="{x:Bind local:Ui.Hide(ViewModel.IsGenerating), Mode=OneWay}">
+                            <FontIcon Glyph="&#xE74A;" FontSize="14" />
+                        </Button>
+                        <Button x:Name="DesignStop" Grid.Column="1" Width="34" Height="34" Padding="0" CornerRadius="9" Command="{x:Bind ViewModel.StopCommand}"
+                                AutomationProperties.Name="{x:Bind services:Loc.S('Stop')}" Visibility="{x:Bind local:Ui.Show(ViewModel.IsGenerating), Mode=OneWay}">
+                            <FontIcon Glyph="&#xE71A;" FontSize="12" />
+                        </Button>
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- Preview -->
+        <Grid Grid.Column="1" Background="{ThemeResource TitleBarBrush}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <Grid Padding="16,8" MinHeight="52" ColumnSpacing="8" BorderBrush="{ThemeResource DividerBrush}" BorderThickness="0,0,0,1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel x:Name="SizeTabs" Orientation="Horizontal" Spacing="2" Padding="3" CornerRadius="9" Background="{ThemeResource SurfaceAltBrush}" VerticalAlignment="Center">
+                    <StackPanel.Resources>
+                        <StaticResource x:Key="ToggleButtonBackgroundChecked" ResourceKey="ControlBorderBrush" />
+                        <StaticResource x:Key="ToggleButtonBackgroundCheckedPointerOver" ResourceKey="ControlBorderBrush" />
+                        <StaticResource x:Key="ToggleButtonForegroundChecked" ResourceKey="TextPrimaryBrush" />
+                        <StaticResource x:Key="ToggleButtonForegroundCheckedPointerOver" ResourceKey="TextPrimaryBrush" />
+                    </StackPanel.Resources>
+                    <ToggleButton x:Name="SizeDesktop" Tag="desktop" Content="{x:Bind services:Loc.S('DesignDesktop')}" Click="OnSizeClick" Height="28" FontSize="12" Padding="10,0" CornerRadius="7" BorderThickness="0" Background="Transparent" />
+                    <ToggleButton x:Name="SizeTablet" Tag="tablet" Content="{x:Bind services:Loc.S('DesignTablet')}" Click="OnSizeClick" Height="28" FontSize="12" Padding="10,0" CornerRadius="7" BorderThickness="0" Background="Transparent" />
+                    <ToggleButton x:Name="SizePhone" Tag="phone" Content="{x:Bind services:Loc.S('DesignPhone')}" Click="OnSizeClick" Height="28" FontSize="12" Padding="10,0" CornerRadius="7" BorderThickness="0" Background="Transparent" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center" Visibility="{x:Bind local:Ui.Show(ViewModel.HasPreview), Mode=OneWay}">
+                    <Button Style="{StaticResource IconButtonStyle}" Command="{x:Bind ViewModel.PreviousVersionCommand}" AutomationProperties.Name="Previous version">
+                        <FontIcon Glyph="&#xE76B;" FontSize="11" />
+                    </Button>
+                    <TextBlock Text="{x:Bind ViewModel.VersionText, Mode=OneWay}" FontSize="12" Foreground="{ThemeResource TextFaintBrush}" VerticalAlignment="Center"
+                               AutomationProperties.AutomationId="DesignVersion" />
+                    <Button Style="{StaticResource IconButtonStyle}" Command="{x:Bind ViewModel.NextVersionCommand}" AutomationProperties.Name="Next version">
+                        <FontIcon Glyph="&#xE76C;" FontSize="11" />
+                    </Button>
+                </StackPanel>
+                <Button x:Name="CommentButton" Grid.Column="3" Style="{StaticResource OutlineButtonStyle}" Content="{x:Bind services:Loc.S('DesignComment')}" Click="OnComment" />
+                <Button x:Name="HandOffButton" Grid.Column="4" Style="{StaticResource OutlineButtonStyle}" Content="{x:Bind services:Loc.S('DesignHandOff')}" Click="OnHandOff" />
+                <DropDownButton x:Name="ExportButton" Grid.Column="5" Content="{x:Bind services:Loc.S('DesignExport')}" Height="32" CornerRadius="8" FontSize="13"
+                                Background="{ThemeResource TextPrimaryBrush}" Foreground="{ThemeResource AppBackgroundBrush}">
+                    <DropDownButton.Flyout>
+                        <MenuFlyout Placement="BottomEdgeAlignedRight">
+                            <MenuFlyoutItem Text="HTML" Tag="html" Click="OnExport" />
+                            <MenuFlyoutItem Text="PDF" Tag="pdf" Click="OnExport" />
+                            <MenuFlyoutItem Text="ZIP" Tag="zip" Click="OnExport" />
+                            <MenuFlyoutItem Text="Markdown" Tag="md" Click="OnExport" />
+                        </MenuFlyout>
+                    </DropDownButton.Flyout>
+                </DropDownButton>
+            </Grid>
+            <Border Grid.Row="1" Margin="24" HorizontalAlignment="Center" Width="{x:Bind local:Ui.ToDouble(ViewModel.PreviewWidth), Mode=OneWay}" MaxWidth="1280"
+                    CornerRadius="10" BorderThickness="1" BorderBrush="{ThemeResource DividerBrush}" Background="White">
+                <Grid>
+                    <WebView2 x:Name="Preview" AutomationProperties.AutomationId="DesignPreview" />
+                    <TextBlock Text="{x:Bind services:Loc.S('DesignNothingYet')}" Foreground="#8F8E88" HorizontalAlignment="Center" VerticalAlignment="Center"
+                               Visibility="{x:Bind local:Ui.Hide(ViewModel.HasPreview), Mode=OneWay}" />
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- Design system panel -->
+        <ScrollViewer Grid.Column="2" Background="{ThemeResource SidebarBrush}" BorderBrush="{ThemeResource DividerBrush}" BorderThickness="1,0,0,0" Padding="16">
+            <StackPanel Spacing="18">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="{x:Bind services:Loc.S('DesignSystemLabel')}" Style="{StaticResource FieldLabelStyle}" />
+                    <ComboBox x:Name="SystemPicker" HorizontalAlignment="Stretch" ItemsSource="{x:Bind ViewModel.Systems}" SelectedItem="{x:Bind ViewModel.System, Mode=TwoWay}" />
+                </StackPanel>
+                <StackPanel Spacing="8">
+                    <TextBlock Text="{x:Bind services:Loc.S('DesignColors')}" Style="{StaticResource FieldLabelStyle}" />
+                    <ItemsRepeater ItemsSource="{x:Bind local:Ui.Swatches(ViewModel.System), Mode=OneWay}">
+                        <ItemsRepeater.Layout>
+                            <UniformGridLayout MinItemWidth="36" MinItemHeight="32" MinColumnSpacing="8" MaximumRowsOrColumns="5" ItemsStretch="Fill" />
+                        </ItemsRepeater.Layout>
+                        <ItemsRepeater.ItemTemplate>
+                            <DataTemplate x:DataType="local:Swatch">
+                                <Border Height="32" CornerRadius="8" Background="{x:Bind Fill}" BorderThickness="1" BorderBrush="{ThemeResource ControlBorderBrush}"
+                                        ToolTipService.ToolTip="{x:Bind Hex}" AutomationProperties.Name="{x:Bind Hex}" />
+                            </DataTemplate>
+                        </ItemsRepeater.ItemTemplate>
+                    </ItemsRepeater>
+                </StackPanel>
+                <StackPanel Spacing="8">
+                    <TextBlock Text="{x:Bind services:Loc.S('DesignType')}" Style="{StaticResource FieldLabelStyle}" />
+                    <Border Padding="12" CornerRadius="10" Background="{ThemeResource SurfaceAltBrush}">
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="{x:Bind ViewModel.System.HeadingFont, Mode=OneWay}" FontSize="20" FontWeight="SemiBold" />
+                            <TextBlock Text="{x:Bind ViewModel.System.BodyFont, Mode=OneWay}" FontSize="13" Foreground="{ThemeResource TextSecondaryBrush}" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+                <StackPanel Spacing="8">
+                    <TextBlock Text="{x:Bind services:Loc.S('DesignSelected')}" Style="{StaticResource FieldLabelStyle}" />
+                    <Border Padding="12" CornerRadius="10" Background="{ThemeResource SurfaceAltBrush}">
+                        <TextBlock Text="{x:Bind local:Ui.SelectedLabel(ViewModel.SelectedElement), Mode=OneWay}" FontSize="13" Foreground="{ThemeResource TextSecondaryBrush}" TextWrapping="Wrap"
+                                   AutomationProperties.AutomationId="DesignSelectedElement" />
+                    </Border>
+                </StackPanel>
+                <TextBlock Text="{x:Bind services:Loc.S('DesignExports')}" FontSize="12" Foreground="{ThemeResource TextFaintBrush}" TextWrapping="Wrap" />
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Page>
