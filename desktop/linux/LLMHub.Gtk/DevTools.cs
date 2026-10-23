@@ -45,6 +45,9 @@ internal static class DevTools
             case "settings": window.ShowSettings("general"); break;
             case "models": window.ShowSettings("models"); break;
             case "api": window.ShowSettings("api"); break;
+            case "engines" or "speech" or "studiosettings" or "agentsettings" or "websearch" or "storage" or "general":
+                window.ShowSettings(Value(args, "--page")!.Replace("settings", ""));
+                break;
             case "agent" or "design" or "studio": window.ShowSection(Value(args, "--page")!); break;
             case "voice" or "music" or "video":
                 Ioc.StudioVm.Mode = Value(args, "--page")!;

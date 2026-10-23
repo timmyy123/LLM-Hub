@@ -45,7 +45,16 @@ internal sealed class DesignPage
         // Conversation column.
         var (kinds, selectKind) = Ui.Tabs(_vm.Kinds.Select(k => (k.Kind.ToString(), k.Label)), OnKind);
         _selectKind = selectKind;
-        var kindBar = kinds.Margins(10, 12, 10, 12);
+        kinds.SetHexpand(true);
+        var projects = Gtk.MenuButton.New();
+        projects.SetIconName("view-list-symbolic");
+        projects.SetTooltipText(Loc.S("DesignProjects"));
+        projects.AddCssClass("flat");
+        projects.Named("ProjectsButton");
+        var projectsPopover = Gtk.Popover.New();
+        projects.SetPopover(projectsPopover);
+        projectsPopover.OnShow += (_, _) => projectsPopover.SetChild(ProjectsMenu(projectsPopover));
+        var kindBar = Ui.HBox(4, kinds, projects).Margins(10, 8, 10, 12);
         kindBar.AddCssClass("divider-bottom");
         _empty = Ui.VBox(8, Ui.Label(Loc.S("DesignEmptyTitle"), "title-4").Named("DesignEmptyTitle"), Ui.Label(Loc.S("DesignEmptyBody"), "dim-label"));
         var dot = Gtk.Box.New(Gtk.Orientation.Horizontal, 0);
@@ -196,6 +205,43 @@ internal sealed class DesignPage
         SyncModels();
         RebuildMessages();
         SyncAll();
+    }
+
+    /// <summary>Every design (current one marked), then New and Delete; the sidebar is an icon rail on this screen.</summary>
+    private Gtk.Widget ProjectsMenu(Gtk.Popover popover)
+    {
+        var box = Ui.VBox(2).Margins(6, 6, 6, 6);
+        void Item(string label, string? icon, Action action, params string[] css)
+        {
+            var button = Gtk.Button.New();
+            var content = Ui.HBox(8);
+            if (icon is not null)
+                content.Append(Gtk.Image.NewFromIconName(icon));
+            var text = Ui.Label(label);
+            text.SetWrap(false);
+            text.SetEllipsize(Pango.EllipsizeMode.End);
+            text.SetMaxWidthChars(36);
+            content.Append(text);
+            button.SetChild(content);
+            button.AddCssClass("flat");
+            foreach (var c in css)
+                button.AddCssClass(c);
+            button.OnClicked += (_, _) =>
+            {
+                popover.Popdown();
+                action();
+            };
+            box.Append(button);
+        }
+        foreach (var project in _vm.Projects)
+            Item(project.Name.Length > 0 ? project.Name : Loc.S("DesignUntitled"), project == _vm.Selected ? "object-select-symbolic" : null,
+                () => _vm.Selected = project);
+        if (_vm.Projects.Count > 0)
+            box.Append(Gtk.Separator.New(Gtk.Orientation.Horizontal));
+        Item(Loc.S("DesignNewProject"), "list-add-symbolic", () => _vm.NewProjectCommand.Execute(null));
+        if (_vm.Selected is { } current)
+            Item(Loc.S("Delete"), "user-trash-symbolic", () => _vm.DeleteProjectCommand.Execute(current), "destructive-action");
+        return box;
     }
 
     private void OnKind(string tag)

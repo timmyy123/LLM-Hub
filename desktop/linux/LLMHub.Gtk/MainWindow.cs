@@ -30,6 +30,14 @@ internal sealed class MainWindow
     private readonly Gtk.Label _engineText = Ui.Label("", "heading");
     private readonly Gtk.Box _dot = Gtk.Box.New(Gtk.Orientation.Horizontal, 0);
     private readonly SettingsPages _settings;
+    private readonly SettingsSections _sections = new();
+    private static readonly string[] SettingsTags = ["general", "models", "engines", "api", "speech", "studio", "agent", "websearch", "storage"];
+    private Adw.NavigationSplitView _split = null!;
+    private Gtk.Widget _newButton = null!;
+    private Gtk.Widget _engineTexts = null!;
+    private Gtk.Widget _engineGear = null!;
+    private readonly List<Gtk.Label> _navLabels = [];
+    private readonly Adw.WindowTitle _sidebarTitle = Adw.WindowTitle.New("LLM Hub", "");
     private readonly Gtk.Button _star;
     private readonly Gtk.Label _newLabel = Ui.Label(Loc.S("NewChat"), "heading");
     private readonly Gtk.Button _share;
@@ -60,6 +68,12 @@ internal sealed class MainWindow
         _content.AddNamed(_settings.General, "general");
         _content.AddNamed(_settings.Models, "models");
         _content.AddNamed(_settings.Api, "api");
+        _content.AddNamed(_sections.Engines, "engines");
+        _content.AddNamed(_sections.Speech, "speech");
+        _content.AddNamed(_sections.Studio, "studio-settings");
+        _content.AddNamed(_sections.Agent, "agent-settings");
+        _content.AddNamed(_sections.WebSearch, "websearch");
+        _content.AddNamed(_sections.Storage, "storage");
 
         _chatsArea = BuildChatsArea();
         _agentArea = BuildAgentArea();
@@ -70,7 +84,9 @@ internal sealed class MainWindow
 
         var sidebar = Ui.VBox(0, _sidebarModes, BuildEngineCard());
         var sidebarView = Adw.ToolbarView.New();
-        sidebarView.AddTopBar(Adw.HeaderBar.New());
+        var sidebarHeader = Adw.HeaderBar.New();
+        sidebarHeader.SetTitleWidget(_sidebarTitle);
+        sidebarView.AddTopBar(sidebarHeader);
         sidebarView.SetContent(sidebar);
 
         var contentHeader = Adw.HeaderBar.New();
@@ -84,7 +100,7 @@ internal sealed class MainWindow
         contentView.AddTopBar(contentHeader);
         contentView.SetContent(_content);
 
-        var split = Adw.NavigationSplitView.New();
+        var split = _split = Adw.NavigationSplitView.New();
         split.SetSidebar(Adw.NavigationPage.New(sidebarView, "LLM Hub"));
         split.SetContent(Adw.NavigationPage.New(contentView, "LLM Hub"));
         split.SetMinSidebarWidth(240);
@@ -105,6 +121,8 @@ internal sealed class MainWindow
         {
             if (p == nameof(DesignViewModel.Selected))
                 SyncDesignSelection();
+            if (p is nameof(DesignViewModel.Selected) or nameof(DesignViewModel.IsGenerating))
+                UpdateDesignTitle();
         });
         RebuildAgentList();
         RebuildDesignList();
@@ -146,6 +164,7 @@ internal sealed class MainWindow
 
     public void ShowChat()
     {
+        SetCompact(false);
         _sidebarModes.SetVisibleChildName("app");
         _nav.SelectRow(_nav.GetRowAtIndex(0));
         Show("chat", Loc.S("NavChat"));
@@ -153,12 +172,16 @@ internal sealed class MainWindow
 
     public void ShowSettings(string section = "models")
     {
+        SetCompact(false);
         _sidebarModes.SetVisibleChildName("settings");
-        var index = section switch { "general" => 0, "api" => 2, _ => 1 };
+        var index = Math.Max(0, Array.IndexOf(SettingsTags, section));
         _settingsNav.SelectRow(_settingsNav.GetRowAtIndex(index));
-        Show(section, Loc.S("NavSettings"));
+        // Studio and Agent settings share their tag with the app sections, so their pages carry a suffix.
+        Show(section is "studio" or "agent" ? section + "-settings" : section, Loc.S("NavSettings"));
         if (section == "models")
             _ = Ioc.ModelsVm.LoadCatalogAsync();
+        else if (section is not ("general" or "api" or "websearch"))
+            _sections.Refresh();
     }
 
     /// <summary>Shows an app section (chat, agent, design, studio) with its sidebar list.</summary>
@@ -167,6 +190,7 @@ internal sealed class MainWindow
         _sidebarModes.SetVisibleChildName("app");
         var index = section switch { "agent" => 1, "design" => 2, "studio" => 3, _ => 0 };
         _nav.SelectRow(_nav.GetRowAtIndex(index));
+        SetCompact(section is "design" or "studio");
         Show(section, Loc.S(section switch { "agent" => "NavAgent", "design" => "NavDesign", "studio" => "NavStudio", _ => "NavChat" }));
     }
 
@@ -178,9 +202,17 @@ internal sealed class MainWindow
         UpdateChatHeader();
         _chatsArea.SetVisible(page == "chat");
         _agentArea.SetVisible(page == "agent");
-        _designArea.SetVisible(page == "design");
+        _designArea.SetVisible(false);
         _newLabel.SetText(Loc.S(page switch { "agent" => "NewSession", "design" => "DesignNewProject", _ => "NewChat" }));
         _title.SetTitle(page == "chat" && Ioc.Chat.CurrentTitle.Length > 0 ? Ioc.Chat.CurrentTitle : title);
+        UpdateDesignTitle();
+    }
+
+    /// <summary>"Design · Crumb &amp; Co" while Design is open, as in the design's title bar.</summary>
+    private void UpdateDesignTitle()
+    {
+        if (_content.GetVisibleChildName() == "design")
+            _title.SetTitle(Ioc.DesignVm.Selected is { Name.Length: > 0 } p ? $"{Loc.S("NavDesign")} · {p.Name}" : Loc.S("NavDesign"));
     }
 
     // ---------------------------------------------------------------- sidebar
@@ -228,18 +260,19 @@ internal sealed class MainWindow
         _nav.AddCssClass("navigation-sidebar");
         foreach (var (key, icon) in new[] { ("NavChat", "chat-message-new-symbolic"), ("NavAgent", "utilities-terminal-symbolic"),
                                              ("NavDesign", "applications-graphics-symbolic"), ("NavStudio", "image-x-generic-symbolic") })
-            _nav.Append(NavRow(key, icon).Named(key));
+        {
+            var row = NavRow(key, icon).Named(key);
+            if (row.GetChild() is Gtk.Box box && box.GetLastChild() is Gtk.Label label)
+                _navLabels.Add(label);
+            row.SetTooltipText(Loc.S(key));
+            _nav.Append(row);
+        }
         _nav.OnRowActivated += (_, e) =>
         {
-            switch (e.Row.GetIndex())
-            {
-                case 0: Show("chat", Loc.S("NavChat")); break;
-                case 1: Show("agent", Loc.S("NavAgent")); break;
-                case 2: Show("design", Loc.S("NavDesign")); break;
-                default: Show("studio", Loc.S("NavStudio")); break;
-            }
+            ShowSection(e.Row.GetIndex() switch { 1 => "agent", 2 => "design", 3 => "studio", _ => "chat" });
         };
 
+        _newButton = newChat;
         return Ui.VBox(4, newChat, _nav, _chatsArea, _agentArea, _designArea);
     }
 
@@ -282,12 +315,36 @@ internal sealed class MainWindow
         _settingsNav.AddCssClass("navigation-sidebar");
         foreach (var (key, icon, id) in new[] { ("SettingsGeneral", "emblem-system-symbolic", "SectionGeneral"),
                                                  ("SettingsModels", "folder-download-symbolic", "SectionModels"),
-                                                 ("SettingsLocalApi", "network-server-symbolic", "SectionApi") })
+                                                 ("SettingsEngines", "system-run-symbolic", "SectionEngines"),
+                                                 ("SettingsLocalApi", "network-server-symbolic", "SectionApi"),
+                                                 ("SettingsSpeech", "audio-input-microphone-symbolic", "SectionSpeech"),
+                                                 ("SettingsStudio", "image-x-generic-symbolic", "SectionStudio"),
+                                                 ("SettingsAgent", "utilities-terminal-symbolic", "SectionAgent"),
+                                                 ("SettingsWebSearch", "web-browser-symbolic", "SectionWebSearch"),
+                                                 ("SettingsStorage", "drive-harddisk-symbolic", "SectionStorage") })
             _settingsNav.Append(NavRow(key, icon).Named(id));
-        _settingsNav.OnRowActivated += (_, e) => ShowSettings(e.Row.GetIndex() switch { 0 => "general", 2 => "api", _ => "models" });
+        _settingsNav.OnRowActivated += (_, e) => ShowSettings(SettingsTags[e.Row.GetIndex()]);
 
         var header = Ui.Label(Loc.S("NavSettings"), "heading", "dim-label").Margins(10, 12, 2, 16);
         return Ui.VBox(2, back, header, _settingsNav);
+    }
+
+    /// <summary>
+    /// The design's 64px icon rail on Design and Studio: the same sidebar with only nav icons and the engine dot,
+    /// so the canvas gets the room. Chat, Agent and Settings keep the full sidebar.
+    /// </summary>
+    private void SetCompact(bool compact)
+    {
+        if (_split is null)
+            return;
+        _split.SetMinSidebarWidth(compact ? 64 : 240);
+        _split.SetMaxSidebarWidth(compact ? 64 : 300);
+        foreach (var label in _navLabels)
+            label.SetVisible(!compact);
+        _newButton.SetVisible(!compact);
+        _engineTexts.SetVisible(!compact);
+        _engineGear.SetVisible(!compact);
+        _sidebarTitle.SetTitle(compact ? "" : "LLM Hub");
     }
 
     private static Gtk.ListBoxRow NavRow(string key, string icon)
@@ -307,7 +364,10 @@ internal sealed class MainWindow
         var texts = Ui.VBox(0, _engineText, hardware);
         texts.SetHexpand(true);
         var card = Gtk.Button.New();
-        card.SetChild(Ui.HBox(10, _dot, texts, Gtk.Image.NewFromIconName("emblem-system-symbolic")));
+        var gear = Gtk.Image.NewFromIconName("emblem-system-symbolic");
+        _engineTexts = texts;
+        _engineGear = gear;
+        card.SetChild(Ui.HBox(10, _dot, texts, gear));
         card.AddCssClass("engine-card");
         card.AddCssClass("flat");
         card.Named("SettingsButton").Margins(6, 8, 8, 8);

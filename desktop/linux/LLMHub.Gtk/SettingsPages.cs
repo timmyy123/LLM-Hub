@@ -51,6 +51,20 @@ internal sealed class SettingsPages
         };
         language.Named("LanguageBox");
 
+        var appearance = Adw.ComboRow.New();
+        appearance.SetTitle(Loc.S("Appearance"));
+        var looks = SettingsViewModel.Appearances;
+        appearance.SetModel(Gtk.StringList.New(looks.Select(a => a.Label).ToArray()));
+        appearance.SetSelected((uint)Math.Max(0, looks.ToList().FindIndex(a => a.Value == AppSettings.Current.Appearance)));
+        appearance.OnNotify += (_, e) =>
+        {
+            if (e.Pspec.GetName() != "selected" || appearance.GetSelected() >= looks.Count)
+                return;
+            Ioc.SettingsVm.Appearance = looks[(int)appearance.GetSelected()].Value;
+            Styles.ApplyAppearance();
+        };
+        appearance.Named("AppearanceBox");
+
         var context = Adw.ComboRow.New();
         context.SetTitle(Loc.S("ContextLength"));
         context.SetModel(Gtk.StringList.New(ContextOptions.Select(c => $"{c / 1024}K").ToArray()));
@@ -76,6 +90,7 @@ internal sealed class SettingsPages
 
         group.Add(language);
         group.Add(restart);
+        group.Add(appearance);
         group.Add(context);
         group.Add(token);
         var help = Adw.PreferencesGroup.New();

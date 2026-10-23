@@ -217,7 +217,18 @@ internal static class Styles
         .tag { font-size: 11px; padding: 1px 7px; border-radius: 6px; background: alpha(@accent_bg_color, 0.15); color: @accent_color; }
         """;
 
+    private static Gtk.CssProvider? _palette;
+
     public static void Load()
+    {
+        var provider = Gtk.CssProvider.New();
+        provider.LoadFromString(Css);
+        Gtk.StyleContext.AddProviderForDisplay(Gdk.Display.GetDefault()!, provider, 600);
+        ApplyAppearance();
+    }
+
+    /// <summary>Dark (the designed look, with its palette), light or the system's choice; applies immediately.</summary>
+    public static void ApplyAppearance()
     {
         var appearance = Services.AppSettings.Current.Appearance;
         Adw.StyleManager.GetDefault().SetColorScheme(appearance switch
@@ -226,9 +237,15 @@ internal static class Styles
             "system" => Adw.ColorScheme.Default,
             _ => Adw.ColorScheme.ForceDark,
         });
-        var provider = Gtk.CssProvider.New();
-        provider.LoadFromString((appearance == "dark" ? DesignPalette : "") + Css);
-        Gtk.StyleContext.AddProviderForDisplay(Gdk.Display.GetDefault()!, provider, 600);
+        var display = Gdk.Display.GetDefault()!;
+        if (_palette is not null)
+            Gtk.StyleContext.RemoveProviderForDisplay(display, _palette);
+        _palette = null;
+        if (appearance != "dark")
+            return;
+        _palette = Gtk.CssProvider.New();
+        _palette.LoadFromString(DesignPalette);
+        Gtk.StyleContext.AddProviderForDisplay(display, _palette, 599);
     }
 }
 
