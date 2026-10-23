@@ -15,6 +15,13 @@ internal static class DevTools
     {
         if (Value(args, "--theme") is { } theme)
             Adw.StyleManager.GetDefault().SetColorScheme(theme == "dark" ? Adw.ColorScheme.ForceDark : Adw.ColorScheme.ForceLight);
+        if (Value(args, "--speechtest") is { } sentence)
+        {
+            await SpeechTest(sentence);
+            if (args.Contains("--exit"))
+                window.Window.Close();
+            return;
+        }
         if (args.Contains("--uitest"))
         {
             var filter = Value(args, "--uitest");
@@ -101,6 +108,24 @@ internal static class DevTools
         catch (Exception e)
         {
             Log.Error("SELFTEST failed", e);
+        }
+    }
+
+    /// <summary>Round trip: Supertonic reads the sentence into a WAV, Whisper writes it back. Logs both timings.</summary>
+    private static async Task SpeechTest(string sentence)
+    {
+        try
+        {
+            var clock = System.Diagnostics.Stopwatch.StartNew();
+            var (wav, seconds) = await Ioc.Speech.SynthesizeAsync(sentence, "F1", null, CancellationToken.None);
+            Log.Info($"SPEECHTEST tts {seconds:F1}s of audio in {clock.Elapsed.TotalSeconds:F1}s -> {wav}");
+            clock.Restart();
+            var text = await Ioc.Speech.TranscribeAsync(wav, null, CancellationToken.None);
+            Log.Info($"SPEECHTEST asr in {clock.Elapsed.TotalSeconds:F1}s: {text}");
+        }
+        catch (Exception e)
+        {
+            Log.Error("SPEECHTEST failed", e);
         }
     }
 

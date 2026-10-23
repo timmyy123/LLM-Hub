@@ -25,5 +25,22 @@ public static class Ui
         return null;
     }
 
+    public static bool HasText(string? value) => !string.IsNullOrEmpty(value);
+    public static Visibility ShowChecked(bool? value) => value == true ? Visibility.Visible : Visibility.Collapsed;
+    public static string Numbered(int n) => $"{n}.";
+    /// <summary>"Thinking…" while the reply streams, then the design's "Thought for a few seconds" pill label.</summary>
+    public static string ThinkingLabel(bool done) => Services.Loc.S(done ? "ThoughtLabel" : "Thinking");
+
+    /// <summary>File chip badge colours: blue for images, terracotta for documents (from the design).</summary>
+    public static Brush? BadgeBrush(bool isImage, string part)
+    {
+        var key = (isImage ? "ImageBadge" : "PdfBadge") + (part == "fg" ? "TextBrush" : "Brush");
+        return App.Window?.Content is FrameworkElement root ? ThemeBrush(root, key) : null;
+    }
+
+    public static string StarLabel(bool starred) => Services.Loc.S(starred ? "Unstar" : "Star");
+    public static string StarGlyph(bool starred) => starred ? "\uE735" : "\uE734";
+    public static string ReadGlyph(bool reading) => reading ? "\uE71A" : "\uE767";
+
     public static HorizontalAlignment MessageAlign(bool isUser) => isUser ? HorizontalAlignment.Right : HorizontalAlignment.Stretch;
 }

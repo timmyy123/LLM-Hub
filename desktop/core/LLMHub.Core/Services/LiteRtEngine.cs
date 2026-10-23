@@ -171,14 +171,21 @@ public sealed class LiteRtEngine
     }
 
     /// <summary>Streams a reply. History (all turns but the last) seeds a fresh conversation; the last user turn is sent.</summary>
-    public async IAsyncEnumerable<ChatDelta> StreamAsync(IReadOnlyList<ChatTurn> turns, [EnumeratorCancellation] CancellationToken ct)
+    public async IAsyncEnumerable<ChatDelta> StreamAsync(IReadOnlyList<ChatTurn> turns, [EnumeratorCancellation] CancellationToken ct, ChatOptions? options = null)
     {
         if (_api is null || _engine == IntPtr.Zero)
             throw new InvalidOperationException("No LiteRT-LM model loaded");
 
         if (_conversation != IntPtr.Zero)
             _api.ConversationDelete(_conversation);
-        var history = new JsonArray(turns.Take(turns.Count - 1).Select(t => (JsonNode)Message(t.Role, t.Content)).ToArray());
+        // Gemma's LiteRT builds think when the system prompt starts with <|think|> (as in the mobile apps).
+        if (options?.Thinking == true)
+        {
+            var system = turns.FirstOrDefault(t => t.Role == "system");
+            var rest = turns.Where(t => t != system);
+            turns = [new ChatTurn("system", "<|think|>" + (system is null ? "" : "\n" + system.Content)), .. rest];
+        }
+        var history = new JsonArray(turns.Take(turns.Count - 1).Select(t => (JsonNode)Message(t)).ToArray());
         _conversation = _api.CreateConversation(_engine, history.ToJsonString());
         if (_conversation == IntPtr.Zero)
             throw new InvalidOperationException("LiteRT-LM could not start a conversation");
@@ -190,7 +197,7 @@ public sealed class LiteRtEngine
         try
         {
             var last = turns[^1];
-            var rc = _api.SendStream(_conversation, Message(last.Role, last.Content).ToJsonString(), GCHandle.ToIntPtr(handle));
+            var rc = _api.SendStream(_conversation, Message(last).ToJsonString(), GCHandle.ToIntPtr(handle));
             if (rc != 0)
                 throw new InvalidOperationException("LiteRT-LM send failed");
 
@@ -221,10 +228,11 @@ public sealed class LiteRtEngine
             var (tokens, engineRate) = _api.LastDecode(_conversation);
             Log.Info($"LiteRT-LM decode: {tokens} tokens, {chunks} chunks, {wall:F2}s wall, engine rate {engineRate:F1} tok/s");
             // A reply that arrives in one or two chunks has no meaningful wall time; use the engine's figure then.
+            int? context = tokens > 0 ? EstimateTokens(turns) + tokens : null;
             if (chunks >= 3 && tokens > 1 && wall > 0)
-                yield return new ChatDelta(null, null, (tokens - 1) / wall);
+                yield return new ChatDelta(null, null, (tokens - 1) / wall, context);
             else if (engineRate > 0)
-                yield return new ChatDelta(null, null, engineRate);
+                yield return new ChatDelta(null, null, engineRate, context);
         }
         finally
         {
@@ -232,11 +240,17 @@ public sealed class LiteRtEngine
         }
     }
 
-    private static JsonObject Message(string role, string text) => new()
+    /// <summary>A LiteRT-LM message: text (with attached documents folded in) plus image parts by file path.</summary>
+    private static JsonObject Message(ChatTurn turn)
     {
-        ["role"] = role,
-        ["content"] = new JsonArray(new JsonObject { ["type"] = "text", ["text"] = text }),
-    };
+        var content = new JsonArray(new JsonObject { ["type"] = "text", ["text"] = Attachments.WithDocuments(turn.Content, turn.Attachments) });
+        foreach (var image in turn.Attachments?.Where(a => a.IsImage) ?? [])
+            content.Add(new JsonObject { ["type"] = "image", ["path"] = image.Path });
+        return new JsonObject { ["role"] = turn.Role, ["content"] = content };
+    }
+
+    /// <summary>LiteRT-LM reports decode tokens only; the prompt side is estimated at about four characters per token.</summary>
+    private static int EstimateTokens(IEnumerable<ChatTurn> turns) => turns.Sum(t => t.Content.Length) / 4;
 
     /// <summary>Stream chunks are JSON messages; plain text is accepted too.</summary>
     private static string TextOf(string? chunk)

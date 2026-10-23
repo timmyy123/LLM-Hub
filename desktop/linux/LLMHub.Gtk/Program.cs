@@ -33,5 +33,9 @@ app.OnActivate += (_, _) =>
     }
     window.Present();
 };
-app.OnShutdown += (_, _) => Ioc.Engines.Stop();
+app.OnShutdown += (_, _) =>
+{
+    Ioc.Engines.Stop();
+    Ioc.Speech.Stop();
+};
 return app.RunWithSynchronizationContext(null);

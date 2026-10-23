@@ -23,6 +23,8 @@ public sealed partial class MainWindow : Window
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
         SizeToScreen();
+        AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "Assets", "llmhub.ico"));
+        ApplyAppearance();
 
         HardwareLine.Text = Ioc.Hardware.Summary(withRam: false);
         Engine.PropertyChanged += OnEnginePropertyChanged;
@@ -35,6 +37,13 @@ public sealed partial class MainWindow : Window
             Root.RequestedTheme = theme == "dark" ? ElementTheme.Dark : ElementTheme.Light;
 #endif
     }
+
+    public void ApplyAppearance() => Root.RequestedTheme = AppSettings.Current.Appearance switch
+    {
+        "light" => ElementTheme.Light,
+        "system" => ElementTheme.Default,
+        _ => ElementTheme.Dark,
+    };
 
     /// <summary>AppWindow sizes are physical pixels; scale the design size (1440 x 920) by the monitor DPI.</summary>
     private void SizeToScreen()
@@ -128,7 +137,7 @@ public sealed partial class MainWindow : Window
     private void SetSidebarChatsVisible(bool visible)
     {
         var v = visible ? Visibility.Visible : Visibility.Collapsed;
-        ChatSearch.Visibility = v;
+        SearchField.Visibility = v;
         ChatList.Visibility = v;
     }
 
@@ -136,6 +145,12 @@ public sealed partial class MainWindow : Window
     {
         Chat.NewChatCommand.Execute(null);
         ShowChat();
+    }
+
+    private void OnStarChat(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { Tag: ChatSummary chat })
+            Chat.ToggleStarCommand.Execute(chat);
     }
 
     private void OnDeleteChat(object sender, RoutedEventArgs e)

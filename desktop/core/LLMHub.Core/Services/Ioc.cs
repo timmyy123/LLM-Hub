@@ -15,6 +15,7 @@ public static class Ioc
     public static EngineHub Engines { get; } = new(Llama, LiteRt);
     public static ChatStore Chats { get; } = new();
     public static LocalApiServer Api { get; } = new();
+    public static Speech.SpeechService Speech { get; } = new();
 
     private static ChatViewModel? _chat;
     private static ModelsViewModel? _modelsVm;

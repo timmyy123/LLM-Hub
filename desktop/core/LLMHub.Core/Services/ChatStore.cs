@@ -1,10 +1,15 @@
+using System.Text.Json;
 using Microsoft.Data.Sqlite;
 
 namespace LLMHub.Services;
 
 public sealed record ChatRecord(string Id, string Title, string? ModelId, DateTimeOffset UpdatedAt, bool Starred);
 
-public sealed record MessageRecord(string Id, string ChatId, string Role, string Content, string? Reasoning, string? ModelId, DateTimeOffset CreatedAt);
+public sealed record MessageRecord(string Id, string ChatId, string Role, string Content, string? Reasoning, string? ModelId, DateTimeOffset CreatedAt)
+{
+    public IReadOnlyList<Attachment> Attachments { get; init; } = [];
+    public IReadOnlyList<WebSource> Sources { get; init; } = [];
+}
 
 /// <summary>Chat sessions and messages in a local SQLite database.</summary>
 public sealed class ChatStore
@@ -35,6 +40,23 @@ public sealed class ChatStore
             );
             CREATE INDEX IF NOT EXISTS messages_chat ON messages(chat_id, created_at);
             """);
+        // Columns added after the first release: attached files and web sources, as JSON.
+        foreach (var column in new[] { "attachments", "sources" })
+        {
+            try
+            {
+                Execute(db, $"ALTER TABLE messages ADD COLUMN {column} TEXT");
+            }
+            catch (SqliteException e) when (e.Message.Contains("duplicate column", StringComparison.OrdinalIgnoreCase))
+            {
+            }
+        }
+    }
+
+    public void DeleteMessage(string id)
+    {
+        using var db = Open();
+        Execute(db, "DELETE FROM messages WHERE id = $id", ("$id", id));
     }
 
     public List<ChatRecord> ListChats()
@@ -82,14 +104,18 @@ public sealed class ChatStore
     {
         using var db = Open();
         using var cmd = db.CreateCommand();
-        cmd.CommandText = "SELECT id, chat_id, role, content, reasoning, model_id, created_at FROM messages WHERE chat_id = $id ORDER BY created_at";
+        cmd.CommandText = "SELECT id, chat_id, role, content, reasoning, model_id, created_at, attachments, sources FROM messages WHERE chat_id = $id ORDER BY created_at";
         cmd.Parameters.AddWithValue("$id", chatId);
         using var reader = cmd.ExecuteReader();
         var list = new List<MessageRecord>();
         while (reader.Read())
             list.Add(new MessageRecord(reader.GetString(0), reader.GetString(1), reader.GetString(2), reader.GetString(3),
                 reader.IsDBNull(4) ? null : reader.GetString(4), reader.IsDBNull(5) ? null : reader.GetString(5),
-                DateTimeOffset.FromUnixTimeMilliseconds(reader.GetInt64(6))));
+                DateTimeOffset.FromUnixTimeMilliseconds(reader.GetInt64(6)))
+            {
+                Attachments = reader.IsDBNull(7) ? [] : JsonSerializer.Deserialize<List<Attachment>>(reader.GetString(7)) ?? [],
+                Sources = reader.IsDBNull(8) ? [] : JsonSerializer.Deserialize<List<WebSource>>(reader.GetString(8)) ?? [],
+            });
         return list;
     }
 
@@ -97,12 +123,14 @@ public sealed class ChatStore
     {
         using var db = Open();
         Execute(db, """
-            INSERT INTO messages (id, chat_id, role, content, reasoning, model_id, created_at)
-            VALUES ($id, $chat, $role, $content, $reasoning, $model, $at);
+            INSERT INTO messages (id, chat_id, role, content, reasoning, model_id, created_at, attachments, sources)
+            VALUES ($id, $chat, $role, $content, $reasoning, $model, $at, $attachments, $sources);
             UPDATE chats SET updated_at = $at, model_id = COALESCE($model, model_id) WHERE id = $chat;
             """,
             ("$id", m.Id), ("$chat", m.ChatId), ("$role", m.Role), ("$content", m.Content), ("$reasoning", m.Reasoning),
-            ("$model", m.ModelId), ("$at", m.CreatedAt.ToUnixTimeMilliseconds()));
+            ("$model", m.ModelId), ("$at", m.CreatedAt.ToUnixTimeMilliseconds()),
+            ("$attachments", m.Attachments.Count > 0 ? JsonSerializer.Serialize(m.Attachments) : null),
+            ("$sources", m.Sources.Count > 0 ? JsonSerializer.Serialize(m.Sources) : null));
     }
 
     private SqliteConnection Open()

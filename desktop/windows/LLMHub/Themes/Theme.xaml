@@ -25,6 +25,22 @@
             <SolidColorBrush x:Key="DangerBrush" Color="#FF9A9A" />
             <SolidColorBrush x:Key="TagBrush" Color="#262C38" />
             <SolidColorBrush x:Key="TagTextBrush" Color="#B8CDF5" />
+            <SolidColorBrush x:Key="BodyTextBrush" Color="#DAD9D4" />
+            <SolidColorBrush x:Key="CodeTextBrush" Color="#ECD9B0" />
+            <SolidColorBrush x:Key="LinkBrush" Color="#8AB4FF" />
+            <SolidColorBrush x:Key="SourceChipBrush" Color="#252B38" />
+            <SolidColorBrush x:Key="NavSelectedBrush" Color="#2A2A27" />
+            <SolidColorBrush x:Key="ChatSelectedBrush" Color="#22221F" />
+            <SolidColorBrush x:Key="HoverBrush" Color="#20201E" />
+            <SolidColorBrush x:Key="SearchFieldBrush" Color="#1F1F1D" />
+            <SolidColorBrush x:Key="ChipBorderBrush" Color="#33332F" />
+            <SolidColorBrush x:Key="ToggleOnBrush" Color="#232A38" />
+            <SolidColorBrush x:Key="ToggleOnBorderBrush" Color="#3D4A63" />
+            <SolidColorBrush x:Key="PdfBadgeBrush" Color="#3A2F2A" />
+            <SolidColorBrush x:Key="PdfBadgeTextBrush" Color="#F0A98A" />
+            <SolidColorBrush x:Key="ImageBadgeBrush" Color="#263040" />
+            <SolidColorBrush x:Key="ImageBadgeTextBrush" Color="#9CC2FF" />
+            <SolidColorBrush x:Key="AttachmentChipBrush" Color="#222220" />
         </ResourceDictionary>
         <ResourceDictionary x:Key="Light">
             <SolidColorBrush x:Key="AppBackgroundBrush" Color="#FAFAF8" />
@@ -46,6 +62,22 @@
             <SolidColorBrush x:Key="DangerBrush" Color="#B3261E" />
             <SolidColorBrush x:Key="TagBrush" Color="#E3ECFC" />
             <SolidColorBrush x:Key="TagTextBrush" Color="#1D4FAE" />
+            <SolidColorBrush x:Key="BodyTextBrush" Color="#2A2926" />
+            <SolidColorBrush x:Key="CodeTextBrush" Color="#7A4E00" />
+            <SolidColorBrush x:Key="LinkBrush" Color="#2F6FE4" />
+            <SolidColorBrush x:Key="SourceChipBrush" Color="#E3ECFC" />
+            <SolidColorBrush x:Key="NavSelectedBrush" Color="#E6E4DE" />
+            <SolidColorBrush x:Key="ChatSelectedBrush" Color="#ECEAE4" />
+            <SolidColorBrush x:Key="HoverBrush" Color="#EFEEE9" />
+            <SolidColorBrush x:Key="SearchFieldBrush" Color="#ECEBE6" />
+            <SolidColorBrush x:Key="ChipBorderBrush" Color="#D6D4CC" />
+            <SolidColorBrush x:Key="ToggleOnBrush" Color="#E3ECFC" />
+            <SolidColorBrush x:Key="ToggleOnBorderBrush" Color="#9DB7EC" />
+            <SolidColorBrush x:Key="PdfBadgeBrush" Color="#F8E3D9" />
+            <SolidColorBrush x:Key="PdfBadgeTextBrush" Color="#A3431C" />
+            <SolidColorBrush x:Key="ImageBadgeBrush" Color="#DCE7FA" />
+            <SolidColorBrush x:Key="ImageBadgeTextBrush" Color="#1D4FAE" />
+            <SolidColorBrush x:Key="AttachmentChipBrush" Color="#F3F2EE" />
         </ResourceDictionary>
     </ResourceDictionary.ThemeDictionaries>
 
@@ -87,5 +119,99 @@
         <Setter Property="Height" Value="36" />
         <Setter Property="Padding" Value="0" />
         <Setter Property="CornerRadius" Value="8" />
+    </Style>
+    <!-- Sidebar rows: rounded, no selection bar, design colors (nav 36 px, chats 34 px). -->
+    <Style x:Key="SidebarItemStyle" TargetType="ListViewItem">
+        <Setter Property="MinHeight" Value="36" />
+        <Setter Property="Padding" Value="12,0" />
+        <Setter Property="Margin" Value="0,1" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="Foreground" Value="{ThemeResource TextSecondaryBrush}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListViewItem">
+                    <ListViewItemPresenter
+                        ContentTransitions="{TemplateBinding ContentTransitions}"
+                        Control.IsTemplateFocusTarget="True"
+                        SelectionCheckMarkVisualEnabled="False"
+                        SelectionIndicatorVisualEnabled="False"
+                        CheckMode="Overlay"
+                        CornerRadius="{TemplateBinding CornerRadius}"
+                        Background="{TemplateBinding Background}"
+                        PointerOverBackground="{ThemeResource HoverBrush}"
+                        PressedBackground="{ThemeResource NavSelectedBrush}"
+                        SelectedBackground="{ThemeResource NavSelectedBrush}"
+                        SelectedPointerOverBackground="{ThemeResource NavSelectedBrush}"
+                        SelectedPressedBackground="{ThemeResource NavSelectedBrush}"
+                        SelectedForeground="{ThemeResource TextPrimaryBrush}"
+                        PointerOverForeground="{ThemeResource TextPrimaryBrush}"
+                        FocusVisualMargin="0"
+                        ContentMargin="{TemplateBinding Padding}"
+                        HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                        VerticalContentAlignment="Center" />
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="ChatItemStyle" TargetType="ListViewItem" BasedOn="{StaticResource SidebarItemStyle}">
+        <Setter Property="MinHeight" Value="34" />
+    </Style>
+
+    <!-- 32 px icon-only button (message actions, header star). -->
+    <Style x:Key="IconButtonStyle" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Width" Value="32" />
+        <Setter Property="Height" Value="32" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Foreground" Value="{ThemeResource TextMutedBrush}" />
+    </Style>
+
+    <!-- Outlined button: Share, Comment, Export. -->
+    <Style x:Key="OutlineButtonStyle" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{ThemeResource ChipBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Height" Value="32" />
+        <Setter Property="Padding" Value="12,0" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="Foreground" Value="{ThemeResource TextSecondaryBrush}" />
+    </Style>
+
+    <!-- Composer switches (Web search, Extended thinking): 36 px, accent tint when on. -->
+    <Style x:Key="ComposerToggleStyle" TargetType="ToggleButton" BasedOn="{StaticResource DefaultToggleButtonStyle}">
+        <Setter Property="Height" Value="36" />
+        <Setter Property="Padding" Value="12,0" />
+        <Setter Property="CornerRadius" Value="10" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{ThemeResource ControlBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Foreground" Value="{ThemeResource TextSecondaryBrush}" />
+    </Style>
+
+    <!-- 36 px square composer button (attach, dictate). -->
+    <Style x:Key="ComposerIconButtonStyle" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
+        <Setter Property="Width" Value="36" />
+        <Setter Property="Height" Value="36" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="CornerRadius" Value="10" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{ThemeResource ControlBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Foreground" Value="{ThemeResource TextSecondaryBrush}" />
+    </Style>
+
+    <!-- Pill above a reply: "Searched the web · 5 results", "Thought for a few seconds". -->
+    <Style x:Key="ActivityPillStyle" TargetType="Border">
+        <Setter Property="Height" Value="30" />
+        <Setter Property="Padding" Value="12,0" />
+        <Setter Property="CornerRadius" Value="15" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="BorderBrush" Value="{ThemeResource ChipBorderBrush}" />
     </Style>
 </ResourceDictionary>

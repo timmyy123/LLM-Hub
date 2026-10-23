@@ -13,6 +13,10 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.13" />
+    <!-- PDF text for chat attachments (Apache-2.0). -->
+    <PackageReference Include="PdfPig" Version="0.1.16" />
+    <!-- Supertonic text to speech runs on ONNX Runtime (CPU). -->
+    <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.31.0" />
   </ItemGroup>
 
   <ItemGroup>

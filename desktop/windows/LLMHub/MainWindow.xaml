@@ -14,8 +14,10 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <Grid x:Name="AppTitleBar" Background="{ThemeResource TitleBarBrush}">
-            <StackPanel Orientation="Horizontal" Spacing="10" Margin="16,0,0,0" VerticalAlignment="Center">
+        <!-- Title bar: app name and the current section, as in the design. -->
+        <Grid x:Name="AppTitleBar" Background="{ThemeResource TitleBarBrush}" BorderBrush="{ThemeResource DividerBrush}" BorderThickness="0,0,0,1">
+            <StackPanel Orientation="Horizontal" Spacing="12" Margin="14,0,0,0" VerticalAlignment="Center">
+                <Image Source="ms-appx:///Assets/llmhub.png" Width="16" Height="16" />
                 <TextBlock Text="LLM Hub" FontSize="13" FontWeight="SemiBold" Foreground="{ThemeResource TextPrimaryBrush}" />
                 <TextBlock x:Name="SectionTitle" FontSize="13" Foreground="{ThemeResource TextMutedBrush}" />
             </StackPanel>
@@ -37,61 +39,107 @@
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
-                <Button x:Name="NewChatButton" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Height="40" CornerRadius="10"
-                        Background="{ThemeResource SurfaceBrush}" BorderBrush="{ThemeResource ControlBorderBrush}" Click="OnNewChat">
-                    <StackPanel Orientation="Horizontal" Spacing="10">
-                        <FontIcon Glyph="&#xE710;" FontSize="14" />
-                        <TextBlock Text="{x:Bind services:Loc.S('NewChat')}" FontWeight="SemiBold" />
-                    </StackPanel>
+                <Button x:Name="NewChatButton" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Height="40" Padding="12,0" CornerRadius="10"
+                        Background="{ThemeResource SurfaceBrush}" BorderBrush="{ThemeResource ChipBorderBrush}" BorderThickness="1" Click="OnNewChat">
+                    <Button.KeyboardAccelerators>
+                        <KeyboardAccelerator Modifiers="Control" Key="N" />
+                    </Button.KeyboardAccelerators>
+                    <Grid ColumnSpacing="10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <FontIcon Glyph="&#xE710;" FontSize="13" VerticalAlignment="Center" />
+                        <TextBlock x:Name="NewButtonLabel" Grid.Column="1" Text="{x:Bind services:Loc.S('NewChat')}" FontWeight="Medium" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="2" Text="Ctrl+N" FontSize="12" Foreground="{ThemeResource TextFaintBrush}" VerticalAlignment="Center" />
+                    </Grid>
                 </Button>
 
-                <ListView x:Name="NavList" Grid.Row="1" Margin="-4,10,-4,0" SelectionMode="Single" SelectionChanged="OnNavChanged">
+                <ListView x:Name="NavList" Grid.Row="1" Margin="0,10,0,0" Padding="0" SelectionMode="Single" SelectionChanged="OnNavChanged"
+                          ItemContainerStyle="{StaticResource SidebarItemStyle}">
                     <ListViewItem Tag="chat" AutomationProperties.AutomationId="NavChat">
-                        <StackPanel Orientation="Horizontal" Spacing="12">
-                            <FontIcon Glyph="&#xE8BD;" FontSize="16" />
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <FontIcon Glyph="&#xE8BD;" FontSize="15" />
                             <TextBlock Text="{x:Bind services:Loc.S('NavChat')}" />
                         </StackPanel>
                     </ListViewItem>
                     <ListViewItem Tag="agent" AutomationProperties.AutomationId="NavAgent">
-                        <StackPanel Orientation="Horizontal" Spacing="12">
-                            <FontIcon Glyph="&#xE756;" FontSize="16" />
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <FontIcon Glyph="&#xE756;" FontSize="15" />
                             <TextBlock Text="{x:Bind services:Loc.S('NavAgent')}" />
                         </StackPanel>
                     </ListViewItem>
                     <ListViewItem Tag="design" AutomationProperties.AutomationId="NavDesign">
-                        <StackPanel Orientation="Horizontal" Spacing="12">
-                            <FontIcon Glyph="&#xE790;" FontSize="16" />
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <FontIcon Glyph="&#xE790;" FontSize="15" />
                             <TextBlock Text="{x:Bind services:Loc.S('NavDesign')}" />
                         </StackPanel>
                     </ListViewItem>
                     <ListViewItem Tag="studio" AutomationProperties.AutomationId="NavStudio">
-                        <StackPanel Orientation="Horizontal" Spacing="12">
-                            <FontIcon Glyph="&#xE91B;" FontSize="16" />
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <FontIcon Glyph="&#xE91B;" FontSize="15" />
                             <TextBlock Text="{x:Bind services:Loc.S('NavStudio')}" />
                         </StackPanel>
                     </ListViewItem>
                 </ListView>
 
-                <TextBox x:Name="ChatSearch" Grid.Row="2" Margin="0,12,0,4" PlaceholderText="{x:Bind services:Loc.S('SearchChats')}"
-                         Text="{x:Bind Chat.SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                <!-- Search field: icon plus borderless text box on the design's dark field. -->
+                <Border x:Name="SearchField" Grid.Row="2" Margin="0,12,0,4" Height="34" CornerRadius="8" Background="{ThemeResource SearchFieldBrush}" Padding="10,0,4,0">
+                    <Grid ColumnSpacing="6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <FontIcon Glyph="&#xE721;" FontSize="13" Foreground="{ThemeResource TextFaintBrush}" VerticalAlignment="Center" />
+                        <TextBox x:Name="ChatSearch" Grid.Column="1" PlaceholderText="{x:Bind services:Loc.S('SearchChats')}" FontSize="13"
+                                 BorderThickness="0" Background="Transparent" Padding="0,6,0,0" MinHeight="30" VerticalAlignment="Center"
+                                 Text="{x:Bind Chat.SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                            <TextBox.Resources>
+                                <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="Transparent" />
+                                <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="Transparent" />
+                                <Thickness x:Key="TextControlBorderThemeThicknessFocused">0</Thickness>
+                            </TextBox.Resources>
+                        </TextBox>
+                    </Grid>
+                </Border>
 
-                <ListView x:Name="ChatList" Grid.Row="3" Margin="-4,4,-4,0" SelectionMode="Single" IsSynchronizedWithCurrentItem="False"
+                <ListView x:Name="ChatList" Grid.Row="3" Margin="0,2,0,0" SelectionMode="Single" IsSynchronizedWithCurrentItem="False"
+                          ItemContainerStyle="{StaticResource ChatItemStyle}"
                           ItemsSource="{x:Bind ChatGroupsSource.View, Mode=OneWay}"
                           SelectedItem="{x:Bind Chat.SelectedChat, Mode=TwoWay}">
                     <ListView.GroupStyle>
                         <GroupStyle HidesIfEmpty="True">
+                            <GroupStyle.HeaderContainerStyle>
+                                <Style TargetType="ListViewHeaderItem">
+                                    <Setter Property="MinHeight" Value="0" />
+                                    <Setter Property="Padding" Value="12,14,12,4" />
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="ListViewHeaderItem">
+                                                <ContentPresenter Margin="{TemplateBinding Padding}" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}" />
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </GroupStyle.HeaderContainerStyle>
                             <GroupStyle.HeaderTemplate>
                                 <DataTemplate x:DataType="vm:ChatGroup">
-                                    <TextBlock Text="{x:Bind Key}" Style="{StaticResource SectionLabelStyle}" />
+                                    <TextBlock Text="{x:Bind Key}" FontSize="12" FontWeight="Medium" Foreground="{ThemeResource TextFaintBrush}" />
                                 </DataTemplate>
                             </GroupStyle.HeaderTemplate>
                         </GroupStyle>
                     </ListView.GroupStyle>
                     <ListView.ItemTemplate>
                         <DataTemplate x:DataType="vm:ChatSummary">
-                            <Grid>
+                            <Grid Background="Transparent">
                                 <Grid.ContextFlyout>
                                     <MenuFlyout>
+                                        <MenuFlyoutItem Text="{x:Bind local:Ui.StarLabel(Starred), Mode=OneWay}" Click="OnStarChat" Tag="{x:Bind}" AutomationProperties.AutomationId="StarChatMenuItem">
+                                            <MenuFlyoutItem.Icon>
+                                                <FontIcon Glyph="&#xE734;" />
+                                            </MenuFlyoutItem.Icon>
+                                        </MenuFlyoutItem>
                                         <MenuFlyoutItem Text="{x:Bind services:Loc.S('DeleteChat')}" Click="OnDeleteChat" Tag="{x:Bind}" AutomationProperties.AutomationId="DeleteChatMenuItem">
                                             <MenuFlyoutItem.Icon>
                                                 <FontIcon Glyph="&#xE74D;" />
@@ -99,45 +147,47 @@
                                         </MenuFlyoutItem>
                                     </MenuFlyout>
                                 </Grid.ContextFlyout>
-                                <TextBlock Text="{x:Bind Title, Mode=OneWay}" TextTrimming="CharacterEllipsis" Foreground="{ThemeResource TextSecondaryBrush}" AutomationProperties.AutomationId="ChatTitle" />
+                                <TextBlock Text="{x:Bind Title, Mode=OneWay}" TextTrimming="CharacterEllipsis" FontSize="14" AutomationProperties.AutomationId="ChatTitle" />
                             </Grid>
                         </DataTemplate>
                     </ListView.ItemTemplate>
                 </ListView>
 
                 <!-- Settings mode: the same sidebar shows a Back button and the settings sections. -->
-                <StackPanel x:Name="SettingsNav" Grid.Row="0" Grid.RowSpan="4" Spacing="10" Visibility="Collapsed">
-                    <Button x:Name="BackButton" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Height="40" CornerRadius="10"
+                <StackPanel x:Name="SettingsNav" Grid.Row="0" Grid.RowSpan="4" Spacing="6" Visibility="Collapsed">
+                    <Button x:Name="BackButton" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Height="36" Padding="12,0" CornerRadius="8"
                             Background="Transparent" BorderThickness="0" Click="OnBackFromSettings">
                         <StackPanel Orientation="Horizontal" Spacing="10">
-                            <FontIcon Glyph="&#xE72B;" FontSize="14" />
-                            <TextBlock Text="{x:Bind services:Loc.S('Back')}" FontWeight="SemiBold" />
+                            <FontIcon Glyph="&#xE72B;" FontSize="13" />
+                            <TextBlock Text="{x:Bind services:Loc.S('Back')}" FontWeight="Medium" />
                         </StackPanel>
                     </Button>
-                    <TextBlock Text="{x:Bind services:Loc.S('NavSettings')}" Style="{StaticResource SectionLabelStyle}" Margin="12,6,0,0" />
-                    <ListView x:Name="SettingsSectionList" Margin="-4,0,-4,0" SelectionMode="Single" SelectionChanged="OnSettingsSectionChanged">
+                    <TextBlock Text="{x:Bind services:Loc.S('NavSettings')}" FontSize="12" FontWeight="Medium" Foreground="{ThemeResource TextFaintBrush}" Margin="12,8,0,2" />
+                    <ListView x:Name="SettingsSectionList" SelectionMode="Single" SelectionChanged="OnSettingsSectionChanged"
+                              ItemContainerStyle="{StaticResource SidebarItemStyle}">
                         <ListViewItem Tag="general" AutomationProperties.AutomationId="SectionGeneral">
-                            <StackPanel Orientation="Horizontal" Spacing="12">
-                                <FontIcon Glyph="&#xE713;" FontSize="16" />
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                <FontIcon Glyph="&#xE713;" FontSize="15" />
                                 <TextBlock Text="{x:Bind services:Loc.S('SettingsGeneral')}" />
                             </StackPanel>
                         </ListViewItem>
                         <ListViewItem Tag="models" AutomationProperties.AutomationId="SectionModels">
-                            <StackPanel Orientation="Horizontal" Spacing="12">
-                                <FontIcon Glyph="&#xE950;" FontSize="16" />
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                <FontIcon Glyph="&#xE950;" FontSize="15" />
                                 <TextBlock Text="{x:Bind services:Loc.S('SettingsModels')}" />
                             </StackPanel>
                         </ListViewItem>
                         <ListViewItem Tag="api" AutomationProperties.AutomationId="SectionApi">
-                            <StackPanel Orientation="Horizontal" Spacing="12">
-                                <FontIcon Glyph="&#xE968;" FontSize="16" />
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                <FontIcon Glyph="&#xE968;" FontSize="15" />
                                 <TextBlock Text="{x:Bind services:Loc.S('SettingsLocalApi')}" />
                             </StackPanel>
                         </ListViewItem>
                     </ListView>
                 </StackPanel>
 
-                <Button x:Name="SettingsButton" Grid.Row="4" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Margin="0,10,0,0" Padding="12,10"
+                <!-- Engine card: status dot, loaded model, hardware; opens Settings. -->
+                <Button x:Name="SettingsButton" Grid.Row="4" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Margin="0,10,0,0" Padding="12,10"
                         CornerRadius="10" Background="{ThemeResource SurfaceAltBrush}" BorderThickness="0" Click="OnOpenSettings">
                     <Grid ColumnSpacing="10">
                         <Grid.ColumnDefinitions>
@@ -147,10 +197,10 @@
                         </Grid.ColumnDefinitions>
                         <Ellipse x:Name="EngineDot" Width="8" Height="8" Fill="{ThemeResource TextFaintBrush}" VerticalAlignment="Center" />
                         <StackPanel Grid.Column="1">
-                            <TextBlock x:Name="EngineStatus" Text="{x:Bind Engine.StatusText, Mode=OneWay}" FontSize="13" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                            <TextBlock x:Name="EngineStatus" Text="{x:Bind Engine.StatusText, Mode=OneWay}" FontSize="13" FontWeight="Medium" TextTrimming="CharacterEllipsis" />
                             <TextBlock x:Name="HardwareLine" FontSize="12" Foreground="{ThemeResource TextMutedBrush}" TextTrimming="CharacterEllipsis" />
                         </StackPanel>
-                        <FontIcon Grid.Column="2" Glyph="&#xE713;" FontSize="16" Foreground="{ThemeResource TextMutedBrush}" />
+                        <FontIcon Grid.Column="2" Glyph="&#xE713;" FontSize="15" Foreground="{ThemeResource TextMutedBrush}" />
                     </Grid>
                 </Button>
             </Grid>

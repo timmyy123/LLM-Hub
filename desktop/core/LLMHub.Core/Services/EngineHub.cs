@@ -72,10 +72,10 @@ public sealed partial class EngineHub : ObservableObject
         }
     }
 
-    public IAsyncEnumerable<ChatDelta> StreamAsync(InstalledModel model, IReadOnlyList<ChatTurn> turns, CancellationToken ct) =>
+    public IAsyncEnumerable<ChatDelta> StreamAsync(InstalledModel model, IReadOnlyList<ChatTurn> turns, CancellationToken ct, ChatOptions? options = null) =>
         model.Format == "litertlm"
-            ? _liteRt.StreamAsync(turns, ct)
-            : ChatClient.StreamAsync(_llama.BaseUrl!, model.Id, turns, ct);
+            ? _liteRt.StreamAsync(turns, ct, options)
+            : ChatClient.StreamAsync(_llama.BaseUrl!, model.Id, turns, options, ct);
 
     public void Stop()
     {

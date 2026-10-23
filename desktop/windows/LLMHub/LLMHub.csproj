@@ -19,6 +19,8 @@
     <LangVersion>latest</LangVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Version>0.1.0</Version>
+    <!-- Same logo as the iOS and Android apps. -->
+    <ApplicationIcon>..\..\shared\icons\llmhub.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
@@ -29,5 +31,10 @@
   <ItemGroup>
     <!-- Engines, downloads, chat, Local API and view models, shared with the Linux app. -->
     <ProjectReference Include="..\..\core\LLMHub.Core\LLMHub.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="..\..\shared\icons\llmhub.ico" Link="Assets\llmhub.ico" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\shared\icons\llmhub.png" Link="Assets\llmhub.png" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

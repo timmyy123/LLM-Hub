@@ -11,6 +11,11 @@ public partial class App : Application
     {
         AppSettings.Load();
         Loc.ApplyLanguage(AppSettings.Current.Language);
+        // Popups and flyouts follow the application theme, not the window's, so set it here (it cannot change later).
+        if (AppSettings.Current.Appearance == "light")
+            RequestedTheme = ApplicationTheme.Light;
+        else if (AppSettings.Current.Appearance != "system")
+            RequestedTheme = ApplicationTheme.Dark;
         InitializeComponent();
         UnhandledException += (_, e) => Log.Error("Unhandled", e.Exception);
     }
@@ -18,7 +23,11 @@ public partial class App : Application
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
         Window = new MainWindow();
-        Window.Closed += (_, _) => Ioc.Engines.Stop();
+        Window.Closed += (_, _) =>
+        {
+            Ioc.Engines.Stop();
+            Ioc.Speech.Stop();
+        };
         Window.Activate();
         _ = Ioc.Api.RestartAsync();
 #if DEBUG

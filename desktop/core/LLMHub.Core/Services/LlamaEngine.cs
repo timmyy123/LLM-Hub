@@ -196,10 +196,11 @@ public sealed partial class LlamaEngine : ObservableObject
     /// cleaning up (crash, force quit), the loop stops the server instead of leaving the model in memory. It exits on its
     /// own when the server stops first, and checks the process name so a reused PID is never touched.
     /// </summary>
-    private static void StartWatchdog(int serverPid)
+    private static void StartWatchdog(int serverPid, string name, string? pidFile)
     {
+        var cleanup = pidFile is null ? "" : $" rm -f '{pidFile}';";
         var script = $"while kill -0 {Environment.ProcessId} 2>/dev/null && kill -0 {serverPid} 2>/dev/null; do sleep 2; done; " +
-                     $"kill -0 {Environment.ProcessId} 2>/dev/null || {{ ps -p {serverPid} -o comm= | grep -q llama-server && kill {serverPid}; rm -f '{PidFile}'; }}";
+                     $"kill -0 {Environment.ProcessId} 2>/dev/null || {{ ps -p {serverPid} -o comm= | grep -q {name[..Math.Min(name.Length, 15)]} && kill {serverPid};{cleanup} }}";
         try
         {
             using var _ = Process.Start(new ProcessStartInfo("/bin/sh") { ArgumentList = { "-c", script }, UseShellExecute = false });
@@ -208,6 +209,14 @@ public sealed partial class LlamaEngine : ObservableObject
         {
             Log.Error("llama-server watchdog did not start", e);
         }
+    }
+
+    /// <summary>Ties another helper process (whisper-server, ComfyUI) to the app's lifetime, like llama-server.</summary>
+    public void Track(Process process)
+    {
+        _job?.Add(process);
+        if (!OperatingSystem.IsWindows())
+            StartWatchdog(process.Id, Path.GetFileName(process.StartInfo.FileName), null);
     }
 
     private void StopProcess()
@@ -396,7 +405,7 @@ public sealed partial class LlamaEngine : ObservableObject
         if (!OperatingSystem.IsWindows())
         {
             await File.WriteAllTextAsync(PidFile, process.Id.ToString(), ct);
-            StartWatchdog(process.Id);
+            StartWatchdog(process.Id, "llama-server", PidFile);
         }
         process.BeginErrorReadLine();
         process.BeginOutputReadLine();

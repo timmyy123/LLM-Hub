@@ -4,9 +4,13 @@ using System.Text.Json;
 
 namespace LLMHub.Services;
 
-public sealed record ChatTurn(string Role, string Content);
+public sealed record ChatTurn(string Role, string Content, IReadOnlyList<Attachment>? Attachments = null);
 
-public readonly record struct ChatDelta(string? Content, string? Reasoning, double? TokensPerSecond = null);
+/// <summary>Per-request switches from the composer.</summary>
+public sealed record ChatOptions(bool Thinking = false);
+
+/// <param name="ContextTokens">Prompt plus reply tokens of the finished request, for the composer's context meter.</param>
+public readonly record struct ChatDelta(string? Content, string? Reasoning, double? TokensPerSecond = null, int? ContextTokens = null);
 
 /// <summary>Streams replies from llama-server's OpenAI-compatible /v1/chat/completions endpoint.</summary>
 public static class ChatClient
@@ -14,13 +18,16 @@ public static class ChatClient
     private static readonly HttpClient Http = new() { Timeout = Timeout.InfiniteTimeSpan };
 
     public static async IAsyncEnumerable<ChatDelta> StreamAsync(
-        string baseUrl, string model, IEnumerable<ChatTurn> turns, [EnumeratorCancellation] CancellationToken ct)
+        string baseUrl, string model, IEnumerable<ChatTurn> turns, ChatOptions? options, [EnumeratorCancellation] CancellationToken ct)
     {
+        var thinking = options?.Thinking == true;
         var body = new
         {
             model,
             stream = true,
-            messages = turns.Select(t => new { role = t.Role, content = t.Content }).ToArray(),
+            messages = turns.Select(Message).ToArray(),
+            // Chat templates name the switch differently (Gemma/Qwen-style "enable_thinking", Granite "thinking").
+            chat_template_kwargs = new { enable_thinking = thinking, thinking },
         };
         using var request = new HttpRequestMessage(HttpMethod.Post, $"{baseUrl}/v1/chat/completions")
         {
@@ -44,7 +51,12 @@ public static class ChatClient
             if (doc.RootElement.TryGetProperty("error", out var error))
                 throw new HttpRequestException(error.ToString());
             if (doc.RootElement.TryGetProperty("timings", out var timings) && timings.TryGetProperty("predicted_per_second", out var tps) && tps.TryGetDouble(out var speed))
-                yield return new ChatDelta(null, null, speed);
+            {
+                var used = (timings.TryGetProperty("prompt_n", out var p) ? p.GetInt32() : 0) +
+                           (timings.TryGetProperty("cache_n", out var cache) ? cache.GetInt32() : 0) +
+                           (timings.TryGetProperty("predicted_n", out var n) ? n.GetInt32() : 0);
+                yield return new ChatDelta(null, null, speed, used > 0 ? used : null);
+            }
             if (!doc.RootElement.TryGetProperty("choices", out var choices) || choices.GetArrayLength() == 0)
                 continue;
             if (!choices[0].TryGetProperty("delta", out var delta))
@@ -55,5 +67,17 @@ public static class ChatClient
             if (!string.IsNullOrEmpty(content) || !string.IsNullOrEmpty(reasoning))
                 yield return new ChatDelta(content, reasoning);
         }
+    }
+
+    /// <summary>An OpenAI-style message; with images it becomes a list of text and image_url parts (llama-server reads them through the mmproj).</summary>
+    private static object Message(ChatTurn turn)
+    {
+        var text = Attachments.WithDocuments(turn.Content, turn.Attachments);
+        var images = turn.Attachments?.Where(a => a.IsImage).ToList();
+        if (images is null || images.Count == 0)
+            return new { role = turn.Role, content = text };
+        var parts = new List<object> { new { type = "text", text } };
+        parts.AddRange(images.Select(i => (object)new { type = "image_url", image_url = new { url = Attachments.DataUrl(i) } }));
+        return new { role = turn.Role, content = parts };
     }
 }

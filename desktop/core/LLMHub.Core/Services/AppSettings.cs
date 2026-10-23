@@ -8,6 +8,13 @@ public sealed class AppSettings
 
     /// <summary>BCP-47 tag such as "de-DE", or empty to follow Windows.</summary>
     public string Language { get; set; } = "";
+    /// <summary>"dark" (the designed look, default), "light", or "system" to follow the OS.</summary>
+    public string Appearance { get; set; } = "dark";
+    /// <summary>Composer switches, remembered between chats.</summary>
+    public bool WebSearch { get; set; }
+    public bool Thinking { get; set; }
+    /// <summary>Supertonic voice for Read aloud: F1, F2, M1 or M2.</summary>
+    public string Voice { get; set; } = "F1";
     public string HuggingFaceToken { get; set; } = "";
     public string? LastChatModelId { get; set; }
     public int ContextLength { get; set; } = 16384;

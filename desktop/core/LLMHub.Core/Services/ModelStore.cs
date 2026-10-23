@@ -122,4 +122,7 @@ public static class Fmt
         >= 1L << 20 => $"{bytes / 1048576.0:F0} MB",
         _ => $"{bytes / 1024.0:F0} KB",
     };
+
+    /// <summary>Token counts the way the context meter shows them: 950, 11k, 128k.</summary>
+    public static string Tokens(int tokens) => tokens < 1000 ? tokens.ToString() : $"{Math.Round(tokens / 1000.0):F0}k";
 }
