@@ -71,6 +71,7 @@ internal sealed class StudioPage
         var promptFrame = Gtk.Frame.New(null);
         promptFrame.SetChild(_prompt.Margins(8, 8, 8, 8));
         promptFrame.SetSizeRequest(-1, 110);
+        promptFrame.SetVexpand(false);
         var improve = Ui.Button(Loc.S("StudioImprove"), () => _vm.ImprovePromptCommand.Execute(null)).Named("ImproveButton");
         improve.SetHalign(Gtk.Align.Start);
         _aspects = new Picker(_vm.Aspects, i => _vm.Aspect = _vm.Aspects[i]);
@@ -119,7 +120,8 @@ internal sealed class StudioPage
         _progress.SetValign(Gtk.Align.Center);
         var galleryHeader = Ui.HBox(10, Ui.Label(Loc.S("StudioGallery"), "heading"), savedTo, _progress);
         _gallery.SetSelectionMode(Gtk.SelectionMode.Single);
-        _gallery.SetHomogeneous(true);
+        _gallery.SetHomogeneous(false);
+        _gallery.SetHalign(Gtk.Align.Start);
         _gallery.SetMaxChildrenPerLine(6);
         _gallery.SetColumnSpacing(12);
         _gallery.SetRowSpacing(12);
@@ -150,6 +152,7 @@ internal sealed class StudioPage
         var voiceFrame = Gtk.Frame.New(null);
         voiceFrame.SetChild(_voiceText.Margins(8, 8, 8, 8));
         voiceFrame.SetSizeRequest(-1, 150);
+        voiceFrame.SetVexpand(false);
         _voices = new Picker(_vm.Voices, i => _vm.Voice = _vm.Voices[i]);
         _voices.DropDown.Named("VoicePicker");
         _voices.Select(_vm.Voices.ToList().IndexOf(_vm.Voice));
@@ -240,12 +243,25 @@ internal sealed class StudioPage
                 content = Ui.VBox(6, Gtk.Image.NewFromIconName("video-x-generic-symbolic"), Ui.Label(item.Name, "caption"));
             else
             {
-                var picture = Gtk.Picture.NewForFilename(item.Path);
+                // A tile-sized thumbnail: the full image's natural size would stretch the grid.
+                Gtk.Picture picture;
+                try
+                {
+                    picture = Gtk.Picture.NewForPaintable(Gdk.Texture.NewForPixbuf(Thumbnail(item.Path, 240, 160)));
+                }
+                catch (GLib.GException)
+                {
+                    picture = Gtk.Picture.NewForFilename(item.Path);
+                }
                 picture.SetContentFit(Gtk.ContentFit.Cover);
+                picture.SetCanShrink(true);
                 content = picture;
             }
             content.SetSizeRequest(240, 160);
             var tile = Ui.VBox(0, content);
+            tile.SetSizeRequest(240, 160);
+            tile.SetHalign(Gtk.Align.Start);
+            tile.SetValign(Gtk.Align.Start);
             tile.AddCssClass("gallery-tile");
             tile.SetOverflow(Gtk.Overflow.Hidden);
             tile.SetTooltipText(item.Name);
@@ -255,6 +271,16 @@ internal sealed class StudioPage
             tile.AddController(click);
             _gallery.Append(tile);
         }
+    }
+
+    /// <summary>The image scaled to cover <paramref name="width"/> x <paramref name="height"/> and cropped to it.</summary>
+    private static GdkPixbuf.Pixbuf Thumbnail(string path, int width, int height)
+    {
+        var full = GdkPixbuf.Pixbuf.NewFromFile(path)!;
+        var scale = Math.Max((double)width / full.GetWidth(), (double)height / full.GetHeight());
+        var scaled = full.ScaleSimple(Math.Max(width, (int)Math.Ceiling(full.GetWidth() * scale)), Math.Max(height, (int)Math.Ceiling(full.GetHeight() * scale)),
+            GdkPixbuf.InterpType.Bilinear)!;
+        return scaled.NewSubpixbuf((scaled.GetWidth() - width) / 2, (scaled.GetHeight() - height) / 2, width, height);
     }
 
     private async void PickReference()
