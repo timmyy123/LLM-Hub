@@ -32,6 +32,8 @@ internal static class DevCapture
             window.ShowSection("design");
             await Task.Delay(4000);
         }
+        if (ValueOf(args, "--speechtest") is { } sentence)
+            await DevTests.SpeechAsync(sentence);
         if (ValueOf(args, "--agenttest") is { } folder)
             await DevTests.AgentAsync(folder, ValueOf(args, "--prompt") ?? "Describe this project in one sentence.", ValueOf(args, "--model"));
 

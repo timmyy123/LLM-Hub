@@ -87,4 +87,22 @@ public static class DevTests
         await studio.GenerateCommand.ExecuteAsync(null);
         Log.Info($"STUDIOTEST {workflowId} in {clock.Elapsed.TotalSeconds:F0}s: {studio.Status}; newest {studio.Gallery.FirstOrDefault()?.Path}");
     }
+
+    /// <summary>Speaks a sentence with Supertonic, then transcribes the audio with whisper.cpp (both downloaded on first use).</summary>
+    public static async Task SpeechAsync(string sentence)
+    {
+        try
+        {
+            var clock = System.Diagnostics.Stopwatch.StartNew();
+            var (wav, seconds) = await Ioc.Speech.SynthesizeAsync(sentence, "F1", null, CancellationToken.None);
+            Log.Info($"SPEECHTEST tts {seconds:F1}s of audio in {clock.Elapsed.TotalSeconds:F1}s -> {wav}");
+            clock.Restart();
+            var text = await Ioc.Speech.TranscribeAsync(wav, null, CancellationToken.None);
+            Log.Info($"SPEECHTEST asr in {clock.Elapsed.TotalSeconds:F1}s: {text}");
+        }
+        catch (Exception e)
+        {
+            Log.Error("SPEECHTEST failed", e);
+        }
+    }
 }
