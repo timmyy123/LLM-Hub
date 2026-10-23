@@ -31,6 +31,12 @@ public sealed partial class MainWindow : Window
         Root.ActualThemeChanged += (_, _) => UpdateEngineDot();
         UpdateEngineDot();
 
+        DesignVm.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName is nameof(DesignViewModel.Selected) or nameof(DesignViewModel.IsGenerating))
+                UpdateDesignTitle();
+        };
+        DesignVm.Projects.CollectionChanged += (_, _) => UpdateDesignTitle();
         NavList.SelectedIndex = 0;
 #if DEBUG
         if (Environment.GetCommandLineArgs().SkipWhile(a => a != "--theme").Skip(1).FirstOrDefault() is { } theme)
@@ -121,6 +127,7 @@ public sealed partial class MainWindow : Window
     {
         if (NavList.SelectedItem is not ListViewItem { Tag: string tag })
             return;
+        SetCompact(tag is "design" or "studio");
         SetSidebarChatsVisible(tag == "chat");
         switch (tag)
         {
@@ -135,7 +142,7 @@ public sealed partial class MainWindow : Window
                     ContentFrame.Navigate(typeof(AgentPage));
                 break;
             case "design":
-                SectionTitle.Text = Loc.S("NavDesign");
+                UpdateDesignTitle();
                 if (ContentFrame.Content is not DesignPage)
                     ContentFrame.Navigate(typeof(DesignPage));
                 break;
@@ -147,6 +154,37 @@ public sealed partial class MainWindow : Window
         }
     }
 
+    /// <summary>Collapses the sidebar to the design's 64px icon rail (nav icons and the engine dot) or expands it.</summary>
+    private void SetCompact(bool compact)
+    {
+        SidebarColumn.Width = new GridLength(compact ? 64 : 260);
+        foreach (var item in NavList.Items.Cast<ListViewItem>())
+        {
+            if (item.Content is StackPanel { Children: [FontIcon icon, TextBlock label] } panel)
+            {
+                label.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
+                panel.HorizontalAlignment = compact ? HorizontalAlignment.Center : HorizontalAlignment.Left;
+                ToolTipService.SetToolTip(item, compact ? label.Text : null);
+                item.Padding = compact ? new Thickness(0) : new Thickness(12, 0, 12, 0);
+                item.MinWidth = compact ? 0 : 88;
+                item.HorizontalContentAlignment = compact ? HorizontalAlignment.Center : HorizontalAlignment.Stretch;
+                icon.FontSize = compact ? 17 : 15;
+            }
+        }
+        EngineTexts.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
+        SettingsGlyph.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
+        SettingsButton.Padding = compact ? new Thickness(0, 12, 0, 12) : new Thickness(12, 10, 12, 10);
+        SettingsButton.HorizontalContentAlignment = compact ? HorizontalAlignment.Center : HorizontalAlignment.Stretch;
+        ToolTipService.SetToolTip(SettingsButton, compact ? EngineStatus.Text : null);
+    }
+
+    /// <summary>"Design · Crumb &amp; Co" in the title bar, as in the design.</summary>
+    private void UpdateDesignTitle()
+    {
+        if (NavList.SelectedItem is ListViewItem { Tag: "design" })
+            SectionTitle.Text = DesignVm.Selected is { Name.Length: > 0 } p ? $"{Loc.S("NavDesign")} · {p.Name}" : Loc.S("NavDesign");
+    }
+
     private void SetSidebarChatsVisible(bool visible)
     {
         var v = visible ? Visibility.Visible : Visibility.Collapsed;
@@ -156,7 +194,8 @@ public sealed partial class MainWindow : Window
         AgentSessionList.Visibility = section == "agent" ? Visibility.Visible : Visibility.Collapsed;
         DesignProjectList.Visibility = section == "design" ? Visibility.Visible : Visibility.Collapsed;
         NewButtonLabel.Text = Loc.S(section switch { "agent" => "NewSession", "design" => "DesignNewProject", _ => "NewChat" });
-        NewChatButton.Visibility = section == "studio" ? Visibility.Collapsed : Visibility.Visible;
+        NewChatButton.Visibility = section is "chat" or "agent" && SettingsNav.Visibility != Visibility.Visible ? Visibility.Visible : Visibility.Collapsed;
+        DesignProjectList.Visibility = Visibility.Collapsed;
         UpdateEngineCard();
     }
 

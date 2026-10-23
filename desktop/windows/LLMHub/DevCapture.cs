@@ -55,8 +55,14 @@ internal static class DevCapture
                 case "studio":
                     window.ShowSection(ValueOf(args, "--page")!);
                     break;
+                case "engines" or "speech" or "studiosettings" or "agentsettings" or "websearch" or "storage" or "general":
+                    var section = ValueOf(args, "--page")!.Replace("settings", "");
+                    window.ShowSettings(section);
+                    break;
             }
             await Task.Delay(int.TryParse(ValueOf(args, "--wait"), out var ms) ? ms : 2500);
+            if (ValueOf(args, "--page") == "design" && window.Content is FrameworkElement && FindPage<Views.DesignPage>(window) is { } designPage)
+                await designPage.ProbePreviewAsync();
 
             var root = (UIElement)window.Content;
             var bitmap = new RenderTargetBitmap();
@@ -128,6 +134,9 @@ internal static class DevCapture
             Log.Error("SELFTEST failed", e);
         }
     }
+
+    private static T? FindPage<T>(MainWindow window) where T : class =>
+        (window.Content as FrameworkElement)?.FindName("ContentFrame") is Microsoft.UI.Xaml.Controls.Frame { Content: T page } ? page : null;
 
     private static string? ValueOf(string[] args, string name)
     {

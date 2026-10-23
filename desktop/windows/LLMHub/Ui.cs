@@ -90,6 +90,7 @@ public static class Ui
 
     // Studio
     public static Brush RunningBrush(bool running) => running ? Solid(0x5F, 0xD3, 0x8D) : Solid(0x8F, 0x8E, 0x88);
+    public static string Total(string size) => size.Length > 0 ? Services.Loc.F("SettingsTotal", size) : "";
     public static object Box(int value) => value;
     public static double ToDouble(int value) => value;
     public static string ReferenceLabel(string path) => string.IsNullOrEmpty(path) ? Services.Loc.S("StudioReference") : System.IO.Path.GetFileName(path);

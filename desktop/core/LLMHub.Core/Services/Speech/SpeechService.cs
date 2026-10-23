@@ -42,8 +42,31 @@ public sealed partial class SpeechService : ObservableObject
     /// <summary>Setup progress or the last error, for the composer and Settings › Speech and voice.</summary>
     [ObservableProperty] public partial string Status { get; set; }
 
-    private static string TtsRoot => Path.Combine(AppPaths.Engines, "supertonic-3");
-    private static string WhisperRoot => Path.Combine(AppPaths.Engines, "whisper.cpp");
+    public static string TtsRoot => Path.Combine(AppPaths.Engines, "supertonic-3");
+    public static string WhisperRoot => Path.Combine(AppPaths.Engines, "whisper.cpp");
+    public static bool IsTtsInstalled => SupertonicFiles.All(f => File.Exists(Path.Combine(TtsRoot, f)));
+    public static bool IsAsrInstalled => File.Exists(Path.Combine(WhisperRoot, WhisperModel));
+    /// <summary>"Supertonic 3 · 4 voices", "Whisper large-v3 turbo (q5_0)" for Settings.</summary>
+    public static string TtsName => "Supertonic 3";
+    public static string AsrName => "Whisper large-v3 turbo · q5_0";
+
+    /// <summary>Downloads both speech engines now (Settings › Speech and voice) instead of on first use.</summary>
+    public async Task SetUpAsync(CancellationToken ct)
+    {
+        await EnsureTtsAsync(ct);
+        await EnsureWhisperAsync(ct);
+        Status = "";
+    }
+
+    /// <summary>Stops the engines and deletes their downloads.</summary>
+    public void Remove()
+    {
+        Stop();
+        _tts = null;
+        foreach (var dir in new[] { TtsRoot, WhisperRoot })
+            if (Directory.Exists(dir))
+                Directory.Delete(dir, true);
+    }
 
     public static IReadOnlyList<string> Voices => ["F1", "F2", "M1", "M2"];
 

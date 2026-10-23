@@ -9,6 +9,14 @@
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
                 <ResourceDictionary Source="Themes/Theme.xaml" />
             </ResourceDictionary.MergedDictionaries>
+            <!-- The design's accent instead of the Windows accent color: dark controls fill with Light2 (#8AB4FF), light ones with Dark1 (#2F6FE4). -->
+            <Color x:Key="SystemAccentColor">#5B8FF0</Color>
+            <Color x:Key="SystemAccentColorLight1">#7AA6F8</Color>
+            <Color x:Key="SystemAccentColorLight2">#8AB4FF</Color>
+            <Color x:Key="SystemAccentColorLight3">#A9C8FF</Color>
+            <Color x:Key="SystemAccentColorDark1">#2F6FE4</Color>
+            <Color x:Key="SystemAccentColorDark2">#2459BC</Color>
+            <Color x:Key="SystemAccentColorDark3">#1A4590</Color>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

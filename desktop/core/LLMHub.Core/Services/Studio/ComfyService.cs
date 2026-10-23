@@ -26,7 +26,7 @@ public sealed partial class ComfyService : ObservableObject
         // GitHub's API refuses requests without a User-Agent.
         _http.DefaultRequestHeaders.UserAgent.ParseAdd("LLMHub-Desktop/0.1");
         Status = "";
-        StatusLine = Loc.S("ComfyNotInstalled");
+        StatusLine = Loc.S(IsInstalled ? "ComfyReady" : "ComfyNotInstalled");
     }
 
     /// <summary>Install or download progress, or the last error.</summary>
@@ -236,6 +236,7 @@ public sealed partial class ComfyService : ObservableObject
         _process = null;
         _url = null;
         IsRunning = false;
+        StatusLine = Loc.S(IsInstalled ? "ComfyReady" : "ComfyNotInstalled");
     }
 
     // ---------------------------------------------------------------- models

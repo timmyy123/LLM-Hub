@@ -30,6 +30,7 @@ public sealed partial class DesignPage : Page
             ShowPreview();
         };
         UpdateTabs();
+        SizeChanged += OnPageSizeChanged;
     }
 
     public DesignViewModel ViewModel => Ioc.DesignVm;
@@ -56,6 +57,67 @@ public sealed partial class DesignPage : Page
 
     private void OnPreviewMessage(CoreWebView2 sender, CoreWebView2WebMessageReceivedEventArgs args) =>
         ViewModel.SelectedElement = DesignService.DescribePicked(args.WebMessageAsJson);
+
+#if DEBUG
+    /// <summary>What WebView2 loaded (RenderTargetBitmap cannot capture it), after clicking the first heading through the picker.</summary>
+    public async Task ProbePreviewAsync()
+    {
+        if (Preview.CoreWebView2 is null)
+            return;
+        var result = await Preview.CoreWebView2.ExecuteScriptAsync(
+            "JSON.stringify({title: document.title, chars: document.body.innerText.length, elements: document.querySelectorAll('*').length, picker: !!window.__llmhubPicker, " +
+            "clicked: (() => { const h = document.querySelector('h1'); if (h) h.click(); return h ? h.innerText.slice(0, 40) : null; })()})");
+        await Task.Delay(500);
+        Log.Info($"PREVIEW {Preview.Source} {result} selected='{ViewModel.SelectedElement}'");
+    }
+#endif
+
+    /// <summary>Fills the Projects menu: every design (current one checked), then New and Delete.</summary>
+    private void OnProjectsOpening(object sender, object e)
+    {
+        ProjectsMenu.Items.Clear();
+        foreach (var project in ViewModel.Projects)
+        {
+            var item = new ToggleMenuFlyoutItem
+            {
+                Text = project.Name.Length > 0 ? project.Name : Loc.S("DesignUntitled"),
+                IsChecked = project == ViewModel.Selected,
+            };
+            item.Click += (_, _) => ViewModel.Selected = project;
+            ProjectsMenu.Items.Add(item);
+        }
+        if (ViewModel.Projects.Count > 0)
+            ProjectsMenu.Items.Add(new MenuFlyoutSeparator());
+        var create = new MenuFlyoutItem { Text = Loc.S("DesignNewProject"), Icon = new FontIcon { Glyph = "\uE710" } };
+        create.Click += (_, _) => ViewModel.NewProjectCommand.Execute(null);
+        ProjectsMenu.Items.Add(create);
+        if (ViewModel.Selected is { } current)
+        {
+            var delete = new MenuFlyoutItem { Text = Loc.S("Delete"), Icon = new FontIcon { Glyph = "\uE74D" } };
+            delete.Click += (_, _) => ViewModel.DeleteProjectCommand.Execute(current);
+            ProjectsMenu.Items.Add(delete);
+        }
+    }
+
+    /// <summary>
+    /// On a narrow window Comment and Hand off drop their labels so Export stays visible. Measured from the page: the
+    /// toolbar itself reports its desired width, not the visible part of the preview column.
+    /// </summary>
+    private void OnPageSizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        var width = e.NewSize.Width - 340 - 260;
+        var labels = width >= 720 ? Visibility.Visible : Visibility.Collapsed;
+        CommentLabel.Visibility = labels;
+        HandOffLabel.Visibility = labels;
+        VersionLabel.Visibility = width >= 600 ? Visibility.Visible : Visibility.Collapsed;
+        // Below that the size tabs become icons (desktop, tablet, phone).
+        var icons = width < 640;
+        foreach (var (tab, glyph, key) in new[] { (SizeDesktop, "\uE7F4", "DesignDesktop"), (SizeTablet, "\uE70A", "DesignTablet"), (SizePhone, "\uE8EA", "DesignPhone") })
+        {
+            tab.Content = icons ? new FontIcon { Glyph = glyph, FontSize = 13 } : Loc.S(key);
+            ToolTipService.SetToolTip(tab, icons ? Loc.S(key) : null);
+        }
+    }
 
     private void OnKindClick(object sender, RoutedEventArgs e)
     {

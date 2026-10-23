@@ -34,6 +34,9 @@ public static class Ioc
     private static StudioViewModel? _studioVm;
     public static StudioViewModel StudioVm => _studioVm ??= new StudioViewModel();
 
+    private static SettingsViewModel? _settingsVm;
+    public static SettingsViewModel SettingsVm => _settingsVm ??= new SettingsViewModel();
+
     private static DesignViewModel? _designVm;
     public static DesignViewModel DesignVm => _designVm ??= new DesignViewModel();
 }

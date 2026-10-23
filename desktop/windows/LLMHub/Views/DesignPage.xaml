@@ -24,19 +24,33 @@
                 <RowDefinition Height="*" />
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
-            <StackPanel x:Name="KindTabs" Orientation="Horizontal" Spacing="4" Padding="12,10" BorderBrush="{ThemeResource DividerBrush}" BorderThickness="0,0,0,1">
-                <StackPanel.Resources>
-                    <StaticResource x:Key="ToggleButtonBackgroundChecked" ResourceKey="NavSelectedBrush" />
-                    <StaticResource x:Key="ToggleButtonBackgroundCheckedPointerOver" ResourceKey="NavSelectedBrush" />
-                    <StaticResource x:Key="ToggleButtonBackgroundCheckedPressed" ResourceKey="NavSelectedBrush" />
-                    <StaticResource x:Key="ToggleButtonForegroundChecked" ResourceKey="TextPrimaryBrush" />
-                    <StaticResource x:Key="ToggleButtonForegroundCheckedPointerOver" ResourceKey="TextPrimaryBrush" />
-                </StackPanel.Resources>
-                <ToggleButton x:Name="KindPrototype" Tag="Prototype" Content="{x:Bind services:Loc.S('DesignPrototype')}" Click="OnKindClick" Style="{StaticResource StudioTabStyle}" />
-                <ToggleButton x:Name="KindSlides" Tag="Slides" Content="{x:Bind services:Loc.S('DesignSlides')}" Click="OnKindClick" Style="{StaticResource StudioTabStyle}" />
-                <ToggleButton x:Name="KindImage" Tag="Image" Content="{x:Bind services:Loc.S('DesignImage')}" Click="OnKindClick" Style="{StaticResource StudioTabStyle}" />
-                <ToggleButton x:Name="KindMotion" Tag="Motion" Content="{x:Bind services:Loc.S('DesignMotion')}" Click="OnKindClick" Style="{StaticResource StudioTabStyle}" />
-            </StackPanel>
+            <Grid Padding="12,10,6,10" ColumnSpacing="4" BorderBrush="{ThemeResource DividerBrush}" BorderThickness="0,0,0,1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel x:Name="KindTabs" Orientation="Horizontal" Spacing="2">
+                    <StackPanel.Resources>
+                        <StaticResource x:Key="ToggleButtonBackgroundChecked" ResourceKey="NavSelectedBrush" />
+                        <StaticResource x:Key="ToggleButtonBackgroundCheckedPointerOver" ResourceKey="NavSelectedBrush" />
+                        <StaticResource x:Key="ToggleButtonBackgroundCheckedPressed" ResourceKey="NavSelectedBrush" />
+                        <StaticResource x:Key="ToggleButtonForegroundChecked" ResourceKey="TextPrimaryBrush" />
+                        <StaticResource x:Key="ToggleButtonForegroundCheckedPointerOver" ResourceKey="TextPrimaryBrush" />
+                    </StackPanel.Resources>
+                    <ToggleButton x:Name="KindPrototype" Tag="Prototype" Content="{x:Bind services:Loc.S('DesignPrototype')}" Click="OnKindClick" Style="{StaticResource StudioTabStyle}" Padding="10,0" />
+                    <ToggleButton x:Name="KindSlides" Tag="Slides" Content="{x:Bind services:Loc.S('DesignSlides')}" Click="OnKindClick" Style="{StaticResource StudioTabStyle}" Padding="10,0" />
+                    <ToggleButton x:Name="KindImage" Tag="Image" Content="{x:Bind services:Loc.S('DesignImage')}" Click="OnKindClick" Style="{StaticResource StudioTabStyle}" Padding="10,0" />
+                    <ToggleButton x:Name="KindMotion" Tag="Motion" Content="{x:Bind services:Loc.S('DesignMotion')}" Click="OnKindClick" Style="{StaticResource StudioTabStyle}" Padding="10,0" />
+                </StackPanel>
+                <!-- Projects: switch, start or delete a design (the sidebar is a rail on this screen). -->
+                <DropDownButton x:Name="ProjectsButton" Grid.Column="1" Height="32" Padding="8,0" Background="Transparent" BorderThickness="0"
+                                ToolTipService.ToolTip="{x:Bind services:Loc.S('DesignProjects')}" AutomationProperties.Name="{x:Bind services:Loc.S('DesignProjects')}">
+                    <FontIcon Glyph="&#xE8F1;" FontSize="14" />
+                    <DropDownButton.Flyout>
+                        <MenuFlyout x:Name="ProjectsMenu" Placement="BottomEdgeAlignedRight" Opening="OnProjectsOpening" />
+                    </DropDownButton.Flyout>
+                </DropDownButton>
+            </Grid>
 
             <ScrollViewer x:Name="ConversationScroll" Grid.Row="1" Padding="16">
                 <StackPanel Spacing="14">
@@ -115,7 +129,7 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
-            <Grid Padding="16,8" MinHeight="52" ColumnSpacing="8" BorderBrush="{ThemeResource DividerBrush}" BorderThickness="0,0,0,1">
+            <Grid x:Name="PreviewToolbar" Padding="16,8" MinHeight="52" ColumnSpacing="8" BorderBrush="{ThemeResource DividerBrush}" BorderThickness="0,0,0,1">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
@@ -139,14 +153,26 @@
                     <Button Style="{StaticResource IconButtonStyle}" Command="{x:Bind ViewModel.PreviousVersionCommand}" AutomationProperties.Name="Previous version">
                         <FontIcon Glyph="&#xE76B;" FontSize="11" />
                     </Button>
-                    <TextBlock Text="{x:Bind ViewModel.VersionText, Mode=OneWay}" FontSize="12" Foreground="{ThemeResource TextFaintBrush}" VerticalAlignment="Center"
+                    <TextBlock x:Name="VersionLabel" Text="{x:Bind ViewModel.VersionText, Mode=OneWay}" FontSize="12" Foreground="{ThemeResource TextFaintBrush}" VerticalAlignment="Center"
                                AutomationProperties.AutomationId="DesignVersion" />
                     <Button Style="{StaticResource IconButtonStyle}" Command="{x:Bind ViewModel.NextVersionCommand}" AutomationProperties.Name="Next version">
                         <FontIcon Glyph="&#xE76C;" FontSize="11" />
                     </Button>
                 </StackPanel>
-                <Button x:Name="CommentButton" Grid.Column="3" Style="{StaticResource OutlineButtonStyle}" Content="{x:Bind services:Loc.S('DesignComment')}" Click="OnComment" />
-                <Button x:Name="HandOffButton" Grid.Column="4" Style="{StaticResource OutlineButtonStyle}" Content="{x:Bind services:Loc.S('DesignHandOff')}" Click="OnHandOff" />
+                <Button x:Name="CommentButton" Grid.Column="3" Style="{StaticResource OutlineButtonStyle}" Click="OnComment"
+                        ToolTipService.ToolTip="{x:Bind services:Loc.S('DesignComment')}" AutomationProperties.Name="{x:Bind services:Loc.S('DesignComment')}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <FontIcon Glyph="&#xE90A;" FontSize="13" />
+                        <TextBlock x:Name="CommentLabel" Text="{x:Bind services:Loc.S('DesignComment')}" />
+                    </StackPanel>
+                </Button>
+                <Button x:Name="HandOffButton" Grid.Column="4" Style="{StaticResource OutlineButtonStyle}" Click="OnHandOff"
+                        ToolTipService.ToolTip="{x:Bind services:Loc.S('DesignHandOff')}" AutomationProperties.Name="{x:Bind services:Loc.S('DesignHandOff')}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <FontIcon Glyph="&#xE756;" FontSize="13" />
+                        <TextBlock x:Name="HandOffLabel" Text="{x:Bind services:Loc.S('DesignHandOff')}" />
+                    </StackPanel>
+                </Button>
                 <DropDownButton x:Name="ExportButton" Grid.Column="5" Content="{x:Bind services:Loc.S('DesignExport')}" Height="32" CornerRadius="8" FontSize="13"
                                 Background="{ThemeResource TextPrimaryBrush}" Foreground="{ThemeResource AppBackgroundBrush}">
                     <DropDownButton.Flyout>
@@ -159,7 +185,7 @@
                     </DropDownButton.Flyout>
                 </DropDownButton>
             </Grid>
-            <Border Grid.Row="1" Margin="24" HorizontalAlignment="Center" Width="{x:Bind local:Ui.ToDouble(ViewModel.PreviewWidth), Mode=OneWay}" MaxWidth="1280"
+            <Border Grid.Row="1" Margin="24" HorizontalAlignment="Stretch" MaxWidth="{x:Bind local:Ui.ToDouble(ViewModel.PreviewWidth), Mode=OneWay}"
                     CornerRadius="10" BorderThickness="1" BorderBrush="{ThemeResource DividerBrush}" Background="White">
                 <Grid>
                     <WebView2 x:Name="Preview" AutomationProperties.AutomationId="DesignPreview" />
