@@ -120,7 +120,14 @@ public sealed partial class MainWindow : Window
     public void ShowSection(string tag)
     {
         SetSettingsMode(false);
-        NavList.SelectedItem = NavList.Items.Cast<ListViewItem>().First(i => (string)i.Tag == tag);
+        var item = NavList.Items.Cast<ListViewItem>().First(i => (string)i.Tag == tag);
+        if (NavList.SelectedItem == item)
+        {
+            // Already selected, so no SelectionChanged: re-apply the section's sidebar (rail, lists, New button) here.
+            SetCompact(tag is "design" or "studio");
+            SetSidebarChatsVisible(tag == "chat");
+        }
+        NavList.SelectedItem = item;
     }
 
     private void OnNavChanged(object sender, SelectionChangedEventArgs e)
