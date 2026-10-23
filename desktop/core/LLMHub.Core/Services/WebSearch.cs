@@ -34,26 +34,60 @@ public static partial class WebSearch
 
     public static async Task<List<WebSource>> SearchAsync(string query, int max, CancellationToken ct)
     {
+        var results = await SearchHtmlAsync(query, max, ct);
+        // DuckDuckGo throttles repeated queries from one address with an empty or challenge page; its lite page often still answers.
+        if (results.Count == 0)
+            results = await SearchLiteAsync(query, max, ct);
+        Log.Info($"Web search \"{query}\": {results.Count} results");
+        return results;
+    }
+
+    private static async Task<List<WebSource>> SearchHtmlAsync(string query, int max, CancellationToken ct)
+    {
         using var form = new FormUrlEncodedContent([new("q", query), new("kl", "wt-wt")]);
         using var response = await Http.PostAsync("https://html.duckduckgo.com/html/", form, ct);
-        response.EnsureSuccessStatusCode();
         var html = await response.Content.ReadAsStringAsync(ct);
-
         var results = new List<WebSource>();
         foreach (Match m in ResultRegex().Matches(html))
         {
-            var href = HrefRegex().Match(m.Groups["attrs"].Value).Groups[1].Value;
-            var url = RealUrl(WebUtility.HtmlDecode(href));
-            if (url is null || url.Contains("duckduckgo.com", StringComparison.OrdinalIgnoreCase) || results.Any(r => r.Url == url))
-                continue;
-            var title = Clean(m.Groups["title"].Value);
-            var snippet = Clean(m.Groups["snippet"].Value);
-            results.Add(new WebSource(results.Count + 1, title, url, snippet));
+            Add(results, HrefRegex().Match(m.Groups["attrs"].Value).Groups[1].Value, m.Groups["title"].Value, m.Groups["snippet"].Value);
             if (results.Count == max)
                 break;
         }
-        Log.Info($"Web search \"{query}\": {results.Count} results");
+        if (results.Count == 0)
+            Log.Info($"Web search: DuckDuckGo HTML gave no results (HTTP {(int)response.StatusCode}{(html.Contains("anomaly", StringComparison.OrdinalIgnoreCase) ? ", challenge page" : "")})");
         return results;
+    }
+
+    private static async Task<List<WebSource>> SearchLiteAsync(string query, int max, CancellationToken ct)
+    {
+        try
+        {
+            using var form = new FormUrlEncodedContent([new("q", query), new("kl", "wt-wt")]);
+            using var response = await Http.PostAsync("https://lite.duckduckgo.com/lite/", form, ct);
+            var html = await response.Content.ReadAsStringAsync(ct);
+            var links = LiteLinkRegex().Matches(html);
+            var snippets = LiteSnippetRegex().Matches(html);
+            var results = new List<WebSource>();
+            for (var i = 0; i < links.Count && results.Count < max; i++)
+                Add(results, links[i].Groups["href"].Value, links[i].Groups["title"].Value, i < snippets.Count ? snippets[i].Groups["snippet"].Value : "");
+            if (results.Count == 0)
+                Log.Info($"Web search: DuckDuckGo lite gave no results either (HTTP {(int)response.StatusCode})");
+            return results;
+        }
+        catch (HttpRequestException e)
+        {
+            Log.Error("Web search (lite) failed", e);
+            return [];
+        }
+    }
+
+    private static void Add(List<WebSource> results, string href, string title, string snippet)
+    {
+        var url = RealUrl(WebUtility.HtmlDecode(href));
+        if (url is null || url.Contains("duckduckgo.com", StringComparison.OrdinalIgnoreCase) || results.Any(r => r.Url == url))
+            return;
+        results.Add(new WebSource(results.Count + 1, Clean(title), url, Clean(snippet)));
     }
 
     /// <summary>Readable text of a page (scripts, styles and tags removed), or "" when it cannot be fetched in time.</summary>
@@ -127,4 +161,10 @@ public static partial class WebSearch
 
     [GeneratedRegex(@"\s+")]
     private static partial Regex WhitespaceRegex();
+
+    [GeneratedRegex(@"<a(?=[^>]*class=['""]result-link['""])[^>]*href=['""](?<href>[^'""]+)['""][^>]*>(?<title>.*?)</a>", RegexOptions.Singleline)]
+    private static partial Regex LiteLinkRegex();
+
+    [GeneratedRegex(@"<td[^>]*class=['""]result-snippet['""][^>]*>(?<snippet>.*?)</td>", RegexOptions.Singleline)]
+    private static partial Regex LiteSnippetRegex();
 }

@@ -27,6 +27,7 @@ internal sealed class UiTests(MainWindow main)
         {
             ("SidebarSections", SidebarSections),
             ("SettingsSingleSidebar", SettingsSingleSidebar),
+            ("SettingsSectionsContent", SettingsSectionsContent),
             ("CatalogContents", CatalogContents),
             ("LanguageAndContext", LanguageAndContext),
             ("HuggingFaceSearchAndGated", HuggingFaceSearchAndGated),
@@ -34,6 +35,7 @@ internal sealed class UiTests(MainWindow main)
             ("FollowUpsStayInOneChat", FollowUpsStayInOneChat),
             ("ChatListSearchAndSwitch", ChatListSearchAndSwitch),
             ("StopGeneration", StopGeneration),
+            ("WebSearchSources", WebSearchSources),
             ("MtpToggle", MtpToggle),
             ("LiteRtChat", LiteRtChat),
             ("DownloadThinkingModel", DownloadThinkingModel),
@@ -68,14 +70,18 @@ internal sealed class UiTests(MainWindow main)
     private async Task SidebarSections()
     {
         await GoToChat();
-        foreach (var (row, heading) in new[] { ("NavAgent", "NavAgent"), ("NavDesign", "NavDesign"), ("NavStudio", "NavStudio") })
-        {
-            await Activate(One(row));
-            await Until(() => Shown("PlaceholderHeading").Any(w => ((Adw.StatusPage)w).GetTitle()!.Contains(Loc.S(heading))), $"{row} page");
-            Expect(!Visible("ChatList"), "chat list hidden outside Chat");
-        }
+        await Activate(One("NavAgent"));
+        await Until(() => Visible("AgentEmptyTitle") || Visible("AgentComposer"), "Agent page");
+        Expect(!Visible("ChatList"), "chat list hidden outside Chat");
+        await Activate(One("NavDesign"));
+        await Until(() => Visible("DesignComposer") && Visible("SystemPicker"), "Design page");
+        // Design and Studio collapse the sidebar to the icon rail: no New button, no labels.
+        Expect(!Visible("NewChatButton"), "New button hidden on the rail");
+        await Until(() => One("NavDesign").GetWidth() < 90, $"rail is narrow, got {One("NavDesign").GetWidth()}");
+        await Activate(One("NavStudio"));
+        await Until(() => Visible("WorkflowPicker") && Visible("GenerateButton"), "Studio page");
         await Activate(One("NavChat"));
-        await Until(() => Visible("Composer") && Visible("ChatList"), "back on Chat");
+        await Until(() => Visible("Composer") && Visible("ChatList") && Visible("NewChatButton"), "back on Chat with the full sidebar");
     }
 
     private async Task SettingsSingleSidebar()
@@ -90,8 +96,40 @@ internal sealed class UiTests(MainWindow main)
         await Until(() => Visible("ApiToggle") && Visible("PortBox"), "Local API section");
         await Activate(One("SectionModels"));
         await Until(() => Visible("ModelTabs"), "Models section");
+        foreach (var id in new[] { "SectionEngines", "SectionSpeech", "SectionStudio", "SectionAgent", "SectionWebSearch", "SectionStorage" })
+            Expect(Visible(id), $"{id} listed");
         await Activate(One("BackButton"));
         await Until(() => Visible("NavAgent") && Visible("Composer"), "Back returns to the app sidebar");
+    }
+
+    private async Task SettingsSectionsContent()
+    {
+        foreach (var (section, content) in new[] { ("engines", "EngineCard"), ("speech", "TtsLine"), ("studio", "ComfyLine"),
+                                                    ("agent", "ClaudeVersion"), ("websearch", "WebSearchToggle"), ("storage", "StorageRow") })
+        {
+            main.ShowSettings(section);
+            await Until(() => Visible(content), $"{section} shows {content}", 60);
+        }
+        await Until(() => Shown("StorageRow").Count() >= 8, "storage lists every folder", 60);
+    }
+
+    private async Task WebSearchSources()
+    {
+        await NewChatWith(m => m.CatalogId == "gemma-4-12b" && m.Format == "gguf");
+        var toggle = (Gtk.ToggleButton)One("WebSearchToggle");
+        toggle.SetActive(true);
+        try
+        {
+            var reply = await SendAndWait($"{_tag} Search the web: what is the latest stable version of the Rust programming language? One sentence, cite the source.");
+            Expect(reply.Length > 10, $"reply: '{reply}'");
+            await Until(() => Visible("SourceLink"), "source links under the reply", 15);
+            Expect(Visible("ActivityPill"), "activity pill for the search");
+            Log.Info($"UITEST web search reply: {reply[..Math.Min(reply.Length, 160)]}");
+        }
+        finally
+        {
+            toggle.SetActive(false);
+        }
     }
 
     private async Task CatalogContents()
@@ -166,7 +204,7 @@ internal sealed class UiTests(MainWindow main)
     {
         await NewChatWith(m => m.CatalogId == "gemma-4-12b" && m.Format == "gguf");
         await SendAndWait($"{_tag} Reply with exactly one word: apple");
-        var reply = Shown("AssistantMessage").OfType<Gtk.Label>().LastOrDefault()?.GetText() ?? "";
+        var reply = Shown("AssistantMessage").Select(TextOf).LastOrDefault() ?? "";
         Expect(reply.Contains("apple", StringComparison.OrdinalIgnoreCase), $"reply mentions apple: '{reply}'");
         var footer = Shown("MessageFooter").OfType<Gtk.Label>().LastOrDefault()?.GetText() ?? "";
         Expect(footer.Contains("tok/s"), $"footer shows speed: '{footer}'");
@@ -212,13 +250,13 @@ internal sealed class UiTests(MainWindow main)
         await NewChatWith(m => m.CatalogId == "gemma-4-12b" && m.Format == "gguf");
         main.Chat.InputText = $"{_tag} Write a 600-word essay about the history of lighthouses.";
         await Activate(One("SendButton"));
-        await Until(() => Shown("AssistantMessage").OfType<Gtk.Label>().Any(l => (l.GetText() ?? "").Length > 40), "reply streaming", 120);
+        await Until(() => Shown("AssistantMessage").Any(w => TextOf(w).Length > 40), "reply streaming", 120);
         Expect(Visible("StopButton") && !Visible("SendButton"), "Stop replaces Send while generating");
         await Activate(One("StopButton"));
         await Until(() => !Ioc.Chat.IsGenerating && Visible("SendButton"), "generation stops", 15);
-        var length = Shown("AssistantMessage").OfType<Gtk.Label>().Last().GetText()!.Length;
+        var length = TextOf(Shown("AssistantMessage").Last()).Length;
         await Task.Delay(1500);
-        Expect(Shown("AssistantMessage").OfType<Gtk.Label>().Last().GetText()!.Length == length, "no more text after Stop");
+        Expect(TextOf(Shown("AssistantMessage").Last()).Length == length, "no more text after Stop");
     }
 
     private async Task MtpToggle()
@@ -246,7 +284,7 @@ internal sealed class UiTests(MainWindow main)
     {
         await NewChatWith(m => m.CatalogId == "gemma-4-e2b" && m.Format == "litertlm" && !m.Quant.Contains("GPU"));
         await SendAndWait($"{_tag} Name the capital of France in one word.");
-        var reply = Shown("AssistantMessage").OfType<Gtk.Label>().LastOrDefault()?.GetText() ?? "";
+        var reply = Shown("AssistantMessage").Select(TextOf).LastOrDefault() ?? "";
         Expect(reply.Contains("Paris", StringComparison.OrdinalIgnoreCase), $"LiteRT-LM reply: '{reply}'");
         Expect((Shown("MessageFooter").OfType<Gtk.Label>().LastOrDefault()?.GetText() ?? "").Contains("tok/s"), "LiteRT-LM footer shows speed");
     }
@@ -274,7 +312,7 @@ internal sealed class UiTests(MainWindow main)
         await NewChatWith(m => m.CatalogId == "lfm2-5-1-2b-thinking");
         await SendAndWait($"{_tag} What is 17 times 3? Answer with the number.");
         Expect(Shown("ThinkingExpander").Any(), "reasoning shown in the Thinking section");
-        var reply = Shown("AssistantMessage").OfType<Gtk.Label>().LastOrDefault()?.GetText() ?? "";
+        var reply = Shown("AssistantMessage").Select(TextOf).LastOrDefault() ?? "";
         Expect(reply.Contains("51") && !reply.Contains("<think>"), $"answer without raw think tags: '{reply}'");
     }
 
@@ -356,7 +394,7 @@ internal sealed class UiTests(MainWindow main)
         await Until(() => !Ioc.Chat.IsGenerating, "reply finished", 300);
         var status = Shown("MessageStatus").OfType<Gtk.Label>().Select(l => l.GetText()).FirstOrDefault(t => t?.Length > 0);
         Expect(status is null, $"no error status: '{status}'");
-        return Shown("AssistantMessage").OfType<Gtk.Label>().LastOrDefault()?.GetText() ?? "";
+        return Shown("AssistantMessage").Select(TextOf).LastOrDefault() ?? "";
     }
 
     private List<Gtk.ListBoxRow> ChatRows()
@@ -380,6 +418,10 @@ internal sealed class UiTests(MainWindow main)
                 yield return d;
         }
     }
+
+    /// <summary>A label's text, or all label text inside a widget (replies are Markdown boxes of labels).</summary>
+    private static string TextOf(Gtk.Widget widget) =>
+        widget is Gtk.Label label ? label.GetText() ?? "" : string.Join("\n", Descendants(widget).OfType<Gtk.Label>().Select(l => l.GetText()));
 
     private IEnumerable<Gtk.Widget> Named(string name) => Descendants(main.Window).Where(w => w.GetName() == name);
     private IEnumerable<Gtk.Widget> Shown(string name) => Named(name).Where(w => w.GetMapped());

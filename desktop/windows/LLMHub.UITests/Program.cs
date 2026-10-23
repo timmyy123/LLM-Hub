@@ -205,7 +205,8 @@ string Send(string text, int timeoutSeconds = 240, bool useEnter = false)
     else
         Invoke("SendButton");
     WaitUntil(() => FindAll("AssistantMessage").Length > before, TimeSpan.FromSeconds(20), "reply bubble");
-    WaitUntil(() => Visible("StopButton"), TimeSpan.FromSeconds(10), "generation to start");
+    // A loaded model can answer a short prompt before the Stop button is ever seen.
+    WaitUntil(() => Visible("StopButton") || AssistantText().Length > 0, TimeSpan.FromSeconds(30), "generation to start");
     WaitIdle(timeoutSeconds);
     var status = FindAll("MessageStatus").Select(e => e.Name).LastOrDefault(n => !string.IsNullOrEmpty(n));
     var reply = AssistantText();
@@ -286,15 +287,30 @@ Test("Window opens with sidebar navigation", () =>
 
 Test("Agent, Design and Studio pages open", () =>
 {
-    foreach (var nav in new[] { "NavAgent", "NavDesign", "NavStudio" })
-    {
-        Select(nav);
-        var heading = Get("PlaceholderHeading");
-        Check(heading.Name.Length > 0, $"{nav} heading empty");
-        Shot($"02-{nav}");
-    }
+    Select("NavAgent");
+    Check(Find("AgentEmptyTitle") is not null || Find("AgentComposer") is not null, "Agent page did not open");
+    Shot("02-NavAgent");
+    Select("NavDesign");
+    Get("KindPrototype");
+    Get("DesignComposer");
+    Shot("02-NavDesign");
+    Select("NavStudio");
+    Get("TabImage");
+    Get("WorkflowPicker");
+    Shot("02-NavStudio");
     Select("NavChat");
     Get("Composer");
+});
+
+Test("Design and Studio collapse the sidebar to the icon rail", () =>
+{
+    Select("NavDesign");
+    WaitUntil(() => Get("NavDesign").BoundingRectangle.Width < 90, TimeSpan.FromSeconds(5), "rail width");
+    Check(!Visible("NewChatButton"), "New button still shown on the rail");
+    Check(!Visible("ChatSearch"), "chat search still shown on the rail");
+    Select("NavChat");
+    WaitUntil(() => Get("NavChat").BoundingRectangle.Width > 150, TimeSpan.FromSeconds(5), "sidebar width back");
+    Check(Visible("NewChatButton"), "New chat button missing after leaving the rail");
 });
 
 Test("Engine status card shows the GPU", () =>
@@ -308,8 +324,9 @@ Test("Settings use the same single sidebar", () =>
     Invoke("SettingsButton");
     Get("BackButton");
     Check(!Visible("NavAgent"), "app navigation still shown next to settings");
-    foreach (var id in new[] { "SectionGeneral", "SectionModels", "SectionApi" })
+    foreach (var id in new[] { "SectionGeneral", "SectionModels", "SectionEngines", "SectionApi", "SectionSpeech", "SectionStudio", "SectionAgent", "SectionWebSearch", "SectionStorage" })
         Check(Visible(id), $"{id} missing");
+    Check(!Visible("NewChatButton"), "New chat button shown in settings");
     Shot("02-settings-sidebar");
     Invoke("BackButton");
     WaitUntil(() => Visible("NavAgent") && !Visible("BackButton"), TimeSpan.FromSeconds(5), "app navigation back");
@@ -518,7 +535,45 @@ Test("Switch model and show thinking", () =>
     Shot("08-thinking");
 });
 
+Test("Web search answers with sources", () =>
+{
+    GoToChat();
+    Invoke("NewChatButton");
+    PickModel("Gemma 4 12B");
+    var toggle = Get("WebSearchToggle").AsToggleButton();
+    if (toggle.ToggleState != ToggleState.On)
+        toggle.Toggle();
+    try
+    {
+        var reply = Send("Search the web: what is the latest stable version of the Rust programming language? Answer in one sentence and cite the source.", 300);
+        Check(reply.Length > 10, $"reply: {reply}");
+        WaitUntil(() => Find("SourceLink") is not null, TimeSpan.FromSeconds(10), "source links");
+        Check(Find("ActivityPill") is not null, "no activity pill for the search");
+        Log($"   reply: {reply[..Math.Min(reply.Length, 160)]}");
+        Shot("08-web-search");
+    }
+    finally
+    {
+        if (toggle.ToggleState == ToggleState.On)
+            toggle.Toggle();
+    }
+});
+
 // ---------------------------------------------------------------- Settings
+Test("Every settings section opens with its content", () =>
+{
+    Invoke("SettingsButton");
+    foreach (var (section, content) in new[] { ("SectionEngines", "EngineCard"), ("SectionSpeech", "TtsLine"), ("SectionStudio", "ComfyLine"),
+                                                ("SectionAgent", "ClaudeVersion"), ("SectionWebSearch", "WebSearchToggle"), ("SectionStorage", "StorageTotal") })
+    {
+        Select(section);
+        Get(content, 30);
+        Shot($"09-{section}");
+    }
+    WaitUntil(() => Find("StorageTotal")?.Name.Contains("GB") == true, TimeSpan.FromSeconds(60), "storage total in GB");
+    Invoke("BackButton");
+});
+
 Test("Context length setting is saved", () =>
 {
     OpenSettings("SectionGeneral");

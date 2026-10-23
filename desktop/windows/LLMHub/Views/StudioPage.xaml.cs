@@ -17,6 +17,8 @@ public sealed partial class StudioPage : Page
         UpdateTabs();
         CountPicker.SelectedItem = ViewModel.Count;
         StepsBox.Value = ViewModel.Steps;
+        // On a narrow window "Open in ComfyUI" keeps only its icon so the action row fits.
+        SizeChanged += (_, e) => OpenComfyLabel.Visibility = e.NewSize.Width >= 1080 ? Visibility.Visible : Visibility.Collapsed;
         ViewModel.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(StudioViewModel.Steps) && (int)StepsBox.Value != ViewModel.Steps)

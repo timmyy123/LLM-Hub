@@ -144,7 +144,13 @@
                     <Button Style="{StaticResource OutlineButtonStyle}" Height="34" Content="{x:Bind services:Loc.S('StudioUseInChat')}" Click="OnUseInChat" />
                     <Button Style="{StaticResource OutlineButtonStyle}" Height="34" Content="{x:Bind services:Loc.S('StudioAnimate')}" Click="OnAnimate" />
                     <Button Style="{StaticResource OutlineButtonStyle}" Height="34" Content="{x:Bind services:Loc.S('StudioUpscale')}" Click="OnUpscale" />
-                    <Button Style="{StaticResource OutlineButtonStyle}" Height="34" Content="{x:Bind services:Loc.S('StudioOpenComfy')}" Click="OnOpenComfy" />
+                    <Button x:Name="OpenComfyButton" Style="{StaticResource OutlineButtonStyle}" Height="34" Click="OnOpenComfy"
+                            ToolTipService.ToolTip="{x:Bind services:Loc.S('StudioOpenComfy')}" AutomationProperties.Name="{x:Bind services:Loc.S('StudioOpenComfy')}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <FontIcon Glyph="&#xE8A7;" FontSize="12" />
+                            <TextBlock x:Name="OpenComfyLabel" Text="{x:Bind services:Loc.S('StudioOpenComfy')}" />
+                        </StackPanel>
+                    </Button>
                 </StackPanel>
             </Grid>
         </Grid>
