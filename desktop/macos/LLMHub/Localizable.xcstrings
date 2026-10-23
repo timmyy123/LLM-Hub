@@ -3392,43 +3392,43 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Downloading %1$@ (%2$@%)"
+            "value": "Downloading %1$@ (%2$@%%)"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Descargando %1$@ (%2$@ %)"
+            "value": "Descargando %1$@ (%2$@ %%)"
           }
         },
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "Baixando %1$@ (%2$@%)"
+            "value": "Baixando %1$@ (%2$@%%)"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Téléchargement de %1$@ (%2$@ %)"
+            "value": "Téléchargement de %1$@ (%2$@ %%)"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$@ wird geladen (%2$@ %)"
+            "value": "%1$@ wird geladen (%2$@ %%)"
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Download di %1$@ (%2$@%)"
+            "value": "Download di %1$@ (%2$@%%)"
           }
         },
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Загрузка %1$@ (%2$@%)"
+            "value": "Загрузка %1$@ (%2$@%%)"
           }
         }
       }
@@ -3627,43 +3627,43 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Setting up ComfyUI: Python (%1$@%)"
+            "value": "Setting up ComfyUI: Python (%1$@%%)"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Preparando ComfyUI: Python (%1$@ %)"
+            "value": "Preparando ComfyUI: Python (%1$@ %%)"
           }
         },
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "Preparando o ComfyUI: Python (%1$@%)"
+            "value": "Preparando o ComfyUI: Python (%1$@%%)"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Installation de ComfyUI : Python (%1$@ %)"
+            "value": "Installation de ComfyUI : Python (%1$@ %%)"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "ComfyUI wird eingerichtet: Python (%1$@ %)"
+            "value": "ComfyUI wird eingerichtet: Python (%1$@ %%)"
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Configurazione di ComfyUI: Python (%1$@%)"
+            "value": "Configurazione di ComfyUI: Python (%1$@%%)"
           }
         },
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Установка ComfyUI: Python (%1$@%)"
+            "value": "Установка ComfyUI: Python (%1$@%%)"
           }
         }
       }
@@ -3721,43 +3721,43 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Setting up ComfyUI (%1$@%)"
+            "value": "Setting up ComfyUI (%1$@%%)"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Preparando ComfyUI (%1$@ %)"
+            "value": "Preparando ComfyUI (%1$@ %%)"
           }
         },
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "Preparando o ComfyUI (%1$@%)"
+            "value": "Preparando o ComfyUI (%1$@%%)"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Installation de ComfyUI (%1$@ %)"
+            "value": "Installation de ComfyUI (%1$@ %%)"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "ComfyUI wird eingerichtet (%1$@ %)"
+            "value": "ComfyUI wird eingerichtet (%1$@ %%)"
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Configurazione di ComfyUI (%1$@%)"
+            "value": "Configurazione di ComfyUI (%1$@%%)"
           }
         },
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Установка ComfyUI (%1$@%)"
+            "value": "Установка ComfyUI (%1$@%%)"
           }
         }
       }
@@ -5836,43 +5836,43 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Downloading llama.cpp (%1$@%)"
+            "value": "Downloading llama.cpp (%1$@%%)"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Descargando llama.cpp (%1$@ %)"
+            "value": "Descargando llama.cpp (%1$@ %%)"
           }
         },
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "Baixando o llama.cpp (%1$@%)"
+            "value": "Baixando o llama.cpp (%1$@%%)"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Téléchargement de llama.cpp (%1$@ %)"
+            "value": "Téléchargement de llama.cpp (%1$@ %%)"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "llama.cpp wird geladen (%1$@ %)"
+            "value": "llama.cpp wird geladen (%1$@ %%)"
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Download di llama.cpp (%1$@%)"
+            "value": "Download di llama.cpp (%1$@%%)"
           }
         },
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Скачивание llama.cpp (%1$@%)"
+            "value": "Скачивание llama.cpp (%1$@%%)"
           }
         }
       }
@@ -5883,43 +5883,43 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Downloading the voice (%1$@%)"
+            "value": "Downloading the voice (%1$@%%)"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Descargando la voz (%1$@ %)"
+            "value": "Descargando la voz (%1$@ %%)"
           }
         },
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "Baixando a voz (%1$@%)"
+            "value": "Baixando a voz (%1$@%%)"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Téléchargement de la voix (%1$@ %)"
+            "value": "Téléchargement de la voix (%1$@ %%)"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Stimme wird geladen (%1$@ %)"
+            "value": "Stimme wird geladen (%1$@ %%)"
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Download della voce (%1$@%)"
+            "value": "Download della voce (%1$@%%)"
           }
         },
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Загрузка голоса (%1$@%)"
+            "value": "Загрузка голоса (%1$@%%)"
           }
         }
       }
@@ -5930,43 +5930,43 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Setting up Whisper (%1$@%)"
+            "value": "Setting up Whisper (%1$@%%)"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Preparando Whisper (%1$@ %)"
+            "value": "Preparando Whisper (%1$@ %%)"
           }
         },
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "Preparando o Whisper (%1$@%)"
+            "value": "Preparando o Whisper (%1$@%%)"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Installation de Whisper (%1$@ %)"
+            "value": "Installation de Whisper (%1$@ %%)"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Whisper wird eingerichtet (%1$@ %)"
+            "value": "Whisper wird eingerichtet (%1$@ %%)"
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Configurazione di Whisper (%1$@%)"
+            "value": "Configurazione di Whisper (%1$@%%)"
           }
         },
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Установка Whisper (%1$@%)"
+            "value": "Установка Whisper (%1$@%%)"
           }
         }
       }
@@ -7753,6 +7753,1322 @@
           "stringUnit": {
             "state": "translated",
             "value": "Предсказание нескольких токенов: более быстрые ответы на GPU. При переключении модель перезагружается."
+          }
+        }
+      }
+    },
+    "MusicAddStyle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add a style"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Añadir un estilo"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adicionar um estilo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajouter un style"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stil hinzufügen"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aggiungi uno stile"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Добавить стиль"
+          }
+        }
+      }
+    },
+    "MusicBlending": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blending %1$@ styles · %2$@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mezclando %1$@ estilos · %2$@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Misturando %1$@ estilos · %2$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mélange de %1$@ styles · %2$@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ Stile gemischt · %2$@"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mix di %1$@ stili · %2$@"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Смешение стилей: %1$@ · %2$@"
+          }
+        }
+      }
+    },
+    "MusicDownloading": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Downloading Magenta RealTime (%1$@%%)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Descargando Magenta RealTime (%1$@ %%)"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Baixando o Magenta RealTime (%1$@%%)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Téléchargement de Magenta RealTime (%1$@ %%)"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Magenta RealTime wird geladen (%1$@ %%)"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Download di Magenta RealTime (%1$@%%)"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Загрузка Magenta RealTime (%1$@%%)"
+          }
+        }
+      }
+    },
+    "MusicExport": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export WAV"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exportar WAV"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exportar WAV"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exporter en WAV"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Als WAV exportieren"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esporta WAV"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Экспорт в WAV"
+          }
+        }
+      }
+    },
+    "MusicGuidance": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Style guidance"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fidelidad al estilo"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fidelidade ao estilo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fidélité au style"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stiltreue"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aderenza allo stile"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Следование стилю"
+          }
+        }
+      }
+    },
+    "MusicLiveJam": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Live jam"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sesión en directo"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jam ao vivo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jam en direct"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Live-Jam"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jam dal vivo"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Живой джем"
+          }
+        }
+      }
+    },
+    "MusicLoading": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loading Magenta RealTime…"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cargando Magenta RealTime…"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Carregando o Magenta RealTime…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chargement de Magenta RealTime…"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Magenta RealTime wird gestartet…"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Caricamento di Magenta RealTime…"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Запуск Magenta RealTime…"
+          }
+        }
+      }
+    },
+    "MusicMetal": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Metal (%1$@)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Metal (%1$@)"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Metal (%1$@)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Metal (%1$@)"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Metal (%1$@)"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Metal (%1$@)"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Metal (%1$@)"
+          }
+        }
+      }
+    },
+    "MusicNeedsAppleSilicon": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Live music with Magenta RealTime needs a Mac with Apple silicon."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La música en directo con Magenta RealTime necesita un Mac con Apple silicon."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A música ao vivo com o Magenta RealTime precisa de um Mac com Apple silicon."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La musique en direct avec Magenta RealTime nécessite un Mac avec puce Apple silicon."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Live-Musik mit Magenta RealTime braucht einen Mac mit Apple Silicon."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La musica dal vivo con Magenta RealTime richiede un Mac con Apple silicon."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Для живой музыки с Magenta RealTime нужен Mac с Apple silicon."
+          }
+        }
+      }
+    },
+    "MusicNoRecordings": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recordings and exports are saved to %1$@."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Las grabaciones y exportaciones se guardan en %1$@."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gravações e exportações ficam salvas em %1$@."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les enregistrements et exports sont enregistrés dans %1$@."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aufnahmen und Exporte werden in %1$@ gespeichert."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Registrazioni ed esportazioni vengono salvate in %1$@."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Записи и экспорт сохраняются в %1$@."
+          }
+        }
+      }
+    },
+    "MusicOneStyle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "One style · %1$@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un estilo · %1$@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Um estilo · %1$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un style · %1$@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ein Stil · %1$@"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uno stile · %1$@"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Один стиль · %1$@"
+          }
+        }
+      }
+    },
+    "MusicPlay": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Play"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reproducir"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tocar"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lire"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abspielen"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Riproduci"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Играть"
+          }
+        }
+      }
+    },
+    "MusicRecord": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Record"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grabar"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gravar"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enregistrer"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aufnehmen"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Registra"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Записать"
+          }
+        }
+      }
+    },
+    "MusicRecording": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recording"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grabando"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gravando"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enregistrement"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aufnahme läuft"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In registrazione"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Идёт запись"
+          }
+        }
+      }
+    },
+    "MusicRecordings": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recordings"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grabaciones"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gravações"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enregistrements"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aufnahmen"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Registrazioni"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Записи"
+          }
+        }
+      }
+    },
+    "MusicRemoveStyle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove style"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quitar estilo"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remover estilo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retirer le style"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stil entfernen"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rimuovi stile"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Убрать стиль"
+          }
+        }
+      }
+    },
+    "MusicRunsOn": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Runs on"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se ejecuta en"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Roda em"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fonctionne sur"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Läuft auf"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Funziona su"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Работает на"
+          }
+        }
+      }
+    },
+    "MusicSaved": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved %1$@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guardado %1$@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Salvo %1$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ enregistré"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ gespeichert"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Salvato %1$@"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сохранено: %1$@"
+          }
+        }
+      }
+    },
+    "MusicSlow": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This Mac makes music a little slower than real time, so playback may pause briefly."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Este Mac genera la música algo más lento que en tiempo real, así que puede haber pausas breves."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Este Mac gera a música um pouco mais devagar que o tempo real, então podem ocorrer pausas curtas."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce Mac crée la musique un peu moins vite que le temps réel : la lecture peut marquer de courtes pauses."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dieser Mac erzeugt Musik etwas langsamer als in Echtzeit, daher kann die Wiedergabe kurz stocken."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Questo Mac genera la musica un po' più lentamente del tempo reale, quindi la riproduzione può fermarsi per un attimo."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Этот Mac создаёт музыку чуть медленнее реального времени, поэтому возможны короткие паузы."
+          }
+        }
+      }
+    },
+    "MusicStatusDownload": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Magenta RealTime · %1$@ to download on first use"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Magenta RealTime · %1$@ se descargan la primera vez"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Magenta RealTime · %1$@ para baixar no primeiro uso"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Magenta RealTime · %1$@ à télécharger la première fois"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Magenta RealTime · %1$@ Download beim ersten Start"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Magenta RealTime · %1$@ da scaricare al primo utilizzo"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Magenta RealTime · %1$@ загрузится при первом запуске"
+          }
+        }
+      }
+    },
+    "MusicStatusLive": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Magenta RealTime · streaming live"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Magenta RealTime · sonando en directo"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Magenta RealTime · tocando ao vivo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Magenta RealTime · en direct"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Magenta RealTime · spielt live"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Magenta RealTime · in diretta"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Magenta RealTime · играет вживую"
+          }
+        }
+      }
+    },
+    "MusicStatusReady": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Magenta RealTime · ready"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Magenta RealTime · listo"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Magenta RealTime · pronto"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Magenta RealTime · prêt"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Magenta RealTime · bereit"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Magenta RealTime · pronto"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Magenta RealTime · готов"
+          }
+        }
+      }
+    },
+    "MusicStop": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stop"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Detener"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parar"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arrêter"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stoppen"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ferma"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Остановить"
+          }
+        }
+      }
+    },
+    "MusicStylePlaceholder": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Describe a style, like jazz trio"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Describe un estilo, como trío de jazz"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Descreva um estilo, como trio de jazz"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Décrivez un style, comme trio de jazz"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beschreibe einen Stil, etwa Jazztrio"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Descrivi uno stile, come trio jazz"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Опишите стиль, например джазовое трио"
+          }
+        }
+      }
+    },
+    "MusicStyles": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Styles"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estilos"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estilos"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Styles"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stile"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stili"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Стили"
+          }
+        }
+      }
+    },
+    "MusicStylesHelp": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Drag a slider while it plays. The music follows within a couple of seconds."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mueve un control mientras suena. La música cambia en un par de segundos."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arraste um controle enquanto toca. A música acompanha em poucos segundos."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Déplacez un curseur pendant la lecture. La musique suit en quelques secondes."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bewege einen Regler, während die Musik läuft. Sie folgt innerhalb von ein, zwei Sekunden."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sposta un cursore mentre suona. La musica si adegua in un paio di secondi."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Двигайте ползунок во время игры. Музыка подстроится за пару секунд."
+          }
+        }
+      }
+    },
+    "MusicTemperature": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Temperature"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Temperatura"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Temperatura"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Température"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Temperatur"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Temperatura"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Температура"
+          }
+        }
+      }
+    },
+    "MusicVariety": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Variety (top-k)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Variedad (top-k)"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Variedade (top-k)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Variété (top-k)"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vielfalt (Top-k)"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Varietà (top-k)"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Разнообразие (top-k)"
           }
         }
       }
@@ -11846,6 +13162,53 @@
         }
       }
     },
+    "StudioOpen": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abrir"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abrir"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvrir"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Öffnen"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apri"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Открыть"
+          }
+        }
+      }
+    },
     "StudioOpenComfy": {
       "extractionState": "manual",
       "localizations": {
@@ -11936,6 +13299,53 @@
           "stringUnit": {
             "state": "translated",
             "value": "Промпт"
+          }
+        }
+      }
+    },
+    "StudioQueued": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Queued"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En cola"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Na fila"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En attente"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In der Warteschlange"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In coda"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "В очереди"
           }
         }
       }
@@ -12124,6 +13534,53 @@
           "stringUnit": {
             "state": "translated",
             "value": "Seed"
+          }
+        }
+      }
+    },
+    "StudioShowInFinder": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show in Finder"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mostrar en Finder"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mostrar no Finder"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Afficher dans le Finder"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Im Finder zeigen"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mostra nel Finder"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Показать в Finder"
           }
         }
       }

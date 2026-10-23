@@ -16,9 +16,17 @@ settings:
     ENABLE_HARDENED_RUNTIME: NO
     LOCALIZATION_PREFERS_STRING_CATALOGS: YES
     SWIFT_EMIT_LOC_STRINGS: YES
+  configs:
+    Debug:
+      # Studio › Music: MLX and the Magenta driver are 4x too slow for live audio at -O0. Optimizing C/C++ in Debug
+      # roughly doubles Debug speed (mlx-swift stays -Onone there); Release plays live at about 1.3x real time.
+      GCC_OPTIMIZATION_LEVEL: "3"
 packages:
   LiteRTLM:
     path: ../../ios/LLMHub/LocalPackages/LiteRT-LM
+  # Studio › Music: Magenta RealTime 2 on MLX (reuses the iOS runtime; see Packages/MagentaMac/Package.swift).
+  MagentaMac:
+    path: Packages/MagentaMac
 targets:
   LLMHub:
     type: application
@@ -42,6 +50,8 @@ targets:
     dependencies:
       - package: LiteRTLM
         product: LiteRTLM
+      - package: MagentaMac
+        product: MagentaMac
     entitlements:
       path: LLMHub/LLMHub.entitlements
       properties:

@@ -21,6 +21,9 @@ for lang, strings in table.items():
         assert set(re.findall(r"\{\d+\}", value)) == set(re.findall(r"\{\d+\}", table["en-US"][key])), (lang, key)
 
 def swift_format(value):
+    # Strings with placeholders go through String(format:) (L.f), where a literal % must be %%, as in "({0}%)".
+    if re.search(r"\{\d+\}", value):
+        value = value.replace("%", "%%")
     return re.sub(r"\{(\d+)\}", lambda m: f"%{int(m.group(1)) + 1}$@", value)
 
 catalog = {"sourceLanguage": "en", "version": "1.0", "strings": {
