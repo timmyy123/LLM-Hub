@@ -1,0 +1,680 @@
+using System.Diagnostics;
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using FlaUI.Core;
+using FlaUI.Core.AutomationElements;
+using FlaUI.Core.Capturing;
+using FlaUI.Core.Definitions;
+using FlaUI.Core.Input;
+using FlaUI.Core.WindowsAPI;
+using FlaUI.UIA3;
+
+// End-to-end UI tests for LLM Hub on Windows. Drives the real app through UI Automation.
+// Usage: LLMHub.UITests.exe <path to LLMHub.exe> <output folder> [test name filter]
+// Needs: Gemma 4 12B installed (the --selftest run does that) and an interactive desktop session.
+
+var exe = args[0];
+var outDir = args[1];
+var filter = args.Length > 2 ? args[2] : null;
+Directory.CreateDirectory(outDir);
+
+var dataDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "LLMHub");
+var settingsPath = Path.Combine(dataDir, "settings.json");
+var results = new List<(string Name, bool Pass, string Detail)>();
+var automation = new UIA3Automation();
+Application? app = null;
+Window? window = null;
+
+void Log(string line)
+{
+    Console.WriteLine(line);
+    File.AppendAllText(Path.Combine(outDir, "results.txt"), line + Environment.NewLine);
+}
+
+void Shot(string name)
+{
+    try
+    {
+        if (window is not null)
+            Capture.Element(window).ToFile(Path.Combine(outDir, $"{name}.png"));
+    }
+    catch (Exception e)
+    {
+        Log($"   (screenshot {name} failed: {e.Message})");
+    }
+}
+
+void Test(string name, Action body)
+{
+    if (filter is not null && !name.Contains(filter, StringComparison.OrdinalIgnoreCase))
+        return;
+    var clock = Stopwatch.StartNew();
+    try
+    {
+        body();
+        results.Add((name, true, ""));
+        Log($"PASS {name} ({clock.Elapsed.TotalSeconds:F1}s)");
+    }
+    catch (Exception e)
+    {
+        results.Add((name, false, e.Message));
+        Log($"FAIL {name} ({clock.Elapsed.TotalSeconds:F1}s): {e.Message}");
+        Shot("FAIL-" + string.Concat(name.Where(char.IsLetterOrDigit)));
+    }
+}
+
+void Check(bool condition, string message)
+{
+    if (!condition)
+        throw new Exception(message);
+}
+
+T WaitFor<T>(Func<T?> probe, TimeSpan timeout, string what) where T : class
+{
+    var deadline = DateTime.UtcNow + timeout;
+    while (DateTime.UtcNow < deadline)
+    {
+        try
+        {
+            if (probe() is { } value)
+                return value;
+        }
+        catch
+        {
+            // Element tree changing under us; retry.
+        }
+        Thread.Sleep(250);
+    }
+    throw new TimeoutException($"Timed out after {timeout.TotalSeconds:F0}s waiting for {what}");
+}
+
+void WaitUntil(Func<bool> condition, TimeSpan timeout, string what) =>
+    WaitFor(() => condition() ? "ok" : null, timeout, what);
+
+AutomationElement? Find(string id) => window!.FindFirstDescendant(cf => cf.ByAutomationId(id));
+AutomationElement[] FindAll(string id) => window!.FindAllDescendants(cf => cf.ByAutomationId(id));
+AutomationElement Get(string id, int seconds = 15) => WaitFor(() => Find(id), TimeSpan.FromSeconds(seconds), id);
+
+bool Visible(string id)
+{
+    var e = Find(id);
+    return e is not null && !e.Properties.IsOffscreen.ValueOrDefault;
+}
+
+void Invoke(string id) => Get(id).AsButton().Invoke();
+
+void Select(string id)
+{
+    var e = Get(id);
+    if (e.Patterns.SelectionItem.IsSupported)
+        e.Patterns.SelectionItem.Pattern.Select();
+    else
+        e.Click();
+    Thread.Sleep(400);
+}
+
+/// Keyboard input goes to whatever window is in front, so put LLM Hub there first.
+void Front()
+{
+    window!.SetForeground();
+    Thread.Sleep(150);
+}
+
+void SetText(string id, string text)
+{
+    Front();
+    var box = Get(id).AsTextBox();
+    box.Focus();
+    box.Text = text;
+    Thread.Sleep(150);
+}
+
+void Launch(string extraArgs = "", Dictionary<string, string>? env = null)
+{
+    Close();
+    var info = new ProcessStartInfo(exe, extraArgs) { UseShellExecute = false };
+    foreach (var (k, v) in env ?? [])
+        info.Environment[k] = v;
+    app = Application.Launch(info);
+    window = WaitFor(() => app.GetMainWindow(automation, TimeSpan.FromSeconds(2)), TimeSpan.FromSeconds(40), "main window");
+    window.SetForeground();
+    Get("NewChatButton", 30);
+}
+
+void Close()
+{
+    if (app is null)
+        return;
+    try
+    {
+        app.Close();
+        app.WaitWhileMainHandleIsMissing(TimeSpan.FromSeconds(1));
+        if (!app.HasExited)
+            Thread.Sleep(2000);
+        if (!app.HasExited)
+            app.Kill();
+    }
+    catch
+    {
+    }
+    app.Dispose();
+    app = null;
+    window = null;
+    Thread.Sleep(1500);
+}
+
+JsonObject ReadSettings() => File.Exists(settingsPath) ? JsonNode.Parse(File.ReadAllText(settingsPath))!.AsObject() : new JsonObject();
+
+void WriteSetting(string key, JsonNode? value)
+{
+    var s = ReadSettings();
+    s[key] = value;
+    File.WriteAllText(settingsPath, s.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
+}
+
+/// Generation is over once Send is back and Stop is gone for several consecutive checks
+/// (single reads can miss elements while the tree is being rebuilt during streaming).
+void WaitIdle(int timeoutSeconds)
+{
+    var stable = 0;
+    WaitUntil(() =>
+    {
+        stable = Visible("SendButton") && !Visible("StopButton") ? stable + 1 : 0;
+        return stable >= 6;
+    }, TimeSpan.FromSeconds(timeoutSeconds), "generation to finish");
+}
+
+string AssistantText()
+{
+    var all = FindAll("AssistantMessage");
+    return all.Length == 0 ? "" : all[^1].Name;
+}
+
+/// <summary>Types a message, sends it and waits for the reply to finish. Returns the reply text.</summary>
+string Send(string text, int timeoutSeconds = 240, bool useEnter = false)
+{
+    var before = FindAll("AssistantMessage").Length;
+    SetText("Composer", text);
+    if (useEnter)
+    {
+        Front();
+        Get("Composer").Focus();
+        Keyboard.Press(VirtualKeyShort.ENTER);
+        Keyboard.Release(VirtualKeyShort.ENTER);
+    }
+    else
+        Invoke("SendButton");
+    WaitUntil(() => FindAll("AssistantMessage").Length > before, TimeSpan.FromSeconds(20), "reply bubble");
+    WaitUntil(() => Visible("StopButton"), TimeSpan.FromSeconds(10), "generation to start");
+    WaitIdle(timeoutSeconds);
+    var status = FindAll("MessageStatus").Select(e => e.Name).LastOrDefault(n => !string.IsNullOrEmpty(n));
+    var reply = AssistantText();
+    Check(reply.Length > 0, $"empty reply (status: {status})");
+    return reply;
+}
+
+void PickModel(string namePart)
+{
+    var combo = Get("ModelPicker").AsComboBox();
+    combo.Expand();
+    Thread.Sleep(400);
+    var item = combo.Items.FirstOrDefault(i => i.Text.Contains(namePart, StringComparison.OrdinalIgnoreCase))
+               ?? throw new Exception($"model '{namePart}' not in picker: {string.Join(", ", combo.Items.Select(i => i.Text))}");
+    item.Select();
+    combo.Collapse();
+    Thread.Sleep(300);
+}
+
+/// Settings replace the app navigation in the single sidebar; Back returns to it.
+void GoToChat()
+{
+    if (Visible("BackButton"))
+        Invoke("BackButton");
+    Select("NavChat");
+}
+
+void OpenSettings(string section)
+{
+    Invoke("SettingsButton");
+    Select(section);
+}
+
+AutomationElement FindCatalogRow(string modelName)
+{
+    var list = Get("CatalogList", 20);
+    for (var attempt = 0; attempt < 40; attempt++)
+    {
+        var name = list.FindAllDescendants(cf => cf.ByAutomationId("CatalogName")).FirstOrDefault(e => e.Name == modelName);
+        if (name is not null)
+        {
+            var row = name;
+            while (row.Parent is { } parent && row.ControlType != ControlType.ListItem)
+                row = parent;
+            if (row.Patterns.ScrollItem.IsSupported)
+                row.Patterns.ScrollItem.Pattern.ScrollIntoView();
+            return row;
+        }
+        if (list.Patterns.Scroll.IsSupported && list.Patterns.Scroll.Pattern.VerticallyScrollable)
+            list.Patterns.Scroll.Pattern.Scroll(ScrollAmount.NoAmount, ScrollAmount.LargeIncrement);
+        Thread.Sleep(300);
+    }
+    throw new Exception($"catalog row '{modelName}' not found");
+}
+
+double Progress(AutomationElement row) =>
+    row.FindFirstDescendant(cf => cf.ByAutomationId("DownloadProgress"))?.Patterns.RangeValue.Pattern.Value.Value ?? -1;
+
+int LlamaServers() => Process.GetProcessesByName("llama-server").Length;
+
+// A word unique to this run, so chats left by earlier runs never match the searches below.
+var run = "kiwi" + DateTime.Now.ToString("HHmmss");
+
+File.Delete(Path.Combine(outDir, "results.txt"));
+Log($"LLM Hub UI tests {DateTime.Now:yyyy-MM-dd HH:mm}");
+WriteSetting("Language", "");
+WriteSetting("HuggingFaceToken", "");
+
+// ---------------------------------------------------------------- Shell and navigation
+Launch();
+Shot("01-launch");
+
+Test("Window opens with sidebar navigation", () =>
+{
+    foreach (var id in new[] { "NavChat", "NavAgent", "NavDesign", "NavStudio", "NewChatButton", "ChatSearch", "SettingsButton" })
+        Check(Find(id) is not null, $"{id} missing");
+});
+
+Test("Agent, Design and Studio pages open", () =>
+{
+    foreach (var nav in new[] { "NavAgent", "NavDesign", "NavStudio" })
+    {
+        Select(nav);
+        var heading = Get("PlaceholderHeading");
+        Check(heading.Name.Length > 0, $"{nav} heading empty");
+        Shot($"02-{nav}");
+    }
+    Select("NavChat");
+    Get("Composer");
+});
+
+Test("Engine status card shows the GPU", () =>
+{
+    var settings = Get("SettingsButton");
+    Check(settings.FindAllDescendants().Any(e => e.Name.Contains("4090") || e.Name.Contains("GPU") || e.Name.Contains("RAM")), "no hardware line");
+});
+
+Test("Settings use the same single sidebar", () =>
+{
+    Invoke("SettingsButton");
+    Get("BackButton");
+    Check(!Visible("NavAgent"), "app navigation still shown next to settings");
+    foreach (var id in new[] { "SectionGeneral", "SectionModels", "SectionApi" })
+        Check(Visible(id), $"{id} missing");
+    Shot("02-settings-sidebar");
+    Invoke("BackButton");
+    WaitUntil(() => Visible("NavAgent") && !Visible("BackButton"), TimeSpan.FromSeconds(5), "app navigation back");
+});
+
+// ---------------------------------------------------------------- Chat
+Test("Model picker lists installed models", () =>
+{
+    PickModel("Gemma 4 12B");
+    Check(Get("ModelPicker").AsComboBox().SelectedItem?.Text.Contains("Gemma 4 12B") == true, "Gemma 4 12B not selected");
+});
+
+Test("Send with Enter, reply streams and finishes", () =>
+{
+    Invoke("NewChatButton");
+    var reply = Send($"{run}: reply with exactly one word: pineapple", useEnter: true);
+    Check(reply.Contains("pineapple", StringComparison.OrdinalIgnoreCase), $"unexpected reply: {reply}");
+    Check(Get("EngineStatus").Name.Contains("Gemma"), $"engine status: {Get("EngineStatus").Name}");
+    Shot("03-chat-reply");
+});
+
+Test("New chat appears in sidebar under Today", () =>
+{
+    var titles = WaitFor(() => FindAll("ChatTitle").Select(e => e.Name).ToList() is { Count: > 0 } t ? t : null, TimeSpan.FromSeconds(10), "chat titles");
+    Check(titles.Any(t => t.Contains(run)), $"titles: {string.Join(" | ", titles)}");
+    Check(Get("ChatHeaderTitle").Name.Contains(run), "header title not set");
+});
+
+Test("Multi-turn conversation keeps context", () =>
+{
+    Send("Remember this: my favourite colour is teal. Just answer OK.");
+    var reply = Send("What is my favourite colour? Answer with one word.");
+    Check(reply.Contains("teal", StringComparison.OrdinalIgnoreCase), $"reply: {reply}");
+});
+
+Test("Stop button ends generation early", () =>
+{
+    Invoke("NewChatButton");
+    SetText("Composer", $"{run} count from 1 to 400, one number per line, no other text.");
+    Invoke("SendButton");
+    WaitUntil(() => Visible("StopButton"), TimeSpan.FromSeconds(30), "generation start");
+    WaitUntil(() => AssistantText().Length > 20, TimeSpan.FromSeconds(60), "some output");
+    Invoke("StopButton");
+    WaitIdle(15);
+    var text = AssistantText();
+    Check(!text.Contains("400"), "reached 400, stop did not cut it short");
+    Thread.Sleep(2000);
+    Check(AssistantText() == text, "text kept growing after Stop");
+});
+
+Test("Search filters the chat list", () =>
+{
+    // This run made two chats: the multi-turn one and the stopped "count" one.
+    SetText("ChatSearch", run);
+    WaitUntil(() => FindAll("ChatTitle") is { Length: 2 } t && t.All(e => e.Name.Contains(run)), TimeSpan.FromSeconds(5), "this run's two chats");
+    SetText("ChatSearch", "zzzz-no-such-chat");
+    WaitUntil(() => FindAll("ChatTitle").Length == 0, TimeSpan.FromSeconds(5), "no matches");
+    SetText("ChatSearch", "");
+    WaitUntil(() => FindAll("ChatTitle").Length >= 2, TimeSpan.FromSeconds(5), "all chats back");
+});
+
+Test("Opening an old chat loads its messages", () =>
+{
+    // Also guards a regression: rebuilding the sidebar after a reply used to detach the open chat, so each follow-up
+    // was saved as a new chat and this one held a single message.
+    var item = FindAll("ChatTitle").First(e => e.Name.StartsWith($"{run}:"));
+    var row = item;
+    while (row.Parent is { } p && row.ControlType != ControlType.ListItem)
+        row = p;
+    row.Patterns.SelectionItem.Pattern.Select();
+    WaitUntil(() => FindAll("UserMessage").Length >= 3, TimeSpan.FromSeconds(10), "3 user messages");
+    Check(FindAll("AssistantMessage").Any(e => e.Name.Contains("teal", StringComparison.OrdinalIgnoreCase)), "teal reply missing");
+});
+
+Test("New chat button clears the conversation", () =>
+{
+    Invoke("NewChatButton");
+    WaitUntil(() => FindAll("UserMessage").Length == 0, TimeSpan.FromSeconds(5), "empty conversation");
+    Check(Find("EmptyTitle") is not null, "empty state missing");
+});
+
+Test("Chats persist after restart", () =>
+{
+    Close();
+    WaitUntil(() => LlamaServers() == 0, TimeSpan.FromSeconds(20), "llama-server to exit");
+    Launch();
+    WaitUntil(() => FindAll("ChatTitle").Any(e => e.Name.Contains(run)), TimeSpan.FromSeconds(10), "saved chat");
+});
+
+Test("Delete chat from the context menu", () =>
+{
+    bool Present() => FindAll("ChatTitle").Any(e => e.Name.StartsWith($"{run} count", StringComparison.OrdinalIgnoreCase));
+    var item = FindAll("ChatTitle").First(e => e.Name.StartsWith($"{run} count", StringComparison.OrdinalIgnoreCase));
+    Front();
+    item.RightClick();
+    var menu = WaitFor(() => window!.FindFirstDescendant(cf => cf.ByAutomationId("DeleteChatMenuItem"))
+                             ?? automation.GetDesktop().FindFirstDescendant(cf => cf.ByAutomationId("DeleteChatMenuItem")), TimeSpan.FromSeconds(5), "delete menu");
+    menu.AsMenuItem().Invoke();
+    WaitUntil(() => !Present(), TimeSpan.FromSeconds(5), "chat removed");
+    Close();
+    Launch();
+    Check(!FindAll("ChatTitle").Any(e => e.Name.StartsWith($"{run} count", StringComparison.OrdinalIgnoreCase)), "deleted chat came back after restart");
+});
+
+// ---------------------------------------------------------------- Models
+Test("Catalog loads quants from Hugging Face, only ones that fit", () =>
+{
+    OpenSettings("SectionModels");
+    Select("TabCatalog");
+    var row = FindCatalogRow("Gemma 4 12B");
+    WaitUntil(() => row.FindFirstDescendant(cf => cf.ByAutomationId("VariantPicker")) is not null, TimeSpan.FromSeconds(60), "variants");
+    var picker = row.FindFirstDescendant(cf => cf.ByAutomationId("VariantPicker"))!.AsComboBox();
+    picker.Expand();
+    Thread.Sleep(500);
+    var items = picker.Items.Select(i => i.Text + " " + string.Join(" ", i.FindAllDescendants().Select(d => d.Name))).ToList();
+    picker.Collapse();
+    Check(items.Count > 0, "no variants");
+    Check(items.All(i => !i.Contains("Too large")), $"too-large variant offered: {string.Join(" | ", items)}");
+    Log($"   Gemma 4 12B variants: {string.Join(" | ", items)}");
+    Shot("04-catalog");
+});
+
+Test("Download, pause and resume a catalog model", () =>
+{
+    var row = FindCatalogRow("LFM2.5 1.2B Thinking");
+    WaitFor(() => row.FindFirstDescendant(cf => cf.ByAutomationId("DownloadButton")) ?? row.FindFirstDescendant(cf => cf.ByAutomationId("DeleteModelButton")), TimeSpan.FromSeconds(60), "row actions");
+    if (row.FindFirstDescendant(cf => cf.ByAutomationId("DeleteModelButton")) is { } delete)
+        delete.AsButton().Invoke(); // Installed by an earlier run; start clean.
+    WaitFor(() => row.FindFirstDescendant(cf => cf.ByAutomationId("DownloadButton")), TimeSpan.FromSeconds(30), "Download button").AsButton().Invoke();
+    WaitUntil(() => Progress(row) > 15, TimeSpan.FromSeconds(120), "15% progress");
+    var paused = Progress(row);
+    row.FindFirstDescendant(cf => cf.ByAutomationId("CancelDownloadButton"))!.AsButton().Invoke();
+    WaitFor(() => row.FindFirstDescendant(cf => cf.ByAutomationId("DownloadButton")), TimeSpan.FromSeconds(15), "Download button after pause").AsButton().Invoke();
+    WaitUntil(() => Progress(row) > 0, TimeSpan.FromSeconds(30), "progress after resume");
+    var resumed = Progress(row);
+    Check(resumed >= paused - 1, $"restarted from {resumed:F1}% instead of resuming from {paused:F1}%");
+    Log($"   paused at {paused:F1}%, resumed at {resumed:F1}%");
+    WaitFor(() => row.FindFirstDescendant(cf => cf.ByAutomationId("InstalledLabel")), TimeSpan.FromMinutes(10), "Installed");
+});
+
+Test("Gated model shows a clear token message", () =>
+{
+    Select("TabHuggingFace");
+    SetText("HfQuery", "google/gemma-3-1b-it-qat-q4_0-gguf");
+    Invoke("HfSearchButton");
+    WaitFor(() => Find("DownloadButton"), TimeSpan.FromSeconds(60), "Download button").AsButton().Invoke();
+    WaitUntil(() => Find("RepoStatus")?.Name.Contains("gated", StringComparison.OrdinalIgnoreCase) == true, TimeSpan.FromSeconds(60), "gated message");
+    Shot("05-gated");
+    Select("TabCatalog");
+});
+
+Test("Hugging Face search finds repos and lists fitting quants", () =>
+{
+    Select("TabHuggingFace");
+    SetText("HfQuery", "LFM2.5-1.2B-Instruct-GGUF");
+    Invoke("HfSearchButton");
+    var results = Get("HfResults", 30);
+    WaitUntil(() => results.FindAllChildren().Length > 0, TimeSpan.FromSeconds(30), "results");
+    WaitFor(() => Find("VariantPicker"), TimeSpan.FromSeconds(30), "variant picker");
+    Shot("06-huggingface");
+});
+
+Test("Download from the Hugging Face tab", () =>
+{
+    var detail = window!; // The Hugging Face panel is the only visible tab, so its controls are unique.
+    var picker = detail.FindFirstDescendant(cf => cf.ByAutomationId("VariantPicker"))!.AsComboBox();
+    picker.Expand();
+    Thread.Sleep(400);
+    var q4 = picker.Items.FirstOrDefault(i => i.Text.StartsWith("Q4_0")) ?? picker.Items.First();
+    q4.Select();
+    picker.Collapse();
+    WaitFor(() => detail.FindFirstDescendant(cf => cf.ByAutomationId("DownloadButton")), TimeSpan.FromSeconds(10), "Download").AsButton().Invoke();
+    WaitFor(() => detail.FindFirstDescendant(cf => cf.ByAutomationId("InstalledLabel")), TimeSpan.FromMinutes(10), "Installed");
+});
+
+Test("Installed tab lists models and deletes one", () =>
+{
+    Select("TabInstalled");
+    var list = Get("InstalledList");
+    WaitUntil(() => list.FindAllDescendants(cf => cf.ByAutomationId("InstalledName")).Length >= 3, TimeSpan.FromSeconds(10), "3 installed models");
+    var names = list.FindAllDescendants(cf => cf.ByAutomationId("InstalledName")).Select(e => e.Name).ToList();
+    Log($"   installed: {string.Join(" | ", names)}");
+    Shot("07-installed");
+    var target = list.FindAllDescendants(cf => cf.ByAutomationId("InstalledName")).First(e => e.Name.StartsWith("LFM2.5-1.2B-Instruct", StringComparison.OrdinalIgnoreCase) && e.Name.Contains("Q4_0"));
+    var row = target;
+    while (row.Parent is { } p && row.ControlType != ControlType.ListItem)
+        row = p;
+    row.FindFirstDescendant(cf => cf.ByAutomationId("DeleteInstalledButton"))!.AsButton().Invoke();
+    WaitUntil(() => list.FindAllDescendants(cf => cf.ByAutomationId("InstalledName")).Length == names.Count - 1, TimeSpan.FromSeconds(10), "model removed");
+    var folder = Directory.EnumerateDirectories(Path.Combine(dataDir, "models")).Any(d => d.Contains("lfm2.5-1.2b-instruct-gguf__q4_0"));
+    Check(!folder, "model folder still on disk");
+});
+
+// ---------------------------------------------------------------- Second model, thinking, switching
+Test("Switch model and show thinking", () =>
+{
+    GoToChat();
+    Invoke("NewChatButton");
+    PickModel("LFM2.5 1.2B Thinking");
+    var reply = Send("What is 17 multiplied by 3? Answer with the number.");
+    Check(reply.Contains("51"), $"reply: {reply}");
+    Check(Get("EngineStatus").Name.Contains("LFM2.5"), $"engine did not switch: {Get("EngineStatus").Name}");
+    var thinking = Find("ThinkingExpander");
+    Log($"   thinking section shown: {thinking is not null && !thinking.Properties.IsOffscreen.ValueOrDefault}");
+    Check(thinking is not null && !thinking.Properties.IsOffscreen.ValueOrDefault, "no thinking section for a thinking model");
+    Shot("08-thinking");
+});
+
+// ---------------------------------------------------------------- Settings
+Test("Context length setting is saved", () =>
+{
+    OpenSettings("SectionGeneral");
+    var box = Get("ContextBox").AsComboBox();
+    box.Select("32K");
+    Thread.Sleep(500);
+    Check(ReadSettings()["ContextLength"]?.GetValue<int>() == 32768, "ContextLength not 32768");
+    box.Select("16K");
+    Thread.Sleep(500);
+    Check(ReadSettings()["ContextLength"]?.GetValue<int>() == 16384, "ContextLength not restored");
+});
+
+Test("Hugging Face token is saved", () =>
+{
+    Front();
+    var box = Get("TokenBox");
+    box.Click();
+    box.Focus();
+    Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_A);
+    Keyboard.Type(VirtualKeyShort.BACK);
+    Keyboard.Type("hf_uitest");
+    Thread.Sleep(500);
+    Check(ReadSettings()["HuggingFaceToken"]?.GetValue<string>() == "hf_uitest", "token not saved");
+    for (var i = 0; i < 9; i++)
+        Keyboard.Type(VirtualKeyShort.BACK);
+    Thread.Sleep(500);
+    Check(ReadSettings()["HuggingFaceToken"]?.GetValue<string>() == "", "token not cleared");
+});
+
+Test("Language picker saves and asks for restart", () =>
+{
+    var box = Get("LanguageBox").AsComboBox();
+    box.Select("Deutsch");
+    Thread.Sleep(500);
+    Check(ReadSettings()["Language"]?.GetValue<string>() == "de-DE", "language not saved");
+    Check(Visible("RestartHint"), "restart hint not shown");
+});
+
+var expected = new Dictionary<string, string>
+{
+    ["es-ES"] = "Nuevo chat",
+    ["pt-BR"] = "Nova conversa",
+    ["fr-FR"] = "Nouvelle discussion",
+    ["de-DE"] = "Neuer Chat",
+    ["it-IT"] = "Nuova chat",
+    ["ru-RU"] = "Новый чат",
+    ["en-US"] = "New chat",
+};
+foreach (var (tag, label) in expected)
+{
+    Test($"UI is translated: {tag}", () =>
+    {
+        WriteSetting("Language", tag);
+        Launch();
+        var button = Get("NewChatButton");
+        Check(button.FindAllDescendants().Any(e => e.Name == label) || button.Name == label, $"expected '{label}'");
+        OpenSettings("SectionModels");
+        Thread.Sleep(1500);
+        Shot($"09-lang-{tag}");
+    });
+}
+WriteSetting("Language", "");
+
+Test("Dark theme renders", () =>
+{
+    Launch("--theme dark");
+    Select("NavChat");
+    Shot("10-dark-chat");
+    OpenSettings("SectionModels");
+    Thread.Sleep(3000);
+    Shot("10-dark-models");
+});
+
+// ---------------------------------------------------------------- LiteRT-LM, MTP and the local API
+// LiteRT-LM has no Windows on Arm build, so these two only run on x64.
+if (System.Runtime.InteropServices.RuntimeInformation.OSArchitecture == System.Runtime.InteropServices.Architecture.X64)
+{
+    Test("LiteRT-LM model chats and shows its speed", () =>
+    {
+        GoToChat();
+        Invoke("NewChatButton");
+        PickModel("Gemma 4 E2B");
+        var reply = Send($"{run} Name the capital of France in one word.");
+        Check(reply.Contains("Paris", StringComparison.OrdinalIgnoreCase), $"reply: {reply}");
+        var footer = FindAll("MessageFooter").Select(e => e.Name).LastOrDefault() ?? "";
+        Check(footer.Contains("tok/s"), $"footer: {footer}");
+        Shot("11-litert");
+    });
+
+    Test("MTP toggle is saved per model and reloads the engine", () =>
+    {
+        var toggle = WaitFor(() => Visible("MtpToggle") ? Find("MtpToggle") : null, TimeSpan.FromSeconds(5), "MTP toggle").AsToggleButton();
+        var id = ReadSettings()["LastChatModelId"]?.GetValue<string>() ?? "";
+        bool Off() => ReadSettings()["MtpOff"]?.AsArray().Any(n => n?.GetValue<string>() == id) == true;
+        var wasOff = Off();
+        toggle.Toggle();
+        WaitUntil(() => Off() != wasOff, TimeSpan.FromSeconds(3), "MTP choice saved");
+        var reply = Send($"{run} Reply with exactly one word: cherry");
+        Check(reply.Contains("cherry", StringComparison.OrdinalIgnoreCase), $"reply after switching MTP: {reply}");
+        toggle.Toggle();
+        WaitUntil(() => Off() == wasOff, TimeSpan.FromSeconds(3), "MTP choice restored");
+        PickModel("Gemma 4 12B");
+        WaitUntil(() => !Visible("MtpToggle"), TimeSpan.FromSeconds(3), "MTP toggle hidden for GGUF");
+    });
+}
+
+Test("Local API switch starts and stops the server", () =>
+{
+    OpenSettings("SectionApi");
+    var toggle = Get("ApiToggle").AsToggleButton();
+    var port = ReadSettings()["ApiPort"]?.GetValue<int>() ?? 8642;
+    using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(2) };
+    bool Reachable()
+    {
+        try { return (int)http.GetAsync($"http://127.0.0.1:{port}/v1/models").Result.StatusCode is 200 or 401; }
+        catch { return false; }
+    }
+    var wasOn = toggle.ToggleState == ToggleState.On;
+    if (!wasOn)
+        toggle.Toggle();
+    WaitUntil(Reachable, TimeSpan.FromSeconds(10), "API answering");
+    Shot("12-local-api");
+    toggle.Toggle();
+    WaitUntil(() => !Reachable(), TimeSpan.FromSeconds(10), "API stopped");
+    if (wasOn)
+        toggle.Toggle();
+    GoToChat();
+});
+
+// ---------------------------------------------------------------- Engine
+Test("Engine falls back when a GPU backend fails", () =>
+{
+    var working = Path.Combine(dataDir, "engines", "llama.cpp", "working.txt");
+    File.Delete(working);
+    Launch("", new() { ["LLMHUB_FAIL_VARIANT"] = "win-cuda-13.4-x64" });
+    Invoke("NewChatButton");
+    PickModel("LFM2.5 1.2B Thinking");
+    var reply = Send("Say hi in one word.", timeoutSeconds: 600);
+    Check(File.ReadAllText(working).Trim() == "win-vulkan-x64", $"working build: {File.ReadAllText(working)}");
+    Log($"   fallback reply: {reply}");
+    Close();
+    File.Delete(working);
+    Launch();
+});
+
+Test("llama-server stops when the app closes", () =>
+{
+    Invoke("NewChatButton");
+    PickModel("Gemma 4 12B");
+    Send("Say OK.");
+    Check(LlamaServers() == 1, $"expected 1 llama-server, found {LlamaServers()}");
+    Close();
+    WaitUntil(() => LlamaServers() == 0, TimeSpan.FromSeconds(20), "llama-server to exit");
+});
+
+Close();
+var passed = results.Count(r => r.Pass);
+Log($"DONE {passed}/{results.Count} passed");
+return passed == results.Count ? 0 : 1;

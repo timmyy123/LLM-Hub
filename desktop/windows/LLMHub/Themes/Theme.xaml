@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Design tokens from the LLM Hub Desktop canvas. The app follows the Windows light/dark setting. -->
+    <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Default">
+            <SolidColorBrush x:Key="AppBackgroundBrush" Color="#1B1B1A" />
+            <SolidColorBrush x:Key="TitleBarBrush" Color="#141413" />
+            <SolidColorBrush x:Key="SidebarBrush" Color="#161615" />
+            <SolidColorBrush x:Key="SurfaceBrush" Color="#252523" />
+            <SolidColorBrush x:Key="SurfaceAltBrush" Color="#1F1F1D" />
+            <SolidColorBrush x:Key="DividerBrush" Color="#2C2C29" />
+            <SolidColorBrush x:Key="ControlBorderBrush" Color="#3A3A36" />
+            <SolidColorBrush x:Key="TextPrimaryBrush" Color="#ECEBE7" />
+            <SolidColorBrush x:Key="TextSecondaryBrush" Color="#C9C8C2" />
+            <SolidColorBrush x:Key="TextMutedBrush" Color="#A5A49E" />
+            <SolidColorBrush x:Key="TextFaintBrush" Color="#8F8E88" />
+            <SolidColorBrush x:Key="UserBubbleBrush" Color="#2B2B29" />
+            <SolidColorBrush x:Key="AccentFillBrush" Color="#8AB4FF" />
+            <SolidColorBrush x:Key="OnAccentBrush" Color="#10131A" />
+            <SolidColorBrush x:Key="SuccessBrush" Color="#5FD38D" />
+            <SolidColorBrush x:Key="WarningBrush" Color="#E8B04A" />
+            <SolidColorBrush x:Key="DangerBrush" Color="#FF9A9A" />
+            <SolidColorBrush x:Key="TagBrush" Color="#262C38" />
+            <SolidColorBrush x:Key="TagTextBrush" Color="#B8CDF5" />
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="Light">
+            <SolidColorBrush x:Key="AppBackgroundBrush" Color="#FAFAF8" />
+            <SolidColorBrush x:Key="TitleBarBrush" Color="#F1F0EC" />
+            <SolidColorBrush x:Key="SidebarBrush" Color="#F1F0EC" />
+            <SolidColorBrush x:Key="SurfaceBrush" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="SurfaceAltBrush" Color="#F5F4F0" />
+            <SolidColorBrush x:Key="DividerBrush" Color="#E2E0D9" />
+            <SolidColorBrush x:Key="ControlBorderBrush" Color="#D6D4CC" />
+            <SolidColorBrush x:Key="TextPrimaryBrush" Color="#1B1B1A" />
+            <SolidColorBrush x:Key="TextSecondaryBrush" Color="#3D3C38" />
+            <SolidColorBrush x:Key="TextMutedBrush" Color="#5F5E59" />
+            <SolidColorBrush x:Key="TextFaintBrush" Color="#6E6D68" />
+            <SolidColorBrush x:Key="UserBubbleBrush" Color="#ECEBE6" />
+            <SolidColorBrush x:Key="AccentFillBrush" Color="#2F6FE4" />
+            <SolidColorBrush x:Key="OnAccentBrush" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="SuccessBrush" Color="#1E8A4C" />
+            <SolidColorBrush x:Key="WarningBrush" Color="#9A6400" />
+            <SolidColorBrush x:Key="DangerBrush" Color="#B3261E" />
+            <SolidColorBrush x:Key="TagBrush" Color="#E3ECFC" />
+            <SolidColorBrush x:Key="TagTextBrush" Color="#1D4FAE" />
+        </ResourceDictionary>
+    </ResourceDictionary.ThemeDictionaries>
+
+    <Style x:Key="SectionLabelStyle" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{ThemeResource TextFaintBrush}" />
+    </Style>
+
+    <Style x:Key="MutedTextStyle" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Foreground" Value="{ThemeResource TextMutedBrush}" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+
+    <Style x:Key="CardStyle" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource SurfaceAltBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource DividerBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="12" />
+        <Setter Property="Padding" Value="16" />
+    </Style>
+
+    <Style x:Key="TagBorderStyle" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource TagBrush}" />
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="Padding" Value="7,1" />
+    </Style>
+
+    <Style x:Key="PrimaryPillButtonStyle" TargetType="Button" BasedOn="{StaticResource AccentButtonStyle}">
+        <Setter Property="CornerRadius" Value="10" />
+        <Setter Property="MinHeight" Value="36" />
+    </Style>
+
+    <Style x:Key="SubtleIconButtonStyle" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Width" Value="36" />
+        <Setter Property="Height" Value="36" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="CornerRadius" Value="8" />
+    </Style>
+</ResourceDictionary>

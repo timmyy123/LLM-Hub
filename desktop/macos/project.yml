@@ -1,0 +1,77 @@
+name: LLMHub
+options:
+  bundleIdPrefix: app.llm-hub
+  deploymentTarget:
+    macOS: "26.0"
+  createIntermediateGroups: true
+  developmentLanguage: en
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    CODE_SIGN_IDENTITY: "-"
+    CODE_SIGN_STYLE: Manual
+    DEVELOPMENT_TEAM: ""
+    ENABLE_HARDENED_RUNTIME: NO
+    LOCALIZATION_PREFERS_STRING_CATALOGS: YES
+    SWIFT_EMIT_LOC_STRINGS: YES
+packages:
+  LiteRTLM:
+    path: ../../ios/LLMHub/LocalPackages/LiteRT-LM
+targets:
+  LLMHub:
+    type: application
+    platform: macOS
+    sources:
+      - path: LLMHub
+      - path: ../shared/catalog.json
+        buildPhase: resources
+    info:
+      path: LLMHub/Info.plist
+      properties:
+        CFBundleName: LLM Hub
+        CFBundleDisplayName: LLM Hub
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        LSApplicationCategoryType: public.app-category.productivity
+        LSMinimumSystemVersion: $(MACOSX_DEPLOYMENT_TARGET)
+        CFBundleLocalizations: [en, es, pt-BR, fr, de, it, ru]
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+    dependencies:
+      - package: LiteRTLM
+        product: LiteRTLM
+    entitlements:
+      path: LLMHub/LLMHub.entitlements
+      properties:
+        com.apple.security.app-sandbox: false
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.llm-hub.desktop
+        PRODUCT_NAME: LLMHub
+        GENERATE_INFOPLIST_FILE: NO
+  LLMHubUITests:
+    type: bundle.ui-testing
+    platform: macOS
+    sources:
+      - path: LLMHubUITests
+    dependencies:
+      - target: LLMHub
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.llm-hub.desktop.uitests
+        TEST_TARGET_NAME: LLMHub
+        GENERATE_INFOPLIST_FILE: YES
+schemes:
+  LLMHub:
+    build:
+      targets:
+        LLMHub: all
+        LLMHubUITests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - LLMHubUITests
