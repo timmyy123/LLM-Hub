@@ -13,7 +13,7 @@ struct GalleryItem: Identifiable, Hashable {
     }
 }
 
-/// Studio: image and video (ComfyUI), music (Magenta RealTime on MLX) and voice (Supertonic).
+/// Studio: image and video (ComfyUI), music (Magenta RealTime on MLX), voice (Supertonic) and search (EmbeddingGemma 2).
 /// The view model behind StudioView; a port of core/LLMHub.Core/ViewModels/StudioViewModel.cs.
 @MainActor @Observable
 final class StudioService {
@@ -22,11 +22,13 @@ final class StudioService {
     let music = MusicService()
     /// Fixed-length clips with Stable Audio 3, next to the live jam.
     let clips = StableAudioService()
+    /// Studio › Search: photos and audio found by description or by example (EmbeddingGemma 2).
+    let search = MediaSearchService()
 
     static let aspects = ["3:2", "1:1", "16:9", "9:16"]
     static let counts = [1, 2, 4]
 
-    /// image, video, music or voice.
+    /// image, video, music, voice or search.
     var mode = "image" {
         didSet {
             if mode == "video" && workflow.kind != "video" { workflow = .ltxVideo }
@@ -68,6 +70,7 @@ final class StudioService {
 
     func attach(_ app: AppModel) {
         self.app = app
+        search.attach(app)
         loadGallery()
     }
 

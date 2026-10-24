@@ -137,6 +137,7 @@ final class ModelStore {
     func delete(_ model: InstalledModel, engine: EngineHub) {
         if engine.loadedModel?.id == model.id { engine.stop() }
         if AppModel.shared.embeddings.loadedModel?.id == model.id { AppModel.shared.embeddings.stop() }
+        if AppModel.shared.mediaEmbedder.loaded?.model.id == model.id { Task { await AppModel.shared.mediaEmbedder.unload() } }
         do { try FileManager.default.removeItem(at: model.folder) } catch { Log.error("Delete \(model.id)", error) }
         installed.removeAll { $0.id == model.id }
     }

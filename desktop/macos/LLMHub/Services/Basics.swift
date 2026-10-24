@@ -117,6 +117,10 @@ struct AppSettings: Codable {
     var designModelId: String?
     /// Context for the Agent and the Local API (Claude Code's own prompt is about 18K tokens).
     var apiContextLength = 65536
+    /// Studio › Search: the folders indexed for photos and audio ("" for ~/Pictures and ~/Music), and the EmbeddingGemma 2 build.
+    var mediaPhotoFolder = ""
+    var mediaAudioFolder = ""
+    var mediaModelId: String?
 
     init() {}
 
@@ -144,6 +148,9 @@ struct AppSettings: Codable {
         agentEngine = try c.decodeIfPresent(String.self, forKey: .agentEngine) ?? "claude"
         designModelId = try c.decodeIfPresent(String.self, forKey: .designModelId)
         apiContextLength = try c.decodeIfPresent(Int.self, forKey: .apiContextLength) ?? 65536
+        mediaPhotoFolder = try c.decodeIfPresent(String.self, forKey: .mediaPhotoFolder) ?? ""
+        mediaAudioFolder = try c.decodeIfPresent(String.self, forKey: .mediaAudioFolder) ?? ""
+        mediaModelId = try c.decodeIfPresent(String.self, forKey: .mediaModelId)
     }
 
     static var current: AppSettings = load()

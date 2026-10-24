@@ -2,7 +2,8 @@ import XCTest
 
 /// Real window screenshots of chosen pages (Liquid Glass is composited by the window server, so the app's own
 /// capture cannot show it). Pages come from SHOT_PAGES, set with TEST_RUNNER_SHOT_PAGES=design,studio when running
-/// xcodebuild test; extra app arguments (for example a --designtest run first) from SHOT_ARGS, split on "|".
+/// xcodebuild test; extra app arguments (for example a --designtest run first) from SHOT_ARGS, split on "|", and the
+/// app data folder from SHOT_HOME.
 final class PageShots: XCTestCase {
     func testPageShots() throws {
         let env = ProcessInfo.processInfo.environment
@@ -13,6 +14,8 @@ final class PageShots: XCTestCase {
             let app = XCUIApplication()
             // --capture makes DevTools switch to the page; the file itself is not used here.
             app.launchArguments = ["--page", page, "--capture", "/tmp/llmhub-devcapture.png", "--wait", "600000"] + extra
+            // SHOT_HOME: a separate app data folder (LLMHUB_HOME), so test models and indexes stay out of the real one.
+            if let home = env["SHOT_HOME"] { app.launchEnvironment["LLMHUB_HOME"] = home }
             app.launch()
             XCTAssertTrue(app.windows.firstMatch.waitForExistence(timeout: 30))
             Thread.sleep(forTimeInterval: wait)
