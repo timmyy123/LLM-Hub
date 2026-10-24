@@ -17,12 +17,16 @@ public sealed partial class StudioPage : Page
         UpdateTabs();
         CountPicker.SelectedItem = ViewModel.Count;
         StepsBox.Value = ViewModel.Steps;
+        MusicSecondsBox.Value = ViewModel.MusicSeconds;
+        Unloaded += (_, _) => _player?.Dispose();
         // On a narrow window "Open in ComfyUI" keeps only its icon so the action row fits.
         SizeChanged += (_, e) => OpenComfyLabel.Visibility = e.NewSize.Width >= 1080 ? Visibility.Visible : Visibility.Collapsed;
         ViewModel.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(StudioViewModel.Steps) && (int)StepsBox.Value != ViewModel.Steps)
                 StepsBox.Value = ViewModel.Steps;
+        MusicSecondsBox.Value = ViewModel.MusicSeconds;
+        Unloaded += (_, _) => _player?.Dispose();
         };
     }
 
@@ -89,6 +93,35 @@ public sealed partial class StudioPage : Page
         ViewModel.Workflow = ComfyWorkflow.Upscale;
         ViewModel.ReferenceImage = item.Path;
         UpdateTabs();
+    }
+
+    private Windows.Media.Playback.MediaPlayer? _player;
+
+    private void OnMusicSecondsChanged(NumberBox sender, NumberBoxValueChangedEventArgs args)
+    {
+        if (!double.IsNaN(args.NewValue))
+            ViewModel.MusicSeconds = Math.Clamp((int)args.NewValue, 1, ViewModel.MusicWorkflow.MaxSeconds);
+    }
+
+    /// <summary>Plays a clip (ComfyUI saves FLAC, which Windows' media player handles); clicking again stops it.</summary>
+    private void OnPlayClip(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement { Tag: string path })
+            return;
+        var playing = _player?.Source is Windows.Media.Core.MediaSource { Uri: { } current } && current.LocalPath == path
+                      && _player.PlaybackSession.PlaybackState == Windows.Media.Playback.MediaPlaybackState.Playing;
+        _player?.Pause();
+        if (playing)
+            return;
+        _player ??= new Windows.Media.Playback.MediaPlayer();
+        _player.Source = Windows.Media.Core.MediaSource.CreateFromUri(new Uri(path));
+        _player.Play();
+    }
+
+    private async void OnShowClip(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { Tag: string path })
+            await Launcher.LaunchFolderPathAsync(Path.GetDirectoryName(path)!);
     }
 
     private async void OnOpenComfy(object sender, RoutedEventArgs e)

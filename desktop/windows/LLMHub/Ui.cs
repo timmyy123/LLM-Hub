@@ -97,6 +97,7 @@ public static class Ui
     public static object Box(int value) => value;
     public static double ToDouble(int value) => value;
     public static string ReferenceLabel(string path) => string.IsNullOrEmpty(path) ? Services.Loc.S("StudioReference") : System.IO.Path.GetFileName(path);
+    public static string MusicSavedTo() => Services.Loc.F("StudioSavedTo", ViewModels.StudioViewModel.MusicFolder);
     public static string SavedTo() => Services.Loc.F("StudioSavedTo", Services.Studio.ComfyService.Gallery);
     public static ImageSource? Thumbnail(string path)
     {

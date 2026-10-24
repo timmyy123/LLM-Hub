@@ -34,6 +34,9 @@ internal static class DevCapture
         }
         if (ValueOf(args, "--speechtest") is { } sentence)
             await DevTests.SpeechAsync(sentence);
+        if (ValueOf(args, "--musictest") is { } musicWorkflow)
+            await DevTests.MusicAsync(musicWorkflow, ValueOf(args, "--prompt") ?? "warm lo-fi hip hop with Rhodes piano and soft vinyl crackle, 85 BPM",
+                int.TryParse(ValueOf(args, "--seconds"), out var musicSeconds) ? musicSeconds : 30);
         if (args.Contains("--speechmatrix"))
             await DevTests.SpeechMatrixAsync();
         if (ValueOf(args, "--agenttest") is { } folder)
@@ -53,6 +56,10 @@ internal static class DevCapture
                     break;
                 case "api":
                     window.ShowSettings("api");
+                    break;
+                case "music":
+                    Ioc.StudioVm.Mode = "music";
+                    window.ShowSection("studio");
                     break;
                 case "agent":
                 case "design":

@@ -332,7 +332,11 @@
   "DeleteVoice": "Delete voice",
   "VoiceImportInvalid": "This file is not a Supertonic voice style.",
   "VoiceImported": "Voice {0} added",
-  "VoiceStyleFiles": "Supertonic voice style"
+  "VoiceStyleFiles": "Supertonic voice style",
+  "PoweredByStability": "Powered by Stability AI",
+  "MusicLength": "Length (seconds)",
+  "MusicClips": "Clips",
+  "MusicPromptPlaceholder": "Describe the music, like warm lo-fi hip hop with Rhodes piano, 85 BPM"
  },
  "es-ES": {
   "NewChat": "Nuevo chat",
@@ -667,7 +671,11 @@
   "DeleteVoice": "Eliminar voz",
   "VoiceImportInvalid": "Este archivo no es un estilo de voz de Supertonic.",
   "VoiceImported": "Voz {0} añadida",
-  "VoiceStyleFiles": "Estilo de voz de Supertonic"
+  "VoiceStyleFiles": "Estilo de voz de Supertonic",
+  "PoweredByStability": "Powered by Stability AI",
+  "MusicLength": "Duración (segundos)",
+  "MusicClips": "Clips",
+  "MusicPromptPlaceholder": "Describe la música, por ejemplo lo-fi cálido con piano Rhodes, 85 BPM"
  },
  "pt-BR": {
   "NewChat": "Nova conversa",
@@ -1002,7 +1010,11 @@
   "DeleteVoice": "Excluir voz",
   "VoiceImportInvalid": "Este arquivo não é um estilo de voz do Supertonic.",
   "VoiceImported": "Voz {0} adicionada",
-  "VoiceStyleFiles": "Estilo de voz do Supertonic"
+  "VoiceStyleFiles": "Estilo de voz do Supertonic",
+  "PoweredByStability": "Powered by Stability AI",
+  "MusicLength": "Duração (segundos)",
+  "MusicClips": "Clipes",
+  "MusicPromptPlaceholder": "Descreva a música, como lo-fi suave com piano Rhodes, 85 BPM"
  },
  "fr-FR": {
   "NewChat": "Nouvelle discussion",
@@ -1337,7 +1349,11 @@
   "DeleteVoice": "Supprimer la voix",
   "VoiceImportInvalid": "Ce fichier n'est pas un style de voix Supertonic.",
   "VoiceImported": "Voix {0} ajoutée",
-  "VoiceStyleFiles": "Style de voix Supertonic"
+  "VoiceStyleFiles": "Style de voix Supertonic",
+  "PoweredByStability": "Powered by Stability AI",
+  "MusicLength": "Durée (secondes)",
+  "MusicClips": "Extraits",
+  "MusicPromptPlaceholder": "Décrivez la musique, par exemple un lo-fi chaleureux au piano Rhodes, 85 BPM"
  },
  "de-DE": {
   "NewChat": "Neuer Chat",
@@ -1672,7 +1688,11 @@
   "DeleteVoice": "Stimme löschen",
   "VoiceImportInvalid": "Diese Datei ist kein Supertonic-Stimmstil.",
   "VoiceImported": "Stimme {0} hinzugefügt",
-  "VoiceStyleFiles": "Supertonic-Stimmstil"
+  "VoiceStyleFiles": "Supertonic-Stimmstil",
+  "PoweredByStability": "Powered by Stability AI",
+  "MusicLength": "Länge (Sekunden)",
+  "MusicClips": "Clips",
+  "MusicPromptPlaceholder": "Beschreibe die Musik, etwa warmer Lo-Fi mit Rhodes-Piano, 85 BPM"
  },
  "it-IT": {
   "NewChat": "Nuova chat",
@@ -2007,7 +2027,11 @@
   "DeleteVoice": "Elimina voce",
   "VoiceImportInvalid": "Questo file non è uno stile vocale Supertonic.",
   "VoiceImported": "Voce {0} aggiunta",
-  "VoiceStyleFiles": "Stile vocale Supertonic"
+  "VoiceStyleFiles": "Stile vocale Supertonic",
+  "PoweredByStability": "Powered by Stability AI",
+  "MusicLength": "Durata (secondi)",
+  "MusicClips": "Clip",
+  "MusicPromptPlaceholder": "Descrivi la musica, ad esempio lo-fi caldo con piano Rhodes, 85 BPM"
  },
  "ru-RU": {
   "NewChat": "Новый чат",
@@ -2342,6 +2366,10 @@
   "DeleteVoice": "Удалить голос",
   "VoiceImportInvalid": "Этот файл не является голосовым стилем Supertonic.",
   "VoiceImported": "Голос {0} добавлен",
-  "VoiceStyleFiles": "Голосовой стиль Supertonic"
+  "VoiceStyleFiles": "Голосовой стиль Supertonic",
+  "PoweredByStability": "Powered by Stability AI",
+  "MusicLength": "Длительность (секунды)",
+  "MusicClips": "Клипы",
+  "MusicPromptPlaceholder": "Опишите музыку, например тёплый лоу-фай с роялем Rhodes, 85 BPM"
  }
 }

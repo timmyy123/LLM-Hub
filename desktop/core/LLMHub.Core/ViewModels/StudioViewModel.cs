@@ -15,7 +15,10 @@ public sealed record GalleryItem(string Path)
     public Uri Uri => new(Path);
 }
 
-/// <summary>Studio: Image and Video (ComfyUI), Voice (Supertonic), Music (Magenta RealTime where available).</summary>
+/// <summary>
+/// Studio: Image and Video (ComfyUI), Music (Stable Audio 3 clips through ComfyUI; live Magenta RealTime on the Mac and on
+/// Linux with an NVIDIA GPU), Voice (Supertonic).
+/// </summary>
 public sealed partial class StudioViewModel : ObservableObject
 {
     private readonly ComfyService _comfy = Ioc.Comfy;
@@ -35,10 +38,19 @@ public sealed partial class StudioViewModel : ObservableObject
         VoiceText = "";
         Voice = AppSettings.Current.Voice;
         ReferenceImage = "";
+        MusicWorkflow = ComfyWorkflow.StableAudioSmall;
+        MusicPrompt = "";
+        MusicSeconds = 30;
+        MusicSeed = "";
+        MusicStatus = "";
         LoadGallery();
+        LoadMusic();
     }
 
-    public IReadOnlyList<ComfyWorkflow> Workflows => ComfyWorkflow.All;
+    public IReadOnlyList<ComfyWorkflow> Workflows => ComfyWorkflow.Visual;
+    public IReadOnlyList<ComfyWorkflow> MusicWorkflows => ComfyWorkflow.Music;
+    public ObservableCollection<GalleryItem> MusicClips { get; } = [];
+    public static string MusicFolder => Directory.CreateDirectory(Path.Combine(ComfyService.Gallery, "Music")).FullName;
     public IReadOnlyList<string> Aspects { get; } = ["3:2", "1:1", "16:9", "9:16"];
     public IReadOnlyList<int> Counts { get; } = [1, 2, 4];
     public IReadOnlyList<string> Voices => Services.Speech.SpeechService.Voices;
@@ -62,6 +74,84 @@ public sealed partial class StudioViewModel : ObservableObject
     [ObservableProperty] public partial string VoiceText { get; set; }
     [ObservableProperty] public partial string Voice { get; set; }
     [ObservableProperty] public partial string? LastSpeech { get; set; }
+    [ObservableProperty] public partial ComfyWorkflow MusicWorkflow { get; set; }
+    [ObservableProperty] public partial string MusicPrompt { get; set; }
+    [ObservableProperty] public partial int MusicSeconds { get; set; }
+    [ObservableProperty] public partial string MusicSeed { get; set; }
+    [ObservableProperty] public partial bool IsGeneratingMusic { get; set; }
+    [ObservableProperty] public partial double MusicProgress { get; set; }
+    [ObservableProperty] public partial string MusicStatus { get; set; }
+
+    /// <summary>"2.3 GB to download on first use" for the chosen music model, or "".</summary>
+    public string MusicDownloadNote => ComfyService.HasModels(MusicWorkflow) ? "" : Loc.F("StudioDownloadNote", Fmt.Bytes(MusicWorkflow.DownloadSize));
+
+    partial void OnMusicWorkflowChanged(ComfyWorkflow value)
+    {
+        MusicSeconds = Math.Min(MusicSeconds, value.MaxSeconds);
+        OnPropertyChanged(nameof(MusicDownloadNote));
+    }
+
+    private CancellationTokenSource? _music;
+
+    /// <summary>Stable Audio 3 through ComfyUI: one clip of <see cref="MusicSeconds"/>, saved to Pictures/LLM Hub/Music.</summary>
+    [RelayCommand]
+    private async Task GenerateMusicAsync()
+    {
+        if (IsGeneratingMusic || MusicPrompt.Trim().Length == 0)
+            return;
+        IsGeneratingMusic = true;
+        MusicProgress = 0;
+        _music = new CancellationTokenSource();
+        var ct = _music.Token;
+        try
+        {
+            MusicStatus = Loc.S("ComfyStarting");
+            await _comfy.EnsureRunningAsync(ct);
+            await _comfy.EnsureModelsAsync(MusicWorkflow, ct);
+            OnPropertyChanged(nameof(MusicDownloadNote));
+            var seed = long.TryParse(MusicSeed, out var s) ? s : Random.Shared.NextInt64(1, 1L << 48);
+            var graph = MusicWorkflow.Build(MusicPrompt.Trim(), Math.Clamp(MusicSeconds, 1, MusicWorkflow.MaxSeconds), 0, 1, MusicWorkflow.DefaultSteps, seed, null);
+            var clock = System.Diagnostics.Stopwatch.StartNew();
+            var outputs = await _comfy.RunAsync(graph, (p, text) => UiThread.Post(() =>
+            {
+                MusicProgress = p;
+                MusicStatus = text;
+            }), ct);
+            Log.Info($"Studio {MusicWorkflow.Id} {MusicSeconds}s seed {seed}: {outputs.Count} file(s) in {clock.Elapsed.TotalSeconds:F1}s");
+            MusicStatus = Loc.F("StudioDone", outputs.Count.ToString(), clock.Elapsed.TotalSeconds.ToString("F0"));
+            foreach (var file in outputs)
+                MusicClips.Insert(0, new GalleryItem(file));
+        }
+        catch (OperationCanceledException)
+        {
+            MusicStatus = "";
+        }
+        catch (Exception e)
+        {
+            Log.Error("Music generation failed", e);
+            MusicStatus = Loc.F("ErrorPrefix", e.Message);
+        }
+        finally
+        {
+            IsGeneratingMusic = false;
+            MusicProgress = 0;
+            _music.Dispose();
+            _music = null;
+        }
+    }
+
+    [RelayCommand]
+    private void CancelMusic() => _music?.Cancel();
+
+    public void LoadMusic()
+    {
+        MusicClips.Clear();
+        foreach (var file in Directory.EnumerateFiles(MusicFolder)
+                     .Where(f => f.EndsWith(".flac", StringComparison.OrdinalIgnoreCase) || f.EndsWith(".wav", StringComparison.OrdinalIgnoreCase)
+                                 || f.EndsWith(".mp3", StringComparison.OrdinalIgnoreCase) || f.EndsWith(".opus", StringComparison.OrdinalIgnoreCase))
+                     .OrderByDescending(File.GetLastWriteTimeUtc).Take(100))
+            MusicClips.Add(new GalleryItem(file));
+    }
 
     public bool NeedsReference => Workflow.NeedsImage;
     public bool IsImageOrVideo => Mode is "image" or "video";

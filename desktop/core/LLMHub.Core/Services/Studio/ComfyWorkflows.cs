@@ -7,7 +7,8 @@ public sealed record ComfyFile(string Folder, string Name, string Url, long Size
 
 /// <summary>
 /// The built-in Studio workflows, in ComfyUI's API format. No models from Chinese companies (the owner's rule): Flux.1
-/// schnell (Black Forest Labs, Apache-2.0), SDXL (Stability AI), LTX-Video 2B 0.9.5 (Lightricks), 4x-ClearReality (Apache-2.0).
+/// schnell (Black Forest Labs, Apache-2.0), SDXL (Stability AI), LTX-Video 2B 0.9.5 (Lightricks), 4x-ClearReality (Apache-2.0),
+/// Stable Audio 3 (Stability AI Community License; "Powered by Stability AI" shows wherever it is offered).
 /// </summary>
 public sealed record ComfyWorkflow(string Id, string Name, string Kind, bool NeedsImage, int DefaultSteps, IReadOnlyList<ComfyFile> Files)
 {
@@ -36,7 +37,33 @@ public sealed record ComfyWorkflow(string Id, string Name, string Kind, bool Nee
         new("upscale_models", "4x-ClearRealityV1.safetensors", "https://huggingface.co/Kim2091/ClearRealityV1/resolve/main/4x-ClearRealityV1.safetensors", 4_492_232),
     ]);
 
-    public static IReadOnlyList<ComfyWorkflow> All { get; } = [FluxSchnell, Sdxl, LtxVideo, Upscale];
+    // Stable Audio 3, the post-trained checkpoints (8 steps, CFG 1, as Stability recommends; the "-base" ones need ~50 steps).
+    // The ComfyUI template's Qwen prompt expansion is left out (no Chinese models); prompts go straight to T5Gemma.
+    private static readonly ComfyFile T5Gemma = new("text_encoders", "t5gemma_b_b_ul2.safetensors",
+        "https://huggingface.co/Comfy-Org/stable-audio-3/resolve/75aad8836271cb5a5123fb58304fae5d3bb4b0f9/text_encoders/t5gemma_b_b_ul2.safetensors", 1_187_264_003);
+
+    public static readonly ComfyWorkflow StableAudioSmall = new("sa3-small-music", "Music · Stable Audio 3 Small", "music", false, 8,
+    [
+        new("checkpoints", "stable_audio_3_small_music.safetensors",
+            "https://huggingface.co/Comfy-Org/stable-audio-3/resolve/75aad8836271cb5a5123fb58304fae5d3bb4b0f9/checkpoints/stable_audio_3_small_music.safetensors", 2_270_384_940),
+        T5Gemma,
+    ]) { MaxSeconds = 120 };
+
+    public static readonly ComfyWorkflow StableAudioMedium = new("sa3-medium", "Music · Stable Audio 3 Medium", "music", false, 8,
+    [
+        new("checkpoints", "stable_audio_3_medium.safetensors",
+            "https://huggingface.co/Comfy-Org/stable-audio-3/resolve/75aad8836271cb5a5123fb58304fae5d3bb4b0f9/checkpoints/stable_audio_3_medium.safetensors", 9_222_116_660),
+        T5Gemma,
+    ]) { MaxSeconds = 380 };
+
+    public static IReadOnlyList<ComfyWorkflow> All { get; } = [FluxSchnell, Sdxl, LtxVideo, Upscale, StableAudioSmall, StableAudioMedium];
+    /// <summary>Image and video workflows (the Image and Video tabs).</summary>
+    public static IReadOnlyList<ComfyWorkflow> Visual { get; } = [.. All.Where(w => w.Kind is "image" or "video")];
+    public static IReadOnlyList<ComfyWorkflow> Music { get; } = [.. All.Where(w => w.Kind == "music")];
+
+    /// <summary>Longest clip a music workflow makes, in seconds.</summary>
+    public int MaxSeconds { get; init; }
+    public bool IsStability => Id.StartsWith("sa3", StringComparison.Ordinal) || Id == "sdxl";
 
     /// <summary>The API-format graph for one run. <paramref name="image"/> is a name returned by ComfyUI's /upload/image.</summary>
     public JsonObject Build(string prompt, int width, int height, int count, int steps, long seed, string? image)
@@ -111,6 +138,22 @@ public sealed record ComfyWorkflow(string Id, string Name, string Kind, bool Nee
                 ["2"] = Node("LoadImage", new() { ["image"] = image ?? "" }),
                 ["3"] = Node("ImageUpscaleWithModel", new() { ["upscale_model"] = Link("1", 0), ["image"] = Link("2", 0) }),
                 ["4"] = Node("SaveImage", new() { ["images"] = Link("3", 0), ["filename_prefix"] = prefix }),
+            },
+            // Music: width carries the clip length in seconds.
+            "sa3-small-music" or "sa3-medium" => new JsonObject
+            {
+                ["1"] = Node("CheckpointLoaderSimple", new() { ["ckpt_name"] = Files[0].Name }),
+                ["2"] = Node("CLIPLoader", new() { ["clip_name"] = Files[1].Name, ["type"] = "stable_audio", ["device"] = "default" }),
+                ["3"] = Node("CLIPTextEncode", new() { ["text"] = prompt, ["clip"] = Link("2", 0) }),
+                ["4"] = Node("CLIPTextEncode", new() { ["text"] = "", ["clip"] = Link("2", 0) }),
+                ["5"] = Node("EmptyLatentAudio", new() { ["seconds"] = (double)Math.Clamp(width, 1, MaxSeconds), ["batch_size"] = Math.Max(1, count) }),
+                ["6"] = Node("KSampler", new()
+                {
+                    ["model"] = Link("1", 0), ["positive"] = Link("3", 0), ["negative"] = Link("4", 0), ["latent_image"] = Link("5", 0),
+                    ["seed"] = seed, ["steps"] = steps, ["cfg"] = 1.0, ["sampler_name"] = "lcm", ["scheduler"] = "simple", ["denoise"] = 1.0,
+                }),
+                ["7"] = Node("VAEDecodeAudio", new() { ["samples"] = Link("6", 0), ["vae"] = Link("1", 2) }),
+                ["8"] = Node("SaveAudio", new() { ["audio"] = Link("7", 0), ["filename_prefix"] = prefix }),
             },
             _ => throw new ArgumentException(Id),
         };

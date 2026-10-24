@@ -174,12 +174,87 @@
             </StackPanel>
         </ScrollViewer>
 
-        <!-- Music (Magenta RealTime runs on Apple Silicon only) -->
-        <StackPanel Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="560" Spacing="12"
-                    Visibility="{x:Bind local:Ui.Show(ViewModel.IsMusic), Mode=OneWay}">
-            <FontIcon Glyph="&#xE8D6;" FontSize="32" Foreground="{ThemeResource TextMutedBrush}" />
-            <TextBlock Text="{x:Bind services:Loc.S('StudioMusicUnavailable')}" TextAlignment="Center" TextWrapping="Wrap" Foreground="{ThemeResource TextSecondaryBrush}"
-                       AutomationProperties.AutomationId="MusicUnavailable" />
-        </StackPanel>
+        <!-- Music: Stable Audio 3 clips through ComfyUI (live Magenta RealTime is on the Mac and on Linux with NVIDIA) -->
+        <Grid Grid.Row="1" Visibility="{x:Bind local:Ui.Show(ViewModel.IsMusic), Mode=OneWay}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="340" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <ScrollViewer BorderBrush="{ThemeResource DividerBrush}" BorderThickness="0,0,1,0" Padding="20">
+                <StackPanel Spacing="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="{x:Bind services:Loc.S('StudioWorkflow')}" Style="{StaticResource FieldLabelStyle}" />
+                        <ComboBox x:Name="MusicModelPicker" HorizontalAlignment="Stretch" ItemsSource="{x:Bind ViewModel.MusicWorkflows}"
+                                  SelectedItem="{x:Bind ViewModel.MusicWorkflow, Mode=TwoWay}" />
+                        <TextBlock Text="{x:Bind ViewModel.MusicDownloadNote, Mode=OneWay}" FontSize="12" Foreground="{ThemeResource TextFaintBrush}"
+                                   Visibility="{x:Bind local:Ui.ShowText(ViewModel.MusicDownloadNote), Mode=OneWay}" />
+                    </StackPanel>
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="{x:Bind services:Loc.S('StudioPrompt')}" Style="{StaticResource FieldLabelStyle}" />
+                        <TextBox x:Name="MusicPromptBox" Text="{x:Bind ViewModel.MusicPrompt, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True"
+                                 TextWrapping="Wrap" MinHeight="100" PlaceholderText="{x:Bind services:Loc.S('MusicPromptPlaceholder')}" />
+                    </StackPanel>
+                    <Grid ColumnSpacing="10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="{x:Bind services:Loc.S('MusicLength')}" Style="{StaticResource FieldLabelStyle}" />
+                            <NumberBox x:Name="MusicSecondsBox" Minimum="1" Maximum="380" SpinButtonPlacementMode="Inline" ValueChanged="OnMusicSecondsChanged" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Spacing="6">
+                            <TextBlock Text="{x:Bind services:Loc.S('StudioSeed')}" Style="{StaticResource FieldLabelStyle}" />
+                            <TextBox Text="{x:Bind ViewModel.MusicSeed, Mode=TwoWay}" PlaceholderText="{x:Bind services:Loc.S('StudioRandom')}" />
+                        </StackPanel>
+                    </Grid>
+                    <TextBlock Text="{x:Bind ViewModel.MusicStatus, Mode=OneWay}" FontSize="12" Foreground="{ThemeResource TextMutedBrush}" TextWrapping="Wrap"
+                               Visibility="{x:Bind local:Ui.ShowText(ViewModel.MusicStatus), Mode=OneWay}" AutomationProperties.AutomationId="MusicStatus" />
+                    <ProgressBar Value="{x:Bind ViewModel.MusicProgress, Mode=OneWay}" Maximum="1" Visibility="{x:Bind local:Ui.Show(ViewModel.IsGeneratingMusic), Mode=OneWay}" />
+                    <TextBlock Text="{x:Bind services:Loc.S('ComfyUnsupported')}" FontSize="12" Foreground="{ThemeResource WarningBrush}" TextWrapping="Wrap"
+                               Visibility="{x:Bind local:Ui.Hide(ViewModel.ComfySupported)}" />
+                    <Button x:Name="GenerateMusicButton" HorizontalAlignment="Stretch" Height="44" CornerRadius="10" FontWeight="SemiBold"
+                            Content="{x:Bind services:Loc.S('StudioGenerate')}" Background="{ThemeResource AccentFillBrush}" Foreground="{ThemeResource OnAccentBrush}"
+                            BorderThickness="0" Command="{x:Bind ViewModel.GenerateMusicCommand}" IsEnabled="{x:Bind ViewModel.ComfySupported}"
+                            Visibility="{x:Bind local:Ui.Hide(ViewModel.IsGeneratingMusic), Mode=OneWay}" />
+                    <Button HorizontalAlignment="Stretch" Height="44" CornerRadius="10" Content="{x:Bind services:Loc.S('Cancel')}" Command="{x:Bind ViewModel.CancelMusicCommand}"
+                            Visibility="{x:Bind local:Ui.Show(ViewModel.IsGeneratingMusic), Mode=OneWay}" />
+                    <TextBlock Text="{x:Bind services:Loc.S('PoweredByStability')}" FontSize="12" Foreground="{ThemeResource TextFaintBrush}"
+                               AutomationProperties.AutomationId="PoweredByStability" />
+                </StackPanel>
+            </ScrollViewer>
+            <Grid Grid.Column="1" Padding="20" RowSpacing="14">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <TextBlock Text="{x:Bind services:Loc.S('MusicClips')}" FontSize="15" FontWeight="Medium" VerticalAlignment="Center" />
+                    <TextBlock Text="{x:Bind local:Ui.MusicSavedTo()}" FontSize="12" Foreground="{ThemeResource TextFaintBrush}" VerticalAlignment="Center" />
+                </StackPanel>
+                <ListView x:Name="MusicClipList" Grid.Row="1" ItemsSource="{x:Bind ViewModel.MusicClips}" SelectionMode="None" ItemContainerStyle="{StaticResource ChatItemStyle}">
+                    <ListView.ItemTemplate>
+                        <DataTemplate x:DataType="vm:GalleryItem">
+                            <Grid ColumnSpacing="10" Padding="0,4" AutomationProperties.AutomationId="MusicClip" AutomationProperties.Name="{x:Bind Name}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <Button Style="{StaticResource IconButtonStyle}" Tag="{x:Bind Path}" Click="OnPlayClip"
+                                        ToolTipService.ToolTip="{x:Bind services:Loc.S('MusicPlay')}" AutomationProperties.Name="{x:Bind services:Loc.S('MusicPlay')}">
+                                    <FontIcon Glyph="&#xE768;" FontSize="13" />
+                                </Button>
+                                <TextBlock Grid.Column="1" Text="{x:Bind Name}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                <Button Grid.Column="2" Style="{StaticResource IconButtonStyle}" Tag="{x:Bind Path}" Click="OnShowClip"
+                                        ToolTipService.ToolTip="{x:Bind services:Loc.S('SettingsOpenFolder')}" AutomationProperties.Name="{x:Bind services:Loc.S('SettingsOpenFolder')}">
+                                    <FontIcon Glyph="&#xE838;" FontSize="13" />
+                                </Button>
+                            </Grid>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </Grid>
+        </Grid>
     </Grid>
 </Page>

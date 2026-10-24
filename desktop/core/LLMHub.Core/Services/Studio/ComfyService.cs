@@ -332,7 +332,7 @@ public sealed partial class ComfyService : ObservableObject
         var saved = new List<string>();
         foreach (var (_, output) in history ?? [])
         {
-            foreach (var key in new[] { "images", "gifs", "videos" })
+            foreach (var key in new[] { "images", "gifs", "videos", "audio" })
             {
                 foreach (var file in output?[key]?.AsArray() ?? [])
                 {
@@ -342,7 +342,8 @@ public sealed partial class ComfyService : ObservableObject
                     if (type != "output")
                         continue;
                     var bytes = await _http.GetByteArrayAsync($"{_url}/view?filename={Uri.EscapeDataString(name)}&subfolder={Uri.EscapeDataString(subfolder)}&type={type}", ct);
-                    var target = Path.Combine(Gallery, $"{DateTime.Now:yyyyMMdd-HHmmss}-{name.Replace('/', '_')}");
+                    var folder = key == "audio" ? Directory.CreateDirectory(Path.Combine(Gallery, "Music")).FullName : Gallery;
+                    var target = Path.Combine(folder, $"{DateTime.Now:yyyyMMdd-HHmmss}-{name.Replace('/', '_')}");
                     await File.WriteAllBytesAsync(target, bytes, ct);
                     saved.Add(target);
                 }

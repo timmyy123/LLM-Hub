@@ -162,4 +162,27 @@ public static class DevTests
             Ioc.Speech.ReloadModel();
         }
     }
+
+    /// <summary>Generates a music clip through the real Studio view model (installing ComfyUI and the model if needed).</summary>
+    public static async Task MusicAsync(string workflowId, string prompt, int seconds)
+    {
+        var studio = Ioc.StudioVm;
+        studio.MusicWorkflow = Studio.ComfyWorkflow.Music.First(w => w.Id == workflowId);
+        studio.MusicPrompt = prompt;
+        studio.MusicSeconds = seconds;
+        studio.Mode = "music";
+        var last = DateTime.UtcNow;
+        Ioc.Comfy.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(Studio.ComfyService.Status) && (DateTime.UtcNow - last).TotalSeconds > 20)
+            {
+                Log.Info($"MUSICTEST {Ioc.Comfy.Status}");
+                last = DateTime.UtcNow;
+            }
+        };
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+        await studio.GenerateMusicCommand.ExecuteAsync(null);
+        var clip = studio.MusicClips.FirstOrDefault()?.Path;
+        Log.Info($"MUSICTEST {workflowId} {seconds}s in {clock.Elapsed.TotalSeconds:F0}s: {studio.MusicStatus}; {clip} ({(clip is null ? 0 : new FileInfo(clip).Length)} bytes)");
+    }
 }
