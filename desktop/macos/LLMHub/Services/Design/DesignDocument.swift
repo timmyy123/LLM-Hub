@@ -37,10 +37,17 @@ enum DesignDocument {
             Rules:
             - Output exactly one block: <artifact type="text/html"> then a complete document starting with <!doctype html>, then </artifact>.
             - Everything inline: CSS in <style>, no external JS libraries, images as CSS shapes or gradients (no external image URLs).
-            - Add data-od-id="short-name" to major sections and key elements so the user can point at them.
+            - Add data-od-id="short-name" to major sections and key elements so the user can point at them.\(kind == .prototype || kind == .slides ? photoRule : "")
             - Before the artifact, write one or two sentences saying what you made or changed. Nothing after the artifact.
             """
     }
+
+    /// Prototypes and decks may ask for real photos; LLM Hub makes them (DesignService.renderImages).
+    private static let photoRule = """
+
+        - For a real photo (one hero photo, two at most), write <img data-generate="a vivid one-sentence description of the photo" alt="..."> with CSS
+          that sizes it (for example width:100%;height:100%;object-fit:cover). LLM Hub makes the photo on this computer. Never use other image URLs.
+        """
 
     /// The user turn: the current document (for edits), the element picked in the preview, and the request.
     static func userTurn(request: String, current: String?, selectedElement: String) -> String {
@@ -105,23 +112,136 @@ enum DesignDocument {
             document.querySelectorAll('[data-llmhub-picked]').forEach(x => x.removeAttribute('data-llmhub-picked'));
             const el = e.target.closest('[data-od-id]') || e.target;
             el.setAttribute('data-llmhub-picked', '');
-            POST({ id: el.getAttribute('data-od-id') || '', tag: el.tagName.toLowerCase(), text: (el.innerText || '').trim().slice(0, 80) });
+            const cs = getComputedStyle(el);
+            POST({ type: 'pick', id: el.getAttribute('data-od-id') || '', tag: el.tagName.toLowerCase(), text: (el.innerText || '').trim().slice(0, 80),
+                   fill: cs.backgroundColor, ink: cs.color, radius: cs.borderTopLeftRadius, font: cs.fontFamily.split(',')[0].replace(/["']/g, ''), size: cs.fontSize });
           }, true);
         })();
         """
 
+    /// Renders the page at phone width (390 px) in a hidden frame and posts how wide its content really is, so the app can
+    /// say whether the layout fits a phone.
+    static func phoneCheckScript(_ postMessage: String) -> String { phoneCheckTemplate.replacingOccurrences(of: "POST(", with: postMessage + "(") }
+
+    private static let phoneCheckTemplate = """
+        (() => {
+          const f = document.createElement('iframe');
+          f.style.cssText = 'position:fixed;left:-10000px;top:0;width:390px;height:844px;border:0;visibility:hidden';
+          f.srcdoc = '<!doctype html>' + document.documentElement.outerHTML;
+          f.onload = () => setTimeout(() => {
+            const d = f.contentDocument.documentElement;
+            POST({ type: 'phone', width: Math.max(d.scrollWidth, f.contentDocument.body ? f.contentDocument.body.scrollWidth : 0) });
+            f.remove();
+          }, 400);
+          document.body.appendChild(f);
+        })();
+        """
+
+    /// A message from the preview's scripts (a dictionary from WebKit, or its JSON) as a dictionary.
+    static func fields(_ body: Any) -> [String: Any] {
+        if let dict = body as? [String: Any] { return dict }
+        if let json = body as? String, let data = json.data(using: .utf8),
+           let dict = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] {
+            return dict
+        }
+        return [:]
+    }
+
+    /// "Fill: #b4532a", "Radius: 10 px", "Font: Fraunces · 32 px" for the selected element panel.
+    static func pickedProperties(_ body: Any) -> [String] {
+        let fields = fields(body)
+        func get(_ name: String) -> String { fields[name] as? String ?? "" }
+        var list: [String] = []
+        if let fill = cssColor(get("fill")) { list.append(L.f("DesignPropFill", fill)) }
+        if let ink = cssColor(get("ink")) { list.append(L.f("DesignPropText", ink)) }
+        let radius = get("radius")
+        if !radius.isEmpty && radius != "0px" { list.append(L.f("DesignPropRadius", radius.replacingOccurrences(of: "px", with: " px"))) }
+        let font = get("font")
+        if !font.isEmpty { list.append(L.f("DesignPropFont", "\(font) · \(get("size").replacingOccurrences(of: "px", with: " px"))")) }
+        return list
+    }
+
+    /// "rgb(180, 83, 42)" as "#b4532a"; nil for transparent.
+    static func cssColor(_ css: String) -> String? {
+        let ns = css as NSString
+        guard let m = rgb.firstMatch(in: css, range: NSRange(location: 0, length: ns.length)) else { return nil }
+        if m.range(at: 4).location != NSNotFound, Double(ns.substring(with: m.range(at: 4))) == 0 { return nil }
+        let channels = (1...3).map { min(255, Int(ns.substring(with: m.range(at: $0))) ?? 0) }
+        return "#" + channels.map { String(format: "%02x", $0) }.joined()
+    }
+
     /// "button · cta · "Book a table"" from the picker's message (a dictionary from WebKit, or its JSON).
     static func describePicked(_ body: Any) -> String {
-        var fields: [String: Any] = [:]
-        if let dict = body as? [String: Any] {
-            fields = dict
-        } else if let json = body as? String, let data = json.data(using: .utf8),
-                  let dict = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] {
-            fields = dict
-        }
+        let fields = fields(body)
         let text = ((fields["text"] as? String) ?? "").split(whereSeparator: \.isWhitespace).joined(separator: " ")
         return [fields["tag"] as? String, fields["id"] as? String, text.isEmpty ? nil : "\"\(text)\""]
             .compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · ")
+    }
+
+    // MARK: - Photos
+
+    /// The <img data-generate="…"> tags the model asked for (two at most): each tag's range in `html` and its decoded prompt.
+    static func photoRequests(_ html: String) -> [(range: NSRange, prompt: String)] {
+        generateImage.matches(in: html, range: NSRange(location: 0, length: (html as NSString).length)).prefix(2).map {
+            ($0.range, decodeEntities((html as NSString).substring(with: $0.range(at: 1))))
+        }
+    }
+
+    /// `tag` (an <img …> tag) with any src it had replaced by `src`.
+    static func settingSource(_ tag: String, _ src: String) -> String {
+        let bare = replace(srcAttribute, in: tag, with: "")
+        return String(bare.prefix(4)) + " src=\"\(src)\"" + String(bare.dropFirst(4))
+    }
+
+    /// A soft gradient in the design system's colors, standing in for a photo when none can be made.
+    static func placeholder(_ system: DesignSystem) -> String {
+        let colors = system.colors
+        let from = colors.count > 1 ? colors[1] : colors[0]
+        let to = colors.count > 3 ? colors[3] : colors[colors.count - 1]
+        let svg = "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1344 768'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='\(from)'/><stop offset='1' stop-color='\(to)'/></linearGradient></defs><rect width='1344' height='768' fill='url(#g)'/></svg>"
+        // Uri.EscapeDataString's set: everything but RFC 3986's unreserved characters.
+        let unreserved = CharacterSet(charactersIn: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~")
+        return "data:image/svg+xml," + (svg.addingPercentEncoding(withAllowedCharacters: unreserved) ?? svg)
+    }
+
+    /// Generated photos (v2-image1.png next to the version) as data: URIs, so an exported file opens anywhere on its own.
+    static func inlineImages(_ html: String, folder: URL) -> String {
+        replace(localImage, in: html) { groups in
+            let file = folder.appendingPathComponent(groups[1])
+            guard let data = try? Data(contentsOf: file) else { return groups[0] }
+            let mime = file.pathExtension.lowercased() == "png" ? "image/png" : "image/jpeg"
+            return "src=\"data:\(mime);base64,\(data.base64EncodedString())\""
+        }
+    }
+
+    // MARK: - PowerPoint export
+
+    /// Slides from the document: each <section class="slide"> for decks, otherwise each top-level section; the first h1-h3 is
+    /// the title, paragraphs and list items the body, and a generated photo in that part its picture.
+    static func slides(_ html: String, folder: URL, name: String) -> [PptxSlide] {
+        let body = replace(styleBlocks, in: html, with: "")
+        var parts = groups(slideSection, in: body)
+        if parts.isEmpty { parts = groups(section, in: body) }
+        if parts.isEmpty { parts = [body] }
+        var slides: [PptxSlide] = []
+        for part in parts.prefix(40) {
+            let ns = part as NSString
+            let heading = firstHeading.firstMatch(in: part, range: NSRange(location: 0, length: ns.length))
+            let title = heading.map { clean(ns.substring(with: $0.range(at: 2))) } ?? name
+            let rest = heading.map { ns.replacingCharacters(in: $0.range, with: "") } ?? part
+            let lines = groups(line, in: rest, group: 2).map(clean).filter { !$0.isEmpty && !$0.hasPrefix("[") }.prefix(9)
+                .map { $0.count > 220 ? String($0.prefix(217)) + "…" : $0 }
+            let picture = groups(localImage, in: part).first.map { folder.appendingPathComponent($0) }
+                .flatMap { FileManager.default.fileExists(atPath: $0.path) ? $0 : nil }
+            if !title.isEmpty || !lines.isEmpty {
+                slides.append(PptxSlide(title: title.isEmpty ? name : title, lines: Array(lines), picture: picture))
+            }
+        }
+        return slides
+    }
+
+    private static func clean(_ html: String) -> String {
+        replace(whitespace, in: decodeEntities(replace(tags, in: html, with: " ")), with: " ").trimmingCharacters(in: .whitespaces)
     }
 
     // MARK: - Markdown export
@@ -154,6 +274,23 @@ enum DesignDocument {
     private static let tags = regex(#"<[^>]+>"#, [])
     private static let blankLines = regex(#"\n\s*\n+"#, [])
     private static let spaces = regex(#"[ \t]+"#, [])
+    private static let whitespace = regex(#"\s+"#, [])
+    private static let generateImage = regex(#"<img\b(?=[^>]*\bdata-generate="([^"]+)")[^>]*>"#, [.caseInsensitive])
+    private static let srcAttribute = regex(#"\ssrc="[^"]*""#, [.caseInsensitive])
+    private static let localImage = regex(#"src="(v\d+-image\d+\.(?:png|jpe?g|webp))""#, [.caseInsensitive])
+    private static let rgb = regex(#"rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+)\s*)?\)"#, [])
+    private static let slideSection = regex(#"<section\b[^>]*class="[^"]*\bslide\b[^"]*"[^>]*>(.*?)</section>"#)
+    private static let section = regex(#"<(?:section|header|footer)\b[^>]*>(.*?)</(?:section|header|footer)>"#)
+    private static let firstHeading = regex(#"<h([1-3])[^>]*>(.*?)</h\1>"#)
+    private static let line = regex(#"<(p|li|h[4-6]|blockquote|figcaption|dt|dd|td)\b[^>]*>(.*?)</\1>"#)
+
+    /// Group `group` of every match.
+    private static func groups(_ regex: NSRegularExpression, in text: String, group: Int = 1) -> [String] {
+        let ns = text as NSString
+        return regex.matches(in: text, range: NSRange(location: 0, length: ns.length)).compactMap {
+            $0.range(at: group).location == NSNotFound ? nil : ns.substring(with: $0.range(at: group))
+        }
+    }
 
     private static func firstGroup(_ regex: NSRegularExpression, in text: String) -> String? {
         let ns = text as NSString

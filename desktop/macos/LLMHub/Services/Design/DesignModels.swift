@@ -52,23 +52,37 @@ enum DesignKind: String, Codable, CaseIterable, Identifiable {
     var label: String { L.s("Design\(rawValue)") }
 }
 
+/// A turn in a design project; the assistant's carries the steps it took ("Wrote index.html", "Checked layout at phone width").
 struct DesignMessage: Codable, Hashable, Identifiable {
     var id = UUID()
     let role: String
     let text: String
+    var steps: [String]
 
-    init(role: String, text: String) {
+    init(role: String, text: String, steps: [String] = []) {
         self.role = role
         self.text = text
+        self.steps = steps
     }
 
-    private enum CodingKeys: String, CodingKey { case role, text }
+    private enum CodingKeys: String, CodingKey { case role, text, steps }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         role = try c.decode(String.self, forKey: .role)
         text = try c.decode(String.self, forKey: .text)
+        steps = try c.decodeIfPresent([String].self, forKey: .steps) ?? []
     }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(role, forKey: .role)
+        try c.encode(text, forKey: .text)
+        if !steps.isEmpty { try c.encode(steps, forKey: .steps) }
+    }
+
+    /// The steps as "✓ Wrote index.html" lines, or "".
+    var stepsText: String { steps.map { "✓ " + $0 }.joined(separator: "\n") }
 }
 
 /// A design project on disk: design/<id>/v1.html, v2.html, … plus project.json.
