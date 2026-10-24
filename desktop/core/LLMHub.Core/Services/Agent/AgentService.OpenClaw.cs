@@ -320,6 +320,23 @@ public sealed partial class AgentService
             var path = Str("path", "file_path", "filePath", "file") ?? (call["locations"] as JsonArray)?.FirstOrDefault()?["path"]?.GetValue<string>() ?? "";
             var title = call["title"]?.GetValue<string>() ?? "";
             var diff = (call["content"] as JsonArray ?? []).OfType<JsonObject>().FirstOrDefault(c => c["type"]?.GetValue<string>() == "diff");
+            // OpenClaw's edit and apply_patch take a list of {oldText, newText} replacements: show them as one multi-edit.
+            if (raw["edits"] is JsonArray edits)
+            {
+                var list = new JsonArray();
+                foreach (var e in edits.OfType<JsonObject>())
+                    list.Add(new JsonObject
+                    {
+                        ["old_string"] = e["oldText"]?.GetValue<string>() ?? e["old_string"]?.GetValue<string>() ?? "",
+                        ["new_string"] = e["newText"]?.GetValue<string>() ?? e["new_string"]?.GetValue<string>() ?? "",
+                    });
+                return ("MultiEdit", new JsonObject { ["file_path"] = path, ["edits"] = list });
+            }
+            var tool = title.Split(':', ' ')[0].ToLowerInvariant();
+            if (tool is "ls")
+                return ("LS", new JsonObject { ["path"] = path.Length > 0 ? path : "." });
+            if (tool is "exec" or "process" && Str("command", "cmd") is { } command)
+                return ("Bash", new JsonObject { ["command"] = command });
             switch (call["kind"]?.GetValue<string>())
             {
                 case "read":
