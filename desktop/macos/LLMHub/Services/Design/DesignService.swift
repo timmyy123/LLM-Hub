@@ -43,11 +43,16 @@ final class DesignService {
     var previewSize = "desktop"
     /// The element clicked in the preview ("section · hours · "Open today""), sent with the next request.
     var selectedElement = ""
+    /// "Fill: #b4532a", "Radius: 10 px"… of the element clicked in the preview, one per line.
+    private(set) var selectedProperties = ""
+    /// Set after a new prototype version; once the preview has loaded it, the page is measured at phone width.
+    @ObservationIgnored private(set) var needsPhoneCheck = false
 
     /// The WebKit preview; lives as long as the app so the page survives switching tabs.
     @ObservationIgnored private(set) lazy var preview: DesignPreview = {
         let preview = DesignPreview()
-        preview.onPick = { [weak self] picked in self?.selectedElement = picked }
+        preview.onMessage = { [weak self] body in self?.previewMessage(body) }
+        preview.onLoad = { [weak self] file in self?.previewLoaded(file) }
         return preview
     }()
     @ObservationIgnored private var generation: Task<Void, Never>?
@@ -131,6 +136,8 @@ final class DesignService {
         }
         version = selected?.versions ?? 0
         selectedElement = ""
+        selectedProperties = ""
+        needsPhoneCheck = false
         status = ""
     }
 
@@ -205,8 +212,10 @@ final class DesignService {
                 Log.info("Design \(saved.id) v\(saved.versions) (\(saved.kind.rawValue), \(saved.systemId)) in \(Int(Date().timeIntervalSince(start)))s")
                 if self.selectedId == saved.id {
                     self.messages = saved.history
+                    self.needsPhoneCheck = saved.kind == .prototype
                     self.version = saved.versions
                     self.selectedElement = ""
+                    self.selectedProperties = ""
                 }
                 self.status = ""
             } catch is CancellationError {
@@ -259,13 +268,17 @@ final class DesignService {
             throw NSError(domain: "LLMHub", code: 40, userInfo: [NSLocalizedDescriptionKey: L.s("DesignNoHtml")])
         }
 
+        let next = (projects.first { $0.id == project.id } ?? project).versions + 1
+        var steps = [L.s(next == 1 ? "DesignStepWrote" : "DesignStepUpdated")]
+        let page = try await renderImages(project, html: html, version: next, steps: &steps)
+
         // The project may have been renamed or re-styled meanwhile; build on the stored copy.
         var saved = projects.first { $0.id == project.id } ?? project
-        saved.versions += 1
-        try html.write(to: saved.versionFile(saved.versions), atomically: true, encoding: .utf8)
+        saved.versions = next
+        try page.write(to: saved.versionFile(saved.versions), atomically: true, encoding: .utf8)
         let note = DesignDocument.summary(text)
         saved.history.append(DesignMessage(role: "user", text: request))
-        saved.history.append(DesignMessage(role: "assistant", text: note.isEmpty ? "Updated the design." : note))
+        saved.history.append(DesignMessage(role: "assistant", text: note.isEmpty ? "Updated the design." : note, steps: steps))
         if saved.versions == 1 {
             saved.name = DesignDocument.title(html) ?? (request.count <= 40 ? request : String(request.prefix(37)) + "…")
         }
@@ -276,6 +289,75 @@ final class DesignService {
             projects.insert(projects.remove(at: index), at: 0)
         }
         return projects.first { $0.id == saved.id } ?? saved
+    }
+
+    /// Turns <img data-generate="…"> into photos made with ComfyUI when Studio is set up (ComfyUI and an image model already on
+    /// disk; Design never starts a download), saved next to the version as v3-image1.png; otherwise a soft gradient in the
+    /// design system's colors stands in.
+    private func renderImages(_ project: DesignProject, html: String, version: Int, steps: inout [String]) async throws -> String {
+        let requests = DesignDocument.photoRequests(html)
+        guard !requests.isEmpty else { return html }
+        let comfy = app?.studio.comfy
+        let workflow = [ComfyWorkflow.sdxl, .fluxSchnell].first(where: ComfyService.hasModels)
+        var page = html as NSString
+        var made = 0
+        // Last first, so the earlier tags' ranges stay valid.
+        for (i, request) in requests.enumerated().reversed() {
+            var src = DesignDocument.placeholder(project.system)
+            if let comfy, comfy.isInstalled, let workflow {
+                do {
+                    status = L.s("DesignMakingImage")
+                    try await comfy.ensureRunning()
+                    let graph = workflow.build(prompt: request.prompt + ", " + project.system.name.lowercased() + " style, photograph",
+                                               width: 1344, height: 768, count: 1, steps: workflow.defaultSteps, seed: Int64.random(in: 1..<(1 << 48)), image: nil)
+                    guard let file = try await comfy.run(graph, progress: { _, _ in }).first else { throw ComfyService.error("ComfyUI made no image") }
+                    let name = "v\(version)-image\(i + 1).\(file.pathExtension)"
+                    let target = project.folder.appendingPathComponent(name)
+                    try? FileManager.default.removeItem(at: target)
+                    try FileManager.default.copyItem(at: file, to: target)
+                    src = name
+                    made += 1
+                } catch {
+                    if error is CancellationError || Task.isCancelled { throw CancellationError() }
+                    Log.error("Design image failed", error)
+                }
+            }
+            page = page.replacingCharacters(in: request.range, with: DesignDocument.settingSource(page.substring(with: request.range), src)) as NSString
+        }
+        status = L.s("DesignWorking")
+        steps.append(L.s(made > 0 ? "DesignStepImage" : "DesignStepPlaceholder"))
+        return page as String
+    }
+
+    // MARK: - Preview messages
+
+    /// A message from the preview's injected scripts: an element the user clicked, or the phone-width measurement.
+    private func previewMessage(_ body: Any) {
+        let fields = DesignDocument.fields(body)
+        if fields["type"] as? String == "phone" {
+            if let width = fields["width"] as? NSNumber { reportPhoneCheck(width.intValue) }
+            return
+        }
+        selectedElement = DesignDocument.describePicked(fields)
+        selectedProperties = DesignDocument.pickedProperties(fields).joined(separator: "\n")
+    }
+
+    /// Measures a new prototype version at phone width once the preview has loaded it.
+    private func previewLoaded(_ file: URL) {
+        guard needsPhoneCheck, file == selected?.currentFile else { return }
+        preview.webView.evaluateJavaScript(DesignDocument.phoneCheckScript(DesignPreview.postMessage), completionHandler: nil)
+    }
+
+    /// Adds "Checked layout at phone width" (or how much too wide it is) to the latest reply's steps.
+    private func reportPhoneCheck(_ contentWidth: Int) {
+        guard needsPhoneCheck, let index = selectedIndex, let last = projects[index].history.last, last.role == "assistant" else { return }
+        needsPhoneCheck = false
+        let over = contentWidth - 390
+        let step = over <= 2 ? L.s("DesignStepPhone") : L.f("DesignStepPhoneWide", "\(over)")
+        projects[index].history[projects[index].history.count - 1].steps.append(step)
+        save(projects[index])
+        if let shown = messages.lastIndex(where: { $0.id == last.id }) { messages[shown].steps.append(step) }
+        Log.info("Design \(projects[index].id) v\(version) at phone width: content \(contentWidth) px")
     }
 
     // MARK: - Hand off and export
@@ -304,7 +386,8 @@ final class DesignService {
         app?.section = .agent
     }
 
-    /// Exports the current version: "html" (the file), "zip" (every version, newest as index.html), "md" (page text), "pdf".
+    /// Exports the current version: "html" (one self-contained file), "zip" (every version with its photos, newest as
+    /// index.html), "pptx" (one slide per slide or section, with the generated photos), "md" (page text), "pdf".
     func export(_ format: String, to target: URL) async throws {
         guard let project = selected, let current = project.currentFile else {
             throw NSError(domain: "LLMHub", code: 41, userInfo: [NSLocalizedDescriptionKey: L.s("DesignNothingYet")])
@@ -312,8 +395,12 @@ final class DesignService {
         let fm = FileManager.default
         switch format {
         case "html":
-            try? fm.removeItem(at: target)
-            try fm.copyItem(at: current, to: target)
+            let html = try String(contentsOf: current, encoding: .utf8)
+            try DesignDocument.inlineImages(html, folder: project.folder).write(to: target, atomically: true, encoding: .utf8)
+        case "pptx":
+            let html = try String(contentsOf: current, encoding: .utf8)
+            try await PptxWriter.write(to: target, title: project.name, slides: DesignDocument.slides(html, folder: project.folder, name: project.name),
+                                       system: project.system)
         case "md":
             let html = try String(contentsOf: current, encoding: .utf8)
             try DesignDocument.htmlToMarkdown(html).write(to: target, atomically: true, encoding: .utf8)
@@ -326,20 +413,30 @@ final class DesignService {
             let staging = fm.temporaryDirectory.appendingPathComponent("llmhub-design-\(UUID().uuidString)", isDirectory: true)
             try fm.createDirectory(at: staging.appendingPathComponent("versions", isDirectory: true), withIntermediateDirectories: true)
             defer { try? fm.removeItem(at: staging) }
+            let files = (try? fm.contentsOfDirectory(atPath: project.folder.path)) ?? []
             for n in 1...project.versions {
-                let name = n == project.versions ? "index.html" : "versions/v\(n).html"
-                try fm.copyItem(at: project.versionFile(n), to: staging.appendingPathComponent(name))
+                let prefix = n == project.versions ? "" : "versions/"
+                try fm.copyItem(at: project.versionFile(n), to: staging.appendingPathComponent(n == project.versions ? "index.html" : "versions/v\(n).html"))
+                for image in files where image.hasPrefix("v\(n)-image") {
+                    try fm.copyItem(at: project.folder.appendingPathComponent(image), to: staging.appendingPathComponent(prefix + image))
+                }
             }
             if project.versions == 1 { try? fm.removeItem(at: staging.appendingPathComponent("versions")) }
             try? fm.removeItem(at: target)
-            try await Self.run("/usr/bin/zip", ["-q", "-r", target.path, "."], in: staging)
+            try await Self.zip(staging, to: target)
         default:
             throw NSError(domain: "LLMHub", code: 42, userInfo: [NSLocalizedDescriptionKey: "Unknown format \(format)"])
         }
         Log.info("Design \(project.id) exported \(format) to \(target.path)")
     }
 
-    private static func run(_ tool: String, _ arguments: [String], in directory: URL) async throws {
+    /// Zips the contents of `folder` into `target` with /usr/bin/zip: no folder entries or extra attributes, so the
+    /// archive is also a valid Office package.
+    nonisolated static func zip(_ folder: URL, to target: URL) async throws {
+        try await run("/usr/bin/zip", ["-q", "-X", "-D", "-r", target.path, "."], in: folder)
+    }
+
+    nonisolated private static func run(_ tool: String, _ arguments: [String], in directory: URL) async throws {
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             let process = Process()
             process.executableURL = URL(fileURLWithPath: tool)
@@ -365,7 +462,4 @@ final class DesignService {
         s = s.trimmingCharacters(in: .whitespaces)
         return s.isEmpty ? "design" : s
     }
-
-    /// The element picker, posting to `postMessage` (the web view's message function).
-    nonisolated static func pickerScript(_ postMessage: String) -> String { DesignDocument.pickerScript(postMessage) }
 }

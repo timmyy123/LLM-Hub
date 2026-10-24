@@ -32,17 +32,18 @@ extension DevTools {
             let seconds = Int(Date().timeIntervalSince(start).rounded())
             let file = design.previewFile
             let bytes = file.flatMap { (try? FileManager.default.attributesOfItem(atPath: $0.path))?[.size] as? Int } ?? 0
-            Log.info("DESIGNTEST v\(design.version) in \(seconds)s: \(file.map { "\(bytes) bytes \($0.path)" } ?? "no file") status='\(design.status)' name='\(design.selected?.name ?? "")'")
+            Log.info("DESIGNTEST v\(design.version) in \(seconds)s: \(file.map { "\(bytes) bytes \($0.path)" } ?? "no file") status='\(design.status)' name='\(design.selected?.name ?? "")' steps='\(design.messages.last?.steps.joined(separator: ";") ?? "")'")
         }
         await probePreview(snapshot: value("--capture", args).map { ($0 as NSString).deletingPathExtension + "-preview.png" })
         if let folder = value("--designexport", args) { await exportAll(to: URL(fileURLWithPath: folder, isDirectory: true)) }
     }
 
-    /// `--designexport <folder>`: writes the open design as HTML, PDF, ZIP and Markdown there (the menu's formats, no save panel).
+    /// `--designexport <folder>`: writes the open design as HTML, PDF, PPTX, ZIP and Markdown there (the menu's formats, no
+    /// save panel), and logs the slides the PPTX was made from.
     private static func exportAll(to folder: URL) async {
         let design = AppModel.shared.design
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        for format in ["html", "pdf", "zip", "md"] {
+        for format in ["html", "pdf", "pptx", "zip", "md"] {
             let target = folder.appendingPathComponent("design.\(format)")
             do {
                 try await design.export(format, to: target)
@@ -51,6 +52,10 @@ extension DevTools {
             } catch {
                 Log.error("DESIGNTEST export \(format) failed", error)
             }
+        }
+        if let project = design.selected, let file = project.currentFile, let html = try? String(contentsOf: file, encoding: .utf8) {
+            let slides = DesignDocument.slides(html, folder: project.folder, name: project.name)
+            Log.info("DESIGNTEST slides \(slides.count): \(slides.map { "\($0.title) [\($0.lines.count)\($0.picture == nil ? "" : " + photo")]" }.joined(separator: " | "))")
         }
     }
 
@@ -67,9 +72,12 @@ extension DevTools {
         let probe = "JSON.stringify({title: document.title, chars: document.body.innerText.length, elements: document.querySelectorAll('*').length, "
             + "height: document.documentElement.scrollHeight, picker: !!window.__llmhubPicker, "
             + "clicked: (() => { const h = document.querySelector('h1'); if (h) h.click(); return h ? h.innerText.slice(0, 40) : null; })()})"
+        // The phone-width check runs when the new version loads and posts back after 400 ms.
+        try? await Task.sleep(for: .milliseconds(1000))
         let result = await design.preview.evaluate(probe)
         try? await Task.sleep(for: .milliseconds(500))
-        Log.info("PREVIEW \(design.preview.webView.url?.path ?? "-") \(result) selected='\(design.selectedElement)'")
+        Log.info("PREVIEW \(design.preview.webView.url?.path ?? "-") \(result) selected='\(design.selectedElement)' "
+            + "properties='\(design.selectedProperties.replacingOccurrences(of: "\n", with: "; "))' steps='\(design.messages.last?.steps.joined(separator: ";") ?? "")'")
         if let snapshot, let image = try? await design.preview.webView.takeSnapshot(configuration: nil),
            let tiff = image.tiffRepresentation, let png = NSBitmapImageRep(data: tiff)?.representation(using: .png, properties: [:]) {
             try? png.write(to: URL(fileURLWithPath: snapshot))

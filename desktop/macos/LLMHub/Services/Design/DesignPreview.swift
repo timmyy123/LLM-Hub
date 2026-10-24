@@ -2,19 +2,25 @@ import AppKit
 import WebKit
 
 /// The live preview: one WKWebView for the app's lifetime (so switching tabs keeps the page), the element picker injected
-/// into every page, and clicks reported back to the Design tab as the selected element.
+/// into every page, and its messages (a clicked element, the phone-width measurement) passed back to the Design tab.
 @MainActor
 final class DesignPreview: NSObject, WKNavigationDelegate {
+    /// The web view's message function, for the scripts that report back.
+    static let postMessage = "window.webkit.messageHandlers.llmhub.postMessage"
+
     let webView: WKWebView
-    /// Called with "h1 · hero-title · "…"" when the user clicks an element in the page.
-    var onPick: ((String) -> Void)?
+    /// Called with what a script posted: {type: 'pick', id, tag, text, fill, …} when the user clicks an element in the page,
+    /// {type: 'phone', width} from the phone-width check.
+    var onMessage: ((Any) -> Void)?
+    /// Called with the version file when it has finished loading (never for the blank page).
+    var onLoad: ((URL) -> Void)?
     private(set) var shown: URL?
     private(set) var isLoading = false
 
     override init() {
         let config = WKWebViewConfiguration()
         let controller = WKUserContentController()
-        controller.addUserScript(WKUserScript(source: DesignService.pickerScript("window.webkit.messageHandlers.llmhub.postMessage"),
+        controller.addUserScript(WKUserScript(source: DesignDocument.pickerScript(Self.postMessage),
                                               injectionTime: .atDocumentEnd, forMainFrameOnly: true))
         config.userContentController = controller
         webView = WKWebView(frame: NSRect(x: 0, y: 0, width: 800, height: 600), configuration: config)
@@ -76,7 +82,10 @@ final class DesignPreview: NSObject, WKNavigationDelegate {
 
     // MARK: - WKNavigationDelegate
 
-    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) { isLoading = false }
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        isLoading = false
+        if let shown, webView.url?.isFileURL == true { onLoad?(shown) }
+    }
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
         isLoading = false
         Log.error("Design preview failed to load", error)
@@ -95,10 +104,7 @@ final class DesignPreview: NSObject, WKNavigationDelegate {
         return .allow
     }
 
-    fileprivate func received(_ body: Any) {
-        let picked = DesignDocument.describePicked(body)
-        onPick?(picked)
-    }
+    fileprivate func received(_ body: Any) { onMessage?(body) }
 
     /// WKUserContentController retains its handlers; the proxy keeps that from retaining the preview.
     private final class MessageProxy: NSObject, WKScriptMessageHandler {

@@ -255,6 +255,7 @@ struct DesignView: View {
                 Menu {
                     Button("HTML") { export("html") }
                     Button("PDF") { export("pdf") }
+                    Button("PPTX") { export("pptx") }
                     Button("ZIP") { export("zip") }
                     Button("Markdown") { export("md") }
                 } label: {
@@ -280,11 +281,11 @@ struct DesignView: View {
         }
     }
 
-    /// Asks where to save, then writes HTML, PDF, ZIP or Markdown; the result goes to the status line.
+    /// Asks where to save, then writes HTML, PDF, PPTX, ZIP or Markdown; the result goes to the status line.
     private func export(_ format: String) {
         let design = app.design
         guard let project = design.selected, project.currentFile != nil else { return }
-        let ext = ["md": "md", "zip": "zip", "pdf": "pdf"][format] ?? "html"
+        let ext = ["md": "md", "zip": "zip", "pdf": "pdf", "pptx": "pptx"][format] ?? "html"
         let panel = NSSavePanel()
         panel.nameFieldStringValue = DesignService.safe(project.name) + "." + ext
         panel.allowedContentTypes = [UTType(filenameExtension: ext) ?? .data]
@@ -328,13 +329,40 @@ private struct MessageRow: View {
                     .accessibilityIdentifier("DesignUserMessage")
             }
         } else {
-            Text(Self.markdown(message.text))
-                .font(.system(size: 14))
-                .lineSpacing(3)
-                .textSelection(.enabled)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .accessibilityIdentifier("DesignAssistantMessage")
+            VStack(alignment: .leading, spacing: 8) {
+                Text(Self.markdown(message.text))
+                    .font(.system(size: 14))
+                    .lineSpacing(3)
+                    .textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .accessibilityIdentifier("DesignAssistantMessage")
+                if !message.steps.isEmpty { steps }
+            }
         }
+    }
+
+    /// What the reply did ("Wrote index.html", "Checked layout at phone width") in a subtle card, each with a green check.
+    private var steps: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            ForEach(Array(message.steps.enumerated()), id: \.offset) { _, step in
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(Theme.success)
+                    Text(step)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+        .font(.system(size: 13))
+        .foregroundStyle(Theme.textMuted)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Theme.divider))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(message.stepsText)
+        .accessibilityIdentifier("DesignSteps")
     }
 
     private static func markdown(_ text: String) -> AttributedString {
@@ -430,15 +458,24 @@ private struct DesignSystemPanel: View {
                 .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 10))
             }
             field(L.s("DesignSelected")) {
-                Text(design.selectedElement.isEmpty ? L.s("DesignSelectHint") : design.selectedElement)
-                    .font(.system(size: 13))
-                    .foregroundStyle(design.selectedElement.isEmpty ? Theme.textMuted : Color.primary)
-                    .textSelection(.enabled)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(12)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 10))
-                    .accessibilityIdentifier("DesignSelectedElement")
+                // The element, then its fill, text color, radius and font, as in the design.
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(design.selectedElement.isEmpty ? L.s("DesignSelectHint") : design.selectedElement)
+                        .foregroundStyle(design.selectedElement.isEmpty ? Theme.textMuted : Color.primary)
+                        .accessibilityIdentifier("DesignSelectedElement")
+                    if !design.selectedProperties.isEmpty {
+                        Text(design.selectedProperties)
+                            .foregroundStyle(Theme.textMuted)
+                            .lineSpacing(3)
+                            .accessibilityIdentifier("DesignSelectedProperties")
+                    }
+                }
+                .font(.system(size: 13))
+                .textSelection(.enabled)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 10))
             }
             Spacer(minLength: 0)
             Text(L.s("DesignExports"))
