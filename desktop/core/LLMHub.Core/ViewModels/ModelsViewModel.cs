@@ -61,7 +61,19 @@ public abstract partial class DownloadableViewModel : ObservableObject
     protected abstract string[] Tags { get; }
     protected abstract int ContextLength { get; }
 
-    partial void OnSelectedVariantChanged(VariantOption? value) => Refresh();
+    private VariantOption? _lastSelected;
+
+    partial void OnSelectedVariantChanged(VariantOption? value)
+    {
+        // A list row being recycled (when a filter chip moves rows) unbinds its drop-down, which writes null back; keep the pick.
+        if (value is null && _lastSelected is not null && Variants.Contains(_lastSelected))
+        {
+            SelectedVariant = _lastSelected;
+            return;
+        }
+        _lastSelected = value;
+        Refresh();
+    }
 
     protected void Refresh()
     {
