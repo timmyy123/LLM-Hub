@@ -169,9 +169,13 @@ public sealed partial class CatalogItemViewModel(CatalogModel model) : Downloada
                 variants.AddRange(await Ioc.HuggingFace.GetGgufVariantsAsync(gguf.Repo, ct));
             if (LiteRtSource is { } litert && LiteRtEngine.IsSupported)
                 variants.AddRange(await Ioc.HuggingFace.GetLiteRtVariantsAsync(litert.Repo, ct));
-            SetVariants(variants, GgufSource?.PreferredQuant);
-            NothingFits = Variants.Count == 0;
-            Status = NothingFits ? Loc.S("NothingFits") : "";
+            // The pickers are bound to Variants: change it on the UI thread whatever thread the lookup finished on.
+            await UiThread.RunAsync(() =>
+            {
+                SetVariants(variants, GgufSource?.PreferredQuant);
+                NothingFits = Variants.Count == 0;
+                Status = NothingFits ? Loc.S("NothingFits") : "";
+            });
         }
         catch (Exception e) when (e is not OperationCanceledException)
         {
@@ -298,10 +302,13 @@ public sealed partial class HfRepoViewModel(HfRepo repo) : DownloadableViewModel
             var variants = Repo.Format == "litertlm"
                 ? await Ioc.HuggingFace.GetLiteRtVariantsAsync(Repo.Id, ct)
                 : await Ioc.HuggingFace.GetGgufVariantsAsync(Repo.Id, ct);
-            _all = variants;
-            SetVariants(variants, "Q4_K_M");
-            RefreshRows();
-            Status = variants.Count == 0 ? Loc.S("HfNoGguf") : Variants.Count == 0 ? Loc.S("NothingFits") : "";
+            await UiThread.RunAsync(() =>
+            {
+                _all = variants;
+                SetVariants(variants, "Q4_K_M");
+                RefreshRows();
+                Status = variants.Count == 0 ? Loc.S("HfNoGguf") : Variants.Count == 0 ? Loc.S("NothingFits") : "";
+            });
         }
         catch (Exception e) when (e is not OperationCanceledException)
         {

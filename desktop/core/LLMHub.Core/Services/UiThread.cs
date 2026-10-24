@@ -28,4 +28,28 @@ public static class UiThread
         else
             _post(action);
     }
+
+    /// <summary>Runs <paramref name="action"/> on the UI thread and completes when it has run.</summary>
+    public static Task RunAsync(Action action)
+    {
+        if (_post is null || _hasAccess!())
+        {
+            action();
+            return Task.CompletedTask;
+        }
+        var done = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        _post(() =>
+        {
+            try
+            {
+                action();
+                done.SetResult();
+            }
+            catch (Exception e)
+            {
+                done.SetException(e);
+            }
+        });
+        return done.Task;
+    }
 }

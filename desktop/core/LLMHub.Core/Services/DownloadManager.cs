@@ -52,6 +52,7 @@ public sealed class DownloadManager(HuggingFaceClient hf, ModelStore store)
 
         var job = new DownloadJob(id, $"{name} · {variant.Quant}") { IsRunning = true };
         Jobs.Add(job);
+        Log.Info($"Download {id} started ({Fmt.Bytes(variant.TotalBytes)})");
         _ = RunAsync(job, variant, name, catalogId, tags, contextLength);
         return job;
     }
