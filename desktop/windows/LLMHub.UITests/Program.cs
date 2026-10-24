@@ -487,6 +487,9 @@ Test("Gated model shows a clear token message", () =>
     Select("TabHuggingFace");
     SetText("HfQuery", "google/gemma-3-1b-it-qat-q4_0-gguf");
     Invoke("HfSearchButton");
+    // Results mix GGUF and LiteRT-LM repos by trend: pick the gated Google one by name.
+    WaitFor(() => window!.FindAllDescendants(cf => cf.ByAutomationId("HfRepoId")).FirstOrDefault(e => e.Name == "google/gemma-3-1b-it-qat-q4_0-gguf"),
+        TimeSpan.FromSeconds(60), "google/gemma-3-1b-it-qat-q4_0-gguf in results").Click();
     WaitFor(() => window!.FindAllDescendants(cf => cf.ByAutomationId("HfFileDownload")).FirstOrDefault(b => b.IsEnabled), TimeSpan.FromSeconds(60), "Download in the file table")
         .AsButton().Invoke();
     Check(Find("HfGatedBar") is { IsOffscreen: false }, "gated notice with sign-in missing");
@@ -510,11 +513,20 @@ Test("Hugging Face search finds repos and lists fitting quants", () =>
 
 Test("Download from the Hugging Face tab", () =>
 {
-    // The Q4_0 row of the file table: its first text reads "Q4_0 · 0.7 GB".
-    var table = Get("HfFileTable");
-    var q4 = WaitFor(() => table.FindAllChildren().FirstOrDefault(r => r.FindFirstDescendant(cf => cf.ByControlType(ControlType.Text))?.Name.StartsWith("Q4_0") == true),
-        TimeSpan.FromSeconds(30), "Q4_0 row");
-    q4.FindFirstDescendant(cf => cf.ByAutomationId("HfFileDownload"))!.AsButton().Invoke();
+    // The file table's rows have no automation peers, so walk the panel in order: the Download after the "Q4_0 · …" text.
+    var download = WaitFor(() =>
+    {
+        var seen = false;
+        foreach (var e in window!.FindAllDescendants())
+        {
+            if (e.ControlType == ControlType.Text && e.Name.StartsWith("Q4_0 ·"))
+                seen = true;
+            else if (seen && e.AutomationId == "HfFileDownload")
+                return e;
+        }
+        return null;
+    }, TimeSpan.FromSeconds(30), "Download on the Q4_0 file");
+    download.AsButton().Invoke();
     WaitFor(() => Find("HfFileInstalled"), TimeSpan.FromMinutes(10), "Installed in the file table");
 });
 
