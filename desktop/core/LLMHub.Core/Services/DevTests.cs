@@ -185,4 +185,49 @@ public static class DevTests
         var clip = studio.MusicClips.FirstOrDefault()?.Path;
         Log.Info($"MUSICTEST {workflowId} {seconds}s in {clock.Elapsed.TotalSeconds:F0}s: {studio.MusicStatus}; {clip} ({(clip is null ? 0 : new FileInfo(clip).Length)} bytes)");
     }
+
+    /// <summary>
+    /// Live Magenta RealTime: plays <paramref name="seconds"/> while recording, swaps the style halfway, then checks speed
+    /// and that the recording holds music. Run with LLMHUB_AUDIO_SINK=null where there is no sound server.
+    /// </summary>
+    public static async Task MagentaLiveAsync(int seconds)
+    {
+        var music = Ioc.Magenta;
+        var last = "";
+        music.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(Studio.MagentaService.Status) && music.Status != last)
+                Log.Info($"MAGENTATEST {last = music.Status}");
+        };
+        string? saved = null;
+        music.Saved += path => saved = path;
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+        music.SetRecording(true);
+        await music.PlayAsync(CancellationToken.None);
+        if (!music.IsPlaying)
+        {
+            Log.Info($"MAGENTATEST failed to start: {music.Status}");
+            return;
+        }
+        var start = clock.Elapsed.TotalSeconds;
+        Log.Info($"MAGENTATEST playing on {music.Device} after {start:F0}s");
+        await Task.Delay(TimeSpan.FromSeconds(seconds / 2.0));
+        music.Styles[0].Weight = 0;
+        music.Styles[1].Text = "Upbeat disco funk with slap bass";
+        music.Styles[1].Weight = 1;
+        music.Temperature = 0.7;
+        await Task.Delay(TimeSpan.FromSeconds(seconds / 2.0));
+        music.Stop();
+        music.Export();
+        var played = clock.Elapsed.TotalSeconds - start;
+        Log.Info($"MAGENTATEST {music.Elapsed:F1}s played in {played:F1}s, speed {music.Speed:F2}x real time, levels max {music.Levels.Max():F2}");
+        if (saved is null)
+            return;
+        var bytes = File.ReadAllBytes(saved);
+        var samples = System.Runtime.InteropServices.MemoryMarshal.Cast<byte, short>(bytes.AsSpan(44)).ToArray();
+        var halves = new[] { samples[..(samples.Length / 2)], samples[(samples.Length / 2)..] }
+            .Select(h => Math.Sqrt(h.Sum(s => (double)s * s) / Math.Max(1, h.Length))).ToArray();
+        var recordings = Directory.GetFiles(ViewModels.StudioViewModel.MusicFolder, "*.wav").OrderByDescending(File.GetLastWriteTimeUtc).Take(2);
+        Log.Info($"MAGENTATEST export {saved}: {bytes.Length} bytes, {(bytes.Length - 44) / 4.0 / Studio.MagentaService.SampleRate:F1}s, RMS {halves[0]:F0} / {halves[1]:F0}; files {string.Join(", ", recordings.Select(Path.GetFileName))}");
+    }
 }

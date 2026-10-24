@@ -387,13 +387,78 @@ internal sealed class SettingsPages
         access.Add(requireKey);
         access.Add(key);
 
-        var endpoints = Adw.PreferencesGroup.New();
-        endpoints.SetTitle(Loc.S("ApiEndpoints"));
-        var list = Ui.Label("POST /v1/chat/completions   (OpenAI)\nPOST /v1/messages           (Anthropic)\nPOST /v1/messages/count_tokens\nGET  /v1/models", "monospace");
-        list.SetSelectable(true);
-        endpoints.Add(list);
-        endpoints.Add(Ui.Label(Loc.S("ApiClaudeCode"), "dim-label").Margins(12, 0, 4, 0));
+        // Endpoint tables from the design: OpenAI-compatible, then Anthropic-compatible with the Claude Code setup.
+        Adw.PreferencesGroup EndpointGroup(string title, bool anthropic)
+        {
+            var group = Adw.PreferencesGroup.New();
+            group.SetTitle(title);
+            var rows = Gtk.ListBox.New();
+            rows.AddCssClass("boxed-list");
+            rows.SetSelectionMode(Gtk.SelectionMode.None);
+            rows.Named(anthropic ? "AnthropicEndpoints" : "OpenAiEndpoints");
+            foreach (var e in LocalApiServer.Endpoints.Where(e => e.Anthropic == anthropic))
+            {
+                var row = Adw.ActionRow.New();
+                row.SetTitle($"{e.Method,-4} {e.Path}");
+                row.AddCssClass("monospace");
+                row.SetTitleSelectable(true);
+                if (e.ServedBy.Length > 0)
+                {
+                    var servedBy = Ui.Label(e.ServedBy, "dim-label");
+                    servedBy.SetWrap(false);
+                    row.AddSuffix(servedBy);
+                }
+                rows.Append(row);
+            }
+            group.Add(rows);
+            return group;
+        }
+        var openAi = EndpointGroup(Loc.S("ApiOpenAiCompatible"), anthropic: false);
+        var endpoints = EndpointGroup(Loc.S("ApiAnthropicCompatible"), anthropic: true);
+        endpoints.Add(Ui.Label(Loc.S("ApiClaudeCode"), "dim-label").Margins(16, 0, 4, 0));
         endpoints.Add(snippet);
+
+        // Models offered, each with the engine that serves it, and when idle models are unloaded.
+        var offered = Adw.PreferencesGroup.New();
+        offered.SetTitle(Loc.S("ApiModelsOffered"));
+        offered.SetDescription(Loc.S("ApiModelsOfferedHelp"));
+        var unload = Adw.ComboRow.New();
+        unload.SetTitle(Loc.S("ApiUnloadAfter"));
+        unload.SetModel(Gtk.StringList.New(LocalApiServer.UnloadChoices.Select(c => c.Label).ToArray()));
+        unload.SetSelected((uint)Math.Max(0, LocalApiServer.UnloadChoices.ToList().FindIndex(c => c.Minutes == s.ApiUnloadAfterMinutes)));
+        unload.Named("UnloadPicker");
+        unload.OnNotify += (_, e) =>
+        {
+            if (e.Pspec.GetName() != "selected" || unload.GetSelected() >= LocalApiServer.UnloadChoices.Count)
+                return;
+            s.ApiUnloadAfterMinutes = LocalApiServer.UnloadChoices[(int)unload.GetSelected()].Minutes;
+            AppSettings.Save();
+        };
+        offered.Add(unload);
+        var models = Gtk.ListBox.New();
+        models.AddCssClass("boxed-list");
+        models.SetSelectionMode(Gtk.SelectionMode.None);
+        models.Named("ApiModelsOffered");
+        models.SetMarginTop(12);
+        offered.Add(models);
+        void ListModels()
+        {
+            models.RemoveAll();
+            foreach (var m in Ioc.Models.Installed)
+            {
+                var row = Adw.ActionRow.New();
+                row.SetTitle(LocalApiServer.ApiName(m));
+                row.SetTitleSelectable(true);
+                row.AddCssClass("monospace");
+                var engine = Ui.Label(LocalApiServer.EngineLabel(m), "dim-label");
+                engine.SetWrap(false);
+                row.AddSuffix(engine);
+                models.Append(row);
+            }
+            models.SetVisible(Ioc.Models.Installed.Count > 0);
+        }
+        Ioc.Models.Installed.CollectionChanged += (_, _) => UiThread.Run(ListModels);
+        ListModels();
 
         var recent = Adw.PreferencesGroup.New();
         recent.SetTitle(Loc.S("ApiRecent"));
@@ -459,7 +524,9 @@ internal sealed class SettingsPages
 
         page.Add(main);
         page.Add(access);
+        page.Add(openAi);
         page.Add(endpoints);
+        page.Add(offered);
         page.Add(recent);
         return page;
     }

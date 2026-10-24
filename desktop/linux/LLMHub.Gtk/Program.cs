@@ -52,6 +52,7 @@ app.OnShutdown += (_, _) =>
     Ioc.Embeddings.Stop();
     Ioc.Speech.Stop();
     Ioc.Comfy.Stop();
+    Ioc.Magenta.Shutdown();
 };
 return app.RunWithSynchronizationContext(null);
 

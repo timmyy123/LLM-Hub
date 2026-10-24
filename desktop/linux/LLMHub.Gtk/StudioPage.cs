@@ -6,7 +6,7 @@ namespace LLMHub.Linux;
 
 /// <summary>
 /// Studio from the design: Image / Video / Music / Voice tabs. Image and video run on ComfyUI (form on the left,
-/// gallery on the right), Voice on Supertonic; Music explains that Magenta RealTime needs a Mac.
+/// gallery on the right), Music on Magenta RealTime and Stable Audio 3 (<see cref="MusicPane"/>), Voice on Supertonic.
 /// </summary>
 internal sealed class StudioPage
 {
@@ -168,12 +168,7 @@ internal sealed class StudioPage
         voiceClamp.SetHalign(Gtk.Align.Start);
         _body.AddNamed(Ui.Scroll(voiceClamp), "voice");
 
-        // Music.
-        var music = Adw.StatusPage.New();
-        music.SetIconName("audio-x-generic-symbolic");
-        music.SetDescription(Loc.S("StudioMusicUnavailable"));
-        music.Named("MusicUnavailable");
-        _body.AddNamed(music, "music");
+        _body.AddNamed(new MusicPane().Root, "music");
         _body.SetVexpand(true);
 
         Root = Ui.VBox(0, header, _body);

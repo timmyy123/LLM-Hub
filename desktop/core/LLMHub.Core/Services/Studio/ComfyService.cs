@@ -15,7 +15,6 @@ namespace LLMHub.Services.Studio;
 /// </summary>
 public sealed partial class ComfyService : ObservableObject
 {
-    private const string PythonTag = "3.12.";
     private readonly HttpClient _http = new() { Timeout = TimeSpan.FromMinutes(10) };
     private readonly SemaphoreSlim _gate = new(1, 1);
     private Process? _process;
@@ -42,7 +41,7 @@ public sealed partial class ComfyService : ObservableObject
     public static string ModelsDir => Path.Combine(DataDir, "models");
     public static string Gallery => Directory.CreateDirectory(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures) is { Length: > 0 } pictures
         ? pictures : AppPaths.Root, "LLM Hub")).FullName;
-    private static string PythonExe => OperatingSystem.IsWindows() ? Path.Combine(Root, "python", "python.exe") : Path.Combine(Root, "python", "bin", "python3");
+    private static string PythonExe => StandalonePython.Exe(Root);
     private static string MarkerFile => Path.Combine(Root, "installed.txt");
 
     public bool IsInstalled => File.Exists(MarkerFile);
@@ -78,19 +77,7 @@ public sealed partial class ComfyService : ObservableObject
         var hw = Ioc.Hardware;
 
         // 1. A standalone Python (relocatable CPython builds that ComfyUI's own desktop app also uses).
-        if (!File.Exists(PythonExe))
-        {
-            var triple = OperatingSystem.IsWindows()
-                ? hw.IsArm64 ? "aarch64-pc-windows-msvc" : "x86_64-pc-windows-msvc"
-                : hw.IsArm64 ? "aarch64-unknown-linux-gnu" : "x86_64-unknown-linux-gnu";
-            var asset = await Fetch.GitHubAssetAsync("astral-sh/python-build-standalone",
-                n => n.StartsWith("cpython-" + PythonTag, StringComparison.Ordinal) && n.EndsWith($"-{triple}-install_only.tar.gz", StringComparison.Ordinal), ct, scan: 3)
-                ?? throw new InvalidOperationException("No standalone Python for this computer");
-            var archive = Path.Combine(Root, "python.tar.gz");
-            await Fetch.FileAsync(asset.Url, archive, p => SetStatus(Loc.F("ComfyStepPython", p.ToString("F0"))), ct);
-            Fetch.Extract(archive, Root);
-            File.Delete(archive);
-        }
+        await StandalonePython.EnsureAsync(Root, p => SetStatus(Loc.F("ComfyStepPython", p.ToString("F0"))), ct);
 
         // 2. ComfyUI's latest release source.
         var source = Path.Combine(Root, "ComfyUI");
@@ -125,30 +112,7 @@ public sealed partial class ComfyService : ObservableObject
         Log.Info($"ComfyUI installed with torch from {index}");
     }
 
-    private async Task PipAsync(CancellationToken ct, params string[] args)
-    {
-        var info = new ProcessStartInfo(PythonExe) { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true };
-        foreach (var arg in new[] { "-m", "pip" }.Concat(args).Append("--disable-pip-version-check").Append("--no-input"))
-            info.ArgumentList.Add(arg);
-        using var process = Process.Start(info)!;
-        var tail = new StringBuilder();
-        process.OutputDataReceived += (_, e) =>
-        {
-            if (e.Data is { } line && (line.StartsWith("Collecting", StringComparison.Ordinal) || line.StartsWith("Downloading", StringComparison.Ordinal)))
-                SetStatus(line.Trim()[..Math.Min(line.Trim().Length, 90)]);
-        };
-        process.ErrorDataReceived += (_, e) =>
-        {
-            if (e.Data is { } line)
-                lock (tail)
-                    tail.AppendLine(line);
-        };
-        process.BeginOutputReadLine();
-        process.BeginErrorReadLine();
-        await process.WaitForExitAsync(ct);
-        if (process.ExitCode != 0)
-            throw new InvalidOperationException($"pip {string.Join(' ', args.Take(3))} failed: {tail.ToString()[^Math.Min(tail.Length, 600)..]}");
-    }
+    private Task PipAsync(CancellationToken ct, params string[] args) => StandalonePython.PipAsync(Root, SetStatus, ct, args);
 
     private async Task StartAsync(CancellationToken ct)
     {

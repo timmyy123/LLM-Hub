@@ -35,6 +35,10 @@ public sealed partial class LocalApiServer
     public static IReadOnlyList<(int Minutes, string Label)> UnloadChoices { get; } =
         [(10, Loc.F("ApiMinutes", "10")), (0, Loc.S("ApiNever")), (1, Loc.F("ApiMinutes", "1")), (30, Loc.F("ApiMinutes", "30"))];
 
+    /// <summary>"llama.cpp", "LiteRT-LM" or "llama.cpp · Embedding" beside each model the API offers.</summary>
+    public static string EngineLabel(InstalledModel m) =>
+        m.Format == "litertlm" ? "LiteRT-LM" : m.IsEmbedding ? "llama.cpp · " + Loc.S("TagEmbedding") : "llama.cpp";
+
     private readonly SemaphoreSlim _mediaGate = new(1, 1);
 
     /// <summary>OpenAI voice names mapped onto Supertonic's four voices, so clients written for OpenAI keep working.</summary>

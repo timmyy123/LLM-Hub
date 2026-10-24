@@ -16,5 +16,6 @@
     <PackageReference Include="GirCore.WebKit-6.0" Version="0.8.1" />
     <ProjectReference Include="..\..\core\LLMHub.Core\LLMHub.Core.csproj" />
       <None Include="../../shared/licenses/*" Link="Licenses/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+      <None Include="../../shared/magenta/mrt_live.py" Link="magenta/mrt_live.py" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

@@ -9,7 +9,8 @@ public sealed record HfFile(string Path, long Size, string? Sha256)
     public string FileName => System.IO.Path.GetFileName(Path);
 }
 
-public sealed record HfRepo(string Id, long Downloads, long Likes, DateTimeOffset? LastModified, bool Gated);
+/// <summary>A search result. <paramref name="Format"/> is "gguf" or "litertlm"; <paramref name="Trending"/> is the Hub's trending score.</summary>
+public sealed record HfRepo(string Id, long Downloads, long Likes, DateTimeOffset? LastModified, bool Gated, string Format = "gguf", double Trending = 0);
 
 /// <summary>One downloadable quantization of a GGUF repo: its weight files (possibly split) plus the vision projector if any.</summary>
 public sealed record GgufVariant(string Repo, string Quant, IReadOnlyList<HfFile> Files, HfFile? Mmproj, string Format = "gguf")
@@ -46,9 +47,14 @@ public sealed partial class HuggingFaceClient
     public static string ResolveUrl(string repo, string path) =>
         $"{Host}/{repo}/resolve/main/{string.Join('/', path.Split('/').Select(Uri.EscapeDataString))}";
 
-    public async Task<IReadOnlyList<HfRepo>> SearchAsync(string query, string? libraryFilter, CancellationToken ct)
+    /// <summary>
+    /// Repos matching <paramref name="query"/> with the "gguf" or "litert-lm" library tag, sorted by "trendingScore",
+    /// "downloads" or "lastModified" (newest first).
+    /// </summary>
+    public async Task<IReadOnlyList<HfRepo>> SearchAsync(string query, string? libraryFilter, CancellationToken ct, string sort = "trendingScore")
     {
-        var url = $"{Host}/api/models?search={Uri.EscapeDataString(query)}&sort=trendingScore&direction=-1&limit=40";
+        var url = $"{Host}/api/models?search={Uri.EscapeDataString(query)}&sort={Uri.EscapeDataString(sort)}&direction=-1&limit=40&expand[]=downloads&expand[]=likes"
+                  + "&expand[]=lastModified&expand[]=gated&expand[]=trendingScore";
         if (!string.IsNullOrEmpty(libraryFilter))
             url += $"&filter={Uri.EscapeDataString(libraryFilter)}";
         using var request = Request(HttpMethod.Get, url);
@@ -63,7 +69,8 @@ public sealed partial class HuggingFaceClient
             var likes = item.TryGetProperty("likes", out var l) && l.TryGetInt64(out var lk) ? lk : 0;
             DateTimeOffset? modified = item.TryGetProperty("lastModified", out var m) && m.TryGetDateTimeOffset(out var dt) ? dt : null;
             var gated = item.TryGetProperty("gated", out var g) && g.ValueKind is JsonValueKind.String or JsonValueKind.True;
-            list.Add(new HfRepo(id, downloads, likes, modified, gated));
+            var trending = item.TryGetProperty("trendingScore", out var t) && t.TryGetDouble(out var ts) ? ts : 0;
+            list.Add(new HfRepo(id, downloads, likes, modified, gated, libraryFilter == "litert-lm" ? "litertlm" : "gguf", trending));
         }
         return list;
     }

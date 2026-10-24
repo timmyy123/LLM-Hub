@@ -22,6 +22,7 @@ public static class Ioc
     public static LocalApiServer AgentBridge { get; } = new(agentBridge: true);
     public static Agent.AgentService Agent { get; } = new();
     public static Studio.ComfyService Comfy { get; } = new();
+    public static Studio.MagentaService Magenta { get; } = new();
     public static Design.DesignService Design { get; } = new();
 
     private static ChatViewModel? _chat;

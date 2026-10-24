@@ -22,8 +22,10 @@ public sealed class InstalledModel
     public bool? HasMtpDrafter { get; set; }
 
     [JsonIgnore] public string Folder { get; set; } = "";
-    [JsonIgnore] public string PrimaryPath => Path.Combine(Folder, Path.GetFileName(Files[0]));
-    [JsonIgnore] public string? MmprojPath => Mmproj is null ? null : Path.Combine(Folder, Path.GetFileName(Mmproj));
+    /// <summary>Downloads live in <see cref="Folder"/>; a local file added from disk keeps its full path and stays where it is.</summary>
+    [JsonIgnore] public string PrimaryPath => Path.IsPathRooted(Files[0]) ? Files[0] : Path.Combine(Folder, Path.GetFileName(Files[0]));
+    [JsonIgnore] public string? MmprojPath => Mmproj is null ? null : Path.IsPathRooted(Mmproj) ? Mmproj : Path.Combine(Folder, Path.GetFileName(Mmproj));
+    [JsonIgnore] public bool IsLocalFile => Repo == "local";
     [JsonIgnore] public string DisplayName => $"{Name} · {Quant}";
     [JsonIgnore] public string SizeText => Fmt.Bytes(SizeBytes);
     /// <summary>EmbeddingGemma and the like: served on /v1/embeddings, never offered for chat.</summary>
@@ -110,6 +112,55 @@ public sealed class ModelStore
                 Installed.Remove(existing);
             Installed.Add(model);
         });
+    }
+
+    /// <summary>
+    /// Adds a .gguf or .litertlm the user already has, in place (nothing is copied). A vision projector (mmproj*.gguf) in
+    /// the same folder is picked up too. Deleting it later removes only LLM Hub's record, never the file.
+    /// </summary>
+    public InstalledModel AddLocalFile(string path)
+    {
+        var info = new FileInfo(path);
+        if (!info.Exists)
+            throw new FileNotFoundException(path);
+        var format = info.Extension.ToLowerInvariant() switch
+        {
+            ".gguf" => "gguf",
+            ".litertlm" => "litertlm",
+            _ => throw new InvalidOperationException(Loc.S("ModelsLocalUnsupported")),
+        };
+        if (format == "gguf" && info.Name.StartsWith("mmproj", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException(Loc.S("ModelsLocalProjector"));
+        var stem = Path.GetFileNameWithoutExtension(info.Name);
+        var quant = System.Text.RegularExpressions.Regex.Match(stem, @"(?:UD-)?(?:IQ\d_[A-Z0-9]+|Q\d(?:_[A-Z0-9]+)*|BF16|F16|F32|MXFP4)$",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase).Value;
+        var name = (quant.Length > 0 ? stem[..^quant.Length] : stem).TrimEnd('-', '_', '.', ' ');
+        var mmproj = format == "gguf"
+            ? Directory.EnumerateFiles(info.DirectoryName!, "mmproj*.gguf").OrderBy(f => f.Length).FirstOrDefault()
+            : null;
+        var tags = new List<string>();
+        if (mmproj is not null)
+            tags.Add("vision");
+        if (name.Contains("embedding", StringComparison.OrdinalIgnoreCase))
+            tags.Add("embedding");
+        var model = new InstalledModel
+        {
+            Id = InstalledModel.MakeId("local/" + stem, quant.Length > 0 ? quant : format),
+            Name = name.Length > 0 ? name : stem,
+            Repo = "local",
+            Format = format,
+            Quant = quant.Length > 0 ? quant.ToUpperInvariant() : format == "gguf" ? "GGUF" : "LiteRT",
+            Files = [info.FullName],
+            Mmproj = mmproj,
+            SizeBytes = info.Length + (mmproj is null ? 0 : new FileInfo(mmproj).Length),
+            // The file's own limit is not read; the Settings context length still caps what is used.
+            ContextLength = 32768,
+            Tags = [.. tags],
+            InstalledAt = DateTimeOffset.Now,
+        };
+        Add(model);
+        Log.Info($"Added local model {info.FullName}{(mmproj is null ? "" : $" with {Path.GetFileName(mmproj)}")}");
+        return model;
     }
 
     public void Delete(InstalledModel model)

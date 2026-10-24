@@ -10,7 +10,8 @@
       "name": "Gemma 4 12B",
       "maker": "Google",
       "tags": [
-        "vision"
+        "vision",
+        "agent"
       ],
       "contextLength": 32768,
       "minRamGB": 6,
@@ -32,7 +33,8 @@
       "name": "Gemma 4 26B-A4B",
       "maker": "Google",
       "tags": [
-        "vision"
+        "vision",
+        "agent"
       ],
       "contextLength": 32768,
       "minRamGB": 12,
@@ -49,7 +51,8 @@
       "name": "Gemma 4 31B",
       "maker": "Google",
       "tags": [
-        "vision"
+        "vision",
+        "agent"
       ],
       "contextLength": 32768,
       "minRamGB": 12,
@@ -101,7 +104,9 @@
       "id": "gpt-oss-20b",
       "name": "GPT-OSS 20B",
       "maker": "OpenAI",
-      "tags": [],
+      "tags": [
+        "agent"
+      ],
       "contextLength": 131072,
       "minRamGB": 14,
       "sources": [
@@ -117,7 +122,8 @@
       "name": "Granite 4.2 30B",
       "maker": "IBM",
       "tags": [
-        "thinking"
+        "thinking",
+        "agent"
       ],
       "contextLength": 131072,
       "minRamGB": 12,
@@ -151,7 +157,8 @@
       "name": "Granite 4.2 8B",
       "maker": "IBM",
       "tags": [
-        "thinking"
+        "thinking",
+        "agent"
       ],
       "contextLength": 131072,
       "minRamGB": 4,
@@ -261,7 +268,9 @@
       "id": "lfm2-5-24b-a2b",
       "name": "LFM2.5-24B-A2B",
       "maker": "Liquid AI",
-      "tags": [],
+      "tags": [
+        "agent"
+      ],
       "contextLength": 131072,
       "minRamGB": 10,
       "sources": [
@@ -322,7 +331,8 @@
       "name": "Ministral 3 14B",
       "maker": "Mistral AI",
       "tags": [
-        "vision"
+        "vision",
+        "agent"
       ],
       "contextLength": 131072,
       "minRamGB": 10,
@@ -356,7 +366,8 @@
       "name": "Ministral 3 8B",
       "maker": "Mistral AI",
       "tags": [
-        "vision"
+        "vision",
+        "agent"
       ],
       "contextLength": 131072,
       "minRamGB": 6,
@@ -374,7 +385,8 @@
       "maker": "Meta",
       "tags": [
         "vision",
-        "thinking"
+        "thinking",
+        "agent"
       ],
       "contextLength": 131072,
       "minRamGB": 18,

@@ -29,6 +29,21 @@ internal static class DevTools
                 window.Window.Close();
             return;
         }
+        if (Value(args, "--magentatest") is { } liveSeconds)
+        {
+            await DevTests.MagentaLiveAsync(int.Parse(liveSeconds));
+            if (args.Contains("--exit"))
+                window.Window.Close();
+            return;
+        }
+        if (Value(args, "--musictest") is { } clipModel)
+        {
+            await DevTests.MusicAsync(clipModel, Value(args, "--prompt") ?? "warm lo-fi hip hop with rhodes piano, 85 bpm",
+                int.TryParse(Value(args, "--seconds"), out var clipSeconds) ? clipSeconds : 30);
+            if (args.Contains("--exit"))
+                window.Window.Close();
+            return;
+        }
         if (args.Contains("--uitest"))
         {
             var filter = Value(args, "--uitest");
