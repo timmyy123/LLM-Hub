@@ -112,6 +112,8 @@ struct AppSettings: Codable {
     /// Local API: free the models' memory after this many idle minutes; 0 keeps them loaded.
     var apiUnloadAfterMinutes = 10
     var agentModelId: String?
+    /// "claude" or "openclaw", for new Agent sessions.
+    var agentEngine = "claude"
     var designModelId: String?
     /// Context for the Agent and the Local API (Claude Code's own prompt is about 18K tokens).
     var apiContextLength = 65536
@@ -139,6 +141,7 @@ struct AppSettings: Codable {
         ttsSpeed = try c.decodeIfPresent(Double.self, forKey: .ttsSpeed) ?? 1.05
         apiUnloadAfterMinutes = try c.decodeIfPresent(Int.self, forKey: .apiUnloadAfterMinutes) ?? 10
         agentModelId = try c.decodeIfPresent(String.self, forKey: .agentModelId)
+        agentEngine = try c.decodeIfPresent(String.self, forKey: .agentEngine) ?? "claude"
         designModelId = try c.decodeIfPresent(String.self, forKey: .designModelId)
         apiContextLength = try c.decodeIfPresent(Int.self, forKey: .apiContextLength) ?? 65536
     }

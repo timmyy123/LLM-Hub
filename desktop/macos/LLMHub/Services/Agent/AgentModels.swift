@@ -102,9 +102,27 @@ struct AgentSessionInfo: Codable {
     var modelId = ""
     /// default (ask before edits and commands), acceptEdits, or plan.
     var mode = "default"
+    /// "claude" (Claude Code) or "openclaw"; sessions keep the engine they started with.
+    var engine = "claude"
     var started = false
     var updatedAt = Date()
     var allowedTools: [String] = []
+}
+
+extension AgentSessionInfo {
+    /// Missing keys keep their defaults, so sessions saved before a field existed still load.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decodeIfPresent(String.self, forKey: .id) ?? UUID().uuidString.lowercased()
+        title = try c.decodeIfPresent(String.self, forKey: .title) ?? ""
+        folder = try c.decodeIfPresent(String.self, forKey: .folder) ?? ""
+        modelId = try c.decodeIfPresent(String.self, forKey: .modelId) ?? ""
+        mode = try c.decodeIfPresent(String.self, forKey: .mode) ?? "default"
+        engine = try c.decodeIfPresent(String.self, forKey: .engine) ?? "claude"
+        started = try c.decodeIfPresent(Bool.self, forKey: .started) ?? false
+        updatedAt = try c.decodeIfPresent(Date.self, forKey: .updatedAt) ?? Date()
+        allowedTools = try c.decodeIfPresent([String].self, forKey: .allowedTools) ?? []
+    }
 }
 
 @MainActor @Observable
