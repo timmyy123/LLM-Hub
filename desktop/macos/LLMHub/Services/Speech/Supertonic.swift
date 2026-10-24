@@ -6,9 +6,15 @@ import Foundation
 import OnnxRuntimeBindings
 
 enum Supertonic {
-    /// Available languages for multilingual TTS.
-    static let languages: Set<String> = ["en", "ko", "ja", "ar", "bg", "cs", "da", "de", "el", "es", "et", "fi", "fr", "hi", "hr", "hu", "id", "it",
-                                         "lt", "lv", "nl", "pl", "pt", "ro", "ru", "sk", "sl", "sv", "tr", "uk", "vi", "na"]
+    /// The 31 languages Supertonic 3 speaks, in the Android app's order (Settings › Speech and voice lists them).
+    static let spoken = ["en", "ko", "ja", "ar", "bg", "cs", "da", "de", "el", "es", "et", "fi", "fr", "hi", "hr", "hu", "id", "it",
+                         "lt", "lv", "nl", "pl", "pt", "ro", "ru", "sk", "sl", "sv", "tr", "uk", "vi"]
+    /// Language tags the model accepts ("na" is its language-neutral tag).
+    static let languages = Set(spoken + ["na"])
+    /// Input is cut into chunks of at most this many code points: Korean and Japanese pack more speech per character.
+    static func maxChunk(_ lang: String) -> Int { lang == "ko" || lang == "ja" ? 120 : 300 }
+    /// Imported voice styles are at most 2 MiB (SupertonicModel.MAX_VOICE_BYTES on Android).
+    static let maxVoiceBytes = 2 * 1024 * 1024
 
     struct Config {
         let sampleRate: Int
@@ -105,7 +111,9 @@ enum Supertonic {
         private let vocoder: ORTSession
         var sampleRate: Int { config.sampleRate }
 
-        init(onnxDir: URL) throws {
+        /// `basicOptimization`: the FP16 build's graphs only keep ONNX Runtime CPU kernels at the basic level (extended
+        /// fusion makes FP16 Gelu nodes the CPU provider lacks), as on Android.
+        init(onnxDir: URL, basicOptimization: Bool = false) throws {
             let json = try JSONSerialization.jsonObject(with: Data(contentsOf: onnxDir.appendingPathComponent("tts.json"))) as? [String: Any] ?? [:]
             let ae = json["ae"] as? [String: Any] ?? [:]
             let ttl = json["ttl"] as? [String: Any] ?? [:]
@@ -114,7 +122,7 @@ enum Supertonic {
             textProcessor = try UnicodeProcessor(unicodeIndexerPath: onnxDir.appendingPathComponent("unicode_indexer.json"))
             let env = try ORTEnv(loggingLevel: .warning)
             let options = try ORTSessionOptions()
-            try options.setGraphOptimizationLevel(.all)
+            try options.setGraphOptimizationLevel(basicOptimization ? .basic : .all)
             try options.setIntraOpNumThreads(Int32(max(4, ProcessInfo.processInfo.activeProcessorCount / 2)))
             func load(_ name: String) throws -> ORTSession {
                 try ORTSession(env: env, modelPath: onnxDir.appendingPathComponent(name).path, sessionOptions: options)
@@ -123,6 +131,36 @@ enum Supertonic {
             textEncoder = try load("text_encoder.onnx")
             vectorEstimator = try load("vector_estimator.onnx")
             vocoder = try load("vocoder.onnx")
+        }
+
+        /// A voice style file as the Android app accepts it: at most 2 MiB of JSON with finite `style_ttl` [1, 50, 256]
+        /// and `style_dp` [1, 8, 16] tensors.
+        static func validateStyle(_ data: Data) throws {
+            guard data.count <= Supertonic.maxVoiceBytes else { throw SupertonicError(message: "Voice file is larger than 2 MB") }
+            guard let json = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else {
+                throw SupertonicError(message: "Voice file is not a JSON object")
+            }
+            func check(_ name: String, _ expected: [Int]) throws {
+                guard let tensor = json[name] as? [String: Any], let dims = (tensor["dims"] as? [NSNumber])?.map(\.intValue), dims == expected else {
+                    throw SupertonicError(message: "\(name) must have dims \(expected)")
+                }
+                var count = 0
+                func walk(_ value: Any?, _ depth: Int) throws {
+                    guard depth <= 3 else { throw SupertonicError(message: "\(name) is nested too deeply") }
+                    if let array = value as? [Any] {
+                        for item in array { try walk(item, depth + 1) }
+                    } else if let number = value as? NSNumber, CFGetTypeID(number) != CFBooleanGetTypeID(), number.doubleValue.isFinite {
+                        count += 1
+                    } else {
+                        throw SupertonicError(message: "\(name) holds a value that is not a finite number")
+                    }
+                }
+                try walk(tensor["data"], 0)
+                let wanted = expected.reduce(1, *)
+                guard count == wanted else { throw SupertonicError(message: "\(name) has \(count) values, not \(wanted)") }
+            }
+            try check("style_ttl", [1, 50, 256])
+            try check("style_dp", [1, 8, 16])
         }
 
         static func loadStyle(_ path: URL) throws -> Style {
@@ -208,7 +246,7 @@ enum Supertonic {
             guard style.ttlShape.first == 1 else { throw SupertonicError(message: "Single speaker text to speech only supports single style") }
             var wav: [Float] = []
             var duration: Float = 0
-            for chunk in Supertonic.chunkText(text, maxLength: lang == "ko" || lang == "ja" ? 120 : 300) {
+            for chunk in Supertonic.chunkText(text, maxLength: Supertonic.maxChunk(lang)) {
                 let (piece, seconds) = try infer(chunk, lang: lang, style: style, totalStep: totalStep, speed: speed)
                 // Trim each chunk to its predicted length so silences line up.
                 let keep = min(piece.count, Int(Float(sampleRate) * seconds))
@@ -228,8 +266,33 @@ enum Supertonic {
     private static let sentenceSplit = try! NSRegularExpression(pattern:
         #"(?<!Mr\.|Mrs\.|Ms\.|Dr\.|Prof\.|Sr\.|Jr\.|Ph\.D\.|etc\.|e\.g\.|i\.e\.|vs\.|Inc\.|Ltd\.|Co\.|Corp\.|St\.|Ave\.|Blvd\.)(?<!\b[A-Z]\.)(?<=[.!?])\s+"#)
 
-    /// Paragraphs, then sentences, packed into chunks of at most `maxLength` characters.
+    /// Paragraphs, then sentences, packed into chunks of at most `maxLength` code points; a sentence longer than that
+    /// (or unbroken CJK text) is cut at the last space in the second half of the window, as on Android.
     static func chunkText(_ text: String, maxLength: Int = 300) -> [String] {
+        packSentences(text, maxLength: maxLength).flatMap { hardSplit($0, maxLength: maxLength) }
+    }
+
+    /// SupertonicEngine.chunks from the Android app: bounded by code points, never splitting a scalar.
+    static func hardSplit(_ text: String, maxLength: Int) -> [String] {
+        let scalars = Array(text.unicodeScalars)
+        guard scalars.count > maxLength else { return [text] }
+        var result: [String] = []
+        var start = 0
+        while start < scalars.count {
+            var end = min(scalars.count, start + maxLength)
+            if end < scalars.count, let space = scalars[start ..< end].lastIndex(of: " "), space > start, space - start >= (end - start) / 2 {
+                end = space
+            }
+            var view = String.UnicodeScalarView()
+            view.append(contentsOf: scalars[start ..< end])
+            let piece = String(view).trimmingCharacters(in: .whitespaces)
+            if !piece.isEmpty { result.append(piece) }
+            start = end
+        }
+        return result
+    }
+
+    private static func packSentences(_ text: String, maxLength: Int) -> [String] {
         var chunks: [String] = []
         let paragraphs = text.trimmingCharacters(in: .whitespacesAndNewlines)
             .replacingOccurrences(of: #"\n\s*\n+"#, with: "\u{0}", options: .regularExpression)
@@ -245,7 +308,7 @@ enum Supertonic {
             sentences.append(ns.substring(from: last))
             var current = ""
             for sentence in sentences where !sentence.isEmpty {
-                if current.count + sentence.count + 1 <= maxLength {
+                if current.unicodeScalars.count + sentence.unicodeScalars.count + 1 <= maxLength {
                     current += (current.isEmpty ? "" : " ") + sentence
                 } else {
                     if !current.isEmpty { chunks.append(current.trimmingCharacters(in: .whitespaces)) }

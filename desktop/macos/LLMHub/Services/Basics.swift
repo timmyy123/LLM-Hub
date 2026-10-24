@@ -101,8 +101,16 @@ struct AppSettings: Codable {
     /// New chats start with web search on.
     var webSearch = false
     var thinking = false
-    /// Supertonic voice for read aloud and Studio › Voice.
+    /// Supertonic voice for read aloud, Studio › Voice and the Local API: F1 to F5, M1 to M5 or an imported custom_<uuid>.
     var voice = "F1"
+    /// Supertonic ONNX build: fp16 (default) or fp32.
+    var ttsBuild = "fp16"
+    /// Supertonic language code, or "" to detect it from the text.
+    var ttsLanguage = ""
+    /// Supertonic speaking speed, 0.5 to 2.
+    var ttsSpeed = 1.05
+    /// Local API: free the models' memory after this many idle minutes; 0 keeps them loaded.
+    var apiUnloadAfterMinutes = 10
     var agentModelId: String?
     var designModelId: String?
     /// Context for the Agent and the Local API (Claude Code's own prompt is about 18K tokens).
@@ -126,6 +134,10 @@ struct AppSettings: Codable {
         webSearch = try c.decodeIfPresent(Bool.self, forKey: .webSearch) ?? false
         thinking = try c.decodeIfPresent(Bool.self, forKey: .thinking) ?? false
         voice = try c.decodeIfPresent(String.self, forKey: .voice) ?? "F1"
+        ttsBuild = try c.decodeIfPresent(String.self, forKey: .ttsBuild) ?? "fp16"
+        ttsLanguage = try c.decodeIfPresent(String.self, forKey: .ttsLanguage) ?? ""
+        ttsSpeed = try c.decodeIfPresent(Double.self, forKey: .ttsSpeed) ?? 1.05
+        apiUnloadAfterMinutes = try c.decodeIfPresent(Int.self, forKey: .apiUnloadAfterMinutes) ?? 10
         agentModelId = try c.decodeIfPresent(String.self, forKey: .agentModelId)
         designModelId = try c.decodeIfPresent(String.self, forKey: .designModelId)
         apiContextLength = try c.decodeIfPresent(Int.self, forKey: .apiContextLength) ?? 65536

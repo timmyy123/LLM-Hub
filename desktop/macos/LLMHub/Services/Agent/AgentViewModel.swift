@@ -39,7 +39,7 @@ final class AgentViewModel {
     init(service: AgentService, app: AppModel) {
         self.service = service
         self.app = app
-        let models = app.modelStore.installed
+        let models = app.modelStore.chatModels
         selectedModelId = (models.first { $0.id == AppSettings.current.agentModelId }
             ?? models.first { $0.catalogId != nil && $0.catalogId == app.catalog.defaults["agent"] }
             ?? models.first { $0.format == "gguf" })?.id
@@ -48,7 +48,7 @@ final class AgentViewModel {
     }
 
     var selected: AgentSession? { selectedId.flatMap { service.find($0) } }
-    var models: [InstalledModel] { app.modelStore.installed }
+    var models: [InstalledModel] { app.modelStore.chatModels }
     var selectedChange: FileChange? {
         guard let selected else { return nil }
         return selected.changes.first { $0.path == selectedChangePath } ?? selected.changes.first

@@ -19,7 +19,10 @@ final class LlamaEngine {
     private var loading: Task<Void, Error>?
 
     private var engineRoot: URL { AppPaths.engines.appendingPathComponent("llama.cpp", isDirectory: true) }
-    private var pidFile: URL { engineRoot.appendingPathComponent("server.pid") }
+    /// Each server keeps its own pid file, so the embedding server never stops the chat model's and vice versa.
+    private var pidFile: URL { engineRoot.appendingPathComponent(embeddings ? "embeddings.pid" : "server.pid") }
+    /// A second, small server for /v1/embeddings (EmbeddingGemma): started with --embeddings, alongside the chat model.
+    let embeddings: Bool
 
     /// If the app dies without cleaning up (crash, force quit), this tiny shell loop stops llama-server instead of
     /// leaving the model in memory. It exits on its own when the server stops first, and checks the process name so a
@@ -40,7 +43,10 @@ final class LlamaEngine {
         #endif
     }
 
-    init() { killStaleServer() }
+    init(embeddings: Bool = false) {
+        self.embeddings = embeddings
+        killStaleServer()
+    }
 
     /// Context window of the running server; asking for a larger one reloads the model.
     private(set) var loadedContext = 0
@@ -103,7 +109,18 @@ final class LlamaEngine {
         try? FileManager.default.removeItem(at: pidFile)
     }
 
+    /// The chat and embedding servers share one llama.cpp install; a second caller waits for the first download.
+    private static var installing: Task<URL, Error>?
+
     private func ensureInstalled() async throws -> URL {
+        if let running = Self.installing { return try await running.value }
+        let task = Task { try await self.install() }
+        Self.installing = task
+        defer { Self.installing = nil }
+        return try await task.value
+    }
+
+    private func install() async throws -> URL {
         try? FileManager.default.createDirectory(at: engineRoot, withIntermediateDirectories: true)
         let dirs = ((try? FileManager.default.contentsOfDirectory(at: engineRoot, includingPropertiesForKeys: nil)) ?? [])
             .filter { $0.lastPathComponent.hasSuffix("-\(variant)") }
@@ -167,8 +184,8 @@ final class LlamaEngine {
     private func startServer(_ server: URL, _ model: InstalledModel, context: Int) async throws {
         let port = Self.freePort()
         var args = ["-m", model.primaryPath.path, "--host", "127.0.0.1", "--port", "\(port)", "--alias", model.id,
-                    "-ngl", "999", "-c", "\(context)", "--jinja"]
-        if let mmproj = model.mmprojPath, FileManager.default.fileExists(atPath: mmproj.path) {
+                    "-ngl", "999", "-c", "\(context)", embeddings ? "--embeddings" : "--jinja"]
+        if !embeddings, let mmproj = model.mmprojPath, FileManager.default.fileExists(atPath: mmproj.path) {
             args += ["--mmproj", mmproj.path]
         }
 

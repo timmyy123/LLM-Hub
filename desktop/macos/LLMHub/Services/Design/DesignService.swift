@@ -68,7 +68,7 @@ final class DesignService {
     var currentName: String { selected.map { $0.versions > 0 || !$0.name.isEmpty ? $0.displayName : "" } ?? "" }
 
     /// Installed models that can write a page (GGUF and LiteRT-LM; Apple's on-device model has too small a window).
-    var models: [InstalledModel] { app?.modelStore.installed ?? [] }
+    var models: [InstalledModel] { app?.modelStore.chatModels ?? [] }
     var selectedModel: InstalledModel? { models.first { $0.id == selectedModelId } }
 
     var previewFile: URL? {

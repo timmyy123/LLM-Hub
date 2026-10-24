@@ -83,6 +83,7 @@ final class CatalogItem: DownloadableItem {
             case "vision": return L.s("TagVision")
             case "audio": return L.s("TagAudio")
             case "thinking": return L.s("TagThinking")
+            case "embedding": return L.s("TagEmbedding")
             default: return tag
             }
         }).joined(separator: " · ")

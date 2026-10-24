@@ -280,6 +280,13 @@ private struct LocalApiSettings: View {
     @State private var lan = AppSettings.current.apiAllowLan
     @State private var requireKey = AppSettings.current.apiRequireKey
     @State private var key = AppSettings.current.apiKey
+    @State private var unloadAfter = AppSettings.current.apiUnloadAfterMinutes
+
+    /// "llama.cpp", "LiteRT-LM" or "Apple Intelligence", plus Embedding for embedding models.
+    static func engineLabel(_ model: InstalledModel) -> String {
+        let engine = model.format == "litertlm" ? "LiteRT-LM" : model.format == "apple" ? "Apple Intelligence" : "llama.cpp"
+        return model.isEmbedding ? "\(engine) · \(L.s("TagEmbedding"))" : engine
+    }
 
     var body: some View {
         Form {
@@ -316,12 +323,41 @@ private struct LocalApiSettings: View {
                 }
             } header: { Text(L.s("ApiAccess")) }
             Section {
-                Text("POST /v1/chat/completions   (OpenAI)\nPOST /v1/messages           (Anthropic)\nPOST /v1/messages/count_tokens\nGET  /v1/models")
-                    .font(.system(size: 12, design: .monospaced)).textSelection(.enabled)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(L.s("ApiOpenAiCompatible")).font(.system(size: 13, weight: .semibold))
+                    ForEach(LocalApiServer.endpoints.filter { !$0.anthropic }) { EndpointRow(endpoint: $0) }
+                    Text(L.s("ApiAnthropicCompatible")).font(.system(size: 13, weight: .semibold)).padding(.top, 8)
+                    ForEach(LocalApiServer.endpoints.filter(\.anthropic)) { EndpointRow(endpoint: $0) }
+                }
+                .accessibilityElement(children: .contain)
+                .accessibilityIdentifier("ApiEndpointList")
                 Text(L.s("ApiClaudeCode")).font(.caption).foregroundStyle(.secondary)
                 Text("export ANTHROPIC_BASE_URL=\(app.api.baseURL)\nexport ANTHROPIC_AUTH_TOKEN=\(requireKey ? key : "none")\nclaude --model \(app.chat.models.first { $0.format == "gguf" }.map(app.api.apiName) ?? "gemma-4-12b")")
                     .font(.system(size: 12, design: .monospaced)).textSelection(.enabled)
             } header: { Text(L.s("ApiEndpoints")) }
+            Section {
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(L.s("ApiModelsOffered")).fontWeight(.semibold)
+                        Text(L.s("ApiModelsOfferedHelp")).font(.caption).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Picker(L.s("ApiUnloadAfter"), selection: $unloadAfter) {
+                        ForEach(LocalApiServer.unloadChoices, id: \.self) { Text(LocalApiServer.unloadLabel($0)).tag($0) }
+                    }
+                    .fixedSize()
+                    .accessibilityIdentifier("ApiUnloadPicker")
+                    .onChange(of: unloadAfter) { save(restart: false) { $0.apiUnloadAfterMinutes = unloadAfter } }
+                }
+                ForEach(app.api.offeredModels) { model in
+                    HStack(spacing: 12) {
+                        Text(app.api.apiName(model)).font(.system(size: 12, design: .monospaced)).textSelection(.enabled).lineLimit(1).truncationMode(.middle)
+                        Spacer()
+                        Text(Self.engineLabel(model)).font(.system(size: 12)).foregroundStyle(.secondary)
+                    }
+                    .accessibilityIdentifier("ApiOfferedModel")
+                }
+            }
             Section {
                 if app.api.requests.isEmpty {
                     Text(L.s("ApiNoRequests")).foregroundStyle(.secondary)
@@ -359,5 +395,26 @@ private struct LocalApiSettings: View {
     private func copy(_ text: String) {
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(text, forType: .string)
+    }
+}
+
+/// One endpoint in Settings › Local API: method badge, path, what serves it.
+private struct EndpointRow: View {
+    let endpoint: ApiEndpoint
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Text(endpoint.method)
+                .font(.system(size: 11, design: .monospaced))
+                .foregroundStyle(Color.accentColor)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 1)
+                .background(Color.accentColor.opacity(0.12), in: .rect(cornerRadius: 5))
+                .frame(width: 46, alignment: .leading)
+            Text(endpoint.path).font(.system(size: 13, design: .monospaced)).textSelection(.enabled)
+            Text(endpoint.servedBy).font(.system(size: 12)).foregroundStyle(.secondary)
+            Spacer(minLength: 0)
+        }
+        .padding(.vertical, 1)
     }
 }
