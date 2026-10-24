@@ -198,13 +198,14 @@ public sealed partial class SettingsPage : Page
     }
 
     /// <summary>
-    /// The row comes from the button's DataContext at click time: the file table reuses row controls when another repo is
-    /// picked, and a command bound once could still point at the old repo's file.
+    /// Downloads the clicked file, but only if it belongs to the repo on screen (rows are rebuilt when downloads change, so
+    /// the current row is matched by repo and quant).
     /// </summary>
     private void OnHfFileDownload(object sender, RoutedEventArgs e)
     {
-        if (sender is FrameworkElement { DataContext: HfFileRow row } && Models.SelectedRepo?.Rows.Contains(row) == true)
-            row.DownloadCommand.Execute(null);
+        if ((sender as FrameworkElement)?.Tag is not HfFileRow clicked)
+            return;
+        Models.SelectedRepo?.Rows.FirstOrDefault(r => r.Option.Variant.Repo == clicked.Option.Variant.Repo && r.Quant == clicked.Quant)?.DownloadCommand.Execute(null);
     }
 
     private void OnHfFormatChanged(object sender, SelectionChangedEventArgs e)
