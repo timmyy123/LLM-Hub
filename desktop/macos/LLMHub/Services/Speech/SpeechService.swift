@@ -5,33 +5,33 @@ import Observation
 /// Both download on first use into the engines folder; nothing is sent anywhere else. Studio › Voice uses `synthesize` too.
 @MainActor @Observable
 final class SpeechService {
-    static let voices = ["F1", "F2", "M1", "M2"]
+    /// The ten preset voices (imported ones come from SupertonicVoices.custom()).
+    static let voices = SupertonicVoices.presets
     /// Setup progress or the last error, for the composer and Settings › Speech and voice.
     var status = ""
     /// Id of the message being read aloud, or nil.
     var speakingId: String?
     var isRecording = false
     var isTranscribing = false
+    /// Bumped when voices are imported or deleted, so the pickers refresh.
+    var voicesRevision = 0
 
-    // Same files and pinned revision as the Windows and Linux apps.
-    private static let supertonicRepo = "https://huggingface.co/supertone-oss-archive/supertonic-3/resolve/aafc6e32416a594460b32413efc49d7fe4ce6d46/"
-    private static let supertonicFiles = [
-        "onnx/duration_predictor.onnx", "onnx/text_encoder.onnx", "onnx/vector_estimator.onnx", "onnx/vocoder.onnx",
-        "onnx/tts.json", "onnx/unicode_indexer.json",
-        "voice_styles/F1.json", "voice_styles/F2.json", "voice_styles/M1.json", "voice_styles/M2.json",
-    ]
     private static let whisperModel = "ggml-large-v3-turbo-q5_0.bin"
     private static let whisperModelUrl = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/" + whisperModel
 
-    static var ttsRoot: URL { AppPaths.engines.appendingPathComponent("supertonic-3", isDirectory: true) }
+    nonisolated static var ttsRoot: URL { AppPaths.engines.appendingPathComponent("supertonic-3", isDirectory: true) }
     static var whisperRoot: URL { AppPaths.engines.appendingPathComponent("whisper.cpp", isDirectory: true) }
     private static var whisperModelPath: URL { whisperRoot.appendingPathComponent("models").appendingPathComponent(whisperModel) }
-    static var isTtsInstalled: Bool { supertonicFiles.allSatisfy { FileManager.default.fileExists(atPath: ttsRoot.appendingPathComponent($0).path) } }
+    static var isTtsInstalled: Bool {
+        SupertonicVoices.Build.current.isInstalled
+            && voices.allSatisfy { FileManager.default.fileExists(atPath: SupertonicVoices.presetFolder.appendingPathComponent("\($0).json").path) }
+    }
     static var isAsrInstalled: Bool { FileManager.default.fileExists(atPath: whisperModelPath.path) }
-    static let ttsName = "Supertonic 3"
+    static var ttsName: String { "Supertonic 3 · \(SupertonicVoices.Build.current.label)" }
     static let asrName = "Whisper large-v3 turbo · q5_0"
 
     private var tts: Supertonic.TextToSpeech?
+    private var ttsBuild: SupertonicVoices.Build?
     private var ttsLoading: Task<Supertonic.TextToSpeech, Error>?
     private let whisper = WhisperTranscriber()
     private var whisperLoading: Task<Void, Error>?
@@ -50,6 +50,7 @@ final class SpeechService {
     func remove() async {
         stopSpeaking()
         tts = nil
+        ttsBuild = nil
         ttsLoading = nil
         whisperReady = false
         whisperLoading = nil
@@ -94,16 +95,20 @@ final class SpeechService {
         speakingId = nil
     }
 
-    /// Speaks `text` in `voice` to a WAV file (44.1 kHz) and returns it with its length in seconds.
-    /// The language is guessed from the text and the app language unless given.
-    func synthesize(_ text: String, voice: String, language: String? = nil) async throws -> (url: URL, seconds: Double) {
+    /// Speaks `text` in `voice` (a preset or an imported custom_ key) to a WAV file (44.1 kHz) and returns it with its
+    /// length in seconds. Language and speed come from Settings › Speech and voice unless given; "auto" reads the
+    /// text's own language.
+    func synthesize(_ text: String, voice: String, language: String? = nil, speed: Double? = nil) async throws -> (url: URL, seconds: Double) {
         let tts = try await ensureTts()
-        let voiceFile = Self.ttsRoot.appendingPathComponent("voice_styles/\(Self.voices.contains(voice) ? voice : "F1").json")
-        let lang = language.map { String($0.prefix(2)).lowercased() }.flatMap { Supertonic.languages.contains($0) ? $0 : nil } ?? Self.guessLanguage(text)
+        let voiceFile = SupertonicVoices.file(voice).flatMap { FileManager.default.fileExists(atPath: $0.path) ? $0 : nil }
+            ?? SupertonicVoices.presetFolder.appendingPathComponent("F1.json")
+        let lang = language.map { String($0.prefix(2)).lowercased() }.flatMap { Supertonic.languages.contains($0) ? $0 : nil }
+            ?? SupertonicVoices.language(for: text)
+        let pace = Float(min(2, max(0.5, speed ?? AppSettings.current.ttsSpeed)))
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("llmhub-tts-\(UUID().uuidString).wav")
         let seconds = try await Task.detached(priority: .userInitiated) {
             let style = try Supertonic.TextToSpeech.loadStyle(voiceFile)
-            let (wav, duration) = try tts.call(text, lang: lang, style: style, totalStep: 8, speed: 1.05)
+            let (wav, duration) = try tts.call(text, lang: lang, style: style, totalStep: 8, speed: pace)
             let length = min(wav.count, Int(Float(tts.sampleRate) * duration))
             try AudioIO.writeWav(url, samples: wav[0..<length], sampleRate: tts.sampleRate)
             return Double(duration)
@@ -111,28 +116,43 @@ final class SpeechService {
         return (url, seconds)
     }
 
+    /// Downloads the chosen build (and the ten preset styles) on first use and loads it; switching builds reloads.
     private func ensureTts() async throws -> Supertonic.TextToSpeech {
-        if let tts { return tts }
+        let build = SupertonicVoices.Build.current
+        if let tts, ttsBuild == build { return tts }
         if let ttsLoading { return try await ttsLoading.value }
+        tts = nil
         let task = Task<Supertonic.TextToSpeech, Error> {
-            let files = Self.supertonicFiles
-            for (n, file) in files.enumerated() {
-                let target = Self.ttsRoot.appendingPathComponent(file)
-                guard !FileManager.default.fileExists(atPath: target.path) else { continue }
-                try await Self.download(Self.supertonicRepo + file, to: target) { p in
-                    self.status = L.f("DownloadingVoice", String(format: "%.0f", (Double(n) * 100 + p) / Double(files.count)))
+            var downloads: [(url: String, target: URL, size: Int64)] = build.files.map { (build.repo + $0.name, build.folder.appendingPathComponent($0.name), $0.size) }
+            downloads += Self.voices.map { (SupertonicVoices.stylesRepo + "\($0).json", SupertonicVoices.presetFolder.appendingPathComponent("\($0).json"), 0) }
+            let total = Double(downloads.reduce(0) { $0 + max($1.size, 300_000) })
+            var done = 0.0
+            for item in downloads {
+                let size = (try? FileManager.default.attributesOfItem(atPath: item.target.path)[.size] as? NSNumber)?.int64Value
+                if let size, item.size == 0 || size == item.size {
+                    done += Double(max(item.size, 300_000))
+                    continue
                 }
+                let before = done
+                try await Self.download(item.url, to: item.target) { p in
+                    self.status = L.f("DownloadingVoice", String(format: "%.0f", min(99, (before + p / 100 * Double(max(item.size, 300_000))) * 100 / total)))
+                }
+                done += Double(max(item.size, 300_000))
             }
             status = ""
-            let onnx = Self.ttsRoot.appendingPathComponent("onnx", isDirectory: true)
-            let loaded = try await Task.detached(priority: .userInitiated) { try Supertonic.TextToSpeech(onnxDir: onnx) }.value
-            Log.info("Supertonic 3 loaded")
+            let onnx = build.folder
+            let clock = Date()
+            let loaded = try await Task.detached(priority: .userInitiated) {
+                try Supertonic.TextToSpeech(onnxDir: onnx, basicOptimization: build == .fp16)
+            }.value
+            Log.info("Supertonic 3 \(build.label) loaded in \(String(format: "%.1f", Date().timeIntervalSince(clock)))s")
             return loaded
         }
         ttsLoading = task
         do {
             let loaded = try await task.value
             tts = loaded
+            ttsBuild = build
             ttsLoading = nil
             return loaded
         } catch {
@@ -142,12 +162,24 @@ final class SpeechService {
         }
     }
 
-    /// App language first, then a cheap script check, so Russian text is read as Russian in an English UI.
-    private static func guessLanguage(_ text: String) -> String {
-        if text.unicodeScalars.contains(where: { (0x0400...0x04FF).contains($0.value) }) { return "ru" }
-        let tag = L.override.isEmpty ? (Locale.preferredLanguages.first ?? "en") : L.override
-        let ui = String(tag.prefix(2))
-        return ["es", "pt", "fr", "de", "it", "ru"].contains(ui) ? ui : "en"
+    /// Imports a voice style JSON (validated as on Android) and makes it the current voice.
+    func importVoice(from url: URL) throws -> String {
+        let key = try SupertonicVoices.importVoice(from: url)
+        AppSettings.current.voice = key
+        AppSettings.save()
+        voicesRevision += 1
+        return key
+    }
+
+    func deleteVoice(_ key: String) {
+        SupertonicVoices.delete(key)
+        voicesRevision += 1
+    }
+
+    /// Frees the loaded text to speech engine (a different build loads on next use).
+    func unloadTts() {
+        tts = nil
+        ttsBuild = nil
     }
 
     // MARK: Dictation

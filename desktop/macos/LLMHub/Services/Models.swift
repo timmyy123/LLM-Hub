@@ -22,6 +22,8 @@ struct InstalledModel: Codable, Identifiable, Hashable {
     var primaryPath: URL { folder.appendingPathComponent(files[0]) }
     var mmprojPath: URL? { mmproj.map { folder.appendingPathComponent($0) } }
     var displayName: String { "\(name) · \(quant)" }
+    /// EmbeddingGemma and the like: served on /v1/embeddings, never offered for chat.
+    var isEmbedding: Bool { tags.contains("embedding") }
 
     /// LiteRT-LM model whose catalog entry has an MTP drafter (looked up live so older downloads get it too), unless the
     /// downloaded file turned out to have none: Google's GPU-only builds leave it out.
@@ -36,6 +38,8 @@ struct InstalledModel: Codable, Identifiable, Hashable {
 @MainActor @Observable
 final class ModelStore {
     private(set) var installed: [InstalledModel] = []
+    /// Installed models that can chat (everything but embedding models), for the Chat, Agent and Design pickers.
+    var chatModels: [InstalledModel] { installed.filter { !$0.isEmbedding } }
 
     init() { reload() }
 
@@ -74,6 +78,7 @@ final class ModelStore {
 
     func delete(_ model: InstalledModel, engine: EngineHub) {
         if engine.loadedModel?.id == model.id { engine.stop() }
+        if AppModel.shared.embeddings.loadedModel?.id == model.id { AppModel.shared.embeddings.stop() }
         do { try FileManager.default.removeItem(at: model.folder) } catch { Log.error("Delete \(model.id)", error) }
         installed.removeAll { $0.id == model.id }
     }

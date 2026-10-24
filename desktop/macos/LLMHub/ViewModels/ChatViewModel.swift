@@ -92,7 +92,7 @@ final class ChatViewModel {
 
     /// Downloaded models, plus Apple Intelligence when this Mac has it.
     var models: [InstalledModel] {
-        (AppleModel.unavailableReason == nil ? [AppleModel.installed] : []) + (app?.modelStore.installed ?? [])
+        (AppleModel.unavailableReason == nil ? [AppleModel.installed] : []) + (app?.modelStore.chatModels ?? [])
     }
     var selectedModel: InstalledModel? { models.first { $0.id == selectedModelId } }
     var currentChat: ChatSummary? { all.first { $0.id == selectedChatId } }

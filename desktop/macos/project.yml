@@ -27,6 +27,9 @@ packages:
   # Studio › Music: Magenta RealTime 2 on MLX (reuses the iOS runtime; see Packages/MagentaMac/Package.swift).
   MagentaMac:
     path: Packages/MagentaMac
+  # Studio › Music clips: Stable Audio 3 on MLX (a Swift port of Stability AI's official MLX runtime).
+  StableAudioMac:
+    path: Packages/StableAudioMac
   # Read aloud: Supertonic 3 runs on Microsoft's official ONNX Runtime package.
   onnxruntime:
     url: https://github.com/microsoft/onnxruntime-swift-package-manager
@@ -41,6 +44,10 @@ targets:
     sources:
       - path: LLMHub
       - path: ../shared/catalog.json
+        buildPhase: resources
+      # Stability AI Community License, NOTICE and Gemma terms for Stable Audio 3 (Contents/Resources/Licenses).
+      - path: Licenses
+        type: folder
         buildPhase: resources
     info:
       path: LLMHub/Info.plist
@@ -60,6 +67,8 @@ targets:
         product: LiteRTLM
       - package: MagentaMac
         product: MagentaMac
+      - package: StableAudioMac
+        product: StableAudioMac
       - package: onnxruntime
         product: onnxruntime
       - package: WhisperCpp

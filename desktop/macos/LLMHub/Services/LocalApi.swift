@@ -48,8 +48,15 @@ final class LocalApiServer {
     /// The model name clients send: the catalog id when unambiguous ("gemma-4-12b"), else the full id.
     func apiName(_ m: InstalledModel) -> String {
         guard let catalogId = m.catalogId else { return m.id }
-        return app.chat.models.filter { $0.catalogId == catalogId }.count > 1 ? "\(catalogId):\(m.quant.lowercased().replacingOccurrences(of: " ", with: "-"))" : catalogId
+        return offeredModels.filter { $0.catalogId == catalogId }.count > 1 ? "\(catalogId):\(m.quant.lowercased().replacingOccurrences(of: " ", with: "-"))" : catalogId
     }
+
+    /// What GET /v1/models lists and Settings › Local API shows: the chat models, then embedding models.
+    var offeredModels: [InstalledModel] { app.chat.models + app.modelStore.installed.filter(\.isEmbedding) }
+
+    /// When an API client last used a model, for Unload after idle (shared by both server instances).
+    static var lastApiUse: Date?
+    static var idleTimer: Timer?
 
     /// Starts the Agent bridge if it is not running and waits until it accepts connections.
     func ensureBridge() async throws {
@@ -142,14 +149,20 @@ final class LocalApiServer {
         }
         switch (req.method, req.path) {
         case ("GET", "/v1/models"):
-            let data: [[String: Any]] = app.chat.models.map {
-                ["id": apiName($0), "object": "model", "type": "model", "owned_by": "llm-hub", "display_name": $0.displayName]
+            let data: [[String: Any]] = offeredModels.map {
+                ["id": apiName($0), "object": "model", "type": "model", "owned_by": "llm-hub", "display_name": $0.displayName,
+                 "created_at": ISO8601DateFormatter().string(from: $0.installedAt)]
             }
             await out.json(200, ["object": "list", "data": data])
             record(req, "", "200")
         case ("POST", "/v1/chat/completions"): await generate(req, out, anthropic: false)
         case ("POST", "/v1/messages"): await generate(req, out, anthropic: true)
         case ("POST", "/v1/messages/count_tokens"): await generate(req, out, anthropic: true, countOnly: true)
+        case ("POST", "/v1/responses"): await responses(req, out)
+        case ("POST", "/v1/embeddings"): await embeddings(req, out)
+        case ("POST", "/v1/audio/transcriptions"): await transcriptions(req, out)
+        case ("POST", "/v1/audio/speech"): await speech(req, out)
+        case ("POST", "/v1/images/generations"): await images(req, out)
         case ("POST", "/mcp") where isBridge: await AgentPermissions.handle(req, out, agent: app.agent)
         case ("GET", "/mcp") where isBridge: await out.empty(405)
         case ("GET", "/"): await out.text(200, "LLM Hub local API")
@@ -164,7 +177,7 @@ final class LocalApiServer {
             return
         }
         let requested = body["model"] as? String ?? ""
-        guard let model = app.chat.models.first(where: { apiName($0) == requested || $0.id == requested || $0.catalogId == requested }) else {
+        guard let model = findChatModel(requested) else {
             await out.json(404, Self.errorBody("not_found_error", "Model '\(requested)' is not installed. GET /v1/models lists what is."))
             record(req, requested, "404")
             return
@@ -173,6 +186,8 @@ final class LocalApiServer {
         do {
             // Claude Code and other API clients send long system prompts: load with the larger API context.
             try await loadSerialized(model)
+            markApiUse()
+            defer { markApiUse() }
             if model.format == "gguf", let base = app.engine.baseURL {
                 body["model"] = model.id
                 try await proxy(req, body, base, out)
@@ -189,7 +204,7 @@ final class LocalApiServer {
         }
     }
 
-    private func loadSerialized(_ model: InstalledModel) async throws {
+    func loadSerialized(_ model: InstalledModel) async throws {
         let previous = Self.loadChain
         let engines = app.engines
         let load = Task { @MainActor in
@@ -298,11 +313,11 @@ final class LocalApiServer {
     }
 
     /// Both OpenAI ("error.message") and Anthropic ("type":"error") clients can read this shape.
-    private static func errorBody(_ type: String, _ message: String) -> [String: Any] {
+    static func errorBody(_ type: String, _ message: String) -> [String: Any] {
         ["type": "error", "error": ["type": type, "message": message]]
     }
 
-    private func record(_ req: HttpRequest, _ model: String, _ status: String) {
+    func record(_ req: HttpRequest, _ model: String, _ status: String) {
         let agent = req.headers["user-agent"].flatMap { $0.split(separator: " ").first.map { String($0.split(separator: "/")[0]) } } ?? "-"
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm:ss"
@@ -339,6 +354,10 @@ struct HttpRequest {
             }
             let length = Int(headers["content-length"] ?? "0") ?? 0
             var body = Data(data[split.upperBound...])
+            // curl and other clients wait for this before sending large uploads (audio files for /v1/audio/transcriptions).
+            if headers["expect"]?.lowercased() == "100-continue", body.count < length {
+                await HttpResponder(connection: connection).write(Data("HTTP/1.1 100 Continue\r\n\r\n".utf8))
+            }
             while body.count < length {
                 guard let more = await receive(connection) else { return nil }
                 body.append(more)
@@ -378,6 +397,11 @@ struct HttpResponder {
     func empty(_ status: Int) async {
         let reason = HTTPURLResponse.localizedString(forStatusCode: status).capitalized
         await write(Data("HTTP/1.1 \(status) \(reason)\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".utf8))
+    }
+
+    func data(_ status: Int, contentType: String, _ body: Data) async {
+        let reason = HTTPURLResponse.localizedString(forStatusCode: status).capitalized
+        await write(Data("HTTP/1.1 \(status) \(reason)\r\nContent-Type: \(contentType)\r\nContent-Length: \(body.count)\r\nConnection: close\r\n\r\n".utf8) + body)
     }
 
     func text(_ status: Int, _ text: String) async {

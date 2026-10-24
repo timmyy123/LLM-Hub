@@ -20,6 +20,8 @@ final class StudioService {
     private weak var app: AppModel?
     let comfy = ComfyService()
     let music = MusicService()
+    /// Fixed-length clips with Stable Audio 3, next to the live jam.
+    let clips = StableAudioService()
 
     static let aspects = ["3:2", "1:1", "16:9", "9:16"]
     static let counts = [1, 2, 4]
@@ -170,6 +172,37 @@ final class StudioService {
             } catch {
                 Log.error("Improve prompt failed", error)
                 status = L.f("ErrorPrefix", error.localizedDescription)
+            }
+        }
+    }
+
+    /// Studio › Music clips: the user's own local chat model (never a separate prompt model) turns a short idea into a
+    /// Stable Audio 3 style prompt (genre, instruments, mood, tempo).
+    func improveClipPrompt() {
+        let text = clips.prompt.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty, !clips.isGenerating, !isImproving, let app, let model = app.chat.selectedModel else {
+            if app?.chat.selectedModel == nil { clips.status = L.s("EmptyNoModel") }
+            return
+        }
+        isImproving = true
+        clips.status = L.s("StudioImproving")
+        let instruction = "Rewrite this as one prompt for a text-to-music model: genre, instruments, mood, tempo in BPM and production style, "
+            + "as a comma-separated description under 40 words. No lyrics, artist or song names. Reply with the prompt only."
+        Task {
+            defer { isImproving = false }
+            do {
+                try await app.engines.load(model)
+                var reply = ""
+                for try await delta in app.engines.stream(model, turns: [ChatTurn(role: "system", content: instruction), ChatTurn(role: "user", content: text)]) {
+                    reply += delta.content ?? ""
+                }
+                var splitter = ThinkSplitter()
+                let answer = splitter.push(reply).answer.trimmingCharacters(in: .whitespacesAndNewlines).trimmingCharacters(in: CharacterSet(charactersIn: "\""))
+                if !answer.isEmpty { clips.prompt = answer }
+                clips.status = ""
+            } catch {
+                Log.error("Improve music prompt failed", error)
+                clips.status = L.f("ErrorPrefix", error.localizedDescription)
             }
         }
     }

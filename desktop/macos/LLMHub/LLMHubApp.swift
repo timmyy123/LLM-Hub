@@ -47,7 +47,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
-        MainActor.assumeIsolated { AppModel.shared.engines.stop() }
+        MainActor.assumeIsolated {
+            AppModel.shared.engines.stop()
+            AppModel.shared.embeddings.stop()
+        }
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }

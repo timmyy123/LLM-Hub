@@ -18,15 +18,29 @@ extension DevTools {
         }
         guard let sentence = value("--speechtest", args) else { return }
         do {
-            let voice = value("--voice", args) ?? AppSettings.current.voice
+            // --build fp16|fp32 picks the Supertonic build for this run, --lang the language (else auto),
+            // --importvoice <json> imports a style file first and speaks with it (then deletes it unless --keepvoice).
+            if let build = value("--build", args) { AppSettings.current.ttsBuild = build }
+            let language = value("--lang", args)
+            var voice = value("--voice", args) ?? AppSettings.current.voice
+            var imported: String?
+            if let path = value("--importvoice", args) {
+                voice = try speech.importVoice(from: URL(fileURLWithPath: path))
+                imported = voice
+                Log.info("SPEECHTEST imported \(path) as \(voice) (\(SupertonicVoices.label(voice)))")
+            }
+            defer {
+                if let imported, !args.contains("--keepvoice") { speech.deleteVoice(imported) }
+            }
+            let detected = language ?? SupertonicVoices.language(for: sentence)
             var start = Date()
-            let wav = try await speech.synthesize(sentence, voice: voice)
+            let wav = try await speech.synthesize(sentence, voice: voice, language: language)
             let ttsTime = Date().timeIntervalSince(start)
-            Log.info("SPEECHTEST tts voice=\(voice) \(String(format: "%.1f", wav.seconds))s of audio in \(String(format: "%.1f", ttsTime))s "
+            Log.info("SPEECHTEST tts \(SpeechService.ttsName) voice=\(voice) lang=\(detected) \(String(format: "%.1f", wav.seconds))s of audio in \(String(format: "%.1f", ttsTime))s "
                 + "(real-time factor \(String(format: "%.2f", ttsTime / max(wav.seconds, 0.01)))) -> \(wav.url.path)")
             // Second run: the first includes download and model load.
             start = Date()
-            let again = try await speech.synthesize(sentence, voice: voice)
+            let again = try await speech.synthesize(sentence, voice: voice, language: language)
             let warm = Date().timeIntervalSince(start)
             Log.info("SPEECHTEST tts warm \(String(format: "%.1f", again.seconds))s of audio in \(String(format: "%.1f", warm))s "
                 + "(real-time factor \(String(format: "%.2f", warm / max(again.seconds, 0.01))))")
@@ -42,7 +56,9 @@ extension DevTools {
                 s.lowercased().components(separatedBy: CharacterSet.alphanumerics.inverted).filter { !$0.isEmpty }
             }
             let ok = words(text) == words(sentence)
-            Log.info("SPEECHTEST ok=\(ok) asr in \(String(format: "%.1f", asrTime))s (warm \(String(format: "%.1f", asrWarm))s): \"\(text)\"")
+            let heard = Set(words(text))
+            let match = Double(words(sentence).filter { heard.contains($0) }.count) / Double(max(1, words(sentence).count))
+            Log.info("SPEECHTEST ok=\(ok) words \(String(format: "%.0f", match * 100))% asr in \(String(format: "%.1f", asrTime))s (warm \(String(format: "%.1f", asrWarm))s): \"\(text)\"")
         } catch {
             Log.error("SPEECHTEST failed", error)
         }

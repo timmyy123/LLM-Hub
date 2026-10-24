@@ -21,6 +21,8 @@ final class AppModel {
     let modelStore: ModelStore
     let downloads: DownloadManager
     let engine = LlamaEngine()
+    /// EmbeddingGemma for /v1/embeddings, on its own small llama-server next to the chat model.
+    let embeddings = LlamaEngine(embeddings: true)
     let engines: EngineHub
     let chatStore = ChatStore()
     let chat: ChatViewModel

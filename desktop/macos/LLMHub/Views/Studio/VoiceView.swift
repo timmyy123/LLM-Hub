@@ -9,7 +9,7 @@ struct VoiceView: View {
         @Bindable var studio = app.studio
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                Text(L.s("StudioVoiceHelp")).foregroundStyle(Theme.textMuted)
+                Text(L.s("StudioVoiceHelpAll")).foregroundStyle(Theme.textMuted)
                 VStack(alignment: .leading, spacing: 6) {
                     FieldLabel(L.s("StudioVoiceText"))
                     TextEditor(text: $studio.voiceText)
@@ -22,12 +22,7 @@ struct VoiceView: View {
                         .accessibilityIdentifier("VoiceTextBox")
                 }
                 HStack(spacing: 10) {
-                    Picker("", selection: $studio.voice) {
-                        ForEach(SpeechService.voices, id: \.self) { Text($0).tag($0) }
-                    }
-                    .labelsHidden()
-                    .fixedSize()
-                    .accessibilityIdentifier("VoicePicker")
+                    VoicePicker(voice: $studio.voice)
                     Button {
                         studio.speak()
                     } label: {

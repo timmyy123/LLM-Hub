@@ -1,5 +1,6 @@
 #if DEBUG
 import Foundation
+import StableAudioMac
 
 extension DevTools {
     /// End-to-end Studio runs on this Mac, results in the log. They run before `--page`/`--capture`, so pair them with
@@ -7,6 +8,8 @@ extension DevTools {
     /// - `--studiotest <workflowId> [--prompt <text>] [--image <path|latest>]` generates through the real view model:
     ///   `STUDIOTEST <id> in <s>s: <status>; newest <path>`
     /// - `--musictest "<prompt>" [--seconds 10]` renders a clip with Magenta RealTime: `MUSICTEST …` with the WAV and timing
+    /// - `--cliptest "<prompt>" [--seconds 10,30] [--clipmodel sm-music|medium] [--seed 42]` makes Stable Audio 3 clips,
+    ///   one per length: `CLIPTEST <model> <s>s seed <n> in <s>s (load, encode, sample, decode) peak <p> rms <r>: <path>`
     /// - `--musiclive <seconds>` plays the live jam muted, changes a style halfway, records and exports: `MUSICLIVE …`
     /// - `--voicetest "<text>"` speaks through Studio › Voice (SpeechService): `VOICETEST <voice>: <status>; file <path>`
     /// - `--studiomode image|video|music|voice` picks the Studio tab for captures.
@@ -18,6 +21,12 @@ extension DevTools {
         }
         if let prompt = value("--musictest", args) {
             await runMusic(prompt, seconds: Double(value("--seconds", args) ?? "") ?? 10)
+        }
+        if let prompt = value("--cliptest", args) {
+            let model = StableAudio3.Model(rawValue: value("--clipmodel", args) ?? "") ?? .smallMusic
+            for seconds in (value("--seconds", args) ?? "10").split(separator: ",").compactMap({ Double($0) }) {
+                await runClip(prompt, seconds: seconds, model: model, seed: value("--seed", args).flatMap { UInt64($0) })
+            }
         }
         if let seconds = value("--musiclive", args) {
             await runMusicLive(seconds: Double(seconds) ?? 20)
@@ -80,6 +89,27 @@ extension DevTools {
                             prompt, result.seconds, result.took, result.seconds / max(0.01, result.took), Date().timeIntervalSince(clock), result.url.path))
         } catch {
             Log.error("MUSICTEST failed", error)
+        }
+        reporter.cancel()
+    }
+
+    private static func runClip(_ prompt: String, seconds: Double, model: StableAudio3.Model, seed: UInt64?) async {
+        let clips = AppModel.shared.studio.clips
+        let clock = Date()
+        let reporter = Task {
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(20))
+                if Task.isCancelled { break }
+                Log.info("CLIPTEST \(Int(Date().timeIntervalSince(clock)))s: \(clips.status)")
+            }
+        }
+        do {
+            let r = try await clips.render(prompt: prompt, seconds: seconds, seed: seed, model: model)
+            Log.info(String(format: "CLIPTEST %@ %.0fs seed %llu in %.1fs (load %.1f, encode %.2f, sample %.2f, decode %.2f; %.1fx real time) peak %.3f rms %.3f: %@",
+                            model.rawValue, r.seconds, r.seed, r.took, r.timings.load, r.timings.encode, r.timings.sample, r.timings.decode,
+                            r.seconds / max(0.01, r.took), r.peak, r.rms, r.url.path))
+        } catch {
+            Log.error("CLIPTEST failed", error)
         }
         reporter.cancel()
     }

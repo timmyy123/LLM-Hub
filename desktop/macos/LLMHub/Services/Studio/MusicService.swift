@@ -293,7 +293,14 @@ final class MusicService {
         recordings = files.filter { $0.pathExtension.lowercased() == "wav" }.compactMap { url in
             let values = try? url.resourceValues(forKeys: [.contentModificationDateKey, .fileSizeKey])
             let bytes = Double(values?.fileSize ?? 0)
-            return Recording(url: url, date: values?.contentModificationDate ?? .distantPast, seconds: max(0, bytes - 44) / Double(MagentaLive.sampleRate * 4))
+            // Magenta writes 48 kHz and Stable Audio 3 44.1 kHz: read the byte rate from the RIFF header.
+            var rate = Double(MagentaLive.sampleRate * 4)
+            if let handle = try? FileHandle(forReadingFrom: url), let head = try? handle.read(upToCount: 32), head.count == 32 {
+                let value = head.subdata(in: 28 ..< 32).withUnsafeBytes { UInt32(littleEndian: $0.loadUnaligned(as: UInt32.self)) }
+                if value > 0 { rate = Double(value) }
+                try? handle.close()
+            }
+            return Recording(url: url, date: values?.contentModificationDate ?? .distantPast, seconds: max(0, bytes - 44) / rate)
         }.sorted { $0.date > $1.date }.prefix(30).map { $0 }
     }
 

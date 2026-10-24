@@ -1,5 +1,7 @@
 import AppKit
 import SwiftUI
+import StableAudioMac
+import UniformTypeIdentifiers
 
 /// What Settings › Engines, Studio backends, Agent and Storage show: engines on disk, Claude Code, folder sizes.
 /// Read off the main thread (sizes walk ComfyUI's Python, tens of thousands of files).
@@ -197,6 +199,9 @@ struct EnginesSettings: View {
 struct SpeechSettings: View {
     @Environment(AppModel.self) private var app
     @State private var voice = AppSettings.current.voice
+    @State private var build = AppSettings.current.ttsBuild
+    @State private var language = AppSettings.current.ttsLanguage
+    @State private var speed = AppSettings.current.ttsSpeed
     @State private var testing = false
 
     var body: some View {
@@ -204,36 +209,148 @@ struct SpeechSettings: View {
             Card {
                 LabeledContent(L.s("SettingsTts"), value: "Supertonic 3")
                 LabeledContent(L.s("SettingsAsr"), value: "Whisper large-v3 turbo · q5_0")
+            }
+            Card {
+                Picker(L.s("SpeechBuild"), selection: $build) {
+                    ForEach(SupertonicVoices.Build.allCases, id: \.rawValue) { b in
+                        Text("\(b.label) · \(Fmt.bytes(b.size))").tag(b.rawValue)
+                    }
+                }
+                .accessibilityIdentifier("SpeechBuildPicker")
+                .onChange(of: build) {
+                    AppSettings.current.ttsBuild = build
+                    AppSettings.save()
+                    app.speech.unloadTts()
+                }
                 HStack(spacing: 10) {
-                    Picker(L.s("StudioVoice"), selection: $voice) {
-                        ForEach(SpeechService.voices, id: \.self) { Text($0).tag($0) }
-                    }
-                    .fixedSize()
-                    .onChange(of: voice) {
-                        AppSettings.current.voice = voice
-                        AppSettings.save()
-                    }
-                    Button(L.s("SettingsTestVoice")) {
-                        testing = true
-                        Task {
-                            do {
-                                let (url, _) = try await app.speech.synthesize(L.s("SettingsVoiceSample"), voice: voice)
-                                await app.speech.play(url)
-                            } catch {
-                                app.speech.status = L.f("ErrorPrefix", error.localizedDescription)
-                            }
-                            testing = false
-                        }
-                    }
-                    .buttonStyle(.glass)
-                    .disabled(testing)
+                    VoicePicker(voice: $voice, title: L.s("StudioVoice"))
+                    Button(L.s("SettingsTestVoice")) { test() }
+                        .buttonStyle(.glass)
+                        .disabled(testing)
+                        .accessibilityIdentifier("TestVoiceButton")
+                    Button(L.s("SpeechImportVoice")) { importVoice() }
+                        .buttonStyle(.glass)
+                        .accessibilityIdentifier("ImportVoiceButton")
                     if testing { ProgressView().controlSize(.small) }
                 }
+                Picker(L.s("SpeechLanguage"), selection: $language) {
+                    Text(L.s("SpeechLanguageAuto")).tag("")
+                    ForEach(Supertonic.spoken.sorted { SupertonicVoices.languageName($0) < SupertonicVoices.languageName($1) }, id: \.self) {
+                        Text(SupertonicVoices.languageName($0)).tag($0)
+                    }
+                }
+                .accessibilityIdentifier("SpeechLanguagePicker")
+                .onChange(of: language) {
+                    AppSettings.current.ttsLanguage = language
+                    AppSettings.save()
+                }
+                LabeledContent(L.s("SpeechSpeed")) {
+                    HStack(spacing: 10) {
+                        Slider(value: Binding(get: { speed }, set: { speed = ($0 * 20).rounded() / 20 }), in: 0.5 ... 2)
+                            .frame(maxWidth: 260)
+                            .accessibilityIdentifier("SpeechSpeedSlider")
+                            .onChange(of: speed) {
+                                AppSettings.current.ttsSpeed = speed
+                                AppSettings.save()
+                            }
+                        Text(String(format: "%.2f×", speed)).monospacedDigit().foregroundStyle(Theme.textMuted).frame(width: 48, alignment: .trailing)
+                    }
+                }
                 if !app.speech.status.isEmpty {
-                    Text(app.speech.status).font(.system(size: 12)).foregroundStyle(Theme.textMuted)
+                    Text(app.speech.status).font(.system(size: 12)).foregroundStyle(Theme.textMuted).accessibilityIdentifier("SpeechStatus")
+                }
+            }
+            let custom = customVoices
+            if !custom.isEmpty {
+                Text(L.s("SpeechCustomVoices")).font(.system(size: 12, weight: .medium)).foregroundStyle(Theme.textFaint)
+                VStack(spacing: 6) {
+                    ForEach(custom) { item in
+                        HStack {
+                            Image(systemName: "waveform").foregroundStyle(Theme.textMuted)
+                            Text(item.label).lineLimit(1)
+                            Spacer()
+                            Button {
+                                app.speech.deleteVoice(item.key)
+                                voice = AppSettings.current.voice
+                            } label: { Image(systemName: "trash") }
+                            .buttonStyle(.borderless)
+                            .help(L.s("Delete"))
+                            .accessibilityLabel(L.s("Delete"))
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .glassEffect(.regular, in: .rect(cornerRadius: 9))
+                        .accessibilityIdentifier("CustomVoiceRow")
+                    }
                 }
             }
         }
+        .onAppear { voice = AppSettings.current.voice }
+    }
+
+    private var customVoices: [SupertonicVoices.Voice] {
+        _ = app.speech.voicesRevision
+        return SupertonicVoices.custom()
+    }
+
+    private func test() {
+        testing = true
+        Task {
+            do {
+                let (url, _) = try await app.speech.synthesize(L.s("SettingsVoiceSample"), voice: voice)
+                await app.speech.play(url)
+            } catch {
+                app.speech.status = L.f("ErrorPrefix", error.localizedDescription)
+            }
+            testing = false
+        }
+    }
+
+    private func importVoice() {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.json]
+        panel.allowsMultipleSelection = false
+        panel.message = L.s("SpeechImportVoice")
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        do {
+            voice = try app.speech.importVoice(from: url)
+            app.speech.status = ""
+        } catch {
+            app.speech.status = L.f("SpeechImportFailed", error.localizedDescription)
+        }
+    }
+}
+
+/// The Supertonic voice picker (presets, then imported voices), shared by Settings › Speech and voice and Studio › Voice.
+/// Changing it saves the choice for read aloud too.
+struct VoicePicker: View {
+    @Environment(AppModel.self) private var app
+    @Binding var voice: String
+    var title = ""
+
+    var body: some View {
+        let _ = app.speech.voicesRevision
+        let voices = SupertonicVoices.all()
+        Picker(title, selection: $voice) {
+            ForEach(voices.filter { !$0.isCustom }) { Text($0.label).tag($0.key) }
+            if voices.contains(where: \.isCustom) {
+                Divider()
+                ForEach(voices.filter(\.isCustom)) { Text($0.label).tag($0.key) }
+            }
+        }
+        .fixedSize()
+        .labelsHidden(title.isEmpty)
+        .accessibilityIdentifier("VoicePicker")
+        .onChange(of: voice) {
+            AppSettings.current.voice = voice
+            AppSettings.save()
+        }
+    }
+}
+
+private extension View {
+    @ViewBuilder func labelsHidden(_ hidden: Bool) -> some View {
+        if hidden { labelsHidden() } else { self }
     }
 }
 
@@ -273,8 +390,53 @@ struct StudioSettings: View {
                 Text(L.s("SettingsMusic")).fontWeight(.semibold)
                 Text(L.s("SettingsMusicMac")).font(.system(size: 12)).foregroundStyle(Theme.textMuted)
             }
+            StableAudioCard()
         }
         .task { await info.refresh(running: nil) }
+    }
+}
+
+/// Settings › Studio backends: Stable Audio 3 for music clips, with the attribution and license its terms ask for.
+private struct StableAudioCard: View {
+    @Environment(AppModel.self) private var app
+    @State private var revision = 0
+
+    var body: some View {
+        let _ = revision
+        let clips = app.studio.clips
+        Card {
+            HStack(alignment: .firstTextBaseline) {
+                Text("Stable Audio 3").fontWeight(.semibold)
+                Spacer()
+                Text(StabilityAttribution.poweredBy).font(.system(size: 12, weight: .medium)).foregroundStyle(Theme.textMuted)
+                    .accessibilityIdentifier("SettingsPoweredByStability")
+            }
+            Text(L.s("SettingsStableAudioHelp")).font(.system(size: 12)).foregroundStyle(Theme.textMuted)
+            ForEach(StableAudioService.models, id: \.self) { model in
+                HStack {
+                    Text(StableAudioService.name(model)).font(.system(size: 12))
+                    Spacer()
+                    Text(StableAudio3.isInstalled(model, in: StableAudioService.folder) ? L.s("Installed") : L.f("StudioDownloadNote", Fmt.bytes(model.downloadSize)))
+                        .font(.system(size: 12)).foregroundStyle(Theme.textMuted)
+                }
+            }
+            HStack(spacing: 8) {
+                Button(L.s("SettingsLicense")) { StabilityAttribution.open(StabilityAttribution.license) }.buttonStyle(.glass)
+                    .accessibilityIdentifier("StabilityLicenseButton")
+                Button("NOTICE") { StabilityAttribution.open(StabilityAttribution.notice) }.buttonStyle(.glass)
+                Button(L.s("SettingsOpenFolder")) { openFolder(StableAudioService.folder) }.buttonStyle(.glass)
+                if StableAudioService.models.contains(where: { StableAudio3.isInstalled($0, in: StableAudioService.folder) }) {
+                    Button(L.s("SettingsRemove")) {
+                        clips.remove()
+                        revision += 1
+                    }
+                    .buttonStyle(.glass)
+                    .disabled(clips.isGenerating)
+                }
+            }
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("StableAudioCard")
     }
 }
 

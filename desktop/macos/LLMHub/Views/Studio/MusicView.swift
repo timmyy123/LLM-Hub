@@ -1,4 +1,5 @@
 import AppKit
+import StableAudioMac
 import SwiftUI
 
 /// Studio › Music: a live jam with Magenta RealTime (Music.dc.html): transport and level bars, style sliders that the
@@ -13,6 +14,7 @@ struct MusicView: View {
                     NowPlaying()
                     StylesSection()
                     MusicSettingsSection()
+                    ClipsSection()
                     RecordingsSection()
                 }
                 .padding(28)
@@ -210,6 +212,101 @@ private struct MusicSettingsSection: View {
         .frame(maxWidth: .infinity, minHeight: 50, alignment: .leading)
         .padding(14)
         .glassEffect(.regular, in: .rect(cornerRadius: 12))
+    }
+}
+
+/// Fixed-length clips with Stable Audio 3 (StableAudioService): prompt, length up to the model's maximum, seed,
+/// Generate or Cancel with progress. Clips land in the recordings list below. Stability's license asks for the
+/// "Powered by Stability AI" line wherever the models are offered.
+private struct ClipsSection: View {
+    @Environment(AppModel.self) private var app
+
+    var body: some View {
+        @Bindable var clips = app.studio.clips
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                Text(L.s("ClipTitle")).font(.system(size: 15, weight: .semibold))
+                Text(L.s("ClipHelp")).font(.system(size: 12)).foregroundStyle(Theme.textFaint).lineLimit(1)
+                Spacer()
+                Text(StabilityAttribution.poweredBy).font(.system(size: 11, weight: .medium)).foregroundStyle(Theme.textMuted)
+                    .accessibilityIdentifier("PoweredByStability")
+            }
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(alignment: .top, spacing: 8) {
+                    TextField(L.s("ClipPromptPlaceholder"), text: $clips.prompt, axis: .vertical)
+                        .textFieldStyle(.plain)
+                        .font(.system(size: 14))
+                        .lineLimit(2 ... 4)
+                        .accessibilityIdentifier("ClipPrompt")
+                    Button {
+                        app.studio.improveClipPrompt()
+                    } label: {
+                        if app.studio.isImproving { ProgressView().controlSize(.small) } else { Image(systemName: "sparkles") }
+                    }
+                    .buttonStyle(.borderless)
+                    .disabled(app.studio.isImproving || clips.isGenerating)
+                    .help(L.s("StudioImprove"))
+                    .accessibilityLabel(L.s("StudioImprove"))
+                }
+                .padding(10)
+                .background(Theme.surfaceAlt.opacity(0.6), in: .rect(cornerRadius: 10))
+
+                HStack(spacing: 18) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        FieldLabel(L.s("ClipModel"))
+                        Picker("", selection: $clips.model) {
+                            ForEach(StableAudioService.models, id: \.self) { Text(StableAudioService.name($0)).tag($0) }
+                        }
+                        .labelsHidden()
+                        .fixedSize()
+                        .disabled(clips.isGenerating)
+                        .accessibilityIdentifier("ClipModelPicker")
+                    }
+                    VStack(alignment: .leading, spacing: 4) {
+                        FieldLabel(L.f("ClipLength", "\(Int(clips.seconds))"))
+                        Slider(value: Binding(get: { clips.seconds }, set: { clips.seconds = $0.rounded() }), in: 1 ... clips.model.maxSeconds)
+                            .frame(minWidth: 160, maxWidth: 280)
+                            .disabled(clips.isGenerating)
+                            .accessibilityIdentifier("ClipLengthSlider")
+                    }
+                    VStack(alignment: .leading, spacing: 4) {
+                        FieldLabel(L.s("StudioSeed"))
+                        TextField(L.s("StudioRandom"), text: $clips.seed)
+                            .textFieldStyle(.roundedBorder)
+                            .frame(width: 110)
+                            .accessibilityIdentifier("ClipSeed")
+                    }
+                    Spacer()
+                    if clips.isGenerating {
+                        Button(L.s("Cancel")) { clips.cancel() }
+                            .buttonStyle(.glass)
+                            .controlSize(.large)
+                            .accessibilityIdentifier("ClipCancel")
+                    } else {
+                        Button {
+                            clips.generate(app.studio.music)
+                        } label: {
+                            Label(L.s("StudioGenerate"), systemImage: "music.note").fontWeight(.semibold)
+                        }
+                        .buttonStyle(.glassProminent)
+                        .controlSize(.large)
+                        .disabled(clips.prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        .accessibilityIdentifier("ClipGenerate")
+                    }
+                }
+                if clips.isGenerating {
+                    ProgressView(value: clips.progress).accessibilityIdentifier("ClipProgress")
+                }
+                let note = clips.downloadNote
+                if !clips.status.isEmpty || !note.isEmpty {
+                    Text(clips.status.isEmpty ? note : clips.status).font(.system(size: 12)).foregroundStyle(Theme.textMuted).lineLimit(2)
+                        .textSelection(.enabled)
+                        .accessibilityIdentifier("ClipStatus")
+                }
+            }
+            .padding(16)
+            .glassEffect(.regular, in: .rect(cornerRadius: 16))
+        }
     }
 }
 
