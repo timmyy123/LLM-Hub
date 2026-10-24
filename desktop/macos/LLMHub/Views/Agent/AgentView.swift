@@ -62,7 +62,7 @@ private struct EngineCard: View {
         @Bindable var vm = app.agent.ui!
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 12) {
-                Text(L.s("AgentEngine")).fontWeight(.semibold)
+                Text(L.s("AgentEngineTitle")).fontWeight(.semibold)
                 Spacer(minLength: 0)
                 Picker("", selection: $vm.engineChoice) {
                     ForEach(vm.engines, id: \.mode) { Text($0.label).tag($0.mode) }
@@ -75,7 +75,7 @@ private struct EngineCard: View {
                 Text(vm.installHelp).font(.system(size: 13)).foregroundStyle(Theme.textMuted)
                     .fixedSize(horizontal: false, vertical: true)
                 HStack(spacing: 10) {
-                    Button(L.s("AgentInstall")) { Task { await vm.installEngine() } }
+                    Button(vm.installLabel) { Task { await vm.installEngine() } }
                         .buttonStyle(.glass)
                         .disabled(vm.isEngineInstalling)
                         .accessibilityIdentifier("InstallClaudeButton")

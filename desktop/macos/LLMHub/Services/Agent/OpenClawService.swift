@@ -164,8 +164,10 @@ final class OpenClawService {
              "cost": ["input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0],
              "contextWindow": AppSettings.current.apiContextLength, "maxTokens": 4096]
         }
+        // One agent per project folder in use: the Gateway prepares a database for every listed agent when it starts, so
+        // folders that are not open stay out (their history stays on disk). Sessions in a folder differ by session key.
         var entries: [String: Any] = [:]
-        for session in sessions { entries[Self.agentId(session)] = ["workspace": session.folder] }
+        for session in sessions where entries[Self.agentId(session)] == nil { entries[Self.agentId(session)] = ["workspace": session.folder] }
         let primary = chatModels.first { $0.id == sessions.last?.info.modelId } ?? chatModels.first
         let workspace = Self.root.appendingPathComponent("workspace", isDirectory: true)
         // Keys OpenClaw adds itself (meta, skills, wizard) are kept: a file that loses them looks clobbered to the Gateway,
@@ -181,7 +183,7 @@ final class OpenClawService {
                     "workspace": workspace.path,
                 ],
                 "entries": entries,
-                // Required once there are two or more entries; without it the Gateway exits 78 until doctor adds it.
+                // One agent per folder is a multi-agent roster, which OpenClaw only accepts with explicit ownership.
                 "ownership": "explicit",
             ],
             "models": [
@@ -194,18 +196,23 @@ final class OpenClawService {
                     "models": models,
                 ]],
             ],
-            "tools": ["exec": ["mode": "ask"]],
+            // Commands run on this Mac through the Gateway, which asks first (as Claude Code does) for anything unknown.
+            "tools": ["exec": ["mode": "ask", "host": "gateway"]],
             "plugins": ["allow": ["memory-core"]],
         ]
         config.merge(ours) { _, new in new }
+        if config["meta"] == nil { config["meta"] = ["lastTouchedVersion": Self.version] }
         try FileManager.default.createDirectory(at: Self.configFile.deletingLastPathComponent(), withIntermediateDirectories: true)
         try FileManager.default.createDirectory(at: workspace, withIntermediateDirectories: true)
         let json = try JSONSerialization.data(withJSONObject: config, options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes])
         if (try? Data(contentsOf: Self.configFile)) != json { try json.write(to: Self.configFile, options: .atomic) }
     }
 
+    /// "f-" and a hash of the folder: the OpenClaw agent whose workspace is that folder.
     static func agentId(_ session: AgentSession) -> String {
-        "s-" + session.id.replacingOccurrences(of: "-", with: "").prefix(12).lowercased()
+        var folder = URL(fileURLWithPath: session.folder).standardizedFileURL.path
+        while folder.count > 1 && folder.hasSuffix("/") { folder.removeLast() }
+        return "f-" + SHA256.hash(data: Data(folder.utf8)).map { String(format: "%02x", $0) }.joined().prefix(12)
     }
 
     /// Starts the Gateway once (it takes 15 to 20 seconds) and keeps it running while the app is open.
@@ -245,7 +252,7 @@ final class OpenClawService {
             try process.run()
             gateway = process
             try? "\(process.processIdentifier)".write(to: Self.pidFile, atomically: true, encoding: .utf8)
-            let deadline = Date().addingTimeInterval(120)
+            let deadline = Date().addingTimeInterval(240)
             let port = self.port
             while Date() < deadline, process.isRunning, !(await Self.portOpen(port)) {
                 try await Task.sleep(for: .milliseconds(300))

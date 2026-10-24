@@ -24,7 +24,8 @@ extension AgentService {
 
         do {
             let bridge = try await ensureBridge()
-            var engaged = sessions.filter { $0.info.engine == "openclaw" && $0 !== session }
+            // This session's folder, plus the folders of sessions with an open connection.
+            var engaged = sessions.filter { $0 !== session && acp[$0.id]?.isAlive == true }
             engaged.append(session)
             try await openClaw.ensureGateway(engaged, bridge: bridge, models: app.modelStore.chatModels)
             let connection: AcpConnection
@@ -82,8 +83,8 @@ final class AcpConnection {
     private var cancelled = false
     /// Set when the process's output ends; later calls fail at once instead of waiting forever.
     private var finished = false
-    /// OpenClaw's "tool_call" dispatch steps by id, and the dispatch ids whose real tool call has been seen.
-    private var dispatches: [String: [String: Any]] = [:]
+    /// OpenClaw's tool dispatches with no real call yet (and their results), and the dispatch ids whose real call came.
+    private var dispatches: [(id: String, call: [String: Any], result: [String: Any]?)] = []
     private var dispatched: Set<String> = []
     /// Text streams as chunks; it is written out as one message when a tool starts or the turn ends.
     private var text = ""
@@ -134,6 +135,13 @@ final class AcpConnection {
         cancelled = false
         let result = try await call("session/prompt", ["sessionId": acpSession, "prompt": [["type": "text", "text": text]]]) as? [String: Any]
         flushText()
+        // A dispatch nothing followed: show it as the tool it names, with its arguments (and its result).
+        for dispatch in dispatches {
+            emitToolUse(dispatch.id, dispatch.call)
+            if let output = dispatch.result { owner.emit(session, output) }
+        }
+        dispatches = []
+        dispatched = []
         return result?["stopReason"] as? String ?? "end_turn"
     }
 
@@ -215,30 +223,36 @@ final class AcpConnection {
         case "tool_call":
             flushText()
             let id = update["toolCallId"] as? String ?? UUID().uuidString
-            // OpenClaw runs each tool through its "tool_call" dispatcher, which reports the dispatch and then the real
-            // tool (id "tool_call:<dispatch id>:<tool>:<n>"). Only the real one is shown; the dispatch stands in for it
-            // only if no real call follows (a call rejected before it ran).
-            if (update["title"] as? String ?? "").hasPrefix("tool_call") {
-                dispatches[id] = update
+            // OpenClaw announces each tool twice: a dispatch (raw input {args, id: tool}), then the real call with id
+            // "tool_call:<dispatch>:<tool>:<n>". A dispatch is shown, at the end of the turn, only if no real call follows.
+            if Self.isDispatch(update["rawInput"]) {
+                dispatches.append((id, update, nil))
                 return
             }
-            if id.hasPrefix("tool_call:") { dispatched.insert(String(id.split(separator: ":")[1])) }
+            if id.hasPrefix("tool_call:") {
+                let dispatch = String(id.split(separator: ":")[1])
+                dispatches.removeAll { $0.id == dispatch }
+                dispatched.insert(dispatch)
+            }
             emitToolUse(id, update)
         case "tool_call_update":
             let status = update["status"] as? String
             guard status == "completed" || status == "failed" else { return }
             let id = update["toolCallId"] as? String ?? ""
-            if let dispatch = dispatches.removeValue(forKey: id) {
-                guard !dispatched.contains(id) else { return }
-                emitToolUse(id, dispatch)
-            }
+            guard !dispatched.contains(id) else { return }
             var output = (update["content"] as? [[String: Any]] ?? []).map { (($0["content"] as? [String: Any])?["text"] as? String) ?? "" }.joined()
             if output.isEmpty, let raw = update["rawOutput"] as? [String: Any], let content = raw["content"] {
                 output = content as? String ?? AgentService.jsonString(content)
             }
-            owner.emit(session, ["type": "user", "message": ["content": [[
-                "type": "tool_result", "tool_use_id": update["toolCallId"] as? String ?? "", "content": output, "is_error": status == "failed",
-            ]]]])
+            let result: [String: Any] = ["type": "user", "message": ["content": [[
+                "type": "tool_result", "tool_use_id": id, "content": output, "is_error": status == "failed",
+            ]]]]
+            // A pending dispatch's result waits for the dispatch to be shown.
+            if let index = dispatches.firstIndex(where: { $0.id == id }) {
+                dispatches[index].result = result
+            } else {
+                owner.emit(session, result)
+            }
         default:
             break
         }
@@ -258,10 +272,16 @@ final class AcpConnection {
 
     /// An ACP tool call as the Claude Code tool it resembles, so it renders as Read, Edit, Write, Run or Search:
     /// OpenClaw's read / write / edit / apply_patch / exec / ls tools by their ACP kind and raw input.
+    /// OpenClaw's tool dispatch: raw input with a string `id` (the tool) and nothing but `args` besides.
+    static func isDispatch(_ rawInput: Any?) -> Bool {
+        guard let raw = rawInput as? [String: Any], raw["id"] is String else { return false }
+        return raw.keys.allSatisfy { $0 == "id" || $0 == "args" }
+    }
+
     static func translate(_ call: [String: Any]) -> (String, [String: Any]) {
         let raw = call["rawInput"] as? [String: Any] ?? [:]
-        // A "tool_call" dispatch ({id: "exec", args: {…}}) is shown as the tool it dispatches.
-        if (call["title"] as? String ?? "").hasPrefix("tool_call"), let tool = raw["id"] as? String {
+        // A dispatch ({id: "exec", args: {…}}) is shown as the tool it dispatches.
+        if isDispatch(raw), let tool = raw["id"] as? String {
             var inner = call
             inner["title"] = tool
             inner["rawInput"] = raw["args"] as? [String: Any] ?? [:]

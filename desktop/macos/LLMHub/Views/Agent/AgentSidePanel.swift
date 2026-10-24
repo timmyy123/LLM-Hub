@@ -156,7 +156,7 @@ struct AgentSidePanel: View {
                 .controlSize(.large)
                 .disabled(!canChange)
             }
-            Text(L.s("AgentFooter"))
+            Text(vm.footer)
                 .font(.system(size: 12))
                 .foregroundStyle(Theme.textFaint)
                 .fixedSize(horizontal: false, vertical: true)

@@ -86,6 +86,9 @@ final class AgentViewModel {
     var installStatus: String { engineChoice == "openclaw" ? service.openClaw.status : service.installStatus }
     /// What setting up the chosen engine does, on the install card.
     var installHelp: String { L.s(engineChoice == "openclaw" ? "OpenClawInstallHelp" : "AgentInstallHelp") }
+    var installLabel: String { L.s(engineChoice == "openclaw" ? "OpenClawSetUp" : "AgentInstall") }
+    /// The note under the side panel: which engine talks to LLM Hub's local server.
+    var footer: String { L.s(selected?.info.engine == "openclaw" ? "OpenClawFooter" : "AgentFooter") }
 
     private func onSelected() {
         notice = ""
