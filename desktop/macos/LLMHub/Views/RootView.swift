@@ -63,10 +63,14 @@ private struct Sidebar: View {
         @Bindable var chat = app.chat
         return VStack(spacing: 8) {
             Button {
-                app.chat.newChat()
-                app.section = .chat
+                if app.section == .agent {
+                    app.agent.ui.pickFolderAndStart()
+                } else {
+                    app.chat.newChat()
+                    app.section = .chat
+                }
             } label: {
-                Label(L.s("NewChat"), systemImage: "plus")
+                Label(app.section == .agent ? L.s("NewSession") : L.s("NewChat"), systemImage: "plus")
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .fontWeight(.semibold)
             }
@@ -76,8 +80,20 @@ private struct Sidebar: View {
             .padding(.horizontal, 10)
             .padding(.top, 8)
 
-            List(selection: Binding(get: { app.section == .chat ? chat.selectedChatId.map { "chat:\($0)" } ?? "nav:chat" : navKey },
-                                    set: { select($0) })) {
+            List(selection: Binding(get: {
+                switch app.section {
+                case .chat: return chat.selectedChatId.map { "chat:\($0)" } ?? "nav:chat"
+                case .agent: return app.agent.ui.selectedId.map { "agent:\($0)" } ?? "nav:agent"
+                default: return navKey
+                }
+            }, set: { tag in
+                if let tag, tag.hasPrefix("agent:") {
+                    app.section = .agent
+                    app.agent.ui.selectedId = String(tag.dropFirst(6))
+                } else {
+                    select(tag)
+                }
+            })) {
                 Section {
                     navRow("chat", L.s("NavChat"), "bubble.left", "NavChat")
                     navRow("agent", L.s("NavAgent"), "terminal", "NavAgent")
@@ -97,6 +113,22 @@ private struct Sidebar: View {
                                             .accessibilityIdentifier("DeleteChatMenuItem")
                                     }
                             }
+                        }
+                    }
+                }
+                if app.section == .agent {
+                    // Agent sessions by project folder, with Working / Needs you.
+                    ForEach(app.agent.ui.groups) { group in
+                        Section {
+                            ForEach(group.sessions) { session in
+                                AgentSessionRow(session: session)
+                                    .tag("agent:\(session.id)")
+                                    .contextMenu {
+                                        Button(L.s("Delete"), role: .destructive) { app.agent.ui.delete(session) }
+                                    }
+                            }
+                        } header: {
+                            Label(group.name, systemImage: "folder")
                         }
                     }
                 }

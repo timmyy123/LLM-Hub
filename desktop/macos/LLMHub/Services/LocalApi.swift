@@ -22,10 +22,24 @@ final class LocalApiServer {
     private(set) var requests: [ApiRequestLog] = []
     private var listener: NWListener?
     unowned let app: AppModel
+    /// A private instance for the Agent: loopback only, a random port and key of its own, always available even when the
+    /// user's Local API is off, plus the /mcp endpoint Claude Code asks for permission through.
+    let isBridge: Bool
+    private var bridgePort = 0
+    private var bridgeKey = ""
+    /// Loads run one at a time across both instances: Claude Code sends parallel requests, and a second load while the
+    /// first is starting llama-server would restart it.
+    private static var loadChain: Task<Void, Never>?
 
-    init(app: AppModel) { self.app = app }
+    init(app: AppModel, agentBridge: Bool = false) {
+        self.app = app
+        isBridge = agentBridge
+    }
 
-    var baseURL: String { "http://127.0.0.1:\(AppSettings.current.apiPort)" }
+    var port: Int { isBridge ? bridgePort : AppSettings.current.apiPort }
+    /// The Local API reads the setting live, so "New key" applies without a restart.
+    var key: String { isBridge ? bridgeKey : AppSettings.current.apiKey }
+    var baseURL: String { "http://127.0.0.1:\(port)" }
 
     static func newKey() -> String {
         "llmhub-" + (0..<18).map { _ in String(format: "%02x", UInt8.random(in: 0...255)) }.joined()
@@ -37,21 +51,43 @@ final class LocalApiServer {
         return app.chat.models.filter { $0.catalogId == catalogId }.count > 1 ? "\(catalogId):\(m.quant.lowercased().replacingOccurrences(of: " ", with: "-"))" : catalogId
     }
 
+    /// Starts the Agent bridge if it is not running and waits until it accepts connections.
+    func ensureBridge() async throws {
+        guard isBridge else { return }
+        if listener == nil {
+            bridgePort = Self.freePort()
+            bridgeKey = Self.newKey()
+            start()
+        }
+        let deadline = Date().addingTimeInterval(10)
+        while !isRunning && error.isEmpty && Date() < deadline { try await Task.sleep(for: .milliseconds(20)) }
+        guard isRunning else {
+            listener?.cancel()
+            listener = nil
+            throw NSError(domain: "LLMHub", code: 30, userInfo: [NSLocalizedDescriptionKey: error.isEmpty ? "Agent bridge did not start" : error])
+        }
+    }
+
     func restart() {
         listener?.cancel()
         listener = nil
         isRunning = false
-        guard AppSettings.current.apiEnabled else { return }
+        guard AppSettings.current.apiEnabled, !isBridge else { return }
         if AppSettings.current.apiKey.isEmpty {
             AppSettings.current.apiKey = Self.newKey()
             AppSettings.save()
         }
+        start()
+    }
+
+    private func start() {
+        error = ""
         do {
             let params = NWParameters.tcp
             params.allowLocalEndpointReuse = true
-            let port = NWEndpoint.Port(integerLiteral: UInt16(AppSettings.current.apiPort))
+            let port = NWEndpoint.Port(integerLiteral: UInt16(self.port))
             let listener: NWListener
-            if AppSettings.current.apiAllowLan {
+            if AppSettings.current.apiAllowLan && !isBridge {
                 listener = try NWListener(using: params, on: port)
             } else {
                 // Loopback only. The port then comes from the endpoint; passing it again fails with EINVAL.
@@ -75,7 +111,7 @@ final class LocalApiServer {
             }
             listener.start(queue: .main)
             self.listener = listener
-            Log.info("Local API on port \(AppSettings.current.apiPort) (LAN=\(AppSettings.current.apiAllowLan))")
+            Log.info(isBridge ? "Agent bridge on port \(self.port)" : "Local API on port \(self.port) (LAN=\(AppSettings.current.apiAllowLan))")
         } catch {
             Log.error("Local API could not start: \(error)")
             self.error = L.f("ApiStartFailed", error.localizedDescription)
@@ -95,10 +131,10 @@ final class LocalApiServer {
     }
 
     private func route(_ req: HttpRequest, _ out: HttpResponder) async {
-        if req.path.hasPrefix("/v1"), AppSettings.current.apiRequireKey {
+        if req.path.hasPrefix("/v1") || req.path.hasPrefix("/mcp"), isBridge || AppSettings.current.apiRequireKey {
             let header = req.headers["authorization"] ?? ""
-            let key = header.lowercased().hasPrefix("bearer ") ? String(header.dropFirst(7)).trimmingCharacters(in: .whitespaces) : req.headers["x-api-key"] ?? ""
-            guard Data(key.utf8) == Data(AppSettings.current.apiKey.utf8) else {
+            let sent = header.lowercased().hasPrefix("bearer ") ? String(header.dropFirst(7)).trimmingCharacters(in: .whitespaces) : req.headers["x-api-key"] ?? ""
+            guard !key.isEmpty, Data(sent.utf8) == Data(key.utf8) else {
                 await out.json(401, Self.errorBody("authentication_error", "Missing or wrong API key"))
                 record(req, "", "401")
                 return
@@ -114,6 +150,8 @@ final class LocalApiServer {
         case ("POST", "/v1/chat/completions"): await generate(req, out, anthropic: false)
         case ("POST", "/v1/messages"): await generate(req, out, anthropic: true)
         case ("POST", "/v1/messages/count_tokens"): await generate(req, out, anthropic: true, countOnly: true)
+        case ("POST", "/mcp") where isBridge: await AgentPermissions.handle(req, out, agent: app.agent)
+        case ("GET", "/mcp") where isBridge: await out.empty(405)
         case ("GET", "/"): await out.text(200, "LLM Hub local API")
         default:
             await out.json(404, Self.errorBody("not_found_error", "Unknown endpoint \(req.path)"))
@@ -134,7 +172,7 @@ final class LocalApiServer {
         let stream = body["stream"] as? Bool ?? false
         do {
             // Claude Code and other API clients send long system prompts: load with the larger API context.
-            try await app.engines.load(model, contextLength: max(AppSettings.current.contextLength, AppSettings.current.apiContextLength))
+            try await loadSerialized(model)
             if model.format == "gguf", let base = app.engine.baseURL {
                 body["model"] = model.id
                 try await proxy(req, body, base, out)
@@ -149,6 +187,33 @@ final class LocalApiServer {
             await out.json(500, Self.errorBody("api_error", error.localizedDescription))
             record(req, apiName(model), "500")
         }
+    }
+
+    private func loadSerialized(_ model: InstalledModel) async throws {
+        let previous = Self.loadChain
+        let engines = app.engines
+        let load = Task { @MainActor in
+            await previous?.value
+            try await engines.load(model, contextLength: max(AppSettings.current.contextLength, AppSettings.current.apiContextLength))
+        }
+        Self.loadChain = Task { _ = try? await load.value }
+        try await load.value
+    }
+
+    /// A free loopback port for the bridge.
+    private static func freePort() -> Int {
+        let fd = socket(AF_INET, SOCK_STREAM, 0)
+        guard fd >= 0 else { return 47_000 + Int.random(in: 0..<1000) }
+        defer { close(fd) }
+        var addr = sockaddr_in()
+        addr.sin_family = sa_family_t(AF_INET)
+        addr.sin_addr.s_addr = inet_addr("127.0.0.1")
+        addr.sin_port = 0
+        var len = socklen_t(MemoryLayout<sockaddr_in>.size)
+        let bound = withUnsafeMutablePointer(to: &addr) {
+            $0.withMemoryRebound(to: sockaddr.self, capacity: 1) { bind(fd, $0, len) == 0 && getsockname(fd, $0, &len) == 0 }
+        }
+        return bound ? Int(UInt16(bigEndian: addr.sin_port)) : 47_000 + Int.random(in: 0..<1000)
     }
 
     private func proxy(_ req: HttpRequest, _ body: [String: Any], _ base: URL, _ out: HttpResponder) async throws {
@@ -250,6 +315,8 @@ final class LocalApiServer {
 struct HttpRequest {
     let method: String
     let path: String
+    /// Query parameters ("session" for the Agent bridge's /mcp).
+    var query: [String: String] = [:]
     let headers: [String: String]
     let body: Data
 
@@ -276,8 +343,10 @@ struct HttpRequest {
                 guard let more = await receive(connection) else { return nil }
                 body.append(more)
             }
-            let path = String(parts[1]).split(separator: "?").first.map(String.init) ?? "/"
-            return HttpRequest(method: String(parts[0]), path: path, headers: headers, body: body)
+            let target = String(parts[1])
+            let path = target.split(separator: "?", maxSplits: 1).first.map(String.init) ?? "/"
+            let query = URLComponents(string: target)?.queryItems?.reduce(into: [String: String]()) { $0[$1.name] = $1.value ?? "" } ?? [:]
+            return HttpRequest(method: String(parts[0]), path: path, query: query, headers: headers, body: body)
         }
     }
 
@@ -304,6 +373,11 @@ struct HttpResponder {
         let body = (try? JSONSerialization.data(withJSONObject: object)) ?? Data()
         let reason = HTTPURLResponse.localizedString(forStatusCode: status).capitalized
         await write(Data("HTTP/1.1 \(status) \(reason)\r\nContent-Type: application/json\r\nContent-Length: \(body.count)\r\nConnection: close\r\n\r\n".utf8) + body)
+    }
+
+    func empty(_ status: Int) async {
+        let reason = HTTPURLResponse.localizedString(forStatusCode: status).capitalized
+        await write(Data("HTTP/1.1 \(status) \(reason)\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".utf8))
     }
 
     func text(_ status: Int, _ text: String) async {
