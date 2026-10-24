@@ -33,12 +33,14 @@ enum Theme {
 
 struct Tag: View {
     let text: String
+    /// Grey instead of blue, for capability tags (Vision, Agent) next to the engine tag.
+    var neutral = false
     var body: some View {
         Text(text)
             .font(.system(size: 11))
-            .foregroundStyle(Theme.tagText)
+            .foregroundStyle(neutral ? Theme.textMuted : Theme.tagText)
             .padding(.horizontal, 7)
             .padding(.vertical, 1)
-            .background(Theme.tag, in: RoundedRectangle(cornerRadius: 6))
+            .background(neutral ? Theme.userBubble : Theme.tag, in: RoundedRectangle(cornerRadius: 6))
     }
 }

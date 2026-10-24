@@ -19,8 +19,10 @@ struct InstalledModel: Codable, Identifiable, Hashable {
     var hasMtpDrafter: Bool?
 
     var folder: URL { AppPaths.models.appendingPathComponent(id, isDirectory: true) }
-    var primaryPath: URL { folder.appendingPathComponent(files[0]) }
-    var mmprojPath: URL? { mmproj.map { folder.appendingPathComponent($0) } }
+    /// Downloads live in `folder`; a local file added from disk keeps its full path and stays where it is.
+    var primaryPath: URL { path(files[0]) }
+    var mmprojPath: URL? { mmproj.map(path) }
+    var isLocalFile: Bool { repo == "local" }
     var displayName: String { "\(name) · \(quant)" }
     /// EmbeddingGemma and the like: served on /v1/embeddings, never offered for chat.
     var isEmbedding: Bool { tags.contains("embedding") }
@@ -32,6 +34,15 @@ struct InstalledModel: Codable, Identifiable, Hashable {
     }
 
     @MainActor var mtpEnabled: Bool { supportsMtp && !AppSettings.current.mtpOff.contains(id) }
+
+    private func path(_ file: String) -> URL {
+        file.hasPrefix("/") ? URL(fileURLWithPath: file) : folder.appendingPathComponent((file as NSString).lastPathComponent)
+    }
+}
+
+/// Why a file picked with "Add local file" was refused; the message is shown as is.
+struct LocalModelError: LocalizedError {
+    let errorDescription: String?
 }
 
 /// Models on disk. Each lives in models/<id>/ with a manifest.json written after a verified download.
@@ -76,6 +87,53 @@ final class ModelStore {
         try? encoder.encode(model).write(to: model.folder.appendingPathComponent("manifest.json"), options: .atomic)
     }
 
+    /// Adds a .gguf or .litertlm from disk without copying it: the manifest keeps its absolute path, and a sibling
+    /// mmproj*.gguf comes along as the vision projector. Same rules as the Windows and Linux apps.
+    func addLocalFile(_ url: URL) throws -> InstalledModel {
+        let fm = FileManager.default
+        guard let size = (try? fm.attributesOfItem(atPath: url.path)[.size] as? NSNumber)?.int64Value else {
+            throw LocalModelError(errorDescription: CocoaError(.fileNoSuchFile).localizedDescription)
+        }
+        let format: String
+        switch url.pathExtension.lowercased() {
+        case "gguf": format = "gguf"
+        case "litertlm": format = "litertlm"
+        default: throw LocalModelError(errorDescription: L.s("ModelsLocalUnsupported"))
+        }
+        let fileName = url.lastPathComponent
+        if format == "gguf" && fileName.lowercased().hasPrefix("mmproj") {
+            throw LocalModelError(errorDescription: L.s("ModelsLocalProjector"))
+        }
+        let stem = url.deletingPathExtension().lastPathComponent
+        let quant = stem.range(of: #"(?:UD-)?(?:IQ\d_[A-Z0-9]+|Q\d(?:_[A-Z0-9]+)*|BF16|F16|F32|MXFP4)$"#,
+                               options: [.regularExpression, .caseInsensitive]).map { String(stem[$0]) } ?? ""
+        let name = String(stem.dropLast(quant.count)).trimmingCharacters(in: CharacterSet(charactersIn: "-_. "))
+        let folder = url.deletingLastPathComponent()
+        let mmproj = format == "gguf"
+            ? ((try? fm.contentsOfDirectory(atPath: folder.path)) ?? [])
+                .filter { $0.lowercased().hasPrefix("mmproj") && $0.lowercased().hasSuffix(".gguf") }
+                .map { folder.appendingPathComponent($0).path }
+                .min { $0.count < $1.count }
+            : nil
+        var tags: [String] = []
+        if mmproj != nil { tags.append("vision") }
+        if name.localizedCaseInsensitiveContains("embedding") { tags.append("embedding") }
+        let mmprojSize = mmproj.flatMap { (try? fm.attributesOfItem(atPath: $0)[.size] as? NSNumber)?.int64Value } ?? 0
+        let variant = GgufVariant(repo: "local/" + stem, quant: quant.isEmpty ? format : quant, files: [], mmproj: nil)
+        let model = InstalledModel(
+            id: variant.modelId, name: name.isEmpty ? stem : name, catalogId: nil, repo: "local", format: format,
+            quant: !quant.isEmpty ? quant.uppercased() : format == "gguf" ? "GGUF" : "LiteRT",
+            files: [url.standardizedFileURL.path], mmproj: mmproj, sizeBytes: size + mmprojSize,
+            // The file's own limit is not read; the Settings context length still caps what is used.
+            contextLength: 32768, tags: tags, installedAt: Date())
+        // Only the manifest lives in models/<id>/; the weights stay where they are.
+        try fm.createDirectory(at: model.folder, withIntermediateDirectories: true)
+        add(model)
+        Log.info("Added local model \(url.path)\(mmproj.map { " with \(($0 as NSString).lastPathComponent)" } ?? "")")
+        return model
+    }
+
+    /// Removes models/<id>/. For a local file that is only the manifest (and LiteRT-LM's cache): the file itself stays.
     func delete(_ model: InstalledModel, engine: EngineHub) {
         if engine.loadedModel?.id == model.id { engine.stop() }
         if AppModel.shared.embeddings.loadedModel?.id == model.id { AppModel.shared.embeddings.stop() }
