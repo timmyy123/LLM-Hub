@@ -208,7 +208,7 @@ public sealed partial class SdNpuService : ObservableObject
             await EnsureModelAsync(model, ct);
             byte[]? init = null;
             if (initImage is not null)
-                init = await (ImageLoader ?? throw new NotSupportedException("No image decoder"))(initImage, SdQnnPipeline.Size);
+                init = await (ImageLoader ?? throw new NotSupportedException("No image decoder"))(initImage, SdQnnPipeline.Size, SdQnnPipeline.Size);
             return await Task.Factory.StartNew(() =>
             {
                 var pipeline = Load(model);
@@ -280,8 +280,8 @@ public sealed partial class SdNpuService : ObservableObject
         }
     }
 
-    /// <summary>Decodes a picture file to <c>size</c> x <c>size</c> RGB (centre crop); set by the platform app.</summary>
-    public static Func<string, int, Task<byte[]>>? ImageLoader { get; set; }
+    /// <summary>Decodes a picture file to width x height RGB (scaled to cover, centre crop); set by the platform app.</summary>
+    public static Func<string, int, int, Task<byte[]>>? ImageLoader { get; set; }
 
     private void SetStatus(string text) => UiThread.Post(() => Status = text);
 }

@@ -24,6 +24,7 @@ public sealed partial class StudioViewModel : ObservableObject
 {
     private readonly ComfyService _comfy = Ioc.Comfy;
     private readonly SdNpuService _npu = Ioc.SdNpu;
+    private readonly LtxNpuService _ltx = Ioc.LtxNpu;
     private CancellationTokenSource? _run;
 
     /// <summary>Negative prompt for the Stable Diffusion 1.5 NPU models.</summary>
@@ -46,14 +47,16 @@ public sealed partial class StudioViewModel : ObservableObject
         LoadGallery();
         _comfy.PropertyChanged += (_, e) => OnEngineChanged(e.PropertyName);
         _npu.PropertyChanged += (_, e) => OnEngineChanged(e.PropertyName);
+        _ltx.PropertyChanged += (_, e) => OnEngineChanged(e.PropertyName);
     }
 
     /// <summary>Snapdragon PCs (Windows on Arm with a Hexagon NPU) generate on the NPU, since ComfyUI has no GPU backend there.</summary>
     public static bool UsesNpu => !ComfyService.IsSupported && SdNpuService.IsSupported;
 
     public IReadOnlyList<ComfyWorkflow> Workflows => UsesNpu ? ComfyWorkflow.NpuWorkflows : ComfyWorkflow.All;
-    /// <summary>The NPU models are compiled for 512 x 512 only.</summary>
-    public IReadOnlyList<string> Aspects { get; } = UsesNpu ? ["1:1"] : ["3:2", "1:1", "16:9", "9:16"];
+    /// <summary>The NPU models are compiled for one size: 512 x 512 images, and 512 x 320 (16:10) or 768 x 512 (3:2) video.</summary>
+    public IReadOnlyList<string> Aspects => !UsesNpu ? ["3:2", "1:1", "16:9", "9:16"]
+        : Workflow?.Kind == "video" ? [LtxNpuService.Build.Width * 2 == LtxNpuService.Build.Height * 3 ? "3:2" : "16:10"] : ["1:1"];
     public IReadOnlyList<int> Counts { get; } = [1, 2, 4];
     public IReadOnlyList<string> Voices => Services.Speech.SpeechService.Voices;
     public ObservableCollection<GalleryItem> Gallery { get; } = [];
@@ -77,8 +80,8 @@ public sealed partial class StudioViewModel : ObservableObject
     [ObservableProperty] public partial string Voice { get; set; }
     [ObservableProperty] public partial string? LastSpeech { get; set; }
 
-    /// <summary>Video and upscaling need an image; NPU image workflows take one optionally (image to image).</summary>
-    public bool NeedsReference => Workflow.NeedsImage || Workflow.IsNpu && Workflow.Kind == "image";
+    /// <summary>ComfyUI video and upscaling need an image; the NPU workflows take one optionally (image to image or video).</summary>
+    public bool NeedsReference => Workflow.NeedsImage || Workflow.IsNpu;
     public bool IsImageOrVideo => Mode is "image" or "video";
     public bool IsVoice => Mode == "voice";
     public bool IsMusic => Mode == "music";
@@ -95,12 +98,13 @@ public sealed partial class StudioViewModel : ObservableObject
     /// <summary>"6.9 GB to download on first use" under the workflow picker, or "".</summary>
     public string DownloadNote => Workflow.NpuModel is { } model
         ? SdNpuService.IsInstalled(model) ? "" : Loc.F("StudioDownloadNote", Fmt.Bytes(model.DownloadSize))
+        : Workflow.NpuVideo ? LtxNpuService.IsInstalled ? "" : Loc.F("StudioDownloadNote", Fmt.Bytes(LtxNpuService.DownloadSize))
         : ComfyService.HasModels(Workflow) ? "" : Loc.F("StudioDownloadNote", Fmt.Bytes(Workflow.DownloadSize));
     /// <summary>The engine line in the Studio header: ComfyUI's, or the NPU's on Snapdragon.</summary>
     public string EngineStatusLine => UsesNpu ? _npu.StatusLine : _comfy.StatusLine;
     public bool EngineRunning => UsesNpu ? _npu.IsLoaded : _comfy.IsRunning;
     /// <summary>Install, download or load progress of the engine.</summary>
-    public string EngineStatus => UsesNpu ? _npu.Status : _comfy.Status;
+    public string EngineStatus => UsesNpu ? _ltx.Status.Length > 0 ? _ltx.Status : _npu.Status : _comfy.Status;
 
     private void OnEngineChanged(string? property)
     {
@@ -126,6 +130,9 @@ public sealed partial class StudioViewModel : ObservableObject
         OnPropertyChanged(nameof(NeedsReference));
         OnPropertyChanged(nameof(DownloadNote));
         OnPropertyChanged(nameof(IsNpu));
+        OnPropertyChanged(nameof(Aspects));
+        if (Aspect is not null && !Aspects.Contains(Aspect))
+            Aspect = Aspects[0];
     }
 
     partial void OnVoiceChanged(string value)
@@ -150,9 +157,9 @@ public sealed partial class StudioViewModel : ObservableObject
         Progress = 0;
         _run = new CancellationTokenSource();
         var ct = _run.Token;
-        if (Workflow.NpuModel is { } npuModel)
+        if (Workflow.IsNpu)
         {
-            await GenerateOnNpuAsync(npuModel, ct);
+            await GenerateOnNpuAsync(Workflow, ct);
             return;
         }
         try
@@ -195,8 +202,11 @@ public sealed partial class StudioViewModel : ObservableObject
         }
     }
 
-    /// <summary>Stable Diffusion 1.5 on the Hexagon NPU; with a reference image it is image to image.</summary>
-    private async Task GenerateOnNpuAsync(SdNpuModel model, CancellationToken ct)
+    /// <summary>
+    /// The Hexagon NPU: Stable Diffusion 1.5 (with a reference image it is image to image) or LTX-Video (with a reference
+    /// image it is image to video).
+    /// </summary>
+    private async Task GenerateOnNpuAsync(ComfyWorkflow workflow, CancellationToken ct)
     {
         try
         {
@@ -204,13 +214,16 @@ public sealed partial class StudioViewModel : ObservableObject
             var seed = long.TryParse(Seed, out var s) ? s : Random.Shared.NextInt64(1, 1L << 31);
             var reference = File.Exists(ReferenceImage) ? ReferenceImage : null;
             var clock = System.Diagnostics.Stopwatch.StartNew();
-            var outputs = await _npu.GenerateAsync(model, Prompt.Trim(), NpuNegative, Math.Clamp(Steps, 1, 50), 7f, seed, Count, reference, 0.6f,
-                (p, text) => UiThread.Post(() =>
-                {
-                    Progress = p;
-                    Status = text;
-                }), ct);
-            Log.Info($"Studio {Workflow.Id} 512x512 seed {seed}{(reference is null ? "" : " img2img")}: {outputs.Count} file(s) in {clock.Elapsed.TotalSeconds:F1}s");
+            void Report(double p, string text) => UiThread.Post(() =>
+            {
+                Progress = p;
+                Status = text;
+            });
+            var outputs = workflow.NpuModel is { } model
+                ? await _npu.GenerateAsync(model, Prompt.Trim(), NpuNegative, Math.Clamp(Steps, 1, 50), 7f, seed, Count, reference, 0.6f, Report, ct)
+                : [await _ltx.GenerateAsync(Prompt.Trim(), Math.Clamp(Steps, 1, LtxNpuService.MaxSteps), seed, reference, Report, ct)];
+            var (width, height) = Size(workflow, Aspect);
+            Log.Info($"Studio {workflow.Id} {width}x{height} seed {seed}{(reference is null ? "" : " with reference")}: {outputs.Count} file(s) in {clock.Elapsed.TotalSeconds:F1}s");
             Status = Loc.F("StudioDone", outputs.Count.ToString(), clock.Elapsed.TotalSeconds.ToString("F0"));
             OnPropertyChanged(nameof(DownloadNote));
             foreach (var file in outputs.AsEnumerable().Reverse())
@@ -311,8 +324,11 @@ public sealed partial class StudioViewModel : ObservableObject
     {
         Gallery.Clear();
         foreach (var file in Directory.EnumerateFiles(ComfyService.Gallery)
-                     .Where(f => f.EndsWith(".png", StringComparison.OrdinalIgnoreCase) || f.EndsWith(".webp", StringComparison.OrdinalIgnoreCase)
-                                 || f.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) || f.EndsWith(".webm", StringComparison.OrdinalIgnoreCase))
+                     .Where(f => (f.EndsWith(".png", StringComparison.OrdinalIgnoreCase) || f.EndsWith(".webp", StringComparison.OrdinalIgnoreCase)
+                                  || f.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) || f.EndsWith(".webm", StringComparison.OrdinalIgnoreCase)
+                                  || f.EndsWith(".mp4", StringComparison.OrdinalIgnoreCase))
+                                 // NPU videos keep their first frame next to them as the thumbnail.
+                                 && !f.EndsWith(".poster.png", StringComparison.OrdinalIgnoreCase))
                      .OrderByDescending(File.GetLastWriteTimeUtc).Take(200))
             Gallery.Add(new GalleryItem(file));
     }
@@ -320,6 +336,8 @@ public sealed partial class StudioViewModel : ObservableObject
     /// <summary>Pixel size for an aspect ratio; about one megapixel for images, LTX-Video's 768 x 512 class for video.</summary>
     public static (int Width, int Height) Size(ComfyWorkflow workflow, string aspect)
     {
+        if (workflow.NpuVideo)
+            return (LtxNpuService.Build.Width, LtxNpuService.Build.Height);
         if (workflow.IsNpu)
             return (SdQnnPipeline.Size, SdQnnPipeline.Size);
         if (workflow.Kind == "video")

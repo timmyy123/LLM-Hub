@@ -103,6 +103,10 @@ public static class Ui
     {
         try
         {
+            // NPU videos (MP4) show their poster frame.
+            var poster = Services.Studio.Npu.LtxNpuService.PosterOf(path);
+            if (path.EndsWith(".mp4", StringComparison.OrdinalIgnoreCase) && System.IO.File.Exists(poster))
+                path = poster;
             return new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(new Uri(path)) { DecodePixelWidth = 480 };
         }
         catch (Exception)

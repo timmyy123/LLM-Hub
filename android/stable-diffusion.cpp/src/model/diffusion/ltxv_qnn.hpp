@@ -10,13 +10,26 @@
 
 #ifdef SD_LTXV_QNN
 
+#ifdef _WIN32
+// Windows on Arm (LLM Hub desktop): QnnHtp.dll / QnnSystem.dll next to the executable or in lib_dir.
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#else
 #include <dlfcn.h>
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#endif
 
+#include <cinttypes>
 #include <cmath>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <map>
@@ -36,6 +49,78 @@
 #include "model/vae/ltx_vae.hpp"
 
 namespace LTXV {
+
+    // Shared libraries and read-only file mappings on POSIX (Android) and Windows.
+    namespace qnn_platform {
+#ifdef _WIN32
+        inline void* open_library(const std::string& path) { return reinterpret_cast<void*>(LoadLibraryA(path.c_str())); }
+        inline void* symbol(void* lib, const char* name) { return reinterpret_cast<void*>(GetProcAddress(static_cast<HMODULE>(lib), name)); }
+        inline void close_library(void* lib) { FreeLibrary(static_cast<HMODULE>(lib)); }
+        inline std::string last_error() { return "Windows error " + std::to_string(GetLastError()); }
+        inline const char* htp_library() { return "QnnHtp.dll"; }
+        inline const char* system_library() { return "QnnSystem.dll"; }
+
+        struct MappedFile {
+            void* data  = nullptr;
+            size_t size = 0;
+            HANDLE file = INVALID_HANDLE_VALUE;
+            HANDLE map  = nullptr;
+        };
+        inline bool map_file(const std::string& path, MappedFile& m) {
+            m.file = CreateFileA(path.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+            if (m.file == INVALID_HANDLE_VALUE) {
+                return false;
+            }
+            LARGE_INTEGER size;
+            GetFileSizeEx(m.file, &size);
+            m.size = static_cast<size_t>(size.QuadPart);
+            m.map  = CreateFileMappingA(m.file, nullptr, PAGE_WRITECOPY, 0, 0, nullptr);
+            m.data = m.map != nullptr ? MapViewOfFile(m.map, FILE_MAP_COPY, 0, 0, 0) : nullptr;
+            return m.data != nullptr;
+        }
+        inline void unmap_file(MappedFile& m) {
+            if (m.data != nullptr) UnmapViewOfFile(m.data);
+            if (m.map != nullptr) CloseHandle(m.map);
+            if (m.file != INVALID_HANDLE_VALUE) CloseHandle(m.file);
+            m = MappedFile{};
+        }
+#else
+        inline void* open_library(const std::string& path) { return dlopen(path.c_str(), RTLD_NOW | RTLD_LOCAL); }
+        inline void* symbol(void* lib, const char* name) { return dlsym(lib, name); }
+        inline void close_library(void* lib) { dlclose(lib); }
+        inline std::string last_error() {
+            const char* e = dlerror();
+            return e != nullptr ? e : "";
+        }
+        inline const char* htp_library() { return "libQnnHtp.so"; }
+        inline const char* system_library() { return "libQnnSystem.so"; }
+
+        struct MappedFile {
+            void* data  = nullptr;
+            size_t size = 0;
+        };
+        inline bool map_file(const std::string& path, MappedFile& m) {
+            int fd = open(path.c_str(), O_RDONLY);
+            if (fd < 0) {
+                return false;
+            }
+            struct stat st;
+            fstat(fd, &st);
+            m.size = static_cast<size_t>(st.st_size);
+            m.data = mmap(nullptr, m.size, PROT_READ, MAP_PRIVATE, fd, 0);
+            close(fd);
+            if (m.data == MAP_FAILED) {
+                m.data = nullptr;
+                return false;
+            }
+            return true;
+        }
+        inline void unmap_file(MappedFile& m) {
+            if (m.data != nullptr) munmap(m.data, m.size);
+            m = MappedFile{};
+        }
+#endif
+    }  // namespace qnn_platform
 
     class QnnRuntime {
     public:
@@ -81,30 +166,33 @@ namespace LTXV {
                 sys_.systemContextFree(sys_context_);
             }
             if (htp_lib_ != nullptr) {
-                dlclose(htp_lib_);
+                qnn_platform::close_library(htp_lib_);
             }
             if (sys_lib_ != nullptr) {
-                dlclose(sys_lib_);
+                qnn_platform::close_library(sys_lib_);
             }
         }
 
         bool init(const std::string& lib_dir) {
+#ifndef _WIN32
             if (!lib_dir.empty()) {
                 // FastRPC looks up libQnnHtpV*Skel.so through ADSP_LIBRARY_PATH.
                 std::string adsp = lib_dir + ";/vendor/lib/rfsa/adsp;/vendor/dsp/cdsp;/system/lib/rfsa/adsp;/dsp";
                 setenv("ADSP_LIBRARY_PATH", adsp.c_str(), 1);
             }
+#endif
+            // On Windows the signed skeleton (libQnnHtpV*Skel.so + .cat) sits next to QnnHtp.dll.
             std::string prefix = lib_dir.empty() ? "" : lib_dir + "/";
-            htp_lib_           = dlopen((prefix + "libQnnHtp.so").c_str(), RTLD_NOW | RTLD_LOCAL);
-            sys_lib_           = dlopen((prefix + "libQnnSystem.so").c_str(), RTLD_NOW | RTLD_LOCAL);
+            htp_lib_           = qnn_platform::open_library(prefix + qnn_platform::htp_library());
+            sys_lib_           = qnn_platform::open_library(prefix + qnn_platform::system_library());
             if (htp_lib_ == nullptr || sys_lib_ == nullptr) {
-                LOG_ERROR("ltxv qnn: failed to load QNN libraries from '%s': %s", lib_dir.c_str(), dlerror());
+                LOG_ERROR("ltxv qnn: failed to load QNN libraries from '%s': %s", lib_dir.c_str(), qnn_platform::last_error().c_str());
                 return false;
             }
             using GetProviders    = Qnn_ErrorHandle_t (*)(const QnnInterface_t***, uint32_t*);
             using GetSysProviders = Qnn_ErrorHandle_t (*)(const QnnSystemInterface_t***, uint32_t*);
-            auto get_providers     = reinterpret_cast<GetProviders>(dlsym(htp_lib_, "QnnInterface_getProviders"));
-            auto get_sys_providers = reinterpret_cast<GetSysProviders>(dlsym(sys_lib_, "QnnSystemInterface_getProviders"));
+            auto get_providers     = reinterpret_cast<GetProviders>(qnn_platform::symbol(htp_lib_, "QnnInterface_getProviders"));
+            auto get_sys_providers = reinterpret_cast<GetSysProviders>(qnn_platform::symbol(sys_lib_, "QnnSystemInterface_getProviders"));
             if (get_providers == nullptr || get_sys_providers == nullptr) {
                 LOG_ERROR("ltxv qnn: QNN provider symbols not found");
                 return false;
@@ -142,20 +230,15 @@ namespace LTXV {
         // Spill-fill (scratch) size a context binary needs, read from its HTP graph blob info.
         uint64_t spill_fill_size(const std::string& path) {
             uint64_t result = 0;
-            int fd          = open(path.c_str(), O_RDONLY);
-            if (fd < 0) {
+            qnn_platform::MappedFile file;
+            if (!qnn_platform::map_file(path, file)) {
+                qnn_platform::unmap_file(file);
                 return 0;
             }
-            struct stat st;
-            fstat(fd, &st);
-            void* data = mmap(nullptr, static_cast<size_t>(st.st_size), PROT_READ, MAP_PRIVATE, fd, 0);
-            close(fd);
-            if (data == MAP_FAILED) {
-                return 0;
-            }
+            void* data = file.data;
             const QnnSystemContext_BinaryInfo_t* bi = nullptr;
             Qnn_ContextBinarySize_t bi_size         = 0;
-            if (sys_.systemContextGetBinaryInfo(sys_context_, data, static_cast<uint64_t>(st.st_size), &bi, &bi_size) == QNN_SUCCESS &&
+            if (sys_.systemContextGetBinaryInfo(sys_context_, data, static_cast<uint64_t>(file.size), &bi, &bi_size) == QNN_SUCCESS &&
                 bi != nullptr && bi->version == QNN_SYSTEM_CONTEXT_BINARY_INFO_VERSION_3) {
                 const auto& info = bi->contextBinaryInfoV3;
                 for (uint32_t i = 0; i < info.numGraphs; i++) {
@@ -169,7 +252,7 @@ namespace LTXV {
                     }
                 }
             }
-            munmap(data, static_cast<size_t>(st.st_size));
+            qnn_platform::unmap_file(file);
             return result;
         }
 
@@ -180,20 +263,14 @@ namespace LTXV {
                         bool quiet                  = false,
                         const std::string& group    = "",
                         uint64_t max_spill_fill     = 0) {
-            int fd = open(path.c_str(), O_RDONLY);
-            if (fd < 0) {
-                LOG_ERROR("ltxv qnn: cannot open '%s'", path.c_str());
+            qnn_platform::MappedFile file;
+            if (!qnn_platform::map_file(path, file)) {
+                qnn_platform::unmap_file(file);
+                LOG_ERROR("ltxv qnn: cannot map '%s'", path.c_str());
                 return false;
             }
-            struct stat st;
-            fstat(fd, &st);
-            size_t size = static_cast<size_t>(st.st_size);
-            void* data  = mmap(nullptr, size, PROT_READ, MAP_PRIVATE, fd, 0);
-            close(fd);
-            if (data == MAP_FAILED) {
-                LOG_ERROR("ltxv qnn: mmap failed for '%s'", path.c_str());
-                return false;
-            }
+            size_t size = file.size;
+            void* data  = file.data;
 
             Graph g;
             g.name                                  = graph_name;
@@ -227,7 +304,7 @@ namespace LTXV {
                 groups_[group] = g.context;
             }
             ok                                      = ok && qnn_.graphRetrieve(g.context, graph_name.c_str(), &g.graph) == QNN_SUCCESS;
-            munmap(data, size);
+            qnn_platform::unmap_file(file);
             if (!ok) {
                 if (quiet) {
                     LOG_INFO("ltxv qnn: '%s' does not fit next to the loaded graphs", graph_name.c_str());
@@ -905,7 +982,12 @@ struct LTXVideoQnnVAE : public LTXVideoVAE {
         const int64_t F = (T - 1) * 8 + 1;
         std::string name = "ltxv_vae_" + std::to_string(W * 32) + "x" + std::to_string(H * 32) + "x" + std::to_string(F);
         std::string path = qnn_dir + "/" + name + ".bin";
-        if (qnn == nullptr || access(path.c_str(), R_OK) != 0 || x.shape()[3] != 128) {
+        FILE* probe         = fopen(path.c_str(), "rb");
+        const bool readable = probe != nullptr;
+        if (probe != nullptr) {
+            fclose(probe);
+        }
+        if (qnn == nullptr || !readable || x.shape()[3] != 128) {
             return LTXVideoVAE::decode(n_threads, x, tiling_params, decode_video, circular_x, circular_y, silent);
         }
         int64_t t0 = ggml_time_ms();

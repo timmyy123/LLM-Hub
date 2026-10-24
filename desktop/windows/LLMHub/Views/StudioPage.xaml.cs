@@ -63,6 +63,14 @@ public sealed partial class StudioPage : Page
             ViewModel.ReferenceImage = file.Path;
     }
 
+    /// <summary>Opens the selected picture or video in its default Windows app.</summary>
+    private async void OnOpenItem(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel.SelectedItem is not { } item || !File.Exists(item.Path))
+            return;
+        await Launcher.LaunchFileAsync(await Windows.Storage.StorageFile.GetFileFromPathAsync(item.Path));
+    }
+
     private void OnUseInChat(object sender, RoutedEventArgs e)
     {
         if (ViewModel.SelectedItem is not { } item)

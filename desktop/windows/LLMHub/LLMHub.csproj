@@ -32,6 +32,9 @@
        Hexagon NPU (QnnHtp.dll, QnnSystem.dll, signed Hexagon v73/v81 skeletons). -->
   <ItemGroup Condition="'$(Platform)' == 'ARM64' Or '$(RuntimeIdentifier)' == 'win-arm64'">
     <PackageReference Include="Qualcomm.ML.OnnxRuntime.QNN" Version="2.7.0" />
+    <!-- LTX-Video on the NPU: stable-diffusion.cpp's sd-cli.exe, built beforehand by ..\sdcpp\build.ps1 (Studio hides
+         the NPU video workflow when it is missing). -->
+    <Content Include="..\sdcpp\out\sd-cli.exe" Link="sd-cli.exe" CopyToOutputDirectory="PreserveNewest" Condition="Exists('..\sdcpp\out\sd-cli.exe')" />
   </ItemGroup>
 
   <!-- Parts of the QNN package Studio does not use: Genie (LLM runtime), the Adreno GPU backend and net-run tooling. -->

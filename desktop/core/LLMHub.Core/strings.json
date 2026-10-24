@@ -329,7 +329,10 @@
   "NpuNoVideo": "Video generation on Snapdragon is not available yet.",
   "NpuReferenceOptional": "Reference image (optional)",
   "NpuClearReference": "Remove reference image",
-  "NpuImageToImage": "Image to image"
+  "NpuImageToImage": "Image to image",
+  "NpuLoadingVideo": "Loading LTX-Video on the NPU…",
+  "NpuDecodingVideo": "Decoding frames…",
+  "NpuEncodingVideo": "Saving the video…"
  },
  "es-ES": {
   "NewChat": "Nuevo chat",
@@ -661,7 +664,10 @@
   "NpuNoVideo": "La generación de vídeo en Snapdragon aún no está disponible.",
   "NpuReferenceOptional": "Imagen de referencia (opcional)",
   "NpuClearReference": "Quitar la imagen de referencia",
-  "NpuImageToImage": "De imagen a imagen"
+  "NpuImageToImage": "De imagen a imagen",
+  "NpuLoadingVideo": "Cargando LTX-Video en la NPU…",
+  "NpuDecodingVideo": "Decodificando fotogramas…",
+  "NpuEncodingVideo": "Guardando el vídeo…"
  },
  "pt-BR": {
   "NewChat": "Nova conversa",
@@ -993,7 +999,10 @@
   "NpuNoVideo": "A geração de vídeo no Snapdragon ainda não está disponível.",
   "NpuReferenceOptional": "Imagem de referência (opcional)",
   "NpuClearReference": "Remover a imagem de referência",
-  "NpuImageToImage": "De imagem para imagem"
+  "NpuImageToImage": "De imagem para imagem",
+  "NpuLoadingVideo": "Carregando o LTX-Video na NPU…",
+  "NpuDecodingVideo": "Decodificando quadros…",
+  "NpuEncodingVideo": "Salvando o vídeo…"
  },
  "fr-FR": {
   "NewChat": "Nouvelle discussion",
@@ -1325,7 +1334,10 @@
   "NpuNoVideo": "La génération de vidéos sur Snapdragon n'est pas encore disponible.",
   "NpuReferenceOptional": "Image de référence (facultative)",
   "NpuClearReference": "Retirer l'image de référence",
-  "NpuImageToImage": "D'image à image"
+  "NpuImageToImage": "D'image à image",
+  "NpuLoadingVideo": "Chargement de LTX-Video sur le NPU…",
+  "NpuDecodingVideo": "Décodage des images…",
+  "NpuEncodingVideo": "Enregistrement de la vidéo…"
  },
  "de-DE": {
   "NewChat": "Neuer Chat",
@@ -1657,7 +1669,10 @@
   "NpuNoVideo": "Videos lassen sich auf Snapdragon noch nicht erstellen.",
   "NpuReferenceOptional": "Referenzbild (optional)",
   "NpuClearReference": "Referenzbild entfernen",
-  "NpuImageToImage": "Bild zu Bild"
+  "NpuImageToImage": "Bild zu Bild",
+  "NpuLoadingVideo": "LTX-Video wird auf die NPU geladen…",
+  "NpuDecodingVideo": "Einzelbilder werden dekodiert…",
+  "NpuEncodingVideo": "Video wird gespeichert…"
  },
  "it-IT": {
   "NewChat": "Nuova chat",
@@ -1989,7 +2004,10 @@
   "NpuNoVideo": "La generazione di video su Snapdragon non è ancora disponibile.",
   "NpuReferenceOptional": "Immagine di riferimento (facoltativa)",
   "NpuClearReference": "Rimuovi l'immagine di riferimento",
-  "NpuImageToImage": "Da immagine a immagine"
+  "NpuImageToImage": "Da immagine a immagine",
+  "NpuLoadingVideo": "Caricamento di LTX-Video sulla NPU…",
+  "NpuDecodingVideo": "Decodifica dei fotogrammi…",
+  "NpuEncodingVideo": "Salvataggio del video…"
  },
  "ru-RU": {
   "NewChat": "Новый чат",
@@ -2321,6 +2339,9 @@
   "NpuNoVideo": "Создание видео на Snapdragon пока недоступно.",
   "NpuReferenceOptional": "Исходное изображение (необязательно)",
   "NpuClearReference": "Убрать исходное изображение",
-  "NpuImageToImage": "Изображение в изображение"
+  "NpuImageToImage": "Изображение в изображение",
+  "NpuLoadingVideo": "Загрузка LTX-Video в NPU…",
+  "NpuDecodingVideo": "Декодирование кадров…",
+  "NpuEncodingVideo": "Сохранение видео…"
  }
 }
