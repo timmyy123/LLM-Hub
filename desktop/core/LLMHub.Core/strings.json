@@ -311,7 +311,8 @@
   "MusicDownloading": "Downloading Magenta RealTime ({0}%)",
   "MusicLoading": "Loading Magenta RealTime…",
   "MusicSaved": "Saved {0}",
-  "MusicSlow": "This Mac makes music a little slower than real time, so playback may pause briefly."
+  "MusicSlow": "This Mac makes music a little slower than real time, so playback may pause briefly.",
+  "ThoughtForSeconds": "Thought for {0}s"
  },
  "es-ES": {
   "NewChat": "Nuevo chat",
@@ -625,7 +626,8 @@
   "MusicDownloading": "Descargando Magenta RealTime ({0} %)",
   "MusicLoading": "Cargando Magenta RealTime…",
   "MusicSaved": "Guardado {0}",
-  "MusicSlow": "Este Mac genera la música algo más lento que en tiempo real, así que puede haber pausas breves."
+  "MusicSlow": "Este Mac genera la música algo más lento que en tiempo real, así que puede haber pausas breves.",
+  "ThoughtForSeconds": "Pensó durante {0} s"
  },
  "pt-BR": {
   "NewChat": "Nova conversa",
@@ -939,7 +941,8 @@
   "MusicDownloading": "Baixando o Magenta RealTime ({0}%)",
   "MusicLoading": "Carregando o Magenta RealTime…",
   "MusicSaved": "Salvo {0}",
-  "MusicSlow": "Este Mac gera a música um pouco mais devagar que o tempo real, então podem ocorrer pausas curtas."
+  "MusicSlow": "Este Mac gera a música um pouco mais devagar que o tempo real, então podem ocorrer pausas curtas.",
+  "ThoughtForSeconds": "Pensou por {0} s"
  },
  "fr-FR": {
   "NewChat": "Nouvelle discussion",
@@ -1253,7 +1256,8 @@
   "MusicDownloading": "Téléchargement de Magenta RealTime ({0} %)",
   "MusicLoading": "Chargement de Magenta RealTime…",
   "MusicSaved": "{0} enregistré",
-  "MusicSlow": "Ce Mac crée la musique un peu moins vite que le temps réel : la lecture peut marquer de courtes pauses."
+  "MusicSlow": "Ce Mac crée la musique un peu moins vite que le temps réel : la lecture peut marquer de courtes pauses.",
+  "ThoughtForSeconds": "A réfléchi pendant {0} s"
  },
  "de-DE": {
   "NewChat": "Neuer Chat",
@@ -1567,7 +1571,8 @@
   "MusicDownloading": "Magenta RealTime wird geladen ({0} %)",
   "MusicLoading": "Magenta RealTime wird gestartet…",
   "MusicSaved": "{0} gespeichert",
-  "MusicSlow": "Dieser Mac erzeugt Musik etwas langsamer als in Echtzeit, daher kann die Wiedergabe kurz stocken."
+  "MusicSlow": "Dieser Mac erzeugt Musik etwas langsamer als in Echtzeit, daher kann die Wiedergabe kurz stocken.",
+  "ThoughtForSeconds": "{0} s nachgedacht"
  },
  "it-IT": {
   "NewChat": "Nuova chat",
@@ -1881,7 +1886,8 @@
   "MusicDownloading": "Download di Magenta RealTime ({0}%)",
   "MusicLoading": "Caricamento di Magenta RealTime…",
   "MusicSaved": "Salvato {0}",
-  "MusicSlow": "Questo Mac genera la musica un po' più lentamente del tempo reale, quindi la riproduzione può fermarsi per un attimo."
+  "MusicSlow": "Questo Mac genera la musica un po' più lentamente del tempo reale, quindi la riproduzione può fermarsi per un attimo.",
+  "ThoughtForSeconds": "Ha pensato per {0} s"
  },
  "ru-RU": {
   "NewChat": "Новый чат",
@@ -2195,6 +2201,7 @@
   "MusicDownloading": "Загрузка Magenta RealTime ({0}%)",
   "MusicLoading": "Запуск Magenta RealTime…",
   "MusicSaved": "Сохранено: {0}",
-  "MusicSlow": "Этот Mac создаёт музыку чуть медленнее реального времени, поэтому возможны короткие паузы."
+  "MusicSlow": "Этот Mac создаёт музыку чуть медленнее реального времени, поэтому возможны короткие паузы.",
+  "ThoughtForSeconds": "Думал {0} с"
  }
 }

@@ -27,6 +27,13 @@ packages:
   # Studio › Music: Magenta RealTime 2 on MLX (reuses the iOS runtime; see Packages/MagentaMac/Package.swift).
   MagentaMac:
     path: Packages/MagentaMac
+  # Read aloud: Supertonic 3 runs on Microsoft's official ONNX Runtime package.
+  onnxruntime:
+    url: https://github.com/microsoft/onnxruntime-swift-package-manager
+    exactVersion: 1.24.2
+  # Dictation: whisper.cpp's official Apple xcframework (Metal).
+  WhisperCpp:
+    path: Packages/WhisperCpp
 targets:
   LLMHub:
     type: application
@@ -47,11 +54,16 @@ targets:
         CFBundleLocalizations: [en, es, pt-BR, fr, de, it, ru]
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true
+        NSMicrophoneUsageDescription: LLM Hub uses the microphone for dictation. Speech is transcribed on this Mac by Whisper and never leaves it.
     dependencies:
       - package: LiteRTLM
         product: LiteRTLM
       - package: MagentaMac
         product: MagentaMac
+      - package: onnxruntime
+        product: onnxruntime
+      - package: WhisperCpp
+        product: whisper
     entitlements:
       path: LLMHub/LLMHub.entitlements
       properties:

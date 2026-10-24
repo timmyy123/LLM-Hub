@@ -83,7 +83,7 @@ final class EngineHub {
 
     func stream(_ model: InstalledModel, turns: [ChatTurn], options: ChatOptions = .init()) -> AsyncThrowingStream<ChatClient.Delta, Error> {
         switch model.format {
-        case "litertlm": return liteRt.stream(turns: turns)
+        case "litertlm": return liteRt.stream(turns: turns, options: options)
         case "apple": return AppleModel.stream(turns: turns)
         default: return ChatClient.stream(baseURL: llama.baseURL!, model: model.id, turns: turns, options: options)
         }
@@ -105,6 +105,8 @@ final class LiteRtEngine {
     private var engine: Engine?
     private(set) var backend: String?
     private(set) var loadedWithMtp = false
+    private var model: InstalledModel?
+    private var hasVision = false
 
     func load(_ model: InstalledModel) async throws {
         unload()
@@ -121,25 +123,33 @@ final class LiteRtEngine {
             Log.info("LiteRT-LM \(model.id): file \(has ? "has" : "has no") MTP drafter")
         }
         let fileHasMtp = model.mtpEnabled
+        // Vision models also get the image encoder (chat attachments); without it if that cannot start.
+        // (Google's "-gpu" Gemma 4 build ships no vision encoder, and a conversation then fails, so ask the file.)
+        let wantsVision = model.tags.contains("vision") && ModelInfo(modelPath: model.primaryPath.path)?.inputModalities.vision == true
         for backend in [Backend.gpu, Backend.cpu()] {
-            do {
-                // MTP (speculative decoding) only on the GPU, and only for files that ship a drafter; it throws otherwise.
-                let mtp = fileHasMtp && backend == .gpu
-                ExperimentalFlags.optIntoExperimentalAPIs()
-                ExperimentalFlags.enableSpeculativeDecoding = mtp ? true : nil
-                // Real decode tokens/s for the reply footer (stream chunks can hold several tokens, especially with MTP).
-                ExperimentalFlags.enableBenchmark = true
-                let config = try EngineConfig(modelPath: model.primaryPath.path, backend: backend, maxNumTokens: tokens, cacheDir: cache.path)
-                let engine = Engine(engineConfig: config)
-                try await engine.initialize()
-                self.engine = engine
-                self.backend = backend.rawValue
-                loadedWithMtp = model.mtpEnabled
-                Log.info("LiteRT-LM loaded \(model.id) on \(backend.rawValue)\(mtp ? " with MTP" : "")")
-                return
-            } catch {
-                Log.error("LiteRT-LM could not start \(model.id) on \(backend.rawValue)", error)
-                lastError = error
+            for vision in wantsVision ? [true, false] : [false] {
+                do {
+                    // MTP (speculative decoding) only on the GPU, and only for files that ship a drafter; it throws otherwise.
+                    let mtp = fileHasMtp && backend == .gpu
+                    ExperimentalFlags.optIntoExperimentalAPIs()
+                    ExperimentalFlags.enableSpeculativeDecoding = mtp ? true : nil
+                    // Real decode tokens/s for the reply footer (stream chunks can hold several tokens, especially with MTP).
+                    ExperimentalFlags.enableBenchmark = true
+                    let config = try EngineConfig(modelPath: model.primaryPath.path, backend: backend, visionBackend: vision ? backend : nil,
+                                                  maxNumTokens: tokens, cacheDir: cache.path)
+                    let engine = Engine(engineConfig: config)
+                    try await engine.initialize()
+                    self.engine = engine
+                    self.backend = backend.rawValue
+                    self.model = model
+                    hasVision = vision
+                    loadedWithMtp = model.mtpEnabled
+                    Log.info("LiteRT-LM loaded \(model.id) on \(backend.rawValue)\(mtp ? " with MTP" : "")\(vision ? " with vision" : "")")
+                    return
+                } catch {
+                    Log.error("LiteRT-LM could not start \(model.id) on \(backend.rawValue)\(vision ? " with vision" : "")", error)
+                    lastError = error
+                }
             }
         }
         throw lastError ?? NSError(domain: "LLMHub", code: 21)
@@ -148,25 +158,46 @@ final class LiteRtEngine {
     func unload() {
         engine = nil
         backend = nil
+        model = nil
+        hasVision = false
     }
 
-    func stream(turns: [ChatTurn]) -> AsyncThrowingStream<ChatClient.Delta, Error> {
+    /// A turn as a LiteRT-LM message: attached images (when the vision encoder is loaded) before the text.
+    private func message(_ turn: ChatTurn, role: Role) -> Message {
+        let images = hasVision ? turn.images.map { Content.imageFile($0.path) } : []
+        return images.isEmpty ? Message(turn.content, role: role) : Message(contents: images + [.text(turn.content)], role: role)
+    }
+
+    /// Extended thinking: Gemma 4 12B uses the engine's thinking switch; smaller Gemma 4 models the <|think|> system tag,
+    /// which keeps MTP on the main token stream (as in the iOS app). Reasoning arrives on the "thought" channel.
+    func stream(turns: [ChatTurn], options: ChatOptions = .init()) -> AsyncThrowingStream<ChatClient.Delta, Error> {
         AsyncThrowingStream { continuation in
             let task = Task { @MainActor in
                 do {
                     guard let engine else { throw NSError(domain: "LLMHub", code: 22, userInfo: [NSLocalizedDescriptionKey: "No LiteRT-LM model loaded"]) }
-                    let system = turns.first { $0.role == "system" }.map { Message($0.content, role: .system) }
-                    let history = turns.dropLast().filter { $0.role != "system" }.map { Message($0.content, role: $0.role == "assistant" ? .model : .user) }
-                    let conversation = try await engine.createConversation(with: ConversationConfig(systemMessage: system, initialMessages: Array(history)))
+                    let id = (self.model?.catalogId ?? self.model?.id ?? "").lowercased()
+                    let nativeThinking = options.thinking && id.contains("12b")
+                    let tagThinking = options.thinking && !nativeThinking
+                    // Every system note (instructions, web search results) goes into the one system message.
+                    var systemText = turns.filter { $0.role == "system" }.map(\.content).joined(separator: "\n\n")
+                    if tagThinking { systemText = systemText.isEmpty ? "<|think|>" : "<|think|>\n" + systemText }
+                    let system = systemText.isEmpty ? nil : Message(systemText, role: .system)
+                    let dialog = turns.filter { $0.role != "system" }
+                    let history = dialog.dropLast().map { message($0, role: $0.role == "assistant" ? .model : .user) }
+                    let conversation = try await engine.createConversation(with: ConversationConfig(
+                        systemMessage: system, initialMessages: Array(history),
+                        thinkingConfig: nativeThinking ? ThinkingConfig(enableThinking: true) : nil))
                     var firstToken: Date?
                     var pieces = 0
-                    for try await chunk in conversation.sendMessageStream(Message(turns.last?.content ?? "")) {
+                    let last = dialog.last ?? ChatTurn(role: "user", content: "")
+                    for try await chunk in conversation.sendMessageStream(message(last, role: .user)) {
                         try Task.checkCancellation()
+                        let thought = options.thinking ? chunk.channels["thought"] ?? "" : ""
                         let text = chunk.toString
-                        if !text.isEmpty {
+                        if !thought.isEmpty || !text.isEmpty {
                             firstToken = firstToken ?? Date()
                             pieces += 1
-                            continuation.yield(.init(content: text))
+                            continuation.yield(.init(content: text.isEmpty ? nil : text, reasoning: thought.isEmpty ? nil : thought))
                         }
                     }
                     // What the user feels: decoded tokens over the wall time from first to last token.

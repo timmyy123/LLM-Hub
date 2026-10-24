@@ -12,7 +12,7 @@ enum DevTools {
         if let theme = value("--theme", args) {
             NSApp.appearance = NSAppearance(named: theme == "dark" ? .darkAqua : .aqua)
         }
-        guard args.contains("--capture") || args.contains("--selftest") else { return }
+        guard args.contains(where: { $0 == "--capture" || ($0.hasPrefix("--") && $0.hasSuffix("test")) }) else { return }
         Task {
             if let id = value("--selftest", args) {
                 await selfTest(id, format: value("--format", args) ?? "gguf", quant: value("--quant", args), prompt: value("--prompt", args))
@@ -21,6 +21,7 @@ enum DevTools {
             await designTest(args)
             await studioTest(args)
             await speechTest(args)
+            await chatTest(args)
             switch value("--page", args) {
             case "settings": AppModel.shared.section = .settings(.general)
             case "models": AppModel.shared.section = .settings(.models)

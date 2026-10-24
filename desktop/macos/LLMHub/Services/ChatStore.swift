@@ -6,6 +6,7 @@ struct ChatRecord {
     var title: String
     var modelId: String?
     var updatedAt: Date
+    var starred = false
 }
 
 struct MessageRecord {
@@ -16,6 +17,8 @@ struct MessageRecord {
     let reasoning: String?
     let modelId: String?
     let createdAt: Date
+    var attachments: [Attachment] = []
+    var sources: [WebSource] = []
 }
 
 /// Chat sessions and messages in a local SQLite database (same schema as the Windows app).
@@ -36,11 +39,17 @@ final class ChatStore {
                 role TEXT NOT NULL, content TEXT NOT NULL, reasoning TEXT, model_id TEXT, created_at INTEGER NOT NULL);
             CREATE INDEX IF NOT EXISTS messages_chat ON messages(chat_id, created_at);
             """)
+        // Columns added after the first release: attached files and web sources, as JSON (same as Windows and Linux).
+        let columns = Set(query("PRAGMA table_info(messages)", []) { Self.text($0, 1) ?? "" })
+        for column in ["attachments", "sources"] where !columns.contains(column) {
+            exec("ALTER TABLE messages ADD COLUMN \(column) TEXT")
+        }
     }
 
     func listChats() -> [ChatRecord] {
-        query("SELECT id, title, model_id, updated_at FROM chats ORDER BY updated_at DESC", []) { s in
-            ChatRecord(id: Self.text(s, 0)!, title: Self.text(s, 1)!, modelId: Self.text(s, 2), updatedAt: Self.date(s, 3))
+        query("SELECT id, title, model_id, updated_at, starred FROM chats ORDER BY updated_at DESC", []) { s in
+            ChatRecord(id: Self.text(s, 0)!, title: Self.text(s, 1)!, modelId: Self.text(s, 2), updatedAt: Self.date(s, 3),
+                       starred: sqlite3_column_int64(s, 4) != 0)
         }
     }
 
@@ -51,21 +60,31 @@ final class ChatStore {
         return chat
     }
 
+    func setStarred(_ id: String, _ starred: Bool) {
+        run("UPDATE chats SET starred = ? WHERE id = ?", [Int64(starred ? 1 : 0), id])
+    }
+
+    func deleteMessage(_ id: String) {
+        run("DELETE FROM messages WHERE id = ?", [id])
+    }
+
     func deleteChat(_ id: String) {
         run("DELETE FROM messages WHERE chat_id = ?", [id])
         run("DELETE FROM chats WHERE id = ?", [id])
     }
 
     func messages(_ chatId: String) -> [MessageRecord] {
-        query("SELECT id, chat_id, role, content, reasoning, model_id, created_at FROM messages WHERE chat_id = ? ORDER BY created_at", [chatId]) { s in
+        query("SELECT id, chat_id, role, content, reasoning, model_id, created_at, attachments, sources FROM messages WHERE chat_id = ? ORDER BY created_at", [chatId]) { s in
             MessageRecord(id: Self.text(s, 0)!, chatId: Self.text(s, 1)!, role: Self.text(s, 2)!, content: Self.text(s, 3) ?? "",
-                          reasoning: Self.text(s, 4), modelId: Self.text(s, 5), createdAt: Self.date(s, 6))
+                          reasoning: Self.text(s, 4), modelId: Self.text(s, 5), createdAt: Self.date(s, 6),
+                          attachments: Self.decode(Self.text(s, 7)) ?? [], sources: Self.decode(Self.text(s, 8)) ?? [])
         }
     }
 
     func add(_ m: MessageRecord) {
-        run("INSERT INTO messages (id, chat_id, role, content, reasoning, model_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            [m.id, m.chatId, m.role, m.content, m.reasoning, m.modelId, Self.millis(m.createdAt)])
+        run("INSERT INTO messages (id, chat_id, role, content, reasoning, model_id, created_at, attachments, sources) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            [m.id, m.chatId, m.role, m.content, m.reasoning, m.modelId, Self.millis(m.createdAt),
+             m.attachments.isEmpty ? nil : Self.encode(m.attachments), m.sources.isEmpty ? nil : Self.encode(m.sources)])
         run("UPDATE chats SET updated_at = ?, model_id = COALESCE(?, model_id) WHERE id = ?", [Self.millis(m.createdAt), m.modelId, m.chatId])
     }
 
@@ -112,6 +131,14 @@ final class ChatStore {
 
     private static func date(_ s: OpaquePointer, _ i: Int32) -> Date {
         Date(timeIntervalSince1970: Double(sqlite3_column_int64(s, i)) / 1000)
+    }
+
+    private static func decode<T: Decodable>(_ json: String?) -> T? {
+        json.flatMap { try? JSONDecoder().decode(T.self, from: Data($0.utf8)) }
+    }
+
+    private static func encode<T: Encodable>(_ value: T) -> String? {
+        (try? JSONEncoder().encode(value)).map { String(decoding: $0, as: UTF8.self) }
     }
 
     private static func millis(_ d: Date) -> Int64 { Int64(d.timeIntervalSince1970 * 1000) }

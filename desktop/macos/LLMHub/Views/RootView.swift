@@ -109,6 +109,10 @@ private struct Sidebar: View {
                                     .tag("chat:\(item.id)")
                                     .accessibilityIdentifier("ChatTitle")
                                     .contextMenu {
+                                        Button(L.s(item.starred ? "Unstar" : "Star"), systemImage: item.starred ? "star.slash" : "star") {
+                                            app.chat.toggleStar(item)
+                                        }
+                                        .accessibilityIdentifier("StarChatMenuItem")
                                         Button(L.s("DeleteChat"), role: .destructive) { app.chat.delete(item) }
                                             .accessibilityIdentifier("DeleteChatMenuItem")
                                     }
