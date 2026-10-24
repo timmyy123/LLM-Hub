@@ -14,6 +14,12 @@ public sealed record ComfyWorkflow(string Id, string Name, string Kind, bool Nee
 {
     public override string ToString() => Name;
 
+    /// <summary>Set for the Snapdragon NPU workflows (Stable Diffusion 1.5 through QNN) instead of ComfyUI.</summary>
+    public LLMHub.Services.Studio.Npu.SdNpuModel? NpuModel { get; init; }
+    /// <summary>The Snapdragon NPU video workflow (LTX-Video through stable-diffusion.cpp and QNN).</summary>
+    public bool NpuVideo { get; init; }
+    public bool IsNpu => NpuModel is not null || NpuVideo;
+
     public long DownloadSize => Files.Sum(f => f.Size);
 
     public static readonly ComfyWorkflow FluxSchnell = new("flux-schnell", "Text to image · Flux.1 schnell", "image", false, 4,
@@ -64,6 +70,19 @@ public sealed record ComfyWorkflow(string Id, string Name, string Kind, bool Nee
     /// <summary>Longest clip a music workflow makes, in seconds.</summary>
     public int MaxSeconds { get; init; }
     public bool IsStability => Id.StartsWith("sa3", StringComparison.Ordinal) || Id == "sdxl";
+
+    /// <summary>
+    /// Windows on Arm: Stable Diffusion 1.5 checkpoints on the Hexagon NPU (512 x 512, optional reference for image to
+    /// image), and LTX-Video 2B 0.9.8 distilled (Lightricks) when sd-cli.exe ships with the app (optional reference for
+    /// image to video).
+    /// </summary>
+    public static IReadOnlyList<ComfyWorkflow> NpuWorkflows { get; } =
+    [
+        .. LLMHub.Services.Studio.Npu.SdNpuModel.All.Select(m => new ComfyWorkflow("npu-" + m.Id, $"{m.Name} · NPU", "image", false, 20, []) { NpuModel = m }),
+        .. LLMHub.Services.Studio.Npu.LtxNpuService.IsSupported
+            ? [new ComfyWorkflow("npu-ltxv", "LTX-Video 2B 0.9.8 · NPU", "video", false, LLMHub.Services.Studio.Npu.LtxNpuService.MaxSteps, []) { NpuVideo = true }]
+            : Array.Empty<ComfyWorkflow>(),
+    ];
 
     /// <summary>The API-format graph for one run. <paramref name="image"/> is a name returned by ComfyUI's /upload/image.</summary>
     public JsonObject Build(string prompt, int width, int height, int count, int steps, long seed, string? image)

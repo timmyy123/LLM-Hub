@@ -153,14 +153,40 @@ public sealed partial class HuggingFaceClient
                      ?? projectors.FirstOrDefault(f => f.FileName.Contains("BF16", StringComparison.OrdinalIgnoreCase))
                      ?? projectors.FirstOrDefault();
 
-        return all.Except(projectors)
-            .GroupBy(f =>
+        // One variant per model file, with the parts of a split model ("-00001-of-00003") kept together. Two different
+        // files can carry the same quant (LFM2.5's Q4_0 and QAD-Q4_0): those get the words that tell them apart.
+        var groups = all.Except(projectors)
+            .GroupBy(f => SplitSuffixRegex().Replace(f.Path, ".gguf"), StringComparer.OrdinalIgnoreCase)
+            .Select(g =>
             {
-                var match = QuantRegex().Match(f.FileName);
-                return match.Success ? match.Groups["q"].Value.ToUpperInvariant() : "GGUF";
+                var match = QuantRegex().Match(g.First().FileName);
+                return (Quant: match.Success ? match.Groups["q"].Value.ToUpperInvariant() : "GGUF",
+                    Stem: Path.GetFileNameWithoutExtension(g.Key), Files: g.OrderBy(f => f.Path, StringComparer.Ordinal).ToList());
             })
-            .Select(g => new GgufVariant(repo, g.Key, g.OrderBy(f => f.Path, StringComparer.Ordinal).ToList(), mmproj))
+            .ToList();
+        return groups
+            .GroupBy(v => v.Quant)
+            .SelectMany(same => same.Count() == 1
+                ? same.Select(v => (Label: v.Quant, v.Files))
+                : same.Select(v => (Label: Distinct(v.Stem, same.Select(o => o.Stem).ToList()), v.Files)))
+            .Select(v => new GgufVariant(repo, v.Label, v.Files, mmproj))
             .OrderBy(v => v.WeightBytes)
             .ToList();
     }
+
+    /// <summary>The words of <paramref name="stem"/> after those every file in <paramref name="stems"/> shares ("QAD-Q4_0").</summary>
+    private static string Distinct(string stem, IReadOnlyList<string> stems)
+    {
+        var words = stem.Split('-', '_', '.');
+        var common = 0;
+        while (common < words.Length - 1 && stems.All(s => s.Split('-', '_', '.') is var w && w.Length > common && w[common].Equals(words[common], StringComparison.OrdinalIgnoreCase)))
+            common++;
+        var rest = stem;
+        for (var i = 0; i < common; i++)
+            rest = rest[(rest.IndexOf(words[i], StringComparison.Ordinal) + words[i].Length)..].TrimStart('-', '_', '.');
+        return rest.Length > 0 ? rest.ToUpperInvariant() : stem;
+    }
+
+    [GeneratedRegex(@"-\d{5}-of-\d{5}\.gguf$", RegexOptions.IgnoreCase)]
+    private static partial Regex SplitSuffixRegex();
 }

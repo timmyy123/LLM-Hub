@@ -67,6 +67,14 @@ public sealed partial class StudioPage : Page
             ViewModel.ReferenceImage = file.Path;
     }
 
+    /// <summary>Opens the selected picture or video in its default Windows app.</summary>
+    private async void OnOpenItem(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel.SelectedItem is not { } item || !File.Exists(item.Path))
+            return;
+        await Launcher.LaunchFileAsync(await Windows.Storage.StorageFile.GetFileFromPathAsync(item.Path));
+    }
+
     private void OnUseInChat(object sender, RoutedEventArgs e)
     {
         if (ViewModel.SelectedItem is not { } item)
@@ -80,7 +88,17 @@ public sealed partial class StudioPage : Page
         if (ViewModel.SelectedItem is not { } item)
             return;
         ViewModel.Mode = "video";
-        ViewModel.Workflow = ComfyWorkflow.LtxVideo;
+        ViewModel.Workflow = ViewModel.Workflows.FirstOrDefault(w => w.Kind == "video") ?? ComfyWorkflow.LtxVideo;
+        ViewModel.ReferenceImage = item.Path;
+        UpdateTabs();
+    }
+
+    /// <summary>Snapdragon NPU: the selected picture becomes the reference of the current image model (image to image).</summary>
+    private void OnImageToImage(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel.SelectedItem is not { } item)
+            return;
+        ViewModel.Mode = "image";
         ViewModel.ReferenceImage = item.Path;
         UpdateTabs();
     }

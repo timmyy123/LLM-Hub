@@ -18,6 +18,8 @@ public partial class App : Application
             RequestedTheme = ApplicationTheme.Dark;
         InitializeComponent();
         UnhandledException += (_, e) => Log.Error("Unhandled", e.Exception);
+        Services.Studio.Npu.SdNpuService.ImageLoader = NpuImages.LoadRgbAsync;
+        Services.Studio.Npu.LtxNpuService.VideoEncoder = NpuImages.EncodeMp4Async;
     }
 
     protected override void OnLaunched(LaunchActivatedEventArgs args)
@@ -29,6 +31,7 @@ public partial class App : Application
             Ioc.Embeddings.Stop();
             Ioc.Speech.Stop();
             Ioc.Comfy.Stop();
+            Ioc.SdNpu.Unload();
         };
         Window.Activate();
         _ = Ioc.Api.RestartAsync();

@@ -405,7 +405,19 @@
   "DesignPropFill": "Fill: {0}",
   "DesignPropText": "Text: {0}",
   "DesignPropRadius": "Radius: {0}",
-  "DesignPropFont": "Font: {0}"
+  "DesignPropFont": "Font: {0}",
+  "NpuReady": "{0} · loads when you generate",
+  "NpuLoaded": "{1} · {0} ready",
+  "NpuLoading": "Loading {0} on the NPU…",
+  "NpuUnpacking": "Unpacking {0}…",
+  "NpuNoVideo": "Video generation on Snapdragon is not available yet.",
+  "NpuReferenceOptional": "Reference image (optional)",
+  "NpuClearReference": "Remove reference image",
+  "NpuImageToImage": "Image to image",
+  "NpuLoadingVideo": "Loading LTX-Video on the NPU…",
+  "NpuDecodingVideo": "Decoding frames…",
+  "NpuEncodingVideo": "Saving the video…",
+  "NpuSettingsHelp": "Images and video are generated on the Snapdragon NPU. Each model downloads the first time you use it."
  },
  "es-ES": {
   "NewChat": "Nuevo chat",
@@ -813,7 +825,19 @@
   "DesignPropFill": "Relleno: {0}",
   "DesignPropText": "Texto: {0}",
   "DesignPropRadius": "Radio: {0}",
-  "DesignPropFont": "Fuente: {0}"
+  "DesignPropFont": "Fuente: {0}",
+  "NpuReady": "{0} · se carga al generar",
+  "NpuLoaded": "{1} · {0} listo",
+  "NpuLoading": "Cargando {0} en la NPU…",
+  "NpuUnpacking": "Descomprimiendo {0}…",
+  "NpuNoVideo": "La generación de vídeo en Snapdragon aún no está disponible.",
+  "NpuReferenceOptional": "Imagen de referencia (opcional)",
+  "NpuClearReference": "Quitar la imagen de referencia",
+  "NpuImageToImage": "De imagen a imagen",
+  "NpuLoadingVideo": "Cargando LTX-Video en la NPU…",
+  "NpuDecodingVideo": "Decodificando fotogramas…",
+  "NpuEncodingVideo": "Guardando el vídeo…",
+  "NpuSettingsHelp": "Las imágenes y los vídeos se generan en la NPU Snapdragon. Cada modelo se descarga la primera vez que lo usas."
  },
  "pt-BR": {
   "NewChat": "Nova conversa",
@@ -1221,7 +1245,19 @@
   "DesignPropFill": "Preenchimento: {0}",
   "DesignPropText": "Texto: {0}",
   "DesignPropRadius": "Raio: {0}",
-  "DesignPropFont": "Fonte: {0}"
+  "DesignPropFont": "Fonte: {0}",
+  "NpuReady": "{0} · carrega quando você gerar",
+  "NpuLoaded": "{1} · {0} pronto",
+  "NpuLoading": "Carregando {0} na NPU…",
+  "NpuUnpacking": "Descompactando {0}…",
+  "NpuNoVideo": "A geração de vídeo no Snapdragon ainda não está disponível.",
+  "NpuReferenceOptional": "Imagem de referência (opcional)",
+  "NpuClearReference": "Remover a imagem de referência",
+  "NpuImageToImage": "De imagem para imagem",
+  "NpuLoadingVideo": "Carregando o LTX-Video na NPU…",
+  "NpuDecodingVideo": "Decodificando quadros…",
+  "NpuEncodingVideo": "Salvando o vídeo…",
+  "NpuSettingsHelp": "Imagens e vídeos são gerados na NPU Snapdragon. Cada modelo é baixado na primeira vez que você o usa."
  },
  "fr-FR": {
   "NewChat": "Nouvelle discussion",
@@ -1629,7 +1665,19 @@
   "DesignPropFill": "Remplissage : {0}",
   "DesignPropText": "Texte : {0}",
   "DesignPropRadius": "Rayon : {0}",
-  "DesignPropFont": "Police : {0}"
+  "DesignPropFont": "Police : {0}",
+  "NpuReady": "{0} · se charge à la génération",
+  "NpuLoaded": "{1} · {0} prêt",
+  "NpuLoading": "Chargement de {0} sur le NPU…",
+  "NpuUnpacking": "Décompression de {0}…",
+  "NpuNoVideo": "La génération de vidéos sur Snapdragon n'est pas encore disponible.",
+  "NpuReferenceOptional": "Image de référence (facultative)",
+  "NpuClearReference": "Retirer l'image de référence",
+  "NpuImageToImage": "D'image à image",
+  "NpuLoadingVideo": "Chargement de LTX-Video sur le NPU…",
+  "NpuDecodingVideo": "Décodage des images…",
+  "NpuEncodingVideo": "Enregistrement de la vidéo…",
+  "NpuSettingsHelp": "Les images et les vidéos sont générées sur le NPU Snapdragon. Chaque modèle se télécharge la première fois que vous l'utilisez."
  },
  "de-DE": {
   "NewChat": "Neuer Chat",
@@ -2037,7 +2085,19 @@
   "DesignPropFill": "Füllung: {0}",
   "DesignPropText": "Text: {0}",
   "DesignPropRadius": "Radius: {0}",
-  "DesignPropFont": "Schrift: {0}"
+  "DesignPropFont": "Schrift: {0}",
+  "NpuReady": "{0} · wird beim Generieren geladen",
+  "NpuLoaded": "{1} · {0} bereit",
+  "NpuLoading": "{0} wird auf die NPU geladen…",
+  "NpuUnpacking": "{0} wird entpackt…",
+  "NpuNoVideo": "Videos lassen sich auf Snapdragon noch nicht erstellen.",
+  "NpuReferenceOptional": "Referenzbild (optional)",
+  "NpuClearReference": "Referenzbild entfernen",
+  "NpuImageToImage": "Bild zu Bild",
+  "NpuLoadingVideo": "LTX-Video wird auf die NPU geladen…",
+  "NpuDecodingVideo": "Einzelbilder werden dekodiert…",
+  "NpuEncodingVideo": "Video wird gespeichert…",
+  "NpuSettingsHelp": "Bilder und Videos entstehen auf der Snapdragon-NPU. Jedes Modell wird bei der ersten Nutzung heruntergeladen."
  },
  "it-IT": {
   "NewChat": "Nuova chat",
@@ -2445,7 +2505,19 @@
   "DesignPropFill": "Riempimento: {0}",
   "DesignPropText": "Testo: {0}",
   "DesignPropRadius": "Raggio: {0}",
-  "DesignPropFont": "Font: {0}"
+  "DesignPropFont": "Font: {0}",
+  "NpuReady": "{0} · si carica quando generi",
+  "NpuLoaded": "{1} · {0} pronto",
+  "NpuLoading": "Caricamento di {0} sulla NPU…",
+  "NpuUnpacking": "Estrazione di {0}…",
+  "NpuNoVideo": "La generazione di video su Snapdragon non è ancora disponibile.",
+  "NpuReferenceOptional": "Immagine di riferimento (facoltativa)",
+  "NpuClearReference": "Rimuovi l'immagine di riferimento",
+  "NpuImageToImage": "Da immagine a immagine",
+  "NpuLoadingVideo": "Caricamento di LTX-Video sulla NPU…",
+  "NpuDecodingVideo": "Decodifica dei fotogrammi…",
+  "NpuEncodingVideo": "Salvataggio del video…",
+  "NpuSettingsHelp": "Immagini e video vengono generati sulla NPU Snapdragon. Ogni modello si scarica al primo utilizzo."
  },
  "ru-RU": {
   "NewChat": "Новый чат",
@@ -2853,6 +2925,18 @@
   "DesignPropFill": "Заливка: {0}",
   "DesignPropText": "Текст: {0}",
   "DesignPropRadius": "Скругление: {0}",
-  "DesignPropFont": "Шрифт: {0}"
+  "DesignPropFont": "Шрифт: {0}",
+  "NpuReady": "{0} · загрузится при генерации",
+  "NpuLoaded": "{1} · {0}: готово",
+  "NpuLoading": "Загрузка {0} в NPU…",
+  "NpuUnpacking": "Распаковка {0}…",
+  "NpuNoVideo": "Создание видео на Snapdragon пока недоступно.",
+  "NpuReferenceOptional": "Исходное изображение (необязательно)",
+  "NpuClearReference": "Убрать исходное изображение",
+  "NpuImageToImage": "Изображение в изображение",
+  "NpuLoadingVideo": "Загрузка LTX-Video в NPU…",
+  "NpuDecodingVideo": "Декодирование кадров…",
+  "NpuEncodingVideo": "Сохранение видео…",
+  "NpuSettingsHelp": "Изображения и видео создаются на NPU Snapdragon. Каждая модель загружается при первом использовании."
  }
 }

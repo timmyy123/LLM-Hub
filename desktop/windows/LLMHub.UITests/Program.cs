@@ -513,19 +513,9 @@ Test("Hugging Face search finds repos and lists fitting quants", () =>
 
 Test("Download from the Hugging Face tab", () =>
 {
-    // The file table's rows have no automation peers, so walk the panel in order: the Download after the "Q4_0 · …" text.
-    var download = WaitFor(() =>
-    {
-        var seen = false;
-        foreach (var e in window!.FindAllDescendants())
-        {
-            if (e.ControlType == ControlType.Text && e.Name.StartsWith("Q4_0 ·"))
-                seen = true;
-            else if (seen && e.AutomationId == "HfFileDownload")
-                return e;
-        }
-        return null;
-    }, TimeSpan.FromSeconds(30), "Download on the Q4_0 file");
+    // The best-fit row is highlighted and first to offer Download (Q4_K_M, 0.7 GB for this repo).
+    var download = WaitFor(() => window!.FindAllDescendants(cf => cf.ByAutomationId("HfFileDownload")).FirstOrDefault(e => e.IsEnabled),
+        TimeSpan.FromSeconds(30), "Download in the file table");
     download.AsButton().Invoke();
     WaitFor(() => Find("HfFileInstalled"), TimeSpan.FromMinutes(10), "Installed in the file table");
 });
@@ -538,13 +528,13 @@ Test("Installed tab lists models and deletes one", () =>
     var names = list.FindAllDescendants(cf => cf.ByAutomationId("InstalledName")).Select(e => e.Name).ToList();
     Log($"   installed: {string.Join(" | ", names)}");
     Shot("07-installed");
-    var target = list.FindAllDescendants(cf => cf.ByAutomationId("InstalledName")).First(e => e.Name.StartsWith("LFM2.5-1.2B-Instruct", StringComparison.OrdinalIgnoreCase) && e.Name.Contains("Q4_0"));
+    var target = list.FindAllDescendants(cf => cf.ByAutomationId("InstalledName")).First(e => e.Name.StartsWith("LFM2.5-1.2B-Instruct", StringComparison.OrdinalIgnoreCase) && e.Name.Contains("Q4_K_M"));
     var row = target;
     while (row.Parent is { } p && row.ControlType != ControlType.ListItem)
         row = p;
     row.FindFirstDescendant(cf => cf.ByAutomationId("DeleteInstalledButton"))!.AsButton().Invoke();
     WaitUntil(() => list.FindAllDescendants(cf => cf.ByAutomationId("InstalledName")).Length == names.Count - 1, TimeSpan.FromSeconds(10), "model removed");
-    var folder = Directory.EnumerateDirectories(Path.Combine(dataDir, "models")).Any(d => d.Contains("lfm2.5-1.2b-instruct-gguf__q4_0"));
+    var folder = Directory.EnumerateDirectories(Path.Combine(dataDir, "models")).Any(d => d.Contains("lfm2.5-1.2b-instruct-gguf__q4_k_m"));
     Check(!folder, "model folder still on disk");
 });
 

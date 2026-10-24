@@ -567,14 +567,15 @@
             <StackPanel Spacing="18" MaxWidth="760" HorizontalAlignment="Left">
                 <StackPanel Spacing="4">
                     <TextBlock Text="{x:Bind services:Loc.S('SettingsStudio')}" FontSize="20" FontWeight="SemiBold" />
-                    <TextBlock Text="{x:Bind services:Loc.S('SettingsStudioHelp')}" Style="{StaticResource MutedTextStyle}" />
+                    <TextBlock Text="{x:Bind Settings.StudioHelp}" Style="{StaticResource MutedTextStyle}" TextWrapping="Wrap" />
                 </StackPanel>
                 <Border Style="{StaticResource CardStyle}">
                     <StackPanel Spacing="12">
                         <TextBlock Text="{x:Bind Settings.ComfyLine, Mode=OneWay}" FontWeight="SemiBold" AutomationProperties.AutomationId="ComfyLine" />
                         <TextBlock Text="{x:Bind Settings.ComfyFolder}" FontFamily="Cascadia Mono, Consolas" FontSize="12" Foreground="{ThemeResource TextFaintBrush}" />
                         <StackPanel Orientation="Horizontal" Spacing="10">
-                            <Button Style="{StaticResource OutlineButtonStyle}" Content="{x:Bind services:Loc.S('SettingsStart')}" Command="{x:Bind Settings.StartComfyCommand}" />
+                            <Button Style="{StaticResource OutlineButtonStyle}" Content="{x:Bind services:Loc.S('SettingsStart')}" Command="{x:Bind Settings.StartComfyCommand}"
+                                    Visibility="{x:Bind local:Ui.Hide(Settings.UsesNpu)}" />
                             <Button Style="{StaticResource OutlineButtonStyle}" Content="{x:Bind services:Loc.S('SettingsStop')}" Command="{x:Bind Settings.StopComfyCommand}" />
                             <Button Style="{StaticResource OutlineButtonStyle}" Content="{x:Bind services:Loc.S('SettingsOpenFolder')}" Tag="{x:Bind Settings.ComfyFolder}" Click="OnOpenFolder" />
                         </StackPanel>

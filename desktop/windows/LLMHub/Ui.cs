@@ -103,13 +103,18 @@ public static class Ui
     public static string Total(string size) => size.Length > 0 ? Services.Loc.F("SettingsTotal", size) : "";
     public static object Box(int value) => value;
     public static double ToDouble(int value) => value;
-    public static string ReferenceLabel(string path) => string.IsNullOrEmpty(path) ? Services.Loc.S("StudioReference") : System.IO.Path.GetFileName(path);
+    public static string ReferenceLabel(string path, bool optional) =>
+        string.IsNullOrEmpty(path) ? Services.Loc.S(optional ? "NpuReferenceOptional" : "StudioReference") : System.IO.Path.GetFileName(path);
     public static string MusicSavedTo() => Services.Loc.F("StudioSavedTo", ViewModels.StudioViewModel.MusicFolder);
     public static string SavedTo() => Services.Loc.F("StudioSavedTo", Services.Studio.ComfyService.Gallery);
     public static ImageSource? Thumbnail(string path)
     {
         try
         {
+            // NPU videos (MP4) show their poster frame.
+            var poster = Services.Studio.Npu.LtxNpuService.PosterOf(path);
+            if (path.EndsWith(".mp4", StringComparison.OrdinalIgnoreCase) && System.IO.File.Exists(poster))
+                path = poster;
             return new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(new Uri(path)) { DecodePixelWidth = 480 };
         }
         catch (Exception)

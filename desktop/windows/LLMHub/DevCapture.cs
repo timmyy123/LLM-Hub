@@ -25,7 +25,7 @@ internal static class DevCapture
         if (ValueOf(args, "--selftest") is { } catalogId)
             await SelfTestAsync(catalogId, ValueOf(args, "--format") ?? "gguf", ValueOf(args, "--quant"), ValueOf(args, "--prompt"));
         if (ValueOf(args, "--studiotest") is { } workflowId)
-            await DevTests.StudioAsync(workflowId, ValueOf(args, "--prompt") ?? "a cozy cafe interior in morning light, film photo", ValueOf(args, "--image"));
+            await DevTests.StudioAsync(workflowId, ValueOf(args, "--prompt") ?? "a cozy cafe interior in morning light, film photo", ValueOf(args, "--image"), ValueOf(args, "--seed"));
         if (ValueOf(args, "--designtest") is { } request)
         {
             await DevTests.DesignAsync(request, ValueOf(args, "--kind"), ValueOf(args, "--model"), ValueOf(args, "--followup"));
