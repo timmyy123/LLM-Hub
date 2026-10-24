@@ -38,6 +38,9 @@ public static partial class WebSearch
         // DuckDuckGo throttles repeated queries from one address with an empty or challenge page; its lite page often still answers.
         if (results.Count == 0)
             results = await SearchLiteAsync(query, max, ct);
+        // Search engines answer scripted queries with bot challenges at times; Wikipedia's API is made for programs.
+        if (results.Count == 0)
+            results = await SearchWikipediaAsync(query, max, ct);
         Log.Info($"Web search \"{query}\": {results.Count} results");
         return results;
     }
@@ -80,6 +83,70 @@ public static partial class WebSearch
             Log.Error("Web search (lite) failed", e);
             return [];
         }
+    }
+
+    /// <summary>Wikipedia in the app's language: narrower than the web, but it never blocks a well-behaved client.</summary>
+    private static async Task<List<WebSource>> SearchWikipediaAsync(string query, int max, CancellationToken ct)
+    {
+        var tag = AppSettings.Current.Language is { Length: >= 2 } chosen ? chosen : System.Globalization.CultureInfo.CurrentUICulture.Name;
+        var language = tag.Length >= 2 && char.IsLetter(tag[0]) && char.IsLetter(tag[1]) ? tag[..2].ToLowerInvariant() : "en";
+        // Wikipedia matches every word, so send keywords, not the request ("search the web", "one sentence"…);
+        // if an odd word still blocks a match, any keyword may match (ranked by relevance).
+        var keywords = Keywords(query);
+        if (keywords.Count == 0)
+            return [];
+        try
+        {
+            foreach (var search in new[] { string.Join(' ', keywords), string.Join(" OR ", keywords) })
+            {
+                var results = await WikipediaQueryAsync(language, search, max, ct);
+                if (results.Count > 0)
+                {
+                    Log.Info($"Web search: answered from {language}.wikipedia.org (\"{search}\")");
+                    return results;
+                }
+            }
+            return [];
+        }
+        catch (Exception e) when (e is HttpRequestException or System.Text.Json.JsonException or KeyNotFoundException)
+        {
+            Log.Error("Web search (Wikipedia) failed", e);
+            return [];
+        }
+    }
+
+    private static async Task<List<WebSource>> WikipediaQueryAsync(string language, string search, int max, CancellationToken ct)
+    {
+        var url = $"https://{language}.wikipedia.org/w/api.php?action=query&list=search&format=json&srprop=snippet&srlimit={max}&srsearch={Uri.EscapeDataString(search)}";
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        // Wikimedia asks API clients to identify themselves.
+        request.Headers.UserAgent.Clear();
+        request.Headers.UserAgent.ParseAdd("LLMHub/1.0 (https://llm-hub.app)");
+        using var response = await Http.SendAsync(request, ct);
+        response.EnsureSuccessStatusCode();
+        using var doc = System.Text.Json.JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
+        var results = new List<WebSource>();
+        foreach (var hit in doc.RootElement.GetProperty("query").GetProperty("search").EnumerateArray())
+        {
+            var title = hit.GetProperty("title").GetString() ?? "";
+            Add(results, $"https://{language}.wikipedia.org/wiki/{Uri.EscapeDataString(title.Replace(' ', '_'))}", title, hit.GetProperty("snippet").GetString() ?? "");
+        }
+        return results;
+    }
+
+    /// <summary>The words of a request that say what it is about, without filler and instructions to the assistant.</summary>
+    private static List<string> Keywords(string text)
+    {
+        string[] filler =
+        [
+            "search", "web", "internet", "online", "google", "look", "find", "tell", "me", "please", "answer", "reply", "cite", "source", "sources",
+            "one", "two", "sentence", "sentences", "word", "words", "short", "briefly", "brief", "explain", "describe", "give", "show", "list",
+            "what", "whats", "who", "whom", "which", "when", "where", "why", "how", "is", "are", "was", "were", "be", "been", "do", "does", "did",
+            "can", "could", "would", "should", "will", "the", "a", "an", "of", "to", "in", "on", "for", "and", "or", "with", "about", "from",
+            "by", "at", "as", "it", "its", "this", "that", "these", "those", "there", "i", "you", "your", "my", "we", "our", "up", "out", "into",
+        ];
+        return WordRegex().Matches(text.ToLowerInvariant()).Select(m => m.Value)
+            .Where(w => w.Length > 1 && !filler.Contains(w)).Distinct().Take(8).ToList();
     }
 
     private static void Add(List<WebSource> results, string href, string title, string snippet)
@@ -167,4 +234,7 @@ public static partial class WebSearch
 
     [GeneratedRegex(@"<td[^>]*class=['""]result-snippet['""][^>]*>(?<snippet>.*?)</td>", RegexOptions.Singleline)]
     private static partial Regex LiteSnippetRegex();
+
+    [GeneratedRegex(@"[\p{L}\p{N}]+")]
+    private static partial Regex WordRegex();
 }
