@@ -5,7 +5,8 @@ import Observation
 /// The Agent tab's engine: Claude Code (installed by the user, or from the Agent tab) driven headless, one process per
 /// turn, talking to a local model through LLM Hub's private Agent bridge. Nothing leaves the computer.
 /// Each turn: `claude -p --input-format stream-json --output-format stream-json --verbose` with `--session-id` the first
-/// time and `--resume` after, in the session's project folder. Same behavior as core Services/Agent/AgentService.cs.
+/// time and `--resume` after, in the session's project folder. Sessions can instead run on OpenClaw
+/// (AgentService+OpenClaw.swift). Same behavior as core Services/Agent/AgentService.cs.
 @MainActor @Observable
 final class AgentService {
     static let permissionTool = "approve"
@@ -15,9 +16,13 @@ final class AgentService {
     private(set) var isInstalling = false
     /// Bumped after an install so views re-check `isClaudeInstalled`.
     private(set) var installGeneration = 0
+    /// The other engine: OpenClaw, installed by the app, its Gateway warm while the app is open.
+    let openClaw = OpenClawService()
 
-    @ObservationIgnored private weak var app: AppModel?
+    @ObservationIgnored private(set) weak var app: AppModel?
     @ObservationIgnored private var running: [String: Process] = [:]
+    /// OpenClaw sessions' `openclaw acp` connections, kept open between turns.
+    @ObservationIgnored var acp: [String: AcpConnection] = [:]
     @ObservationIgnored private var toolItems: [String: AgentItem] = [:]
     /// The private Local API instance Claude Code talks to (own port and key, loopback only, always on).
     @ObservationIgnored private var bridge: LocalApiServer?
@@ -37,6 +42,7 @@ final class AgentService {
         NotificationCenter.default.addObserver(forName: NSApplication.willTerminateNotification, object: nil, queue: .main) { [weak self] _ in
             MainActor.assumeIsolated {
                 for process in Array(self?.running.values ?? [String: Process]().values) where process.isRunning { Self.kill(process) }
+                for connection in Array(self?.acp.values ?? [String: AcpConnection]().values) { connection.close() }
             }
         }
     }
@@ -97,7 +103,7 @@ final class AgentService {
 
     /// The app's environment without anything inherited from another Claude Code or an Anthropic account, with the
     /// usual tool folders on PATH (apps started from Finder get only /usr/bin:/bin).
-    private static func childEnvironment() -> [String: String] {
+    static func childEnvironment() -> [String: String] {
         var env = ProcessInfo.processInfo.environment.filter { key, _ in
             !key.hasPrefix("CLAUDE") && !key.hasPrefix("ANTHROPIC") && key != "AI_AGENT"
         }
@@ -108,7 +114,7 @@ final class AgentService {
         return env
     }
 
-    private func ensureBridge() async throws -> LocalApiServer {
+    func ensureBridge() async throws -> LocalApiServer {
         if bridge == nil, let app { bridge = LocalApiServer(app: app, agentBridge: true) }
         guard let bridge else { throw Self.error("No app") }
         try await bridge.ensureBridge()
@@ -117,8 +123,8 @@ final class AgentService {
 
     // MARK: Sessions
 
-    func createSession(folder: String, modelId: String, mode: String) -> AgentSession {
-        let session = AgentSession(AgentSessionInfo(title: L.s("NewSession"), folder: folder, modelId: modelId, mode: mode))
+    func createSession(folder: String, modelId: String, mode: String, engine: String = "claude") -> AgentSession {
+        let session = AgentSession(AgentSessionInfo(title: L.s("NewSession"), folder: folder, modelId: modelId, mode: mode, engine: engine))
         sessions.insert(session, at: 0)
         updateBranch(session)
         saveInfos()
@@ -127,6 +133,7 @@ final class AgentService {
 
     func delete(_ session: AgentSession) {
         stop(session)
+        acp.removeValue(forKey: session.id)?.close()
         sessions.removeAll { $0 === session }
         try? FileManager.default.removeItem(at: Self.eventLog(session.id))
         try? FileManager.default.removeItem(at: Self.root.appendingPathComponent(session.id + ".mcp.json"))
@@ -137,6 +144,10 @@ final class AgentService {
     func send(_ session: AgentSession, _ text: String) async throws {
         let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !session.isWorking, !text.isEmpty else { return }
+        if session.info.engine == "openclaw" {
+            try await sendOpenClaw(session, text)
+            return
+        }
         guard let claude = Self.findClaude() else { throw Self.error(L.s("AgentNotInstalled")) }
         guard let app, let model = app.modelStore.installed.first(where: { $0.id == session.info.modelId }) else {
             throw Self.error(L.s("AgentNoModel"))
@@ -232,11 +243,12 @@ final class AgentService {
 
     func stop(_ session: AgentSession) {
         session.pending?.resolve(false)
+        acp[session.id]?.cancel()
         if let process = running[session.id], process.isRunning { Self.kill(process) }
     }
 
-    /// Stops claude and the commands it started.
-    private static func kill(_ process: Process) {
+    /// Stops claude (or an OpenClaw process) and the commands it started.
+    static func kill(_ process: Process) {
         let children = Process()
         children.executableURL = URL(fileURLWithPath: "/usr/bin/pkill")
         children.arguments = ["-TERM", "-P", "\(process.processIdentifier)"]
@@ -284,7 +296,7 @@ final class AgentService {
 
     // MARK: Events → transcript
 
-    private func apply(_ session: AgentSession, _ e: [String: Any]) {
+    func apply(_ session: AgentSession, _ e: [String: Any]) {
         switch e["type"] as? String {
         case "llmhub_user":
             session.items.append(AgentItem(.user, e["text"] as? String ?? ""))
@@ -391,7 +403,7 @@ final class AgentService {
             + a[(a.count - suffix)...].map { DiffLine(kind: " ", text: $0) }
     }
 
-    private func fail(_ session: AgentSession, _ message: String) {
+    func fail(_ session: AgentSession, _ message: String) {
         session.items.append(AgentItem(.error, message))
         session.status = .error
     }
@@ -510,7 +522,7 @@ final class AgentService {
         }
     }
 
-    private func saveInfos() {
+    func saveInfos() {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         encoder.dateEncodingStrategy = .iso8601
@@ -521,9 +533,9 @@ final class AgentService {
         }
     }
 
-    private func append(_ session: AgentSession, _ event: [String: Any]) { appendLine(session, Self.jsonString(event)) }
+    func append(_ session: AgentSession, _ event: [String: Any]) { appendLine(session, Self.jsonString(event)) }
 
-    private func appendLine(_ session: AgentSession, _ line: String) {
+    func appendLine(_ session: AgentSession, _ line: String) {
         let url = Self.eventLog(session.id)
         let data = Data((line + "\n").utf8)
         if let handle = try? FileHandle(forWritingTo: url) {
@@ -553,7 +565,7 @@ final class AgentService {
         return String(decoding: data, as: UTF8.self)
     }
 
-    private static func error(_ message: String) -> NSError {
+    static func error(_ message: String) -> NSError {
         NSError(domain: "LLMHub.Agent", code: 1, userInfo: [NSLocalizedDescriptionKey: message])
     }
 }

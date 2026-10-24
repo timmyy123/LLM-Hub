@@ -25,6 +25,16 @@ final class AgentViewModel {
 
     let modes = [Mode(mode: "default", label: L.s("AgentModeAsk")), Mode(mode: "acceptEdits", label: L.s("AgentModeAuto")),
                  Mode(mode: "plan", label: L.s("AgentModePlan"))]
+    /// The agent engines: Claude Code, or OpenClaw (installed by the app, Chinese-origin extensions removed).
+    let engines = [Mode(mode: "claude", label: "Claude Code"), Mode(mode: "openclaw", label: "OpenClaw")]
+    /// The engine new sessions use; a session keeps the engine it started with.
+    var engineChoice = AppSettings.current.agentEngine {
+        didSet {
+            guard engineChoice != AppSettings.current.agentEngine else { return }
+            AppSettings.current.agentEngine = engineChoice
+            AppSettings.save()
+        }
+    }
     var selectedId: String? { didSet { if selectedId != oldValue { onSelected() } } }
     var draft = ""
     var mode = "default" { didSet { selected?.info.mode = mode } }
@@ -71,6 +81,12 @@ final class AgentViewModel {
         return "via \(model.format == "litertlm" ? "LiteRT-LM" : "llama.cpp") · \(model.name)"
     }
 
+    var isEngineInstalled: Bool { engineChoice == "openclaw" ? service.openClaw.isInstalled : service.isClaudeInstalled }
+    var isEngineInstalling: Bool { engineChoice == "openclaw" ? service.openClaw.isInstalling : service.isInstalling }
+    var installStatus: String { engineChoice == "openclaw" ? service.openClaw.status : service.installStatus }
+    /// What setting up the chosen engine does, on the install card.
+    var installHelp: String { L.s(engineChoice == "openclaw" ? "OpenClawInstallHelp" : "AgentInstallHelp") }
+
     private func onSelected() {
         notice = ""
         guard let session = selected else { return }
@@ -109,7 +125,7 @@ final class AgentViewModel {
             notice = L.s("AgentNoModel")
             return nil
         }
-        let session = service.createSession(folder: folder, modelId: modelId, mode: mode)
+        let session = service.createSession(folder: folder, modelId: modelId, mode: mode, engine: engineChoice)
         selectedId = session.id
         return session
     }
@@ -117,8 +133,9 @@ final class AgentViewModel {
     func send() {
         let text = draft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard let session = selected, !text.isEmpty, !session.isWorking else { return }
-        guard service.isClaudeInstalled else {
-            notice = L.s("AgentNotInstalled")
+        let openClaw = session.info.engine == "openclaw"
+        guard openClaw ? service.openClaw.isInstalled : service.isClaudeInstalled else {
+            notice = L.s(openClaw ? "OpenClawNotInstalled" : "AgentNotInstalled")
             return
         }
         draft = ""
@@ -166,7 +183,18 @@ final class AgentViewModel {
         if selectedId == session.id { selectedId = service.sessions.first?.id }
     }
 
-    func installClaude() async { await service.installClaude() }
+    /// Installs the engine chosen on the empty-state card.
+    func installEngine() async {
+        guard engineChoice == "openclaw" else {
+            await service.installClaude()
+            return
+        }
+        do {
+            try await service.openClaw.install()
+        } catch {
+            notice = L.f("ErrorPrefix", error.localizedDescription)
+        }
+    }
 
     /// Project files for the Files tab (skipping dependency and build folders).
     func loadFiles() {

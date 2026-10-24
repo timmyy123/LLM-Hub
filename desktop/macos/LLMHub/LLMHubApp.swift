@@ -50,6 +50,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         MainActor.assumeIsolated {
             AppModel.shared.engines.stop()
             AppModel.shared.embeddings.stop()
+            AppModel.shared.agent.openClaw.stopGateway()
         }
     }
 

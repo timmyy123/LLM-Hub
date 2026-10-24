@@ -46,9 +46,7 @@ private struct AgentEmptyState: View {
             if !vm.notice.isEmpty {
                 Text(vm.notice).font(.system(size: 12)).foregroundStyle(Theme.textMuted)
             }
-            if !app.agent.isClaudeInstalled {
-                InstallCard().padding(.top, 8)
-            }
+            EngineCard().padding(.top, 8)
         }
         .frame(maxWidth: 560)
         .padding(24)
@@ -56,21 +54,36 @@ private struct AgentEmptyState: View {
     }
 }
 
-private struct InstallCard: View {
+/// The engine for new sessions (Claude Code, or OpenClaw installed by the app), and its install button when it is missing.
+private struct EngineCard: View {
     @Environment(AppModel.self) private var app
 
     var body: some View {
+        @Bindable var vm = app.agent.ui!
         VStack(alignment: .leading, spacing: 10) {
-            Text(L.s("AgentEngine")).fontWeight(.semibold)
-            Text(L.s("AgentInstallHelp")).font(.system(size: 13)).foregroundStyle(Theme.textMuted)
-                .fixedSize(horizontal: false, vertical: true)
-            HStack(spacing: 10) {
-                Button(L.s("AgentInstall")) { Task { await app.agent.installClaude() } }
-                    .buttonStyle(.glass)
-                    .disabled(app.agent.isInstalling)
-                    .accessibilityIdentifier("InstallClaudeButton")
-                if app.agent.isInstalling { ProgressView().controlSize(.small) }
-                Text(app.agent.installStatus).font(.system(size: 12)).foregroundStyle(Theme.textMuted)
+            HStack(spacing: 12) {
+                Text(L.s("AgentEngine")).fontWeight(.semibold)
+                Spacer(minLength: 0)
+                Picker("", selection: $vm.engineChoice) {
+                    ForEach(vm.engines, id: \.mode) { Text($0.label).tag($0.mode) }
+                }
+                .labelsHidden()
+                .fixedSize()
+                .accessibilityIdentifier("AgentEnginePicker")
+            }
+            if !vm.isEngineInstalled {
+                Text(vm.installHelp).font(.system(size: 13)).foregroundStyle(Theme.textMuted)
+                    .fixedSize(horizontal: false, vertical: true)
+                HStack(spacing: 10) {
+                    Button(L.s("AgentInstall")) { Task { await vm.installEngine() } }
+                        .buttonStyle(.glass)
+                        .disabled(vm.isEngineInstalling)
+                        .accessibilityIdentifier("InstallClaudeButton")
+                    if vm.isEngineInstalling { ProgressView().controlSize(.small) }
+                    Text(vm.installStatus).font(.system(size: 12)).foregroundStyle(Theme.textMuted)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier("AgentInstallStatus")
+                }
             }
         }
         .padding(16)

@@ -215,8 +215,8 @@ final class LocalApiServer {
         try await load.value
     }
 
-    /// A free loopback port for the bridge.
-    private static func freePort() -> Int {
+    /// A free loopback port for the bridge (and OpenClaw's Gateway).
+    static func freePort() -> Int {
         let fd = socket(AF_INET, SOCK_STREAM, 0)
         guard fd >= 0 else { return 47_000 + Int.random(in: 0..<1000) }
         defer { close(fd) }
