@@ -21,11 +21,9 @@ enum WebSearch {
     private static let session: URLSession = {
         let config = URLSessionConfiguration.ephemeral
         config.timeoutIntervalForRequest = 12
-        // A browser user agent; DuckDuckGo's HTML endpoint refuses obvious bots.
-        config.httpAdditionalHeaders = [
-            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:140.0) Gecko/20100101 Firefox/140.0",
-            "Accept-Language": "en-US,en;q=0.8",
-        ]
+        // The Android and iOS apps' request: Firefox for Android, which DuckDuckGo's HTML page serves without a bot check
+        // far more often than a desktop browser posting the form.
+        config.httpAdditionalHeaders = ["User-Agent": "Mozilla/5.0 (Android 10; Mobile; rv:91.0) Gecko/91.0 Firefox/91.0"]
         return URLSession(configuration: config)
     }()
 
@@ -45,11 +43,11 @@ enum WebSearch {
     private static let liteSnippetRegex = regex(#"<td[^>]*class=['"]result-snippet['"][^>]*>(?<snippet>.*?)</td>"#, .dotMatchesLineSeparators)
 
     static func search(_ query: String, max: Int) async throws -> [WebSource] {
-        let html = try await post("https://html.duckduckgo.com/html/", query)
+        let html = try await get("https://duckduckgo.com/html/", query)
         var results = parseHtml(html, max: max)
         if results.isEmpty {
             Log.info("Web search \"\(query)\": no results from the HTML endpoint\(isChallenge(html) ? " (bot check)" : ""), trying Lite")
-            let lite = try await post("https://lite.duckduckgo.com/lite/", query)
+            let lite = try await get("https://lite.duckduckgo.com/lite/", query)
             results = parseLite(lite, max: max)
             // Search engines answer scripted queries with bot checks at times; Wikipedia's API is made for programs.
             if results.isEmpty { results = await searchWikipedia(query, max: max) }
@@ -107,14 +105,10 @@ enum WebSearch {
 
     private static func isChallenge(_ html: String) -> Bool { html.contains("anomaly-modal") || html.contains("anomaly.js") }
 
-    private static func post(_ endpoint: String, _ query: String) async throws -> String {
-        var request = URLRequest(url: URL(string: endpoint)!)
-        request.httpMethod = "POST"
-        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+    private static func get(_ endpoint: String, _ query: String) async throws -> String {
         let allowed = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-._~"))
         let q = query.addingPercentEncoding(withAllowedCharacters: allowed) ?? ""
-        request.httpBody = Data("q=\(q)&kl=wt-wt".utf8)
-        let (data, response) = try await session.data(for: request)
+        let (data, response) = try await session.data(from: URL(string: "\(endpoint)?q=\(q)")!)
         try HuggingFaceClient.check(response)
         return String(decoding: data, as: UTF8.self)
     }

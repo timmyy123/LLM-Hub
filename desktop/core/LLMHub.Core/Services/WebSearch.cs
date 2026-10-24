@@ -18,6 +18,7 @@ public sealed record WebSource(int Number, string Title, string Url, string Snip
 /// </summary>
 public static partial class WebSearch
 {
+    private const string MobileUserAgent = "Mozilla/5.0 (Android 10; Mobile; rv:91.0) Gecko/91.0 Firefox/91.0";
     private static readonly HttpClient Http = CreateClient();
 
     private static HttpClient CreateClient()
@@ -26,9 +27,9 @@ public static partial class WebSearch
         {
             Timeout = TimeSpan.FromSeconds(12),
         };
-        // A browser user agent; DuckDuckGo's HTML endpoint refuses obvious bots.
-        http.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:140.0) Gecko/20100101 Firefox/140.0");
-        http.DefaultRequestHeaders.AcceptLanguage.ParseAdd("en-US,en;q=0.8");
+        // The Android and iOS apps' request: Firefox for Android, which DuckDuckGo's HTML page serves without a bot check
+        // far more often than a desktop browser posting the form.
+        http.DefaultRequestHeaders.UserAgent.ParseAdd(MobileUserAgent);
         return http;
     }
 
@@ -47,8 +48,7 @@ public static partial class WebSearch
 
     private static async Task<List<WebSource>> SearchHtmlAsync(string query, int max, CancellationToken ct)
     {
-        using var form = new FormUrlEncodedContent([new("q", query), new("kl", "wt-wt")]);
-        using var response = await Http.PostAsync("https://html.duckduckgo.com/html/", form, ct);
+        using var response = await Http.GetAsync($"https://duckduckgo.com/html/?q={Uri.EscapeDataString(query)}", ct);
         var html = await response.Content.ReadAsStringAsync(ct);
         var results = new List<WebSource>();
         foreach (Match m in ResultRegex().Matches(html))
@@ -66,8 +66,7 @@ public static partial class WebSearch
     {
         try
         {
-            using var form = new FormUrlEncodedContent([new("q", query), new("kl", "wt-wt")]);
-            using var response = await Http.PostAsync("https://lite.duckduckgo.com/lite/", form, ct);
+            using var response = await Http.GetAsync($"https://lite.duckduckgo.com/lite/?q={Uri.EscapeDataString(query)}", ct);
             var html = await response.Content.ReadAsStringAsync(ct);
             var links = LiteLinkRegex().Matches(html);
             var snippets = LiteSnippetRegex().Matches(html);
