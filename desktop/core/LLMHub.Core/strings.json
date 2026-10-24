@@ -280,7 +280,8 @@
   "SettingsTotal": "Total: {0}",
   "SettingsRefresh": "Refresh",
   "DesignProjects": "Designs",
-  "ComfyReady": "ComfyUI ready · starts when you generate"
+  "ComfyReady": "ComfyUI ready · starts when you generate",
+  "ThoughtForSeconds": "Thought for {0}s"
  },
  "es-ES": {
   "NewChat": "Nuevo chat",
@@ -563,7 +564,8 @@
   "SettingsTotal": "Total: {0}",
   "SettingsRefresh": "Actualizar",
   "DesignProjects": "Diseños",
-  "ComfyReady": "ComfyUI listo · se inicia al generar"
+  "ComfyReady": "ComfyUI listo · se inicia al generar",
+  "ThoughtForSeconds": "Pensó durante {0} s"
  },
  "pt-BR": {
   "NewChat": "Nova conversa",
@@ -846,7 +848,8 @@
   "SettingsTotal": "Total: {0}",
   "SettingsRefresh": "Atualizar",
   "DesignProjects": "Designs",
-  "ComfyReady": "ComfyUI pronto · inicia quando você gerar"
+  "ComfyReady": "ComfyUI pronto · inicia quando você gerar",
+  "ThoughtForSeconds": "Pensou por {0} s"
  },
  "fr-FR": {
   "NewChat": "Nouvelle discussion",
@@ -1129,7 +1132,8 @@
   "SettingsTotal": "Total : {0}",
   "SettingsRefresh": "Actualiser",
   "DesignProjects": "Designs",
-  "ComfyReady": "ComfyUI prêt · démarre à la génération"
+  "ComfyReady": "ComfyUI prêt · démarre à la génération",
+  "ThoughtForSeconds": "A réfléchi pendant {0} s"
  },
  "de-DE": {
   "NewChat": "Neuer Chat",
@@ -1412,7 +1416,8 @@
   "SettingsTotal": "Gesamt: {0}",
   "SettingsRefresh": "Aktualisieren",
   "DesignProjects": "Designs",
-  "ComfyReady": "ComfyUI bereit · startet beim Generieren"
+  "ComfyReady": "ComfyUI bereit · startet beim Generieren",
+  "ThoughtForSeconds": "{0} s nachgedacht"
  },
  "it-IT": {
   "NewChat": "Nuova chat",
@@ -1695,7 +1700,8 @@
   "SettingsTotal": "Totale: {0}",
   "SettingsRefresh": "Aggiorna",
   "DesignProjects": "Design",
-  "ComfyReady": "ComfyUI pronto · si avvia quando generi"
+  "ComfyReady": "ComfyUI pronto · si avvia quando generi",
+  "ThoughtForSeconds": "Ha pensato per {0} s"
  },
  "ru-RU": {
   "NewChat": "Новый чат",
@@ -1978,6 +1984,7 @@
   "SettingsTotal": "Всего: {0}",
   "SettingsRefresh": "Обновить",
   "DesignProjects": "Дизайны",
-  "ComfyReady": "ComfyUI готов · запустится при генерации"
+  "ComfyReady": "ComfyUI готов · запустится при генерации",
+  "ThoughtForSeconds": "Думал {0} с"
  }
 }

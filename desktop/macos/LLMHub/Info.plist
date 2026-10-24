@@ -39,5 +39,7 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>LLM Hub uses the microphone for dictation. Speech is transcribed on this Mac by Whisper and never leaves it.</string>
 </dict>
 </plist>
