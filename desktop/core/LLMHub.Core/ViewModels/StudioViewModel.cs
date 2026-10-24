@@ -173,6 +173,8 @@ public sealed partial class StudioViewModel : ObservableObject
     public bool IsImageOrVideo => Mode is "image" or "video";
     public bool IsVoice => Mode == "voice";
     public bool IsMusic => Mode == "music";
+    /// <summary>Photo and audio search with EmbeddingGemma 2 (<see cref="MediaSearchViewModel"/>).</summary>
+    public bool IsSearch => Mode == "search";
     /// <summary>Image and video generation works here: ComfyUI on a GPU or Mac, or the Snapdragon NPU.</summary>
     public bool ComfySupported => ComfyService.IsSupported || UsesNpu;
     /// <summary>The current tab has a workflow (Snapdragon PCs have NPU image workflows, but no video one).</summary>
@@ -208,6 +210,7 @@ public sealed partial class StudioViewModel : ObservableObject
         OnPropertyChanged(nameof(IsImageOrVideo));
         OnPropertyChanged(nameof(IsVoice));
         OnPropertyChanged(nameof(IsMusic));
+        OnPropertyChanged(nameof(IsSearch));
         OnPropertyChanged(nameof(ModeSupported));
         OnPropertyChanged(nameof(UnsupportedNote));
     }

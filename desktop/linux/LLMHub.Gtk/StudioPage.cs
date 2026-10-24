@@ -45,7 +45,7 @@ internal sealed class StudioPage
         _main = main;
 
         // Mode tabs and engine status.
-        var (tabs, select) = Ui.Tabs([("image", Loc.S("StudioImage")), ("video", Loc.S("StudioVideo")), ("music", Loc.S("StudioMusic")), ("voice", Loc.S("StudioVoice"))],
+        var (tabs, select) = Ui.Tabs([("image", Loc.S("StudioImage")), ("video", Loc.S("StudioVideo")), ("music", Loc.S("StudioMusic")), ("voice", Loc.S("StudioVoice")), ("search", Loc.S("StudioSearch"))],
             mode => _vm.Mode = mode);
         _selectTab = select;
         _engineDot.AddCssClass("dot");
@@ -169,6 +169,7 @@ internal sealed class StudioPage
         _body.AddNamed(Ui.Scroll(voiceClamp), "voice");
 
         _body.AddNamed(new MusicPane().Root, "music");
+        _body.AddNamed(new SearchPane(main).Root, "search");
         _body.SetVexpand(true);
 
         Root = Ui.VBox(0, header, _body);

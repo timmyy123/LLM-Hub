@@ -306,7 +306,173 @@ public sealed class LiteRtEngine
         return Directory.EnumerateFiles(target, LibName, SearchOption.AllDirectories).First();
     }
 
-    /// <summary>The subset of LiteRT-LM's C API (litert_lm/c/engine.h) that LLM Hub uses.</summary>
+    /// <summary>
+    /// An EmbeddingGemma 2 .litertlm file loaded for embeddings (text, images, audio), configured like Android's media
+    /// search: 256 input tokens and 70 vision tokens per image. GPU first, CPU if the GPU build cannot start.
+    /// </summary>
+    public async Task<LiteRtEmbedder> OpenEmbedderAsync(InstalledModel model, Action<string> status, CancellationToken ct)
+    {
+        if (!IsSupported)
+            throw new PlatformNotSupportedException(Loc.S("LiteRtNoArm"));
+        _api ??= Api.Load(await EnsureInstalledAsync(status, ct));
+        var api = _api;
+        var vision = model.Tags.Contains("vision");
+        var audio = model.Tags.Contains("audio");
+        // On Linux a GPU that LiteRT-LM cannot drive crashes the process, so the first GPU start is tried in a child process.
+        var backends = Backends().ToList();
+        if (backends.Contains("gpu") && !await GpuEmbedSurvivesAsync(model, vision, audio, status, ct))
+            backends.Remove("gpu");
+        return await Task.Run(() =>
+        {
+            foreach (var backend in backends)
+            {
+                var cacheDir = Directory.CreateDirectory(Path.Combine(model.Folder, "cache", "embed-" + backend)).FullName;
+                var engine = api.CreateEmbeddingEngine(model.PrimaryPath, backend, vision ? backend : null, audio ? "cpu" : null, cacheDir,
+                    LiteRtEmbedder.MaxInputTokens, LiteRtEmbedder.VisionTokens);
+                if (engine == IntPtr.Zero)
+                {
+                    Log.Info($"LiteRT-LM embeddings {model.Id}: {backend} failed: {api.LastError()}");
+                    continue;
+                }
+                var embedder = new LiteRtEmbedder(api, engine, model, backend, vision, audio);
+                // A GPU engine can be created and still fail on the first input: probe it once.
+                if (embedder.EmbedText("test", query: true) is { Length: > 0 })
+                {
+                    Log.Info($"LiteRT-LM embeddings {model.Id} on {backend}");
+                    return embedder;
+                }
+                Log.Info($"LiteRT-LM embeddings {model.Id}: {backend} probe failed: {api.LastError()}");
+                embedder.Dispose();
+            }
+            throw new InvalidOperationException(Loc.F("EmbedderFailed", model.Name));
+        }, ct);
+    }
+
+    private async Task<bool> GpuEmbedSurvivesAsync(InstalledModel model, bool vision, bool audio, Action<string> status, CancellationToken ct)
+    {
+        if (!OperatingSystem.IsLinux() || Environment.ProcessPath is not { } exe)
+            return true;
+        var results = Path.Combine(Root, "gpu-probe.txt");
+        var key = $"{_api!.LibraryPath}|{model.Id}|embed=";
+        var known = File.Exists(results) ? File.ReadLines(results).LastOrDefault(l => l.StartsWith(key, StringComparison.Ordinal)) : null;
+        if (known is not null)
+            return known.EndsWith("ok", StringComparison.Ordinal);
+        status(Loc.F("LoadingModel", model.Name));
+        var cacheDir = Directory.CreateDirectory(Path.Combine(model.Folder, "cache", "embed-gpu")).FullName;
+        var info = new System.Diagnostics.ProcessStartInfo(exe) { UseShellExecute = false, RedirectStandardError = true, RedirectStandardOutput = true };
+        if (Path.GetFileNameWithoutExtension(exe) == "dotnet" && System.Reflection.Assembly.GetEntryAssembly()?.Location is { Length: > 0 } entry)
+            info.ArgumentList.Add(entry);
+        foreach (var arg in new[] { "--litert-embed-probe", _api.LibraryPath, model.PrimaryPath, cacheDir, vision ? "1" : "0", audio ? "1" : "0" })
+            info.ArgumentList.Add(arg);
+        using var probe = System.Diagnostics.Process.Start(info)!;
+        _ = probe.StandardOutput.ReadToEndAsync(ct);
+        _ = probe.StandardError.ReadToEndAsync(ct);
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        timeout.CancelAfter(TimeSpan.FromMinutes(3));
+        try
+        {
+            await probe.WaitForExitAsync(timeout.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            probe.Kill(true);
+            ct.ThrowIfCancellationRequested();
+        }
+        var ok = probe.HasExited && probe.ExitCode == 0;
+        Log.Info($"LiteRT-LM GPU embedding probe for {model.Id}: {(ok ? "ok" : probe.HasExited ? $"exit {probe.ExitCode}" : "timed out")}");
+        File.AppendAllText(results, key + (ok ? "ok" : "failed") + "\n");
+        return ok;
+    }
+
+    /// <summary>
+    /// Entry point for the embedding GPU probe child process: <c>--litert-embed-probe lib model cacheDir vision audio</c>.
+    /// Exit 0 when a GPU embedding engine starts and embeds a short text.
+    /// </summary>
+    public static int RunEmbedProbe(string[] args)
+    {
+        var api = Api.Load(args[0]);
+        var engine = api.CreateEmbeddingEngine(args[1], "gpu", args[3] == "1" ? "gpu" : null, args[4] == "1" ? "cpu" : null, args[2],
+            LiteRtEmbedder.MaxInputTokens, LiteRtEmbedder.VisionTokens);
+        if (engine == IntPtr.Zero)
+            return 2;
+        var vector = api.ComputeEmbedding(engine, [(EmbedKind.Text, Encoding.UTF8.GetBytes("task: search result | query: test"))], LiteRtEmbedder.VisionTokens);
+        api.EmbeddingEngineDelete(engine);
+        return vector is { Length: > 0 } ? 0 : 3;
+    }
+
+    /// <summary>One EmbeddingGemma 2 engine. Calls are serialized; vectors come back L2-normalized (dot product = cosine).</summary>
+    public sealed class LiteRtEmbedder : IDisposable
+    {
+        public const int MaxInputTokens = 256;
+        public const int VisionTokens = 70;
+        private const string QueryPrefix = "task: search result | query: ";
+        private const string DocumentPrefix = "title: none | text: ";
+
+        private readonly Api _api;
+        private readonly object _lock = new();
+        private IntPtr _engine;
+
+        internal LiteRtEmbedder(object api, IntPtr engine, InstalledModel model, string backend, bool vision, bool audio)
+        {
+            _api = (Api)api;
+            _engine = engine;
+            Model = model;
+            Backend = backend;
+            SupportsImages = vision;
+            SupportsAudio = audio;
+        }
+
+        public InstalledModel Model { get; }
+        public string Backend { get; }
+        public bool SupportsImages { get; }
+        public bool SupportsAudio { get; }
+
+        /// <summary>A search query or a document, with EmbeddingGemma's task prompts.</summary>
+        public float[]? EmbedText(string text, bool query)
+        {
+            var clean = text.Trim();
+            if (clean.Length == 0)
+                return null;
+            if (clean.Length > 6000)
+                clean = clean[..6000];
+            return Embed([(EmbedKind.Text, Encoding.UTF8.GetBytes((query ? QueryPrefix : DocumentPrefix) + clean))]);
+        }
+
+        /// <summary>JPEG or PNG bytes (ideally no larger than 512 px on the long edge); several frames make one vector.</summary>
+        public float[]? EmbedImages(IReadOnlyList<byte[]> images) =>
+            SupportsImages && images.Count > 0 ? Embed(images.Select(i => (EmbedKind.Image, i)).ToList()) : null;
+
+        /// <summary>A 16 kHz mono PCM16 WAV.</summary>
+        public float[]? EmbedAudio(byte[] wav) => SupportsAudio ? Embed([(EmbedKind.Audio, wav)]) : null;
+
+        public float[]? Embed(IReadOnlyList<(EmbedKind Kind, byte[] Data)> parts)
+        {
+            lock (_lock)
+            {
+                if (_engine == IntPtr.Zero)
+                    return null;
+                var vector = _api.ComputeEmbedding(_engine, parts, VisionTokens);
+                if (vector is null)
+                    Log.Info($"LiteRT-LM embedding failed ({string.Join(", ", parts.Select(p => p.Kind))}): {_api.LastError()}");
+                return vector;
+            }
+        }
+
+        public void Dispose()
+        {
+            lock (_lock)
+            {
+                if (_engine != IntPtr.Zero)
+                    _api.EmbeddingEngineDelete(_engine);
+                _engine = IntPtr.Zero;
+            }
+        }
+    }
+
+    /// <summary>LiteRtLmInputDataType: what a part of an embedding input is.</summary>
+    public enum EmbedKind { Text = 0, Image = 1, Audio = 3 }
+
+    /// <summary>The subset of LiteRT-LM's C API (litert_lm/c/engine.h, c/embedding_engine.h) that LLM Hub uses.</summary>
     private sealed unsafe class Api
     {
         public static Api? Current;
@@ -451,6 +617,67 @@ public sealed class LiteRtEngine
         }
 
         public byte ChunkIsFinal(IntPtr chunk) => ((delegate* unmanaged[Cdecl]<IntPtr, byte>)Fn("litert_lm_stream_chunk_is_final"))(chunk);
+
+        public string LastError() => Marshal.PtrToStringUTF8(((delegate* unmanaged[Cdecl]<IntPtr>)Fn("litert_lm_get_last_error_message"))()) ?? "";
+
+        public IntPtr CreateEmbeddingEngine(string modelPath, string backend, string? visionBackend, string? audioBackend, string cacheDir, int maxInput, int visionTokens)
+        {
+            var settings = Call4S("litert_lm_embedding_engine_settings_create", modelPath, backend, visionBackend, audioBackend);
+            if (settings == IntPtr.Zero)
+                return IntPtr.Zero;
+            try
+            {
+                CallPS("litert_lm_embedding_engine_settings_set_cache_dir", settings, cacheDir);
+                ((delegate* unmanaged[Cdecl]<IntPtr, int, void>)Fn("litert_lm_embedding_engine_settings_set_max_input_length"))(settings, maxInput);
+                ((delegate* unmanaged[Cdecl]<IntPtr, int, void>)Fn("litert_lm_embedding_engine_settings_set_vision_tokens_per_image"))(settings, visionTokens);
+                return ((delegate* unmanaged[Cdecl]<IntPtr, IntPtr>)Fn("litert_lm_embedding_engine_create"))(settings);
+            }
+            finally
+            {
+                ((delegate* unmanaged[Cdecl]<IntPtr, void>)Fn("litert_lm_embedding_engine_settings_delete"))(settings);
+            }
+        }
+
+        public void EmbeddingEngineDelete(IntPtr engine) => ((delegate* unmanaged[Cdecl]<IntPtr, void>)Fn("litert_lm_embedding_engine_delete"))(engine);
+
+        public float[]? ComputeEmbedding(IntPtr engine, IReadOnlyList<(EmbedKind Kind, byte[] Data)> parts, int visionTokens)
+        {
+            var inputs = new IntPtr[parts.Count];
+            var options = ((delegate* unmanaged[Cdecl]<IntPtr>)Fn("litert_lm_embedding_options_create"))();
+            try
+            {
+                for (var i = 0; i < parts.Count; i++)
+                {
+                    fixed (byte* data = parts[i].Data)
+                        inputs[i] = ((delegate* unmanaged[Cdecl]<int, byte*, nuint, IntPtr>)Fn("litert_lm_input_data_create"))((int)parts[i].Kind, data, (nuint)parts[i].Data.Length);
+                    if (inputs[i] == IntPtr.Zero)
+                        return null;
+                }
+                ((delegate* unmanaged[Cdecl]<IntPtr, byte, void>)Fn("litert_lm_embedding_options_set_normalize"))(options, 1);
+                ((delegate* unmanaged[Cdecl]<IntPtr, int, void>)Fn("litert_lm_embedding_options_set_vision_tokens_per_image"))(options, visionTokens);
+                IntPtr response;
+                fixed (IntPtr* list = inputs)
+                    response = ((delegate* unmanaged[Cdecl]<IntPtr, IntPtr*, nuint, IntPtr, IntPtr>)Fn("litert_lm_embedding_engine_compute_embedding"))(engine, list, (nuint)inputs.Length, options);
+                if (response == IntPtr.Zero)
+                    return null;
+                try
+                {
+                    var size = (int)((delegate* unmanaged[Cdecl]<IntPtr, nuint>)Fn("litert_lm_embedding_response_get_size"))(response);
+                    var values = ((delegate* unmanaged[Cdecl]<IntPtr, float*>)Fn("litert_lm_embedding_response_get_values"))(response);
+                    return size > 0 ? new ReadOnlySpan<float>(values, size).ToArray() : null;
+                }
+                finally
+                {
+                    ((delegate* unmanaged[Cdecl]<IntPtr, void>)Fn("litert_lm_embedding_response_delete"))(response);
+                }
+            }
+            finally
+            {
+                foreach (var input in inputs.Where(p => p != IntPtr.Zero))
+                    ((delegate* unmanaged[Cdecl]<IntPtr, void>)Fn("litert_lm_input_data_delete"))(input);
+                ((delegate* unmanaged[Cdecl]<IntPtr, void>)Fn("litert_lm_embedding_options_delete"))(options);
+            }
+        }
 
         private IntPtr Call4S(string name, string? a, string? b, string? c, string? d)
         {

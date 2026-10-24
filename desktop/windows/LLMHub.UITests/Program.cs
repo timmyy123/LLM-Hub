@@ -298,6 +298,12 @@ Test("Agent, Design and Studio pages open", () =>
     Get("TabImage");
     Get("WorkflowPicker");
     Shot("02-NavStudio");
+    Get("TabSearch").AsToggleButton().Toggle();
+    Get("SearchQueryBox");
+    Get("SearchIndexButton");
+    Check(Find("SearchFolder")?.Name.Length > 0, "search folder shown");
+    Shot("02-StudioSearch");
+    Get("TabImage").AsToggleButton().Toggle();
     Select("NavChat");
     Get("Composer");
 });
@@ -453,7 +459,7 @@ Test("Filter chips narrow the catalog", () =>
 {
     var list = Get("CatalogList", 20);
     Get("Filter_embedding").AsToggleButton().Toggle();
-    WaitUntil(() => list.FindAllDescendants(cf => cf.ByAutomationId("CatalogName")).Select(e => e.Name).SequenceEqual(["EmbeddingGemma 2"]),
+    WaitUntil(() => list.FindAllDescendants(cf => cf.ByAutomationId("CatalogName")).Select(e => e.Name).All(n => n.StartsWith("EmbeddingGemma 2")),
         TimeSpan.FromSeconds(10), "Embedding chip shows only EmbeddingGemma");
     Get("Filter_vision").AsToggleButton().Toggle();
     WaitUntil(() => list.FindAllDescendants(cf => cf.ByAutomationId("CatalogName")).Any(e => e.Name == "Gemma 4 12B")

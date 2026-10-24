@@ -80,6 +80,9 @@ internal sealed class UiTests(MainWindow main)
         await Until(() => One("NavDesign").GetWidth() < 90, $"rail is narrow, got {One("NavDesign").GetWidth()}");
         await Activate(One("NavStudio"));
         await Until(() => Visible("WorkflowPicker") && Visible("GenerateButton"), "Studio page");
+        Ioc.StudioVm.Mode = "search";
+        await Until(() => Visible("SearchQueryBox") && Visible("SearchIndexButton") && Visible("SearchFolder"), "Studio search tab");
+        Ioc.StudioVm.Mode = "image";
         await Activate(One("NavChat"));
         await Until(() => Visible("Composer") && Visible("ChatList") && Visible("NewChatButton"), "back on Chat with the full sidebar");
     }
@@ -143,7 +146,7 @@ internal sealed class UiTests(MainWindow main)
         Expect(bad.Count == 0, $"catalog must not list: {string.Join(", ", bad)}");
         // The Embedding chip leaves only embedding models; All brings the rest back.
         ((Gtk.ToggleButton)One("Filter_embedding")).SetActive(true);
-        await Until(() => Descendants(One("CatalogList")).OfType<Adw.ActionRow>().Select(r => r.GetTitle()).SequenceEqual(["EmbeddingGemma 2"]), "Embedding chip shows EmbeddingGemma only");
+        await Until(() => Descendants(One("CatalogList")).OfType<Adw.ActionRow>().Select(r => r.GetTitle() ?? "").All(n => n.StartsWith("EmbeddingGemma 2")), "Embedding chip shows EmbeddingGemma only");
         ((Gtk.ToggleButton)One("Filter_all")).SetActive(true);
         await Until(() => Descendants(One("CatalogList")).OfType<Adw.ActionRow>().Count() > 10, "All chip shows every model again");
         var row = One("CatalogRow-gemma-4-12b");

@@ -32,6 +32,9 @@ internal static class DevCapture
             window.ShowSection("design");
             await Task.Delay(int.TryParse(ValueOf(args, "--wait"), out var designWait) ? designWait : 4000);
         }
+        if (ValueOf(args, "--searchtest") is { } searchMode)
+            await DevTests.MediaSearchAsync(searchMode, ValueOf(args, "--folder")!, ValueOf(args, "--model") ?? "embeddinggemma-2-740m",
+                (ValueOf(args, "--queries") ?? "").Split('|', StringSplitOptions.RemoveEmptyEntries));
         if (ValueOf(args, "--exportdesign") is { } exportFormat)
             await DevTests.DesignExportAsync(exportFormat, ValueOf(args, "--out") ?? Path.Combine(Path.GetTempPath(), "design." + exportFormat), ValueOf(args, "--kind"));
         if (ValueOf(args, "--speechtest") is { } sentence)

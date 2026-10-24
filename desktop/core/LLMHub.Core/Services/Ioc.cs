@@ -24,6 +24,8 @@ public static class Ioc
     public static Agent.OpenClawService OpenClaw { get; } = new();
     public static Studio.ComfyService Comfy { get; } = new();
     public static Studio.MagentaService Magenta { get; } = new();
+    /// <summary>EmbeddingGemma 2 for photo and audio embeddings (Studio › Search, /v1/embeddings).</summary>
+    public static MediaSearch.MediaEmbedderHost MediaEmbedder { get; } = new();
     /// <summary>Studio images on the Snapdragon NPU (Windows on Arm), where ComfyUI has no GPU backend.</summary>
     public static Studio.Npu.SdNpuService SdNpu { get; } = new();
     /// <summary>Studio video on the Snapdragon NPU (LTX-Video through sd-cli.exe).</summary>
@@ -38,6 +40,9 @@ public static class Ioc
 
     private static AgentViewModel? _agentVm;
     public static AgentViewModel AgentVm => _agentVm ??= new AgentViewModel();
+
+    private static MediaSearchViewModel? _mediaSearchVm;
+    public static MediaSearchViewModel MediaSearchVm => _mediaSearchVm ??= new MediaSearchViewModel();
 
     private static StudioViewModel? _studioVm;
     public static StudioViewModel StudioVm => _studioVm ??= new StudioViewModel();

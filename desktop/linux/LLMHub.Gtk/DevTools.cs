@@ -29,6 +29,14 @@ internal static class DevTools
                 window.Window.Close();
             return;
         }
+        if (Value(args, "--searchtest") is { } searchMode)
+        {
+            await DevTests.MediaSearchAsync(searchMode, Value(args, "--folder")!, Value(args, "--model") ?? "embeddinggemma-2-740m",
+                (Value(args, "--queries") ?? "").Split('|', StringSplitOptions.RemoveEmptyEntries));
+            if (args.Contains("--exit"))
+                window.Window.Close();
+            return;
+        }
         if (Value(args, "--exportdesign") is { } exportFormat)
         {
             await DevTests.DesignExportAsync(exportFormat, Value(args, "--out") ?? $"/tmp/design.{exportFormat}", Value(args, "--kind"));

@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json.Nodes;
+using LLMHub.Services.MediaSearch;
 using LLMHub.Services.Studio;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -21,7 +22,7 @@ public sealed partial class LocalApiServer
     [
         new("POST", "/v1/chat/completions", Loc.S("ApiChatFeatures"), false),
         new("POST", "/v1/responses", "", false),
-        new("POST", "/v1/embeddings", "EmbeddingGemma", false),
+        new("POST", "/v1/embeddings", "EmbeddingGemma 2", false),
         new("POST", "/v1/audio/transcriptions", "Whisper", false),
         new("POST", "/v1/audio/speech", "Supertonic", false),
         new("POST", "/v1/images/generations", ComfyService.IsSupported || !Studio.Npu.SdNpuService.IsSupported ? "ComfyUI" : "Stable Diffusion 1.5 · NPU", false),
@@ -169,11 +170,21 @@ public sealed partial class LocalApiServer
 
     // ---------------------------------------------------------------- /v1/embeddings
 
-    /// <summary>Embeddings from an installed embedding model (EmbeddingGemma), on its own small llama-server.</summary>
+    /// <summary>
+    /// Embeddings from an installed embedding model: text on EmbeddingGemma 2's own small llama-server, or images and
+    /// audio (and text in the same space) on EmbeddingGemma 2 440M/740M through LiteRT-LM.
+    /// </summary>
     private async Task Embeddings(HttpContext ctx)
     {
         var body = await JsonNode.ParseAsync(ctx.Request.Body) as JsonObject ?? new JsonObject();
         var requested = body["model"]?.GetValue<string>() ?? "";
+        var mediaModels = Ioc.Models.Installed.Where(m => m.IsEmbedding && m.Format == "litertlm").OrderByDescending(m => m.Tags.Contains("audio")).ToList();
+        var hasMedia = body["input"] is JsonArray parts && parts.OfType<JsonObject>().Any(p => p["type"]?.GetValue<string>() is "image_url" or "input_audio");
+        if (hasMedia || mediaModels.Any(m => ApiName(m) == requested || m.Id == requested || m.CatalogId == requested))
+        {
+            await MediaEmbeddings(ctx, body, requested, mediaModels);
+            return;
+        }
         // EmbeddingGemma 2 first when it is installed alongside the original EmbeddingGemma.
         var embedders = Ioc.Models.Installed.Where(m => m.IsEmbedding && m.Format == "gguf").OrderByDescending(m => m.CatalogId == "embeddinggemma-2").ToList();
         var model = embedders.FirstOrDefault(m => ApiName(m) == requested || m.Id == requested || m.CatalogId == requested) ?? embedders.FirstOrDefault();
@@ -209,6 +220,123 @@ public sealed partial class LocalApiServer
             if (!ctx.Response.HasStarted)
                 await WriteError(ctx, 500, "api_error", e.Message);
             Record(ctx, ApiName(model), 500);
+        }
+    }
+
+    /// <summary>
+    /// /v1/embeddings with OpenAI-style content parts: strings or {"type":"text"}, {"type":"image_url","image_url":{"url":
+    /// "data:image/png;base64,…"}} and {"type":"input_audio","input_audio":{"data":"…","format":"wav"}}. One vector per
+    /// input item, in the same space, so a text can be compared with photos and recordings. Only data URLs: nothing is fetched.
+    /// </summary>
+    private async Task MediaEmbeddings(HttpContext ctx, JsonObject body, string requested, List<InstalledModel> models)
+    {
+        var items = body["input"] switch
+        {
+            JsonArray a => a.ToList(),
+            { } single => [single],
+            _ => [],
+        };
+        var needsAudio = items.OfType<JsonObject>().Any(p => p["type"]?.GetValue<string>() == "input_audio");
+        var model = models.FirstOrDefault(m => ApiName(m) == requested || m.Id == requested || m.CatalogId == requested)
+                    ?? models.FirstOrDefault(m => !needsAudio || m.Tags.Contains("audio"));
+        if (model is null || (needsAudio && !model.Tags.Contains("audio")))
+        {
+            await WriteError(ctx, 404, "not_found_error", needsAudio
+                ? "Audio embeddings need EmbeddingGemma 2 740M. Download it in Settings › Models."
+                : "Image embeddings need EmbeddingGemma 2 440M or 740M. Download one in Settings › Models.");
+            Record(ctx, requested, 404);
+            return;
+        }
+        var name = ApiName(model);
+        var temps = new List<string>();
+        try
+        {
+            var embedder = await Ioc.MediaEmbedder.GetAsync(model, _ => { }, ctx.RequestAborted);
+            MarkApiUse();
+            var data = new JsonArray();
+            for (var i = 0; i < items.Count; i++)
+            {
+                var (kind, bytes, error) = await ApiPartAsync(items[i], temps, ctx.RequestAborted);
+                if (error is not null)
+                {
+                    await WriteError(ctx, 400, "invalid_request_error", $"input[{i}]: {error}");
+                    Record(ctx, name, 400);
+                    return;
+                }
+                var vector = await Task.Run(() => embedder.Embed([(kind, bytes!)]), ctx.RequestAborted)
+                             ?? throw new InvalidOperationException($"input[{i}] could not be embedded");
+                data.Add(new JsonObject { ["object"] = "embedding", ["index"] = i, ["embedding"] = new JsonArray(vector.Select(v => (JsonNode)v).ToArray()) });
+            }
+            await ctx.Response.WriteAsJsonAsync(new JsonObject
+            {
+                ["object"] = "list", ["data"] = data, ["model"] = name,
+                ["usage"] = new JsonObject { ["prompt_tokens"] = 0, ["total_tokens"] = 0 },
+            });
+            Record(ctx, name, 200);
+        }
+        catch (OperationCanceledException)
+        {
+            Record(ctx, name, 499);
+        }
+        catch (Exception e)
+        {
+            Log.Error("Local API /v1/embeddings (media) failed", e);
+            if (!ctx.Response.HasStarted)
+                await WriteError(ctx, 500, "api_error", e.Message);
+            Record(ctx, name, 500);
+        }
+        finally
+        {
+            foreach (var temp in temps)
+            {
+                try
+                {
+                    File.Delete(temp);
+                }
+                catch (IOException)
+                {
+                }
+            }
+        }
+    }
+
+    /// <summary>One input item as embedder input: text as is (the client adds task prompts), photos scaled, audio as 16 kHz WAV.</summary>
+    private static async Task<(LiteRtEngine.EmbedKind Kind, byte[]? Bytes, string? Error)> ApiPartAsync(JsonNode? item, List<string> temps, CancellationToken ct)
+    {
+        if (item is JsonValue v && v.TryGetValue<string>(out var text))
+            return (LiteRtEngine.EmbedKind.Text, Encoding.UTF8.GetBytes(text), null);
+        if (item is not JsonObject part)
+            return (default, null, "expected a string or a content part");
+        switch (part["type"]?.GetValue<string>())
+        {
+            case "text":
+                return (LiteRtEngine.EmbedKind.Text, Encoding.UTF8.GetBytes(part["text"]?.GetValue<string>() ?? ""), null);
+            case "image_url":
+            {
+                var url = part["image_url"]?["url"]?.GetValue<string>() ?? part["image_url"]?.GetValue<string>() ?? "";
+                var comma = url.IndexOf(',');
+                if (!url.StartsWith("data:image/", StringComparison.OrdinalIgnoreCase) || comma < 0)
+                    return (default, null, "images must be data URLs (data:image/…;base64,…)");
+                var ext = url[11..url.IndexOfAny([';', ','])] switch { "jpeg" or "jpg" => ".jpg", var e => "." + e };
+                var path = Path.Combine(Path.GetTempPath(), $"llmhub-api-{Guid.NewGuid():N}{ext}");
+                temps.Add(path);
+                await File.WriteAllBytesAsync(path, Convert.FromBase64String(url[(comma + 1)..]), ct);
+                var jpeg = await MediaDecoders.Image(path, 512, ct);
+                return jpeg is null ? (default, null, "the image could not be read") : (LiteRtEngine.EmbedKind.Image, jpeg, null);
+            }
+            case "input_audio":
+            {
+                var audio = part["input_audio"];
+                var format = audio?["format"]?.GetValue<string>() ?? "wav";
+                var path = Path.Combine(Path.GetTempPath(), $"llmhub-api-{Guid.NewGuid():N}.{format}");
+                temps.Add(path);
+                await File.WriteAllBytesAsync(path, Convert.FromBase64String(audio?["data"]?.GetValue<string>() ?? ""), ct);
+                var samples = await MediaDecoders.Audio(path, 30, ct);
+                return samples is null ? (default, null, $"the {format} audio could not be decoded")
+                    : (LiteRtEngine.EmbedKind.Audio, MediaDecoders.Wav(samples, 0, samples.Length), null);
+            }
+            default:
+                return (default, null, "unknown content part type");
         }
     }
 

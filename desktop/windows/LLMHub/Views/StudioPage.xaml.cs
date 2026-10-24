@@ -1,4 +1,5 @@
 using LLMHub.Services;
+using LLMHub.Services.MediaSearch;
 using LLMHub.Services.Studio;
 using LLMHub.ViewModels;
 using Microsoft.UI.Xaml;
@@ -43,6 +44,59 @@ public sealed partial class StudioPage : Page
     }
 
     public StudioViewModel ViewModel => Ioc.StudioVm;
+    public MediaSearchViewModel Search => Ioc.MediaSearchVm;
+    public string SearchPlaceholder => Loc.S(Search.IsPhotos ? "SearchPlaceholderPhotos" : "SearchPlaceholderAudio");
+
+    private void OnSearchModeClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { Tag: string mode })
+            Search.Mode = mode;
+        SearchPhotosTab.IsChecked = Search.IsPhotos;
+        SearchAudioTab.IsChecked = Search.IsAudio;
+        Bindings.Update();
+    }
+
+    private async void OnSearchFolder(object sender, RoutedEventArgs e)
+    {
+        var picker = new FolderPicker { SuggestedStartLocation = Search.IsPhotos ? PickerLocationId.PicturesLibrary : PickerLocationId.MusicLibrary };
+        picker.FileTypeFilter.Add("*");
+        WinRT.Interop.InitializeWithWindow.Initialize(picker, WinRT.Interop.WindowNative.GetWindowHandle(App.Window));
+        if (await picker.PickSingleFolderAsync() is { } folder)
+            Search.SetFolder(folder.Path);
+    }
+
+    private void OnSearchKeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+    {
+        if (e.Key != Windows.System.VirtualKey.Enter)
+            return;
+        e.Handled = true;
+        Search.SearchCommand.Execute(null);
+    }
+
+    private async void OnSearchByPhoto(object sender, RoutedEventArgs e)
+    {
+        var picker = new FileOpenPicker { ViewMode = PickerViewMode.Thumbnail, SuggestedStartLocation = PickerLocationId.PicturesLibrary };
+        foreach (var ext in MediaDecoders.ImageExtensions)
+            picker.FileTypeFilter.Add(ext);
+        WinRT.Interop.InitializeWithWindow.Initialize(picker, WinRT.Interop.WindowNative.GetWindowHandle(App.Window));
+        if (await picker.PickSingleFileAsync() is { } file)
+            await Search.SearchByPhotoAsync(file.Path);
+    }
+
+    private async void OnPhotoMatchClick(object sender, ItemClickEventArgs e)
+    {
+        if (e.ClickedItem is PhotoMatch match)
+            await Windows.System.Launcher.LaunchFileAsync(await Windows.Storage.StorageFile.GetFileFromPathAsync(match.Path));
+    }
+
+    private async void OnPlayMoment(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement { Tag: AudioMoment moment })
+            return;
+        var match = Search.Audio.FirstOrDefault(a => a.Moments.Contains(moment));
+        if (match is not null)
+            await Search.PlayMomentAsync(match, moment);
+    }
 
     private void OnModeClick(object sender, RoutedEventArgs e)
     {
@@ -53,7 +107,7 @@ public sealed partial class StudioPage : Page
 
     private void UpdateTabs()
     {
-        foreach (var tab in new ToggleButton[] { TabImage, TabVideo, TabMusic, TabVoice })
+        foreach (var tab in new ToggleButton[] { TabImage, TabVideo, TabMusic, TabVoice, TabSearch })
             tab.IsChecked = (string)tab.Tag == ViewModel.Mode;
     }
 

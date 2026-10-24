@@ -4,6 +4,8 @@ using LLMHub.Services;
 // Child process that tries LiteRT-LM's GPU backend, which can crash outright on a bad driver.
 if (args is ["--litert-probe", .. var probe])
     return LiteRtEngine.RunProbe(probe);
+if (args is ["--litert-embed-probe", .. var embedProbe])
+    return LiteRtEngine.RunEmbedProbe(embedProbe);
 
 AppSettings.Load();
 Loc.ApplyLanguage(AppSettings.Current.Language);
@@ -30,6 +32,7 @@ UiThread.Initialize(
         return false;
     }),
     () => Environment.CurrentManagedThreadId == mainThread);
+LLMHub.Linux.SearchPane.RegisterDecoders();
 
 var app = Adw.Application.New("app.llmhub.Desktop", Gio.ApplicationFlags.DefaultFlags);
 MainWindow? window = null;
@@ -54,6 +57,7 @@ app.OnShutdown += (_, _) =>
     Ioc.Comfy.Stop();
     Ioc.OpenClaw.StopGateway();
     Ioc.Magenta.Shutdown();
+    _ = Ioc.MediaSearchVm.UnloadAsync();
 };
 return app.RunWithSynchronizationContext(null);
 

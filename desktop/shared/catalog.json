@@ -415,7 +415,7 @@
     },
     {
       "id": "embeddinggemma-2",
-      "name": "EmbeddingGemma 2",
+      "name": "EmbeddingGemma 2 270M",
       "maker": "Google",
       "tags": [
         "embedding"
@@ -427,6 +427,41 @@
           "repo": "ggml-org/embeddinggemma-2-GGUF",
           "format": "gguf",
           "preferredQuant": "Q8_0"
+        }
+      ]
+    },
+    {
+      "id": "embeddinggemma-2-740m",
+      "name": "EmbeddingGemma 2 740M",
+      "maker": "Google",
+      "tags": [
+        "embedding",
+        "vision",
+        "audio"
+      ],
+      "contextLength": 8192,
+      "minRamGB": 2,
+      "sources": [
+        {
+          "repo": "litert-community/embeddinggemma-2-740m-litert-lm",
+          "format": "litertlm"
+        }
+      ]
+    },
+    {
+      "id": "embeddinggemma-2-440m",
+      "name": "EmbeddingGemma 2 440M",
+      "maker": "Google",
+      "tags": [
+        "embedding",
+        "vision"
+      ],
+      "contextLength": 8192,
+      "minRamGB": 2,
+      "sources": [
+        {
+          "repo": "litert-community/embeddinggemma-2-text-vision-440m-litert-lm",
+          "format": "litertlm"
         }
       ]
     }

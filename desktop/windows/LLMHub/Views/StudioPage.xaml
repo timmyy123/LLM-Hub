@@ -36,6 +36,7 @@
                 <ToggleButton x:Name="TabVideo" Tag="video" Content="{x:Bind services:Loc.S('StudioVideo')}" Click="OnModeClick" Style="{StaticResource StudioTabStyle}" />
                 <ToggleButton x:Name="TabMusic" Tag="music" Content="{x:Bind services:Loc.S('StudioMusic')}" Click="OnModeClick" Style="{StaticResource StudioTabStyle}" />
                 <ToggleButton x:Name="TabVoice" Tag="voice" Content="{x:Bind services:Loc.S('StudioVoice')}" Click="OnModeClick" Style="{StaticResource StudioTabStyle}" />
+                <ToggleButton x:Name="TabSearch" Tag="search" Content="{x:Bind services:Loc.S('StudioSearch')}" Click="OnModeClick" Style="{StaticResource StudioTabStyle}" />
             </StackPanel>
             <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Visibility="{x:Bind local:Ui.Show(ViewModel.IsImageOrVideo), Mode=OneWay}">
                 <Ellipse Width="8" Height="8" Fill="{x:Bind local:Ui.RunningBrush(ViewModel.EngineRunning), Mode=OneWay}" />
@@ -174,6 +175,120 @@
                         </StackPanel>
                     </Button>
                 </StackPanel>
+            </Grid>
+        </Grid>
+
+        <!-- Search: photos and audio by description or by example, with EmbeddingGemma 2 on this computer -->
+        <Grid Grid.Row="1" Visibility="{x:Bind local:Ui.Show(ViewModel.IsSearch), Mode=OneWay}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="320" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <ScrollViewer BorderBrush="{ThemeResource DividerBrush}" BorderThickness="0,0,1,0" Padding="20">
+                <StackPanel Spacing="16">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <ToggleButton x:Name="SearchPhotosTab" Tag="photos" Content="{x:Bind services:Loc.S('SearchPhotos')}" Click="OnSearchModeClick" CornerRadius="14" IsChecked="True" />
+                        <ToggleButton x:Name="SearchAudioTab" Tag="audio" Content="{x:Bind services:Loc.S('SearchAudio')}" Click="OnSearchModeClick" CornerRadius="14" />
+                    </StackPanel>
+                    <TextBlock Text="{x:Bind services:Loc.S('SearchGetModel')}" Style="{StaticResource MutedTextStyle}" TextWrapping="Wrap"
+                               Visibility="{x:Bind local:Ui.Hide(Search.HasModel), Mode=OneWay}" AutomationProperties.AutomationId="SearchGetModel" />
+                    <StackPanel Spacing="6" Visibility="{x:Bind local:Ui.Show(Search.HasModel), Mode=OneWay}">
+                        <TextBlock Text="{x:Bind services:Loc.S('SearchModel')}" Style="{StaticResource FieldLabelStyle}" />
+                        <ComboBox x:Name="SearchModelPicker" HorizontalAlignment="Stretch" ItemsSource="{x:Bind Search.Models}" SelectedItem="{x:Bind Search.SelectedModel, Mode=TwoWay}" />
+                    </StackPanel>
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="{x:Bind services:Loc.S('SearchFolder')}" Style="{StaticResource FieldLabelStyle}" />
+                        <Grid ColumnSpacing="8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{x:Bind Search.Folder, Mode=OneWay}" FontSize="12" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"
+                                       ToolTipService.ToolTip="{x:Bind Search.Folder, Mode=OneWay}" AutomationProperties.AutomationId="SearchFolder" />
+                            <Button Grid.Column="1" Content="{x:Bind services:Loc.S('SearchChange')}" Click="OnSearchFolder" CornerRadius="8" />
+                        </Grid>
+                    </StackPanel>
+                    <Grid ColumnSpacing="8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Button x:Name="SearchIndexButton" HorizontalAlignment="Stretch" CornerRadius="9" Content="{x:Bind services:Loc.S('SearchIndex')}" Command="{x:Bind Search.IndexCommand}"
+                                IsEnabled="{x:Bind local:Ui.Not(Search.IsIndexing), Mode=OneWay}" />
+                        <Button Grid.Column="1" CornerRadius="9" Content="{x:Bind services:Loc.S('Stop')}" Command="{x:Bind Search.StopIndexingCommand}"
+                                Visibility="{x:Bind local:Ui.Show(Search.IsIndexing), Mode=OneWay}" />
+                    </Grid>
+                    <ProgressBar Value="{x:Bind Search.Progress, Mode=OneWay}" Maximum="1" Visibility="{x:Bind local:Ui.Show(Search.IsIndexing), Mode=OneWay}" />
+                    <TextBlock Text="{x:Bind Search.IndexedText, Mode=OneWay}" FontSize="12" Foreground="{ThemeResource TextMutedBrush}" AutomationProperties.AutomationId="SearchIndexed" />
+                    <TextBlock Text="{x:Bind Search.Status, Mode=OneWay}" FontSize="12" Foreground="{ThemeResource TextMutedBrush}" TextWrapping="Wrap"
+                               Visibility="{x:Bind local:Ui.ShowText(Search.Status), Mode=OneWay}" AutomationProperties.AutomationId="SearchStatus" />
+                    <TextBlock Text="{x:Bind services:Loc.S('SearchHelp')}" FontSize="12" Foreground="{ThemeResource TextFaintBrush}" TextWrapping="Wrap" />
+                </StackPanel>
+            </ScrollViewer>
+            <Grid Grid.Column="1" Padding="20" RowSpacing="14">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <Grid ColumnSpacing="8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="SearchQueryBox" Text="{x:Bind Search.Query, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" KeyDown="OnSearchKeyDown"
+                             PlaceholderText="{x:Bind SearchPlaceholder, Mode=OneWay}" />
+                    <Button x:Name="SearchButton" Grid.Column="1" Command="{x:Bind Search.SearchCommand}" AutomationProperties.Name="{x:Bind services:Loc.S('StudioSearch')}">
+                        <FontIcon Glyph="&#xE721;" FontSize="14" />
+                    </Button>
+                    <Button x:Name="SearchByPhotoButton" Grid.Column="2" Click="OnSearchByPhoto" Content="{x:Bind services:Loc.S('SearchByPhoto')}" CornerRadius="8"
+                            Visibility="{x:Bind local:Ui.Show(Search.IsPhotos), Mode=OneWay}" />
+                </Grid>
+                <GridView x:Name="SearchPhotoResults" Grid.Row="1" ItemsSource="{x:Bind Search.Photos}" SelectionMode="None" IsItemClickEnabled="True" ItemClick="OnPhotoMatchClick"
+                          Visibility="{x:Bind local:Ui.Show(Search.IsPhotos), Mode=OneWay}">
+                    <GridView.ItemTemplate>
+                        <DataTemplate x:DataType="vm:PhotoMatch">
+                            <Grid Width="200" Height="150" CornerRadius="10" ToolTipService.ToolTip="{x:Bind Name}">
+                                <Image Source="{x:Bind local:Ui.Thumbnail(Path)}" Stretch="UniformToFill" />
+                                <Border VerticalAlignment="Bottom" HorizontalAlignment="Right" Margin="6" Padding="6,2" CornerRadius="6" Background="#99000000">
+                                    <TextBlock Text="{x:Bind ScoreText}" FontSize="11" Foreground="White" AutomationProperties.AutomationId="SearchPhotoScore" />
+                                </Border>
+                            </Grid>
+                        </DataTemplate>
+                    </GridView.ItemTemplate>
+                </GridView>
+                <ListView x:Name="SearchAudioResults" Grid.Row="1" ItemsSource="{x:Bind Search.Audio}" SelectionMode="None"
+                          Visibility="{x:Bind local:Ui.Show(Search.IsAudio), Mode=OneWay}">
+                    <ListView.ItemTemplate>
+                        <DataTemplate x:DataType="vm:AudioMatch">
+                            <Grid ColumnSpacing="12" Padding="0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Spacing="6">
+                                    <TextBlock Text="{x:Bind Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" AutomationProperties.AutomationId="SearchAudioName" />
+                                    <ItemsRepeater ItemsSource="{x:Bind Moments}">
+                                        <ItemsRepeater.Layout>
+                                            <StackLayout Orientation="Horizontal" Spacing="6" />
+                                        </ItemsRepeater.Layout>
+                                        <ItemsRepeater.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:AudioMoment">
+                                                <Button Click="OnPlayMoment" Tag="{x:Bind}" CornerRadius="12" Padding="10,3" AutomationProperties.AutomationId="SearchMoment">
+                                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                                        <FontIcon Glyph="&#xE768;" FontSize="10" />
+                                                        <TextBlock Text="{x:Bind Label}" FontSize="12" />
+                                                    </StackPanel>
+                                                </Button>
+                                            </DataTemplate>
+                                        </ItemsRepeater.ItemTemplate>
+                                    </ItemsRepeater>
+                                </StackPanel>
+                                <TextBlock Grid.Column="1" Text="{x:Bind ScoreText}" FontSize="12" Foreground="{ThemeResource TextMutedBrush}" VerticalAlignment="Center" />
+                            </Grid>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
             </Grid>
         </Grid>
 

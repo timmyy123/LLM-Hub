@@ -20,6 +20,7 @@ public partial class App : Application
         UnhandledException += (_, e) => Log.Error("Unhandled", e.Exception);
         Services.Studio.Npu.SdNpuService.ImageLoader = NpuImages.LoadRgbAsync;
         Services.Studio.Npu.LtxNpuService.VideoEncoder = NpuImages.EncodeMp4Async;
+        MediaDecodersWindows.Register();
     }
 
     protected override void OnLaunched(LaunchActivatedEventArgs args)
@@ -33,6 +34,7 @@ public partial class App : Application
             Ioc.Comfy.Stop();
             Ioc.OpenClaw.StopGateway();
             Ioc.SdNpu.Unload();
+            _ = Ioc.MediaSearchVm.UnloadAsync();
         };
         Window.Activate();
         _ = Ioc.Api.RestartAsync();

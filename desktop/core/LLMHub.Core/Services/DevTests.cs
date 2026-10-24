@@ -217,6 +217,56 @@ public static class DevTests
         Log.Info($"MUSICTEST {workflowId} {seconds}s in {clock.Elapsed.TotalSeconds:F0}s: {studio.MusicStatus}; {clip} ({(clip is null ? 0 : new FileInfo(clip).Length)} bytes)");
     }
 
+    /// <summary>
+    /// Studio › Search: installs an EmbeddingGemma 2 build from the catalog if needed, indexes a folder of photos or audio,
+    /// then logs the best matches for each query (text, or a photo path for photo-to-photo).
+    /// </summary>
+    public static async Task MediaSearchAsync(string mode, string folder, string catalogId, IReadOnlyList<string> queries)
+    {
+        try
+        {
+            var model = Ioc.Catalog.Models.First(m => m.Id == catalogId);
+            var source = model.Sources.First(s => s.Format == "litertlm");
+            var variant = (await Ioc.HuggingFace.GetLiteRtVariantsAsync(source.Repo, CancellationToken.None))[0];
+            var id = InstalledModel.MakeId(variant.Repo, variant.Quant);
+            if (Ioc.Models.Find(id) is null)
+            {
+                var clock = System.Diagnostics.Stopwatch.StartNew();
+                Ioc.Downloads.Start(variant, model.Name, model.Id, model.Tags, model.ContextLength);
+                while (Ioc.Downloads.Find(id) is not null)
+                    await Task.Delay(1000);
+                Log.Info($"SEARCHTEST downloaded {id} ({Fmt.Bytes(variant.TotalBytes)}) in {clock.Elapsed.TotalSeconds:F0}s");
+            }
+            await Task.Delay(500);
+            var search = Ioc.MediaSearchVm;
+            search.Mode = mode;
+            search.SelectedModel = search.Models.First(m => m.Id == id);
+            search.SetFolder(folder);
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+            await search.IndexCommand.ExecuteAsync(null);
+            Log.Info($"SEARCHTEST index {mode} in {watch.Elapsed.TotalSeconds:F1}s: {search.Status} ({search.IndexedText})");
+            foreach (var query in queries)
+            {
+                watch.Restart();
+                if (File.Exists(query))
+                    await search.SearchByPhotoAsync(query);
+                else
+                {
+                    search.Query = query;
+                    await search.SearchCommand.ExecuteAsync(null);
+                }
+                var top = mode == "photos"
+                    ? search.Photos.Take(4).Select(p => $"{p.Name} {p.ScoreText}")
+                    : search.Audio.Take(4).Select(a => $"{a.Name} {a.ScoreText} @{string.Join("/", a.Moments.Select(m => m.Label))}");
+                Log.Info($"SEARCHTEST \"{Path.GetFileName(query)}\" in {watch.Elapsed.TotalSeconds:F2}s: {string.Join(" | ", top)}");
+            }
+        }
+        catch (Exception e)
+        {
+            Log.Error("SEARCHTEST failed", e);
+        }
+    }
+
     /// <summary>Exports the most recent design project (or the one with <paramref name="kind"/>) to <paramref name="path"/>.</summary>
     public static async Task DesignExportAsync(string format, string path, string? kind)
     {
