@@ -332,7 +332,8 @@
   "NpuImageToImage": "Image to image",
   "NpuLoadingVideo": "Loading LTX-Video on the NPU…",
   "NpuDecodingVideo": "Decoding frames…",
-  "NpuEncodingVideo": "Saving the video…"
+  "NpuEncodingVideo": "Saving the video…",
+  "NpuSettingsHelp": "Images and video are generated on the Snapdragon NPU. Each model downloads the first time you use it."
  },
  "es-ES": {
   "NewChat": "Nuevo chat",
@@ -667,7 +668,8 @@
   "NpuImageToImage": "De imagen a imagen",
   "NpuLoadingVideo": "Cargando LTX-Video en la NPU…",
   "NpuDecodingVideo": "Decodificando fotogramas…",
-  "NpuEncodingVideo": "Guardando el vídeo…"
+  "NpuEncodingVideo": "Guardando el vídeo…",
+  "NpuSettingsHelp": "Las imágenes y los vídeos se generan en la NPU Snapdragon. Cada modelo se descarga la primera vez que lo usas."
  },
  "pt-BR": {
   "NewChat": "Nova conversa",
@@ -1002,7 +1004,8 @@
   "NpuImageToImage": "De imagem para imagem",
   "NpuLoadingVideo": "Carregando o LTX-Video na NPU…",
   "NpuDecodingVideo": "Decodificando quadros…",
-  "NpuEncodingVideo": "Salvando o vídeo…"
+  "NpuEncodingVideo": "Salvando o vídeo…",
+  "NpuSettingsHelp": "Imagens e vídeos são gerados na NPU Snapdragon. Cada modelo é baixado na primeira vez que você o usa."
  },
  "fr-FR": {
   "NewChat": "Nouvelle discussion",
@@ -1337,7 +1340,8 @@
   "NpuImageToImage": "D'image à image",
   "NpuLoadingVideo": "Chargement de LTX-Video sur le NPU…",
   "NpuDecodingVideo": "Décodage des images…",
-  "NpuEncodingVideo": "Enregistrement de la vidéo…"
+  "NpuEncodingVideo": "Enregistrement de la vidéo…",
+  "NpuSettingsHelp": "Les images et les vidéos sont générées sur le NPU Snapdragon. Chaque modèle se télécharge la première fois que vous l'utilisez."
  },
  "de-DE": {
   "NewChat": "Neuer Chat",
@@ -1672,7 +1676,8 @@
   "NpuImageToImage": "Bild zu Bild",
   "NpuLoadingVideo": "LTX-Video wird auf die NPU geladen…",
   "NpuDecodingVideo": "Einzelbilder werden dekodiert…",
-  "NpuEncodingVideo": "Video wird gespeichert…"
+  "NpuEncodingVideo": "Video wird gespeichert…",
+  "NpuSettingsHelp": "Bilder und Videos entstehen auf der Snapdragon-NPU. Jedes Modell wird bei der ersten Nutzung heruntergeladen."
  },
  "it-IT": {
   "NewChat": "Nuova chat",
@@ -2007,7 +2012,8 @@
   "NpuImageToImage": "Da immagine a immagine",
   "NpuLoadingVideo": "Caricamento di LTX-Video sulla NPU…",
   "NpuDecodingVideo": "Decodifica dei fotogrammi…",
-  "NpuEncodingVideo": "Salvataggio del video…"
+  "NpuEncodingVideo": "Salvataggio del video…",
+  "NpuSettingsHelp": "Immagini e video vengono generati sulla NPU Snapdragon. Ogni modello si scarica al primo utilizzo."
  },
  "ru-RU": {
   "NewChat": "Новый чат",
@@ -2342,6 +2348,7 @@
   "NpuImageToImage": "Изображение в изображение",
   "NpuLoadingVideo": "Загрузка LTX-Video в NPU…",
   "NpuDecodingVideo": "Декодирование кадров…",
-  "NpuEncodingVideo": "Сохранение видео…"
+  "NpuEncodingVideo": "Сохранение видео…",
+  "NpuSettingsHelp": "Изображения и видео создаются на NPU Snapdragon. Каждая модель загружается при первом использовании."
  }
 }

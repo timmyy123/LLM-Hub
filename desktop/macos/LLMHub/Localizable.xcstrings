@@ -10436,6 +10436,53 @@
         }
       }
     },
+    "NpuSettingsHelp": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Images and video are generated on the Snapdragon NPU. Each model downloads the first time you use it."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Las imágenes y los vídeos se generan en la NPU Snapdragon. Cada modelo se descarga la primera vez que lo usas."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Imagens e vídeos são gerados na NPU Snapdragon. Cada modelo é baixado na primeira vez que você o usa."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les images et les vidéos sont générées sur le NPU Snapdragon. Chaque modèle se télécharge la première fois que vous l'utilisez."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bilder und Videos entstehen auf der Snapdragon-NPU. Jedes Modell wird bei der ersten Nutzung heruntergeladen."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Immagini e video vengono generati sulla NPU Snapdragon. Ogni modello si scarica al primo utilizzo."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Изображения и видео создаются на NPU Snapdragon. Каждая модель загружается при первом использовании."
+          }
+        }
+      }
+    },
     "NpuUnpacking": {
       "extractionState": "manual",
       "localizations": {

@@ -69,6 +69,8 @@ public sealed partial class SettingsViewModel : ObservableObject
         ? Ioc.Comfy.StatusLine
         : StudioViewModel.UsesNpu ? Ioc.SdNpu.StatusLine : Loc.S("ComfyUnsupported");
     public string ComfyFolder => StudioViewModel.UsesNpu ? Services.Studio.Npu.SdNpuService.Root : ComfyService.Root;
+    public bool UsesNpu => StudioViewModel.UsesNpu;
+    public string StudioHelp => Loc.S(StudioViewModel.UsesNpu ? "NpuSettingsHelp" : "SettingsStudioHelp");
     public string MusicLine => Loc.S(OperatingSystem.IsMacOS() ? "SettingsMusicMac" : "StudioMusicUnavailable");
 
     partial void OnAppearanceChanged(string value) => Save(s => s.Appearance = value);
@@ -164,8 +166,9 @@ public sealed partial class SettingsViewModel : ObservableObject
     {
         if (StudioViewModel.UsesNpu)
         {
-            // One entry per NPU model folder (QNN package plus text encoder).
-            return Services.Studio.Npu.SdNpuModel.All.Select(m => Services.Studio.Npu.SdNpuService.ModelDir(m)).Where(Directory.Exists)
+            // One entry per NPU model folder (Stable Diffusion checkpoints, LTX-Video).
+            var root = Services.Studio.Npu.SdNpuService.Root;
+            return !Directory.Exists(root) ? [] : Directory.EnumerateDirectories(root)
                 .Select(d => new StorageItem(d, Path.GetFileName(d), d, Size(d))).OrderByDescending(i => i.Bytes).ToList();
         }
         if (!Directory.Exists(ComfyService.ModelsDir))
