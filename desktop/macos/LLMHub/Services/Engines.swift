@@ -26,6 +26,9 @@ final class EngineHub {
         }
     }
 
+    /// "gpu" or "cpu" once a .litertlm model has loaded; nil before.
+    var liteRtBackend: String? { liteRt.backend }
+
     var backend: String {
         switch activeFormat {
         case "litertlm": return "LiteRT-LM \(liteRt.backend ?? "")"

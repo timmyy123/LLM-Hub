@@ -120,12 +120,18 @@ final class LlamaEngine {
         return try await task.value
     }
 
-    private func install() async throws -> URL {
-        try? FileManager.default.createDirectory(at: engineRoot, withIntermediateDirectories: true)
-        let dirs = ((try? FileManager.default.contentsOfDirectory(at: engineRoot, includingPropertiesForKeys: nil)) ?? [])
+    private var installedDirs: [URL] {
+        ((try? FileManager.default.contentsOfDirectory(at: engineRoot, includingPropertiesForKeys: nil)) ?? [])
             .filter { $0.lastPathComponent.hasSuffix("-\(variant)") }
             .sorted { $0.lastPathComponent > $1.lastPathComponent }
-        for dir in dirs {
+    }
+
+    /// Whether a llama.cpp build is on disk already (Settings › Models shows "ready" rather than "downloads on first use").
+    var isInstalled: Bool { installedDirs.contains { Self.findServer(in: $0) != nil } }
+
+    private func install() async throws -> URL {
+        try? FileManager.default.createDirectory(at: engineRoot, withIntermediateDirectories: true)
+        for dir in installedDirs {
             if let server = Self.findServer(in: dir) { return server }
         }
 

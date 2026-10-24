@@ -285,15 +285,13 @@ final class LLMHubUITests: XCTestCase {
         query.typeText("LFM2.5-1.2B-Instruct-GGUF\r")
         let detail = el("HfDetail")
         XCTAssertTrue(detail.waitForExistence(timeout: 30))
-        let picker = detail.descendants(matching: .any).matching(identifier: "VariantPicker").firstMatch
-        XCTAssertTrue(picker.waitForExistence(timeout: 30))
-        picker.click()
-        let q4 = app.menuItems.allElementsBoundByIndex.first { $0.title.hasPrefix("Q4_0") } ?? app.menuItems.firstMatch
-        q4.click()
-        detail.descendants(matching: .any).matching(identifier: "DownloadButton").firstMatch.click()
-        XCTAssertTrue(detail.descendants(matching: .any).matching(identifier: "InstalledLabel").firstMatch.waitForExistence(timeout: 600))
+        // The file table has one row per quant, each with its own Download button.
+        let q4 = detail.descendants(matching: .any).matching(identifier: "HfFileRow-Q4_0").firstMatch
+        XCTAssertTrue(q4.waitForExistence(timeout: 30))
+        q4.descendants(matching: .any).matching(identifier: "DownloadButton").firstMatch.click()
+        XCTAssertTrue(q4.descendants(matching: .any).matching(identifier: "InstalledLabel").firstMatch.waitForExistence(timeout: 600))
 
-        app.radioButtons["Installed"].click()
+        app.radioButtons.matching(NSPredicate(format: "label BEGINSWITH %@", "Installed")).firstMatch.click()
         wait(10, "3 installed") { all("InstalledName").count >= 3 }
         let before = all("InstalledName").count
         let row = all("InstalledRow").first { r in

@@ -4,7 +4,7 @@ import AppKit
 /// Debug builds only, same flags as Windows:
 /// `LLMHub [--selftest catalogId|apple [--format litertlm] [--quant label] [--prompt text]] [--capture out.png]
 /// [--page chat|agent|design|studio|settings|models|<settings section>] [--wait ms] [--theme dark|light] [--exit]`
-/// Feature end-to-end runs (--agenttest, --designtest, --studiotest, --speechtest) live in DevTools+<Feature>.swift.
+/// Feature end-to-end runs (--agenttest, --designtest, --studiotest, --speechtest, --modelstest) live in DevTools+<Feature>.swift.
 @MainActor
 enum DevTools {
     static func runIfRequested() {
@@ -22,6 +22,7 @@ enum DevTools {
             await studioTest(args)
             await speechTest(args)
             await chatTest(args)
+            await modelsTest(args)
             switch value("--page", args) {
             case "settings": AppModel.shared.section = .settings(.general)
             case "models": AppModel.shared.section = .settings(.models)
@@ -47,7 +48,10 @@ enum DevTools {
     /// Renders the window's own views; needs no screen recording permission.
     private static func capture(to path: String) {
         guard let view = NSApp.windows.first(where: { $0.isVisible })?.contentView?.superview,
-              let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { return }
+              let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds) else {
+            Log.info("Capture skipped: no visible window (\(NSApp.windows.count) windows)")
+            return
+        }
         view.cacheDisplay(in: view.bounds, to: rep)
         try? rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: path))
         Log.info("Captured \(path)")

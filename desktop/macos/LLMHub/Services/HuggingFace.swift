@@ -45,6 +45,12 @@ struct HfRepo: Identifiable, Hashable {
     let id: String
     let downloads: Int
     let likes: Int
+    var lastModified: Date?
+    /// Gated repos need the license accepted on the Hub, and a token from that account to download.
+    var gated = false
+    /// "gguf" or "litertlm": which library filter found it, so which files the detail pane lists.
+    var format = "gguf"
+    var trending = 0.0
 }
 
 /// One downloadable quantization of a GGUF repo: weight files (possibly split) plus the vision projector if any.
@@ -86,16 +92,43 @@ actor HuggingFaceClient {
         return URL(string: "\(host)/\(repo)/resolve/main/\(escaped)")!
     }
 
-    func search(_ query: String, filter: String?) async throws -> [HfRepo] {
+    /// `sort`: trendingScore, downloads or lastModified. The "litert-lm" library filter marks results as .litertlm repos.
+    func search(_ query: String, filter: String?, sort: String = "trendingScore") async throws -> [HfRepo] {
         var components = URLComponents(string: "\(Self.host)/api/models")!
         components.queryItems = [
-            .init(name: "search", value: query), .init(name: "sort", value: "trendingScore"),
+            .init(name: "search", value: query), .init(name: "sort", value: sort),
             .init(name: "direction", value: "-1"), .init(name: "limit", value: "40"),
-        ] + (filter.map { [URLQueryItem(name: "filter", value: $0)] } ?? [])
+        ] + ["downloads", "likes", "lastModified", "gated", "trendingScore"].map { URLQueryItem(name: "expand[]", value: $0) }
+            + (filter.map { [URLQueryItem(name: "filter", value: $0)] } ?? [])
         let (data, response) = try await URLSession.shared.data(for: request(components.url!))
         try Self.check(response)
         let items = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] ?? []
-        return items.map { HfRepo(id: $0["id"] as? String ?? "", downloads: $0["downloads"] as? Int ?? 0, likes: $0["likes"] as? Int ?? 0) }
+        let format = filter == "litert-lm" ? "litertlm" : "gguf"
+        return items.filter { !Self.isChineseOrigin($0["id"] as? String ?? "") }.map { item in
+            // "gated" is false, or "auto" / "manual" for repos behind a license.
+            let gated = item["gated"] is String || (item["gated"] as? Bool) == true
+            return HfRepo(
+                id: item["id"] as? String ?? "", downloads: item["downloads"] as? Int ?? 0, likes: item["likes"] as? Int ?? 0,
+                lastModified: (item["lastModified"] as? String).flatMap(Self.parseDate), gated: gated, format: format,
+                trending: (item["trendingScore"] as? NSNumber)?.doubleValue ?? 0)
+        }
+    }
+
+    /// LLM Hub offers no Chinese-origin models, so search results skip them (same list as the Windows and Linux apps).
+    nonisolated static func isChineseOrigin(_ repoId: String) -> Bool {
+        chineseOrigin.firstMatch(in: repoId, range: NSRange(repoId.startIndex..., in: repoId)) != nil
+    }
+
+    private static let chineseOrigin = try! NSRegularExpression(
+        pattern: #"(^|[/_\-. ])(qwen|qwq|deepseek|glm|chatglm|codegeex|thudm|zai-org|01-ai|yi|baichuan|internlm|internvl|intern-s1|minimax|kimi|moonshot|hunyuan|tencent|ernie|baidu|wan|wan-ai|wan2|step|stepfun|step3|seed-oss|bytedance|doubao|cogvideo|cogview|minicpm|openbmb|telechat|skywork|xverse|aquila|baai|bailing|ling|ring|inclusionai|longcat|meituan|mimo|xiaomi|xiaomimimo|kwai|kuaishou|keye|ovis|seedream|seedance|opengvlab|iflytek|spark|sensenova|pangu|hy|mistral-chinese)(?=$|[/_\-.0-9 ])"#,
+        options: [.caseInsensitive])
+
+    private nonisolated static func parseDate(_ text: String) -> Date? {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let date = formatter.date(from: text) { return date }
+        formatter.formatOptions = [.withInternetDateTime]
+        return formatter.date(from: text)
     }
 
     func listFiles(_ repo: String) async throws -> [HfFile] {
