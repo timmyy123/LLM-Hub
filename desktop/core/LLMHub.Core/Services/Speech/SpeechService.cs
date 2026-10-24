@@ -12,13 +12,25 @@ namespace LLMHub.Services.Speech;
 /// </summary>
 public sealed partial class SpeechService : ObservableObject
 {
-    private const string SupertonicRepo = "https://huggingface.co/supertone-oss-archive/supertonic-3/resolve/aafc6e32416a594460b32413efc49d7fe4ce6d46/";
-    private static readonly string[] SupertonicFiles =
+    // Same files as the Android app: Supertone's FP32 release, and a community FP16 conversion (half the download; inputs
+    // and outputs stay FP32). Voice styles come from Supertone's repo for both.
+    private const string SupertonicRepo = "https://huggingface.co/Supertone/supertonic-3/resolve/3cadd1ee6394adea1bd021217a0e650ede09a323/";
+    private const string SupertonicFp16Repo = "https://huggingface.co/Kyumdroid/supertonic-3-quant/resolve/d9bfd0a9384b42a76f9256eafdd3d8a5cc4706ba/fp16/";
+    private static readonly string[] ModelFiles =
     [
         "onnx/duration_predictor.onnx", "onnx/text_encoder.onnx", "onnx/vector_estimator.onnx", "onnx/vocoder.onnx",
         "onnx/tts.json", "onnx/unicode_indexer.json",
-        "voice_styles/F1.json", "voice_styles/F2.json", "voice_styles/M1.json", "voice_styles/M2.json",
     ];
+    /// <summary>Supertonic 3's ten built-in voices.</summary>
+    public static IReadOnlyList<string> BuiltInVoices { get; } = ["F1", "F2", "F3", "F4", "F5", "M1", "M2", "M3", "M4", "M5"];
+    /// <summary>The 31 languages Supertonic 3 reads (ISO 639-1).</summary>
+    public static IReadOnlyList<string> Languages { get; } =
+    [
+        "en", "ko", "ja", "ar", "bg", "cs", "da", "de", "el", "es", "et", "fi", "fr", "hi", "hr", "hu", "id", "it", "lt", "lv", "nl",
+        "pl", "pt", "ro", "ru", "sk", "sl", "sv", "tr", "uk", "vi",
+    ];
+    private const long MaxVoiceBytes = 2 * 1024 * 1024;
+
     private const string WhisperModel = "ggml-large-v3-turbo-q5_0.bin";
     private const string WhisperModelUrl = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/" + WhisperModel;
 
@@ -43,11 +55,16 @@ public sealed partial class SpeechService : ObservableObject
     [ObservableProperty] public partial string Status { get; set; }
 
     public static string TtsRoot => Path.Combine(AppPaths.Engines, "supertonic-3");
+    public static string TtsFp16Root => Path.Combine(AppPaths.Engines, "supertonic-3-fp16");
+    public static string CustomVoicesDir => Directory.CreateDirectory(Path.Combine(AppPaths.Root, "voices")).FullName;
+    private static bool UseFp16 => AppSettings.Current.SpeechPrecision == "fp16";
+    private static string ModelRoot => UseFp16 ? TtsFp16Root : TtsRoot;
     public static string WhisperRoot => Path.Combine(AppPaths.Engines, "whisper.cpp");
-    public static bool IsTtsInstalled => SupertonicFiles.All(f => File.Exists(Path.Combine(TtsRoot, f)));
-    public static bool IsAsrInstalled => File.Exists(Path.Combine(WhisperRoot, WhisperModel));
+    public static bool IsTtsInstalled => ModelFiles.All(f => File.Exists(Path.Combine(ModelRoot, f)))
+                                         && BuiltInVoices.All(v => File.Exists(Path.Combine(TtsRoot, "voice_styles", v + ".json")));
+    public static bool IsAsrInstalled => File.Exists(Path.Combine(WhisperRoot, "models", WhisperModel));
     /// <summary>"Supertonic 3 · 4 voices", "Whisper large-v3 turbo (q5_0)" for Settings.</summary>
-    public static string TtsName => "Supertonic 3";
+    public static string TtsName => UseFp16 ? "Supertonic 3 · FP16" : "Supertonic 3";
     public static string AsrName => "Whisper large-v3 turbo · q5_0";
 
     /// <summary>Downloads both speech engines now (Settings › Speech and voice) instead of on first use.</summary>
@@ -63,12 +80,67 @@ public sealed partial class SpeechService : ObservableObject
     {
         Stop();
         _tts = null;
-        foreach (var dir in new[] { TtsRoot, WhisperRoot })
+        foreach (var dir in new[] { TtsRoot, TtsFp16Root, WhisperRoot })
             if (Directory.Exists(dir))
                 Directory.Delete(dir, true);
     }
 
-    public static IReadOnlyList<string> Voices => ["F1", "F2", "M1", "M2"];
+    /// <summary>The built-in voices, then voices the user imported (named after their files).</summary>
+    public static IReadOnlyList<string> Voices =>
+        [.. BuiltInVoices, .. Directory.EnumerateFiles(CustomVoicesDir, "*.json").Select(Path.GetFileNameWithoutExtension).OfType<string>().Order()];
+
+    private static string VoicePath(string voice) => BuiltInVoices.Contains(voice)
+        ? Path.Combine(TtsRoot, "voice_styles", voice + ".json")
+        : Path.Combine(CustomVoicesDir, voice + ".json") is var custom && File.Exists(custom) ? custom : Path.Combine(TtsRoot, "voice_styles", "F1.json");
+
+    /// <summary>
+    /// Adds a Supertonic voice style (JSON with style_ttl [1,50,256] and style_dp [1,8,16], at most 2 MB, as the Android app
+    /// accepts) and returns its name, or throws with a message for the user.
+    /// </summary>
+    public static string ImportVoice(string path)
+    {
+        var info = new FileInfo(path);
+        if (!info.Exists || info.Length > MaxVoiceBytes)
+            throw new InvalidDataException(Loc.S("VoiceImportInvalid"));
+        try
+        {
+            using var doc = JsonDocument.Parse(File.ReadAllText(path));
+            static long[] Dims(JsonElement root, string name) => root.GetProperty(name).GetProperty("dims").EnumerateArray().Select(d => d.GetInt64()).ToArray();
+            if (!Dims(doc.RootElement, "style_ttl").SequenceEqual([1L, 50, 256]) || !Dims(doc.RootElement, "style_dp").SequenceEqual([1L, 8, 16]))
+                throw new InvalidDataException(Loc.S("VoiceImportInvalid"));
+        }
+        catch (Exception e) when (e is JsonException or KeyNotFoundException or InvalidOperationException)
+        {
+            throw new InvalidDataException(Loc.S("VoiceImportInvalid"));
+        }
+        var name = string.Concat(Path.GetFileNameWithoutExtension(path).Where(c => char.IsLetterOrDigit(c) || c is '-' or '_' or ' ')).Trim();
+        if (name.Length == 0 || BuiltInVoices.Contains(name, StringComparer.OrdinalIgnoreCase))
+            name = "Voice " + name;
+        File.Copy(path, Path.Combine(CustomVoicesDir, name + ".json"), overwrite: true);
+        Log.Info($"Imported voice {name}");
+        return name;
+    }
+
+    public static void DeleteVoice(string name)
+    {
+        if (BuiltInVoices.Contains(name))
+            return;
+        var file = Path.Combine(CustomVoicesDir, name + ".json");
+        if (File.Exists(file))
+            File.Delete(file);
+        if (AppSettings.Current.Voice == name)
+        {
+            AppSettings.Current.Voice = "F1";
+            AppSettings.Save();
+        }
+    }
+
+    /// <summary>Called when the FP32/FP16 choice changes: the next request loads the other model.</summary>
+    public void ReloadModel()
+    {
+        _tts = null;
+        OnPropertyChanged(nameof(Status));
+    }
 
     // ---------------------------------------------------------------- read aloud
 
@@ -116,9 +188,11 @@ public sealed partial class SpeechService : ObservableObject
     public async Task<(string Path, double Seconds)> SynthesizeAsync(string text, string voice, string? language, CancellationToken ct)
     {
         var tts = await EnsureTtsAsync(ct);
-        var style = Helper.LoadVoiceStyle([Path.Combine(TtsRoot, "voice_styles", (Voices.Contains(voice) ? voice : "F1") + ".json")]);
-        var lang = language ?? GuessLanguage(text);
-        var (wav, duration) = await Task.Run(() => tts.Call(text, lang, style, totalStep: 8, speed: 1.05f), ct);
+        var style = Helper.LoadVoiceStyle([VoicePath(voice)]);
+        var chosen = AppSettings.Current.SpeechLanguage;
+        var lang = language ?? (Languages.Contains(chosen) ? chosen : GuessLanguage(text));
+        var speed = (float)Math.Clamp(AppSettings.Current.SpeechSpeed, 0.5, 2.0);
+        var (wav, duration) = await Task.Run(() => tts.Call(text, lang, style, totalStep: 8, speed: speed), ct);
         var length = Math.Min(wav.Length, (int)(tts.SampleRate * duration[0]));
         var path = Path.Combine(Path.GetTempPath(), $"llmhub-tts-{Guid.NewGuid():N}.wav");
         AudioIO.WriteWav(path, wav.AsSpan(0, length), tts.SampleRate);
@@ -132,16 +206,18 @@ public sealed partial class SpeechService : ObservableObject
         {
             if (_tts is not null)
                 return _tts;
-            for (var i = 0; i < SupertonicFiles.Length; i++)
+            var downloads = ModelFiles.Select(f => (Url: (UseFp16 ? SupertonicFp16Repo : SupertonicRepo) + f, Target: Path.Combine(ModelRoot, f)))
+                .Concat(BuiltInVoices.Select(v => (Url: $"{SupertonicRepo}voice_styles/{v}.json", Target: Path.Combine(TtsRoot, "voice_styles", v + ".json"))))
+                .ToList();
+            for (var i = 0; i < downloads.Count; i++)
             {
-                var file = SupertonicFiles[i];
                 var n = i;
-                await Fetch.FileAsync(SupertonicRepo + file, Path.Combine(TtsRoot, file),
-                    p => UiThread.Post(() => Status = Loc.F("DownloadingVoice", ((n * 100 + p) / SupertonicFiles.Length).ToString("F0"))), ct);
+                await Fetch.FileAsync(downloads[i].Url, downloads[i].Target,
+                    p => UiThread.Post(() => Status = Loc.F("DownloadingVoice", ((n * 100 + p) / downloads.Count).ToString("F0"))), ct);
             }
             UiThread.Post(() => Status = "");
-            _tts = await Task.Run(() => Helper.LoadTextToSpeech(Path.Combine(TtsRoot, "onnx")), ct);
-            Log.Info("Supertonic 3 loaded");
+            _tts = await Task.Run(() => Helper.LoadTextToSpeech(Path.Combine(ModelRoot, "onnx")), ct);
+            Log.Info($"Supertonic 3 loaded ({(UseFp16 ? "FP16" : "FP32")})");
             return _tts;
         }
         finally
@@ -150,14 +226,27 @@ public sealed partial class SpeechService : ObservableObject
         }
     }
 
-    /// <summary>App language first, then a cheap script check, so Russian text is read as Russian in an English UI.</summary>
+    /// <summary>
+    /// The writing system first (Hangul, kana, Arabic, Greek, Devanagari, Cyrillic), then the app language if Supertonic
+    /// reads it, else English, so Japanese text is read as Japanese in an English UI.
+    /// </summary>
     private static string GuessLanguage(string text)
     {
-        if (text.Any(c => c is >= 'Ѐ' and <= 'ӿ'))
-            return "ru";
         var tag = AppSettings.Current.Language.Length > 0 ? AppSettings.Current.Language : System.Globalization.CultureInfo.CurrentUICulture.Name;
-        var ui = tag.Length >= 2 ? tag[..2] : "en";
-        return ui is "es" or "pt" or "fr" or "de" or "it" or "ru" ? ui : "en";
+        var ui = tag.Length >= 2 ? tag[..2].ToLowerInvariant() : "en";
+        if (text.Any(c => c is >= '\uAC00' and <= '\uD7A3' or >= '\u1100' and <= '\u11FF'))
+            return "ko";
+        if (text.Any(c => c is >= '\u3040' and <= '\u30FF'))
+            return "ja";
+        if (text.Any(c => c is >= '\u0600' and <= '\u06FF'))
+            return "ar";
+        if (text.Any(c => c is >= '\u0370' and <= '\u03FF'))
+            return "el";
+        if (text.Any(c => c is >= '\u0900' and <= '\u097F'))
+            return "hi";
+        if (text.Any(c => c is >= '\u0400' and <= '\u04FF'))
+            return ui is "uk" or "bg" ? ui : "ru";
+        return Languages.Contains(ui) ? ui : "en";
     }
 
     // ---------------------------------------------------------------- dictation

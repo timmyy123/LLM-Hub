@@ -15,6 +15,11 @@ public sealed class AppSettings
     public bool Thinking { get; set; }
     /// <summary>Supertonic voice for Read aloud: F1, F2, M1 or M2.</summary>
     public string Voice { get; set; } = "F1";
+    /// <summary>Supertonic model: fp32 (Supertone's release) or fp16 (half the download).</summary>
+    public string SpeechPrecision { get; set; } = "fp32";
+    /// <summary>Language Supertonic reads in ("" detects it from the text).</summary>
+    public string SpeechLanguage { get; set; } = "";
+    public double SpeechSpeed { get; set; } = 1.05;
     /// <summary>Model new Agent sessions use (defaults to the catalog's agent pick, Gemma 4 26B-A4B).</summary>
     public string? AgentModelId { get; set; }
     public string? DesignModelId { get; set; }

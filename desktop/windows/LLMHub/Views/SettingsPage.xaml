@@ -420,9 +420,20 @@
                             <TextBlock Text="{x:Bind Settings.AsrLine, Mode=OneWay}" AutomationProperties.AutomationId="AsrLine" />
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Spacing="10">
-                            <ComboBox x:Name="VoiceBox" Header="{x:Bind services:Loc.S('StudioVoice')}" ItemsSource="{x:Bind Settings.Voices}" SelectionChanged="OnVoiceChanged" MinWidth="120" />
+                            <ComboBox x:Name="VoiceBox" Header="{x:Bind services:Loc.S('StudioVoice')}" ItemsSource="{x:Bind Settings.Voices}" SelectionChanged="OnVoiceChanged" MinWidth="140" />
                             <Button Style="{StaticResource OutlineButtonStyle}" Content="{x:Bind services:Loc.S('SettingsTestVoice')}" Command="{x:Bind Settings.TestVoiceCommand}" VerticalAlignment="Bottom" />
+                            <Button x:Name="ImportVoiceButton" Style="{StaticResource OutlineButtonStyle}" Content="{x:Bind services:Loc.S('ImportVoice')}" Click="OnImportVoice" VerticalAlignment="Bottom" />
+                            <Button x:Name="DeleteVoiceButton" Style="{StaticResource SubtleIconButtonStyle}" Click="OnDeleteVoice" VerticalAlignment="Bottom"
+                                    ToolTipService.ToolTip="{x:Bind services:Loc.S('DeleteVoice')}" AutomationProperties.Name="{x:Bind services:Loc.S('DeleteVoice')}">
+                                <FontIcon Glyph="&#xE74D;" FontSize="13" />
+                            </Button>
                         </StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <ComboBox x:Name="SpeechModelBox" Header="{x:Bind services:Loc.S('SpeechModel')}" MinWidth="190" SelectionChanged="OnSpeechModelChanged" />
+                            <ComboBox x:Name="SpeechLanguageBox" Header="{x:Bind services:Loc.S('SpeechLanguage')}" MinWidth="210" MaxDropDownHeight="420" SelectionChanged="OnSpeechLanguageChanged" />
+                        </StackPanel>
+                        <Slider x:Name="SpeechSpeedSlider" Header="{x:Bind services:Loc.S('SpeechSpeed')}" Minimum="0.5" Maximum="2" StepFrequency="0.05" MaxWidth="360"
+                                HorizontalAlignment="Left" Width="360" ValueChanged="OnSpeechSpeedChanged" />
                         <StackPanel Orientation="Horizontal" Spacing="10">
                             <Button x:Name="SetUpSpeechButton" Style="{StaticResource AccentButtonStyle}" CornerRadius="9" Content="{x:Bind services:Loc.S('SettingsSetUpNow')}"
                                     Command="{x:Bind Settings.SetUpSpeechCommand}" />

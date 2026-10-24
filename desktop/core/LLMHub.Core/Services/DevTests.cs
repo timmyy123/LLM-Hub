@@ -105,4 +105,61 @@ public static class DevTests
             Log.Error("SPEECHTEST failed", e);
         }
     }
+
+    /// <summary>
+    /// Supertonic parity with Android: new voices and languages on the FP32 and FP16 models, and an imported voice.
+    /// English results go back through Whisper so a garbled voice shows up as a wrong transcript.
+    /// </summary>
+    public static async Task SpeechMatrixAsync()
+    {
+        var saved = (AppSettings.Current.SpeechPrecision, AppSettings.Current.SpeechLanguage);
+        try
+        {
+            foreach (var precision in new[] { "fp32", "fp16" })
+            {
+                AppSettings.Current.SpeechPrecision = precision;
+                Ioc.Speech.ReloadModel();
+                foreach (var (voice, lang, text) in new[]
+                         {
+                             ("F3", "en", "The quick brown fox jumps over the lazy dog."),
+                             ("M4", "ja", "今日はとても良い天気ですね。"),
+                             ("F5", "de", "Guten Morgen, wie geht es dir heute?"),
+                         })
+                {
+                    AppSettings.Current.SpeechLanguage = lang;
+                    var clock = System.Diagnostics.Stopwatch.StartNew();
+                    var (wav, seconds) = await Ioc.Speech.SynthesizeAsync(text, voice, null, CancellationToken.None);
+                    var line = $"SPEECHMATRIX {precision} {voice} {lang}: {seconds:F1}s audio in {clock.Elapsed.TotalSeconds:F1}s";
+                    if (lang == "en")
+                        line += $" -> \"{await Ioc.Speech.TranscribeAsync(wav, "en", CancellationToken.None)}\"";
+                    Log.Info(line);
+                }
+            }
+            AppSettings.Current.SpeechLanguage = "";
+            var copy = Path.Combine(Path.GetTempPath(), "Narrator.json");
+            File.Copy(Path.Combine(Speech.SpeechService.TtsRoot, "voice_styles", "M2.json"), copy, true);
+            var name = Speech.SpeechService.ImportVoice(copy);
+            var (custom, len) = await Ioc.Speech.SynthesizeAsync("This is an imported voice.", name, null, CancellationToken.None);
+            Log.Info($"SPEECHMATRIX imported '{name}': {len:F1}s -> \"{await Ioc.Speech.TranscribeAsync(custom, "en", CancellationToken.None)}\"; voices: {string.Join(",", Speech.SpeechService.Voices)}");
+            Speech.SpeechService.DeleteVoice(name);
+            try
+            {
+                Speech.SpeechService.ImportVoice(Path.Combine(Speech.SpeechService.TtsRoot, "onnx", "tts.json"));
+                Log.Info("SPEECHMATRIX invalid voice accepted (wrong)");
+            }
+            catch (InvalidDataException)
+            {
+                Log.Info("SPEECHMATRIX invalid voice rejected (right)");
+            }
+        }
+        catch (Exception e)
+        {
+            Log.Error("SPEECHMATRIX failed", e);
+        }
+        finally
+        {
+            (AppSettings.Current.SpeechPrecision, AppSettings.Current.SpeechLanguage) = saved;
+            Ioc.Speech.ReloadModel();
+        }
+    }
 }

@@ -321,7 +321,18 @@
   "ApiModelsOfferedHelp": "Loaded when first requested",
   "ApiUnloadAfter": "Unload after idle",
   "ApiNever": "Never",
-  "ApiMinutes": "{0} minutes"
+  "ApiMinutes": "{0} minutes",
+  "SpeechModel": "Voice model",
+  "SpeechModelFp32": "Standard (400 MB)",
+  "SpeechModelFp16": "Compact (200 MB)",
+  "SpeechLanguage": "Reading language",
+  "SpeechLanguageAuto": "Detect from the text",
+  "SpeechSpeed": "Speed",
+  "ImportVoice": "Import voice…",
+  "DeleteVoice": "Delete voice",
+  "VoiceImportInvalid": "This file is not a Supertonic voice style.",
+  "VoiceImported": "Voice {0} added",
+  "VoiceStyleFiles": "Supertonic voice style"
  },
  "es-ES": {
   "NewChat": "Nuevo chat",
@@ -645,7 +656,18 @@
   "ApiModelsOfferedHelp": "Se cargan con la primera petición",
   "ApiUnloadAfter": "Descargar tras inactividad",
   "ApiNever": "Nunca",
-  "ApiMinutes": "{0} minutos"
+  "ApiMinutes": "{0} minutos",
+  "SpeechModel": "Modelo de voz",
+  "SpeechModelFp32": "Estándar (400 MB)",
+  "SpeechModelFp16": "Compacto (200 MB)",
+  "SpeechLanguage": "Idioma de lectura",
+  "SpeechLanguageAuto": "Detectar en el texto",
+  "SpeechSpeed": "Velocidad",
+  "ImportVoice": "Importar voz…",
+  "DeleteVoice": "Eliminar voz",
+  "VoiceImportInvalid": "Este archivo no es un estilo de voz de Supertonic.",
+  "VoiceImported": "Voz {0} añadida",
+  "VoiceStyleFiles": "Estilo de voz de Supertonic"
  },
  "pt-BR": {
   "NewChat": "Nova conversa",
@@ -969,7 +991,18 @@
   "ApiModelsOfferedHelp": "Carregados na primeira solicitação",
   "ApiUnloadAfter": "Descarregar após inatividade",
   "ApiNever": "Nunca",
-  "ApiMinutes": "{0} minutos"
+  "ApiMinutes": "{0} minutos",
+  "SpeechModel": "Modelo de voz",
+  "SpeechModelFp32": "Padrão (400 MB)",
+  "SpeechModelFp16": "Compacto (200 MB)",
+  "SpeechLanguage": "Idioma da leitura",
+  "SpeechLanguageAuto": "Detectar pelo texto",
+  "SpeechSpeed": "Velocidade",
+  "ImportVoice": "Importar voz…",
+  "DeleteVoice": "Excluir voz",
+  "VoiceImportInvalid": "Este arquivo não é um estilo de voz do Supertonic.",
+  "VoiceImported": "Voz {0} adicionada",
+  "VoiceStyleFiles": "Estilo de voz do Supertonic"
  },
  "fr-FR": {
   "NewChat": "Nouvelle discussion",
@@ -1293,7 +1326,18 @@
   "ApiModelsOfferedHelp": "Chargés à la première requête",
   "ApiUnloadAfter": "Décharger après inactivité",
   "ApiNever": "Jamais",
-  "ApiMinutes": "{0} minutes"
+  "ApiMinutes": "{0} minutes",
+  "SpeechModel": "Modèle de voix",
+  "SpeechModelFp32": "Standard (400 Mo)",
+  "SpeechModelFp16": "Compact (200 Mo)",
+  "SpeechLanguage": "Langue de lecture",
+  "SpeechLanguageAuto": "Détecter d'après le texte",
+  "SpeechSpeed": "Vitesse",
+  "ImportVoice": "Importer une voix…",
+  "DeleteVoice": "Supprimer la voix",
+  "VoiceImportInvalid": "Ce fichier n'est pas un style de voix Supertonic.",
+  "VoiceImported": "Voix {0} ajoutée",
+  "VoiceStyleFiles": "Style de voix Supertonic"
  },
  "de-DE": {
   "NewChat": "Neuer Chat",
@@ -1617,7 +1661,18 @@
   "ApiModelsOfferedHelp": "Werden bei der ersten Anfrage geladen",
   "ApiUnloadAfter": "Nach Leerlauf entladen",
   "ApiNever": "Nie",
-  "ApiMinutes": "{0} Minuten"
+  "ApiMinutes": "{0} Minuten",
+  "SpeechModel": "Sprachmodell",
+  "SpeechModelFp32": "Standard (400 MB)",
+  "SpeechModelFp16": "Kompakt (200 MB)",
+  "SpeechLanguage": "Vorlesesprache",
+  "SpeechLanguageAuto": "Am Text erkennen",
+  "SpeechSpeed": "Tempo",
+  "ImportVoice": "Stimme importieren…",
+  "DeleteVoice": "Stimme löschen",
+  "VoiceImportInvalid": "Diese Datei ist kein Supertonic-Stimmstil.",
+  "VoiceImported": "Stimme {0} hinzugefügt",
+  "VoiceStyleFiles": "Supertonic-Stimmstil"
  },
  "it-IT": {
   "NewChat": "Nuova chat",
@@ -1941,7 +1996,18 @@
   "ApiModelsOfferedHelp": "Caricati alla prima richiesta",
   "ApiUnloadAfter": "Scarica dopo inattività",
   "ApiNever": "Mai",
-  "ApiMinutes": "{0} minuti"
+  "ApiMinutes": "{0} minuti",
+  "SpeechModel": "Modello vocale",
+  "SpeechModelFp32": "Standard (400 MB)",
+  "SpeechModelFp16": "Compatto (200 MB)",
+  "SpeechLanguage": "Lingua di lettura",
+  "SpeechLanguageAuto": "Rileva dal testo",
+  "SpeechSpeed": "Velocità",
+  "ImportVoice": "Importa voce…",
+  "DeleteVoice": "Elimina voce",
+  "VoiceImportInvalid": "Questo file non è uno stile vocale Supertonic.",
+  "VoiceImported": "Voce {0} aggiunta",
+  "VoiceStyleFiles": "Stile vocale Supertonic"
  },
  "ru-RU": {
   "NewChat": "Новый чат",
@@ -2265,6 +2331,17 @@
   "ApiModelsOfferedHelp": "Загружаются при первом запросе",
   "ApiUnloadAfter": "Выгружать при простое",
   "ApiNever": "Никогда",
-  "ApiMinutes": "{0} мин"
+  "ApiMinutes": "{0} мин",
+  "SpeechModel": "Модель голоса",
+  "SpeechModelFp32": "Стандартная (400 МБ)",
+  "SpeechModelFp16": "Компактная (200 МБ)",
+  "SpeechLanguage": "Язык чтения",
+  "SpeechLanguageAuto": "Определять по тексту",
+  "SpeechSpeed": "Скорость",
+  "ImportVoice": "Импортировать голос…",
+  "DeleteVoice": "Удалить голос",
+  "VoiceImportInvalid": "Этот файл не является голосовым стилем Supertonic.",
+  "VoiceImported": "Голос {0} добавлен",
+  "VoiceStyleFiles": "Голосовой стиль Supertonic"
  }
 }

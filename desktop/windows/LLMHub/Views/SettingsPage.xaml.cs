@@ -34,6 +34,14 @@ public sealed partial class SettingsPage : Page
             AppearanceBox.Items.Add(new ComboBoxItem { Content = label, Tag = value });
         AppearanceBox.SelectedItem = AppearanceBox.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == Settings.Appearance) ?? AppearanceBox.Items[0];
         VoiceBox.SelectedItem = Settings.Voice;
+        foreach (var (value, label) in SettingsViewModel.SpeechPrecisions)
+            SpeechModelBox.Items.Add(new ComboBoxItem { Content = label, Tag = value });
+        SpeechModelBox.SelectedItem = SpeechModelBox.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == Settings.SpeechPrecision) ?? SpeechModelBox.Items[0];
+        foreach (var (code, label) in SettingsViewModel.SpeechLanguages)
+            SpeechLanguageBox.Items.Add(new ComboBoxItem { Content = label, Tag = code });
+        SpeechLanguageBox.SelectedItem = SpeechLanguageBox.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == Settings.SpeechLanguage) ?? SpeechLanguageBox.Items[0];
+        SpeechSpeedSlider.Value = Settings.SpeechSpeed;
+        DeleteVoiceButton.IsEnabled = !Services.Speech.SpeechService.BuiltInVoices.Contains(Settings.Voice);
         foreach (var size in SettingsViewModel.AgentContexts)
             AgentContextBox.Items.Add(new ComboBoxItem { Content = $"{size / 1024}K", Tag = size });
         AgentContextBox.SelectedItem = AgentContextBox.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (int)i.Tag == Settings.AgentContext) ?? AgentContextBox.Items[1];
@@ -211,6 +219,45 @@ public sealed partial class SettingsPage : Page
     {
         if (!_initializing && VoiceBox.SelectedItem is string voice)
             Settings.Voice = voice;
+        if (VoiceBox.SelectedItem is string selected)
+            DeleteVoiceButton.IsEnabled = !Services.Speech.SpeechService.BuiltInVoices.Contains(selected);
+    }
+
+    private async void OnImportVoice(object sender, RoutedEventArgs e)
+    {
+        var picker = new Windows.Storage.Pickers.FileOpenPicker();
+        picker.FileTypeFilter.Add(".json");
+        WinRT.Interop.InitializeWithWindow.Initialize(picker, WinRT.Interop.WindowNative.GetWindowHandle(App.Window));
+        if (await picker.PickSingleFileAsync() is not { } file)
+            return;
+        Settings.ImportVoice(file.Path);
+        VoiceBox.SelectedItem = Settings.Voice;
+    }
+
+    private void OnDeleteVoice(object sender, RoutedEventArgs e)
+    {
+        if (VoiceBox.SelectedItem is not string voice)
+            return;
+        Settings.DeleteVoiceCommand.Execute(voice);
+        VoiceBox.SelectedItem = Settings.Voice;
+    }
+
+    private void OnSpeechModelChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (!_initializing && SpeechModelBox.SelectedItem is ComboBoxItem { Tag: string value })
+            Settings.SpeechPrecision = value;
+    }
+
+    private void OnSpeechLanguageChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (!_initializing && SpeechLanguageBox.SelectedItem is ComboBoxItem { Tag: string code })
+            Settings.SpeechLanguage = code;
+    }
+
+    private void OnSpeechSpeedChanged(object sender, Microsoft.UI.Xaml.Controls.Primitives.RangeBaseValueChangedEventArgs e)
+    {
+        if (!_initializing)
+            Settings.SpeechSpeed = e.NewValue;
     }
 
     private void OnAgentContextChanged(object sender, SelectionChangedEventArgs e)

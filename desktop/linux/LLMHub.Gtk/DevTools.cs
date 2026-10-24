@@ -22,6 +22,13 @@ internal static class DevTools
                 window.Window.Close();
             return;
         }
+        if (args.Contains("--speechmatrix"))
+        {
+            await DevTests.SpeechMatrixAsync();
+            if (args.Contains("--exit"))
+                window.Window.Close();
+            return;
+        }
         if (args.Contains("--uitest"))
         {
             var filter = Value(args, "--uitest");

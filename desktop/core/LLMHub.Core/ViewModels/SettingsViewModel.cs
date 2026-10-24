@@ -32,6 +32,10 @@ public sealed partial class SettingsViewModel : ObservableObject
         Appearance = s.Appearance;
         WebSearch = s.WebSearch;
         Voice = s.Voice;
+        SpeechPrecision = s.SpeechPrecision;
+        SpeechLanguage = s.SpeechLanguage;
+        SpeechSpeed = s.SpeechSpeed;
+        RefreshVoices();
         AgentContext = s.ApiContextLength;
         ClaudeVersion = "";
         SpeechStatus = "";
@@ -41,7 +45,29 @@ public sealed partial class SettingsViewModel : ObservableObject
     public static IReadOnlyList<(string Value, string Label)> Appearances { get; } =
         [("dark", Loc.S("AppearanceDark")), ("light", Loc.S("AppearanceLight")), ("system", Loc.S("AppearanceSystem"))];
     public static IReadOnlyList<int> AgentContexts { get; } = [32768, 65536, 131072];
-    public IReadOnlyList<string> Voices => SpeechService.Voices;
+    /// <summary>Built-in voices plus imported ones; refreshed after an import or delete.</summary>
+    public ObservableCollection<string> Voices { get; } = [];
+    public static IReadOnlyList<(string Value, string Label)> SpeechPrecisions { get; } =
+        [("fp32", Loc.S("SpeechModelFp32")), ("fp16", Loc.S("SpeechModelFp16"))];
+    /// <summary>"Detect from text", then the 31 languages by their own names ("Deutsch", "日本語").</summary>
+    public static IReadOnlyList<(string Code, string Label)> SpeechLanguages { get; } =
+    [
+        ("", Loc.S("SpeechLanguageAuto")),
+        .. SpeechService.Languages.Select(c => (c, NativeName(c))).OrderBy(l => l.Item2, StringComparer.CurrentCultureIgnoreCase),
+    ];
+
+    private static string NativeName(string code)
+    {
+        try
+        {
+            var name = System.Globalization.CultureInfo.GetCultureInfo(code).NativeName;
+            return name.Length > 0 ? char.ToUpper(name[0]) + name[1..] : code;
+        }
+        catch (System.Globalization.CultureNotFoundException)
+        {
+            return code;
+        }
+    }
 
     public ObservableCollection<EngineInfo> Engines { get; } = [];
     public ObservableCollection<StorageItem> Storage { get; } = [];
@@ -52,6 +78,9 @@ public sealed partial class SettingsViewModel : ObservableObject
     [ObservableProperty] public partial string Appearance { get; set; }
     [ObservableProperty] public partial bool WebSearch { get; set; }
     [ObservableProperty] public partial string Voice { get; set; }
+    [ObservableProperty] public partial string SpeechPrecision { get; set; }
+    [ObservableProperty] public partial string SpeechLanguage { get; set; }
+    [ObservableProperty] public partial double SpeechSpeed { get; set; }
     [ObservableProperty] public partial int AgentContext { get; set; }
     [ObservableProperty] public partial string ClaudeVersion { get; set; }
     [ObservableProperty] public partial string SpeechStatus { get; set; }
@@ -77,6 +106,53 @@ public sealed partial class SettingsViewModel : ObservableObject
         Ioc.Chat.WebSearchEnabled = value;
     }
     partial void OnVoiceChanged(string value) => Save(s => s.Voice = value);
+    partial void OnSpeechLanguageChanged(string value) => Save(s => s.SpeechLanguage = value);
+    partial void OnSpeechSpeedChanged(double value) => Save(s => s.SpeechSpeed = Math.Round(Math.Clamp(value, 0.5, 2.0), 2));
+
+    partial void OnSpeechPrecisionChanged(string value)
+    {
+        if (AppSettings.Current.SpeechPrecision == value)
+            return;
+        Save(s => s.SpeechPrecision = value);
+        Ioc.Speech.ReloadModel();
+        OnPropertyChanged(nameof(TtsInstalled));
+        OnPropertyChanged(nameof(TtsLine));
+    }
+
+    public void RefreshVoices()
+    {
+        Voices.Clear();
+        foreach (var v in SpeechService.Voices)
+            Voices.Add(v);
+    }
+
+    /// <summary>Adds a voice-style file and makes it the voice; returns an error message, or "" on success.</summary>
+    public string ImportVoice(string path)
+    {
+        try
+        {
+            var name = SpeechService.ImportVoice(path);
+            RefreshVoices();
+            Voice = name;
+            SpeechStatus = Loc.F("VoiceImported", name);
+            return "";
+        }
+        catch (Exception e) when (e is InvalidDataException or IOException or UnauthorizedAccessException)
+        {
+            SpeechStatus = e.Message;
+            return e.Message;
+        }
+    }
+
+    [RelayCommand]
+    private void DeleteVoice(string? name)
+    {
+        if (name is null || SpeechService.BuiltInVoices.Contains(name))
+            return;
+        SpeechService.DeleteVoice(name);
+        RefreshVoices();
+        Voice = AppSettings.Current.Voice;
+    }
     partial void OnAgentContextChanged(int value) => Save(s => s.ApiContextLength = value);
 
     private static void Save(Action<AppSettings> change)

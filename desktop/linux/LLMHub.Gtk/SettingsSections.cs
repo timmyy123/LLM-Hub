@@ -132,19 +132,76 @@ internal sealed class SettingsSections
         _asr.Named("AsrLine");
         var voice = Adw.ComboRow.New();
         voice.SetTitle(Loc.S("StudioVoice"));
-        voice.SetModel(Gtk.StringList.New(_vm.Voices.ToArray()));
-        voice.SetSelected((uint)Math.Max(0, _vm.Voices.ToList().IndexOf(_vm.Voice)));
+        voice.Named("VoiceBox");
+        var syncing = false;
+        void SyncVoices()
+        {
+            syncing = true;
+            voice.SetModel(Gtk.StringList.New(_vm.Voices.ToArray()));
+            voice.SetSelected((uint)Math.Max(0, _vm.Voices.IndexOf(_vm.Voice)));
+            syncing = false;
+        }
+        SyncVoices();
+        _vm.Voices.CollectionChanged += (_, _) => UiThread.Post(SyncVoices);
         voice.OnNotify += (_, e) =>
         {
-            if (e.Pspec.GetName() == "selected" && voice.GetSelected() < _vm.Voices.Count)
+            if (!syncing && e.Pspec.GetName() == "selected" && voice.GetSelected() < _vm.Voices.Count)
                 _vm.Voice = _vm.Voices[(int)voice.GetSelected()];
         };
         var test = Ui.Button(Loc.S("SettingsTestVoice"), () => _vm.TestVoiceCommand.Execute(null), "flat");
-        test.SetValign(Gtk.Align.Center);
-        voice.AddSuffix(test);
+        var import = Ui.Button(Loc.S("ImportVoice"), ImportVoice, "flat").Named("ImportVoiceButton");
+        var delete = Ui.IconButton("user-trash-symbolic", Loc.S("DeleteVoice"), () => _vm.DeleteVoiceCommand.Execute(_vm.Voice), "flat").Named("DeleteVoiceButton");
+        foreach (var b in new Gtk.Widget[] { test, import, delete })
+        {
+            b.SetValign(Gtk.Align.Center);
+            voice.AddSuffix(b);
+        }
+        Ui.Watch(_vm, p =>
+        {
+            if (p == nameof(SettingsViewModel.Voice))
+                delete.SetSensitive(!Services.Speech.SpeechService.BuiltInVoices.Contains(_vm.Voice));
+        });
+        delete.SetSensitive(!Services.Speech.SpeechService.BuiltInVoices.Contains(_vm.Voice));
+
+        var model = Adw.ComboRow.New();
+        model.SetTitle(Loc.S("SpeechModel"));
+        var precisions = SettingsViewModel.SpeechPrecisions;
+        model.SetModel(Gtk.StringList.New(precisions.Select(p => p.Label).ToArray()));
+        model.SetSelected((uint)Math.Max(0, precisions.ToList().FindIndex(p => p.Value == _vm.SpeechPrecision)));
+        model.OnNotify += (_, e) =>
+        {
+            if (e.Pspec.GetName() == "selected" && model.GetSelected() < precisions.Count)
+                _vm.SpeechPrecision = precisions[(int)model.GetSelected()].Value;
+        };
+        model.Named("SpeechModelBox");
+
+        var language = Adw.ComboRow.New();
+        language.SetTitle(Loc.S("SpeechLanguage"));
+        var languages = SettingsViewModel.SpeechLanguages;
+        language.SetModel(Gtk.StringList.New(languages.Select(l => l.Label).ToArray()));
+        language.SetSelected((uint)Math.Max(0, languages.ToList().FindIndex(l => l.Code == _vm.SpeechLanguage)));
+        language.OnNotify += (_, e) =>
+        {
+            if (e.Pspec.GetName() == "selected" && language.GetSelected() < languages.Count)
+                _vm.SpeechLanguage = languages[(int)language.GetSelected()].Code;
+        };
+        language.Named("SpeechLanguageBox");
+
+        var speed = Adw.SpinRow.NewWithRange(0.5, 2.0, 0.05);
+        speed.SetTitle(Loc.S("SpeechSpeed"));
+        speed.SetDigits(2);
+        speed.SetValue(_vm.SpeechSpeed);
+        speed.OnNotify += (_, e) =>
+        {
+            if (e.Pspec.GetName() == "value")
+                _vm.SpeechSpeed = speed.GetValue();
+        };
         group.Add(_tts);
         group.Add(_asr);
         group.Add(voice);
+        group.Add(model);
+        group.Add(language);
+        group.Add(speed);
         var actions = Adw.PreferencesGroup.New();
         var buttons = Ui.HBox(10,
             Ui.Button(Loc.S("SettingsSetUpNow"), () => _vm.SetUpSpeechCommand.Execute(null), "suggested-action").Named("SetUpSpeechButton"),
@@ -152,6 +209,27 @@ internal sealed class SettingsSections
             _speechStatus);
         actions.Add(buttons);
         return Page(group, actions);
+    }
+
+    private async void ImportVoice()
+    {
+        try
+        {
+            var dialog = Gtk.FileDialog.New();
+            dialog.SetTitle(Loc.S("ImportVoice"));
+            var filter = Gtk.FileFilter.New();
+            filter.SetName(Loc.S("VoiceStyleFiles"));
+            filter.AddPattern("*.json");
+            var filters = Gio.ListStore.New(Gtk.FileFilter.GetGType());
+            filters.Append(filter);
+            dialog.SetFilters(filters);
+            if (await dialog.OpenAsync(null) is { } file && file.GetPath() is { } path)
+                _vm.ImportVoice(path);
+        }
+        catch (GLib.GException)
+        {
+            // Dismissed.
+        }
     }
 
     // ---------------------------------------------------------------- Studio backends
