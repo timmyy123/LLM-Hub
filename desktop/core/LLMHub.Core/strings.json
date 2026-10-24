@@ -424,7 +424,10 @@
   "OpenClawStarting": "Starting OpenClaw…",
   "OpenClawNotInstalled": "Set up OpenClaw first, from this page or Settings › Agent.",
   "OpenClawStopped": "OpenClaw stopped.",
-  "AgentMaxTokens": "The reply hit the model's length limit."
+  "AgentMaxTokens": "The reply hit the model's length limit.",
+  "AgentEngineTitle": "Agent engine",
+  "OpenClawSetUp": "Set up OpenClaw",
+  "OpenClawFooter": "OpenClaw talks to LLM Hub's local server on 127.0.0.1, which runs the model on llama.cpp or LiteRT-LM. Nothing leaves this computer."
  },
  "es-ES": {
   "NewChat": "Nuevo chat",
@@ -851,7 +854,10 @@
   "OpenClawStarting": "Iniciando OpenClaw…",
   "OpenClawNotInstalled": "Configura OpenClaw primero, desde esta página o en Ajustes › Agente.",
   "OpenClawStopped": "OpenClaw se detuvo.",
-  "AgentMaxTokens": "La respuesta llegó al límite de longitud del modelo."
+  "AgentMaxTokens": "La respuesta llegó al límite de longitud del modelo.",
+  "AgentEngineTitle": "Motor del agente",
+  "OpenClawSetUp": "Configurar OpenClaw",
+  "OpenClawFooter": "OpenClaw habla con el servidor local de LLM Hub en 127.0.0.1, que ejecuta el modelo con llama.cpp o LiteRT-LM. Nada sale de este ordenador."
  },
  "pt-BR": {
   "NewChat": "Nova conversa",
@@ -1278,7 +1284,10 @@
   "OpenClawStarting": "Iniciando o OpenClaw…",
   "OpenClawNotInstalled": "Configure o OpenClaw primeiro, nesta página ou em Ajustes › Agente.",
   "OpenClawStopped": "O OpenClaw parou.",
-  "AgentMaxTokens": "A resposta atingiu o limite de tamanho do modelo."
+  "AgentMaxTokens": "A resposta atingiu o limite de tamanho do modelo.",
+  "AgentEngineTitle": "Motor do agente",
+  "OpenClawSetUp": "Configurar o OpenClaw",
+  "OpenClawFooter": "O OpenClaw conversa com o servidor local do LLM Hub em 127.0.0.1, que roda o modelo com llama.cpp ou LiteRT-LM. Nada sai deste computador."
  },
  "fr-FR": {
   "NewChat": "Nouvelle discussion",
@@ -1705,7 +1714,10 @@
   "OpenClawStarting": "Démarrage d'OpenClaw…",
   "OpenClawNotInstalled": "Installez d'abord OpenClaw, depuis cette page ou Réglages › Agent.",
   "OpenClawStopped": "OpenClaw s'est arrêté.",
-  "AgentMaxTokens": "La réponse a atteint la limite de longueur du modèle."
+  "AgentMaxTokens": "La réponse a atteint la limite de longueur du modèle.",
+  "AgentEngineTitle": "Moteur de l'agent",
+  "OpenClawSetUp": "Installer OpenClaw",
+  "OpenClawFooter": "OpenClaw dialogue avec le serveur local de LLM Hub sur 127.0.0.1, qui exécute le modèle avec llama.cpp ou LiteRT-LM. Rien ne quitte cet ordinateur."
  },
  "de-DE": {
   "NewChat": "Neuer Chat",
@@ -2132,7 +2144,10 @@
   "OpenClawStarting": "OpenClaw wird gestartet…",
   "OpenClawNotInstalled": "Richte zuerst OpenClaw ein, hier oder unter Einstellungen › Agent.",
   "OpenClawStopped": "OpenClaw wurde beendet.",
-  "AgentMaxTokens": "Die Antwort hat das Längenlimit des Modells erreicht."
+  "AgentMaxTokens": "Die Antwort hat das Längenlimit des Modells erreicht.",
+  "AgentEngineTitle": "Agent-Engine",
+  "OpenClawSetUp": "OpenClaw einrichten",
+  "OpenClawFooter": "OpenClaw spricht mit dem lokalen Server von LLM Hub auf 127.0.0.1, der das Modell mit llama.cpp oder LiteRT-LM ausführt. Nichts verlässt diesen Computer."
  },
  "it-IT": {
   "NewChat": "Nuova chat",
@@ -2559,7 +2574,10 @@
   "OpenClawStarting": "Avvio di OpenClaw…",
   "OpenClawNotInstalled": "Configura prima OpenClaw, da questa pagina o in Impostazioni › Agente.",
   "OpenClawStopped": "OpenClaw si è fermato.",
-  "AgentMaxTokens": "La risposta ha raggiunto il limite di lunghezza del modello."
+  "AgentMaxTokens": "La risposta ha raggiunto il limite di lunghezza del modello.",
+  "AgentEngineTitle": "Motore dell'agente",
+  "OpenClawSetUp": "Configura OpenClaw",
+  "OpenClawFooter": "OpenClaw comunica con il server locale di LLM Hub su 127.0.0.1, che esegue il modello con llama.cpp o LiteRT-LM. Nulla lascia questo computer."
  },
  "ru-RU": {
   "NewChat": "Новый чат",
@@ -2986,6 +3004,9 @@
   "OpenClawStarting": "Запуск OpenClaw…",
   "OpenClawNotInstalled": "Сначала настройте OpenClaw на этой странице или в Настройках › Агент.",
   "OpenClawStopped": "OpenClaw остановлен.",
-  "AgentMaxTokens": "Ответ упёрся в ограничение длины модели."
+  "AgentMaxTokens": "Ответ упёрся в ограничение длины модели.",
+  "AgentEngineTitle": "Движок агента",
+  "OpenClawSetUp": "Настроить OpenClaw",
+  "OpenClawFooter": "OpenClaw обращается к локальному серверу LLM Hub на 127.0.0.1, который запускает модель через llama.cpp или LiteRT-LM. Ничего не покидает этот компьютер."
  }
 }

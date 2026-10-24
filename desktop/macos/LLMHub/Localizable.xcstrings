@@ -566,6 +566,53 @@
         }
       }
     },
+    "AgentEngineTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Agent engine"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Motor del agente"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Motor do agente"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moteur de l'agent"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Agent-Engine"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Motore dell'agente"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Движок агента"
+          }
+        }
+      }
+    },
     "AgentError": {
       "extractionState": "manual",
       "localizations": {
@@ -13773,6 +13820,53 @@
         }
       }
     },
+    "OpenClawFooter": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OpenClaw talks to LLM Hub's local server on 127.0.0.1, which runs the model on llama.cpp or LiteRT-LM. Nothing leaves this computer."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OpenClaw habla con el servidor local de LLM Hub en 127.0.0.1, que ejecuta el modelo con llama.cpp o LiteRT-LM. Nada sale de este ordenador."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O OpenClaw conversa com o servidor local do LLM Hub em 127.0.0.1, que roda o modelo com llama.cpp ou LiteRT-LM. Nada sai deste computador."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OpenClaw dialogue avec le serveur local de LLM Hub sur 127.0.0.1, qui exécute le modèle avec llama.cpp ou LiteRT-LM. Rien ne quitte cet ordinateur."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OpenClaw spricht mit dem lokalen Server von LLM Hub auf 127.0.0.1, der das Modell mit llama.cpp oder LiteRT-LM ausführt. Nichts verlässt diesen Computer."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OpenClaw comunica con il server locale di LLM Hub su 127.0.0.1, che esegue il modello con llama.cpp o LiteRT-LM. Nulla lascia questo computer."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OpenClaw обращается к локальному серверу LLM Hub на 127.0.0.1, который запускает модель через llama.cpp или LiteRT-LM. Ничего не покидает этот компьютер."
+          }
+        }
+      }
+    },
     "OpenClawInstallHelp": {
       "extractionState": "manual",
       "localizations": {
@@ -13910,6 +14004,53 @@
           "stringUnit": {
             "state": "translated",
             "value": "Сначала настройте OpenClaw на этой странице или в Настройках › Агент."
+          }
+        }
+      }
+    },
+    "OpenClawSetUp": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set up OpenClaw"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Configurar OpenClaw"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Configurar o OpenClaw"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Installer OpenClaw"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OpenClaw einrichten"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Configura OpenClaw"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Настроить OpenClaw"
           }
         }
       }

@@ -59,6 +59,7 @@ public sealed partial class OpenClawService : ObservableObject
     private static string Home => Path.Combine(Root, "home");
     private static string ConfigFile => Path.Combine(Home, ".openclaw", "openclaw.json");
     private static string TokenFile => Path.Combine(Root, "gateway.token");
+    private static string PidFile => Path.Combine(Root, "gateway.pid");
     private static string MarkerFile => Path.Combine(Root, "installed.txt");
 
     public static bool IsInstalled => File.Exists(MarkerFile) && File.Exists(NodeExe) && File.Exists(Entry);
@@ -194,8 +195,10 @@ public sealed partial class OpenClawService : ObservableObject
                 ["maxTokens"] = 4096,
             });
         }
+        // One agent per project folder in use: the Gateway prepares a database for every listed agent when it starts, so
+        // folders that are not open stay out (their history stays on disk). Sessions in a folder differ by session key.
         var entries = new JsonObject();
-        foreach (var session in sessions)
+        foreach (var session in sessions.DistinctBy(s => AgentId(s)))
             entries[AgentId(session)] = new JsonObject { ["workspace"] = session.Folder };
         var primary = Ioc.Models.ChatModels.FirstOrDefault(m => m.Id == sessions.LastOrDefault()?.Info.ModelId) ?? Ioc.Models.ChatModels.FirstOrDefault();
         var config = new JsonObject
@@ -217,6 +220,8 @@ public sealed partial class OpenClawService : ObservableObject
                     ["workspace"] = Path.Combine(Root, "workspace"),
                 },
                 ["entries"] = entries,
+                // One agent per session folder is a multi-agent roster, which OpenClaw only accepts with explicit ownership.
+                ["ownership"] = "explicit",
             },
             ["models"] = new JsonObject
             {
@@ -233,17 +238,43 @@ public sealed partial class OpenClawService : ObservableObject
                     },
                 },
             },
-            ["tools"] = new JsonObject { ["exec"] = new JsonObject { ["mode"] = "ask" } },
+            // Commands run on this computer through the Gateway, which asks first (as Claude Code does) for anything unknown.
+            ["tools"] = new JsonObject { ["exec"] = new JsonObject { ["mode"] = "ask", ["host"] = "gateway" } },
             ["plugins"] = new JsonObject { ["allow"] = new JsonArray("memory-core") },
         };
         Directory.CreateDirectory(Path.GetDirectoryName(ConfigFile)!);
         Directory.CreateDirectory(Path.Combine(Root, "workspace"));
+        // Only LLM Hub's keys are replaced: what OpenClaw keeps there itself (meta, skills its doctor turned off) stays.
+        if (File.Exists(ConfigFile))
+        {
+            try
+            {
+                if (JsonNode.Parse(File.ReadAllText(ConfigFile)) is JsonObject existing)
+                {
+                    foreach (var (key, value) in existing)
+                        if (!config.ContainsKey(key))
+                            config[key] = value?.DeepClone();
+                }
+            }
+            catch (JsonException e)
+            {
+                Log.Error("OpenClaw config could not be read; writing a fresh one", e);
+            }
+        }
+        config["meta"] ??= new JsonObject { ["lastTouchedVersion"] = Version };
         var json = config.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
         if (!File.Exists(ConfigFile) || File.ReadAllText(ConfigFile) != json)
             File.WriteAllText(ConfigFile, json);
     }
 
-    internal static string AgentId(AgentSession session) => "s-" + session.Id.Replace("-", "")[..12].ToLowerInvariant();
+    /// <summary>"f-" and a hash of the folder: the OpenClaw agent whose workspace is that folder.</summary>
+    internal static string AgentId(AgentSession session)
+    {
+        var folder = Path.GetFullPath(session.Folder).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        if (OperatingSystem.IsWindows())
+            folder = folder.ToLowerInvariant();
+        return "f-" + Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(folder)))[..12];
+    }
 
     /// <summary>Starts the Gateway once (it takes 15 to 20 seconds) and keeps it running while the app is open.</summary>
     internal async Task EnsureGatewayAsync(IEnumerable<AgentSession> sessions, CancellationToken ct)
@@ -259,6 +290,7 @@ public sealed partial class OpenClawService : ObservableObject
                 WriteConfig(sessions);
                 return;
             }
+            StopLeftoverGateway();
             _port = FreePort();
             _token = Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(24));
             await File.WriteAllTextAsync(TokenFile, _token, ct);
@@ -276,7 +308,8 @@ public sealed partial class OpenClawService : ObservableObject
                 process.BeginErrorReadLine();
                 Ioc.Engines.Llama.Track(process);
                 _gateway = process;
-                var deadline = DateTime.UtcNow.AddMinutes(2);
+                await File.WriteAllTextAsync(PidFile, process.Id.ToString(), ct);
+                var deadline = DateTime.UtcNow.AddMinutes(4);
                 while (DateTime.UtcNow < deadline && !process.HasExited && !await PortOpenAsync(_port, ct))
                     await Task.Delay(300, ct);
                 if (!process.HasExited && await PortOpenAsync(_port, ct))
@@ -294,7 +327,7 @@ public sealed partial class OpenClawService : ObservableObject
                 }
                 if (!process.HasExited)
                     process.Kill(true);
-                throw new InvalidOperationException($"OpenClaw gateway did not start: {Tail(tail)}");
+                throw new InvalidOperationException($"OpenClaw gateway did not start{(process.HasExited ? $" (exit {process.ExitCode})" : "")}: {Tail(tail)}");
             }
         }
         finally
@@ -340,8 +373,31 @@ public sealed partial class OpenClawService : ObservableObject
         ["OPENCLAW_HIDE_BANNER"] = "1",
         ["OPENCLAW_SUPPRESS_NOTES"] = "1",
         ["NO_COLOR"] = "1",
+        // The Gateway runs npm at start; keep its cache and logs out of ~/.npm.
+        ["npm_config_cache"] = Path.Combine(Root, "npm-cache"),
         ["PATH"] = Path.GetDirectoryName(NodeExe) + Path.PathSeparator + Environment.GetEnvironmentVariable("PATH"),
     };
+
+    /// <summary>A Gateway from an earlier run (the app was killed) holds the state folder, and a new one would refuse to start.</summary>
+    private static void StopLeftoverGateway()
+    {
+        try
+        {
+            if (!File.Exists(PidFile) || !int.TryParse(File.ReadAllText(PidFile), out var pid))
+                return;
+            using var old = Process.GetProcessById(pid);
+            if (!old.HasExited && string.Equals(old.MainModule?.FileName, NodeExe, StringComparison.OrdinalIgnoreCase))
+            {
+                Log.Info($"Stopping the OpenClaw gateway left from an earlier run ({pid})");
+                old.Kill(entireProcessTree: true);
+                old.WaitForExit(5000);
+            }
+        }
+        catch (Exception e) when (e is ArgumentException or InvalidOperationException or System.ComponentModel.Win32Exception or IOException)
+        {
+            // Not running any more.
+        }
+    }
 
     public void StopGateway()
     {

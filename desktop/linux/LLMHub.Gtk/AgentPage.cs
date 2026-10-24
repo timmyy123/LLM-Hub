@@ -42,6 +42,7 @@ internal sealed class AgentPage
     private readonly Gtk.Entry _commitMessage = Gtk.Entry.New();
     private readonly Gtk.Label _installStatus = Ui.Label("", "caption", "dim-label");
     private readonly Gtk.Label _installHelp = Ui.Label("", "dim-label");
+    private readonly Gtk.Label _footer = Ui.Label(Loc.S("AgentFooter"), "caption", "dim-label");
     private readonly Gtk.Widget _installCard;
     private AgentSession? _watched;
     private bool _syncingChanges;
@@ -65,7 +66,7 @@ internal sealed class AgentPage
         var engines = new Picker(_vm.Engines.Select(e => e.Label), i => _vm.EngineChoice = _vm.Engines[i]);
         engines.DropDown.Named("AgentEnginePicker");
         engines.Select(_vm.Engines.ToList().IndexOf(_vm.EngineChoice));
-        var engineTitle = Ui.Label(Loc.S("AgentEngine"), "heading");
+        var engineTitle = Ui.Label(Loc.S("AgentEngineTitle"), "heading");
         engineTitle.SetHexpand(true);
         _installHelp.SetWrap(true);
         _installCard = Ui.VBox(10, _installHelp, Ui.HBox(10, install, _installStatus));
@@ -149,7 +150,7 @@ internal sealed class AgentPage
         var composer = Ui.VBox(10, inputScroll, Ui.HBox(8, _modes.DropDown, spacer, _models.DropDown, _send, _stop));
         composer.AddCssClass("composer");
         _notice.Named("AgentNotice");
-        var footer = Ui.Label(Loc.S("AgentFooter"), "caption", "dim-label");
+        var footer = _footer;
         footer.SetXalign(0.5f);
         footer.SetJustify(Gtk.Justification.Center);
         var composerClamp = Adw.Clamp.New();
@@ -168,11 +169,12 @@ internal sealed class AgentPage
         {
             _installStatus.SetText(_vm.InstallStatus);
             _installHelp.SetText(_vm.InstallHelp);
+            install.SetLabel(_vm.InstallLabel);
             _installCard.SetVisible(!_vm.IsEngineInstalled);
         }
         Ui.Watch(_vm, p =>
         {
-            if (p is nameof(AgentViewModel.InstallStatus) or nameof(AgentViewModel.IsEngineInstalled) or nameof(AgentViewModel.InstallHelp))
+            if (p is nameof(AgentViewModel.InstallStatus) or nameof(AgentViewModel.IsEngineInstalled) or nameof(AgentViewModel.InstallHelp) or nameof(AgentViewModel.InstallLabel))
                 SyncInstall();
         });
         SyncInstall();
@@ -284,6 +286,7 @@ internal sealed class AgentPage
         switch (property)
         {
             case nameof(AgentViewModel.Selected):
+                _footer.SetText(_vm.Footer);
                 Watch(_vm.Selected);
                 UpdateState();
                 break;

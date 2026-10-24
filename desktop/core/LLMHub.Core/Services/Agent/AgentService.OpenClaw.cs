@@ -31,7 +31,8 @@ public sealed partial class AgentService
 
         try
         {
-            await Ioc.OpenClaw.EnsureGatewayAsync(Sessions.Where(s => s.Info.Engine == "openclaw").Append(session).Distinct(), CancellationToken.None);
+            // This session's folder, plus the folders of sessions with an open connection.
+            await Ioc.OpenClaw.EnsureGatewayAsync(Sessions.Where(s => _acp.TryGetValue(s.Id, out var open) && open.IsAlive).Append(session).Distinct(), CancellationToken.None);
             if (!_acp.TryGetValue(session.Id, out var acp) || !acp.IsAlive)
             {
                 acp?.Dispose();
@@ -94,6 +95,9 @@ public sealed partial class AgentService
         private CancellationTokenSource _turn = new();
         // Text streams as chunks; it is written out as one message when a tool starts or the turn ends.
         private readonly System.Text.StringBuilder _text = new();
+        // OpenClaw announces each tool twice: a dispatch (raw input {args, id: tool}), then the real call with id
+        // "tool_call:<dispatch>:<tool>:<n>". A dispatch is shown only if no real call follows it.
+        private readonly Dictionary<string, JsonObject> _dispatches = [];
 
         private AcpConnection(AgentService owner, AgentSession session, Process process)
         {
@@ -144,6 +148,15 @@ public sealed partial class AgentService
                 ["prompt"] = new JsonArray(new JsonObject { ["type"] = "text", ["text"] = text }),
             });
             FlushText();
+            // A dispatch nothing followed: show it as the tool it names, with its arguments.
+            foreach (var (id, dispatch) in _dispatches)
+            {
+                var raw = (JsonObject)dispatch["rawInput"]!;
+                dispatch["title"] = raw["id"]?.GetValue<string>() ?? "tool";
+                dispatch["rawInput"] = raw["args"]?.DeepClone() ?? new JsonObject();
+                EmitToolCall(dispatch, id);
+            }
+            _dispatches.Clear();
             return result?["stopReason"]?.GetValue<string>() ?? "end_turn";
         }
 
@@ -257,16 +270,15 @@ public sealed partial class AgentService
                 case "tool_call":
                 {
                     FlushText();
-                    var (name, input) = Translate(update);
                     var id = update["toolCallId"]?.GetValue<string>() ?? Guid.NewGuid().ToString("N");
-                    _owner.Emit(_session, new JsonObject
+                    if (update["rawInput"] is JsonObject dispatch && dispatch["id"] is JsonValue && dispatch.All(p => p.Key is "id" or "args"))
                     {
-                        ["type"] = "assistant",
-                        ["message"] = new JsonObject
-                        {
-                            ["content"] = new JsonArray(new JsonObject { ["type"] = "tool_use", ["id"] = id, ["name"] = name, ["input"] = input }),
-                        },
-                    });
+                        _dispatches[id] = (JsonObject)update.DeepClone();
+                        break;
+                    }
+                    if (id.StartsWith("tool_call:", StringComparison.Ordinal) && id.Split(':') is { Length: > 1 } parts)
+                        _dispatches.Remove(parts[1]);
+                    EmitToolCall(update, id);
                     break;
                 }
                 case "tool_call_update":
@@ -294,6 +306,19 @@ public sealed partial class AgentService
                     break;
                 }
             }
+        }
+
+        private void EmitToolCall(JsonObject call, string id)
+        {
+            var (name, input) = Translate(call);
+            _owner.Emit(_session, new JsonObject
+            {
+                ["type"] = "assistant",
+                ["message"] = new JsonObject
+                {
+                    ["content"] = new JsonArray(new JsonObject { ["type"] = "tool_use", ["id"] = id, ["name"] = name, ["input"] = input }),
+                },
+            });
         }
 
         private void FlushText()

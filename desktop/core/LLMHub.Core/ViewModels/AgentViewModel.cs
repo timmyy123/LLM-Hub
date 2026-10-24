@@ -68,6 +68,9 @@ public sealed partial class AgentViewModel : ObservableObject
     public string InstallStatus => EngineChoice.Mode == "openclaw" ? Ioc.OpenClaw.Status : _agent.InstallStatus;
     /// <summary>What setting up the chosen engine does, on the install card.</summary>
     public string InstallHelp => Loc.S(EngineChoice.Mode == "openclaw" ? "OpenClawInstallHelp" : "AgentInstallHelp");
+    public string InstallLabel => Loc.S(EngineChoice.Mode == "openclaw" ? "OpenClawSetUp" : "AgentInstall");
+    /// <summary>The note under the side panel: which engine talks to LLM Hub's local server.</summary>
+    public string Footer => Loc.S(Selected?.Info.Engine == "openclaw" ? "OpenClawFooter" : "AgentFooter");
 
     private void OnEngineStateChanged() => UiThread.Post(() =>
     {
@@ -81,6 +84,7 @@ public sealed partial class AgentViewModel : ObservableObject
         AppSettings.Current.AgentEngine = value.Mode;
         AppSettings.Save();
         OnPropertyChanged(nameof(InstallHelp));
+        OnPropertyChanged(nameof(InstallLabel));
         OnEngineStateChanged();
     }
     public AgentService Engine => _agent;
@@ -92,6 +96,7 @@ public sealed partial class AgentViewModel : ObservableObject
         if (oldValue is not null)
             oldValue.Changes.CollectionChanged -= OnChangesChanged;
         OnPropertyChanged(nameof(HasSession));
+        OnPropertyChanged(nameof(Footer));
         Notice = "";
         if (newValue is null)
             return;
