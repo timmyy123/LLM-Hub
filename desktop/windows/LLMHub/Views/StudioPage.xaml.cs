@@ -76,7 +76,17 @@ public sealed partial class StudioPage : Page
         if (ViewModel.SelectedItem is not { } item)
             return;
         ViewModel.Mode = "video";
-        ViewModel.Workflow = ComfyWorkflow.LtxVideo;
+        ViewModel.Workflow = ViewModel.Workflows.FirstOrDefault(w => w.Kind == "video") ?? ComfyWorkflow.LtxVideo;
+        ViewModel.ReferenceImage = item.Path;
+        UpdateTabs();
+    }
+
+    /// <summary>Snapdragon NPU: the selected picture becomes the reference of the current image model (image to image).</summary>
+    private void OnImageToImage(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel.SelectedItem is not { } item)
+            return;
+        ViewModel.Mode = "image";
         ViewModel.ReferenceImage = item.Path;
         UpdateTabs();
     }

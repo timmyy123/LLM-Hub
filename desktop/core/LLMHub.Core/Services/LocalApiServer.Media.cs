@@ -24,7 +24,7 @@ public sealed partial class LocalApiServer
         new("POST", "/v1/embeddings", "EmbeddingGemma", false),
         new("POST", "/v1/audio/transcriptions", "Whisper", false),
         new("POST", "/v1/audio/speech", "Supertonic", false),
-        new("POST", "/v1/images/generations", "ComfyUI", false),
+        new("POST", "/v1/images/generations", ComfyService.IsSupported || !Studio.Npu.SdNpuService.IsSupported ? "ComfyUI" : "Stable Diffusion 1.5 · NPU", false),
         new("GET", "/v1/models", "", false),
         new("POST", "/v1/messages", Loc.S("ApiChatFeatures"), true),
         new("POST", "/v1/messages/count_tokens", "", true),
@@ -314,12 +314,20 @@ public sealed partial class LocalApiServer
 
     // ---------------------------------------------------------------- /v1/images/generations
 
-    /// <summary>Text to image through ComfyUI (SDXL by default, "flux-schnell" when asked), returned as base64 PNG.</summary>
+    /// <summary>
+    /// Text to image through ComfyUI (SDXL by default, "flux-schnell" when asked), or on Snapdragon PCs through Stable
+    /// Diffusion 1.5 on the NPU (512 x 512; "model" picks the checkpoint by id or name), returned as base64 PNG.
+    /// </summary>
     private async Task Images(HttpContext ctx)
     {
         var body = await JsonNode.ParseAsync(ctx.Request.Body) as JsonObject ?? new JsonObject();
         var prompt = body["prompt"]?.GetValue<string>() ?? "";
         var requested = body["model"]?.GetValue<string>() ?? "";
+        if (!ComfyService.IsSupported && Studio.Npu.SdNpuService.IsSupported)
+        {
+            await ImagesOnNpu(ctx, body, prompt, requested);
+            return;
+        }
         var workflow = requested.Contains("flux", StringComparison.OrdinalIgnoreCase) ? ComfyWorkflow.FluxSchnell : ComfyWorkflow.Sdxl;
         if (!ComfyService.IsSupported)
         {
@@ -366,6 +374,46 @@ public sealed partial class LocalApiServer
             if (!ctx.Response.HasStarted)
                 await WriteError(ctx, 500, "api_error", e.Message);
             Record(ctx, workflow.Id, 500);
+        }
+    }
+
+    /// <summary>/v1/images/generations on the Hexagon NPU: one of Studio's Stable Diffusion 1.5 models at 512 x 512.</summary>
+    private async Task ImagesOnNpu(HttpContext ctx, JsonObject body, string prompt, string requested)
+    {
+        var model = Studio.Npu.SdNpuModel.All.FirstOrDefault(m => requested.Length > 0 &&
+                        (m.Id.Equals(requested, StringComparison.OrdinalIgnoreCase) || m.Name.Contains(requested, StringComparison.OrdinalIgnoreCase)))
+                    ?? Studio.Npu.SdNpuModel.All[0];
+        var id = "npu-" + model.Id;
+        if (prompt.Trim().Length == 0)
+        {
+            await WriteError(ctx, 400, "invalid_request_error", "'prompt' is empty.");
+            Record(ctx, id, 400);
+            return;
+        }
+        var count = Math.Clamp(body["n"]?.GetValue<int>() ?? 1, 1, 4);
+        var steps = Math.Clamp(body["steps"]?.GetValue<int>() ?? 20, 1, 50);
+        var seed = body["seed"]?.GetValue<long>() ?? Random.Shared.NextInt64(1, 1L << 31);
+        var negative = body["negative_prompt"]?.GetValue<string>()
+                       ?? "lowres, bad anatomy, bad hands, text, error, missing fingers, cropped, worst quality, low quality, jpeg artifacts, signature, watermark, blurry, deformed";
+        try
+        {
+            var files = await Ioc.SdNpu.GenerateAsync(model, prompt.Trim(), negative, steps, 7f, seed, count, null, 0.6f, (_, _) => { }, ctx.RequestAborted);
+            var data = new JsonArray();
+            foreach (var file in files)
+                data.Add(new JsonObject { ["b64_json"] = Convert.ToBase64String(await File.ReadAllBytesAsync(file, ctx.RequestAborted)), ["revised_prompt"] = prompt });
+            await ctx.Response.WriteAsJsonAsync(new JsonObject { ["created"] = DateTimeOffset.UtcNow.ToUnixTimeSeconds(), ["data"] = data });
+            Record(ctx, id, 200);
+        }
+        catch (OperationCanceledException)
+        {
+            Record(ctx, id, 499);
+        }
+        catch (Exception e)
+        {
+            Log.Error("Local API /v1/images/generations (NPU) failed", e);
+            if (!ctx.Response.HasStarted)
+                await WriteError(ctx, 500, "api_error", e.Message);
+            Record(ctx, id, 500);
         }
     }
 

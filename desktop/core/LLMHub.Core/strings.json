@@ -321,7 +321,15 @@
   "ApiModelsOfferedHelp": "Loaded when first requested",
   "ApiUnloadAfter": "Unload after idle",
   "ApiNever": "Never",
-  "ApiMinutes": "{0} minutes"
+  "ApiMinutes": "{0} minutes",
+  "NpuReady": "{0} · loads when you generate",
+  "NpuLoaded": "{1} · {0} ready",
+  "NpuLoading": "Loading {0} on the NPU…",
+  "NpuUnpacking": "Unpacking {0}…",
+  "NpuNoVideo": "Video generation on Snapdragon is not available yet.",
+  "NpuReferenceOptional": "Reference image (optional)",
+  "NpuClearReference": "Remove reference image",
+  "NpuImageToImage": "Image to image"
  },
  "es-ES": {
   "NewChat": "Nuevo chat",
@@ -645,7 +653,15 @@
   "ApiModelsOfferedHelp": "Se cargan con la primera petición",
   "ApiUnloadAfter": "Descargar tras inactividad",
   "ApiNever": "Nunca",
-  "ApiMinutes": "{0} minutos"
+  "ApiMinutes": "{0} minutos",
+  "NpuReady": "{0} · se carga al generar",
+  "NpuLoaded": "{1} · {0} listo",
+  "NpuLoading": "Cargando {0} en la NPU…",
+  "NpuUnpacking": "Descomprimiendo {0}…",
+  "NpuNoVideo": "La generación de vídeo en Snapdragon aún no está disponible.",
+  "NpuReferenceOptional": "Imagen de referencia (opcional)",
+  "NpuClearReference": "Quitar la imagen de referencia",
+  "NpuImageToImage": "De imagen a imagen"
  },
  "pt-BR": {
   "NewChat": "Nova conversa",
@@ -969,7 +985,15 @@
   "ApiModelsOfferedHelp": "Carregados na primeira solicitação",
   "ApiUnloadAfter": "Descarregar após inatividade",
   "ApiNever": "Nunca",
-  "ApiMinutes": "{0} minutos"
+  "ApiMinutes": "{0} minutos",
+  "NpuReady": "{0} · carrega quando você gerar",
+  "NpuLoaded": "{1} · {0} pronto",
+  "NpuLoading": "Carregando {0} na NPU…",
+  "NpuUnpacking": "Descompactando {0}…",
+  "NpuNoVideo": "A geração de vídeo no Snapdragon ainda não está disponível.",
+  "NpuReferenceOptional": "Imagem de referência (opcional)",
+  "NpuClearReference": "Remover a imagem de referência",
+  "NpuImageToImage": "De imagem para imagem"
  },
  "fr-FR": {
   "NewChat": "Nouvelle discussion",
@@ -1293,7 +1317,15 @@
   "ApiModelsOfferedHelp": "Chargés à la première requête",
   "ApiUnloadAfter": "Décharger après inactivité",
   "ApiNever": "Jamais",
-  "ApiMinutes": "{0} minutes"
+  "ApiMinutes": "{0} minutes",
+  "NpuReady": "{0} · se charge à la génération",
+  "NpuLoaded": "{1} · {0} prêt",
+  "NpuLoading": "Chargement de {0} sur le NPU…",
+  "NpuUnpacking": "Décompression de {0}…",
+  "NpuNoVideo": "La génération de vidéos sur Snapdragon n'est pas encore disponible.",
+  "NpuReferenceOptional": "Image de référence (facultative)",
+  "NpuClearReference": "Retirer l'image de référence",
+  "NpuImageToImage": "D'image à image"
  },
  "de-DE": {
   "NewChat": "Neuer Chat",
@@ -1617,7 +1649,15 @@
   "ApiModelsOfferedHelp": "Werden bei der ersten Anfrage geladen",
   "ApiUnloadAfter": "Nach Leerlauf entladen",
   "ApiNever": "Nie",
-  "ApiMinutes": "{0} Minuten"
+  "ApiMinutes": "{0} Minuten",
+  "NpuReady": "{0} · wird beim Generieren geladen",
+  "NpuLoaded": "{1} · {0} bereit",
+  "NpuLoading": "{0} wird auf die NPU geladen…",
+  "NpuUnpacking": "{0} wird entpackt…",
+  "NpuNoVideo": "Videos lassen sich auf Snapdragon noch nicht erstellen.",
+  "NpuReferenceOptional": "Referenzbild (optional)",
+  "NpuClearReference": "Referenzbild entfernen",
+  "NpuImageToImage": "Bild zu Bild"
  },
  "it-IT": {
   "NewChat": "Nuova chat",
@@ -1941,7 +1981,15 @@
   "ApiModelsOfferedHelp": "Caricati alla prima richiesta",
   "ApiUnloadAfter": "Scarica dopo inattività",
   "ApiNever": "Mai",
-  "ApiMinutes": "{0} minuti"
+  "ApiMinutes": "{0} minuti",
+  "NpuReady": "{0} · si carica quando generi",
+  "NpuLoaded": "{1} · {0} pronto",
+  "NpuLoading": "Caricamento di {0} sulla NPU…",
+  "NpuUnpacking": "Estrazione di {0}…",
+  "NpuNoVideo": "La generazione di video su Snapdragon non è ancora disponibile.",
+  "NpuReferenceOptional": "Immagine di riferimento (facoltativa)",
+  "NpuClearReference": "Rimuovi l'immagine di riferimento",
+  "NpuImageToImage": "Da immagine a immagine"
  },
  "ru-RU": {
   "NewChat": "Новый чат",
@@ -2265,6 +2313,14 @@
   "ApiModelsOfferedHelp": "Загружаются при первом запросе",
   "ApiUnloadAfter": "Выгружать при простое",
   "ApiNever": "Никогда",
-  "ApiMinutes": "{0} мин"
+  "ApiMinutes": "{0} мин",
+  "NpuReady": "{0} · загрузится при генерации",
+  "NpuLoaded": "{1} · {0}: готово",
+  "NpuLoading": "Загрузка {0} в NPU…",
+  "NpuUnpacking": "Распаковка {0}…",
+  "NpuNoVideo": "Создание видео на Snapdragon пока недоступно.",
+  "NpuReferenceOptional": "Исходное изображение (необязательно)",
+  "NpuClearReference": "Убрать исходное изображение",
+  "NpuImageToImage": "Изображение в изображение"
  }
 }

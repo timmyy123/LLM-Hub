@@ -65,23 +65,38 @@ public static class DevTests
         }
     }
 
-    /// <summary>Generates with one Studio workflow through the real view model (installing ComfyUI and models if needed).</summary>
-    public static async Task StudioAsync(string workflowId, string prompt, string? image)
+    /// <summary>
+    /// Generates with one Studio workflow through the real view model (installing ComfyUI and models if needed). The
+    /// Snapdragon NPU workflows ("npu-absolutereality", ...) do image to image when <paramref name="image"/> is given.
+    /// </summary>
+    public static async Task StudioAsync(string workflowId, string prompt, string? image, string? seed = null)
     {
         var studio = Ioc.StudioVm;
-        studio.Workflow = Studio.ComfyWorkflow.All.First(w => w.Id == workflowId);
+        studio.Workflow = Studio.ComfyWorkflow.All.Concat(Studio.ComfyWorkflow.NpuWorkflows).First(w => w.Id == workflowId);
         studio.Mode = studio.Workflow.Kind;
         studio.Prompt = prompt;
         if (image is not null)
             studio.ReferenceImage = image;
+        if (seed is not null)
+            studio.Seed = seed;
         var last = DateTime.UtcNow;
-        Ioc.Comfy.PropertyChanged += (_, e) =>
+        void Report(string status)
         {
-            if (e.PropertyName == nameof(Studio.ComfyService.Status) && (DateTime.UtcNow - last).TotalSeconds > 20)
+            if (status.Length > 0 && (DateTime.UtcNow - last).TotalSeconds > 20)
             {
-                Log.Info($"STUDIOTEST {Ioc.Comfy.Status}");
+                Log.Info($"STUDIOTEST {status}");
                 last = DateTime.UtcNow;
             }
+        }
+        Ioc.Comfy.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(Studio.ComfyService.Status))
+                Report(Ioc.Comfy.Status);
+        };
+        Ioc.SdNpu.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(Studio.Npu.SdNpuService.Status))
+                Report(Ioc.SdNpu.Status);
         };
         var clock = System.Diagnostics.Stopwatch.StartNew();
         await studio.GenerateCommand.ExecuteAsync(null);

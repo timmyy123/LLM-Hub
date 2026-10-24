@@ -38,8 +38,8 @@
                 <ToggleButton x:Name="TabVoice" Tag="voice" Content="{x:Bind services:Loc.S('StudioVoice')}" Click="OnModeClick" Style="{StaticResource StudioTabStyle}" />
             </StackPanel>
             <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Visibility="{x:Bind local:Ui.Show(ViewModel.IsImageOrVideo), Mode=OneWay}">
-                <Ellipse Width="8" Height="8" Fill="{x:Bind local:Ui.RunningBrush(ViewModel.Comfy.IsRunning), Mode=OneWay}" />
-                <TextBlock Text="{x:Bind ViewModel.Comfy.StatusLine, Mode=OneWay}" FontSize="12" Foreground="{ThemeResource TextMutedBrush}" AutomationProperties.AutomationId="ComfyStatus" />
+                <Ellipse Width="8" Height="8" Fill="{x:Bind local:Ui.RunningBrush(ViewModel.EngineRunning), Mode=OneWay}" />
+                <TextBlock Text="{x:Bind ViewModel.EngineStatusLine, Mode=OneWay}" FontSize="12" Foreground="{ThemeResource TextMutedBrush}" AutomationProperties.AutomationId="ComfyStatus" />
             </StackPanel>
         </Grid>
 
@@ -90,23 +90,33 @@
                             <TextBox x:Name="SeedBox" Text="{x:Bind ViewModel.Seed, Mode=TwoWay}" PlaceholderText="{x:Bind services:Loc.S('StudioRandom')}" />
                         </StackPanel>
                     </Grid>
-                    <Button x:Name="ReferenceButton" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Height="40" CornerRadius="9" Click="OnPickReference"
-                            Background="Transparent" BorderBrush="{ThemeResource ControlBorderBrush}" BorderThickness="1"
-                            Visibility="{x:Bind local:Ui.Show(ViewModel.NeedsReference), Mode=OneWay}">
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                            <FontIcon Glyph="&#xE710;" FontSize="12" />
-                            <TextBlock Text="{x:Bind local:Ui.ReferenceLabel(ViewModel.ReferenceImage), Mode=OneWay}" TextTrimming="CharacterEllipsis" MaxWidth="250" />
-                        </StackPanel>
-                    </Button>
+                    <Grid ColumnSpacing="6" Visibility="{x:Bind local:Ui.Show(ViewModel.NeedsReference), Mode=OneWay}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Button x:Name="ReferenceButton" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Height="40" CornerRadius="9" Click="OnPickReference"
+                                Background="Transparent" BorderBrush="{ThemeResource ControlBorderBrush}" BorderThickness="1">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon Glyph="&#xE710;" FontSize="12" />
+                                <TextBlock Text="{x:Bind local:Ui.ReferenceLabel(ViewModel.ReferenceImage, ViewModel.IsNpu), Mode=OneWay}" TextTrimming="CharacterEllipsis" MaxWidth="230" />
+                            </StackPanel>
+                        </Button>
+                        <Button Grid.Column="1" Style="{StaticResource SubtleIconButtonStyle}" Command="{x:Bind ViewModel.ClearReferenceCommand}"
+                                Visibility="{x:Bind local:Ui.ShowText(ViewModel.ReferenceImage), Mode=OneWay}"
+                                ToolTipService.ToolTip="{x:Bind services:Loc.S('NpuClearReference')}" AutomationProperties.Name="{x:Bind services:Loc.S('NpuClearReference')}">
+                            <FontIcon Glyph="&#xE711;" FontSize="12" />
+                        </Button>
+                    </Grid>
                     <TextBlock Text="{x:Bind ViewModel.Status, Mode=OneWay}" FontSize="12" Foreground="{ThemeResource TextMutedBrush}" TextWrapping="Wrap"
                                Visibility="{x:Bind local:Ui.ShowText(ViewModel.Status), Mode=OneWay}" AutomationProperties.AutomationId="StudioStatus" />
-                    <TextBlock Text="{x:Bind ViewModel.Comfy.Status, Mode=OneWay}" FontSize="12" Foreground="{ThemeResource TextMutedBrush}" TextWrapping="Wrap"
-                               Visibility="{x:Bind local:Ui.ShowText(ViewModel.Comfy.Status), Mode=OneWay}" />
-                    <TextBlock Text="{x:Bind services:Loc.S('ComfyUnsupported')}" FontSize="12" Foreground="{ThemeResource WarningBrush}" TextWrapping="Wrap"
-                               Visibility="{x:Bind local:Ui.Hide(ViewModel.ComfySupported)}" />
+                    <TextBlock Text="{x:Bind ViewModel.EngineStatus, Mode=OneWay}" FontSize="12" Foreground="{ThemeResource TextMutedBrush}" TextWrapping="Wrap"
+                               Visibility="{x:Bind local:Ui.ShowText(ViewModel.EngineStatus), Mode=OneWay}" />
+                    <TextBlock Text="{x:Bind ViewModel.UnsupportedNote, Mode=OneWay}" FontSize="12" Foreground="{ThemeResource WarningBrush}" TextWrapping="Wrap"
+                               Visibility="{x:Bind local:Ui.ShowText(ViewModel.UnsupportedNote), Mode=OneWay}" AutomationProperties.AutomationId="StudioUnsupported" />
                     <Button x:Name="GenerateButton" HorizontalAlignment="Stretch" Height="44" CornerRadius="10" FontWeight="SemiBold" Content="{x:Bind services:Loc.S('StudioGenerate')}"
                             Background="{ThemeResource AccentFillBrush}" Foreground="{ThemeResource OnAccentBrush}" BorderThickness="0" Command="{x:Bind ViewModel.GenerateCommand}"
-                            Visibility="{x:Bind local:Ui.Hide(ViewModel.IsGenerating), Mode=OneWay}" IsEnabled="{x:Bind ViewModel.ComfySupported}" />
+                            Visibility="{x:Bind local:Ui.Hide(ViewModel.IsGenerating), Mode=OneWay}" IsEnabled="{x:Bind ViewModel.ModeSupported, Mode=OneWay}" />
                     <Button x:Name="CancelGenerateButton" HorizontalAlignment="Stretch" Height="44" CornerRadius="10" Content="{x:Bind services:Loc.S('Cancel')}"
                             Command="{x:Bind ViewModel.CancelCommand}" Visibility="{x:Bind local:Ui.Show(ViewModel.IsGenerating), Mode=OneWay}" />
                 </StackPanel>
@@ -142,9 +152,14 @@
                 </GridView>
                 <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8">
                     <Button Style="{StaticResource OutlineButtonStyle}" Height="34" Content="{x:Bind services:Loc.S('StudioUseInChat')}" Click="OnUseInChat" />
-                    <Button Style="{StaticResource OutlineButtonStyle}" Height="34" Content="{x:Bind services:Loc.S('StudioAnimate')}" Click="OnAnimate" />
-                    <Button Style="{StaticResource OutlineButtonStyle}" Height="34" Content="{x:Bind services:Loc.S('StudioUpscale')}" Click="OnUpscale" />
+                    <Button Style="{StaticResource OutlineButtonStyle}" Height="34" Content="{x:Bind services:Loc.S('StudioAnimate')}" Click="OnAnimate"
+                            Visibility="{x:Bind local:Ui.Show(ViewModel.CanAnimate)}" />
+                    <Button Style="{StaticResource OutlineButtonStyle}" Height="34" Content="{x:Bind services:Loc.S('StudioUpscale')}" Click="OnUpscale"
+                            Visibility="{x:Bind local:Ui.Hide(ViewModel.UsesNpuEngine)}" />
+                    <Button Style="{StaticResource OutlineButtonStyle}" Height="34" Content="{x:Bind services:Loc.S('NpuImageToImage')}" Click="OnImageToImage"
+                            Visibility="{x:Bind local:Ui.Show(ViewModel.UsesNpuEngine)}" />
                     <Button x:Name="OpenComfyButton" Style="{StaticResource OutlineButtonStyle}" Height="34" Click="OnOpenComfy"
+                            Visibility="{x:Bind local:Ui.Hide(ViewModel.UsesNpuEngine)}"
                             ToolTipService.ToolTip="{x:Bind services:Loc.S('StudioOpenComfy')}" AutomationProperties.Name="{x:Bind services:Loc.S('StudioOpenComfy')}">
                         <StackPanel Orientation="Horizontal" Spacing="6">
                             <FontIcon Glyph="&#xE8A7;" FontSize="12" />

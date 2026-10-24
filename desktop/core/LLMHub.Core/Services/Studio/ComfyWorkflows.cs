@@ -13,6 +13,10 @@ public sealed record ComfyWorkflow(string Id, string Name, string Kind, bool Nee
 {
     public override string ToString() => Name;
 
+    /// <summary>Set for the Snapdragon NPU workflows (Stable Diffusion 1.5 through QNN) instead of ComfyUI.</summary>
+    public LLMHub.Services.Studio.Npu.SdNpuModel? NpuModel { get; init; }
+    public bool IsNpu => NpuModel is not null;
+
     public long DownloadSize => Files.Sum(f => f.Size);
 
     public static readonly ComfyWorkflow FluxSchnell = new("flux-schnell", "Text to image · Flux.1 schnell", "image", false, 4,
@@ -37,6 +41,10 @@ public sealed record ComfyWorkflow(string Id, string Name, string Kind, bool Nee
     ]);
 
     public static IReadOnlyList<ComfyWorkflow> All { get; } = [FluxSchnell, Sdxl, LtxVideo, Upscale];
+
+    /// <summary>Windows on Arm: Stable Diffusion 1.5 checkpoints on the Hexagon NPU (512 x 512, optional reference for image to image).</summary>
+    public static IReadOnlyList<ComfyWorkflow> NpuWorkflows { get; } =
+        [.. LLMHub.Services.Studio.Npu.SdNpuModel.All.Select(m => new ComfyWorkflow("npu-" + m.Id, $"{m.Name} · NPU", "image", false, 20, []) { NpuModel = m })];
 
     /// <summary>The API-format graph for one run. <paramref name="image"/> is a name returned by ComfyUI's /upload/image.</summary>
     public JsonObject Build(string prompt, int width, int height, int count, int steps, long seed, string? image)

@@ -22,6 +22,8 @@ public static class Ioc
     public static LocalApiServer AgentBridge { get; } = new(agentBridge: true);
     public static Agent.AgentService Agent { get; } = new();
     public static Studio.ComfyService Comfy { get; } = new();
+    /// <summary>Studio images on the Snapdragon NPU (Windows on Arm), where ComfyUI has no GPU backend.</summary>
+    public static Studio.Npu.SdNpuService SdNpu { get; } = new();
     public static Design.DesignService Design { get; } = new();
 
     private static ChatViewModel? _chat;

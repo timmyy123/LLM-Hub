@@ -64,10 +64,11 @@ public sealed partial class SettingsViewModel : ObservableObject
     public string AsrLine => $"{SpeechService.AsrName} · {Loc.S(AsrInstalled ? "Installed" : "SettingsNotInstalled")}";
     public string ClaudePath => AgentService.FindClaude() ?? Loc.S("SettingsNotInstalled");
     public bool ClaudeInstalled => AgentService.FindClaude() is not null;
+    /// <summary>Studio's image engine: ComfyUI, or on Snapdragon PCs Stable Diffusion on the Hexagon NPU.</summary>
     public string ComfyLine => ComfyService.IsSupported
         ? Ioc.Comfy.StatusLine
-        : Loc.S("ComfyUnsupported");
-    public string ComfyFolder => ComfyService.Root;
+        : StudioViewModel.UsesNpu ? Ioc.SdNpu.StatusLine : Loc.S("ComfyUnsupported");
+    public string ComfyFolder => StudioViewModel.UsesNpu ? Services.Studio.Npu.SdNpuService.Root : ComfyService.Root;
     public string MusicLine => Loc.S(OperatingSystem.IsMacOS() ? "SettingsMusicMac" : "StudioMusicUnavailable");
 
     partial void OnAppearanceChanged(string value) => Save(s => s.Appearance = value);
@@ -140,13 +141,16 @@ public sealed partial class SettingsViewModel : ObservableObject
     private static List<StorageItem> ReadStorage()
     {
         var engines = AppPaths.Engines;
+        // Studio's NPU models live under models/ but count as Studio.
+        var npu = Size(Services.Studio.Npu.SdNpuService.Root);
         return
         [
-            new("models", Loc.S("SettingsStorageModels"), AppPaths.Models, Size(AppPaths.Models)),
+            new("models", Loc.S("SettingsStorageModels"), AppPaths.Models, Size(AppPaths.Models) - npu),
             new("engines", Loc.S("SettingsStorageEngines"), engines,
                 Size(engines) - Size(ComfyService.Root) - Size(SpeechService.TtsRoot) - Size(SpeechService.WhisperRoot)),
             new("speech", Loc.S("SettingsSpeech"), engines, Size(SpeechService.TtsRoot) + Size(SpeechService.WhisperRoot)),
-            new("studio", Loc.S("SettingsStudio"), ComfyService.Root, Size(ComfyService.Root)),
+            new("studio", Loc.S("SettingsStudio"), StudioViewModel.UsesNpu ? Services.Studio.Npu.SdNpuService.Root : ComfyService.Root,
+                Size(ComfyService.Root) + npu),
             new("chats", Loc.S("SettingsStorageChats"), AppPaths.Root, File.Exists(AppPaths.Database) ? new FileInfo(AppPaths.Database).Length : 0),
             new("attachments", Loc.S("SettingsStorageAttachments"), AppPaths.Attachments, Size(AppPaths.Attachments)),
             new("design", Loc.S("NavDesign"), Path.Combine(AppPaths.Root, "design"), Size(Path.Combine(AppPaths.Root, "design"))),
@@ -158,6 +162,12 @@ public sealed partial class SettingsViewModel : ObservableObject
 
     private static List<StorageItem> ReadStudioModels()
     {
+        if (StudioViewModel.UsesNpu)
+        {
+            // One entry per NPU model folder (QNN package plus text encoder).
+            return Services.Studio.Npu.SdNpuModel.All.Select(m => Services.Studio.Npu.SdNpuService.ModelDir(m)).Where(Directory.Exists)
+                .Select(d => new StorageItem(d, Path.GetFileName(d), d, Size(d))).OrderByDescending(i => i.Bytes).ToList();
+        }
         if (!Directory.Exists(ComfyService.ModelsDir))
             return [];
         return Directory.EnumerateFiles(ComfyService.ModelsDir, "*.safetensors", SearchOption.AllDirectories)
@@ -242,6 +252,8 @@ public sealed partial class SettingsViewModel : ObservableObject
     [RelayCommand]
     private async Task StartComfyAsync()
     {
+        if (StudioViewModel.UsesNpu)
+            return; // the NPU model loads when Studio generates
         try
         {
             await Ioc.Comfy.EnsureRunningAsync(CancellationToken.None);
@@ -256,6 +268,8 @@ public sealed partial class SettingsViewModel : ObservableObject
     [RelayCommand]
     private async Task StopComfyAsync()
     {
+        if (StudioViewModel.UsesNpu)
+            await Ioc.SdNpu.StopAsync();
         Ioc.Comfy.Stop();
         await RefreshAsync();
     }
@@ -263,6 +277,14 @@ public sealed partial class SettingsViewModel : ObservableObject
     [RelayCommand]
     private async Task DeleteStudioModelAsync(StorageItem? item)
     {
+        if (item is not null && Directory.Exists(item.Key))
+        {
+            // An NPU model folder.
+            await Ioc.SdNpu.StopAsync();
+            Directory.Delete(item.Key, true);
+            await RefreshAsync();
+            return;
+        }
         if (item is null || !File.Exists(item.Key))
             return;
         File.Delete(item.Key);

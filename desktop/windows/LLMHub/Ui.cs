@@ -96,7 +96,8 @@ public static class Ui
     public static string Total(string size) => size.Length > 0 ? Services.Loc.F("SettingsTotal", size) : "";
     public static object Box(int value) => value;
     public static double ToDouble(int value) => value;
-    public static string ReferenceLabel(string path) => string.IsNullOrEmpty(path) ? Services.Loc.S("StudioReference") : System.IO.Path.GetFileName(path);
+    public static string ReferenceLabel(string path, bool optional) =>
+        string.IsNullOrEmpty(path) ? Services.Loc.S(optional ? "NpuReferenceOptional" : "StudioReference") : System.IO.Path.GetFileName(path);
     public static string SavedTo() => Services.Loc.F("StudioSavedTo", Services.Studio.ComfyService.Gallery);
     public static ImageSource? Thumbnail(string path)
     {
