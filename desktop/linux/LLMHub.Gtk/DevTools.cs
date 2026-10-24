@@ -86,7 +86,7 @@ internal static class DevTools
                 window.ShowSettings(Value(args, "--page")!.Replace("settings", ""));
                 break;
             case "agent" or "design" or "studio": window.ShowSection(Value(args, "--page")!); break;
-            case "voice" or "music" or "video":
+            case "voice" or "music" or "video" or "search":
                 Ioc.StudioVm.Mode = Value(args, "--page")!;
                 window.ShowSection("studio");
                 break;

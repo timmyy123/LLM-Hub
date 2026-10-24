@@ -66,7 +66,8 @@ internal static class DevCapture
                     window.ShowSettings("api");
                     break;
                 case "music":
-                    Ioc.StudioVm.Mode = "music";
+                case "search":
+                    Ioc.StudioVm.Mode = ValueOf(args, "--page")!;
                     window.ShowSection("studio");
                     break;
                 case "agent":
