@@ -252,6 +252,7 @@ public sealed partial class HfRepoViewModel(HfRepo repo) : DownloadableViewModel
 
     public void DownloadRow(HfFileRow row)
     {
+        Log.Info($"Hugging Face download {Repo.Id} {row.Quant}");
         if (!Variants.Contains(row.Option))
             Variants.Add(row.Option);
         SelectedVariant = row.Option;

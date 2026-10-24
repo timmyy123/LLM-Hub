@@ -294,7 +294,7 @@
                                             </StackPanel>
                                             <TextBlock Grid.Column="1" Text="{x:Bind FitText}" FontSize="12" Foreground="{x:Bind local:Ui.FitBrush(FitLevel)}" VerticalAlignment="Center"
                                                        TextWrapping="Wrap" AutomationProperties.AutomationId="HfFileFit" />
-                                            <Button Grid.Column="2" HorizontalAlignment="Stretch" CornerRadius="8" Content="{x:Bind services:Loc.S('Download')}" Command="{x:Bind DownloadCommand}"
+                                            <Button Grid.Column="2" HorizontalAlignment="Stretch" CornerRadius="8" Content="{x:Bind services:Loc.S('Download')}" Click="OnHfFileDownload"
                                                     IsEnabled="{x:Bind CanDownload}" Visibility="{x:Bind local:Ui.Hide(IsInstalled)}" AutomationProperties.AutomationId="HfFileDownload" />
                                             <TextBlock Grid.Column="2" Text="{x:Bind services:Loc.S('Installed')}" FontSize="12" VerticalAlignment="Center"
                                                        Visibility="{x:Bind local:Ui.Show(IsInstalled)}" AutomationProperties.AutomationId="HfFileInstalled" />

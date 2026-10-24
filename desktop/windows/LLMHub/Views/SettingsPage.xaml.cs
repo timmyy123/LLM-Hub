@@ -197,6 +197,16 @@ public sealed partial class SettingsPage : Page
         };
     }
 
+    /// <summary>
+    /// The row comes from the button's DataContext at click time: the file table reuses row controls when another repo is
+    /// picked, and a command bound once could still point at the old repo's file.
+    /// </summary>
+    private void OnHfFileDownload(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: HfFileRow row } && Models.SelectedRepo?.Rows.Contains(row) == true)
+            row.DownloadCommand.Execute(null);
+    }
+
     private void OnHfFormatChanged(object sender, SelectionChangedEventArgs e)
     {
         if (!_initializing && HfFormatBox.SelectedItem is ComboBoxItem { Tag: string key })

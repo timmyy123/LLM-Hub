@@ -490,7 +490,7 @@ Test("Gated model shows a clear token message", () =>
     // Results mix GGUF and LiteRT-LM repos by trend: pick the gated Google one by name.
     WaitFor(() => window!.FindAllDescendants(cf => cf.ByAutomationId("HfRepoId")).FirstOrDefault(e => e.Name == "google/gemma-3-1b-it-qat-q4_0-gguf"),
         TimeSpan.FromSeconds(60), "google/gemma-3-1b-it-qat-q4_0-gguf in results").Click();
-    WaitFor(() => window!.FindAllDescendants(cf => cf.ByAutomationId("HfFileDownload")).FirstOrDefault(b => b.IsEnabled), TimeSpan.FromSeconds(60), "Download in the file table")
+    WaitFor(() => window!.FindAllDescendants(cf => cf.ByAutomationId("HfFileDownload")).FirstOrDefault(b => b.IsEnabled && !b.IsOffscreen), TimeSpan.FromSeconds(60), "Download in the file table")
         .AsButton().Invoke();
     Check(Find("HfGatedBar") is { IsOffscreen: false }, "gated notice with sign-in missing");
     WaitUntil(() => Find("RepoStatus")?.Name.Contains("gated", StringComparison.OrdinalIgnoreCase) == true, TimeSpan.FromSeconds(60), "gated message");
@@ -500,11 +500,15 @@ Test("Gated model shows a clear token message", () =>
 
 Test("Hugging Face search finds repos and lists fitting quants", () =>
 {
+    if (Find("TabHuggingFace") is null)
+        OpenSettings("SectionModels");
     Select("TabHuggingFace");
     SetText("HfQuery", "LFM2.5-1.2B-Instruct-GGUF");
     Invoke("HfSearchButton");
-    var results = Get("HfResults", 30);
-    WaitUntil(() => results.FindAllChildren().Length > 0, TimeSpan.FromSeconds(30), "results");
+    // The tab opens on trending repos; wait for this search's own result and open it.
+    WaitFor(() => window!.FindAllDescendants(cf => cf.ByAutomationId("HfRepoId")).FirstOrDefault(e => e.Name == "LiquidAI/LFM2.5-1.2B-Instruct-GGUF"),
+        TimeSpan.FromSeconds(60), "LiquidAI/LFM2.5-1.2B-Instruct-GGUF in results").Click();
+    WaitUntil(() => Find("RepoDetail")?.Name.Contains("LFM2.5") == true, TimeSpan.FromSeconds(30), "LFM2.5 repo detail");
     WaitFor(() => Find("HfFileFit"), TimeSpan.FromSeconds(30), "file table with fit");
     var fits = window!.FindAllDescendants(cf => cf.ByAutomationId("HfFileFit")).Select(e => e.Name).ToList();
     Check(fits.Contains("Best fit"), $"no Best fit row: {string.Join(" | ", fits)}");
@@ -513,8 +517,8 @@ Test("Hugging Face search finds repos and lists fitting quants", () =>
 
 Test("Download from the Hugging Face tab", () =>
 {
-    // The best-fit row is highlighted and first to offer Download (Q4_K_M, 0.7 GB for this repo).
-    var download = WaitFor(() => window!.FindAllDescendants(cf => cf.ByAutomationId("HfFileDownload")).FirstOrDefault(e => e.IsEnabled),
+    // The first on-screen Download (the file table recycles rows; recycled ones stay in the tree, offscreen).
+    var download = WaitFor(() => window!.FindAllDescendants(cf => cf.ByAutomationId("HfFileDownload")).FirstOrDefault(e => e.IsEnabled && !e.IsOffscreen),
         TimeSpan.FromSeconds(30), "Download in the file table");
     download.AsButton().Invoke();
     WaitFor(() => Find("HfFileInstalled"), TimeSpan.FromMinutes(10), "Installed in the file table");
@@ -528,13 +532,13 @@ Test("Installed tab lists models and deletes one", () =>
     var names = list.FindAllDescendants(cf => cf.ByAutomationId("InstalledName")).Select(e => e.Name).ToList();
     Log($"   installed: {string.Join(" | ", names)}");
     Shot("07-installed");
-    var target = list.FindAllDescendants(cf => cf.ByAutomationId("InstalledName")).First(e => e.Name.StartsWith("LFM2.5-1.2B-Instruct", StringComparison.OrdinalIgnoreCase) && e.Name.Contains("Q4_K_M"));
+    var target = list.FindAllDescendants(cf => cf.ByAutomationId("InstalledName")).First(e => e.Name.StartsWith("LFM2.5-1.2B-Instruct", StringComparison.OrdinalIgnoreCase));
     var row = target;
     while (row.Parent is { } p && row.ControlType != ControlType.ListItem)
         row = p;
     row.FindFirstDescendant(cf => cf.ByAutomationId("DeleteInstalledButton"))!.AsButton().Invoke();
     WaitUntil(() => list.FindAllDescendants(cf => cf.ByAutomationId("InstalledName")).Length == names.Count - 1, TimeSpan.FromSeconds(10), "model removed");
-    var folder = Directory.EnumerateDirectories(Path.Combine(dataDir, "models")).Any(d => d.Contains("lfm2.5-1.2b-instruct-gguf__q4_k_m"));
+    var folder = Directory.EnumerateDirectories(Path.Combine(dataDir, "models")).Any(d => d.Contains("lfm2.5-1.2b-instruct-gguf__"));
     Check(!folder, "model folder still on disk");
 });
 
