@@ -51,7 +51,8 @@ public sealed partial class StudioViewModel : ObservableObject
     }
 
     /// <summary>Snapdragon PCs (Windows on Arm with a Hexagon NPU) generate on the NPU, since ComfyUI has no GPU backend there.</summary>
-    public static bool UsesNpu => !ComfyService.IsSupported && SdNpuService.IsSupported;
+    public static bool UsesNpu => UsesNpuOnce.Value;
+    private static readonly Lazy<bool> UsesNpuOnce = new(() => !ComfyService.IsSupported && SdNpuService.IsSupported);
 
     public IReadOnlyList<ComfyWorkflow> Workflows => UsesNpu ? ComfyWorkflow.NpuWorkflows : ComfyWorkflow.All;
     /// <summary>The NPU models are compiled for one size: 512 x 512 images, and 512 x 320 (16:10) or 768 x 512 (3:2) video.</summary>
