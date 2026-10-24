@@ -11,7 +11,7 @@ struct ApiEndpoint: Identifiable {
 
 /// The OpenAI endpoints beyond chat, as listed on the design's Local API page and served by the Windows app
 /// (core/LLMHub.Core/Services/LocalApiServer.Media.cs): /v1/responses (any chat model), /v1/embeddings
-/// (EmbeddingGemma), /v1/audio/transcriptions (Whisper), /v1/audio/speech (Supertonic) and /v1/images/generations
+/// (EmbeddingGemma 2, with image and audio inputs), /v1/audio/transcriptions (Whisper), /v1/audio/speech (Supertonic) and /v1/images/generations
 /// (ComfyUI). Each one uses the same engine the app itself uses for that feature.
 extension LocalApiServer {
     /// Every route this server answers, in the order the design lists them.
@@ -19,7 +19,7 @@ extension LocalApiServer {
         [
             ApiEndpoint(method: "POST", path: "/v1/chat/completions", servedBy: L.s("ApiChatFeatures"), anthropic: false),
             ApiEndpoint(method: "POST", path: "/v1/responses", servedBy: "", anthropic: false),
-            ApiEndpoint(method: "POST", path: "/v1/embeddings", servedBy: "EmbeddingGemma", anthropic: false),
+            ApiEndpoint(method: "POST", path: "/v1/embeddings", servedBy: "EmbeddingGemma 2", anthropic: false),
             ApiEndpoint(method: "POST", path: "/v1/audio/transcriptions", servedBy: "Whisper", anthropic: false),
             ApiEndpoint(method: "POST", path: "/v1/audio/speech", servedBy: "Supertonic", anthropic: false),
             ApiEndpoint(method: "POST", path: "/v1/images/generations", servedBy: "ComfyUI", anthropic: false),
@@ -125,13 +125,21 @@ extension LocalApiServer {
 
     // MARK: /v1/embeddings
 
-    /// Embeddings from an installed embedding model (EmbeddingGemma), on its own small llama-server.
+    /// Embeddings from an installed embedding model: text on EmbeddingGemma 2's own small llama-server, or images and
+    /// audio (and text in the same space) on EmbeddingGemma 2 440M/740M through LiteRT-LM.
     func embeddings(_ req: HttpRequest, _ out: HttpResponder) async {
         guard var body = (try? JSONSerialization.jsonObject(with: req.body)) as? [String: Any] else {
             await out.json(400, Self.errorBody("invalid_request_error", "Body must be JSON"))
             return
         }
         let requested = body["model"] as? String ?? ""
+        let mediaModels = app.modelStore.installed.filter { $0.isEmbedding && $0.format == "litertlm" }
+            .sorted { ($0.tags.contains("audio") ? 0 : 1) < ($1.tags.contains("audio") ? 0 : 1) }
+        let hasMedia = (body["input"] as? [Any])?.contains { (($0 as? [String: Any])?["type"] as? String).map { $0 == "image_url" || $0 == "input_audio" } == true } == true
+        if hasMedia || mediaModels.contains(where: { apiName($0) == requested || $0.id == requested || $0.catalogId == requested }) {
+            await mediaEmbeddings(req, out, body: body, requested: requested, models: mediaModels)
+            return
+        }
         // EmbeddingGemma 2 first when it is installed alongside the original EmbeddingGemma.
         let embedders = app.modelStore.installed.filter { $0.isEmbedding && $0.format == "gguf" }
             .sorted { ($0.catalogId == "embeddinggemma-2" ? 0 : 1) < ($1.catalogId == "embeddinggemma-2" ? 0 : 1) }
@@ -164,6 +172,96 @@ extension LocalApiServer {
             Log.error("Local API /v1/embeddings failed", error)
             await out.json(500, Self.errorBody("api_error", error.localizedDescription))
             record(req, name, "500")
+        }
+    }
+
+    /// /v1/embeddings with OpenAI-style content parts: strings or {"type":"text"}, {"type":"image_url","image_url":{"url":
+    /// "data:image/png;base64,…"}} and {"type":"input_audio","input_audio":{"data":"…","format":"wav"}}. One vector per
+    /// input item, in the same space, so a text can be compared with photos and recordings. Only data URLs: nothing is fetched.
+    private func mediaEmbeddings(_ req: HttpRequest, _ out: HttpResponder, body: [String: Any], requested: String, models: [InstalledModel]) async {
+        let items: [Any] = switch body["input"] {
+        case let list as [Any]: list
+        case let single?: [single]
+        case nil: []
+        }
+        let needsAudio = items.contains { ($0 as? [String: Any])?["type"] as? String == "input_audio" }
+        guard let model = models.first(where: { apiName($0) == requested || $0.id == requested || $0.catalogId == requested })
+                ?? models.first(where: { !needsAudio || $0.tags.contains("audio") }),
+              !needsAudio || model.tags.contains("audio") else {
+            await out.json(404, Self.errorBody("not_found_error", needsAudio
+                ? "Audio embeddings need EmbeddingGemma 2 740M. Download it in Settings › Models."
+                : "Image embeddings need EmbeddingGemma 2 440M or 740M. Download one in Settings › Models."))
+            record(req, requested, "404")
+            return
+        }
+        let name = apiName(model)
+        do {
+            let embedder = try await app.mediaEmbedder.get(model)
+            markApiUse()
+            var data: [[String: Any]] = []
+            for (i, item) in items.enumerated() {
+                let part: EmbedPart
+                switch await Self.apiPart(item) {
+                case .success(let value): part = value
+                case .failure(let error):
+                    await out.json(400, Self.errorBody("invalid_request_error", "input[\(i)]: \(error.message)"))
+                    record(req, name, "400")
+                    return
+                }
+                guard let vector = await embedder.embed([part]) else { throw ComfyService.error("input[\(i)] could not be embedded") }
+                data.append(["object": "embedding", "index": i, "embedding": vector.map(Double.init)])
+            }
+            await out.json(200, ["object": "list", "data": data, "model": name, "usage": ["prompt_tokens": 0, "total_tokens": 0]])
+            record(req, name, "200")
+        } catch {
+            Log.error("Local API /v1/embeddings (media) failed", error)
+            await out.json(500, Self.errorBody("api_error", error.localizedDescription))
+            record(req, name, "500")
+        }
+    }
+
+    struct PartError: Error {
+        let message: String
+    }
+
+    /// One input item as embedder input: text as is (the client adds task prompts), photos scaled, audio as 16 kHz WAV.
+    static func apiPart(_ item: Any) async -> Result<EmbedPart, PartError> {
+        if let text = item as? String { return .success(.text(text)) }
+        guard let part = item as? [String: Any] else { return .failure(PartError(message: "expected a string or a content part")) }
+        switch part["type"] as? String {
+        case "text":
+            return .success(.text(part["text"] as? String ?? ""))
+        case "image_url":
+            let url = (part["image_url"] as? [String: Any])?["url"] as? String ?? part["image_url"] as? String ?? ""
+            guard url.lowercased().hasPrefix("data:image/"), let comma = url.firstIndex(of: ",") else {
+                return .failure(PartError(message: "images must be data URLs (data:image/…;base64,…)"))
+            }
+            let type = url[url.index(url.startIndex, offsetBy: 11)...].prefix { $0 != ";" && $0 != "," }.lowercased()
+            let ext = type == "jpeg" || type == "jpg" ? "jpg" : type
+            guard let bytes = Data(base64Encoded: String(url[url.index(after: comma)...]), options: .ignoreUnknownCharacters) else {
+                return .failure(PartError(message: "the image is not valid base64"))
+            }
+            let path = FileManager.default.temporaryDirectory.appendingPathComponent("llmhub-api-\(UUID().uuidString).\(ext)")
+            defer { try? FileManager.default.removeItem(at: path) }
+            guard (try? bytes.write(to: path)) != nil,
+                  let jpeg = await Task.detached(operation: { MediaDecoders.image(path, maxEdge: 512) }).value else {
+                return .failure(PartError(message: "the image could not be read"))
+            }
+            return .success(.image(jpeg))
+        case "input_audio":
+            let audio = part["input_audio"] as? [String: Any]
+            let format = (audio?["format"] as? String ?? "wav").filter { $0.isLetter || $0.isNumber }
+            guard let bytes = Data(base64Encoded: audio?["data"] as? String ?? "", options: .ignoreUnknownCharacters) else {
+                return .failure(PartError(message: "the audio is not valid base64"))
+            }
+            let path = FileManager.default.temporaryDirectory.appendingPathComponent("llmhub-api-\(UUID().uuidString).\(format)")
+            defer { try? FileManager.default.removeItem(at: path) }
+            guard (try? bytes.write(to: path)) != nil, let samples = await MediaDecoders.audio(path, maxSeconds: 30) else {
+                return .failure(PartError(message: "the \(format) audio could not be decoded"))
+            }
+            return .success(.audio(MediaDecoders.wav(samples, from: 0, to: samples.count)))
+        default:
+            return .failure(PartError(message: "unknown content part type"))
         }
     }
 

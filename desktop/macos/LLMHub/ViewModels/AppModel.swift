@@ -24,6 +24,8 @@ final class AppModel {
     /// EmbeddingGemma for /v1/embeddings, on its own small llama-server next to the chat model.
     let embeddings = LlamaEngine(embeddings: true)
     let engines: EngineHub
+    /// EmbeddingGemma 2 (.litertlm) for photo and audio embeddings: Studio › Search and /v1/embeddings media inputs.
+    let mediaEmbedder = MediaEmbedderHost()
     let chatStore = ChatStore()
     let chat: ChatViewModel
     let models: ModelsViewModel

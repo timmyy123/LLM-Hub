@@ -12,10 +12,17 @@ extension DevTools {
     ///   one per length: `CLIPTEST <model> <s>s seed <n> in <s>s (load, encode, sample, decode) peak <p> rms <r>: <path>`
     /// - `--musiclive <seconds>` plays the live jam muted, changes a style halfway, records and exports: `MUSICLIVE …`
     /// - `--voicetest "<text>"` speaks through Studio › Voice (SpeechService): `VOICETEST <voice>: <status>; file <path>`
-    /// - `--studiomode image|video|music|voice` picks the Studio tab for captures.
+    /// - `--searchtest photos|audio --folder <dir> [--model embeddinggemma-2-440m] --queries "a red car|/path/photo.jpg"`
+    ///   installs the EmbeddingGemma 2 build if needed, indexes the folder in Studio › Search and logs the best matches for
+    ///   each query (text, or a photo path for photo-to-photo): `SEARCHTEST "<query>" in <s>s: name score | …`
+    /// - `--studiomode image|video|music|voice|search` picks the Studio tab for captures.
     static func studioTest(_ args: [String]) async {
         let studio = AppModel.shared.studio
         if let mode = value("--studiomode", args) { studio.mode = mode }
+        if let mode = value("--searchtest", args), let folder = value("--folder", args) {
+            await runSearch(mode, folder: folder, catalogId: value("--model", args) ?? "embeddinggemma-2-740m",
+                            queries: (value("--queries", args) ?? "").split(separator: "|").map(String.init))
+        }
         if let id = value("--studiotest", args) {
             await runStudio(id, prompt: value("--prompt", args) ?? "a cozy cafe interior in morning light, film photo", image: value("--image", args))
         }
@@ -37,6 +44,46 @@ extension DevTools {
             studio.speak()
             while studio.isSpeaking { try? await Task.sleep(for: .milliseconds(200)) }
             Log.info("VOICETEST \(studio.voice): \(studio.voiceStatus); file \(studio.lastSpeech?.path ?? "-")")
+        }
+    }
+
+    private static func runSearch(_ mode: String, folder: String, catalogId: String, queries: [String]) async {
+        let app = AppModel.shared
+        do {
+            guard let model = app.catalog.models.first(where: { $0.id == catalogId }),
+                  let source = model.sources.first(where: { $0.format == "litertlm" }) else { throw ComfyService.error("\(catalogId) is not in the catalog") }
+            let variants = try await app.hub.liteRtVariants(source.repo)
+            Log.info("SEARCHTEST variants: \(variants.map { "\($0.quant) \($0.files[0].fileName) \(Fmt.bytes($0.totalBytes))" }.joined(separator: ", "))")
+            let variant = variants[0]
+            if app.modelStore.find(variant.modelId) == nil {
+                let clock = Date()
+                app.downloads.start(variant, name: model.name, catalogId: model.id, tags: model.tags, contextLength: model.contextLength)
+                while app.downloads.find(variant.modelId) != nil { try await Task.sleep(for: .seconds(1)) }
+                Log.info("SEARCHTEST downloaded \(variant.modelId) (\(Fmt.bytes(variant.totalBytes))) in \(Int(Date().timeIntervalSince(clock)))s")
+            }
+            let search = app.studio.search
+            app.studio.mode = "search"
+            search.mode = mode
+            search.selectedModelId = variant.modelId
+            search.setFolder(folder)
+            var clock = Date()
+            await search.index()
+            Log.info("SEARCHTEST index \(mode) with \(search.selectedModel?.id ?? "-") on \(app.mediaEmbedder.loaded?.backend ?? "-") in \(String(format: "%.1f", Date().timeIntervalSince(clock)))s: \(search.status) (\(search.indexedText))")
+            for query in queries {
+                clock = Date()
+                if FileManager.default.fileExists(atPath: query) {
+                    await search.searchByPhoto(URL(fileURLWithPath: query))
+                } else {
+                    search.query = query
+                    await search.search()
+                }
+                let top = mode == "photos"
+                    ? search.photos.prefix(5).map { "\($0.name) \($0.scoreText)" }
+                    : search.audio.prefix(5).map { "\($0.name) \($0.scoreText) @\($0.moments.map(\.label).joined(separator: "/"))" }
+                Log.info("SEARCHTEST \"\((query as NSString).lastPathComponent)\" in \(String(format: "%.2f", Date().timeIntervalSince(clock)))s: \(top.joined(separator: " | "))")
+            }
+        } catch {
+            Log.error("SEARCHTEST failed", error)
         }
     }
 

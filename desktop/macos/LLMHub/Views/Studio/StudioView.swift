@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Studio: mode tabs (Image, Video, Music, Voice) and the engine status, then the mode's page.
+/// Studio: mode tabs (Image, Video, Music, Voice, Search) and the engine status, then the mode's page.
 struct StudioView: View {
     @Environment(AppModel.self) private var app
 
@@ -13,6 +13,7 @@ struct StudioView: View {
                 switch studio.mode {
                 case "music": MusicView()
                 case "voice": VoiceView()
+                case "search": SearchView()
                 default: ImageStudioView()
                 }
             }
@@ -34,6 +35,7 @@ private struct StudioHeader: View {
                     tab("video", L.s("StudioVideo"))
                     tab("music", L.s("StudioMusic"))
                     tab("voice", L.s("StudioVoice"))
+                    tab("search", L.s("StudioSearch"))
                 }
             }
             .accessibilityIdentifier("StudioTabs")
