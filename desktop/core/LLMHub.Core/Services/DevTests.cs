@@ -10,18 +10,29 @@ public static class DevTests
     /// Runs one Agent turn in "ask before edits" mode, approving each permission request (and logging it), so the whole
     /// Claude Code → bridge → MCP permission → model path is exercised.
     /// </summary>
-    public static async Task AgentAsync(string folder, string prompt, string? modelId)
+    public static async Task AgentAsync(string folder, string prompt, string? modelId, string engine = "claude", string? followUp = null)
     {
         try
         {
             var agent = Ioc.Agent;
-            if (!agent.IsClaudeInstalled)
+            if (engine == "openclaw" && !Agent.OpenClawService.IsInstalled)
+            {
+                var install = System.Diagnostics.Stopwatch.StartNew();
+                Ioc.OpenClaw.PropertyChanged += (_, e) =>
+                {
+                    if (e.PropertyName == nameof(Agent.OpenClawService.Status) && Ioc.OpenClaw.Status.Length > 0)
+                        Log.Info($"AGENTTEST {Ioc.OpenClaw.Status}");
+                };
+                await Ioc.OpenClaw.InstallAsync(CancellationToken.None);
+                Log.Info($"AGENTTEST OpenClaw installed in {install.Elapsed.TotalSeconds:F0}s");
+            }
+            else if (engine != "openclaw" && !agent.IsClaudeInstalled)
             {
                 await agent.InstallClaudeAsync();
                 Log.Info($"AGENTTEST install: {agent.InstallStatus} installed={agent.IsClaudeInstalled}");
             }
             var model = Ioc.Models.Installed.FirstOrDefault(m => m.Id == modelId || m.CatalogId == modelId) ?? Ioc.Models.Installed.First(m => m.Format == "gguf");
-            var session = agent.CreateSession(folder, model.Id, "default");
+            var session = agent.CreateSession(folder, model.Id, "default", engine);
             UiThread.Run(() => Ioc.AgentVm.Selected = session);
             session.PropertyChanged += (_, e) =>
             {
@@ -33,6 +44,11 @@ public static class DevTests
             };
             var clock = System.Diagnostics.Stopwatch.StartNew();
             await agent.SendAsync(session, prompt);
+            if (followUp is not null)
+            {
+                Log.Info($"AGENTTEST first turn in {clock.Elapsed.TotalSeconds:F1}s status={session.Status}");
+                await agent.SendAsync(session, followUp);
+            }
             foreach (var item in session.Items)
                 Log.Info($"AGENTTEST {item.Kind} {item.Detail} {item.Title[..Math.Min(item.Title.Length, 160)].Replace('\n', ' ')} {item.Meta}");
             foreach (var task in session.Tasks)

@@ -31,6 +31,9 @@ public sealed partial class AgentViewModel : ObservableObject
         SideTab = "diff";
         Modes = [new("default", Loc.S("AgentModeAsk")), new("acceptEdits", Loc.S("AgentModeAuto")), new("plan", Loc.S("AgentModePlan"))];
         Mode = Modes[0];
+        EngineChoice = Engines.FirstOrDefault(e => e.Mode == AppSettings.Current.AgentEngine) ?? Engines[0];
+        _agent.PropertyChanged += (_, _) => OnEngineStateChanged();
+        Ioc.OpenClaw.PropertyChanged += (_, _) => OnEngineStateChanged();
         _agent.Sessions.CollectionChanged += (_, _) => RebuildGroups();
         RebuildGroups();
         SelectedModel = Models.FirstOrDefault(m => m.Id == AppSettings.Current.AgentModelId)
@@ -42,11 +45,15 @@ public sealed partial class AgentViewModel : ObservableObject
     public ObservableCollection<AgentGroup> Groups { get; } = [];
     public ObservableCollection<InstalledModel> Models => Ioc.Models.ChatModels;
     public IReadOnlyList<AgentModeOption> Modes { get; }
+    /// <summary>The agent engines: Claude Code, or OpenClaw (installed by the app, Chinese-origin extensions removed).</summary>
+    public IReadOnlyList<AgentModeOption> Engines { get; } = [new("claude", "Claude Code"), new("openclaw", "OpenClaw")];
     public ObservableCollection<string> Files { get; } = [];
 
     [ObservableProperty] public partial AgentSession? Selected { get; set; }
     [ObservableProperty] public partial string Draft { get; set; }
     [ObservableProperty] public partial AgentModeOption Mode { get; set; }
+    /// <summary>The engine new sessions use; a session keeps the engine it started with.</summary>
+    [ObservableProperty] public partial AgentModeOption EngineChoice { get; set; }
     [ObservableProperty] public partial InstalledModel? SelectedModel { get; set; }
     [ObservableProperty] public partial FileChange? SelectedChange { get; set; }
     /// <summary>diff, terminal, files or preview.</summary>
@@ -56,7 +63,26 @@ public sealed partial class AgentViewModel : ObservableObject
     [ObservableProperty] public partial string Notice { get; set; }
 
     public bool HasSession => Selected is not null;
-    public bool IsClaudeInstalled => _agent.IsClaudeInstalled;
+    public bool IsEngineInstalled => EngineChoice.Mode == "openclaw" ? OpenClawService.IsInstalled : _agent.IsClaudeInstalled;
+    public bool IsEngineInstalling => EngineChoice.Mode == "openclaw" ? Ioc.OpenClaw.IsInstalling : _agent.IsInstalling;
+    public string InstallStatus => EngineChoice.Mode == "openclaw" ? Ioc.OpenClaw.Status : _agent.InstallStatus;
+    /// <summary>What setting up the chosen engine does, on the install card.</summary>
+    public string InstallHelp => Loc.S(EngineChoice.Mode == "openclaw" ? "OpenClawInstallHelp" : "AgentInstallHelp");
+
+    private void OnEngineStateChanged() => UiThread.Post(() =>
+    {
+        OnPropertyChanged(nameof(IsEngineInstalled));
+        OnPropertyChanged(nameof(IsEngineInstalling));
+        OnPropertyChanged(nameof(InstallStatus));
+    });
+
+    partial void OnEngineChoiceChanged(AgentModeOption value)
+    {
+        AppSettings.Current.AgentEngine = value.Mode;
+        AppSettings.Save();
+        OnPropertyChanged(nameof(InstallHelp));
+        OnEngineStateChanged();
+    }
     public AgentService Engine => _agent;
     /// <summary>"via llama.cpp · Gemma 4 26B" on the engine card.</summary>
     public string EngineLine => SelectedModel is { } m ? $"via {(m.Format == "litertlm" ? "LiteRT-LM" : "llama.cpp")} · {m.Name}" : Loc.S("AgentNoModel");
@@ -109,7 +135,7 @@ public sealed partial class AgentViewModel : ObservableObject
             Notice = Loc.S("AgentNoModel");
             return;
         }
-        Selected = _agent.CreateSession(folder, SelectedModel.Id, Mode.Mode);
+        Selected = _agent.CreateSession(folder, SelectedModel.Id, Mode.Mode, EngineChoice.Mode);
     }
 
     [RelayCommand]
@@ -118,9 +144,9 @@ public sealed partial class AgentViewModel : ObservableObject
         var text = Draft.Trim();
         if (Selected is not { } session || text.Length == 0 || session.IsWorking)
             return;
-        if (!_agent.IsClaudeInstalled)
+        if (session.Info.Engine == "openclaw" ? !OpenClawService.IsInstalled : !_agent.IsClaudeInstalled)
         {
-            Notice = Loc.S("AgentNotInstalled");
+            Notice = Loc.S(session.Info.Engine == "openclaw" ? "OpenClawNotInstalled" : "AgentNotInstalled");
             return;
         }
         Draft = "";
@@ -198,10 +224,22 @@ public sealed partial class AgentViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task InstallClaudeAsync()
+    private async Task InstallEngineAsync()
     {
-        await _agent.InstallClaudeAsync();
-        OnPropertyChanged(nameof(IsClaudeInstalled));
+        if (EngineChoice.Mode != "openclaw")
+        {
+            await _agent.InstallClaudeAsync();
+            return;
+        }
+        try
+        {
+            await Ioc.OpenClaw.InstallAsync(CancellationToken.None);
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            Notice = Loc.F("ErrorPrefix", e.Message);
+        }
+        OnEngineStateChanged();
     }
 
     /// <summary>Project files for the Files tab (skipping dependency and build folders).</summary>

@@ -41,6 +41,7 @@ internal sealed class AgentPage
     private Gtk.Button _openPreview = null!;
     private readonly Gtk.Entry _commitMessage = Gtk.Entry.New();
     private readonly Gtk.Label _installStatus = Ui.Label("", "caption", "dim-label");
+    private readonly Gtk.Label _installHelp = Ui.Label("", "dim-label");
     private readonly Gtk.Widget _installCard;
     private AgentSession? _watched;
     private bool _syncingChanges;
@@ -60,10 +61,16 @@ internal sealed class AgentPage
         emptyBody.SetJustify(Gtk.Justification.Center);
         var pick = Ui.Button(Loc.S("AgentPickFolder"), () => PickFolderAndStart(_main.Window), "pill", "suggested-action").Named("PickFolderButton");
         pick.SetHalign(Gtk.Align.Center);
-        var install = Ui.Button(Loc.S("AgentInstall"), () => _vm.InstallClaudeCommand.Execute(null)).Named("InstallClaudeButton");
-        var card = Ui.VBox(10, Ui.Label(Loc.S("AgentEngine"), "heading"), Ui.Label(Loc.S("AgentInstallHelp"), "dim-label"), Ui.HBox(10, install, _installStatus));
+        var install = Ui.Button(Loc.S("AgentInstall"), () => _vm.InstallEngineCommand.Execute(null)).Named("InstallClaudeButton");
+        var engines = new Picker(_vm.Engines.Select(e => e.Label), i => _vm.EngineChoice = _vm.Engines[i]);
+        engines.DropDown.Named("AgentEnginePicker");
+        engines.Select(_vm.Engines.ToList().IndexOf(_vm.EngineChoice));
+        var engineTitle = Ui.Label(Loc.S("AgentEngine"), "heading");
+        engineTitle.SetHexpand(true);
+        _installHelp.SetWrap(true);
+        _installCard = Ui.VBox(10, _installHelp, Ui.HBox(10, install, _installStatus));
+        var card = Ui.VBox(10, Ui.HBox(12, engineTitle, engines.DropDown), _installCard);
         card.AddCssClass("tasks-card");
-        _installCard = card;
         var inner = Ui.VBox(16, emptyTitle, emptyBody, pick, card);
         inner.SetSizeRequest(520, -1);
         inner.SetValign(Gtk.Align.Center);
@@ -157,19 +164,24 @@ internal sealed class AgentPage
         _root.AddNamed(session, "session");
 
         Ui.Watch(_vm, OnVmChanged);
-        Ui.Watch(_vm.Engine, p =>
+        void SyncInstall()
         {
-            if (p == nameof(AgentService.InstallStatus))
-                _installStatus.SetText(_vm.Engine.InstallStatus);
-            _installCard.SetVisible(!_vm.IsClaudeInstalled);
+            _installStatus.SetText(_vm.InstallStatus);
+            _installHelp.SetText(_vm.InstallHelp);
+            _installCard.SetVisible(!_vm.IsEngineInstalled);
+        }
+        Ui.Watch(_vm, p =>
+        {
+            if (p is nameof(AgentViewModel.InstallStatus) or nameof(AgentViewModel.IsEngineInstalled) or nameof(AgentViewModel.InstallHelp))
+                SyncInstall();
         });
+        SyncInstall();
         _vm.Models.CollectionChanged += (_, _) => UiThread.Run(SyncModels);
         _vm.Files.CollectionChanged += (_, _) => UiThread.Run(RebuildFiles);
         SyncModels();
         _modes.Select(_vm.Modes.ToList().IndexOf(_vm.Mode));
         Watch(_vm.Selected);
         UpdateState();
-        _installCard.SetVisible(!_vm.IsClaudeInstalled);
     }
 
     private Gtk.Widget BuildSidePanel()

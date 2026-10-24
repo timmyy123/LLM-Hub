@@ -34,13 +34,25 @@
             <TextBlock Text="{x:Bind services:Loc.S('AgentEmptyBody')}" Foreground="{ThemeResource TextMutedBrush}" TextAlignment="Center" TextWrapping="Wrap" />
             <Button x:Name="PickFolderButton" HorizontalAlignment="Center" Style="{StaticResource PrimaryPillButtonStyle}" Click="OnPickFolder"
                     Content="{x:Bind services:Loc.S('AgentPickFolder')}" />
-            <Border Style="{StaticResource CardStyle}" Visibility="{x:Bind local:Ui.Hide(ViewModel.IsClaudeInstalled), Mode=OneWay}">
+            <!-- Engine for new sessions: Claude Code, or OpenClaw installed by the app. -->
+            <Border Style="{StaticResource CardStyle}">
                 <StackPanel Spacing="10">
-                    <TextBlock Text="{x:Bind services:Loc.S('AgentEngine')}" FontWeight="SemiBold" />
-                    <TextBlock Text="{x:Bind services:Loc.S('AgentInstallHelp')}" Style="{StaticResource MutedTextStyle}" />
-                    <StackPanel Orientation="Horizontal" Spacing="10">
-                        <Button x:Name="InstallClaudeButton" Content="{x:Bind services:Loc.S('AgentInstall')}" Command="{x:Bind ViewModel.InstallClaudeCommand}" />
-                        <TextBlock Text="{x:Bind ViewModel.Engine.InstallStatus, Mode=OneWay}" Style="{StaticResource MutedTextStyle}" VerticalAlignment="Center" />
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="{x:Bind services:Loc.S('AgentEngine')}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        <ComboBox x:Name="AgentEnginePicker" Grid.Column="1" MinWidth="160" ItemsSource="{x:Bind ViewModel.Engines}" SelectedItem="{x:Bind ViewModel.EngineChoice, Mode=TwoWay}" />
+                    </Grid>
+                    <StackPanel Spacing="10" Visibility="{x:Bind local:Ui.Hide(ViewModel.IsEngineInstalled), Mode=OneWay}">
+                        <TextBlock Text="{x:Bind ViewModel.InstallHelp, Mode=OneWay}" Style="{StaticResource MutedTextStyle}" TextWrapping="Wrap" />
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <Button x:Name="InstallClaudeButton" Content="{x:Bind services:Loc.S('AgentInstall')}" Command="{x:Bind ViewModel.InstallEngineCommand}"
+                                    IsEnabled="{x:Bind local:Ui.Not(ViewModel.IsEngineInstalling), Mode=OneWay}" />
+                            <TextBlock Text="{x:Bind ViewModel.InstallStatus, Mode=OneWay}" Style="{StaticResource MutedTextStyle}" VerticalAlignment="Center" TextWrapping="Wrap"
+                                       AutomationProperties.AutomationId="AgentInstallStatus" />
+                        </StackPanel>
                     </StackPanel>
                 </StackPanel>
             </Border>

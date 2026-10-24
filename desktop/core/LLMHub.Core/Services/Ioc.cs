@@ -21,6 +21,7 @@ public static class Ioc
     /// <summary>Private API instance the Agent's Claude Code talks to (see <see cref="LocalApiServer(bool)"/>).</summary>
     public static LocalApiServer AgentBridge { get; } = new(agentBridge: true);
     public static Agent.AgentService Agent { get; } = new();
+    public static Agent.OpenClawService OpenClaw { get; } = new();
     public static Studio.ComfyService Comfy { get; } = new();
     public static Studio.MagentaService Magenta { get; } = new();
     /// <summary>Studio images on the Snapdragon NPU (Windows on Arm), where ComfyUI has no GPU backend.</summary>

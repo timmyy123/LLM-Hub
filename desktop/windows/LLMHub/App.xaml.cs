@@ -31,6 +31,7 @@ public partial class App : Application
             Ioc.Embeddings.Stop();
             Ioc.Speech.Stop();
             Ioc.Comfy.Stop();
+            Ioc.OpenClaw.StopGateway();
             Ioc.SdNpu.Unload();
         };
         Window.Activate();

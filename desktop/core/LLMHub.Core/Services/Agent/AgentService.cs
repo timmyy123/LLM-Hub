@@ -95,9 +95,9 @@ public sealed partial class AgentService : ObservableObject
 
     // ---------------------------------------------------------------- sessions
 
-    public AgentSession CreateSession(string folder, string modelId, string mode)
+    public AgentSession CreateSession(string folder, string modelId, string mode, string engine = "claude")
     {
-        var session = new AgentSession(new AgentSessionInfo { Folder = folder, ModelId = modelId, Mode = mode, Title = Loc.S("NewSession") });
+        var session = new AgentSession(new AgentSessionInfo { Folder = folder, ModelId = modelId, Mode = mode, Engine = engine, Title = Loc.S("NewSession") });
         Sessions.Insert(0, session);
         UpdateBranch(session);
         SaveInfos();
@@ -123,6 +123,11 @@ public sealed partial class AgentService : ObservableObject
     {
         if (session.IsWorking || text.Trim().Length == 0)
             return;
+        if (session.Info.Engine == "openclaw")
+        {
+            await SendOpenClawAsync(session, text);
+            return;
+        }
         var claude = FindClaude() ?? throw new InvalidOperationException(Loc.S("AgentNotInstalled"));
         var model = Ioc.Models.Installed.FirstOrDefault(m => m.Id == session.Info.ModelId)
                     ?? throw new InvalidOperationException(Loc.S("AgentNoModel"));
@@ -252,6 +257,8 @@ public sealed partial class AgentService : ObservableObject
     {
         if (session.Pending is { } pending)
             pending.Decision.TrySetResult(false);
+        if (_acp.TryGetValue(session.Id, out var acp))
+            acp.Cancel();
         if (_running.TryGetValue(session.Id, out var process) && !process.HasExited)
             process.Kill(entireProcessTree: true);
     }

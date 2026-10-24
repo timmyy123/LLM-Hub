@@ -90,6 +90,8 @@ public sealed class AgentSessionInfo
     public string ModelId { get; set; } = "";
     /// <summary>default (ask before edits and commands), acceptEdits, or plan.</summary>
     public string Mode { get; set; } = "default";
+    /// <summary>"claude" (Claude Code) or "openclaw"; sessions keep the engine they started with.</summary>
+    public string Engine { get; set; } = "claude";
     public bool Started { get; set; }
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.Now;
     public List<string> AllowedTools { get; set; } = [];

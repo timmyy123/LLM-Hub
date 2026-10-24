@@ -417,7 +417,14 @@
   "NpuLoadingVideo": "Loading LTX-Video on the NPU…",
   "NpuDecodingVideo": "Decoding frames…",
   "NpuEncodingVideo": "Saving the video…",
-  "NpuSettingsHelp": "Images and video are generated on the Snapdragon NPU. Each model downloads the first time you use it."
+  "NpuSettingsHelp": "Images and video are generated on the Snapdragon NPU. Each model downloads the first time you use it.",
+  "OpenClawInstallHelp": "OpenClaw runs on your local model through LLM Hub. Setting it up downloads Node.js and OpenClaw (about 800 MB); extensions from Chinese companies are left out.",
+  "OpenClawDownloadingNode": "Downloading Node.js ({0}%)",
+  "OpenClawInstallingPackage": "Installing OpenClaw…",
+  "OpenClawStarting": "Starting OpenClaw…",
+  "OpenClawNotInstalled": "Set up OpenClaw first, from this page or Settings › Agent.",
+  "OpenClawStopped": "OpenClaw stopped.",
+  "AgentMaxTokens": "The reply hit the model's length limit."
  },
  "es-ES": {
   "NewChat": "Nuevo chat",
@@ -837,7 +844,14 @@
   "NpuLoadingVideo": "Cargando LTX-Video en la NPU…",
   "NpuDecodingVideo": "Decodificando fotogramas…",
   "NpuEncodingVideo": "Guardando el vídeo…",
-  "NpuSettingsHelp": "Las imágenes y los vídeos se generan en la NPU Snapdragon. Cada modelo se descarga la primera vez que lo usas."
+  "NpuSettingsHelp": "Las imágenes y los vídeos se generan en la NPU Snapdragon. Cada modelo se descarga la primera vez que lo usas.",
+  "OpenClawInstallHelp": "OpenClaw funciona con tu modelo local a través de LLM Hub. Al configurarlo se descargan Node.js y OpenClaw (unos 800 MB); se dejan fuera las extensiones de empresas chinas.",
+  "OpenClawDownloadingNode": "Descargando Node.js ({0} %)",
+  "OpenClawInstallingPackage": "Instalando OpenClaw…",
+  "OpenClawStarting": "Iniciando OpenClaw…",
+  "OpenClawNotInstalled": "Configura OpenClaw primero, desde esta página o en Ajustes › Agente.",
+  "OpenClawStopped": "OpenClaw se detuvo.",
+  "AgentMaxTokens": "La respuesta llegó al límite de longitud del modelo."
  },
  "pt-BR": {
   "NewChat": "Nova conversa",
@@ -1257,7 +1271,14 @@
   "NpuLoadingVideo": "Carregando o LTX-Video na NPU…",
   "NpuDecodingVideo": "Decodificando quadros…",
   "NpuEncodingVideo": "Salvando o vídeo…",
-  "NpuSettingsHelp": "Imagens e vídeos são gerados na NPU Snapdragon. Cada modelo é baixado na primeira vez que você o usa."
+  "NpuSettingsHelp": "Imagens e vídeos são gerados na NPU Snapdragon. Cada modelo é baixado na primeira vez que você o usa.",
+  "OpenClawInstallHelp": "O OpenClaw roda no seu modelo local pelo LLM Hub. A configuração baixa o Node.js e o OpenClaw (cerca de 800 MB); extensões de empresas chinesas ficam de fora.",
+  "OpenClawDownloadingNode": "Baixando o Node.js ({0}%)",
+  "OpenClawInstallingPackage": "Instalando o OpenClaw…",
+  "OpenClawStarting": "Iniciando o OpenClaw…",
+  "OpenClawNotInstalled": "Configure o OpenClaw primeiro, nesta página ou em Ajustes › Agente.",
+  "OpenClawStopped": "O OpenClaw parou.",
+  "AgentMaxTokens": "A resposta atingiu o limite de tamanho do modelo."
  },
  "fr-FR": {
   "NewChat": "Nouvelle discussion",
@@ -1677,7 +1698,14 @@
   "NpuLoadingVideo": "Chargement de LTX-Video sur le NPU…",
   "NpuDecodingVideo": "Décodage des images…",
   "NpuEncodingVideo": "Enregistrement de la vidéo…",
-  "NpuSettingsHelp": "Les images et les vidéos sont générées sur le NPU Snapdragon. Chaque modèle se télécharge la première fois que vous l'utilisez."
+  "NpuSettingsHelp": "Les images et les vidéos sont générées sur le NPU Snapdragon. Chaque modèle se télécharge la première fois que vous l'utilisez.",
+  "OpenClawInstallHelp": "OpenClaw fonctionne avec votre modèle local via LLM Hub. L'installation télécharge Node.js et OpenClaw (environ 800 Mo) ; les extensions d'entreprises chinoises sont exclues.",
+  "OpenClawDownloadingNode": "Téléchargement de Node.js ({0} %)",
+  "OpenClawInstallingPackage": "Installation d'OpenClaw…",
+  "OpenClawStarting": "Démarrage d'OpenClaw…",
+  "OpenClawNotInstalled": "Installez d'abord OpenClaw, depuis cette page ou Réglages › Agent.",
+  "OpenClawStopped": "OpenClaw s'est arrêté.",
+  "AgentMaxTokens": "La réponse a atteint la limite de longueur du modèle."
  },
  "de-DE": {
   "NewChat": "Neuer Chat",
@@ -2097,7 +2125,14 @@
   "NpuLoadingVideo": "LTX-Video wird auf die NPU geladen…",
   "NpuDecodingVideo": "Einzelbilder werden dekodiert…",
   "NpuEncodingVideo": "Video wird gespeichert…",
-  "NpuSettingsHelp": "Bilder und Videos entstehen auf der Snapdragon-NPU. Jedes Modell wird bei der ersten Nutzung heruntergeladen."
+  "NpuSettingsHelp": "Bilder und Videos entstehen auf der Snapdragon-NPU. Jedes Modell wird bei der ersten Nutzung heruntergeladen.",
+  "OpenClawInstallHelp": "OpenClaw läuft über LLM Hub mit deinem lokalen Modell. Die Einrichtung lädt Node.js und OpenClaw (etwa 800 MB); Erweiterungen chinesischer Firmen bleiben außen vor.",
+  "OpenClawDownloadingNode": "Node.js wird geladen ({0} %)",
+  "OpenClawInstallingPackage": "OpenClaw wird installiert…",
+  "OpenClawStarting": "OpenClaw wird gestartet…",
+  "OpenClawNotInstalled": "Richte zuerst OpenClaw ein, hier oder unter Einstellungen › Agent.",
+  "OpenClawStopped": "OpenClaw wurde beendet.",
+  "AgentMaxTokens": "Die Antwort hat das Längenlimit des Modells erreicht."
  },
  "it-IT": {
   "NewChat": "Nuova chat",
@@ -2517,7 +2552,14 @@
   "NpuLoadingVideo": "Caricamento di LTX-Video sulla NPU…",
   "NpuDecodingVideo": "Decodifica dei fotogrammi…",
   "NpuEncodingVideo": "Salvataggio del video…",
-  "NpuSettingsHelp": "Immagini e video vengono generati sulla NPU Snapdragon. Ogni modello si scarica al primo utilizzo."
+  "NpuSettingsHelp": "Immagini e video vengono generati sulla NPU Snapdragon. Ogni modello si scarica al primo utilizzo.",
+  "OpenClawInstallHelp": "OpenClaw funziona con il tuo modello locale tramite LLM Hub. La configurazione scarica Node.js e OpenClaw (circa 800 MB); le estensioni di aziende cinesi sono escluse.",
+  "OpenClawDownloadingNode": "Download di Node.js ({0}%)",
+  "OpenClawInstallingPackage": "Installazione di OpenClaw…",
+  "OpenClawStarting": "Avvio di OpenClaw…",
+  "OpenClawNotInstalled": "Configura prima OpenClaw, da questa pagina o in Impostazioni › Agente.",
+  "OpenClawStopped": "OpenClaw si è fermato.",
+  "AgentMaxTokens": "La risposta ha raggiunto il limite di lunghezza del modello."
  },
  "ru-RU": {
   "NewChat": "Новый чат",
@@ -2937,6 +2979,13 @@
   "NpuLoadingVideo": "Загрузка LTX-Video в NPU…",
   "NpuDecodingVideo": "Декодирование кадров…",
   "NpuEncodingVideo": "Сохранение видео…",
-  "NpuSettingsHelp": "Изображения и видео создаются на NPU Snapdragon. Каждая модель загружается при первом использовании."
+  "NpuSettingsHelp": "Изображения и видео создаются на NPU Snapdragon. Каждая модель загружается при первом использовании.",
+  "OpenClawInstallHelp": "OpenClaw работает с вашей локальной моделью через LLM Hub. При настройке скачиваются Node.js и OpenClaw (около 800 МБ); расширения китайских компаний не устанавливаются.",
+  "OpenClawDownloadingNode": "Загрузка Node.js ({0}%)",
+  "OpenClawInstallingPackage": "Установка OpenClaw…",
+  "OpenClawStarting": "Запуск OpenClaw…",
+  "OpenClawNotInstalled": "Сначала настройте OpenClaw на этой странице или в Настройках › Агент.",
+  "OpenClawStopped": "OpenClaw остановлен.",
+  "AgentMaxTokens": "Ответ упёрся в ограничение длины модели."
  }
 }

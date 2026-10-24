@@ -42,7 +42,7 @@ internal static class DevCapture
         if (args.Contains("--speechmatrix"))
             await DevTests.SpeechMatrixAsync();
         if (ValueOf(args, "--agenttest") is { } folder)
-            await DevTests.AgentAsync(folder, ValueOf(args, "--prompt") ?? "Describe this project in one sentence.", ValueOf(args, "--model"));
+            await DevTests.AgentAsync(folder, ValueOf(args, "--prompt") ?? "Describe this project in one sentence.", ValueOf(args, "--model"), ValueOf(args, "--engine") ?? "claude", ValueOf(args, "--followup"));
 
         try
         {

@@ -67,7 +67,7 @@ internal static class DevTools
         if (Value(args, "--designtest") is { } request)
             await DevTests.DesignAsync(request, Value(args, "--kind"), Value(args, "--model"), Value(args, "--followup"));
         if (Value(args, "--agenttest") is { } folder)
-            await DevTests.AgentAsync(folder, Value(args, "--prompt") ?? "Describe this project in one sentence.", Value(args, "--model"));
+            await DevTests.AgentAsync(folder, Value(args, "--prompt") ?? "Describe this project in one sentence.", Value(args, "--model"), Value(args, "--engine") ?? "claude", Value(args, "--followup"));
 
         switch (Value(args, "--page"))
         {
