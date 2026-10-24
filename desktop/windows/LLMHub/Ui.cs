@@ -89,6 +89,14 @@ public static class Ui
     };
 
     // Studio
+    /// <summary>The design's fit colors: green fits, amber partly on the CPU, red too large.</summary>
+    public static Brush FitBrush(string level) => level switch
+    {
+        "ok" => Solid(0x5F, 0xB8, 0x86),
+        "warn" => Solid(0xD9, 0x9A, 0x2B),
+        _ => Solid(0xE0, 0x6C, 0x6C),
+    };
+    public static Brush BestRowBrush(bool best) => best ? Solid(0x8A, 0xB4, 0xFF, 0x22) : Solid(0, 0, 0, 0);
     public static Brush RunningBrush(bool running) => running ? Solid(0x5F, 0xD3, 0x8D) : Solid(0x8F, 0x8E, 0x88);
     /// <summary>"llama.cpp", "LiteRT-LM" or "llama.cpp · embeddings" for the Local API's model list.</summary>
     public static string EngineLabel(Services.InstalledModel m) => Services.LocalApiServer.EngineLabel(m);

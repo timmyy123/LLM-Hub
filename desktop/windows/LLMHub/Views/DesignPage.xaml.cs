@@ -26,7 +26,12 @@ public sealed partial class DesignPage : Page
             await Preview.EnsureCoreWebView2Async();
             Preview.CoreWebView2.Settings.AreDevToolsEnabled = false;
             Preview.CoreWebView2.WebMessageReceived += OnPreviewMessage;
-            Preview.CoreWebView2.NavigationCompleted += async (_, _) => await Preview.CoreWebView2.ExecuteScriptAsync(DesignService.PickerScript("window.chrome.webview.postMessage"));
+            Preview.CoreWebView2.NavigationCompleted += async (_, _) =>
+            {
+                await Preview.CoreWebView2.ExecuteScriptAsync(DesignService.PickerScript("window.chrome.webview.postMessage"));
+                if (ViewModel.NeedsPhoneCheck)
+                    await Preview.CoreWebView2.ExecuteScriptAsync(DesignService.PhoneCheckScript("window.chrome.webview.postMessage"));
+            };
             ShowPreview();
         };
         UpdateTabs();
@@ -56,7 +61,7 @@ public sealed partial class DesignPage : Page
     }
 
     private void OnPreviewMessage(CoreWebView2 sender, CoreWebView2WebMessageReceivedEventArgs args) =>
-        ViewModel.SelectedElement = DesignService.DescribePicked(args.WebMessageAsJson);
+        ViewModel.OnPreviewMessage(args.WebMessageAsJson);
 
 #if DEBUG
     /// <summary>What WebView2 loaded (RenderTargetBitmap cannot capture it), after clicking the first heading through the picker.</summary>
@@ -176,7 +181,7 @@ public sealed partial class DesignPage : Page
         if (sender is not FrameworkElement { Tag: string format } || ViewModel.Selected is not { } project || project.CurrentFile is null)
             return;
         var picker = new FileSavePicker { SuggestedFileName = DesignViewModel.Safe(project.Name) };
-        picker.FileTypeChoices.Add(format.ToUpperInvariant(), [format switch { "md" => ".md", "zip" => ".zip", "pdf" => ".pdf", _ => ".html" }]);
+        picker.FileTypeChoices.Add(format.ToUpperInvariant(), [format switch { "md" => ".md", "zip" => ".zip", "pdf" => ".pdf", "pptx" => ".pptx", _ => ".html" }]);
         WinRT.Interop.InitializeWithWindow.Initialize(picker, WinRT.Interop.WindowNative.GetWindowHandle(App.Window));
         if (await picker.PickSaveFileAsync() is not { } file)
             return;

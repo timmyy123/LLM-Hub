@@ -449,6 +449,21 @@ Test("Catalog loads quants from Hugging Face, only ones that fit", () =>
     Shot("04-catalog");
 });
 
+Test("Filter chips narrow the catalog", () =>
+{
+    var list = Get("CatalogList", 20);
+    Get("Filter_embedding").AsToggleButton().Toggle();
+    WaitUntil(() => list.FindAllDescendants(cf => cf.ByAutomationId("CatalogName")).Select(e => e.Name).SequenceEqual(["EmbeddingGemma 300M"]),
+        TimeSpan.FromSeconds(10), "Embedding chip shows only EmbeddingGemma");
+    Get("Filter_vision").AsToggleButton().Toggle();
+    WaitUntil(() => list.FindAllDescendants(cf => cf.ByAutomationId("CatalogName")).Any(e => e.Name == "Gemma 4 12B")
+                    && list.FindAllDescendants(cf => cf.ByAutomationId("CatalogName")).All(e => e.Name != "Llama 3.2 3B"), TimeSpan.FromSeconds(10), "Vision chip");
+    Shot("04-chips");
+    Get("Filter_all").AsToggleButton().Toggle();
+    WaitUntil(() => list.FindAllDescendants(cf => cf.ByAutomationId("CatalogName")).Length > 3, TimeSpan.FromSeconds(10), "All chip");
+    Check(Find("LlamaEngineLine")?.Name.StartsWith("GGUF") == true, "llama.cpp engine card");
+});
+
 Test("Download, pause and resume a catalog model", () =>
 {
     var row = FindCatalogRow("LFM2.5 1.2B Thinking");
@@ -472,7 +487,9 @@ Test("Gated model shows a clear token message", () =>
     Select("TabHuggingFace");
     SetText("HfQuery", "google/gemma-3-1b-it-qat-q4_0-gguf");
     Invoke("HfSearchButton");
-    WaitFor(() => Find("DownloadButton"), TimeSpan.FromSeconds(60), "Download button").AsButton().Invoke();
+    WaitFor(() => window!.FindAllDescendants(cf => cf.ByAutomationId("HfFileDownload")).FirstOrDefault(b => b.IsEnabled), TimeSpan.FromSeconds(60), "Download in the file table")
+        .AsButton().Invoke();
+    Check(Find("HfGatedBar") is { IsOffscreen: false }, "gated notice with sign-in missing");
     WaitUntil(() => Find("RepoStatus")?.Name.Contains("gated", StringComparison.OrdinalIgnoreCase) == true, TimeSpan.FromSeconds(60), "gated message");
     Shot("05-gated");
     Select("TabCatalog");
@@ -485,21 +502,20 @@ Test("Hugging Face search finds repos and lists fitting quants", () =>
     Invoke("HfSearchButton");
     var results = Get("HfResults", 30);
     WaitUntil(() => results.FindAllChildren().Length > 0, TimeSpan.FromSeconds(30), "results");
-    WaitFor(() => Find("VariantPicker"), TimeSpan.FromSeconds(30), "variant picker");
+    WaitFor(() => Find("HfFileFit"), TimeSpan.FromSeconds(30), "file table with fit");
+    var fits = window!.FindAllDescendants(cf => cf.ByAutomationId("HfFileFit")).Select(e => e.Name).ToList();
+    Check(fits.Contains("Best fit"), $"no Best fit row: {string.Join(" | ", fits)}");
     Shot("06-huggingface");
 });
 
 Test("Download from the Hugging Face tab", () =>
 {
-    var detail = window!; // The Hugging Face panel is the only visible tab, so its controls are unique.
-    var picker = detail.FindFirstDescendant(cf => cf.ByAutomationId("VariantPicker"))!.AsComboBox();
-    picker.Expand();
-    Thread.Sleep(400);
-    var q4 = picker.Items.FirstOrDefault(i => i.Text.StartsWith("Q4_0")) ?? picker.Items.First();
-    q4.Select();
-    picker.Collapse();
-    WaitFor(() => detail.FindFirstDescendant(cf => cf.ByAutomationId("DownloadButton")), TimeSpan.FromSeconds(10), "Download").AsButton().Invoke();
-    WaitFor(() => detail.FindFirstDescendant(cf => cf.ByAutomationId("InstalledLabel")), TimeSpan.FromMinutes(10), "Installed");
+    // The Q4_0 row of the file table: its first text reads "Q4_0 · 0.7 GB".
+    var table = Get("HfFileTable");
+    var q4 = WaitFor(() => table.FindAllChildren().FirstOrDefault(r => r.FindFirstDescendant(cf => cf.ByControlType(ControlType.Text))?.Name.StartsWith("Q4_0") == true),
+        TimeSpan.FromSeconds(30), "Q4_0 row");
+    q4.FindFirstDescendant(cf => cf.ByAutomationId("HfFileDownload"))!.AsButton().Invoke();
+    WaitFor(() => Find("HfFileInstalled"), TimeSpan.FromMinutes(10), "Installed in the file table");
 });
 
 Test("Installed tab lists models and deletes one", () =>

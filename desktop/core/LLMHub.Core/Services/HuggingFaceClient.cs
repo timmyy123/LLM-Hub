@@ -70,10 +70,21 @@ public sealed partial class HuggingFaceClient
             DateTimeOffset? modified = item.TryGetProperty("lastModified", out var m) && m.TryGetDateTimeOffset(out var dt) ? dt : null;
             var gated = item.TryGetProperty("gated", out var g) && g.ValueKind is JsonValueKind.String or JsonValueKind.True;
             var trending = item.TryGetProperty("trendingScore", out var t) && t.TryGetDouble(out var ts) ? ts : 0;
+            if (IsChineseOrigin(id))
+                continue;
             list.Add(new HfRepo(id, downloads, likes, modified, gated, libraryFilter == "litert-lm" ? "litertlm" : "gguf", trending));
         }
         return list;
     }
+
+    /// <summary>
+    /// LLM Hub offers no models of Chinese origin, nor quants and fine-tunes of them; search results drop repos whose owner
+    /// or name points to one of those model families.
+    /// </summary>
+    public static bool IsChineseOrigin(string repoId) => ChineseOriginRegex().IsMatch(repoId);
+
+    [GeneratedRegex(@"(^|[/_\-. ])(qwen|qwq|deepseek|glm|chatglm|codegeex|thudm|zai-org|01-ai|yi|baichuan|internlm|internvl|intern-s1|minimax|kimi|moonshot|hunyuan|tencent|ernie|baidu|wan|wan-ai|wan2|step|stepfun|step3|seed-oss|bytedance|doubao|cogvideo|cogview|minicpm|openbmb|telechat|skywork|xverse|aquila|baai|bailing|ling|ring|inclusionai|longcat|meituan|mimo|xiaomi|xiaomimimo|kwai|kuaishou|keye|ovis|seedream|seedance|opengvlab|iflytek|spark|sensenova|pangu|hy|mistral-chinese)(?=$|[/_\-.0-9 ])", RegexOptions.IgnoreCase)]
+    private static partial Regex ChineseOriginRegex();
 
     public async Task<IReadOnlyList<HfFile>> ListFilesAsync(string repo, CancellationToken ct)
     {

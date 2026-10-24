@@ -98,63 +98,111 @@
             </StackPanel>
         </ScrollViewer>
 
-        <!-- Models -->
+        <!-- Models (Settings.dc.html, HuggingFace.dc.html) -->
         <Grid x:Name="ModelsPanel" Padding="28,24,28,0" RowSpacing="14" Visibility="Collapsed">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
-            <StackPanel Spacing="4">
-                <TextBlock Text="{x:Bind services:Loc.S('SettingsModels')}" FontSize="20" FontWeight="SemiBold" />
-                <TextBlock Text="{x:Bind Models.HardwareText}" Style="{StaticResource MutedTextStyle}" />
-            </StackPanel>
+            <Grid ColumnSpacing="16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Spacing="4">
+                    <TextBlock Text="{x:Bind services:Loc.S('SettingsModels')}" FontSize="20" FontWeight="SemiBold" />
+                    <TextBlock Text="{x:Bind Models.HardwareText}" Style="{StaticResource MutedTextStyle}" />
+                    <TextBlock x:Name="AddLocalStatus" Style="{StaticResource MutedTextStyle}" TextWrapping="Wrap" Visibility="Collapsed" AutomationProperties.AutomationId="AddLocalStatus" />
+                </StackPanel>
+                <Button x:Name="AddLocalButton" Grid.Column="1" VerticalAlignment="Top" CornerRadius="9" Click="OnAddLocalFile" AutomationProperties.AutomationId="AddLocalButton">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="&#xE710;" FontSize="12" />
+                        <TextBlock Text="{x:Bind services:Loc.S('ModelsAddLocalFile')}" />
+                    </StackPanel>
+                </Button>
+            </Grid>
             <SelectorBar x:Name="ModelTabs" Grid.Row="1" SelectionChanged="OnModelTabChanged">
                 <SelectorBarItem Tag="catalog" AutomationProperties.AutomationId="TabCatalog" Text="{x:Bind services:Loc.S('TabCatalog')}" IsSelected="True" />
                 <SelectorBarItem Tag="hf" AutomationProperties.AutomationId="TabHuggingFace" Text="{x:Bind services:Loc.S('TabHuggingFace')}" />
-                <SelectorBarItem Tag="installed" AutomationProperties.AutomationId="TabInstalled" Text="{x:Bind services:Loc.S('TabInstalled')}" />
+                <SelectorBarItem x:Name="InstalledTab" Tag="installed" AutomationProperties.AutomationId="TabInstalled" Text="{x:Bind services:Loc.S('TabInstalled')}" />
             </SelectorBar>
 
-            <!-- Catalog -->
-            <ListView x:Name="CatalogList" Grid.Row="2" SelectionMode="None" ItemsSource="{x:Bind Models.Catalog}" Padding="0,0,0,24">
-                <ListView.ItemContainerStyle>
-                    <Style TargetType="ListViewItem" BasedOn="{StaticResource DefaultListViewItemStyle}">
-                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                        <Setter Property="Padding" Value="12,10" />
-                    </Style>
-                </ListView.ItemContainerStyle>
-                <ListView.ItemTemplate>
-                    <DataTemplate x:DataType="vm:CatalogItemViewModel">
-                        <Grid ColumnSpacing="14" HorizontalAlignment="Stretch">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" MinWidth="180" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-                            <StackPanel VerticalAlignment="Center" Spacing="2">
-                                <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <TextBlock Text="{x:Bind Name}" FontWeight="SemiBold" AutomationProperties.AutomationId="CatalogName" />
-                                    <Border Style="{StaticResource TagBorderStyle}">
-                                        <TextBlock Text="{x:Bind EngineLabel}" FontSize="11" Foreground="{ThemeResource TagTextBrush}" />
-                                    </Border>
-                                </StackPanel>
-                                <TextBlock Text="{x:Bind Subtitle}" Style="{StaticResource MutedTextStyle}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
-                                <TextBlock Text="{x:Bind Status, Mode=OneWay}" Style="{StaticResource MutedTextStyle}"
-                                           Visibility="{x:Bind local:Ui.ShowText(Status), Mode=OneWay}" />
+            <!-- Catalog: engine cards, filter chips, models -->
+            <Grid x:Name="CatalogPanel" Grid.Row="2" RowSpacing="12">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <Grid ColumnSpacing="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Border Style="{StaticResource CardStyle}" Padding="14,10">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <Ellipse Width="8" Height="8" Fill="{x:Bind local:Ui.RunningBrush(Models.LlamaRunning), Mode=OneWay}" VerticalAlignment="Center" />
+                            <StackPanel>
+                                <TextBlock Text="llama.cpp" FontWeight="SemiBold" />
+                                <TextBlock Text="{x:Bind Models.LlamaEngineLine, Mode=OneWay}" Style="{StaticResource MutedTextStyle}" AutomationProperties.AutomationId="LlamaEngineLine" />
                             </StackPanel>
-                            <ContentControl Grid.Column="1" Content="{x:Bind}" ContentTemplate="{StaticResource VariantPickerTemplate}" />
-                        </Grid>
-                    </DataTemplate>
-                </ListView.ItemTemplate>
-            </ListView>
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Column="1" Style="{StaticResource CardStyle}" Padding="14,10">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <Ellipse Width="8" Height="8" Fill="{x:Bind local:Ui.RunningBrush(Models.LiteRtRunning), Mode=OneWay}" VerticalAlignment="Center" />
+                            <StackPanel>
+                                <TextBlock Text="LiteRT-LM" FontWeight="SemiBold" />
+                                <TextBlock Text="{x:Bind Models.LiteRtEngineLine, Mode=OneWay}" Style="{StaticResource MutedTextStyle}" AutomationProperties.AutomationId="LiteRtEngineLine" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+                <StackPanel x:Name="FilterChips" Grid.Row="1" Orientation="Horizontal" Spacing="8" />
+                <ListView x:Name="CatalogList" Grid.Row="2" SelectionMode="None" ItemsSource="{x:Bind Models.VisibleCatalog}" Padding="0,0,0,24">
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem" BasedOn="{StaticResource DefaultListViewItemStyle}">
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                            <Setter Property="Padding" Value="12,10" />
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                    <ListView.ItemTemplate>
+                        <DataTemplate x:DataType="vm:CatalogItemViewModel">
+                            <Grid ColumnSpacing="14" HorizontalAlignment="Stretch">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" MinWidth="180" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel VerticalAlignment="Center" Spacing="2">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <TextBlock Text="{x:Bind Name}" FontWeight="SemiBold" AutomationProperties.AutomationId="CatalogName" />
+                                        <Border Style="{StaticResource TagBorderStyle}">
+                                            <TextBlock Text="{x:Bind EngineLabel}" FontSize="11" Foreground="{ThemeResource TagTextBrush}" />
+                                        </Border>
+                                    </StackPanel>
+                                    <TextBlock Text="{x:Bind Subtitle}" Style="{StaticResource MutedTextStyle}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Text="{x:Bind FitText, Mode=OneWay}" FontSize="12" Foreground="{x:Bind local:Ui.FitBrush(FitLevel), Mode=OneWay}"
+                                               Visibility="{x:Bind local:Ui.ShowText(FitText), Mode=OneWay}" AutomationProperties.AutomationId="CatalogFit" />
+                                    <TextBlock Text="{x:Bind Status, Mode=OneWay}" Style="{StaticResource MutedTextStyle}"
+                                               Visibility="{x:Bind local:Ui.ShowText(Status), Mode=OneWay}" />
+                                </StackPanel>
+                                <ContentControl Grid.Column="1" Content="{x:Bind}" ContentTemplate="{StaticResource VariantPickerTemplate}" />
+                            </Grid>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </Grid>
 
-            <!-- Hugging Face -->
+            <!-- Hugging Face: search with format and sort, then the repo's files and how each fits -->
             <Grid x:Name="HfPanel" Grid.Row="2" ColumnSpacing="16" Visibility="Collapsed" Padding="0,0,0,24">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="360" />
+                    <ColumnDefinition Width="320" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
                 <Grid RowSpacing="10">
                     <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
@@ -169,29 +217,98 @@
                             <FontIcon Glyph="&#xE721;" FontSize="14" />
                         </Button>
                     </Grid>
-                    <ListView x:Name="HfResults" Grid.Row="1" ItemsSource="{x:Bind Models.SearchResults}" SelectedItem="{x:Bind Models.SelectedRepo, Mode=TwoWay}">
+                    <Grid Grid.Row="1" ColumnSpacing="8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <ComboBox x:Name="HfFormatBox" HorizontalAlignment="Stretch" SelectionChanged="OnHfFormatChanged" AutomationProperties.AutomationId="HfFormatBox" />
+                        <ComboBox x:Name="HfSortBox" Grid.Column="1" HorizontalAlignment="Stretch" SelectionChanged="OnHfSortChanged" AutomationProperties.AutomationId="HfSortBox"
+                                  AutomationProperties.Name="{x:Bind services:Loc.S('HfSort')}" />
+                    </Grid>
+                    <ListView x:Name="HfResults" Grid.Row="2" ItemsSource="{x:Bind Models.SearchResults}" SelectedItem="{x:Bind Models.SelectedRepo, Mode=TwoWay}">
                         <ListView.ItemTemplate>
                             <DataTemplate x:DataType="vm:HfRepoViewModel">
-                                <StackPanel Padding="0,8">
-                                    <TextBlock Text="{x:Bind Id}" FontFamily="Cascadia Mono, Consolas" FontSize="13" TextTrimming="CharacterEllipsis" />
-                                    <TextBlock Text="{x:Bind Subtitle}" Style="{StaticResource MutedTextStyle}" />
+                                <StackPanel Padding="0,8" Spacing="3">
+                                    <TextBlock Text="{x:Bind Id}" FontFamily="Cascadia Mono, Consolas" FontSize="13" TextTrimming="CharacterEllipsis" AutomationProperties.AutomationId="HfRepoId" />
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <Border Style="{StaticResource TagBorderStyle}">
+                                            <TextBlock Text="{x:Bind FormatLabel}" FontSize="11" Foreground="{ThemeResource TagTextBrush}" />
+                                        </Border>
+                                        <TextBlock Text="{x:Bind Meta}" Style="{StaticResource MutedTextStyle}" VerticalAlignment="Center" />
+                                    </StackPanel>
                                 </StackPanel>
                             </DataTemplate>
                         </ListView.ItemTemplate>
                     </ListView>
                 </Grid>
-                <Border Grid.Column="1" CornerRadius="14" BorderThickness="1" BorderBrush="{ThemeResource DividerBrush}"
-                        Background="{ThemeResource SurfaceAltBrush}" Padding="18" VerticalAlignment="Top"
-                        Visibility="{x:Bind local:Ui.Show(Models.HasSelectedRepo), Mode=OneWay}">
-                    <StackPanel Spacing="12">
-                        <TextBlock Text="{x:Bind Models.SelectedRepo.Id, Mode=OneWay, FallbackValue=''}" FontFamily="Cascadia Mono, Consolas" FontSize="15" TextWrapping="Wrap" />
-                        <TextBlock Text="{x:Bind Models.SelectedRepo.Status, Mode=OneWay, FallbackValue=''}" Style="{StaticResource MutedTextStyle}" AutomationProperties.AutomationId="RepoStatus" />
-                        <ContentControl x:Name="HfDetail" Content="{x:Bind Models.SelectedRepo, Mode=OneWay}" ContentTemplate="{StaticResource VariantPickerTemplate}" />
-                        <TextBlock Text="{x:Bind services:Loc.S('HfHint')}" Style="{StaticResource MutedTextStyle}" />
-                    </StackPanel>
-                </Border>
+                <ScrollViewer Grid.Column="1" Visibility="{x:Bind local:Ui.Show(Models.HasSelectedRepo), Mode=OneWay}">
+                    <Border CornerRadius="14" BorderThickness="1" BorderBrush="{ThemeResource DividerBrush}" Background="{ThemeResource SurfaceAltBrush}" Padding="18" VerticalAlignment="Top">
+                        <StackPanel Spacing="12">
+                            <Grid ColumnSpacing="12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Spacing="4">
+                                    <TextBlock Text="{x:Bind Models.SelectedRepo.Id, Mode=OneWay, FallbackValue=''}" FontFamily="Cascadia Mono, Consolas" FontSize="15" TextWrapping="Wrap" />
+                                    <TextBlock Text="{x:Bind Models.SelectedRepo.Detail, Mode=OneWay, FallbackValue=''}" Style="{StaticResource MutedTextStyle}" TextWrapping="Wrap" AutomationProperties.AutomationId="RepoDetail" />
+                                </StackPanel>
+                                <HyperlinkButton Grid.Column="1" Content="{x:Bind services:Loc.S('HfOpenOnHub')}" Click="OnOpenOnHub" VerticalAlignment="Top" />
+                            </Grid>
+                            <InfoBar IsOpen="{x:Bind Models.SelectedRepo.IsGated, Mode=OneWay, FallbackValue=False}" IsClosable="False" Severity="Warning"
+                                     Message="{x:Bind services:Loc.S('HfGated')}" AutomationProperties.AutomationId="HfGatedBar">
+                                <InfoBar.ActionButton>
+                                    <Button x:Name="HfSignInButton" Content="{x:Bind services:Loc.S('HfSignIn')}" Click="OnHfSignIn" />
+                                </InfoBar.ActionButton>
+                            </InfoBar>
+                            <StackPanel x:Name="HfTokenPanel" Spacing="6" Visibility="Collapsed">
+                                <PasswordBox x:Name="HfTokenBox" Header="{x:Bind services:Loc.S('HfToken')}" PasswordChanged="OnHfTokenChanged" />
+                                <TextBlock Text="{x:Bind services:Loc.S('HfSignInHelp')}" Style="{StaticResource MutedTextStyle}" />
+                            </StackPanel>
+                            <TextBlock Text="{x:Bind Models.SelectedRepo.Status, Mode=OneWay, FallbackValue=''}" Style="{StaticResource MutedTextStyle}" AutomationProperties.AutomationId="RepoStatus" />
+                            <!-- Quant, size and file share the first column, so the table fits a narrow window. -->
+                            <Grid ColumnSpacing="12" Padding="10,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="112" />
+                                    <ColumnDefinition Width="96" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="{x:Bind services:Loc.S('HfColFile')}" Style="{StaticResource SectionLabelStyle}" />
+                                <TextBlock Grid.Column="1" Text="{x:Bind services:Loc.S('HfColFit')}" Style="{StaticResource SectionLabelStyle}" />
+                                <TextBlock Grid.Column="2" Text="{x:Bind services:Loc.S('HfColAction')}" Style="{StaticResource SectionLabelStyle}" />
+                            </Grid>
+                            <ItemsRepeater ItemsSource="{x:Bind Models.SelectedRepo.Rows, Mode=OneWay}" AutomationProperties.AutomationId="HfFileTable">
+                                <ItemsRepeater.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:HfFileRow">
+                                        <Grid ColumnSpacing="12" Padding="10,6" CornerRadius="8" Background="{x:Bind local:Ui.BestRowBrush(IsBest)}">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="112" />
+                                                <ColumnDefinition Width="96" />
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock Text="{x:Bind QuantAndSize}" FontFamily="Cascadia Mono, Consolas" FontSize="13" />
+                                                <TextBlock Text="{x:Bind File}" FontFamily="Cascadia Mono, Consolas" FontSize="11" Foreground="{ThemeResource TextMutedBrush}" TextTrimming="CharacterEllipsis"
+                                                           ToolTipService.ToolTip="{x:Bind File}" />
+                                            </StackPanel>
+                                            <TextBlock Grid.Column="1" Text="{x:Bind FitText}" FontSize="12" Foreground="{x:Bind local:Ui.FitBrush(FitLevel)}" VerticalAlignment="Center"
+                                                       TextWrapping="Wrap" AutomationProperties.AutomationId="HfFileFit" />
+                                            <Button Grid.Column="2" HorizontalAlignment="Stretch" CornerRadius="8" Content="{x:Bind services:Loc.S('Download')}" Command="{x:Bind DownloadCommand}"
+                                                    IsEnabled="{x:Bind CanDownload}" Visibility="{x:Bind local:Ui.Hide(IsInstalled)}" AutomationProperties.AutomationId="HfFileDownload" />
+                                            <TextBlock Grid.Column="2" Text="{x:Bind services:Loc.S('Installed')}" FontSize="12" VerticalAlignment="Center"
+                                                       Visibility="{x:Bind local:Ui.Show(IsInstalled)}" AutomationProperties.AutomationId="HfFileInstalled" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsRepeater.ItemTemplate>
+                            </ItemsRepeater>
+                            <ContentControl x:Name="HfDetail" Content="{x:Bind Models.SelectedRepo, Mode=OneWay}" ContentTemplate="{StaticResource VariantPickerTemplate}"
+                                            Visibility="{x:Bind local:Ui.Show(Models.SelectedRepo.IsDownloading), Mode=OneWay, FallbackValue=Collapsed}" />
+                            <TextBlock Text="{x:Bind services:Loc.S('HfMmprojNote')}" Style="{StaticResource MutedTextStyle}" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+                </ScrollViewer>
             </Grid>
-
             <!-- Installed -->
             <Grid x:Name="InstalledPanel" Grid.Row="2" Visibility="Collapsed">
                 <TextBlock Text="{x:Bind services:Loc.S('NoInstalled')}" Style="{StaticResource MutedTextStyle}"

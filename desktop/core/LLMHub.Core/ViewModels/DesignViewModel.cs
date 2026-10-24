@@ -59,6 +59,11 @@ public sealed partial class DesignViewModel : ObservableObject
     /// <summary>Description of the element clicked in the preview ("section · hours"), sent with the next request.</summary>
     [ObservableProperty] public partial string SelectedElement { get; set; }
 
+    /// <summary>"Fill: #b4532a", "Radius: 10 px"… of the element clicked in the preview, one per line.</summary>
+    [ObservableProperty] public partial string SelectedProperties { get; set; } = "";
+    /// <summary>Set after a new prototype version; the preview then measures it at phone width and calls <see cref="OnPreviewMessage"/>.</summary>
+    public bool NeedsPhoneCheck { get; set; }
+
     public string? PreviewFile => Selected is { } p && Version > 0 ? p.VersionFile(Version) : null;
     public string VersionText => Selected is { Versions: > 0 } p ? Loc.F("DesignVersion", Version.ToString(), p.Versions.ToString()) : "";
     public bool HasPreview => PreviewFile is not null;
@@ -76,6 +81,8 @@ public sealed partial class DesignViewModel : ObservableObject
         }
         Version = value?.Versions ?? 0;
         SelectedElement = "";
+        SelectedProperties = "";
+        NeedsPhoneCheck = false;
         Status = "";
     }
 
@@ -147,9 +154,11 @@ public sealed partial class DesignViewModel : ObservableObject
             var version = await _design.GenerateAsync(project, request, element, model, text => UiThread.Post(() => LiveText = text), _run.Token);
             Log.Info($"Design {project.Id} v{version} ({project.Kind}, {project.SystemId}) in {clock.Elapsed.TotalSeconds:F0}s");
             Messages.Add(project.History[^1]);
+            NeedsPhoneCheck = project.Kind == DesignKind.Prototype;
             Version = version;
             NotifyPreview();
             SelectedElement = "";
+            SelectedProperties = "";
             Status = "";
         }
         catch (OperationCanceledException)
@@ -172,6 +181,43 @@ public sealed partial class DesignViewModel : ObservableObject
 
     [RelayCommand]
     private void Stop() => _run?.Cancel();
+
+    /// <summary>A message from the preview's injected scripts: an element the user clicked, or the phone-width measurement.</summary>
+    public void OnPreviewMessage(string json)
+    {
+        try
+        {
+            using var doc = global::System.Text.Json.JsonDocument.Parse(json);
+            if (doc.RootElement.TryGetProperty("type", out var type) && type.GetString() == "phone")
+            {
+                ReportPhoneCheck(doc.RootElement.GetProperty("width").GetInt32());
+                return;
+            }
+            SelectedElement = DesignService.DescribePicked(json);
+            SelectedProperties = string.Join("\n", DesignService.PickedProperties(json));
+        }
+        catch (Exception e) when (e is global::System.Text.Json.JsonException or InvalidOperationException or KeyNotFoundException)
+        {
+            Log.Error("Preview message", e);
+        }
+    }
+
+    /// <summary>Adds "Checked layout at phone width" (or how much too wide it is) to the latest reply's steps.</summary>
+    private void ReportPhoneCheck(int contentWidth)
+    {
+        if (!NeedsPhoneCheck || Selected is not { History.Count: > 0 } project || project.History[^1] is not { Role: "assistant" } last)
+            return;
+        NeedsPhoneCheck = false;
+        var over = contentWidth - 390;
+        var step = over <= 2 ? Loc.S("DesignStepPhone") : Loc.F("DesignStepPhoneWide", over.ToString());
+        var updated = last with { Steps = [.. last.Steps ?? [], step] };
+        project.History[^1] = updated;
+        _design.Save(project);
+        var index = Messages.IndexOf(last);
+        if (index >= 0)
+            Messages[index] = updated;
+        Log.Info($"Design {project.Id} v{Version} at phone width: content {contentWidth} px");
+    }
 
     [RelayCommand]
     private void PreviousVersion()

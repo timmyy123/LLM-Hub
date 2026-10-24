@@ -53,6 +53,8 @@ public abstract partial class DownloadableViewModel : ObservableObject
     public bool IsDownloading => Job is not null;
     public bool IsInstalled => Installed is not null && Job is null;
     public string FitText => SelectedVariant?.FitText ?? "";
+    /// <summary>"ok" (runs on the GPU), "warn" (partly on the CPU) or "bad", for the fit label's color.</summary>
+    public string FitLevel => SelectedVariant?.Fit switch { ModelFit.Gpu => "ok", ModelFit.Partial => "warn", null => "", _ => "bad" };
 
     protected abstract string DisplayName { get; }
     protected abstract string? CatalogId { get; }
@@ -70,6 +72,7 @@ public abstract partial class DownloadableViewModel : ObservableObject
         OnPropertyChanged(nameof(IsDownloading));
         OnPropertyChanged(nameof(IsInstalled));
         OnPropertyChanged(nameof(FitText));
+        OnPropertyChanged(nameof(FitLevel));
     }
 
     [RelayCommand]
@@ -198,6 +201,7 @@ public sealed partial class HfFileRow(HfRepoViewModel owner, VariantOption optio
     public string File => Option.Variant.Files[0].FileName;
     public string Quant => Option.Variant.Quant;
     public string Size => Fmt.Bytes(Option.Variant.TotalBytes);
+    public string QuantAndSize => $"{Quant} · {Size}";
     /// <summary>"Best fit", "Fits", "Fits, lower quality", "Fits, slower" or "Too large".</summary>
     public string FitText { get; } = fitText;
     /// <summary>"ok", "warn" or "bad", for the label's color.</summary>
@@ -228,6 +232,7 @@ public sealed partial class HfRepoViewModel(HfRepo repo) : DownloadableViewModel
     public bool IsGated => Repo.Gated;
     public bool NeedsSignIn => Repo.Gated && string.IsNullOrEmpty(AppSettings.Current.HuggingFaceToken);
     public ObservableCollection<HfFileRow> Rows { get; } = [];
+    private bool _watching;
 
     public void DownloadRow(HfFileRow row)
     {
@@ -242,6 +247,13 @@ public sealed partial class HfRepoViewModel(HfRepo repo) : DownloadableViewModel
 
     private void RefreshRows()
     {
+        // Rows show Download, a disabled button while fetching, or Installed: redraw when downloads or installs change.
+        if (!_watching)
+        {
+            _watching = true;
+            Ioc.Models.Installed.CollectionChanged += (_, _) => UiThread.Post(RefreshRows);
+            Ioc.Downloads.Jobs.CollectionChanged += (_, _) => UiThread.Post(RefreshRows);
+        }
         Rows.Clear();
         var best = SelectedVariant?.Variant;
         var bestSize = best?.WeightBytes ?? 0;
@@ -350,19 +362,28 @@ public sealed partial class ModelsViewModel : ObservableObject
             SearchCommand.Execute(null);
     }
 
+    /// <summary>Updates <see cref="VisibleCatalog"/> in place, so rows that stay are not rebuilt under the pointer.</summary>
     public void ApplyFilter()
     {
-        VisibleCatalog.Clear();
-        foreach (var item in Catalog.Where(i => i.Matches(Filter)))
-            VisibleCatalog.Add(item);
+        var wanted = Catalog.Where(i => i.Matches(Filter)).ToList();
+        for (var i = VisibleCatalog.Count - 1; i >= 0; i--)
+            if (!wanted.Contains(VisibleCatalog[i]))
+                VisibleCatalog.RemoveAt(i);
+        for (var i = 0; i < wanted.Count; i++)
+        {
+            if (i < VisibleCatalog.Count && VisibleCatalog[i] == wanted[i])
+                continue;
+            VisibleCatalog.Remove(wanted[i]);
+            VisibleCatalog.Insert(i, wanted[i]);
+        }
     }
 
     // Engine cards: "GGUF · CUDA · running" and ".litertlm · GPU · ready".
     public bool LlamaRunning => Ioc.Engines.LoadedModel is { Format: "gguf" };
     public bool LiteRtRunning => Ioc.Engines.LoadedModel is { Format: "litertlm" };
 
-    public string LlamaEngineLine => $"GGUF · {LlamaBackend(Ioc.Llama.Variant)} · " +
-        Loc.S(LlamaRunning ? "EngineCardRunning" : Ioc.Llama.Variant is null ? "EngineCardOnDemand" : "EngineCardReady");
+    public string LlamaEngineLine => $"GGUF · {LlamaBackend(Ioc.Llama.Variant ?? LlamaEngine.LastWorkingVariant)} · " +
+        Loc.S(LlamaRunning ? "EngineCardRunning" : (Ioc.Llama.Variant ?? LlamaEngine.LastWorkingVariant) is null ? "EngineCardOnDemand" : "EngineCardReady");
 
     public string LiteRtEngineLine => !LiteRtEngine.IsSupported ? $".litertlm · {Loc.S("EngineCardUnavailable")}"
         : $".litertlm · {Ioc.LiteRt.Backend?.ToUpperInvariant() ?? "GPU"} · " + Loc.S(LiteRtRunning ? "EngineCardRunning" : "EngineCardReady");

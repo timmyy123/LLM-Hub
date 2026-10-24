@@ -138,9 +138,14 @@ internal sealed class UiTests(MainWindow main)
         await Until(() => Named("CatalogList").FirstOrDefault() is Gtk.ListBox l && l.GetRowAtIndex(10) is not null, "catalog rows");
         var titles = Descendants(One("CatalogList")).OfType<Adw.ActionRow>().Select(r => r.GetTitle() ?? "").ToList();
         Expect(titles.Contains("Gemma 4 12B") && titles.Contains("Granite 4.2 8B"), $"expected models listed: {string.Join(", ", titles)}");
-        string[] banned = ["qwen", "deepseek", "glm", "kimi", "minimax", "yi-", "baichuan", "internlm", "gemma 3", "granite 4.0", "granite 4.1"];
-        var bad = titles.Where(t => banned.Any(b => t.Contains(b, StringComparison.OrdinalIgnoreCase))).ToList();
+        string[] banned = ["qwen", "deepseek", "glm", "kimi", "minimax", "yi", "baichuan", "internlm", "gemma 3", "granite 4.0", "granite 4.1"];
+        var bad = titles.Where(t => banned.Any(b => System.Text.RegularExpressions.Regex.IsMatch(t, $@"(^|\W){b}(\W|$)", System.Text.RegularExpressions.RegexOptions.IgnoreCase))).ToList();
         Expect(bad.Count == 0, $"catalog must not list: {string.Join(", ", bad)}");
+        // The Embedding chip leaves only embedding models; All brings the rest back.
+        ((Gtk.ToggleButton)One("Filter_embedding")).SetActive(true);
+        await Until(() => Descendants(One("CatalogList")).OfType<Adw.ActionRow>().Select(r => r.GetTitle()).SequenceEqual(["EmbeddingGemma 300M"]), "Embedding chip shows EmbeddingGemma only");
+        ((Gtk.ToggleButton)One("Filter_all")).SetActive(true);
+        await Until(() => Descendants(One("CatalogList")).OfType<Adw.ActionRow>().Count() > 10, "All chip shows every model again");
         var row = One("CatalogRow-gemma-4-12b");
         await Until(() => Descendants(row).Any(w => w.GetName() == "VariantPicker" && w.GetMapped()) || Descendants(row).Any(w => w.GetName() == "InstalledLabel" && w.GetMapped()),
             "quant picker or Installed on Gemma 4 12B");
@@ -186,11 +191,13 @@ internal sealed class UiTests(MainWindow main)
                 index++;
             Expect(results.GetRowAtIndex(index) is not null, "google/gemma-3-1b-it-qat-q4_0-gguf in results");
             results.SelectRow(results.GetRowAtIndex(index));
-            await Until(() => Shown("HfRepoRow").Any(), "repository detail");
-            var repo = One("HfRepoRow");
-            await Until(() => Descendants(repo).Any(w => w.GetName() == "DownloadButton" && w.GetMapped()), "Download on the repository", 30);
-            await Activate(Descendants(repo).First(w => w.GetName() == "DownloadButton"));
-            await Until(() => Descendants(repo).OfType<Gtk.Label>().Any(l => l.GetName() == "RepoStatus" && l.GetMapped() && (l.GetText() ?? "").Contains(Loc.S("NeedsToken")[..24])),
+            await Until(() => Shown("HfFileTable").Any(), "repository files");
+            var detail = One("HfDetail");
+            Expect(Shown("HfGatedBar").Any(), "gated notice with sign-in");
+            await Until(() => Descendants(detail).Any(w => w.GetName() == "HfFileDownload" && w.GetMapped() && w.GetSensitive()), "Download in the file table", 30);
+            await Activate(Descendants(detail).First(w => w.GetName() == "HfFileDownload" && w.GetSensitive()));
+            await Until(() => Descendants(One("HfDetail")).OfType<Gtk.Label>().Any(l => l.GetName() == "RepoStatus" && l.GetMapped()
+                    && (l.GetText() ?? "").Contains(Loc.S("NeedsToken")[..24])),
                 "gated model explains the token", 60);
         }
         finally

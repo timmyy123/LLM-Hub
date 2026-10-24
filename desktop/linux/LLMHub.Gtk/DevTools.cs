@@ -29,6 +29,13 @@ internal static class DevTools
                 window.Window.Close();
             return;
         }
+        if (Value(args, "--exportdesign") is { } exportFormat)
+        {
+            await DevTests.DesignExportAsync(exportFormat, Value(args, "--out") ?? $"/tmp/design.{exportFormat}", Value(args, "--kind"));
+            if (args.Contains("--exit"))
+                window.Window.Close();
+            return;
+        }
         if (Value(args, "--magentatest") is { } liveSeconds)
         {
             await DevTests.MagentaLiveAsync(int.Parse(liveSeconds));

@@ -2,6 +2,7 @@ using LLMHub.Services;
 using LLMHub.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Navigation;
 using Windows.System;
@@ -62,6 +63,7 @@ public sealed partial class SettingsPage : Page
         }
         UpdateApiTexts();
         Api.Requests.CollectionChanged += (_, _) => Bindings.Update();
+        BuildModelFilters();
         _initializing = false;
     }
 
@@ -154,9 +156,92 @@ public sealed partial class SettingsPage : Page
     private void OnModelTabChanged(SelectorBar sender, SelectorBarSelectionChangedEventArgs args)
     {
         var tag = sender.SelectedItem?.Tag as string;
-        CatalogList.Visibility = Ui.Show(tag == "catalog");
+        CatalogPanel.Visibility = Ui.Show(tag == "catalog");
         HfPanel.Visibility = Ui.Show(tag == "hf");
         InstalledPanel.Visibility = Ui.Show(tag == "installed");
+        // The Hugging Face tab opens on what is trending, like the design.
+        if (tag == "hf" && Models.SearchResults.Count == 0 && !Models.IsSearching)
+            Models.SearchCommand.Execute(null);
+    }
+
+    /// <summary>Opens the catalog, hf or installed tab (dev captures).</summary>
+    public void SelectModelTab(string tag) =>
+        ModelTabs.SelectedItem = ModelTabs.Items.FirstOrDefault(i => (string)i.Tag == tag) ?? ModelTabs.SelectedItem;
+
+    private void BuildModelFilters()
+    {
+        foreach (var (key, label) in ModelsViewModel.Filters)
+        {
+            var chip = new ToggleButton { Content = label, Tag = key, CornerRadius = new CornerRadius(14), IsChecked = key == Models.Filter, Padding = new Thickness(14, 4, 14, 5) };
+            Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(chip, "Filter_" + key);
+            chip.Click += (_, _) =>
+            {
+                Models.Filter = key;
+                foreach (var other in FilterChips.Children.OfType<ToggleButton>())
+                    other.IsChecked = (string)other.Tag == key;
+            };
+            FilterChips.Children.Add(chip);
+        }
+        foreach (var (key, label) in ModelsViewModel.HfFormats)
+            HfFormatBox.Items.Add(new ComboBoxItem { Content = label, Tag = key });
+        HfFormatBox.SelectedIndex = 0;
+        foreach (var (key, label) in ModelsViewModel.HfSorts)
+            HfSortBox.Items.Add(new ComboBoxItem { Content = label, Tag = key });
+        HfSortBox.SelectedIndex = 0;
+        InstalledTab.Text = $"{Loc.S("TabInstalled")} · {Models.Installed.Count}";
+        Models.Installed.CollectionChanged += (_, _) => InstalledTab.Text = $"{Loc.S("TabInstalled")} · {Models.Installed.Count}";
+        Models.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(ModelsViewModel.SelectedRepo))
+                HfTokenPanel.Visibility = Visibility.Collapsed;
+        };
+    }
+
+    private void OnHfFormatChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (!_initializing && HfFormatBox.SelectedItem is ComboBoxItem { Tag: string key })
+            Models.HfFormat = key;
+    }
+
+    private void OnHfSortChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (!_initializing && HfSortBox.SelectedItem is ComboBoxItem { Tag: string key })
+            Models.HfSort = key;
+    }
+
+    private async void OnAddLocalFile(object sender, RoutedEventArgs e)
+    {
+        var picker = new Windows.Storage.Pickers.FileOpenPicker();
+        picker.FileTypeFilter.Add(".gguf");
+        picker.FileTypeFilter.Add(".litertlm");
+        WinRT.Interop.InitializeWithWindow.Initialize(picker, WinRT.Interop.WindowNative.GetWindowHandle(App.Window));
+        if (await picker.PickSingleFileAsync() is not { } file)
+            return;
+        AddLocalStatus.Text = Models.AddLocalFile(file.Path);
+        AddLocalStatus.Visibility = Visibility.Visible;
+    }
+
+    private async void OnOpenOnHub(object sender, RoutedEventArgs e)
+    {
+        if (Models.SelectedRepo is { } repo)
+            await Launcher.LaunchUriAsync(new Uri(repo.Url));
+    }
+
+    /// <summary>Opens Hugging Face's token page and shows a token field right here, for gated repos.</summary>
+    private async void OnHfSignIn(object sender, RoutedEventArgs e)
+    {
+        HfTokenBox.Password = AppSettings.Current.HuggingFaceToken;
+        HfTokenPanel.Visibility = Visibility.Visible;
+        await Launcher.LaunchUriAsync(new Uri("https://huggingface.co/settings/tokens"));
+    }
+
+    private void OnHfTokenChanged(object sender, RoutedEventArgs e)
+    {
+        AppSettings.Current.HuggingFaceToken = HfTokenBox.Password;
+        AppSettings.Save();
+        TokenBox.Password = HfTokenBox.Password;
+        if (HfTokenBox.Password.Length > 0 && Models.SelectedRepo is { } repo)
+            _ = repo.LoadVariantsAsync(CancellationToken.None);
     }
 
     private void OnHfSearchKeyDown(object sender, KeyRoutedEventArgs e)

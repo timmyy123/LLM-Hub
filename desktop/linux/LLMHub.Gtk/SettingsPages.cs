@@ -107,21 +107,106 @@ internal sealed class SettingsPages
         var stack = Adw.ViewStack.New();
         stack.AddTitledWithIcon(BuildCatalog(), "catalog", Loc.S("TabCatalog"), "view-list-symbolic");
         stack.AddTitledWithIcon(BuildHuggingFace(), "hf", Loc.S("TabHuggingFace"), "system-search-symbolic");
-        stack.AddTitledWithIcon(BuildInstalled(), "installed", Loc.S("TabInstalled"), "drive-harddisk-symbolic");
+        var installedPage = stack.AddTitledWithIcon(BuildInstalled(), "installed", Loc.S("TabInstalled"), "drive-harddisk-symbolic");
+        void CountInstalled() => installedPage.SetTitle($"{Loc.S("TabInstalled")} · {Ioc.Models.Installed.Count}");
+        Ioc.Models.Installed.CollectionChanged += (_, _) => UiThread.Run(CountInstalled);
+        CountInstalled();
         stack.Named("ModelTabs");
+        // The Hugging Face tab opens on what is trending, like the design.
+        stack.OnNotify += (_, e) =>
+        {
+            if (e.Pspec.GetName() == "visible-child-name" && stack.GetVisibleChildName() == "hf" && _models.SearchResults.Count == 0 && !_models.IsSearching)
+                _models.SearchCommand.Execute(null);
+        };
         var switcher = Adw.ViewSwitcher.New();
         switcher.SetStack(stack);
         switcher.SetPolicy(Adw.ViewSwitcherPolicy.Wide);
         switcher.SetHalign(Gtk.Align.Start);
 
-        var header = Ui.VBox(4, Ui.Label(Loc.S("SettingsModels"), "title-2"), Ui.Label(_models.HardwareText, "dim-label"));
-        var top = Ui.VBox(14, header, switcher).Margins(24, 28, 8, 28);
+        var addStatus = Ui.Label("", "caption", "dim-label").Named("AddLocalStatus");
+        addStatus.SetVisible(false);
+        var addLocal = Gtk.Button.New();
+        addLocal.SetChild(Ui.HBox(8, Gtk.Image.NewFromIconName("list-add-symbolic"), Ui.Label(Loc.S("ModelsAddLocalFile"))));
+        addLocal.SetValign(Gtk.Align.Start);
+        addLocal.Named("AddLocalButton");
+        addLocal.OnClicked += async (_, _) =>
+        {
+            try
+            {
+                var dialog = Gtk.FileDialog.New();
+                var filter = Gtk.FileFilter.New();
+                filter.AddSuffix("gguf");
+                filter.AddSuffix("litertlm");
+                var filters = Gio.ListStore.New(Gtk.FileFilter.GetGType());
+                filters.Append(filter);
+                dialog.SetFilters(filters);
+                if (await dialog.OpenAsync(_main.Window) is { } file && file.GetPath() is { } path)
+                {
+                    addStatus.SetText(_models.AddLocalFile(path));
+                    addStatus.SetVisible(true);
+                }
+            }
+            catch (GLib.GException)
+            {
+                // Dismissed.
+            }
+        };
+        var titles = Ui.VBox(4, Ui.Label(Loc.S("SettingsModels"), "title-2"), Ui.Label(_models.HardwareText, "dim-label"), addStatus);
+        titles.SetHexpand(true);
+        var top = Ui.VBox(14, Ui.HBox(16, titles, addLocal), switcher).Margins(24, 28, 8, 28);
         stack.SetVexpand(true);
         return Ui.VBox(0, top, stack);
     }
 
     private Gtk.Widget BuildCatalog()
     {
+        // Engine cards: "GGUF · CUDA · running" and ".litertlm · GPU · ready".
+        Gtk.Widget EngineCard(string title, Func<string> line, Func<bool> running, string name)
+        {
+            var dot = Gtk.Box.New(Gtk.Orientation.Horizontal, 0);
+            dot.AddCssClass("dot");
+            dot.SetValign(Gtk.Align.Center);
+            var text = Ui.Label("", "caption", "dim-label").Named(name);
+            void Sync()
+            {
+                text.SetText(line());
+                if (running())
+                    dot.AddCssClass("ready");
+                else
+                    dot.RemoveCssClass("ready");
+            }
+            Ui.Watch(_models, _ => Sync());
+            Sync();
+            var card = Ui.VBox(0, Ui.HBox(10, dot, Ui.VBox(2, Ui.Label(title, "heading"), text)).Margins(10, 14, 10, 14));
+            card.AddCssClass("card");
+            card.SetHexpand(true);
+            return card;
+        }
+        var engines = Ui.HBox(12,
+            EngineCard("llama.cpp", () => _models.LlamaEngineLine, () => _models.LlamaRunning, "LlamaEngineLine"),
+            EngineCard("LiteRT-LM", () => _models.LiteRtEngineLine, () => _models.LiteRtRunning, "LiteRtEngineLine"));
+
+        // Filter chips.
+        var chips = Ui.HBox(8);
+        Gtk.ToggleButton? first = null;
+        foreach (var (key, label) in ModelsViewModel.Filters)
+        {
+            var chip = Gtk.ToggleButton.NewWithLabel(label);
+            chip.AddCssClass("pill");
+            chip.Named("Filter_" + key);
+            if (first is null)
+                first = chip;
+            else
+                chip.SetGroup(first);
+            chip.SetActive(key == _models.Filter);
+            chip.OnToggled += (_, _) =>
+            {
+                if (chip.GetActive())
+                    _models.Filter = key;
+            };
+            chips.Append(chip);
+        }
+
         var list = Gtk.ListBox.New();
         list.AddCssClass("boxed-list");
         list.SetSelectionMode(Gtk.SelectionMode.None);
@@ -129,12 +214,12 @@ internal sealed class SettingsPages
         void Rebuild()
         {
             list.RemoveAll();
-            foreach (var item in _models.Catalog)
-                list.Append(ModelRow(item, item.Name, item.Subtitle, item.EngineLabel, $"CatalogRow-{item.Model.Id}"));
+            foreach (var item in _models.VisibleCatalog)
+                list.Append(ModelRow(item, item.Name, item.Subtitle, item.EngineLabel, $"CatalogRow-{item.Model.Id}", showFit: true));
         }
-        _models.Catalog.CollectionChanged += (_, _) => Rebuild();
+        _models.VisibleCatalog.CollectionChanged += (_, _) => UiThread.Run(Rebuild);
         Rebuild();
-        return Scroll(list);
+        return Scroll(Ui.VBox(14, engines, chips, list));
     }
 
     private Gtk.Widget BuildHuggingFace()
@@ -153,6 +238,13 @@ internal sealed class SettingsPages
             _models.Query = query.GetText();
             _models.SearchCommand.Execute(null);
         }).Named("HfSearchButton");
+        var formats = new Picker(ModelsViewModel.HfFormats.Select(f => f.Label), i => _models.HfFormat = ModelsViewModel.HfFormats[i].Key);
+        formats.DropDown.Named("HfFormatBox");
+        formats.DropDown.SetHexpand(true);
+        var sorts = new Picker(ModelsViewModel.HfSorts.Select(f => f.Label), i => _models.HfSort = ModelsViewModel.HfSorts[i].Key);
+        sorts.DropDown.Named("HfSortBox");
+        sorts.DropDown.SetHexpand(true);
+        sorts.DropDown.SetTooltipText(Loc.S("HfSort"));
 
         var results = Gtk.ListBox.New();
         results.AddCssClass("boxed-list");
@@ -164,36 +256,124 @@ internal sealed class SettingsPages
             if (e.Row is { } row && row.GetIndex() < _models.SearchResults.Count)
                 _models.SelectedRepo = _models.SearchResults[row.GetIndex()];
         };
-        _models.SearchResults.CollectionChanged += (_, _) =>
+        _models.SearchResults.CollectionChanged += (_, _) => UiThread.Run(() =>
         {
             results.RemoveAll();
             foreach (var repo in _models.SearchResults)
             {
                 var row = Adw.ActionRow.New();
                 row.SetTitle(repo.Id);
-                row.SetSubtitle(repo.Subtitle);
+                row.SetSubtitle(repo.Meta);
                 row.AddCssClass("monospace");
+                var format = Ui.Label(repo.FormatLabel, "tag");
+                format.SetWrap(false);
+                format.SetValign(Gtk.Align.Center);
+                row.AddSuffix(format);
                 results.Append(row);
             }
-        };
+        });
         _models.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName != nameof(ModelsViewModel.SelectedRepo))
                 return;
             detail.Clear();
             if (_models.SelectedRepo is { } repo)
-            {
-                var list = Gtk.ListBox.New();
-                list.AddCssClass("boxed-list");
-                list.SetSelectionMode(Gtk.SelectionMode.None);
-                list.Append(ModelRow(repo, repo.Id, Loc.S("HfHint"), "llama.cpp", "HfRepoRow"));
-                detail.Append(list);
-            }
+                detail.Append(RepoDetail(repo));
         };
 
-        var left = Ui.VBox(10, Ui.HBox(8, query, search), Scroll(results, margins: false));
-        left.SetSizeRequest(380, -1);
-        return Ui.HBox(16, left, detail).Margins(8, 28, 24, 28);
+        var left = Ui.VBox(10, Ui.HBox(8, query, search), Ui.HBox(8, formats.DropDown, sorts.DropDown), Scroll(results, margins: false));
+        left.SetSizeRequest(340, -1);
+        return Ui.HBox(16, left, Scroll(detail, margins: false)).Margins(8, 28, 24, 28);
+    }
+
+    /// <summary>The selected repo: name, what it is, a gated notice with sign-in, and its files with how each fits.</summary>
+    private Gtk.Widget RepoDetail(HfRepoViewModel repo)
+    {
+        var id = Ui.Label(repo.Id, "title-4", "monospace");
+        id.SetSelectable(true);
+        var info = Ui.VBox(4, id, Ui.Label(repo.Detail, "dim-label").Named("RepoDetail"));
+        info.SetHexpand(true);
+        var open = Gtk.LinkButton.NewWithLabel(repo.Url, Loc.S("HfOpenOnHub"));
+        open.SetValign(Gtk.Align.Start);
+
+        var token = Adw.PasswordEntryRow.New();
+        token.SetTitle(Loc.S("HfToken"));
+        token.SetText(AppSettings.Current.HuggingFaceToken);
+        token.OnChanged += (_, _) =>
+        {
+            AppSettings.Current.HuggingFaceToken = token.GetText();
+            AppSettings.Save();
+        };
+        token.OnApply += (_, _) => _ = repo.LoadVariantsAsync(CancellationToken.None);
+        token.SetShowApplyButton(true);
+        var tokenList = Gtk.ListBox.New();
+        tokenList.AddCssClass("boxed-list");
+        tokenList.Append(token);
+        var tokenBox = Ui.VBox(6, tokenList, Ui.Label(Loc.S("HfSignInHelp"), "caption", "dim-label"));
+        tokenBox.SetVisible(false);
+        var signIn = Ui.Button(Loc.S("HfSignIn"), () =>
+        {
+            tokenBox.SetVisible(true);
+            Ui.Open("https://huggingface.co/settings/tokens");
+        });
+        signIn.SetVisible(repo.NeedsSignIn);
+        signIn.SetValign(Gtk.Align.Center);
+        var gatedText = Ui.Label(Loc.S("HfGated"), "warning");
+        gatedText.SetHexpand(true);
+        var gated = Ui.HBox(12, gatedText, signIn).Named("HfGatedBar");
+        gated.SetVisible(repo.IsGated);
+
+        var status = Ui.Label(repo.Status, "caption", "dim-label").Named("RepoStatus");
+        var files = Gtk.ListBox.New();
+        files.AddCssClass("boxed-list");
+        files.SetSelectionMode(Gtk.SelectionMode.None);
+        files.Named("HfFileTable");
+        void Rows()
+        {
+            files.RemoveAll();
+            foreach (var r in repo.Rows)
+            {
+                var row = Adw.ActionRow.New();
+                row.SetTitle(r.QuantAndSize);
+                row.SetSubtitle(r.File);
+                row.AddCssClass("monospace");
+                if (r.IsBest)
+                    row.AddCssClass("accent");
+                var fit = Ui.Label(r.FitText, r.FitLevel switch { "ok" => "success", "warn" => "warning", _ => "error" }).Named("HfFileFit");
+                fit.SetWrap(false);
+                row.AddSuffix(fit);
+                if (r.IsInstalled)
+                    row.AddSuffix(Ui.Label("✓ " + Loc.S("Installed"), "success"));
+                else
+                {
+                    var download = Ui.Button(Loc.S("Download"), () => r.DownloadCommand.Execute(null), r.IsBest ? "suggested-action" : "flat").Named("HfFileDownload");
+                    download.SetSensitive(r.CanDownload);
+                    download.SetValign(Gtk.Align.Center);
+                    row.AddSuffix(download);
+                }
+                files.Append(row);
+            }
+            files.SetVisible(repo.Rows.Count > 0);
+        }
+        repo.Rows.CollectionChanged += (_, _) => UiThread.Run(Rows);
+        Rows();
+        // Download progress for the file being fetched (the shared row shows the bar and Cancel).
+        var progressList = Gtk.ListBox.New();
+        progressList.AddCssClass("boxed-list");
+        progressList.SetSelectionMode(Gtk.SelectionMode.None);
+        progressList.Append(ModelRow(repo, repo.Id, "", repo.FormatLabel, "HfRepoRow"));
+        void Sync()
+        {
+            status.SetText(repo.Status);
+            status.SetVisible(repo.Status.Length > 0);
+            progressList.SetVisible(repo.IsDownloading);
+        }
+        Ui.Watch(repo, _ => Sync());
+        Sync();
+
+        var columns = Ui.Label($"{Loc.S("HfColFile")} · {Loc.S("HfColFit")} · {Loc.S("HfColAction")}", "caption", "dim-label");
+        return Ui.VBox(12, Ui.HBox(12, info, open), gated, tokenBox, status, columns, files, progressList,
+            Ui.Label(Loc.S("HfMmprojNote"), "caption", "dim-label"));
     }
 
     private Gtk.Widget BuildInstalled()
@@ -223,8 +403,8 @@ internal sealed class SettingsPages
         return Scroll(Ui.VBox(12, empty, list));
     }
 
-    /// <summary>A model row: name and tags, a quant picker, and Download / progress + cancel / Installed + delete.</summary>
-    private static Gtk.Widget ModelRow(DownloadableViewModel item, string title, string subtitle, string engine, string name)
+    /// <summary>A model row: name and tags, a quant picker (with its fit, for the catalog), and Download / progress + cancel / Installed + delete.</summary>
+    private static Gtk.Widget ModelRow(DownloadableViewModel item, string title, string subtitle, string engine, string name, bool showFit = false)
     {
         var row = Adw.ActionRow.New();
         row.SetTitle(title);
@@ -246,6 +426,10 @@ internal sealed class SettingsPages
         installed.SetWrap(false);
         var delete = Ui.IconButton("user-trash-symbolic", Loc.S("Delete"), () => item.DeleteCommand.Execute(null), "flat").Named("DeleteModelButton");
         var status = Ui.Label("", "caption", "dim-label").Named("RepoStatus");
+        var fit = Ui.Label("", "caption").Named("CatalogFit");
+        fit.SetWrap(false);
+        if (showFit)
+            row.AddSuffix(fit);
         foreach (var w in new Gtk.Widget[] { variants, download, progress, cancel, installed, delete })
         {
             w.SetValign(Gtk.Align.Center);
@@ -283,6 +467,11 @@ internal sealed class SettingsPages
             delete.SetVisible(item.IsInstalled);
             status.SetText(item.Status);
             status.SetVisible(item.Status.Length > 0);
+            fit.SetText(item.FitText);
+            foreach (var css in new[] { "success", "warning", "error" })
+                fit.RemoveCssClass(css);
+            fit.AddCssClass(item.FitLevel switch { "ok" => "success", "warn" => "warning", _ => "error" });
+            fit.SetVisible(showFit && item.FitText.Length > 0);
             if (!ReferenceEquals(watched, item.Job))
             {
                 if (watched is not null && jobHandler is not null)

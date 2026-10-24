@@ -30,8 +30,10 @@ internal static class DevCapture
         {
             await DevTests.DesignAsync(request, ValueOf(args, "--kind"), ValueOf(args, "--model"), ValueOf(args, "--followup"));
             window.ShowSection("design");
-            await Task.Delay(4000);
+            await Task.Delay(int.TryParse(ValueOf(args, "--wait"), out var designWait) ? designWait : 4000);
         }
+        if (ValueOf(args, "--exportdesign") is { } exportFormat)
+            await DevTests.DesignExportAsync(exportFormat, ValueOf(args, "--out") ?? Path.Combine(Path.GetTempPath(), "design." + exportFormat), ValueOf(args, "--kind"));
         if (ValueOf(args, "--speechtest") is { } sentence)
             await DevTests.SpeechAsync(sentence);
         if (ValueOf(args, "--musictest") is { } musicWorkflow)
@@ -53,6 +55,9 @@ internal static class DevCapture
                 case "hf":
                 case "installed":
                     window.ShowSettings("models");
+                    await Task.Delay(300);
+                    if (FindPage<Views.SettingsPage>(window) is { } settingsPage)
+                        settingsPage.SelectModelTab(ValueOf(args, "--page") == "models" ? "catalog" : ValueOf(args, "--page")!);
                     break;
                 case "api":
                     window.ShowSettings("api");

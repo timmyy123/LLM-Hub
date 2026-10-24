@@ -69,8 +69,14 @@
                                             CornerRadius="14" Padding="14,10">
                                         <TextBlock Text="{x:Bind Text}" TextWrapping="Wrap" IsTextSelectionEnabled="True" AutomationProperties.AutomationId="DesignUserMessage" />
                                     </Border>
-                                    <TextBlock Visibility="{x:Bind local:Ui.IsRole(Role, 'assistant')}" Text="{x:Bind Text}" TextWrapping="Wrap" IsTextSelectionEnabled="True"
-                                               Foreground="{ThemeResource BodyTextBrush}" AutomationProperties.AutomationId="DesignAssistantMessage" />
+                                    <StackPanel Visibility="{x:Bind local:Ui.IsRole(Role, 'assistant')}" Spacing="8">
+                                        <TextBlock Text="{x:Bind Text}" TextWrapping="Wrap" IsTextSelectionEnabled="True"
+                                                   Foreground="{ThemeResource BodyTextBrush}" AutomationProperties.AutomationId="DesignAssistantMessage" />
+                                        <Border Visibility="{x:Bind local:Ui.ShowText(StepsText)}" CornerRadius="10" Padding="12,8" Background="{ThemeResource SurfaceAltBrush}">
+                                            <TextBlock Text="{x:Bind StepsText}" FontSize="12" LineHeight="20" Foreground="{ThemeResource TextMutedBrush}" TextWrapping="Wrap"
+                                                       AutomationProperties.AutomationId="DesignSteps" />
+                                        </Border>
+                                    </StackPanel>
                                 </Grid>
                             </DataTemplate>
                         </ItemsRepeater.ItemTemplate>
@@ -179,6 +185,7 @@
                         <MenuFlyout Placement="BottomEdgeAlignedRight">
                             <MenuFlyoutItem Text="HTML" Tag="html" Click="OnExport" />
                             <MenuFlyoutItem Text="PDF" Tag="pdf" Click="OnExport" />
+                            <MenuFlyoutItem Text="PPTX" Tag="pptx" Click="OnExport" />
                             <MenuFlyoutItem Text="ZIP" Tag="zip" Click="OnExport" />
                             <MenuFlyoutItem Text="Markdown" Tag="md" Click="OnExport" />
                         </MenuFlyout>
@@ -231,6 +238,8 @@
                         <TextBlock Text="{x:Bind local:Ui.SelectedLabel(ViewModel.SelectedElement), Mode=OneWay}" FontSize="13" Foreground="{ThemeResource TextSecondaryBrush}" TextWrapping="Wrap"
                                    AutomationProperties.AutomationId="DesignSelectedElement" />
                     </Border>
+                    <TextBlock Text="{x:Bind ViewModel.SelectedProperties, Mode=OneWay}" FontSize="12" LineHeight="20" Foreground="{ThemeResource TextMutedBrush}" TextWrapping="Wrap"
+                               Visibility="{x:Bind local:Ui.ShowText(ViewModel.SelectedProperties), Mode=OneWay}" AutomationProperties.AutomationId="DesignSelectedProperties" />
                 </StackPanel>
                 <TextBlock Text="{x:Bind services:Loc.S('DesignExports')}" FontSize="12" Foreground="{ThemeResource TextFaintBrush}" TextWrapping="Wrap" />
             </StackPanel>

@@ -7,7 +7,11 @@ using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace LLMHub.Services.Design;
 
-public sealed record DesignMessage(string Role, string Text);
+/// <summary>A turn in a design project; the assistant's carries the steps it took ("Wrote index.html", "Checked layout at phone width").</summary>
+public sealed record DesignMessage(string Role, string Text, List<string>? Steps = null)
+{
+    [System.Text.Json.Serialization.JsonIgnore] public string StepsText => Steps is { Count: > 0 } s ? string.Join("\n", s.Select(x => "✓ " + x)) : "";
+}
 
 /// <summary>A design project on disk: design/&lt;id&gt;/v1.html, v2.html, … plus project.json.</summary>
 public sealed partial class DesignProject : ObservableObject
@@ -123,11 +127,13 @@ public sealed partial class DesignService : ObservableObject
             }
         }
         var html = ExtractHtml(text.ToString()) ?? throw new InvalidOperationException(Loc.S("DesignNoHtml"));
+        var steps = new List<string> { Loc.S(project.Versions == 0 ? "DesignStepWrote" : "DesignStepUpdated") };
+        html = await RenderImagesAsync(project, html, project.Versions + 1, steps, ct);
         project.Versions++;
         await File.WriteAllTextAsync(project.VersionFile(project.Versions), html, ct);
         var note = Summary(text.ToString());
         project.History.Add(new DesignMessage("user", request));
-        project.History.Add(new DesignMessage("assistant", note.Length > 0 ? note : "Updated the design."));
+        project.History.Add(new DesignMessage("assistant", note.Length > 0 ? note : "Updated the design.", steps));
         if (project.Versions == 1)
             project.Name = Title(html) ?? (request.Length <= 40 ? request : request[..37] + "…");
         Save(project);
@@ -164,7 +170,11 @@ public sealed partial class DesignService : ObservableObject
             Rules:
             - Output exactly one block: <artifact type="text/html"> then a complete document starting with <!doctype html>, then </artifact>.
             - Everything inline: CSS in <style>, no external JS libraries, images as CSS shapes or gradients (no external image URLs).
-            - Add data-od-id="short-name" to major sections and key elements so the user can point at them.
+            - Add data-od-id="short-name" to major sections and key elements so the user can point at them.{(project.Kind is DesignKind.Prototype or DesignKind.Slides ? """
+
+            - For a real photo (one hero photo, two at most), write <img data-generate="a vivid one-sentence description of the photo" alt="..."> with CSS
+              that sizes it (for example width:100%;height:100%;object-fit:cover). LLM Hub makes the photo on this computer. Never use other image URLs.
+            """ : "")}
             - Before the artifact, write one or two sentences saying what you made or changed. Nothing after the artifact.
             """;
     }
@@ -197,6 +207,61 @@ public sealed partial class DesignService : ObservableObject
         return m.Success && m.Groups[1].Value.Trim().Length > 0 ? System.Net.WebUtility.HtmlDecode(m.Groups[1].Value.Trim()) : null;
     }
 
+    /// <summary>
+    /// Turns &lt;img data-generate="…"&gt; into photos made with ComfyUI when Studio is set up (an image model is on disk), saved
+    /// next to the version as v3-image1.png; otherwise a soft gradient in the design system's colors stands in.
+    /// </summary>
+    private async Task<string> RenderImagesAsync(DesignProject project, string html, int version, List<string> steps, CancellationToken ct)
+    {
+        var matches = GenerateImageRegex().Matches(html).Take(2).ToList();
+        if (matches.Count == 0)
+            return html;
+        var workflow = new[] { Studio.ComfyWorkflow.Sdxl, Studio.ComfyWorkflow.FluxSchnell }.FirstOrDefault(Studio.ComfyService.HasModels);
+        var canGenerate = Studio.ComfyService.IsSupported && workflow is not null;
+        var made = 0;
+        for (var i = matches.Count - 1; i >= 0; i--)
+        {
+            var m = matches[i];
+            var prompt = System.Net.WebUtility.HtmlDecode(m.Groups["prompt"].Value);
+            string src;
+            if (canGenerate)
+            {
+                try
+                {
+                    Status = Loc.S("DesignMakingImage");
+                    await Ioc.Comfy.EnsureRunningAsync(ct);
+                    var graph = workflow!.Build(prompt + ", " + project.System.Name.ToLowerInvariant() + " style, photograph", 1344, 768, 1, workflow.DefaultSteps,
+                        Random.Shared.NextInt64(1, 1L << 48), null);
+                    var files = await Ioc.Comfy.RunAsync(graph, (_, _) => { }, ct);
+                    var name = $"v{version}-image{i + 1}{Path.GetExtension(files[0])}";
+                    File.Copy(files[0], Path.Combine(project.Folder, name), true);
+                    src = name;
+                    made++;
+                }
+                catch (Exception e) when (e is not OperationCanceledException)
+                {
+                    Log.Error("Design image failed", e);
+                    src = Placeholder(project.System);
+                }
+            }
+            else
+                src = Placeholder(project.System);
+            var tag = SrcRegex().Replace(m.Value, "");
+            html = html[..m.Index] + tag.Insert(4, $" src=\"{src}\"") + html[(m.Index + m.Length)..];
+        }
+        Status = Loc.S("DesignWorking");
+        steps.Add(made > 0 ? Loc.S("DesignStepImage") : Loc.S("DesignStepPlaceholder"));
+        return html;
+    }
+
+    private static string Placeholder(DesignSystem system)
+    {
+        var from = system.Colors.Length > 1 ? system.Colors[1] : system.Colors[0];
+        var to = system.Colors.Length > 3 ? system.Colors[3] : system.Colors[^1];
+        var svg = $"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1344 768'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='{from}'/><stop offset='1' stop-color='{to}'/></linearGradient></defs><rect width='1344' height='768' fill='url(#g)'/></svg>";
+        return "data:image/svg+xml," + Uri.EscapeDataString(svg);
+    }
+
     // ---------------------------------------------------------------- preview
 
     /// <summary>
@@ -219,10 +284,59 @@ public sealed partial class DesignService : ObservableObject
             document.querySelectorAll('[data-llmhub-picked]').forEach(x => x.removeAttribute('data-llmhub-picked'));
             const el = e.target.closest('[data-od-id]') || e.target;
             el.setAttribute('data-llmhub-picked', '');
-            POST({ id: el.getAttribute('data-od-id') || '', tag: el.tagName.toLowerCase(), text: (el.innerText || '').trim().slice(0, 80) });
+            const cs = getComputedStyle(el);
+            POST({ type: 'pick', id: el.getAttribute('data-od-id') || '', tag: el.tagName.toLowerCase(), text: (el.innerText || '').trim().slice(0, 80),
+                   fill: cs.backgroundColor, ink: cs.color, radius: cs.borderTopLeftRadius, font: cs.fontFamily.split(',')[0].replace(/["']/g, ''), size: cs.fontSize });
           }, true);
         })();
         """;
+
+    /// <summary>
+    /// Renders the page at phone width (390 px) in a hidden frame and posts how wide its content really is, so the app can
+    /// say whether the layout fits a phone.
+    /// </summary>
+    public static string PhoneCheckScript(string postMessage) => PhoneCheckTemplate.Replace("POST(", postMessage + "(");
+
+    private const string PhoneCheckTemplate = """
+        (() => {
+          const f = document.createElement('iframe');
+          f.style.cssText = 'position:fixed;left:-10000px;top:0;width:390px;height:844px;border:0;visibility:hidden';
+          f.srcdoc = '<!doctype html>' + document.documentElement.outerHTML;
+          f.onload = () => setTimeout(() => {
+            const d = f.contentDocument.documentElement;
+            POST({ type: 'phone', width: Math.max(d.scrollWidth, f.contentDocument.body ? f.contentDocument.body.scrollWidth : 0) });
+            f.remove();
+          }, 400);
+          document.body.appendChild(f);
+        })();
+        """;
+
+    /// <summary>"Fill: #b4532a", "Radius: 10 px", "Font: Fraunces · 32 px" for the selected element panel.</summary>
+    public static IReadOnlyList<string> PickedProperties(string json)
+    {
+        using var doc = System.Text.Json.JsonDocument.Parse(json);
+        var root = doc.RootElement;
+        string Get(string name) => root.TryGetProperty(name, out var v) ? v.GetString() ?? "" : "";
+        var list = new List<string>();
+        if (CssColor(Get("fill")) is { } fill)
+            list.Add(Loc.F("DesignPropFill", fill));
+        if (CssColor(Get("ink")) is { } ink)
+            list.Add(Loc.F("DesignPropText", ink));
+        if (Get("radius") is { Length: > 0 } radius && radius != "0px")
+            list.Add(Loc.F("DesignPropRadius", radius.Replace("px", " px")));
+        if (Get("font") is { Length: > 0 } font)
+            list.Add(Loc.F("DesignPropFont", $"{font} · {Get("size").Replace("px", " px")}"));
+        return list;
+    }
+
+    /// <summary>"rgb(180, 83, 42)" as "#b4532a"; null for transparent.</summary>
+    private static string? CssColor(string css)
+    {
+        var m = RgbRegex().Match(css);
+        if (!m.Success || (m.Groups[4].Success && double.TryParse(m.Groups[4].Value, System.Globalization.CultureInfo.InvariantCulture, out var alpha) && alpha == 0))
+            return null;
+        return $"#{int.Parse(m.Groups[1].Value):x2}{int.Parse(m.Groups[2].Value):x2}{int.Parse(m.Groups[3].Value):x2}";
+    }
 
     /// <summary>"button · cta · "Book a table"" from the picker's message, for <see cref="ViewModels.DesignViewModel.SelectedElement"/>.</summary>
     public static string DescribePicked(string json)
@@ -236,14 +350,17 @@ public sealed partial class DesignService : ObservableObject
 
     // ---------------------------------------------------------------- export
 
-    /// <summary>The current version as one HTML file, a ZIP of every version, or Markdown text of the page.</summary>
+    /// <summary>
+    /// The current version as one self-contained HTML file, a ZIP of every version with its images, Markdown text of the
+    /// page, or a PowerPoint deck (one slide per slide or section, with the generated photos).
+    /// </summary>
     public static async Task ExportAsync(DesignProject project, string format, string target)
     {
         var current = project.CurrentFile ?? throw new InvalidOperationException(Loc.S("DesignNothingYet"));
         switch (format)
         {
             case "html":
-                File.Copy(current, target, true);
+                await File.WriteAllTextAsync(target, InlineImages(project, await File.ReadAllTextAsync(current)));
                 break;
             case "zip":
                 if (File.Exists(target))
@@ -251,8 +368,16 @@ public sealed partial class DesignService : ObservableObject
                 using (var zip = ZipFile.Open(target, ZipArchiveMode.Create))
                 {
                     for (var n = 1; n <= project.Versions; n++)
+                    {
+                        var prefix = n == project.Versions ? "" : "versions/";
                         zip.CreateEntryFromFile(project.VersionFile(n), n == project.Versions ? "index.html" : $"versions/v{n}.html");
+                        foreach (var image in Directory.EnumerateFiles(project.Folder, $"v{n}-image*"))
+                            zip.CreateEntryFromFile(image, prefix + Path.GetFileName(image));
+                    }
                 }
+                break;
+            case "pptx":
+                PptxWriter.Write(target, project.Name, Slides(project, await File.ReadAllTextAsync(current)), project.System);
                 break;
             case "md":
                 await File.WriteAllTextAsync(target, HtmlToMarkdown(await File.ReadAllTextAsync(current)));
@@ -261,6 +386,42 @@ public sealed partial class DesignService : ObservableObject
                 throw new ArgumentException(format);
         }
     }
+
+    /// <summary>Generated photos as data: URIs, so the exported file opens anywhere on its own.</summary>
+    private static string InlineImages(DesignProject project, string html) => LocalImageRegex().Replace(html, m =>
+    {
+        var file = Path.Combine(project.Folder, m.Groups["file"].Value);
+        if (!File.Exists(file))
+            return m.Value;
+        var mime = file.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ? "image/png" : "image/jpeg";
+        return $"src=\"data:{mime};base64,{Convert.ToBase64String(File.ReadAllBytes(file))}\"";
+    });
+
+    /// <summary>Slides from the document: each &lt;section class="slide"&gt; for decks, otherwise each top-level section.</summary>
+    public static IReadOnlyList<PptxSlide> Slides(DesignProject project, string html)
+    {
+        var body = StyleRegex().Replace(html, "");
+        var parts = SlideSectionRegex().Matches(body).Select(m => m.Groups[1].Value).ToList();
+        if (parts.Count == 0)
+            parts = SectionRegex().Matches(body).Select(m => m.Groups[1].Value).ToList();
+        if (parts.Count == 0)
+            parts = [body];
+        var slides = new List<PptxSlide>();
+        foreach (var part in parts.Take(40))
+        {
+            var heading = FirstHeadingRegex().Match(part);
+            var title = heading.Success ? Clean(heading.Groups[2].Value) : project.Name;
+            var rest = heading.Success ? part.Remove(heading.Index, heading.Length) : part;
+            var lines = LineRegex().Matches(rest).Select(m => Clean(m.Groups[2].Value)).Where(l => l.Length > 0 && !l.StartsWith('[')).Take(9)
+                .Select(l => l.Length > 220 ? l[..217] + "…" : l).ToList();
+            var image = LocalImageRegex().Match(part) is { Success: true } img && Path.Combine(project.Folder, img.Groups["file"].Value) is var path && File.Exists(path) ? path : null;
+            if (title.Length > 0 || lines.Count > 0)
+                slides.Add(new PptxSlide(title.Length > 0 ? title : project.Name, lines, image));
+        }
+        return slides;
+    }
+
+    private static string Clean(string html) => WhitespaceRegex().Replace(System.Net.WebUtility.HtmlDecode(TagRegex().Replace(html, " ")), " ").Trim();
 
     private static string HtmlToMarkdown(string html)
     {
@@ -293,4 +454,22 @@ public sealed partial class DesignService : ObservableObject
     private static partial Regex BlankLinesRegex();
     [GeneratedRegex(@"[ \t]+")]
     private static partial Regex SpacesRegex();
+    [GeneratedRegex(@"\s+")]
+    private static partial Regex WhitespaceRegex();
+    [GeneratedRegex(@"<img\b(?=[^>]*\bdata-generate=""(?<prompt>[^""]+)"")[^>]*>", RegexOptions.IgnoreCase)]
+    private static partial Regex GenerateImageRegex();
+    [GeneratedRegex(@"\ssrc=""[^""]*""", RegexOptions.IgnoreCase)]
+    private static partial Regex SrcRegex();
+    [GeneratedRegex(@"src=""(?<file>v\d+-image\d+\.(?:png|jpe?g|webp))""", RegexOptions.IgnoreCase)]
+    private static partial Regex LocalImageRegex();
+    [GeneratedRegex(@"rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+)\s*)?\)")]
+    private static partial Regex RgbRegex();
+    [GeneratedRegex(@"<section\b[^>]*class=""[^""]*\bslide\b[^""]*""[^>]*>(.*?)</section>", RegexOptions.Singleline | RegexOptions.IgnoreCase)]
+    private static partial Regex SlideSectionRegex();
+    [GeneratedRegex(@"<(?:section|header|footer)\b[^>]*>(.*?)</(?:section|header|footer)>", RegexOptions.Singleline | RegexOptions.IgnoreCase)]
+    private static partial Regex SectionRegex();
+    [GeneratedRegex(@"<h([1-3])[^>]*>(.*?)</h\1>", RegexOptions.Singleline | RegexOptions.IgnoreCase)]
+    private static partial Regex FirstHeadingRegex();
+    [GeneratedRegex(@"<(p|li|h[4-6]|blockquote|figcaption|dt|dd|td)\b[^>]*>(.*?)</\1>", RegexOptions.Singleline | RegexOptions.IgnoreCase)]
+    private static partial Regex LineRegex();
 }

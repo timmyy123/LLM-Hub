@@ -59,6 +59,9 @@ public sealed partial class LlamaEngine : ObservableObject
     private static string EngineRoot => Path.Combine(AppPaths.Engines, "llama.cpp");
     private static string WorkingFile => Path.Combine(EngineRoot, "working.txt");
 
+    /// <summary>The build that last ran a model on this computer, or null before the first load.</summary>
+    public static string? LastWorkingVariant => File.Exists(WorkingFile) ? File.ReadAllText(WorkingFile).Trim() : null;
+
     private sealed record InstalledEngine(string Tag, string Variant, string ServerPath);
 
     private sealed class EngineStartException(string message) : Exception(message);

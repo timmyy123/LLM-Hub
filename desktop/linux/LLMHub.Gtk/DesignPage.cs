@@ -34,6 +34,7 @@ internal sealed class DesignPage
     private readonly Gtk.Label _headingFont = Ui.Label("", "title-3");
     private readonly Gtk.Label _bodyFont = Ui.Label("", "dim-label");
     private readonly Gtk.Label _selected = Ui.Label("", "dim-label");
+    private readonly Gtk.Label _selectedProperties = Ui.Label("", "caption", "dim-label");
     private string? _shown;
 
     public Gtk.Widget Root { get; }
@@ -122,7 +123,7 @@ internal sealed class DesignPage
         export.AddCssClass("commit-button");
         export.Named("ExportButton");
         var menu = Ui.VBox(2);
-        foreach (var (label, format) in new[] { ("HTML", "html"), ("PDF", "pdf"), ("ZIP", "zip"), ("Markdown", "md") })
+        foreach (var (label, format) in new[] { ("HTML", "html"), ("PDF", "pdf"), ("PPTX", "pptx"), ("ZIP", "zip"), ("Markdown", "md") })
             menu.Append(Ui.Button(label, () =>
             {
                 export.Popdown();
@@ -143,10 +144,24 @@ internal sealed class DesignPage
             content.OnScriptMessageReceived += (_, e) =>
             {
                 if (e.Value.ToJson(0) is { } json)
-                    _vm.SelectedElement = DesignService.DescribePicked(json);
+                    _vm.OnPreviewMessage(json);
             };
             content.RegisterScriptMessageHandler("llmhub", null);
-            _web.OnLoadChanged += (_, e) => Log.Info($"Design preview {e.LoadEvent} {_web.GetUri()}");
+            _web.OnLoadChanged += async (_, e) =>
+            {
+                Log.Info($"Design preview {e.LoadEvent} {_web.GetUri()}");
+                if (e.LoadEvent == WebKit.LoadEvent.Finished && _vm.NeedsPhoneCheck)
+                {
+                    try
+                    {
+                        await _web.EvaluateJavascriptAsync(DesignService.PhoneCheckScript("window.webkit.messageHandlers.llmhub.postMessage"));
+                    }
+                    catch (GLib.GException ex)
+                    {
+                        Log.Error("Phone width check", ex);
+                    }
+                }
+            };
             _web.OnLoadFailed += (_, e) =>
             {
                 Log.Info($"Design preview failed {e.FailingUri}: {e.Error.Message}");
@@ -185,7 +200,8 @@ internal sealed class DesignPage
         var type = Ui.VBox(6, _headingFont, _bodyFont);
         type.AddCssClass("tasks-card");
         _selected.Named("DesignSelectedElement");
-        var selectedBox = Ui.VBox(0, _selected);
+        _selectedProperties.Named("DesignSelectedProperties");
+        var selectedBox = Ui.VBox(6, _selected, _selectedProperties);
         selectedBox.AddCssClass("tasks-card");
         var right = Ui.VBox(18,
             Ui.Field(Loc.S("DesignSystemLabel"), _systems.DropDown),
@@ -305,6 +321,8 @@ internal sealed class DesignPage
         _headingFont.SetText(_vm.System.HeadingFont);
         _bodyFont.SetText(_vm.System.BodyFont);
         _selected.SetText(_vm.SelectedElement.Length > 0 ? _vm.SelectedElement : Loc.S("DesignSelectHint"));
+        _selectedProperties.SetText(_vm.SelectedProperties);
+        _selectedProperties.SetVisible(_vm.SelectedProperties.Length > 0);
         ShowPreview();
     }
 
@@ -339,7 +357,15 @@ internal sealed class DesignPage
                 _messages.Append(bubble);
             }
             else
+            {
                 _messages.Append(text);
+                if (m.StepsText.Length > 0)
+                {
+                    var steps = Ui.VBox(0, Ui.Label(m.StepsText, "caption", "dim-label").Named("DesignSteps").Margins(8, 12, 8, 12));
+                    steps.AddCssClass("tasks-card");
+                    _messages.Append(steps);
+                }
+            }
         }
         _empty.SetVisible(_vm.Messages.Count == 0);
         ScrollToEnd();
@@ -358,7 +384,7 @@ internal sealed class DesignPage
         try
         {
             var dialog = Gtk.FileDialog.New();
-            dialog.SetInitialName(DesignViewModel.Safe(project.Name) + format switch { "md" => ".md", "zip" => ".zip", "pdf" => ".pdf", _ => ".html" });
+            dialog.SetInitialName(DesignViewModel.Safe(project.Name) + format switch { "md" => ".md", "zip" => ".zip", "pdf" => ".pdf", "pptx" => ".pptx", _ => ".html" });
             if (await dialog.SaveAsync(_main.Window) is not { } file || file.GetPath() is not { } path)
                 return;
             if (format == "pdf" && _web is not null)

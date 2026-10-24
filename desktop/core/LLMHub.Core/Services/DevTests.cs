@@ -61,7 +61,7 @@ public static class DevTests
             design.Draft = text!;
             await design.SendCommand.ExecuteAsync(null);
             var file = design.PreviewFile;
-            Log.Info($"DESIGNTEST v{design.Version} in {clock.Elapsed.TotalSeconds:F0}s: {(file is null ? "no file" : $"{new FileInfo(file).Length} bytes {file}")} status='{design.Status}' name='{design.Selected?.Name}'");
+            Log.Info($"DESIGNTEST v{design.Version} in {clock.Elapsed.TotalSeconds:F0}s: {(file is null ? "no file" : $"{new FileInfo(file).Length} bytes {file}")} status='{design.Status}' name='{design.Selected?.Name}' steps='{design.Messages.LastOrDefault()?.StepsText.Replace('\n', ';')}'");
         }
     }
 
@@ -184,6 +184,21 @@ public static class DevTests
         await studio.GenerateMusicCommand.ExecuteAsync(null);
         var clip = studio.MusicClips.FirstOrDefault()?.Path;
         Log.Info($"MUSICTEST {workflowId} {seconds}s in {clock.Elapsed.TotalSeconds:F0}s: {studio.MusicStatus}; {clip} ({(clip is null ? 0 : new FileInfo(clip).Length)} bytes)");
+    }
+
+    /// <summary>Exports the most recent design project (or the one with <paramref name="kind"/>) to <paramref name="path"/>.</summary>
+    public static async Task DesignExportAsync(string format, string path, string? kind)
+    {
+        var project = Ioc.Design.Projects.Where(p => p.Versions > 0 && (kind is null || p.Kind.ToString().Equals(kind, StringComparison.OrdinalIgnoreCase)))
+            .OrderByDescending(p => p.UpdatedAt).FirstOrDefault();
+        if (project is null)
+        {
+            Log.Info("EXPORTTEST no design project");
+            return;
+        }
+        await Design.DesignService.ExportAsync(project, format, path);
+        var slides = Design.DesignService.Slides(project, await File.ReadAllTextAsync(project.CurrentFile!));
+        Log.Info($"EXPORTTEST {project.Name} ({project.Kind}) -> {path}: {new FileInfo(path).Length} bytes, {slides.Count} slides: {string.Join(" | ", slides.Select(s => s.Title))}");
     }
 
     /// <summary>
