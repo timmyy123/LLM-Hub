@@ -46,6 +46,9 @@ public sealed class DownloadManager(HuggingFaceClient hf, ModelStore store)
 
     public DownloadJob Start(GgufVariant variant, string name, string? catalogId, string[] tags, int contextLength)
     {
+        // Embedding models serve text on /v1/embeddings: a vision/audio projector (EmbeddingGemma 2's, 555 MB) is not needed.
+        if (tags.Contains("embedding"))
+            variant = variant with { Mmproj = null };
         var id = InstalledModel.MakeId(variant.Repo, variant.Quant);
         if (Find(id) is { } running)
             return running;

@@ -132,15 +132,17 @@ extension LocalApiServer {
             return
         }
         let requested = body["model"] as? String ?? ""
+        // EmbeddingGemma 2 first when it is installed alongside the original EmbeddingGemma.
         let embedders = app.modelStore.installed.filter { $0.isEmbedding && $0.format == "gguf" }
+            .sorted { ($0.catalogId == "embeddinggemma-2" ? 0 : 1) < ($1.catalogId == "embeddinggemma-2" ? 0 : 1) }
         guard let model = embedders.first(where: { apiName($0) == requested || $0.id == requested || $0.catalogId == requested }) ?? embedders.first else {
-            await out.json(404, Self.errorBody("not_found_error", "No embedding model is installed. Download EmbeddingGemma 300M in Settings › Models."))
+            await out.json(404, Self.errorBody("not_found_error", "No embedding model is installed. Download EmbeddingGemma 2 in Settings › Models."))
             record(req, requested, "404")
             return
         }
         let name = apiName(model)
         do {
-            try await app.embeddings.load(model, contextLength: 2048)
+            try await app.embeddings.load(model, contextLength: min(max(model.contextLength, 512), 8192))
             markApiUse()
             guard let base = app.embeddings.baseURL else { throw ComfyService.error("The embedding server is not running") }
             body["model"] = model.id

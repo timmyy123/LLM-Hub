@@ -174,17 +174,18 @@ public sealed partial class LocalApiServer
     {
         var body = await JsonNode.ParseAsync(ctx.Request.Body) as JsonObject ?? new JsonObject();
         var requested = body["model"]?.GetValue<string>() ?? "";
-        var embedders = Ioc.Models.Installed.Where(m => m.IsEmbedding && m.Format == "gguf").ToList();
+        // EmbeddingGemma 2 first when it is installed alongside the original EmbeddingGemma.
+        var embedders = Ioc.Models.Installed.Where(m => m.IsEmbedding && m.Format == "gguf").OrderByDescending(m => m.CatalogId == "embeddinggemma-2").ToList();
         var model = embedders.FirstOrDefault(m => ApiName(m) == requested || m.Id == requested || m.CatalogId == requested) ?? embedders.FirstOrDefault();
         if (model is null)
         {
-            await WriteError(ctx, 404, "not_found_error", "No embedding model is installed. Download EmbeddingGemma 300M in Settings › Models.");
+            await WriteError(ctx, 404, "not_found_error", "No embedding model is installed. Download EmbeddingGemma 2 in Settings › Models.");
             Record(ctx, requested, 404);
             return;
         }
         try
         {
-            await Ioc.Embeddings.LoadAsync(model, ctx.RequestAborted, 2048);
+            await Ioc.Embeddings.LoadAsync(model, ctx.RequestAborted, Math.Clamp(model.ContextLength, 512, 8192));
             body["model"] = model.Id;
             using var request = new HttpRequestMessage(HttpMethod.Post, Ioc.Embeddings.BaseUrl + "/v1/embeddings")
             {

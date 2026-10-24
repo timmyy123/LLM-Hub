@@ -184,6 +184,8 @@ final class DownloadManager {
     func cancel(_ job: DownloadJob) { job.task?.cancel() }
 
     private func run(_ job: DownloadJob, _ variant: GgufVariant, name: String, catalogId: String?, tags: [String], contextLength: Int) async {
+        // Embedding models serve text on /v1/embeddings: a vision/audio projector (EmbeddingGemma 2's, 555 MB) is not needed.
+        let variant = tags.contains("embedding") ? GgufVariant(repo: variant.repo, quant: variant.quant, files: variant.files, mmproj: nil, format: variant.format) : variant
         let folder = AppPaths.models.appendingPathComponent(job.id, isDirectory: true)
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let files = variant.files + (variant.mmproj.map { [$0] } ?? [])

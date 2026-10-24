@@ -453,7 +453,7 @@ Test("Filter chips narrow the catalog", () =>
 {
     var list = Get("CatalogList", 20);
     Get("Filter_embedding").AsToggleButton().Toggle();
-    WaitUntil(() => list.FindAllDescendants(cf => cf.ByAutomationId("CatalogName")).Select(e => e.Name).SequenceEqual(["EmbeddingGemma 300M"]),
+    WaitUntil(() => list.FindAllDescendants(cf => cf.ByAutomationId("CatalogName")).Select(e => e.Name).SequenceEqual(["EmbeddingGemma 2"]),
         TimeSpan.FromSeconds(10), "Embedding chip shows only EmbeddingGemma");
     Get("Filter_vision").AsToggleButton().Toggle();
     WaitUntil(() => list.FindAllDescendants(cf => cf.ByAutomationId("CatalogName")).Any(e => e.Name == "Gemma 4 12B")
@@ -538,7 +538,8 @@ Test("Installed tab lists models and deletes one", () =>
         row = p;
     row.FindFirstDescendant(cf => cf.ByAutomationId("DeleteInstalledButton"))!.AsButton().Invoke();
     WaitUntil(() => list.FindAllDescendants(cf => cf.ByAutomationId("InstalledName")).Length == names.Count - 1, TimeSpan.FromSeconds(10), "model removed");
-    var folder = Directory.EnumerateDirectories(Path.Combine(dataDir, "models")).Any(d => d.Contains("lfm2.5-1.2b-instruct-gguf__"));
+    var quant = target.Name.Split('·').Last().Trim().ToLowerInvariant();
+    var folder = Directory.EnumerateDirectories(Path.Combine(dataDir, "models")).Any(d => Path.GetFileName(d) == "liquidai_lfm2.5-1.2b-instruct-gguf__" + quant);
     Check(!folder, "model folder still on disk");
 });
 

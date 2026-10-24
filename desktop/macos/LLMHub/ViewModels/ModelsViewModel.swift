@@ -110,6 +110,10 @@ final class CatalogItem: DownloadableItem {
             var list: [GgufVariant] = []
             if let gguf = ggufSource { list += try await app.hub.ggufVariants(gguf.repo) }
             if let litert = liteRtSource { list += try await app.hub.liteRtVariants(litert.repo) }
+            // /v1/embeddings is text only: EmbeddingGemma 2's vision projector (555 MB) is not downloaded.
+            if model.tags.contains("embedding") {
+                list = list.map { GgufVariant(repo: $0.repo, quant: $0.quant, files: $0.files, mmproj: nil, format: $0.format) }
+            }
             setVariants(list, preferred: ggufSource?.preferredQuant)
             status = nothingFits ? L.s("NothingFits") : ""
         } catch {

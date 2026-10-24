@@ -143,7 +143,7 @@ internal sealed class UiTests(MainWindow main)
         Expect(bad.Count == 0, $"catalog must not list: {string.Join(", ", bad)}");
         // The Embedding chip leaves only embedding models; All brings the rest back.
         ((Gtk.ToggleButton)One("Filter_embedding")).SetActive(true);
-        await Until(() => Descendants(One("CatalogList")).OfType<Adw.ActionRow>().Select(r => r.GetTitle()).SequenceEqual(["EmbeddingGemma 300M"]), "Embedding chip shows EmbeddingGemma only");
+        await Until(() => Descendants(One("CatalogList")).OfType<Adw.ActionRow>().Select(r => r.GetTitle()).SequenceEqual(["EmbeddingGemma 2"]), "Embedding chip shows EmbeddingGemma only");
         ((Gtk.ToggleButton)One("Filter_all")).SetActive(true);
         await Until(() => Descendants(One("CatalogList")).OfType<Adw.ActionRow>().Count() > 10, "All chip shows every model again");
         var row = One("CatalogRow-gemma-4-12b");

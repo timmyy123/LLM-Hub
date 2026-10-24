@@ -169,6 +169,9 @@ public sealed partial class CatalogItemViewModel(CatalogModel model) : Downloada
                 variants.AddRange(await Ioc.HuggingFace.GetGgufVariantsAsync(gguf.Repo, ct));
             if (LiteRtSource is { } litert && LiteRtEngine.IsSupported)
                 variants.AddRange(await Ioc.HuggingFace.GetLiteRtVariantsAsync(litert.Repo, ct));
+            // /v1/embeddings is text only: EmbeddingGemma 2's vision projector (555 MB) is not downloaded.
+            if (Model.Tags.Contains("embedding"))
+                variants = variants.Select(v => v with { Mmproj = null }).ToList();
             // The pickers are bound to Variants: change it on the UI thread whatever thread the lookup finished on.
             await UiThread.RunAsync(() =>
             {
