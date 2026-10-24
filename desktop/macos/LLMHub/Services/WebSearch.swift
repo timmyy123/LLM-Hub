@@ -51,7 +51,9 @@ enum WebSearch {
             Log.info("Web search \"\(query)\": no results from the HTML endpoint\(isChallenge(html) ? " (bot check)" : ""), trying Lite")
             let lite = try await post("https://lite.duckduckgo.com/lite/", query)
             results = parseLite(lite, max: max)
-            // DuckDuckGo answers a throttled network with a bot check page instead of results; say so rather than "0 results".
+            // Search engines answer scripted queries with bot checks at times; Wikipedia's API is made for programs.
+            if results.isEmpty { results = await searchWikipedia(query, max: max) }
+            // Still nothing and DuckDuckGo showed a bot check: say so rather than "0 results".
             if results.isEmpty && isChallenge(html) && isChallenge(lite) {
                 Log.info("Web search \"\(query)\": DuckDuckGo is showing a bot check to this network")
                 throw NSError(domain: "LLMHub", code: 50, userInfo: [NSLocalizedDescriptionKey: "DuckDuckGo is limiting searches from this network"])
@@ -59,6 +61,48 @@ enum WebSearch {
         }
         Log.info("Web search \"\(query)\": \(results.count) results")
         return results
+    }
+
+    /// Wikipedia in the app's language (same as the Windows and Linux apps): keywords first, since its search matches every
+    /// word, then any keyword (ranked by relevance) if an odd word still blocks a match.
+    private static func searchWikipedia(_ query: String, max: Int) async -> [WebSource] {
+        let tag = L.override.isEmpty ? (Locale.preferredLanguages.first ?? "en") : L.override
+        let language = String(tag.prefix(2)).lowercased()
+        let words = keywords(query)
+        guard !words.isEmpty else { return [] }
+        for search in [words.joined(separator: " "), words.joined(separator: " OR ")] {
+            var components = URLComponents(string: "https://\(language).wikipedia.org/w/api.php")!
+            components.queryItems = [.init(name: "action", value: "query"), .init(name: "list", value: "search"), .init(name: "format", value: "json"),
+                                     .init(name: "srprop", value: "snippet"), .init(name: "srlimit", value: "\(max)"), .init(name: "srsearch", value: search)]
+            var request = URLRequest(url: components.url!)
+            // Wikimedia asks API clients to identify themselves.
+            request.setValue("LLMHub/1.0 (https://llm-hub.app)", forHTTPHeaderField: "User-Agent")
+            guard let (data, _) = try? await session.data(for: request),
+                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let hits = (json["query"] as? [String: Any])?["search"] as? [[String: Any]], !hits.isEmpty else { continue }
+            Log.info("Web search: answered from \(language).wikipedia.org (\"\(search)\")")
+            return hits.prefix(max).enumerated().map { i, hit in
+                let title = hit["title"] as? String ?? ""
+                let page = "https://\(language).wikipedia.org/wiki/" + (title.replacingOccurrences(of: " ", with: "_").addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? title)
+                return WebSource(number: i + 1, title: title, url: page, snippet: clean(hit["snippet"] as? String ?? ""))
+            }
+        }
+        return []
+    }
+
+    /// The words of a request that say what it is about, without filler and instructions to the assistant.
+    private static func keywords(_ text: String) -> [String] {
+        let filler: Set<String> = [
+            "search", "web", "internet", "online", "google", "look", "find", "tell", "me", "please", "answer", "reply", "cite", "source", "sources",
+            "one", "two", "sentence", "sentences", "word", "words", "short", "briefly", "brief", "explain", "describe", "give", "show", "list",
+            "what", "whats", "who", "whom", "which", "when", "where", "why", "how", "is", "are", "was", "were", "be", "been", "do", "does", "did",
+            "can", "could", "would", "should", "will", "the", "a", "an", "of", "to", "in", "on", "for", "and", "or", "with", "about", "from",
+            "by", "at", "as", "it", "its", "this", "that", "these", "those", "there", "i", "you", "your", "my", "we", "our", "up", "out", "into",
+        ]
+        var seen = Set<String>()
+        return text.lowercased().split { !$0.isLetter && !$0.isNumber }.map(String.init)
+            .filter { $0.count > 1 && !filler.contains($0) && seen.insert($0).inserted }
+            .prefix(8).map { $0 }
     }
 
     private static func isChallenge(_ html: String) -> Bool { html.contains("anomaly-modal") || html.contains("anomaly.js") }
