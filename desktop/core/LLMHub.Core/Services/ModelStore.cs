@@ -26,6 +26,8 @@ public sealed class InstalledModel
     [JsonIgnore] public string? MmprojPath => Mmproj is null ? null : Path.Combine(Folder, Path.GetFileName(Mmproj));
     [JsonIgnore] public string DisplayName => $"{Name} · {Quant}";
     [JsonIgnore] public string SizeText => Fmt.Bytes(SizeBytes);
+    /// <summary>EmbeddingGemma and the like: served on /v1/embeddings, never offered for chat.</summary>
+    [JsonIgnore] public bool IsEmbedding => Tags.Contains("embedding");
 
     /// <summary>
     /// LiteRT-LM model whose catalog entry has an MTP drafter (looked up live so older downloads get it too), unless the
@@ -51,7 +53,19 @@ public sealed class ModelStore
 
     public ObservableCollection<InstalledModel> Installed { get; } = [];
 
-    public ModelStore() => Reload();
+    /// <summary>Installed models that can chat (everything but embedding models), for the Chat, Agent and Design pickers.</summary>
+    public ObservableCollection<InstalledModel> ChatModels { get; } = [];
+
+    public ModelStore()
+    {
+        Installed.CollectionChanged += (_, _) =>
+        {
+            ChatModels.Clear();
+            foreach (var m in Installed.Where(m => !m.IsEmbedding))
+                ChatModels.Add(m);
+        };
+        Reload();
+    }
 
     public void Reload()
     {

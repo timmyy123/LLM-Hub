@@ -312,7 +312,16 @@
   "MusicLoading": "Loading Magenta RealTime…",
   "MusicSaved": "Saved {0}",
   "MusicSlow": "This Mac makes music a little slower than real time, so playback may pause briefly.",
-  "ThoughtForSeconds": "Thought for {0}s"
+  "ThoughtForSeconds": "Thought for {0}s",
+  "TagEmbedding": "Embedding",
+  "ApiOpenAiCompatible": "OpenAI compatible",
+  "ApiAnthropicCompatible": "Anthropic compatible",
+  "ApiChatFeatures": "chat, tools, images, streaming",
+  "ApiModelsOffered": "Models offered",
+  "ApiModelsOfferedHelp": "Loaded when first requested",
+  "ApiUnloadAfter": "Unload after idle",
+  "ApiNever": "Never",
+  "ApiMinutes": "{0} minutes"
  },
  "es-ES": {
   "NewChat": "Nuevo chat",
@@ -627,7 +636,16 @@
   "MusicLoading": "Cargando Magenta RealTime…",
   "MusicSaved": "Guardado {0}",
   "MusicSlow": "Este Mac genera la música algo más lento que en tiempo real, así que puede haber pausas breves.",
-  "ThoughtForSeconds": "Pensó durante {0} s"
+  "ThoughtForSeconds": "Pensó durante {0} s",
+  "TagEmbedding": "Embeddings",
+  "ApiOpenAiCompatible": "Compatible con OpenAI",
+  "ApiAnthropicCompatible": "Compatible con Anthropic",
+  "ApiChatFeatures": "chat, herramientas, imágenes, streaming",
+  "ApiModelsOffered": "Modelos disponibles",
+  "ApiModelsOfferedHelp": "Se cargan con la primera petición",
+  "ApiUnloadAfter": "Descargar tras inactividad",
+  "ApiNever": "Nunca",
+  "ApiMinutes": "{0} minutos"
  },
  "pt-BR": {
   "NewChat": "Nova conversa",
@@ -942,7 +960,16 @@
   "MusicLoading": "Carregando o Magenta RealTime…",
   "MusicSaved": "Salvo {0}",
   "MusicSlow": "Este Mac gera a música um pouco mais devagar que o tempo real, então podem ocorrer pausas curtas.",
-  "ThoughtForSeconds": "Pensou por {0} s"
+  "ThoughtForSeconds": "Pensou por {0} s",
+  "TagEmbedding": "Embeddings",
+  "ApiOpenAiCompatible": "Compatível com OpenAI",
+  "ApiAnthropicCompatible": "Compatível com Anthropic",
+  "ApiChatFeatures": "chat, ferramentas, imagens, streaming",
+  "ApiModelsOffered": "Modelos oferecidos",
+  "ApiModelsOfferedHelp": "Carregados na primeira solicitação",
+  "ApiUnloadAfter": "Descarregar após inatividade",
+  "ApiNever": "Nunca",
+  "ApiMinutes": "{0} minutos"
  },
  "fr-FR": {
   "NewChat": "Nouvelle discussion",
@@ -1257,7 +1284,16 @@
   "MusicLoading": "Chargement de Magenta RealTime…",
   "MusicSaved": "{0} enregistré",
   "MusicSlow": "Ce Mac crée la musique un peu moins vite que le temps réel : la lecture peut marquer de courtes pauses.",
-  "ThoughtForSeconds": "A réfléchi pendant {0} s"
+  "ThoughtForSeconds": "A réfléchi pendant {0} s",
+  "TagEmbedding": "Embeddings",
+  "ApiOpenAiCompatible": "Compatible OpenAI",
+  "ApiAnthropicCompatible": "Compatible Anthropic",
+  "ApiChatFeatures": "chat, outils, images, streaming",
+  "ApiModelsOffered": "Modèles proposés",
+  "ApiModelsOfferedHelp": "Chargés à la première requête",
+  "ApiUnloadAfter": "Décharger après inactivité",
+  "ApiNever": "Jamais",
+  "ApiMinutes": "{0} minutes"
  },
  "de-DE": {
   "NewChat": "Neuer Chat",
@@ -1572,7 +1608,16 @@
   "MusicLoading": "Magenta RealTime wird gestartet…",
   "MusicSaved": "{0} gespeichert",
   "MusicSlow": "Dieser Mac erzeugt Musik etwas langsamer als in Echtzeit, daher kann die Wiedergabe kurz stocken.",
-  "ThoughtForSeconds": "{0} s nachgedacht"
+  "ThoughtForSeconds": "{0} s nachgedacht",
+  "TagEmbedding": "Embeddings",
+  "ApiOpenAiCompatible": "OpenAI-kompatibel",
+  "ApiAnthropicCompatible": "Anthropic-kompatibel",
+  "ApiChatFeatures": "Chat, Tools, Bilder, Streaming",
+  "ApiModelsOffered": "Angebotene Modelle",
+  "ApiModelsOfferedHelp": "Werden bei der ersten Anfrage geladen",
+  "ApiUnloadAfter": "Nach Leerlauf entladen",
+  "ApiNever": "Nie",
+  "ApiMinutes": "{0} Minuten"
  },
  "it-IT": {
   "NewChat": "Nuova chat",
@@ -1887,7 +1932,16 @@
   "MusicLoading": "Caricamento di Magenta RealTime…",
   "MusicSaved": "Salvato {0}",
   "MusicSlow": "Questo Mac genera la musica un po' più lentamente del tempo reale, quindi la riproduzione può fermarsi per un attimo.",
-  "ThoughtForSeconds": "Ha pensato per {0} s"
+  "ThoughtForSeconds": "Ha pensato per {0} s",
+  "TagEmbedding": "Embedding",
+  "ApiOpenAiCompatible": "Compatibile con OpenAI",
+  "ApiAnthropicCompatible": "Compatibile con Anthropic",
+  "ApiChatFeatures": "chat, strumenti, immagini, streaming",
+  "ApiModelsOffered": "Modelli offerti",
+  "ApiModelsOfferedHelp": "Caricati alla prima richiesta",
+  "ApiUnloadAfter": "Scarica dopo inattività",
+  "ApiNever": "Mai",
+  "ApiMinutes": "{0} minuti"
  },
  "ru-RU": {
   "NewChat": "Новый чат",
@@ -2202,6 +2256,15 @@
   "MusicLoading": "Запуск Magenta RealTime…",
   "MusicSaved": "Сохранено: {0}",
   "MusicSlow": "Этот Mac создаёт музыку чуть медленнее реального времени, поэтому возможны короткие паузы.",
-  "ThoughtForSeconds": "Думал {0} с"
+  "ThoughtForSeconds": "Думал {0} с",
+  "TagEmbedding": "Эмбеддинги",
+  "ApiOpenAiCompatible": "Совместимо с OpenAI",
+  "ApiAnthropicCompatible": "Совместимо с Anthropic",
+  "ApiChatFeatures": "чат, инструменты, изображения, потоковая передача",
+  "ApiModelsOffered": "Доступные модели",
+  "ApiModelsOfferedHelp": "Загружаются при первом запросе",
+  "ApiUnloadAfter": "Выгружать при простое",
+  "ApiNever": "Никогда",
+  "ApiMinutes": "{0} мин"
  }
 }

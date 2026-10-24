@@ -40,7 +40,7 @@ public sealed partial class AgentViewModel : ObservableObject
     }
 
     public ObservableCollection<AgentGroup> Groups { get; } = [];
-    public ObservableCollection<InstalledModel> Models => Ioc.Models.Installed;
+    public ObservableCollection<InstalledModel> Models => Ioc.Models.ChatModels;
     public IReadOnlyList<AgentModeOption> Modes { get; }
     public ObservableCollection<string> Files { get; } = [];
 

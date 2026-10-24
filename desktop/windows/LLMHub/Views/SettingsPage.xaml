@@ -9,6 +9,21 @@
     Background="{ThemeResource AppBackgroundBrush}">
 
     <Page.Resources>
+        <!-- Local API endpoint row: method badge, path, what serves it. -->
+        <DataTemplate x:Key="EndpointTemplate" x:DataType="services:ApiEndpoint">
+            <Grid ColumnSpacing="10" Padding="0,3">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="46" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Border CornerRadius="5" Padding="6,1" Background="{ThemeResource SourceChipBrush}" HorizontalAlignment="Left">
+                    <TextBlock Text="{x:Bind Method}" FontFamily="Cascadia Mono, Consolas" FontSize="11" Foreground="{ThemeResource LinkBrush}" />
+                </Border>
+                <TextBlock Grid.Column="1" Text="{x:Bind Path}" FontFamily="Cascadia Mono, Consolas" FontSize="13" IsTextSelectionEnabled="True" />
+                <TextBlock Grid.Column="2" Text="{x:Bind ServedBy}" FontSize="12" Foreground="{ThemeResource TextMutedBrush}" VerticalAlignment="Center" />
+            </Grid>
+        </DataTemplate>
         <!-- One row: name, variant picker, fit, and download / progress / installed state. Shared by the catalog and Hugging Face tabs. -->
         <DataTemplate x:Key="VariantPickerTemplate" x:DataType="vm:DownloadableViewModel">
             <Grid ColumnSpacing="14">
@@ -282,10 +297,43 @@
                 <Border Style="{StaticResource CardStyle}">
                     <StackPanel Spacing="6">
                         <TextBlock Text="{x:Bind services:Loc.S('ApiEndpoints')}" Style="{StaticResource SectionLabelStyle}" />
-                        <TextBlock FontFamily="Cascadia Mono, Consolas" FontSize="13" IsTextSelectionEnabled="True" TextWrapping="Wrap"
-                                   Text="POST /v1/chat/completions   (OpenAI)&#x0a;POST /v1/messages           (Anthropic)&#x0a;POST /v1/messages/count_tokens&#x0a;GET  /v1/models" />
+                        <TextBlock Text="{x:Bind services:Loc.S('ApiOpenAiCompatible')}" FontWeight="SemiBold" FontSize="13" />
+                        <ItemsRepeater ItemsSource="{x:Bind OpenAiEndpoints}" ItemTemplate="{StaticResource EndpointTemplate}" AutomationProperties.AutomationId="ApiEndpointList" />
+                        <TextBlock Text="{x:Bind services:Loc.S('ApiAnthropicCompatible')}" FontWeight="SemiBold" FontSize="13" Margin="0,8,0,0" />
+                        <ItemsRepeater ItemsSource="{x:Bind AnthropicEndpoints}" ItemTemplate="{StaticResource EndpointTemplate}" />
                         <TextBlock Text="{x:Bind services:Loc.S('ApiClaudeCode')}" Style="{StaticResource SectionLabelStyle}" Margin="0,8,0,0" />
                         <TextBox x:Name="ClaudeSnippet" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" FontFamily="Cascadia Mono, Consolas" FontSize="12" />
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource CardStyle}">
+                    <StackPanel Spacing="10">
+                        <Grid ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="{x:Bind services:Loc.S('ApiModelsOffered')}" FontWeight="SemiBold" />
+                                <TextBlock Text="{x:Bind services:Loc.S('ApiModelsOfferedHelp')}" Style="{StaticResource MutedTextStyle}" />
+                            </StackPanel>
+                            <ComboBox x:Name="UnloadBox" Grid.Column="1" Header="{x:Bind services:Loc.S('ApiUnloadAfter')}" MinWidth="170" SelectionChanged="OnUnloadChanged" />
+                        </Grid>
+                        <ItemsRepeater ItemsSource="{x:Bind Models.Installed}" AutomationProperties.AutomationId="ApiModelsOffered">
+                            <ItemsRepeater.ItemTemplate>
+                                <DataTemplate x:DataType="services:InstalledModel">
+                                    <Grid ColumnSpacing="12" Padding="0,3">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{x:Bind services:LocalApiServer.ApiName((services:InstalledModel))}" FontFamily="Cascadia Mono, Consolas" FontSize="13"
+                                                   IsTextSelectionEnabled="True" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Grid.Column="1" Text="{x:Bind local:Ui.EngineLabel((services:InstalledModel))}" FontSize="12" Foreground="{ThemeResource TextMutedBrush}" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsRepeater.ItemTemplate>
+                        </ItemsRepeater>
                     </StackPanel>
                 </Border>
 

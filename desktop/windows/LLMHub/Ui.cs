@@ -90,6 +90,9 @@ public static class Ui
 
     // Studio
     public static Brush RunningBrush(bool running) => running ? Solid(0x5F, 0xD3, 0x8D) : Solid(0x8F, 0x8E, 0x88);
+    /// <summary>"llama.cpp", "LiteRT-LM" or "llama.cpp · embeddings" for the Local API's model list.</summary>
+    public static string EngineLabel(Services.InstalledModel m) =>
+        m.Format == "litertlm" ? "LiteRT-LM" : m.IsEmbedding ? "llama.cpp · " + Services.Loc.S("TagEmbedding") : "llama.cpp";
     public static string Total(string size) => size.Length > 0 ? Services.Loc.F("SettingsTotal", size) : "";
     public static object Box(int value) => value;
     public static double ToDouble(int value) => value;

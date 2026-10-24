@@ -122,6 +122,7 @@ public sealed partial class LocalApiServer : ObservableObject
             app.MapPost("/v1/chat/completions", ctx => Handle(ctx, Api.OpenAi));
             app.MapPost("/v1/messages", ctx => Handle(ctx, Api.Anthropic));
             app.MapPost("/v1/messages/count_tokens", ctx => Handle(ctx, Api.AnthropicCount));
+            MapMediaRoutes(app);
             app.MapGet("/", () => Results.Text("LLM Hub local API"));
             if (_bridge)
                 app.MapPost("/mcp", ctx => Ioc.Agent.Permissions.HandleMcpAsync(ctx));
@@ -192,7 +193,7 @@ public sealed partial class LocalApiServer : ObservableObject
     {
         var body = await JsonNode.ParseAsync(ctx.Request.Body) as JsonObject ?? new JsonObject();
         var requested = body["model"]?.GetValue<string>() ?? "";
-        var model = Ioc.Models.Installed.FirstOrDefault(m => ApiName(m) == requested || m.Id == requested || m.CatalogId == requested);
+        var model = FindChatModel(requested);
         if (model is null)
         {
             await WriteError(ctx, 404, "not_found_error", $"Model '{requested}' is not installed. GET /v1/models lists what is.");
@@ -203,6 +204,7 @@ public sealed partial class LocalApiServer : ObservableObject
         try
         {
             await Ioc.Engines.LoadAsync(model, ctx.RequestAborted, Math.Max(AppSettings.Current.ContextLength, AppSettings.Current.ApiContextLength));
+            MarkApiUse();
             if (model.Format != "litertlm")
                 await ProxyToLlama(ctx, body, model);
             else if (api == Api.AnthropicCount)

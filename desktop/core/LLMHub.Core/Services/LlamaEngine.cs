@@ -31,11 +31,17 @@ public sealed partial class LlamaEngine : ObservableObject
     private readonly StringBuilder _stderrTail = new();
     private readonly SemaphoreSlim _gate = new(1, 1);
     private Process? _process;
+    private readonly bool _embeddings;
 
-    private static string PidFile => Path.Combine(EngineRoot, "server.pid");
+    // Each server keeps its own pid file, so the embedding server never stops the chat model's and vice versa.
+    private string PidFile => Path.Combine(EngineRoot, _embeddings ? "embeddings.pid" : "server.pid");
 
-    public LlamaEngine()
+    /// <param name="embeddings">
+    /// A second, small server for /v1/embeddings (EmbeddingGemma): started with --embeddings, alongside the chat model.
+    /// </param>
+    public LlamaEngine(bool embeddings = false)
     {
+        _embeddings = embeddings;
         if (!OperatingSystem.IsWindows())
             KillStaleServer();
         _http.DefaultRequestHeaders.UserAgent.ParseAdd("LLMHub-Desktop/0.1");
@@ -180,7 +186,7 @@ public sealed partial class LlamaEngine : ObservableObject
     }
 
     /// <summary>Without job objects, a crash can leave llama-server running; the PID file lets the next launch stop it.</summary>
-    private static void KillStaleServer()
+    private void KillStaleServer()
     {
         try
         {
@@ -359,7 +365,7 @@ public sealed partial class LlamaEngine : ObservableObject
             "--alias", model.Id,
             "-ngl", "999",
             "-c", context.ToString(),
-            "--jinja",
+            _embeddings ? "--embeddings" : "--jinja",
         };
 #if DEBUG
         // Testing: pick the GPU llama.cpp uses, e.g. --engine-device Vulkan1 (list them with llama-server --list-devices).
@@ -369,7 +375,7 @@ public sealed partial class LlamaEngine : ObservableObject
             args.Add(device);
         }
 #endif
-        if (model.MmprojPath is { } mmproj && File.Exists(mmproj))
+        if (!_embeddings && model.MmprojPath is { } mmproj && File.Exists(mmproj))
         {
             args.Add("--mmproj");
             args.Add(mmproj);

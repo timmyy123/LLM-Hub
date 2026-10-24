@@ -26,6 +26,7 @@ public partial class App : Application
         Window.Closed += (_, _) =>
         {
             Ioc.Engines.Stop();
+            Ioc.Embeddings.Stop();
             Ioc.Speech.Stop();
             Ioc.Comfy.Stop();
         };

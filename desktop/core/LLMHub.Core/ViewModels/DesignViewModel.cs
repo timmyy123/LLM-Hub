@@ -38,7 +38,7 @@ public sealed partial class DesignViewModel : ObservableObject
     }
 
     public ObservableCollection<DesignProject> Projects => _design.Projects;
-    public ObservableCollection<InstalledModel> Models => Ioc.Models.Installed;
+    public ObservableCollection<InstalledModel> Models => Ioc.Models.ChatModels;
     public ObservableCollection<DesignMessage> Messages { get; } = [];
     public IReadOnlyList<DesignKindOption> Kinds { get; }
     public IReadOnlyList<DesignSystem> Systems => DesignSystem.All;

@@ -108,7 +108,7 @@ public sealed partial class ChatViewModel : ObservableObject
 
     public ObservableCollection<ChatGroup> Groups { get; } = [];
     public ObservableCollection<MessageItem> Messages { get; } = [];
-    public ObservableCollection<InstalledModel> Models => Ioc.Models.Installed;
+    public ObservableCollection<InstalledModel> Models => Ioc.Models.ChatModels;
     /// <summary>Files attached in the composer, sent with the next message.</summary>
     public ObservableCollection<Attachment> PendingAttachments { get; } = [];
 

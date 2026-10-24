@@ -23,6 +23,8 @@ public sealed class AppSettings
     public int ContextLength { get; set; } = 16384;
     /// <summary>Context window for Local API and Agent requests (capped by the model). Claude Code alone sends about 18k tokens.</summary>
     public int ApiContextLength { get; set; } = 65536;
+    /// <summary>Local API: free the model's memory after this many idle minutes; 0 keeps it loaded.</summary>
+    public int ApiUnloadAfterMinutes { get; set; } = 10;
     /// <summary>Models where the user turned multi-token prediction off (it is on by default where supported).</summary>
     public List<string> MtpOff { get; set; } = [];
 

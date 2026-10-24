@@ -38,6 +38,9 @@ public sealed partial class SettingsPage : Page
             AgentContextBox.Items.Add(new ComboBoxItem { Content = $"{size / 1024}K", Tag = size });
         AgentContextBox.SelectedItem = AgentContextBox.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (int)i.Tag == Settings.AgentContext) ?? AgentContextBox.Items[1];
         WebSearchToggle.IsOn = Settings.WebSearch;
+        foreach (var (minutes, label) in LocalApiServer.UnloadChoices)
+            UnloadBox.Items.Add(new ComboBoxItem { Content = label, Tag = minutes });
+        UnloadBox.SelectedItem = UnloadBox.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (int)i.Tag == AppSettings.Current.ApiUnloadAfterMinutes) ?? UnloadBox.Items[0];
 
         var s = AppSettings.Current;
         ApiToggle.IsOn = s.ApiEnabled;
@@ -56,6 +59,8 @@ public sealed partial class SettingsPage : Page
 
     public ModelsViewModel Models => Ioc.ModelsVm;
     public SettingsViewModel Settings => Ioc.SettingsVm;
+    public IReadOnlyList<ApiEndpoint> OpenAiEndpoints { get; } = LocalApiServer.Endpoints.Where(e => !e.Anthropic).ToList();
+    public IReadOnlyList<ApiEndpoint> AnthropicEndpoints { get; } = LocalApiServer.Endpoints.Where(e => e.Anthropic).ToList();
     public LocalApiServer Api => Ioc.Api;
     public bool HasApiRequests => Api.Requests.Count > 0;
 
@@ -192,6 +197,14 @@ public sealed partial class SettingsPage : Page
             return;
         Settings.Appearance = tag;
         App.Window?.ApplyAppearance();
+    }
+
+    private void OnUnloadChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_initializing || UnloadBox.SelectedItem is not ComboBoxItem { Tag: int minutes })
+            return;
+        AppSettings.Current.ApiUnloadAfterMinutes = minutes;
+        AppSettings.Save();
     }
 
     private void OnVoiceChanged(object sender, SelectionChangedEventArgs e)

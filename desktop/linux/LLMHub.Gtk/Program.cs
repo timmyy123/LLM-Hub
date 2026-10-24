@@ -49,6 +49,7 @@ app.OnActivate += (_, _) =>
 app.OnShutdown += (_, _) =>
 {
     Ioc.Engines.Stop();
+    Ioc.Embeddings.Stop();
     Ioc.Speech.Stop();
     Ioc.Comfy.Stop();
 };

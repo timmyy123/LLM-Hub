@@ -11,6 +11,8 @@ public static class Ioc
     public static ModelStore Models { get; } = new();
     public static DownloadManager Downloads { get; } = new(HuggingFace, Models);
     public static LlamaEngine Llama { get; } = new();
+    /// <summary>EmbeddingGemma for /v1/embeddings, on its own small llama-server next to the chat model.</summary>
+    public static LlamaEngine Embeddings { get; } = new(embeddings: true);
     public static LiteRtEngine LiteRt { get; } = new();
     public static EngineHub Engines { get; } = new(Llama, LiteRt);
     public static ChatStore Chats { get; } = new();

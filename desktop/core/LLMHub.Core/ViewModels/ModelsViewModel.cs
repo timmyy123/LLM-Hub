@@ -174,6 +174,7 @@ public sealed partial class CatalogItemViewModel(CatalogModel model) : Downloada
         "vision" => Loc.S("TagVision"),
         "audio" => Loc.S("TagAudio"),
         "thinking" => Loc.S("TagThinking"),
+        "embedding" => Loc.S("TagEmbedding"),
         _ => tag,
     };
 }

@@ -400,6 +400,23 @@
           "mtp": true
         }
       ]
+    },
+    {
+      "id": "embeddinggemma-300m",
+      "name": "EmbeddingGemma 300M",
+      "maker": "Google",
+      "tags": [
+        "embedding"
+      ],
+      "contextLength": 2048,
+      "minRamGB": 1,
+      "sources": [
+        {
+          "repo": "ggml-org/embeddinggemma-300M-GGUF",
+          "format": "gguf",
+          "preferredQuant": "Q8_0"
+        }
+      ]
     }
   ]
 }
