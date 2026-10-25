@@ -155,8 +155,9 @@ public sealed class DownloadManager(HuggingFaceClient hf, ModelStore store)
 
         if (file.Sha256 is { Length: 64 } expected)
         {
-            await using var stream = new FileStream(part, FileMode.Open, FileAccess.Read, FileShare.Read, 1 << 20, useAsync: true);
-            var actual = Convert.ToHexStringLower(await SHA256.HashDataAsync(stream, ct));
+            string actual;
+            await using (var stream = new FileStream(part, FileMode.Open, FileAccess.Read, FileShare.Read, 1 << 20, useAsync: true))
+                actual = Convert.ToHexStringLower(await SHA256.HashDataAsync(stream, ct));
             if (!string.Equals(actual, expected, StringComparison.OrdinalIgnoreCase))
             {
                 File.Delete(part);
