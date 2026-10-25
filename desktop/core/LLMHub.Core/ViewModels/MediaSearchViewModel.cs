@@ -103,6 +103,9 @@ public sealed partial class MediaSearchViewModel : ObservableObject
     public bool IsVideos => Mode == "videos";
     public string Folder => Mode switch { "photos" => PhotoFolder, "audio" => AudioFolder, _ => VideoFolder };
     public bool HasModel => SelectedModel is not null;
+    /// <summary>EmbeddingGemma 2's image and audio encoders run on LiteRT-LM, which has no Windows on Arm build.</summary>
+    public bool Supported => LiteRtEngine.IsSupported;
+    public bool ShowGetModel => Supported && !HasModel;
     /// <summary>Audio needs the 740M build; photos and videos work with either.</summary>
     public bool ModelFitsMode => SelectedModel is { } m && m.Tags.Contains(IsAudio ? "audio" : "vision");
     /// <summary>Videos with 440M, which has no audio encoder: moments are matched from their frames only.</summary>
@@ -133,6 +136,7 @@ public sealed partial class MediaSearchViewModel : ObservableObject
     partial void OnSelectedModelChanged(InstalledModel? value)
     {
         OnPropertyChanged(nameof(HasModel));
+        OnPropertyChanged(nameof(ShowGetModel));
         OnPropertyChanged(nameof(ModelFitsMode));
         OnPropertyChanged(nameof(VideoFramesOnly));
         // Choosing a model is the user's; loading the view model must not rewrite settings.

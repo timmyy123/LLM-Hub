@@ -466,7 +466,8 @@
   "SearchVideoFramesOnly": "EmbeddingGemma 2 440M has no audio encoder, so moments are matched from the frames only. Get 740M in Settings › Models to search by sound too.",
   "SearchPlayFrom": "Play from {0}",
   "SearchUnreadable": "{0} could not be opened.",
-  "SearchNoVideoDecoder": "To index videos, install ffmpeg or GStreamer (gst-launch-1.0)."
+  "SearchNoVideoDecoder": "To index videos, install ffmpeg or GStreamer (gst-launch-1.0).",
+  "SearchNoArm": "Photo, audio and video search runs on LiteRT-LM, which Google doesn't make for Windows on Arm yet, so it isn't available on this PC."
  },
  "es-ES": {
   "NewChat": "Nuevo chat",
@@ -935,7 +936,8 @@
   "SearchVideoFramesOnly": "EmbeddingGemma 2 440M no tiene codificador de audio, así que los momentos se buscan solo por los fotogramas. Descarga 740M en Ajustes › Modelos para buscar también por el sonido.",
   "SearchPlayFrom": "Reproducir desde {0}",
   "SearchUnreadable": "No se pudieron abrir {0}.",
-  "SearchNoVideoDecoder": "Para indexar vídeos, instala ffmpeg o GStreamer (gst-launch-1.0)."
+  "SearchNoVideoDecoder": "Para indexar vídeos, instala ffmpeg o GStreamer (gst-launch-1.0).",
+  "SearchNoArm": "La búsqueda de fotos, audio y vídeo funciona con LiteRT-LM, que Google aún no ofrece para Windows en Arm, así que no está disponible en este equipo."
  },
  "pt-BR": {
   "NewChat": "Nova conversa",
@@ -1404,7 +1406,8 @@
   "SearchVideoFramesOnly": "O EmbeddingGemma 2 440M não tem codificador de áudio, por isso os momentos são encontrados só pelos quadros. Baixe o 740M em Ajustes › Modelos para buscar também pelo som.",
   "SearchPlayFrom": "Reproduzir a partir de {0}",
   "SearchUnreadable": "Não foi possível abrir {0}.",
-  "SearchNoVideoDecoder": "Para indexar vídeos, instale o ffmpeg ou o GStreamer (gst-launch-1.0)."
+  "SearchNoVideoDecoder": "Para indexar vídeos, instale o ffmpeg ou o GStreamer (gst-launch-1.0).",
+  "SearchNoArm": "A busca de fotos, áudio e vídeo usa o LiteRT-LM, que o Google ainda não oferece para Windows em Arm, então ela não está disponível neste PC."
  },
  "fr-FR": {
   "NewChat": "Nouvelle discussion",
@@ -1873,7 +1876,8 @@
   "SearchVideoFramesOnly": "EmbeddingGemma 2 440M n'a pas d'encodeur audio : les moments sont donc trouvés uniquement à partir des images. Téléchargez 740M dans Réglages › Modèles pour chercher aussi par le son.",
   "SearchPlayFrom": "Lire à partir de {0}",
   "SearchUnreadable": "{0} n'ont pas pu être ouvertes.",
-  "SearchNoVideoDecoder": "Pour indexer des vidéos, installez ffmpeg ou GStreamer (gst-launch-1.0)."
+  "SearchNoVideoDecoder": "Pour indexer des vidéos, installez ffmpeg ou GStreamer (gst-launch-1.0).",
+  "SearchNoArm": "La recherche de photos, d’audio et de vidéos repose sur LiteRT-LM, que Google ne propose pas encore pour Windows sur Arm. Elle n’est donc pas disponible sur ce PC."
  },
  "de-DE": {
   "NewChat": "Neuer Chat",
@@ -2342,7 +2346,8 @@
   "SearchVideoFramesOnly": "EmbeddingGemma 2 440M hat keinen Audio-Encoder, daher werden Momente nur anhand der Bilder gefunden. Lade 740M unter Einstellungen › Modelle, um auch nach Geräuschen zu suchen.",
   "SearchPlayFrom": "Ab {0} abspielen",
   "SearchUnreadable": "{0} ließen sich nicht öffnen.",
-  "SearchNoVideoDecoder": "Um Videos zu indexieren, installiere ffmpeg oder GStreamer (gst-launch-1.0)."
+  "SearchNoVideoDecoder": "Um Videos zu indexieren, installiere ffmpeg oder GStreamer (gst-launch-1.0).",
+  "SearchNoArm": "Die Suche in Fotos, Audio und Videos läuft mit LiteRT-LM, das Google für Windows auf Arm noch nicht anbietet. Auf diesem PC ist sie deshalb nicht verfügbar."
  },
  "it-IT": {
   "NewChat": "Nuova chat",
@@ -2811,7 +2816,8 @@
   "SearchVideoFramesOnly": "EmbeddingGemma 2 440M non ha un encoder audio, quindi i momenti vengono trovati solo dai fotogrammi. Scarica 740M in Impostazioni › Modelli per cercare anche in base ai suoni.",
   "SearchPlayFrom": "Riproduci da {0}",
   "SearchUnreadable": "Impossibile aprirne {0}.",
-  "SearchNoVideoDecoder": "Per indicizzare i video, installa ffmpeg o GStreamer (gst-launch-1.0)."
+  "SearchNoVideoDecoder": "Per indicizzare i video, installa ffmpeg o GStreamer (gst-launch-1.0).",
+  "SearchNoArm": "La ricerca di foto, audio e video usa LiteRT-LM, che Google non offre ancora per Windows su Arm, quindi su questo PC non è disponibile."
  },
  "ru-RU": {
   "NewChat": "Новый чат",
@@ -3280,6 +3286,7 @@
   "SearchVideoFramesOnly": "У EmbeddingGemma 2 440M нет аудиокодировщика, поэтому моменты ищутся только по кадрам. Скачайте 740M в Настройках › Модели, чтобы искать и по звуку.",
   "SearchPlayFrom": "Воспроизвести с {0}",
   "SearchUnreadable": "Не удалось открыть: {0}.",
-  "SearchNoVideoDecoder": "Чтобы индексировать видео, установите ffmpeg или GStreamer (gst-launch-1.0)."
+  "SearchNoVideoDecoder": "Чтобы индексировать видео, установите ffmpeg или GStreamer (gst-launch-1.0).",
+  "SearchNoArm": "Поиск по фото, аудио и видео работает на LiteRT-LM, а Google пока не выпускает его для Windows на Arm, поэтому на этом ПК он недоступен."
  }
 }

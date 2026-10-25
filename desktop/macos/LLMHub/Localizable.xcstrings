@@ -15465,6 +15465,53 @@
         }
       }
     },
+    "SearchNoArm": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Photo, audio and video search runs on LiteRT-LM, which Google doesn't make for Windows on Arm yet, so it isn't available on this PC."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La búsqueda de fotos, audio y vídeo funciona con LiteRT-LM, que Google aún no ofrece para Windows en Arm, así que no está disponible en este equipo."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A busca de fotos, áudio e vídeo usa o LiteRT-LM, que o Google ainda não oferece para Windows em Arm, então ela não está disponível neste PC."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La recherche de photos, d’audio et de vidéos repose sur LiteRT-LM, que Google ne propose pas encore pour Windows sur Arm. Elle n’est donc pas disponible sur ce PC."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Suche in Fotos, Audio und Videos läuft mit LiteRT-LM, das Google für Windows auf Arm noch nicht anbietet. Auf diesem PC ist sie deshalb nicht verfügbar."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La ricerca di foto, audio e video usa LiteRT-LM, che Google non offre ancora per Windows su Arm, quindi su questo PC non è disponibile."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Поиск по фото, аудио и видео работает на LiteRT-LM, а Google пока не выпускает его для Windows на Arm, поэтому на этом ПК он недоступен."
+          }
+        }
+      }
+    },
     "SearchNoFolder": {
       "extractionState": "manual",
       "localizations": {

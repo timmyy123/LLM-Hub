@@ -191,8 +191,10 @@
                         <ToggleButton x:Name="SearchAudioTab" Tag="audio" Content="{x:Bind services:Loc.S('SearchAudio')}" Click="OnSearchModeClick" CornerRadius="14" />
                         <ToggleButton x:Name="SearchVideosTab" Tag="videos" Content="{x:Bind services:Loc.S('SearchVideos')}" Click="OnSearchModeClick" CornerRadius="14" />
                     </StackPanel>
+                    <TextBlock Text="{x:Bind services:Loc.S('SearchNoArm')}" FontSize="12" Foreground="{ThemeResource WarningBrush}" TextWrapping="Wrap"
+                               Visibility="{x:Bind local:Ui.Hide(Search.Supported)}" AutomationProperties.AutomationId="SearchNoArm" />
                     <TextBlock Text="{x:Bind services:Loc.S('SearchGetModel')}" Style="{StaticResource MutedTextStyle}" TextWrapping="Wrap"
-                               Visibility="{x:Bind local:Ui.Hide(Search.HasModel), Mode=OneWay}" AutomationProperties.AutomationId="SearchGetModel" />
+                               Visibility="{x:Bind local:Ui.Show(Search.ShowGetModel), Mode=OneWay}" AutomationProperties.AutomationId="SearchGetModel" />
                     <StackPanel Spacing="6" Visibility="{x:Bind local:Ui.Show(Search.HasModel), Mode=OneWay}">
                         <TextBlock Text="{x:Bind services:Loc.S('SearchModel')}" Style="{StaticResource FieldLabelStyle}" />
                         <ComboBox x:Name="SearchModelPicker" HorizontalAlignment="Stretch" ItemsSource="{x:Bind Search.Models}" SelectedItem="{x:Bind Search.SelectedModel, Mode=TwoWay}" />
@@ -215,7 +217,7 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <Button x:Name="SearchIndexButton" HorizontalAlignment="Stretch" CornerRadius="9" Content="{x:Bind services:Loc.S('SearchIndex')}" Command="{x:Bind Search.IndexCommand}"
-                                IsEnabled="{x:Bind local:Ui.Not(Search.IsIndexing), Mode=OneWay}" />
+                                IsEnabled="{x:Bind local:Ui.Not(Search.IsIndexing), Mode=OneWay}" Visibility="{x:Bind local:Ui.Show(Search.Supported)}" />
                         <Button Grid.Column="1" CornerRadius="9" Content="{x:Bind services:Loc.S('Stop')}" Command="{x:Bind Search.StopIndexingCommand}"
                                 Visibility="{x:Bind local:Ui.Show(Search.IsIndexing), Mode=OneWay}" />
                     </Grid>
