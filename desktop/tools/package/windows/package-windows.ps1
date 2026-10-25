@@ -107,18 +107,22 @@ if ($env:LLMHUB_SIGN_COMMAND) {
 if ($IsccSign) { "Signing: on" } else { "Signing: off (set LLMHUB_SIGN_CERT, LLMHUB_SIGN_THUMBPRINT or LLMHUB_SIGN_COMMAND)" }
 
 function Invoke-Sign([string[]]$files) {
+    if (-not $IsccSign) { return }
     foreach ($file in $files) {
-        if ($env:LLMHUB_SIGN_COMMAND) {
-            $cmdFile = Join-Path $Work "sign.cmd"
-            Set-Content $cmdFile ("@" + $env:LLMHUB_SIGN_COMMAND.Replace('"{file}"', '{file}').Replace("{file}", "`"$file`"")) -Encoding ASCII
-            & cmd.exe /c $cmdFile
-            Remove-Item $cmdFile
-        } elseif ($SignArgs) {
-            & $SignTool sign @SignArgs $file
-        } else {
-            return
+        # Timestamp servers fail now and then, so try a few times (Inno Setup retries its own signing too).
+        for ($attempt = 1; $attempt -le 4; $attempt++) {
+            if ($env:LLMHUB_SIGN_COMMAND) {
+                $cmdFile = Join-Path $Work "sign.cmd"
+                Set-Content $cmdFile ("@" + $env:LLMHUB_SIGN_COMMAND.Replace('"{file}"', '{file}').Replace("{file}", "`"$file`"")) -Encoding ASCII
+                & cmd.exe /c $cmdFile
+                Remove-Item $cmdFile
+            } else {
+                & $SignTool sign /q @SignArgs $file
+            }
+            if ($LASTEXITCODE -eq 0) { break }
+            if ($attempt -eq 4) { throw "signing failed: $file" }
+            Start-Sleep -Seconds (5 * $attempt)
         }
-        if ($LASTEXITCODE -ne 0) { throw "signing failed: $file" }
     }
 }
 

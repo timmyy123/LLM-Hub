@@ -45,6 +45,8 @@ ShowLanguageDialog=auto
 #ifdef Sign
 SignTool=llmhub
 SignedUninstaller=yes
+SignToolRetryCount=4
+SignToolRetryDelay=5000
 #endif
 
 [Languages]
