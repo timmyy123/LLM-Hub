@@ -13,6 +13,8 @@ desktop/
   linux/LLMHub.Gtk/        GTK 4 / libadwaita app (C#, .NET 10, Gir.Core); UiTests.cs is its end-to-end suite
   macos/                   SwiftUI app (XcodeGen project.yml) and LLMHubUITests (XCUITest)
   tools/make_xcstrings.py  Builds the macOS string catalog from core/LLMHub.Core/strings.json
+  tools/package/           Installer scripts (see Packaging)
+  version.xcconfig         The app version for all three apps and every installer
 ```
 
 ## Windows
@@ -116,3 +118,104 @@ by default. GGUF requests are proxied to `llama-server`; LiteRT-LM and Apple Int
 All strings live in `core/LLMHub.Core/strings.json` for en-US, es-ES, pt-BR, fr-FR, de-DE, it-IT and ru-RU, written
 natively per language and without em or en dashes. Windows and Linux embed that file (`Loc.S("Key")`, in XAML
 `{x:Bind services:Loc.S('Key')}`). After editing it, run `python3 desktop/tools/make_xcstrings.py` to update macOS.
+
+## Packaging
+
+The version lives in `desktop/version.xcconfig` (`MARKETING_VERSION`, plus `CURRENT_PROJECT_VERSION` as the build
+number). Xcode, MSBuild (`desktop/Directory.Build.props`) and the scripts below all read it. Icons come from
+`desktop/shared/icons`; `python3 desktop/tools/package/make_icons.py` regenerates the MSIX logos from
+`llmhub-1024.png`. Output goes to `desktop/tools/package/out`, intermediate files to `desktop/tools/package/work`
+(both ignored by git; delete `work` afterwards).
+
+Installers carry the app and its runtimes only. llama.cpp, LiteRT-LM, whisper.cpp, ComfyUI with its Python, voices
+and every model are downloaded by the app on first use, into the data folder (see Data), so they survive updates.
+
+### Windows (x64 and Arm64)
+
+Requirements: everything under Windows above, Visual Studio's C++ build tools for x64 and ARM64 (the installers ship
+the Visual C++ runtime from its `VC\Redist` folder, which ONNX Runtime and the downloaded llama.cpp builds need) and
+Inno Setup 6.3 or later (`winget install JRSoftware.InnoSetup`). Run on an x64 PC; Arm64 is cross-compiled.
+
+```powershell
+desktop\tools\package\windows\package-windows.ps1 [-Arch x64|arm64|all] [-Kind setup|msix|all] [-SdCli <sd-cli.exe>]
+```
+
+| File | What it is |
+|---|---|
+| `LLMHub-<version>-win-<arch>-setup.exe` | Per-user installer for direct download. No admin rights: installs to `%LOCALAPPDATA%\Programs\LLM Hub`, adds a Start menu shortcut (desktop icon optional) and an entry in Settings › Apps for uninstalling, which offers to delete the data folder too. Upgrades install over the old version. |
+| `LLMHub-<version>-win-<arch>.msix`, `LLMHub-<version>-win.msixbundle` | Microsoft Store packages (`-p:WindowsPackageType=MSIX`, manifest in `windows/LLMHub/Package.appxmanifest`). Unsigned: Partner Center signs Store packages. |
+
+Both are self-contained (.NET 10, Windows App SDK, Visual C++ runtime). The Arm64 build adds Qualcomm's QNN runtime and
+`sd-cli.exe` for Studio's NPU video, built with `desktop\windows\sdcpp\build.ps1` (or passed with `-SdCli`); without it
+Studio hides that workflow.
+
+Signing: the installers work unsigned, but SmartScreen shows "Windows protected your PC" (More info › Run anyway) until
+the publisher has a reputation. To sign `LLMHub.exe`, the installer and its uninstaller, set before running the script:
+`LLMHUB_SIGN_CERT` (a .pfx) and `LLMHUB_SIGN_PASSWORD`, or `LLMHUB_SIGN_THUMBPRINT` (a certificate in the user's store,
+for example on a token), or `LLMHUB_SIGN_COMMAND` (any command line with `{file}`, for example Azure Trusted Signing's
+`signtool /dlib` command). `LLMHUB_SIGN_TIMESTAMP` changes the timestamp server.
+
+Microsoft Store: reserve the name in Partner Center, then build with the values from Product management › Product
+identity and upload the `.msixbundle`:
+
+```powershell
+desktop\tools\package\windows\package-windows.ps1 -Kind msix -StoreIdentityName <Package/Identity/Name> `
+  -StorePublisher "<Package/Identity/Publisher>" -StorePublisherDisplayName "<Publisher display name>"
+```
+
+The package uses the `runFullTrust` restricted capability (a desktop app that starts engines as child processes), which
+Partner Center asks to justify. Each upload needs a higher `MARKETING_VERSION`. The Windows App Certification Kit
+(`appcert.exe test -appxpackagepath <msix> -reportoutputpath report.xml`) passes; its optional checks flag duplicate
+WinRT GUIDs in Windows App SDK's own metadata and process launching, both expected for a full-trust app.
+
+### macOS
+
+Requirements: everything under macOS above. Apple silicon only (MLX and Apple Intelligence need it).
+
+```bash
+desktop/tools/package/macos/package-macos.sh [--identity "<signing identity>"] [--notarize <keychain profile>]
+```
+
+It builds Release, signs every nested library and the app with the hardened runtime and
+`macos/LLMHub/LLMHub.entitlements`, and makes `LLMHub-<version>-macos-arm64.dmg` with the app and an Applications link
+to drag it onto. Without `--identity` it uses the first "Developer ID Application" certificate in the keychain, else
+signs ad hoc. An "Apple Development" identity works for testing on your own Macs only.
+
+Entitlements: the app is not sandboxed (it runs llama.cpp, ComfyUI and Claude Code as child processes and reads folders
+you pick), so network and file entitlements do not apply. Under the hardened runtime it needs only
+`com.apple.security.device.audio-input` (dictation). No JIT or unsigned-memory entitlements: MLX compiles Metal
+shaders through Metal, the bundled LiteRT-LM, ONNX Runtime and whisper.cpp libraries are signed with the app, and the
+downloaded llama.cpp runs as its own process.
+
+To ship outside the Mac App Store it must be signed with Developer ID and notarized:
+
+1. Create the certificate (Account Holder role): Xcode › Settings › Accounts › Manage Certificates › + ›
+   Developer ID Application. Check it with `security find-identity -v -p codesigning`.
+2. Create an app-specific password at account.apple.com (Sign-In and Security › App-Specific Passwords), then save it
+   for notarytool (it asks for the password): `xcrun notarytool store-credentials llmhub-notary --apple-id <Apple ID>
+   --team-id 76K65T869A`.
+3. Build, sign, notarize and staple: `desktop/tools/package/macos/package-macos.sh --identity "Developer ID Application:
+   <Name> (76K65T869A)" --notarize llmhub-notary`. If Apple rejects it, `xcrun notarytool log <submission id>
+   --keychain-profile llmhub-notary` says why.
+4. Check: `spctl -a -t open --context context:primary-signature -vv <dmg>` says "accepted, source=Notarized Developer
+   ID", and so does `spctl -a -t exec -vv /Applications/LLMHub.app` after installing it.
+
+### Linux (x64)
+
+Requirements: .NET 10 SDK and `dpkg-deb` (any Linux; WSL works).
+
+```bash
+desktop/tools/package/linux/package-linux.sh [--kind deb|appimage|all]
+```
+
+| File | What it is |
+|---|---|
+| `llmhub_<version>_amd64.deb` | Debian, Ubuntu 24.04 or later and derivatives. Installs to `/usr/lib/llmhub` with `llmhub` on PATH, a desktop entry, icons and AppStream data. Depends on GTK 4, libadwaita 1.4+, libgomp1, OpenSSL and ICU; recommends WebKitGTK 6.0 (Design preview), PipeWire or ALSA tools (dictation, read aloud), GStreamer or FFmpeg (Studio search) and git (Agent). |
+| `LLMHub-<version>-x86_64.AppImage` | Every other distribution: one file, `chmod +x` and run. Uses the system's GTK 4 and libadwaita and says what to install when they are missing. |
+
+Both are self-contained .NET publishes (no .NET install needed), with the desktop entry and icon under the GTK
+application ID `app.llmhub.Desktop`. The script downloads a pinned appimagetool and AppImage runtime (checked by
+SHA-256). AppImage rather than Flatpak: Flatpak's sandbox would cut the app off from what it is built around, namely
+running the llama.cpp, ComfyUI and Python builds it downloads with the host's GPU drivers (CUDA, ROCm, Vulkan) and
+driving Claude Code and git on the host for Agent; it would need `--talk-name=org.freedesktop.Flatpak` and device
+access that Flathub does not accept for this. An AppImage runs unconfined, like the .deb.

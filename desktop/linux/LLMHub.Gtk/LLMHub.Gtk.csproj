@@ -9,7 +9,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Version>0.1.0</Version>
+    <!-- Version: desktop/version.xcconfig, through desktop/Directory.Build.props. -->
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="GirCore.Adw-1" Version="0.8.1" />

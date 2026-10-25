@@ -5,11 +5,13 @@ options:
     macOS: "26.0"
   createIntermediateGroups: true
   developmentLanguage: en
+# MARKETING_VERSION and CURRENT_PROJECT_VERSION come from desktop/version.xcconfig (shared with Windows and Linux).
+configFiles:
+  Debug: ../version.xcconfig
+  Release: ../version.xcconfig
 settings:
   base:
     SWIFT_VERSION: "5.0"
-    MARKETING_VERSION: "0.1.0"
-    CURRENT_PROJECT_VERSION: "1"
     CODE_SIGN_IDENTITY: "-"
     CODE_SIGN_STYLE: Manual
     DEVELOPMENT_TEAM: ""
@@ -77,6 +79,9 @@ targets:
       path: LLMHub/LLMHub.entitlements
       properties:
         com.apple.security.app-sandbox: false
+        # Dictation under the hardened runtime (Developer ID builds from tools/package/macos). Not sandboxed, so no
+        # network or file entitlements are needed.
+        com.apple.security.device.audio-input: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: app.llm-hub.desktop

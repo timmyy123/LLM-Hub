@@ -1,0 +1,14 @@
+#!/bin/sh
+# AppImage entry point. LLM Hub uses the system's GTK 4 and libadwaita (and WebKitGTK 6.0 for the Design preview),
+# like the .deb, so say what to install when they are missing instead of failing with a .NET stack trace.
+HERE=$(dirname "$(readlink -f "$0")")
+if ! { ldconfig -p 2>/dev/null || /sbin/ldconfig -p 2>/dev/null; } | grep -q 'libadwaita-1\.so\.0'; then
+  msg="LLM Hub needs GTK 4 and libadwaita 1.4 or later. Install them with your package manager:
+  Debian, Ubuntu: sudo apt install libgtk-4-1 libadwaita-1-0 libgomp1
+  Fedora: sudo dnf install gtk4 libadwaita libgomp
+  Arch: sudo pacman -S gtk4 libadwaita"
+  echo "$msg" >&2
+  command -v zenity >/dev/null 2>&1 && zenity --error --no-wrap --text="$msg" 2>/dev/null
+  exit 1
+fi
+exec "$HERE/usr/lib/llmhub/llmhub" "$@"
