@@ -1,18 +1,41 @@
 import Foundation
+import os
 import whisper
 
 /// whisper.cpp in process (the official Apple build, Metal on Apple silicon). One context, used by one call at a time.
 actor WhisperTranscriber {
     private var context: OpaquePointer?
     private var loadedPath: String?
+    /// The loaded context, also reachable from the quit handler: whisper.cpp's Metal device aborts in its exit-time
+    /// destructor while a context is still alive ("LLM Hub quit unexpectedly" after any dictation).
+    private static let live = OSAllocatedUnfairLock<(context: OpaquePointer?, busy: Bool)>(initialState: (nil, false))
 
     deinit {
+        if let context { Self.release(context) }
+    }
+
+    /// Frees the context when the app quits (not mid-transcription, which still owns it).
+    nonisolated static func freeOnQuit() {
+        let context = live.withLock { state -> OpaquePointer? in
+            guard !state.busy, let context = state.context else { return nil }
+            state.context = nil
+            return context
+        }
         if let context { whisper_free(context) }
+    }
+
+    private static func release(_ context: OpaquePointer) {
+        let owned = live.withLock { state -> Bool in
+            guard state.context == context else { return false }
+            state.context = nil
+            return true
+        }
+        if owned { whisper_free(context) }
     }
 
     func load(_ modelPath: URL) throws {
         if loadedPath == modelPath.path, context != nil { return }
-        if let context { whisper_free(context) }
+        if let context { Self.release(context) }
         context = nil
         // Quiet: whisper.cpp logs every layer to stderr otherwise.
         whisper_log_set({ _, _, _ in }, nil)
@@ -24,10 +47,11 @@ actor WhisperTranscriber {
         }
         context = ctx
         loadedPath = modelPath.path
+        Self.live.withLock { $0.context = ctx }
     }
 
     func unload() {
-        if let context { whisper_free(context) }
+        if let context { Self.release(context) }
         context = nil
         loadedPath = nil
     }
@@ -45,6 +69,8 @@ actor WhisperTranscriber {
         params.print_timestamps = false
         params.suppress_blank = true
         let code = language ?? "auto"
+        Self.live.withLock { $0.busy = true }
+        defer { Self.live.withLock { $0.busy = false } }
         let status = code.withCString { lang -> Int32 in
             params.language = lang
             return samples.withUnsafeBufferPointer { whisper_full(context, params, $0.baseAddress, Int32($0.count)) }

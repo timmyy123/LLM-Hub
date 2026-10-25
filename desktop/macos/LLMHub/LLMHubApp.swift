@@ -60,6 +60,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             AppModel.shared.embeddings.stop()
             AppModel.shared.agent.openClaw.stopGateway()
         }
+        WhisperTranscriber.freeOnQuit()
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
