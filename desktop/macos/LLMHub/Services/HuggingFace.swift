@@ -182,15 +182,43 @@ actor HuggingFaceClient {
         let mmproj = projectors.first { $0.fileName.contains("F16") && !$0.fileName.contains("BF16") }
             ?? projectors.first { $0.fileName.contains("BF16") } ?? projectors.first
         let weights = all.filter { !$0.fileName.lowercased().contains("mmproj") }
-        let groups = Dictionary(grouping: weights) { file -> String in
-            let name = file.fileName
-            let range = NSRange(name.startIndex..., in: name)
-            guard let match = quantRegex.firstMatch(in: name, range: range),
-                  let r = Range(match.range(withName: "q"), in: name) else { return "GGUF" }
-            return name[r].uppercased()
+        // One variant per model file, with the parts of a split model ("-00001-of-00003") kept together. Two different
+        // files can carry the same quant (LFM2.5's Q4_0 and QAD-Q4_0): those get the words that tell them apart.
+        let models = Dictionary(grouping: weights) { file in
+            splitSuffix.stringByReplacingMatches(in: file.path, range: NSRange(file.path.startIndex..., in: file.path), withTemplate: "").lowercased()
+        }.values.map { parts -> (quant: String, stem: String, files: [HfFile]) in
+            let files = parts.sorted { $0.path < $1.path }
+            let name = files[0].fileName
+            let quant = quantRegex.firstMatch(in: name, range: NSRange(name.startIndex..., in: name))
+                .flatMap { Range($0.range(withName: "q"), in: name) }.map { name[$0].uppercased() } ?? "GGUF"
+            let stem = splitSuffix.stringByReplacingMatches(in: name, range: NSRange(name.startIndex..., in: name), withTemplate: "")
+            return (quant, (stem as NSString).deletingPathExtension, files)
         }
-        return groups.map { GgufVariant(repo: repo, quant: $0.key, files: $0.value.sorted { $0.path < $1.path }, mmproj: mmproj) }
-            .sorted { $0.weightBytes < $1.weightBytes }
+        return Dictionary(grouping: models, by: \.quant).values.flatMap { same in
+            same.map { model in
+                GgufVariant(repo: repo, quant: same.count == 1 ? model.quant : distinct(model.stem, among: same.map(\.stem)),
+                            files: model.files, mmproj: mmproj)
+            }
+        }
+        .sorted { ($0.weightBytes, $0.quant) < ($1.weightBytes, $1.quant) }
+    }
+
+    private static let splitSuffix = try! NSRegularExpression(pattern: #"-\d{5}-of-\d{5}(?=\.gguf$)"#, options: [.caseInsensitive])
+
+    /// The words of `stem` after those every stem in `stems` shares ("QAD-Q4_0").
+    private static func distinct(_ stem: String, among stems: [String]) -> String {
+        let separators = CharacterSet(charactersIn: "-_.")
+        let words = stem.components(separatedBy: separators)
+        let others = stems.map { $0.components(separatedBy: separators) }
+        var common = 0
+        while common < words.count - 1, others.allSatisfy({ $0.count > common && $0[common].caseInsensitiveCompare(words[common]) == .orderedSame }) {
+            common += 1
+        }
+        var rest = Substring(stem)
+        for word in words.prefix(common) {
+            if let r = rest.range(of: word) { rest = rest[r.upperBound...].drop { "-_.".contains($0) } }
+        }
+        return rest.isEmpty ? stem : rest.uppercased()
     }
 
     static func check(_ response: URLResponse) throws {
