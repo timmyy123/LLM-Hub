@@ -47,8 +47,7 @@ private struct GenerateForm: View {
                             .padding(.horizontal, 8)
                             .padding(.vertical, 8)
                             .frame(minHeight: 100, maxHeight: 180)
-                            .background(Theme.surfaceAlt, in: .rect(cornerRadius: 10))
-                            .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Theme.controlBorder))
+                            .glassEffect(.regular, in: .rect(cornerRadius: 10))
                             .accessibilityIdentifier("PromptBox")
                         Button {
                             studio.improvePrompt()
@@ -274,12 +273,12 @@ private struct PendingTile: View {
     let text: String
     var body: some View {
         RoundedRectangle(cornerRadius: 12)
-            .fill(Theme.surfaceAlt)
             .strokeBorder(Theme.controlBorder, style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
             .aspectRatio(3 / 2, contentMode: .fit)
             .overlay {
                 Text(text).font(.system(size: 12)).foregroundStyle(Theme.textMuted).lineLimit(2).multilineTextAlignment(.center).padding(8)
             }
+            .glassEffect(.regular, in: .rect(cornerRadius: 12))
     }
 }
 
@@ -323,7 +322,7 @@ struct Thumbnail: View {
 
     var body: some View {
         ZStack {
-            Theme.surfaceAlt
+            Rectangle().fill(.fill.quaternary)
             if let image {
                 Image(nsImage: image).resizable().scaledToFill()
             }

@@ -289,10 +289,13 @@ private struct Rail: View {
             .help(app.engines.statusText)
             .accessibilityIdentifier("SettingsButton")
         }
-        .padding(.vertical, 12)
-        .frame(width: 64)
+        // A glass pane floating 6pt in from the column's edges, its corners concentric with the items' (12 + 4); the icons
+        // keep their places in the 64pt column.
+        .padding(.vertical, 6)
+        .frame(width: 52)
         .frame(maxHeight: .infinity)
-        .overlay(alignment: .trailing) { Rectangle().fill(Theme.divider).frame(width: 1) }
+        .glassEffect(.regular, in: .rect(cornerRadius: 16))
+        .padding(6)
     }
 
     private func item(_ section: AppSection, _ symbol: String, _ title: String, _ id: String) -> some View {

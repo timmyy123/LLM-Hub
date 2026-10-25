@@ -113,8 +113,9 @@ private struct LevelBars: View {
                 ForEach(levels.indices, id: \.self) { index in
                     let idle = 0.12 + 0.1 * abs(sin(Double(index) * 0.37) * cos(Double(index) * 0.11))
                     let value = active ? max(0.06, Double(levels[index])) : idle
+                    // Idle bars relative to the text colour, so they show on the glass card in light and dark.
                     Capsule()
-                        .fill(active ? Color.accentColor : Theme.controlBorder)
+                        .fill(active ? Color.accentColor : Color.primary.opacity(0.16))
                         .frame(height: max(3, geometry.size.height * value))
                         .frame(maxWidth: .infinity)
                 }
@@ -249,7 +250,7 @@ private struct ClipsSection: View {
                     .accessibilityLabel(L.s("StudioImprove"))
                 }
                 .padding(10)
-                .background(Theme.surfaceAlt.opacity(0.6), in: .rect(cornerRadius: 10))
+                .glassEffect(.regular, in: .rect(cornerRadius: 10))
 
                 HStack(spacing: 18) {
                     VStack(alignment: .leading, spacing: 4) {
@@ -346,7 +347,7 @@ private struct RecordingsSection: View {
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
-                .background(Theme.surfaceAlt.opacity(0.6), in: .rect(cornerRadius: 10))
+                .glassEffect(.regular, in: .rect(cornerRadius: 10))
                 .accessibilityIdentifier("MusicRecording")
             }
         }

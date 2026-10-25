@@ -18,7 +18,6 @@ struct ChatView: View {
             }
             Composer(dropTargeted: dropTargeted)
         }
-        .background(Theme.background)
         // Files dropped anywhere on the chat are attached to the next message.
         .dropDestination(for: URL.self) { urls, _ in
             let files = urls.filter(\.isFileURL)
@@ -284,7 +283,6 @@ private extension Theme {
     static let imageBadgeText = chatColor(light: 0x1D4FAE, dark: 0x9CC2FF)
     static let docBadge = chatColor(light: 0xF8E3D9, dark: 0x3A2F2A)
     static let docBadgeText = chatColor(light: 0xA3431C, dark: 0xF0A98A)
-    static let attachmentChip = chatColor(light: 0xF3F2EE, dark: 0x222220)
 
     static func chatColor(light: UInt32, dark: UInt32) -> Color {
         Color(nsColor: NSColor(name: nil) { appearance in
@@ -294,7 +292,7 @@ private extension Theme {
     }
 }
 
-/// A 32pt borderless icon button with a hover highlight (the design's message actions).
+/// A 32pt borderless icon button that shows Liquid Glass on hover (the design's message actions).
 private struct IconButton: View {
     let symbol: String
     let label: String
@@ -308,9 +306,9 @@ private struct IconButton: View {
                 .font(.system(size: 14))
                 .frame(width: 32, height: 32)
                 .contentShape(.rect(cornerRadius: 8))
-                .background(hover ? Theme.surfaceAlt : .clear, in: .rect(cornerRadius: 8))
         }
         .buttonStyle(.plain)
+        .glassEffect(hover ? .regular.interactive() : .identity, in: .rect(cornerRadius: 8))
         .foregroundStyle(Theme.textMuted)
         .onHover { hover = $0 }
         .help(label)
@@ -339,8 +337,7 @@ private struct AttachmentChip: View {
             .fixedSize(horizontal: true, vertical: false)
         }
         .padding(EdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 12))
-        .background(Theme.attachmentChip, in: .rect(cornerRadius: 10))
-        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.controlBorder.opacity(0.8)))
+        .glassEffect(.regular, in: .rect(cornerRadius: 10))
         .overlay(alignment: .topTrailing) {
             if let onRemove {
                 Button(action: onRemove) {

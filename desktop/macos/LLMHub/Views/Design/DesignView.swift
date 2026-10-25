@@ -189,7 +189,6 @@ struct DesignView: View {
             .padding(24)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .background(DesignView.canvas)
     }
 
     private func toolbar(labels: Bool, versionText: Bool, sizeIcons: Bool) -> some View {
@@ -301,13 +300,6 @@ struct DesignView: View {
             }
         }
     }
-
-    /// The darker canvas behind the page, as in the design (#121211 in dark).
-    static let canvas = Color(nsColor: NSColor(name: nil) { appearance in
-        appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-            ? NSColor(srgbRed: 0x12 / 255, green: 0x12 / 255, blue: 0x11 / 255, alpha: 1)
-            : NSColor(srgbRed: 0xEE / 255, green: 0xED / 255, blue: 0xE8 / 255, alpha: 1)
-    })
 }
 
 // MARK: - Pieces
@@ -455,7 +447,7 @@ private struct DesignSystemPanel: View {
                 .lineLimit(1)
                 .padding(12)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 10))
+                .glassEffect(.regular, in: .rect(cornerRadius: 10))
             }
             field(L.s("DesignSelected")) {
                 // The element, then its fill, text color, radius and font, as in the design.
@@ -475,7 +467,7 @@ private struct DesignSystemPanel: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(12)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 10))
+                .glassEffect(.regular, in: .rect(cornerRadius: 10))
             }
             Spacer(minLength: 0)
             Text(L.s("DesignExports"))

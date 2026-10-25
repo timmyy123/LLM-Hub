@@ -58,8 +58,8 @@ struct AgentSidePanel: View {
                             .padding(.vertical, 10)
                             .frame(minWidth: 334, alignment: .topLeading)
                     }
-                    .background(Theme.surfaceAlt, in: RoundedRectangle(cornerRadius: 10))
-                    .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Theme.divider))
+                    .clipShape(.rect(cornerRadius: 10))
+                    .glassEffect(.regular, in: .rect(cornerRadius: 10))
                     .accessibilityIdentifier("AgentDiffView")
                 }
             }
@@ -83,9 +83,9 @@ struct AgentSidePanel: View {
             .padding(.horizontal, 10)
             .frame(height: 34)
             .contentShape(Rectangle())
-            .background(selected ? Color.primary.opacity(0.07) : .clear, in: RoundedRectangle(cornerRadius: 8))
         }
         .buttonStyle(.plain)
+        .glassEffect(selected ? .regular.interactive() : .identity, in: .rect(cornerRadius: 8))
     }
 
     // MARK: Terminal, Files, Preview
