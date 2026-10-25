@@ -314,8 +314,13 @@ public sealed partial class OpenClawService : ObservableObject
                     await Task.Delay(300, ct);
                 if (!process.HasExited && await PortOpenAsync(_port, ct))
                 {
+                    // The listener binds before each agent's database is inspected; until /readyz says 200, chat.send
+                    // answers UNAVAILABLE ("has not completed startup inspection"), which ACP reports as "Internal error".
+                    var listening = clock.Elapsed.TotalSeconds;
+                    while (DateTime.UtcNow < deadline.AddMinutes(1) && !process.HasExited && !await ReadyAsync(_port, ct))
+                        await Task.Delay(500, ct);
                     SetStatus("");
-                    Log.Info($"OpenClaw gateway ready on {_port} in {clock.Elapsed.TotalSeconds:F0}s");
+                    Log.Info($"OpenClaw gateway ready on {_port} in {clock.Elapsed.TotalSeconds:F0}s (listening after {listening:F0}s)");
                     return;
                 }
                 // 78 is a config error: OpenClaw's doctor repairs it, then one more try.
@@ -439,6 +444,22 @@ public sealed partial class OpenClawService : ObservableObject
             return true;
         }
         catch (SocketException)
+        {
+            return false;
+        }
+    }
+
+    private static readonly HttpClient Probe = new() { Timeout = TimeSpan.FromSeconds(5) };
+
+    /// <summary>The Gateway's own readiness probe: 200 once startup (agent database admission included) is done, else 503.</summary>
+    private static async Task<bool> ReadyAsync(int port, CancellationToken ct)
+    {
+        try
+        {
+            using var response = await Probe.GetAsync($"http://127.0.0.1:{port}/readyz", ct);
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception e) when (e is HttpRequestException or TaskCanceledException && !ct.IsCancellationRequested)
         {
             return false;
         }

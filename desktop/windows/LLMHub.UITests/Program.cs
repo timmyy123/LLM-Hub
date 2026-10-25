@@ -346,12 +346,13 @@ Test("Agent, Design and Studio pages open", () =>
     Check(Find("SearchFolder")?.Name.Length > 0, "search folder shown");
     Shot("02-StudioSearch");
     // Videos: the third kind, with its own folder and the moment list.
-    Get("SearchVideosTab").AsToggleButton().Toggle();
+    // Clicked like a user would: UIA's Toggle on these tabs throws a NullReferenceException inside WinUI on Arm64.
+    Get("SearchVideosTab").Click();
     WaitUntil(() => Find("SearchVideoResults") is not null, TimeSpan.FromSeconds(5), "video results list");
     Get(x64 ? "SearchIndexButton" : "SearchNoArm");
     Check(Find("SearchFolder")?.Name.Length > 0, "video folder shown");
     Shot("02-StudioSearchVideos");
-    Get("SearchPhotosTab").AsToggleButton().Toggle();
+    Get("SearchPhotosTab").Click();
     Get("TabImage").AsToggleButton().Toggle();
     Select("NavChat");
     Get("Composer");

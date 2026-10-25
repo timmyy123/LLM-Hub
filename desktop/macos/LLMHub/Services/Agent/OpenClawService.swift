@@ -258,7 +258,13 @@ final class OpenClawService {
                 try await Task.sleep(for: .milliseconds(300))
             }
             if process.isRunning, await Self.portOpen(port) {
-                Log.info("OpenClaw gateway ready on \(port) in \(String(format: "%.0f", Date().timeIntervalSince(clock)))s")
+                // The listener binds before each agent's database is inspected; until /readyz says 200, chat.send answers
+                // UNAVAILABLE ("has not completed startup inspection"), which ACP reports as "Internal error".
+                let listening = Date().timeIntervalSince(clock)
+                while Date() < deadline.addingTimeInterval(60), process.isRunning, !(await Self.ready(port)) {
+                    try await Task.sleep(for: .milliseconds(500))
+                }
+                Log.info("OpenClaw gateway ready on \(port) in \(String(format: "%.0f", Date().timeIntervalSince(clock)))s (listening after \(String(format: "%.0f", listening))s)")
                 return
             }
             // 78 is a config error: OpenClaw's doctor repairs it, then one more try.
@@ -347,6 +353,14 @@ final class OpenClawService {
         let data = await Task.detached { pipe.fileHandleForReading.readDataToEndOfFile() }.value
         while process.isRunning { try? await Task.sleep(for: .milliseconds(50)) }
         return (process.terminationStatus, String(decoding: data, as: UTF8.self))
+    }
+
+    /// The Gateway's own readiness probe: 200 once startup (agent database admission included) is done, else 503.
+    private nonisolated static func ready(_ port: Int) async -> Bool {
+        var request = URLRequest(url: URL(string: "http://127.0.0.1:\(port)/readyz")!)
+        request.timeoutInterval = 5
+        guard let (_, response) = try? await URLSession.shared.data(for: request) else { return false }
+        return (response as? HTTPURLResponse)?.statusCode == 200
     }
 
     private nonisolated static func portOpen(_ port: Int) async -> Bool {
