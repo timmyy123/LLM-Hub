@@ -1,7 +1,38 @@
 #if DEBUG
-import Foundation
+import AVFoundation
+import AppKit
 
 extension DevTools {
+    /// `--dictatetest <seconds> [--noprompt]`: the chat composer's mic button on the live microphone. Starts dictation the
+    /// way the first click does, records for the given seconds (play speech near the Mac meanwhile; "DICTATETEST recording"
+    /// in the log is the cue), stops the way the second click does, and logs the text that landed in the chat draft.
+    /// `--noprompt` only logs the microphone permission when macOS has not asked yet, instead of asking.
+    static func dictateTest(_ args: [String]) async {
+        guard let text = value("--dictatetest", args), let seconds = Double(text) else { return }
+        let app = AppModel.shared
+        let chat = app.chat
+        for i in 0..<40 where !NSApp.windows.contains(where: { $0.isVisible && $0.frame.width > 600 }) {
+            if i == 8 { NSApp.activate() }
+            try? await Task.sleep(for: .milliseconds(250))
+        }
+        app.section = .chat
+        let status = AVCaptureDevice.authorizationStatus(for: .audio)
+        let names: [AVAuthorizationStatus: String] = [.authorized: "authorized", .denied: "denied", .restricted: "restricted", .notDetermined: "not asked yet"]
+        Log.info("DICTATETEST microphone permission: \(names[status] ?? "\(status.rawValue)"), input: \(AVCaptureDevice.default(for: .audio)?.localizedName ?? "none")")
+        if status == .notDetermined && args.contains("--noprompt") { return }
+        chat.draft = ""
+        await chat.toggleDictation()
+        guard app.speech.isRecording else {
+            Log.info("DICTATETEST did not start: \(chat.attachError)")
+            return
+        }
+        Log.info("DICTATETEST recording for \(text)s")
+        try? await Task.sleep(for: .seconds(seconds))
+        let start = Date()
+        await chat.toggleDictation()
+        Log.info("DICTATETEST stopped; transcribed in \(String(format: "%.1f", Date().timeIntervalSince(start)))s: draft='\(chat.draft)' error='\(chat.attachError)'")
+    }
+
     /// `--speechtest "<sentence>" [--voice F1] [--wav file]`: an end-to-end Speech run on this Mac, results in the log.
     /// Synthesizes the sentence with Supertonic, then transcribes the WAV with Whisper and compares the words.
     /// `--wav` transcribes an existing recording instead (the dictation path, minus the microphone).

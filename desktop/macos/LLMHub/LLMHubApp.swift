@@ -6,6 +6,14 @@ struct LLMHubApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
     @State private var app = AppModel.shared
 
+    init() {
+        #if DEBUG
+        // AppKit takes a command-line argument that is not a "-flag value" pair for a file to open, and an app launched to
+        // open files shows no window. DevTools switches such as `--modelstest --modelstab huggingface` leave such a value.
+        UserDefaults.standard.register(defaults: ["NSTreatUnknownArgumentsAsOpen": "NO"])
+        #endif
+    }
+
     var body: some Scene {
         Window("LLM Hub", id: "main") {
             RootView()

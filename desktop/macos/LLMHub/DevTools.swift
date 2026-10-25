@@ -1,10 +1,12 @@
 #if DEBUG
 import AppKit
+import ScreenCaptureKit
 
 /// Debug builds only, same flags as Windows:
 /// `LLMHub [--selftest catalogId|apple [--format litertlm] [--quant label] [--prompt text]] [--capture out.png]
 /// [--page chat|agent|design|studio|settings|models|<settings section>] [--wait ms] [--theme dark|light] [--exit]`
-/// Feature end-to-end runs (--agenttest, --designtest, --studiotest, --speechtest, --modelstest) live in DevTools+<Feature>.swift.
+/// Feature end-to-end runs (--agenttest, --designtest, --studiotest, --speechtest, --dictatetest, --modelstest) live in
+/// DevTools+<Feature>.swift.
 @MainActor
 enum DevTools {
     static func runIfRequested() {
@@ -21,6 +23,7 @@ enum DevTools {
             await designTest(args)
             await studioTest(args)
             await speechTest(args)
+            await dictateTest(args)
             await chatTest(args)
             await modelsTest(args)
             switch value("--page", args) {
@@ -35,7 +38,7 @@ enum DevTools {
             default: break
             }
             try? await Task.sleep(for: .milliseconds(Int(value("--wait", args) ?? "") ?? 2500))
-            if let path = value("--capture", args) { capture(to: path) }
+            if let path = value("--capture", args) { await capture(to: path) }
             if args.contains("--exit") { NSApp.terminate(nil) }
         }
     }
@@ -45,13 +48,37 @@ enum DevTools {
         return args[i + 1]
     }
 
-    /// Renders the window's own views; needs no screen recording permission.
-    private static func capture(to path: String) {
-        guard let view = NSApp.windows.first(where: { $0.isVisible })?.contentView?.superview,
-              let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds) else {
+    /// The window as the window server composites it (Liquid Glass included), through ScreenCaptureKit's own-process
+    /// content, which needs no screen recording permission. Falls back to rendering the views, which cannot draw glass.
+    private static func capture(to path: String) async {
+        guard let window = NSApp.windows.first(where: { $0.isVisible && $0.frame.width > 600 }) ?? NSApp.windows.first(where: { $0.isVisible }),
+              let view = window.contentView?.superview else {
             Log.info("Capture skipped: no visible window (\(NSApp.windows.count) windows)")
             return
         }
+        do {
+            // As the key window, the way people see it (an inactive window greys its controls).
+            NSApp.activate()
+            window.makeKeyAndOrderFront(nil)
+            try? await Task.sleep(for: .milliseconds(400))
+            let content = try await SCShareableContent.currentProcess
+            guard let shared = content.windows.first(where: { $0.windowID == CGWindowID(window.windowNumber) }) else {
+                throw NSError(domain: "capture", code: 1, userInfo: [NSLocalizedDescriptionKey: "window \(window.windowNumber) not shareable"])
+            }
+            let filter = SCContentFilter(desktopIndependentWindow: shared)
+            let config = SCStreamConfiguration()
+            config.width = Int(filter.contentRect.width * CGFloat(filter.pointPixelScale))
+            config.height = Int(filter.contentRect.height * CGFloat(filter.pointPixelScale))
+            config.showsCursor = false
+            config.ignoreShadowsSingleWindow = true
+            let image = try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: config)
+            try NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: path))
+            Log.info("Captured \(path) (window server, \(image.width)x\(image.height))")
+            return
+        } catch {
+            Log.info("Window server capture unavailable (\(error.localizedDescription)); rendering the views instead")
+        }
+        guard let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { return }
         view.cacheDisplay(in: view.bounds, to: rep)
         try? rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: path))
         Log.info("Captured \(path)")

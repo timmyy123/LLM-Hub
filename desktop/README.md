@@ -65,7 +65,13 @@ llmhub --capture shot.png --page models --wait 9000
 llmhub --selftest gemma-4-12b [--format litertlm] [--quant "LiteRT GPU"] [--prompt "..."] --capture shot.png --exit
 # Linux only: run the built-in UI suite (optionally a comma-separated subset); exits with the failure count
 llmhub --uitest [ChatReplyWithFooter,MtpToggle]
+# macOS only: the chat mic on the live microphone for N seconds (play speech meanwhile), transcript to the log
+LLMHub --dictatetest 12 [--noprompt]
 ```
+
+On macOS `--capture` takes the window as the window server composites it (ScreenCaptureKit, own window, no screen
+recording permission), so Liquid Glass shows. The XCUITest suite (`LLMHubUITests`) needs Automation Mode, which macOS
+asks the signed-in user to approve; the hosted unit tests (`-only-testing:LLMHubTests`) do not.
 
 Results and timings go to the daily log (see Data below).
 

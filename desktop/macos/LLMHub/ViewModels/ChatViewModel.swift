@@ -216,6 +216,28 @@ final class ChatViewModel {
 
     // MARK: Sending
 
+    /// The composer's mic button: the first call starts recording; the second stops, transcribes with Whisper and adds the
+    /// text to the draft. Errors go to the line above the field.
+    func toggleDictation() async {
+        guard let speech = app?.speech else { return }
+        if !speech.isRecording {
+            do {
+                attachError = ""
+                try await speech.startDictation()
+            } catch {
+                Log.error("Dictation failed", error)
+                attachError = L.f("ErrorPrefix", error.localizedDescription)
+            }
+            return
+        }
+        let text = await speech.stopDictation()
+        if !text.isEmpty {
+            draft = draft.isEmpty ? text : draft.trimmingCharacters(in: .whitespaces) + " " + text
+        } else if !speech.status.isEmpty {
+            attachError = speech.status
+        }
+    }
+
     func send() {
         var text = draft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard canSend, let app, let model = selectedModel else { return }
