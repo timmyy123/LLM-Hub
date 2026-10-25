@@ -28,7 +28,10 @@ release assets and the Hugging Face API unless marked otherwise.
 - `google/magenta-realtime-2`: MLX exports (`models/mrt2_small/*.mlxfn`), portable safetensors checkpoints,
   SpectroStream codec and MusicCoCa (TFLite).
 - The official C++ engine is macOS only (MLX/Metal). The Python package `magenta-rt` (JAX) runs on CUDA only on Linux and
-  its docs call NVIDIA "offline (non-real-time)". No Windows GPU path; Windows/Linux need a port or a JAX sidecar.
+  its docs call NVIDIA "offline (non-real-time)".
+- Linux with an NVIDIA GPU plays it live through a JAX sidecar (`MagentaService`, `shared/magenta/mrt_live.py`). Native
+  Windows has no real-time path (MLX's CUDA backend reached 3.6 of the 25 steps/s live audio needs), so Windows offers
+  Stable Audio 3 clips only and says so in Studio › Music and Settings › Studio.
 - macOS reuses the iOS app's MLX driver (`ios/LLMHub/LocalPackages/magenta-runtime`).
 
 ## Images and video: ComfyUI (GPL-3.0, run as a separate process)

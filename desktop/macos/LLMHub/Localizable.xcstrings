@@ -11141,6 +11141,53 @@
         }
       }
     },
+    "MusicClipsInstead": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You can make music clips with Stable Audio 3 instead."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En su lugar, puedes crear clips de música con Stable Audio 3."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Em vez disso, você pode criar clipes de música com o Stable Audio 3."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vous pouvez toutefois créer des extraits musicaux avec Stable Audio 3."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Musikclips mit Stable Audio 3 kannst du trotzdem erstellen."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Puoi comunque creare clip musicali con Stable Audio 3."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Зато можно создавать музыкальные клипы в Stable Audio 3."
+          }
+        }
+      }
+    },
     "MusicCuda": {
       "extractionState": "manual",
       "localizations": {
@@ -11570,43 +11617,43 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Live music with Magenta RealTime needs a Mac with Apple silicon."
+            "value": "On a Mac, live music with Magenta RealTime needs Apple silicon."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "La música en directo con Magenta RealTime necesita un Mac con Apple silicon."
+            "value": "En Mac, la música en directo con Magenta RealTime necesita Apple silicon."
           }
         },
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "A música ao vivo com o Magenta RealTime precisa de um Mac com Apple silicon."
+            "value": "No Mac, a música ao vivo com o Magenta RealTime precisa de Apple silicon."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "La musique en direct avec Magenta RealTime nécessite un Mac avec puce Apple silicon."
+            "value": "Sur Mac, la musique en direct avec Magenta RealTime nécessite une puce Apple silicon."
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Live-Musik mit Magenta RealTime braucht einen Mac mit Apple Silicon."
+            "value": "Auf dem Mac braucht Live-Musik mit Magenta RealTime Apple Silicon."
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "La musica dal vivo con Magenta RealTime richiede un Mac con Apple silicon."
+            "value": "Su Mac, la musica dal vivo con Magenta RealTime richiede Apple silicon."
           }
         },
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Для живой музыки с Magenta RealTime нужен Mac с Apple silicon."
+            "value": "На Mac для живой музыки с Magenta RealTime нужен Apple silicon."
           }
         }
       }
@@ -16734,6 +16781,53 @@
         }
       }
     },
+    "SettingsMusicLinux": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Magenta RealTime runs live on this computer's NVIDIA graphics card."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Magenta RealTime funciona en directo con la tarjeta gráfica NVIDIA de este ordenador."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O Magenta RealTime roda ao vivo na placa de vídeo NVIDIA deste computador."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Magenta RealTime tourne en direct sur la carte graphique NVIDIA de cet ordinateur."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Magenta RealTime läuft live auf der NVIDIA-Grafikkarte dieses Computers."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Magenta RealTime funziona dal vivo sulla scheda video NVIDIA di questo computer."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Magenta RealTime работает в реальном времени на видеокарте NVIDIA этого компьютера."
+          }
+        }
+      }
+    },
     "SettingsMusicMac": {
       "extractionState": "manual",
       "localizations": {
@@ -19372,43 +19466,43 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Live music with Magenta RealTime runs on Apple Silicon Macs. Google has not released a real-time version for Windows or Linux yet."
+            "value": "Live music with Magenta RealTime isn't available on Windows yet."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "La música en vivo con Magenta RealTime funciona en Mac con Apple Silicon. Google aún no ha publicado una versión en tiempo real para Windows ni Linux."
+            "value": "La música en directo con Magenta RealTime aún no está disponible en Windows."
           }
         },
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "A música ao vivo com o Magenta RealTime roda em Macs com Apple Silicon. O Google ainda não lançou uma versão em tempo real para Windows ou Linux."
+            "value": "A música ao vivo com o Magenta RealTime ainda não está disponível no Windows."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "La musique en direct avec Magenta RealTime fonctionne sur les Mac Apple Silicon. Google n’a pas encore publié de version temps réel pour Windows ou Linux."
+            "value": "La musique en direct avec Magenta RealTime n’est pas encore disponible sous Windows."
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Live-Musik mit Magenta RealTime läuft auf Macs mit Apple Silicon. Google hat noch keine Echtzeitversion für Windows oder Linux veröffentlicht."
+            "value": "Live-Musik mit Magenta RealTime gibt es für Windows noch nicht."
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "La musica dal vivo con Magenta RealTime funziona sui Mac con Apple Silicon. Google non ha ancora rilasciato una versione in tempo reale per Windows o Linux."
+            "value": "La musica dal vivo con Magenta RealTime non è ancora disponibile su Windows."
           }
         },
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Живая музыка Magenta RealTime работает на Mac с Apple Silicon. Google пока не выпустил версию реального времени для Windows и Linux."
+            "value": "Живая музыка с Magenta RealTime пока недоступна в Windows."
           }
         }
       }

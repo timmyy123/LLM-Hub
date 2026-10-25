@@ -28,6 +28,7 @@ internal sealed class UiTests(MainWindow main)
             ("SidebarSections", SidebarSections),
             ("SettingsSingleSidebar", SettingsSingleSidebar),
             ("SettingsSectionsContent", SettingsSectionsContent),
+            ("LiveMusicLine", LiveMusicLine),
             ("CatalogContents", CatalogContents),
             ("LanguageAndContext", LanguageAndContext),
             ("HuggingFaceSearchAndGated", HuggingFaceSearchAndGated),
@@ -114,6 +115,24 @@ internal sealed class UiTests(MainWindow main)
             await Until(() => Visible(content), $"{section} shows {content}", 60);
         }
         await Until(() => Shown("StorageRow").Count() >= 8, "storage lists every folder", 60);
+    }
+
+    /// <summary>Settings › Studio and Studio › Music say whether live Magenta RealTime runs here (NVIDIA GPU) and what to use if not.</summary>
+    private async Task LiveMusicLine()
+    {
+        main.ShowSettings("studio");
+        await Until(() => Visible("MusicLine"), "Settings › Studio music group");
+        var line = ((Adw.PreferencesGroup)One("MusicLine")).GetDescription() ?? "";
+        var live = Services.Studio.MagentaService.IsSupported;
+        Expect(line == (live ? Loc.S("SettingsMusicLinux") : ViewModels.StudioViewModel.LiveMusicUnavailable), $"music line: '{line}'");
+        Expect(!line.Contains("Apple"), $"music line still talks about Macs: '{line}'");
+        await Activate(One("BackButton"));
+        await Activate(One("NavStudio"));
+        Ioc.StudioVm.Mode = "music";
+        await Until(() => Visible(live ? "MusicPlayButton" : "MusicUnavailable") && Visible("GenerateMusicButton"), "Studio › Music");
+        Log.Info($"UITEST music line ({(live ? "live" : "clips only")}): {line}");
+        Ioc.StudioVm.Mode = "image";
+        await GoToChat();
     }
 
     private async Task WebSearchSources()

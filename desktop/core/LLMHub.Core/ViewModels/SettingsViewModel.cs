@@ -100,7 +100,10 @@ public sealed partial class SettingsViewModel : ObservableObject
     public string ComfyFolder => StudioViewModel.UsesNpu ? Services.Studio.Npu.SdNpuService.Root : ComfyService.Root;
     public bool UsesNpu => StudioViewModel.UsesNpu;
     public string StudioHelp => Loc.S(StudioViewModel.UsesNpu ? "NpuSettingsHelp" : "SettingsStudioHelp");
-    public string MusicLine => Loc.S(OperatingSystem.IsMacOS() ? "SettingsMusicMac" : "StudioMusicUnavailable");
+    /// <summary>Live Magenta RealTime: on Apple silicon Macs and on Linux with an NVIDIA GPU, not yet on Windows.</summary>
+    public string MusicLine => OperatingSystem.IsMacOS() ? Loc.S("SettingsMusicMac")
+        : MagentaService.IsSupported ? Loc.S("SettingsMusicLinux")
+        : StudioViewModel.LiveMusicUnavailable;
 
     partial void OnAppearanceChanged(string value) => Save(s => s.Appearance = value);
     partial void OnWebSearchChanged(bool value)

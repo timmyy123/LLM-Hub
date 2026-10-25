@@ -319,6 +319,8 @@
             </Grid.ColumnDefinitions>
             <ScrollViewer BorderBrush="{ThemeResource DividerBrush}" BorderThickness="0,0,1,0" Padding="20">
                 <StackPanel Spacing="16">
+                    <TextBlock Text="{x:Bind vm:StudioViewModel.LiveMusicUnavailable}" FontSize="12" Foreground="{ThemeResource TextMutedBrush}" TextWrapping="Wrap"
+                               AutomationProperties.AutomationId="MusicUnavailable" />
                     <StackPanel Spacing="6">
                         <TextBlock Text="{x:Bind services:Loc.S('StudioWorkflow')}" Style="{StaticResource FieldLabelStyle}" />
                         <ComboBox x:Name="MusicModelPicker" HorizontalAlignment="Stretch" ItemsSource="{x:Bind ViewModel.MusicWorkflows}"

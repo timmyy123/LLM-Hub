@@ -388,7 +388,7 @@ struct StudioSettings: View {
             }
             Card {
                 Text(L.s("SettingsMusic")).fontWeight(.semibold)
-                Text(L.s("SettingsMusicMac")).font(.system(size: 12)).foregroundStyle(Theme.textMuted)
+                Text(L.s(MusicService.supported ? "SettingsMusicMac" : "MusicNeedsAppleSilicon")).font(.system(size: 12)).foregroundStyle(Theme.textMuted)
             }
             StableAudioCard()
         }
