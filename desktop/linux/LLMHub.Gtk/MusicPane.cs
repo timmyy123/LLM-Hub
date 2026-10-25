@@ -48,7 +48,7 @@ internal sealed class MusicPane
         }
         else
         {
-            var note = Ui.Label(Loc.S("MusicNeedsNvidia"), "dim-label");
+            var note = Ui.Label(StudioViewModel.LiveMusicUnavailable, "dim-label");
             note.Named("MusicUnavailable");
             sections.Add(Card(Ui.HBox(12, Gtk.Image.NewFromIconName("audio-x-generic-symbolic"), note)));
         }

@@ -114,6 +114,13 @@ internal sealed class ChatPage
 
         Root = Ui.VBox(0, _body, composerClamp.Margins(8, 24, 18, 24));
 
+        // Files dropped anywhere on the chat are attached like the Attach button's. Capture phase, so a file dropped on
+        // the composer is attached instead of the text view inserting its path.
+        var drop = Gtk.DropTarget.New(Gdk.FileList.GetGType(), Gdk.DragAction.Copy);
+        drop.SetPropagationPhase(Gtk.PropagationPhase.Capture);
+        drop.OnDrop += (_, e) => AttachDropped(e.Value);
+        Root.AddController(drop);
+
         _vm.Messages.CollectionChanged += OnMessagesChanged;
         _vm.PropertyChanged += OnVmChanged;
         _vm.Models.CollectionChanged += (_, _) => SyncModels(rebuild: true);
@@ -166,6 +173,16 @@ internal sealed class ChatPage
         {
             // Dismissed.
         }
+    }
+
+    /// <summary>Attaches the files in a dropped GdkFileList; false when it held no local files.</summary>
+    internal bool AttachDropped(GObject.Value value)
+    {
+        var paths = Native.FilePaths(value.GetBoxed());
+        if (paths.Count == 0)
+            return false;
+        _vm.AttachFiles(paths);
+        return true;
     }
 
     private async void Dictate()

@@ -450,4 +450,27 @@ final class LLMHubUITests: XCTestCase {
         app.terminate()
         wait(10, "llama-server to stop after the app was killed") { !serverRunning }
     }
+
+    // MARK: Studio
+
+    /// Needs a picture in ~/Pictures/LLM Hub (any Studio image or upscale).
+    func test22_StudioUseInChat() {
+        goToChat()
+        el("NavStudio").click()
+        el("StudioTab_image").click()
+        let pictures = NSPredicate(format: "NOT (label CONTAINS[c] 'ltxv') AND (label ENDSWITH[c] '.png' OR label ENDSWITH[c] '.jpg' OR label ENDSWITH[c] '.webp')")
+        let tile = app.descendants(matching: .any).matching(identifier: "GalleryItem").matching(pictures).firstMatch
+        XCTAssertTrue(tile.waitForExistence(timeout: 10), "a picture in the Studio gallery")
+        let name = tile.label
+        tile.click()
+        let use = el("UseInChatButton")
+        wait(5, "Use in Chat enabled for \(name)") { use.isEnabled }
+        use.click()
+        XCTAssertTrue(el("Composer").waitForExistence(timeout: 5), "Chat opened")
+        let chip = all("AttachmentChip").first { $0.label == name }
+        XCTAssertNotNil(chip, "\(name) waiting in the composer; chips: \(all("AttachmentChip").map(\.label))")
+        attach("studio-use-in-chat")
+        chip?.descendants(matching: .any).matching(identifier: "RemoveAttachmentButton").firstMatch.click()
+        wait(5, "chip removed") { !all("AttachmentChip").contains { $0.label == name } }
+    }
 }

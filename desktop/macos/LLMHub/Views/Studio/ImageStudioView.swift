@@ -228,6 +228,7 @@ private struct GalleryPane: View {
                                 Button(L.s("StudioOpen")) { NSWorkspace.shared.open(item.url) }
                                 Button(L.s("StudioShowInFinder")) { NSWorkspace.shared.activateFileViewerSelecting([item.url]) }
                                 Divider()
+                                Button(L.s("StudioUseInChat")) { studio.useInChat(item) }.disabled(item.isVideo)
                                 Button(L.s("StudioAnimate")) { studio.animate(item) }.disabled(item.isVideo)
                                 Button(L.s("StudioUpscale")) { studio.upscale(item) }.disabled(item.isVideo)
                             }
@@ -240,6 +241,9 @@ private struct GalleryPane: View {
             GlassEffectContainer(spacing: 8) {
                 HStack(spacing: 8) {
                     let item = studio.selected
+                    Button(L.s("StudioUseInChat")) { if let item { studio.useInChat(item) } }
+                        .disabled(item == nil || item?.isVideo == true)
+                        .accessibilityIdentifier("UseInChatButton")
                     Button(L.s("StudioAnimate")) { if let item { studio.animate(item) } }
                         .disabled(item == nil || item?.isVideo == true)
                         .accessibilityIdentifier("AnimateButton")

@@ -68,6 +68,9 @@ public sealed partial class StudioViewModel : ObservableObject
     public bool MusicSupported => ComfyService.IsSupported || UsesGpuMusic;
     public ObservableCollection<GalleryItem> MusicClips { get; } = [];
     public static string MusicFolder => Directory.CreateDirectory(Path.Combine(ComfyService.Gallery, "Music")).FullName;
+    /// <summary>Why there is no live jam (Windows, or Linux without an NVIDIA GPU), and that clips still work where ComfyUI or the Snapdragon GPU engine runs.</summary>
+    public static string LiveMusicUnavailable =>
+        Loc.S(OperatingSystem.IsWindows() ? "StudioMusicUnavailable" : "MusicNeedsNvidia") + (ComfyService.IsSupported || UsesGpuMusic ? " " + Loc.S("MusicClipsInstead") : "");
     /// <summary>The NPU models are compiled for one size: 512 x 512 images, and 512 x 320 (16:10) or 768 x 512 (3:2) video.</summary>
     public IReadOnlyList<string> Aspects => !UsesNpu ? ["3:2", "1:1", "16:9", "9:16"]
         : Workflow?.Kind == "video" ? [LtxNpuService.Build.Width * 2 == LtxNpuService.Build.Height * 3 ? "3:2" : "16:10"] : ["1:1"];

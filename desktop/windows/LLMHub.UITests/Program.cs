@@ -322,6 +322,23 @@ Test("Agent, Design and Studio pages open", () =>
     Get("Composer");
 });
 
+Test("Studio Music says live music is not on Windows yet", () =>
+{
+    Select("NavStudio");
+    Get("TabMusic").AsToggleButton().Toggle();
+    var note = Get("MusicUnavailable").Name;
+    Check(note.Contains("Windows") && note.Contains("Stable Audio 3"), $"music page note: '{note}'");
+    Shot("02-StudioMusic");
+    Get("TabImage").AsToggleButton().Toggle();
+    OpenSettings("SectionStudio");
+    var line = Get("MusicLine", 30).Name;
+    Check(line == note, $"Settings › Studio music line: '{line}'");
+    Shot("02-SettingsStudioMusic");
+    Invoke("BackButton");
+    Select("NavChat");
+    Get("Composer");
+});
+
 Test("Design and Studio collapse the sidebar to the icon rail", () =>
 {
     Select("NavDesign");

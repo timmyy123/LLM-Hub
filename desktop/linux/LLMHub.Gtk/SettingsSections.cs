@@ -252,7 +252,7 @@ internal sealed class SettingsSections
         _comfy.AddSuffix(OpenFolder(_vm.ComfyFolder));
         group.Add(_comfy);
         _studioModels.SetTitle(Loc.S("SettingsStudioModels"));
-        var music = Group(Loc.S("SettingsMusic"), _vm.MusicLine);
+        var music = Group(Loc.S("SettingsMusic"), _vm.MusicLine).Named("MusicLine");
         return Page(group, _studioModels, music);
     }
 

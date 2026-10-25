@@ -16,9 +16,14 @@ extension DevTools {
     ///   installs the EmbeddingGemma 2 build if needed, indexes the folder in Studio › Search and logs the best matches for
     ///   each query (text, or a photo path for photo-to-photo): `SEARCHTEST "<query>" in <s>s: name score | …`
     /// - `--studiomode image|video|music|voice|search` picks the Studio tab for captures.
+    /// - `--studiouse latest|<file name>` selects that picture in the gallery and does what Use in Chat does (attach it to
+    ///   the chat and open Chat): `STUDIOUSE <name>: section <s>, attached [...]`
     static func studioTest(_ args: [String]) async {
         let studio = AppModel.shared.studio
         if let mode = value("--studiomode", args) { studio.mode = mode }
+        if let name = value("--studiouse", args) {
+            await runUseInChat(name)
+        }
         if let mode = value("--searchtest", args), let folder = value("--folder", args) {
             await runSearch(mode, folder: folder, catalogId: value("--model", args) ?? "embeddinggemma-2-740m",
                             queries: (value("--queries", args) ?? "").split(separator: "|").map(String.init))
@@ -85,6 +90,21 @@ extension DevTools {
         } catch {
             Log.error("SEARCHTEST failed", error)
         }
+    }
+
+    private static func runUseInChat(_ name: String) async {
+        let app = AppModel.shared
+        let studio = app.studio
+        app.section = .studio
+        studio.mode = "image"
+        studio.loadGallery()
+        guard let item = studio.gallery.first(where: { !$0.isVideo && (name == "latest" || $0.name == name) }) else {
+            Log.error("STUDIOUSE no picture \(name) in \(ComfyService.gallery.path)")
+            return
+        }
+        studio.selected = item
+        studio.useInChat(item)
+        Log.info("STUDIOUSE \(item.name): section \(app.section), attached \(app.chat.pendingAttachments.map { "\($0.name) [\($0.kind)]" }) error='\(app.chat.attachError)'")
     }
 
     private static func runStudio(_ id: String, prompt: String, image: String?) async {

@@ -609,7 +609,7 @@
                 <Border Style="{StaticResource CardStyle}">
                     <StackPanel Spacing="4">
                         <TextBlock Text="{x:Bind services:Loc.S('SettingsMusic')}" Style="{StaticResource SectionLabelStyle}" />
-                        <TextBlock Text="{x:Bind Settings.MusicLine}" Style="{StaticResource MutedTextStyle}" />
+                        <TextBlock Text="{x:Bind Settings.MusicLine}" Style="{StaticResource MutedTextStyle}" AutomationProperties.AutomationId="MusicLine" />
                     </StackPanel>
                 </Border>
             </StackPanel>

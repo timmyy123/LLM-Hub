@@ -212,6 +212,13 @@ final class StudioService {
 
     // MARK: - Gallery actions
 
+    /// Attaches the picture to the next message of the current chat and opens Chat.
+    func useInChat(_ item: GalleryItem) {
+        guard let app else { return }
+        app.chat.attachFiles([item.url])
+        app.section = .chat
+    }
+
     func animate(_ item: GalleryItem) {
         mode = "video"
         workflow = .ltxVideo
