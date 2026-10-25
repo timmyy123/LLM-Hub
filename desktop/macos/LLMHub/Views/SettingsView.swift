@@ -59,7 +59,8 @@ private struct GeneralSettings: View {
                 AppSettings.save()
             }
             VStack(alignment: .leading, spacing: 6) {
-                SecureField(L.s("HfToken"), text: $token)
+                // A grouped form draws an empty field without a border: the prompt shows where the token goes.
+                SecureField(L.s("HfToken"), text: $token, prompt: Text(verbatim: "hf_…"))
                     .accessibilityIdentifier("TokenBox")
                     .onChange(of: token) {
                         AppSettings.current.huggingFaceToken = token
