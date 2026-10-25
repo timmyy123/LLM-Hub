@@ -196,9 +196,10 @@
 
             <!-- Hugging Face: search with format and sort, then the repo's files and how each fits -->
             <Grid x:Name="HfPanel" Grid.Row="2" ColumnSpacing="16" Visibility="Collapsed" Padding="0,0,0,24">
+                <!-- The repo list is 320 wide, and gives way to the files when the window is narrow. -->
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="320" />
-                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" MinWidth="220" MaxWidth="320" />
+                    <ColumnDefinition Width="2*" />
                 </Grid.ColumnDefinitions>
                 <Grid RowSpacing="10">
                     <Grid.RowDefinitions>
@@ -226,6 +227,8 @@
                         <ComboBox x:Name="HfSortBox" Grid.Column="1" HorizontalAlignment="Stretch" SelectionChanged="OnHfSortChanged" AutomationProperties.AutomationId="HfSortBox"
                                   AutomationProperties.Name="{x:Bind services:Loc.S('HfSort')}" />
                     </Grid>
+                    <TextBlock Grid.Row="2" Text="{x:Bind Models.HfSearchError, Mode=OneWay}" Foreground="{ThemeResource WarningBrush}" TextWrapping="Wrap"
+                               Visibility="{x:Bind local:Ui.ShowText(Models.HfSearchError), Mode=OneWay}" AutomationProperties.AutomationId="HfSearchError" />
                     <ListView x:Name="HfResults" Grid.Row="2" ItemsSource="{x:Bind Models.SearchResults}" SelectedItem="{x:Bind Models.SelectedRepo, Mode=TwoWay}">
                         <ListView.ItemTemplate>
                             <DataTemplate x:DataType="vm:HfRepoViewModel">

@@ -198,57 +198,57 @@
                             <StaticResource x:Key="ToggleButtonForegroundChecked" ResourceKey="LinkBrush" />
                             <StaticResource x:Key="ToggleButtonForegroundCheckedPointerOver" ResourceKey="LinkBrush" />
                         </Grid.Resources>
+                        <!-- The switches share the * column, so on a narrow window they are clipped first and the model, mic and
+                             Send stay on screen. -->
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <Button x:Name="AttachButton" Style="{StaticResource ComposerIconButtonStyle}" Click="OnAttach"
-                                ToolTipService.ToolTip="{x:Bind services:Loc.S('Attach')}" AutomationProperties.Name="{x:Bind services:Loc.S('Attach')}">
-                            <FontIcon Glyph="&#xE723;" FontSize="15" />
-                        </Button>
-                        <ToggleButton x:Name="WebSearchToggle" Grid.Column="1" Style="{StaticResource ComposerToggleStyle}"
-                                      IsChecked="{x:Bind ViewModel.WebSearchEnabled, Mode=TwoWay}">
-                            <StackPanel Orientation="Horizontal" Spacing="6">
-                                <FontIcon Glyph="&#xE774;" FontSize="13" />
-                                <TextBlock Text="{x:Bind services:Loc.S('WebSearch')}" />
-                            </StackPanel>
-                        </ToggleButton>
-                        <ToggleButton x:Name="ThinkingToggle" Grid.Column="2" Style="{StaticResource ComposerToggleStyle}"
-                                      Content="{x:Bind services:Loc.S('ExtendedThinking')}" IsChecked="{x:Bind ViewModel.ThinkingEnabled, Mode=TwoWay}" />
-                        <ToggleButton x:Name="MtpToggle" Grid.Column="3" Style="{StaticResource ComposerToggleStyle}"
-                                      Content="{x:Bind services:Loc.S('Mtp')}" ToolTipService.ToolTip="{x:Bind services:Loc.S('MtpHelp')}"
-                                      IsChecked="{x:Bind ViewModel.MtpEnabled, Mode=TwoWay}"
-                                      Visibility="{x:Bind local:Ui.Show(ViewModel.MtpVisible), Mode=OneWay}" />
-                        <TextBlock x:Name="ContextMeter" Grid.Column="5" Text="{x:Bind ViewModel.ContextText, Mode=OneWay}" FontSize="12"
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <Button x:Name="AttachButton" Style="{StaticResource ComposerIconButtonStyle}" Click="OnAttach"
+                                    ToolTipService.ToolTip="{x:Bind services:Loc.S('Attach')}" AutomationProperties.Name="{x:Bind services:Loc.S('Attach')}">
+                                <FontIcon Glyph="&#xE723;" FontSize="15" />
+                            </Button>
+                            <ToggleButton x:Name="WebSearchToggle" Style="{StaticResource ComposerToggleStyle}"
+                                          IsChecked="{x:Bind ViewModel.WebSearchEnabled, Mode=TwoWay}">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <FontIcon Glyph="&#xE774;" FontSize="13" />
+                                    <TextBlock Text="{x:Bind services:Loc.S('WebSearch')}" />
+                                </StackPanel>
+                            </ToggleButton>
+                            <ToggleButton x:Name="ThinkingToggle" Style="{StaticResource ComposerToggleStyle}"
+                                          Content="{x:Bind services:Loc.S('ExtendedThinking')}" IsChecked="{x:Bind ViewModel.ThinkingEnabled, Mode=TwoWay}" />
+                            <ToggleButton x:Name="MtpToggle" Style="{StaticResource ComposerToggleStyle}"
+                                          Content="{x:Bind services:Loc.S('Mtp')}" ToolTipService.ToolTip="{x:Bind services:Loc.S('MtpHelp')}"
+                                          IsChecked="{x:Bind ViewModel.MtpEnabled, Mode=TwoWay}"
+                                          Visibility="{x:Bind local:Ui.Show(ViewModel.MtpVisible), Mode=OneWay}" />
+                        </StackPanel>
+                        <TextBlock x:Name="ContextMeter" Grid.Column="1" Text="{x:Bind ViewModel.ContextText, Mode=OneWay}" FontSize="12"
                                    Foreground="{ThemeResource TextFaintBrush}" VerticalAlignment="Center" Margin="0,0,4,0" />
-                        <ComboBox x:Name="ModelPicker" Grid.Column="6" MinWidth="180" ItemsSource="{x:Bind ViewModel.Models}"
+                        <ComboBox x:Name="ModelPicker" Grid.Column="2" MinWidth="120" MaxWidth="260" ItemsSource="{x:Bind ViewModel.Models}"
                                   SelectedItem="{x:Bind ViewModel.SelectedModel, Mode=TwoWay}" FontSize="13"
                                   PlaceholderText="{x:Bind services:Loc.S('ChooseModel')}" BorderThickness="0" Background="Transparent">
                             <ComboBox.ItemTemplate>
                                 <DataTemplate x:DataType="services:InstalledModel">
-                                    <TextBlock Text="{x:Bind DisplayName}" />
+                                    <TextBlock Text="{x:Bind DisplayName}" TextTrimming="CharacterEllipsis" />
                                 </DataTemplate>
                             </ComboBox.ItemTemplate>
                         </ComboBox>
-                        <Button x:Name="DictateButton" Grid.Column="7" Style="{StaticResource ComposerIconButtonStyle}" Click="OnDictate"
+                        <Button x:Name="DictateButton" Grid.Column="3" Style="{StaticResource ComposerIconButtonStyle}" Click="OnDictate"
                                 ToolTipService.ToolTip="{x:Bind services:Loc.S('Dictate')}" AutomationProperties.Name="{x:Bind services:Loc.S('Dictate')}">
                             <FontIcon x:Name="DictateIcon" Glyph="&#xE720;" FontSize="15" />
                         </Button>
-                        <Button x:Name="SendButton" Grid.Column="8" Width="36" Height="36" Padding="0" CornerRadius="10"
+                        <Button x:Name="SendButton" Grid.Column="4" Width="36" Height="36" Padding="0" CornerRadius="10"
                                 Background="{ThemeResource AccentFillBrush}" Foreground="{ThemeResource OnAccentBrush}" BorderThickness="0"
                                 Command="{x:Bind ViewModel.SendCommand}" ToolTipService.ToolTip="{x:Bind services:Loc.S('Send')}"
                                 AutomationProperties.Name="{x:Bind services:Loc.S('Send')}"
                                 Visibility="{x:Bind local:Ui.Hide(ViewModel.IsGenerating), Mode=OneWay}">
                             <FontIcon Glyph="&#xE74A;" FontSize="14" />
                         </Button>
-                        <Button x:Name="StopButton" Grid.Column="8" Width="36" Height="36" Padding="0" CornerRadius="10"
+                        <Button x:Name="StopButton" Grid.Column="4" Width="36" Height="36" Padding="0" CornerRadius="10"
                                 Command="{x:Bind ViewModel.StopCommand}" ToolTipService.ToolTip="{x:Bind services:Loc.S('Stop')}"
                                 AutomationProperties.Name="{x:Bind services:Loc.S('Stop')}"
                                 Visibility="{x:Bind local:Ui.Show(ViewModel.IsGenerating), Mode=OneWay}">

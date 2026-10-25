@@ -18,6 +18,7 @@ var outDir = args[1];
 var filter = args.Length > 2 ? args[2] : null;
 Directory.CreateDirectory(outDir);
 
+var x64 = System.Runtime.InteropServices.RuntimeInformation.OSArchitecture == System.Runtime.InteropServices.Architecture.X64;
 var dataDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "LLMHub");
 var settingsPath = Path.Combine(dataDir, "settings.json");
 var results = new List<(string Name, bool Pass, string Detail)>();
@@ -95,9 +96,30 @@ AutomationElement? Find(string id) => window!.FindFirstDescendant(cf => cf.ByAut
 AutomationElement[] FindAll(string id) => window!.FindAllDescendants(cf => cf.ByAutomationId(id));
 AutomationElement Get(string id, int seconds = 15) => WaitFor(() => Find(id), TimeSpan.FromSeconds(seconds), id);
 
+/// <summary>Scrolls the nearest scrollable ancestor of <paramref name="id"/> to the bottom: on a short screen the HF file table is below the fold.</summary>
+void ScrollDownTo(string id)
+{
+    var walker = automation.TreeWalkerFactory.GetControlViewWalker();
+    for (var e = Find(id); e is not null; e = walker.GetParent(e))
+    {
+        if (e.Patterns.Scroll.IsSupported && e.Patterns.Scroll.Pattern.VerticallyScrollable.ValueOrDefault)
+        {
+            e.Patterns.Scroll.Pattern.SetScrollPercent(-1, 100);
+            Thread.Sleep(300);
+            return;
+        }
+    }
+}
+
 bool Visible(string id)
 {
     var e = Find(id);
+    // On a short screen a list can hold the item below the fold: scroll it into view, as a user would.
+    if (e is not null && e.Properties.IsOffscreen.ValueOrDefault && e.Patterns.ScrollItem.IsSupported)
+    {
+        e.Patterns.ScrollItem.Pattern.ScrollIntoView();
+        Thread.Sleep(300);
+    }
     return e is not null && !e.Properties.IsOffscreen.ValueOrDefault;
 }
 
@@ -314,13 +336,14 @@ Test("Agent, Design and Studio pages open", () =>
     Shot("02-NavStudio");
     Get("TabSearch").AsToggleButton().Toggle();
     Get("SearchQueryBox");
-    Get("SearchIndexButton");
+    // LiteRT-LM (EmbeddingGemma 2's image and audio encoders) has no Windows on Arm build: Search says so instead of indexing.
+    Get(x64 ? "SearchIndexButton" : "SearchNoArm");
     Check(Find("SearchFolder")?.Name.Length > 0, "search folder shown");
     Shot("02-StudioSearch");
     // Videos: the third kind, with its own folder and the moment list.
     Get("SearchVideosTab").AsToggleButton().Toggle();
     WaitUntil(() => Find("SearchVideoResults") is not null, TimeSpan.FromSeconds(5), "video results list");
-    Get("SearchIndexButton");
+    Get(x64 ? "SearchIndexButton" : "SearchNoArm");
     Check(Find("SearchFolder")?.Name.Length > 0, "video folder shown");
     Shot("02-StudioSearchVideos");
     Get("SearchPhotosTab").AsToggleButton().Toggle();
@@ -534,7 +557,11 @@ Test("Gated model shows a clear token message", () =>
     // Results mix GGUF and LiteRT-LM repos by trend: pick the gated Google one by name.
     WaitFor(() => window!.FindAllDescendants(cf => cf.ByAutomationId("HfRepoId")).FirstOrDefault(e => e.Name == "google/gemma-3-1b-it-qat-q4_0-gguf"),
         TimeSpan.FromSeconds(60), "google/gemma-3-1b-it-qat-q4_0-gguf in results").Click();
-    WaitFor(() => window!.FindAllDescendants(cf => cf.ByAutomationId("HfFileDownload")).FirstOrDefault(b => b.IsEnabled && !b.IsOffscreen), TimeSpan.FromSeconds(60), "Download in the file table")
+    WaitFor(() =>
+        {
+            ScrollDownTo("HfFileTable");
+            return window!.FindAllDescendants(cf => cf.ByAutomationId("HfFileDownload")).FirstOrDefault(b => b.IsEnabled && !b.IsOffscreen);
+        }, TimeSpan.FromSeconds(60), "Download in the file table")
         .AsButton().Invoke();
     Check(Find("HfGatedBar") is { IsOffscreen: false }, "gated notice with sign-in missing");
     WaitUntil(() => Find("RepoStatus")?.Name.Contains("gated", StringComparison.OrdinalIgnoreCase) == true, TimeSpan.FromSeconds(60), "gated message");
@@ -564,8 +591,11 @@ Test("Download from the Hugging Face tab", () =>
     // Only the small LFM2.5 repo: never start a download on whatever else is showing (a trending repo can be 10 GB).
     Check(Find("RepoDetail")?.Name.Contains("LFM2.5") == true, "LFM2.5 repo is not the one shown");
     // The first on-screen Download (the file table recycles rows; recycled ones stay in the tree, offscreen).
-    var download = WaitFor(() => window!.FindAllDescendants(cf => cf.ByAutomationId("HfFileDownload")).FirstOrDefault(e => e.IsEnabled && !e.IsOffscreen),
-        TimeSpan.FromSeconds(30), "Download in the file table");
+    var download = WaitFor(() =>
+        {
+            ScrollDownTo("HfFileTable");
+            return window!.FindAllDescendants(cf => cf.ByAutomationId("HfFileDownload")).FirstOrDefault(e => e.IsEnabled && !e.IsOffscreen);
+        }, TimeSpan.FromSeconds(30), "Download in the file table");
     download.AsButton().Invoke();
     WaitFor(() => Find("HfFileInstalled"), TimeSpan.FromMinutes(10), "Installed in the file table");
 });
@@ -718,7 +748,7 @@ Test("Dark theme renders", () =>
 
 // ---------------------------------------------------------------- LiteRT-LM, MTP and the local API
 // LiteRT-LM has no Windows on Arm build, so these two only run on x64.
-if (System.Runtime.InteropServices.RuntimeInformation.OSArchitecture == System.Runtime.InteropServices.Architecture.X64)
+if (x64)
 {
     Test("LiteRT-LM model chats and shows its speed", () =>
     {

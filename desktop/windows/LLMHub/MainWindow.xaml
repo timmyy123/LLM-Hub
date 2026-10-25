@@ -233,7 +233,13 @@
                 </ListView>
 
                 <!-- Settings mode: the same sidebar shows a Back button and the settings sections. -->
-                <StackPanel x:Name="SettingsNav" Grid.Row="0" Grid.RowSpan="4" Spacing="6" Visibility="Collapsed">
+                <!-- A grid, not a stack, so the section list gets a bounded height and scrolls on a short window. -->
+                <Grid x:Name="SettingsNav" Grid.Row="0" Grid.RowSpan="4" RowSpacing="6" Visibility="Collapsed">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
                     <Button x:Name="BackButton" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Height="36" Padding="12,0" CornerRadius="8"
                             Background="Transparent" BorderThickness="0" Click="OnBackFromSettings">
                         <StackPanel Orientation="Horizontal" Spacing="10">
@@ -241,8 +247,8 @@
                             <TextBlock Text="{x:Bind services:Loc.S('Back')}" FontWeight="Medium" />
                         </StackPanel>
                     </Button>
-                    <TextBlock Text="{x:Bind services:Loc.S('NavSettings')}" FontSize="12" FontWeight="Medium" Foreground="{ThemeResource TextFaintBrush}" Margin="12,8,0,2" />
-                    <ListView x:Name="SettingsSectionList" SelectionMode="Single" SelectionChanged="OnSettingsSectionChanged"
+                    <TextBlock Grid.Row="1" Text="{x:Bind services:Loc.S('NavSettings')}" FontSize="12" FontWeight="Medium" Foreground="{ThemeResource TextFaintBrush}" Margin="12,8,0,2" />
+                    <ListView x:Name="SettingsSectionList" Grid.Row="2" SelectionMode="Single" SelectionChanged="OnSettingsSectionChanged"
                               ItemContainerStyle="{StaticResource SidebarItemStyle}">
                         <ListViewItem Tag="general" AutomationProperties.AutomationId="SectionGeneral">
                             <StackPanel Orientation="Horizontal" Spacing="10">
@@ -299,7 +305,7 @@
                             </StackPanel>
                         </ListViewItem>
                     </ListView>
-                </StackPanel>
+                </Grid>
 
                 <!-- Engine card: status dot, loaded model, hardware; opens Settings. -->
                 <Button x:Name="SettingsButton" Grid.Row="4" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Margin="0,10,0,0" Padding="12,10"
