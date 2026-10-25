@@ -1,0 +1,12 @@
+<Project>
+  <!-- One version for every desktop project and installer, read from version.xcconfig (Xcode reads the same file). -->
+  <PropertyGroup>
+    <LLMHubVersionFile>$(MSBuildThisFileDirectory)version.xcconfig</LLMHubVersionFile>
+    <Version>$([System.Text.RegularExpressions.Regex]::Match($([System.IO.File]::ReadAllText('$(LLMHubVersionFile)')), 'MARKETING_VERSION\s*=\s*([0-9]+\.[0-9]+\.[0-9]+)').Groups[1].Value)</Version>
+    <LLMHubBuildNumber>$([System.Text.RegularExpressions.Regex]::Match($([System.IO.File]::ReadAllText('$(LLMHubVersionFile)')), 'CURRENT_PROJECT_VERSION\s*=\s*([0-9]+)').Groups[1].Value)</LLMHubBuildNumber>
+    <FileVersion>$(Version).$(LLMHubBuildNumber)</FileVersion>
+    <AssemblyVersion>$(Version).0</AssemblyVersion>
+    <Product>LLM Hub</Product>
+    <Company>LLM Hub</Company>
+  </PropertyGroup>
+</Project>

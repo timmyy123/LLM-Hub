@@ -9,6 +9,11 @@ public partial class App : Application
 
     public App()
     {
+        // Installed builds carry the Visual C++ runtime next to LLMHub.exe. The llama.cpp and whisper.cpp builds the app
+        // downloads run as child processes from their own folders, so they find it through PATH (last, so a runtime
+        // installed in System32 still wins) on PCs without the Visual C++ Redistributable.
+        if (File.Exists(Path.Combine(AppContext.BaseDirectory, "vcruntime140.dll")))
+            Environment.SetEnvironmentVariable("PATH", $"{Environment.GetEnvironmentVariable("PATH")};{AppContext.BaseDirectory.TrimEnd('\\')}");
         AppSettings.Load();
         Loc.ApplyLanguage(AppSettings.Current.Language);
         // Popups and flyouts follow the application theme, not the window's, so set it here (it cannot change later).

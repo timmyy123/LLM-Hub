@@ -18,7 +18,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Version>0.1.0</Version>
+    <!-- Version: desktop/version.xcconfig, through desktop/Directory.Build.props. -->
     <!-- Same logo as the iOS and Android apps. -->
     <ApplicationIcon>..\..\shared\icons\llmhub.ico</ApplicationIcon>
   </PropertyGroup>
@@ -55,4 +55,33 @@
     <Content Include="..\..\shared\icons\llmhub.ico" Link="Assets\llmhub.ico" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="..\..\shared\icons\llmhub.png" Link="Assets\llmhub.png" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
+
+  <!-- Installers (desktop/tools/package/windows/package-windows.ps1 sets LLMHubVcRuntimeDir to Visual Studio's VC\Redist
+       folder): the Visual C++ runtime next to LLMHub.exe. ONNX Runtime needs it, and so do the llama.cpp and LiteRT-LM
+       builds the app downloads (App.xaml.cs), on PCs without the Visual C++ Redistributable. -->
+  <ItemGroup Condition="'$(LLMHubVcRuntimeDir)' != ''">
+    <Content Include="$(LLMHubVcRuntimeDir)\*.dll" Link="%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!-- Microsoft Store package, built by package-windows.ps1 with -p:WindowsPackageType=MSIX. The manifest is copied to obj
+       with the version from desktop/version.xcconfig and, when given, the Partner Center identity (StoreIdentityName,
+       StorePublisher, StorePublisherDisplayName). Unpackaged builds ignore Package.appxmanifest. -->
+  <ItemGroup Condition="'$(WindowsPackageType)' == 'MSIX'">
+    <Content Include="Assets\Package\*.png" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <Target Name="LLMHubStampAppxManifest" BeforeTargets="_ValidatePresenceOfAppxManifestItems" Condition="'$(WindowsPackageType)' == 'MSIX'">
+    <PropertyGroup>
+      <_LLMHubManifest>$(IntermediateOutputPath)LLMHubManifest\Package.appxmanifest</_LLMHubManifest>
+      <_LLMHubAppxNs>&lt;Namespace Prefix='m' Uri='http://schemas.microsoft.com/appx/manifest/foundation/windows10' /&gt;</_LLMHubAppxNs>
+    </PropertyGroup>
+    <Copy SourceFiles="Package.appxmanifest" DestinationFiles="$(_LLMHubManifest)" />
+    <XmlPoke XmlInputPath="$(_LLMHubManifest)" Namespaces="$(_LLMHubAppxNs)" Query="/m:Package/m:Identity/@Version" Value="$(Version).0" />
+    <XmlPoke Condition="'$(StoreIdentityName)' != ''" XmlInputPath="$(_LLMHubManifest)" Namespaces="$(_LLMHubAppxNs)" Query="/m:Package/m:Identity/@Name" Value="$(StoreIdentityName)" />
+    <XmlPoke Condition="'$(StorePublisher)' != ''" XmlInputPath="$(_LLMHubManifest)" Namespaces="$(_LLMHubAppxNs)" Query="/m:Package/m:Identity/@Publisher" Value="$(StorePublisher)" />
+    <XmlPoke Condition="'$(StorePublisherDisplayName)' != ''" XmlInputPath="$(_LLMHubManifest)" Namespaces="$(_LLMHubAppxNs)" Query="/m:Package/m:Properties/m:PublisherDisplayName" Value="$(StorePublisherDisplayName)" />
+    <ItemGroup>
+      <AppxManifest Remove="@(AppxManifest)" />
+      <AppxManifest Include="$(_LLMHubManifest)" />
+    </ItemGroup>
+  </Target>
 </Project>
