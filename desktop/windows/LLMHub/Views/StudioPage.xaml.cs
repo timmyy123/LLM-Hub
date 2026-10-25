@@ -148,7 +148,10 @@ public sealed partial class StudioPage : Page
                 player.PlaybackSession.Position = TimeSpan.FromMilliseconds(_momentStartMs);
                 player.Play();
             };
-            SearchVideoPlayer.SetMediaPlayer(_momentPlayer);
+            var element = new MediaPlayerElement { AreTransportControlsEnabled = true, Stretch = Microsoft.UI.Xaml.Media.Stretch.Uniform };
+            Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(element, "SearchVideoPlayer");
+            element.SetMediaPlayer(_momentPlayer);
+            SearchVideoStage.Child = element;
             Unloaded += (_, _) => _momentPlayer?.Pause();
         }
         SearchVideoStage.Visibility = Visibility.Visible;

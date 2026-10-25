@@ -60,7 +60,7 @@ void Test(string name, Action body)
     {
         // A crash in the test itself (not a failed check) also says where it happened.
         var at = e is NullReferenceException or InvalidCastException or ArgumentException
-            ? " at " + e.StackTrace?.Split('\n').FirstOrDefault(l => l.Contains("Program.cs"))?.Trim()
+            ? " at " + string.Join(" < ", (e.StackTrace ?? "").Split('\n').Take(4).Select(l => l.Trim()))
             : "";
         results.Add((name, false, e.Message + at));
         Log($"FAIL {name} ({clock.Elapsed.TotalSeconds:F1}s): {e.Message}{at}");
@@ -885,11 +885,13 @@ Test("Engine falls back when a GPU backend fails", () =>
 {
     var working = Path.Combine(dataDir, "engines", "llama.cpp", "working.txt");
     File.Delete(working);
-    Launch("", new() { ["LLMHUB_FAIL_VARIANT"] = "win-cuda-13.4-x64" });
+    // The first GPU build in each list fails on purpose: CUDA then Vulkan on an NVIDIA PC, Adreno OpenCL then the CPU on Snapdragon.
+    var (failing, fallback) = x64 ? ("win-cuda-13.4-x64", "win-vulkan-x64") : ("win-opencl-adreno-arm64", "win-cpu-arm64");
+    Launch("", new() { ["LLMHUB_FAIL_VARIANT"] = failing });
     Invoke("NewChatButton");
     PickModel("LFM2.5 1.2B Thinking");
     var reply = Send("Say hi in one word.", timeoutSeconds: 600);
-    Check(File.ReadAllText(working).Trim() == "win-vulkan-x64", $"working build: {File.ReadAllText(working)}");
+    Check(File.ReadAllText(working).Trim() == fallback, $"working build: {File.ReadAllText(working)}");
     Log($"   fallback reply: {reply}");
     Close();
     File.Delete(working);
