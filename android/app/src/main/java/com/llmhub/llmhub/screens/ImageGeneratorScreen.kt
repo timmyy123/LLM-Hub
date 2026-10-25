@@ -25,6 +25,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.llmhub.llmhub.imagegen.BoundedBitmapDecoder
 import com.llmhub.llmhub.R
 import com.llmhub.llmhub.imagegen.ImageExtrasEditor
 import com.llmhub.llmhub.imagegen.ImagePromptResources
@@ -35,8 +36,6 @@ import com.llmhub.llmhub.imagegen.StableDiffusionHelper
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import android.net.Uri
-import android.os.Build
-import android.provider.MediaStore
 import android.view.ViewGroup
 import androidx.activity.compose.rememberLauncherForActivityResult
 import com.llmhub.llmhub.debug.ScreenshotHooks
@@ -83,13 +82,7 @@ fun ImageGeneratorScreen(
         inputImageUri = uri
         uri?.let {
             try {
-                inputImageBitmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                    val source = android.graphics.ImageDecoder.createSource(context.contentResolver, it)
-                    android.graphics.ImageDecoder.decodeBitmap(source)
-                } else {
-                    @Suppress("DEPRECATION")
-                    MediaStore.Images.Media.getBitmap(context.contentResolver, it)
-                }
+                inputImageBitmap = BoundedBitmapDecoder.decodeUri(context, it)
             } catch (e: Exception) {
                 errorMessage = "Failed to load image: ${e.message}"
                 inputImageUri = null

@@ -555,26 +555,16 @@ class ChatViewModel(
         messageCollectionJob?.cancel()
 
         // Close previous chat session if switching chats
-        if (currentChatId != null && currentChatId != chatId) {
-            Log.d("ChatViewModel", "Switching from chat ${currentChatId} to chat $chatId")
-            val previousChatId = currentChatId!!
-            
+        val previousChatId = currentChatId?.takeIf { it != chatId }
+        if (previousChatId != null) {
+            Log.d("ChatViewModel", "Switching from chat $previousChatId to chat $chatId")
+
             // Cancel any ongoing generation before switching
             generationJob?.cancel()
             generationJob = null
             
             // Clear any streaming state
             _streamingContents.value = emptyMap()
-            
-            // Reset chat session synchronously to prevent session conflicts
-            try {
-                runBlocking {
-                    inferenceService.resetChatSession(previousChatId)
-                }
-                Log.d("ChatViewModel", "Completed session cleanup for chat switch")
-            } catch (e: Exception) {
-                Log.w("ChatViewModel", "Error during session cleanup: ${e.message}")
-            }
         }
 
         // Remember the previously loaded model to preserve it across chat switches
@@ -583,6 +573,19 @@ class ChatViewModel(
         Log.d("ChatViewModel", "Current model before switch: ${previousModel?.name ?: "None"}")
 
         viewModelScope.launch {
+            // Reset the previous chat session before attaching the new chat. It waits for the native
+            // runtime to finish the cancelled reply, so it suspends here instead of blocking the main thread.
+            if (previousChatId != null) {
+                try {
+                    inferenceService.resetChatSession(previousChatId)
+                    Log.d("ChatViewModel", "Completed session cleanup for chat switch")
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Log.w("ChatViewModel", "Error during session cleanup: ${e.message}")
+                }
+            }
+
             // Load the models synchronously so we know what's available before creating/attaching a chat
             loadAvailableModelsSync(context)
 

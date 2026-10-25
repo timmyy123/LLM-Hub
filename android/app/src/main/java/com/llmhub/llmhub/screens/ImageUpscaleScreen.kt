@@ -32,6 +32,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.llmhub.llmhub.imagegen.BoundedBitmapDecoder
 import com.llmhub.llmhub.R
 import com.llmhub.llmhub.data.ModelData
 import com.llmhub.llmhub.data.LiteRtUpscaler
@@ -106,15 +107,7 @@ fun ImageUpscaleScreen(
     ) { uri ->
         uri?.let {
             try {
-                inputBitmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                    val source = android.graphics.ImageDecoder.createSource(context.contentResolver, it)
-                    android.graphics.ImageDecoder.decodeBitmap(source) { decoder, _, _ ->
-                        decoder.allocator = android.graphics.ImageDecoder.ALLOCATOR_SOFTWARE
-                    }
-                } else {
-                    @Suppress("DEPRECATION")
-                    MediaStore.Images.Media.getBitmap(context.contentResolver, it)
-                }
+                inputBitmap = BoundedBitmapDecoder.decodeUri(context, it)
                 outputBitmap = null
             } catch (e: Exception) {
                 errorMessage = "Failed to load image: ${e.message}"

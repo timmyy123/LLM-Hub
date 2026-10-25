@@ -73,13 +73,10 @@ object DeviceInfo {
     )
 
     /**
-     * llama.cpp Vulkan crashes on these Adreno 740/750/830/840 SoCs (pipeline creation
-     * failures and driver faults), so GGUF GPU runs always use OpenCL here.
+     * llama.cpp Vulkan crashes on Adreno drivers (pipeline creation failures and driver faults,
+     * Adreno 730 to 840), so GGUF GPU runs always use OpenCL on Snapdragon and the setting is hidden.
      */
-    fun isLlamaCppVulkanBlocked(): Boolean = getDeviceSoc() in setOf(
-        "SM8550", "SM8550P", "SM8650", "SM8650P",
-        "SM8750", "SM8750P", "SM8850", "SM8850P",
-    )
+    fun isLlamaCppVulkanBlocked(): Boolean = isSnapdragon()
 
     /**
      * SoC tag used in the chip-specific EmbeddingGemma 2 file names

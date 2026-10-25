@@ -2,8 +2,6 @@ package com.llmhub.llmhub.screens
 
 import android.graphics.Bitmap
 import android.net.Uri
-import android.os.Build
-import android.provider.MediaStore
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.graphics.SurfaceTexture
@@ -39,6 +37,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.llmhub.llmhub.imagegen.BoundedBitmapDecoder
 import com.llmhub.llmhub.R
 import com.llmhub.llmhub.videogen.VideoGenBackend
 import com.llmhub.llmhub.videogen.VideoGenEngine
@@ -72,16 +71,8 @@ fun VideoGeneratorScreen(
     ) { uri: Uri? ->
         uri?.let {
             try {
-                viewModel.initImage = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                    val source = android.graphics.ImageDecoder.createSource(context.contentResolver, it)
-                    android.graphics.ImageDecoder.decodeBitmap(source) { decoder, _, _ ->
-                        // Software ARGB bitmap so the native engine can read the pixels
-                        decoder.allocator = android.graphics.ImageDecoder.ALLOCATOR_SOFTWARE
-                    }
-                } else {
-                    @Suppress("DEPRECATION")
-                    MediaStore.Images.Media.getBitmap(context.contentResolver, it)
-                }
+                // Software ARGB bitmap so the native engine can read the pixels
+                viewModel.initImage = BoundedBitmapDecoder.decodeUri(context, it)
             } catch (e: Exception) {
                 viewModel.initImage = null
                 coroutineScope.launch {

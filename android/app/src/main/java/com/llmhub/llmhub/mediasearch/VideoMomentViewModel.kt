@@ -160,7 +160,7 @@ class VideoMomentViewModel(application: Application) : MediaSearchViewModel(appl
 
     fun refresh() {
         refreshModels()
-        loadSavedVideos()
+        viewModelScope.launch { loadSavedVideos() }
     }
 
     override fun onModelLoaded() = startIndexing()
@@ -170,10 +170,11 @@ class VideoMomentViewModel(application: Application) : MediaSearchViewModel(appl
         indexJob?.join()
     }
 
-    private fun loadSavedVideos() {
+    // describe() opens each video through its content provider, which can block for seconds.
+    private suspend fun loadSavedVideos() {
         val saved = prefString(KEY_URIS)?.split("\n")?.filter { it.isNotBlank() }.orEmpty()
-        _videos.value = saved.mapNotNull { describe(Uri.parse(it)) }
-        viewModelScope.launch { updateProgress() }
+        _videos.value = withContext(Dispatchers.IO) { saved.mapNotNull { describe(Uri.parse(it)) } }
+        updateProgress()
     }
 
     private fun saveVideos() {

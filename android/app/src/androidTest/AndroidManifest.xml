@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <!-- VitalsFixes3DeviceTest: a content provider that answers slowly, in the test package's process. -->
+        <provider
+            android:name="com.llmhub.llmhub.SlowVideoProvider"
+            android:authorities="com.llmhub.llmhub.test.slowvideo"
+            android:exported="true" />
+    </application>
+</manifest>

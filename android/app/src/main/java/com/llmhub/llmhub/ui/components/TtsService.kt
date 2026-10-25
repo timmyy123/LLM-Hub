@@ -55,7 +55,9 @@ class TtsService(private val context: Context, private val isTranslationFeature:
 
     private var tts: TextToSpeech? = null
     private var ortEnvironment: OrtEnvironment? = null
-    private var ortSession: OrtSession? = null
+    @Volatile private var ortSession: OrtSession? = null
+    // Held while the Kokoro session runs or closes: closing it mid-run aborts inside OrtSession.run.
+    private val ortSessionLock = Any()
     private var pocketEngine: PocketTtsEngine? = null
     private var supertonicEngine: SupertonicEngine? = null
     private var speechLocale = Locale.getDefault()
@@ -178,8 +180,10 @@ class TtsService(private val context: Context, private val isTranslationFeature:
                         pocketEngine = null
                         supertonicEngine?.close()
                         supertonicEngine = null
-                        ortSession?.close()
-                        ortSession = null
+                        synchronized(ortSessionLock) {
+                            ortSession?.close()
+                            ortSession = null
+                        }
                     }
                     initializeTts(settings[0], settings[1] ?: "cpu")
                 }
@@ -745,21 +749,25 @@ class TtsService(private val context: Context, private val isTranslationFeature:
             val speedTensor = OnnxTensor.createTensor(env, speedBuf, longArrayOf(1))
 
             val audioData = try {
-                session.run(mapOf("input_ids" to inputIdsTensor, "style" to styleTensor, "speed" to speedTensor)).use { result ->
-                    val iterator = result.iterator()
-                    if (!iterator.hasNext()) return@use null
-                    val outputTensor = iterator.next().value as OnnxTensor
-                    when (val tensorType = outputTensor.info.type) {
-                        ai.onnxruntime.OnnxJavaType.FLOAT -> {
-                            val fb = outputTensor.floatBuffer
-                            FloatArray(fb.remaining()).also { fb.get(it) }
+                synchronized(ortSessionLock) {
+                    // Settings change or shutdown may have closed the session since it was read above.
+                    if (ortSession !== session) return@synchronized null
+                    session.run(mapOf("input_ids" to inputIdsTensor, "style" to styleTensor, "speed" to speedTensor)).use { result ->
+                        val iterator = result.iterator()
+                        if (!iterator.hasNext()) return@use null
+                        val outputTensor = iterator.next().value as OnnxTensor
+                        when (val tensorType = outputTensor.info.type) {
+                            ai.onnxruntime.OnnxJavaType.FLOAT -> {
+                                val fb = outputTensor.floatBuffer
+                                FloatArray(fb.remaining()).also { fb.get(it) }
+                            }
+                            ai.onnxruntime.OnnxJavaType.FLOAT16 -> {
+                                val bb = outputTensor.byteBuffer.order(ByteOrder.LITTLE_ENDIAN)
+                                val count = bb.remaining() / 2
+                                FloatArray(count) { fp16ToFloat(bb.getShort()) }
+                            }
+                            else -> { Log.e(TAG, "Unsupported output type: $tensorType"); null }
                         }
-                        ai.onnxruntime.OnnxJavaType.FLOAT16 -> {
-                            val bb = outputTensor.byteBuffer.order(ByteOrder.LITTLE_ENDIAN)
-                            val count = bb.remaining() / 2
-                            FloatArray(count) { fp16ToFloat(bb.getShort()) }
-                        }
-                        else -> { Log.e(TAG, "Unsupported output type: $tensorType"); null }
                     }
                 }
             } finally {
@@ -1794,8 +1802,10 @@ class TtsService(private val context: Context, private val isTranslationFeature:
             pocketEngine = null
             supertonicEngine?.close()
             supertonicEngine = null
-            try { ortSession?.close() } catch (_: Exception) {}
-            ortSession = null
+            synchronized(ortSessionLock) {
+                try { ortSession?.close() } catch (_: Exception) {}
+                ortSession = null
+            }
             ortEnvironment = null
         }
         // OrtEnvironment is process-wide; other ONNX services can still be using it.
