@@ -453,7 +453,10 @@
   "SearchNoVector": "Couldn't read that query.",
   "SearchFound": "{0} matches in {1} s",
   "SearchPlay": "Play",
-  "EmbedderFailed": "{0} couldn't start on the GPU or CPU."
+  "EmbedderFailed": "{0} couldn't start on the GPU or CPU.",
+  "StableAudioSetup": "Setting up Stable Audio 3 for this PC (one time)",
+  "MusicEncodingPrompt": "Reading the prompt…",
+  "MusicDecoding": "Turning it into audio…"
  },
  "es-ES": {
   "NewChat": "Nuevo chat",
@@ -909,7 +912,10 @@
   "SearchNoVector": "No se pudo leer esa búsqueda.",
   "SearchFound": "{0} resultados en {1} s",
   "SearchPlay": "Reproducir",
-  "EmbedderFailed": "{0} no pudo iniciarse en la GPU ni en la CPU."
+  "EmbedderFailed": "{0} no pudo iniciarse en la GPU ni en la CPU.",
+  "StableAudioSetup": "Preparando Stable Audio 3 para este equipo (solo la primera vez)",
+  "MusicEncodingPrompt": "Leyendo la descripción…",
+  "MusicDecoding": "Convirtiéndolo en audio…"
  },
  "pt-BR": {
   "NewChat": "Nova conversa",
@@ -1365,7 +1371,10 @@
   "SearchNoVector": "Não foi possível ler essa busca.",
   "SearchFound": "{0} resultados em {1} s",
   "SearchPlay": "Reproduzir",
-  "EmbedderFailed": "O {0} não iniciou na GPU nem na CPU."
+  "EmbedderFailed": "O {0} não iniciou na GPU nem na CPU.",
+  "StableAudioSetup": "Preparando o Stable Audio 3 para este PC (só na primeira vez)",
+  "MusicEncodingPrompt": "Lendo a descrição…",
+  "MusicDecoding": "Transformando em áudio…"
  },
  "fr-FR": {
   "NewChat": "Nouvelle discussion",
@@ -1821,7 +1830,10 @@
   "SearchNoVector": "Impossible de lire cette recherche.",
   "SearchFound": "{0} résultats en {1} s",
   "SearchPlay": "Lire",
-  "EmbedderFailed": "{0} n'a pas pu démarrer sur le GPU ni sur le CPU."
+  "EmbedderFailed": "{0} n'a pas pu démarrer sur le GPU ni sur le CPU.",
+  "StableAudioSetup": "Installation de Stable Audio 3 sur ce PC (une seule fois)",
+  "MusicEncodingPrompt": "Lecture de la description…",
+  "MusicDecoding": "Conversion en audio…"
  },
  "de-DE": {
   "NewChat": "Neuer Chat",
@@ -2277,7 +2289,10 @@
   "SearchNoVector": "Diese Suche konnte nicht gelesen werden.",
   "SearchFound": "{0} Treffer in {1} s",
   "SearchPlay": "Abspielen",
-  "EmbedderFailed": "{0} konnte weder auf der GPU noch auf der CPU starten."
+  "EmbedderFailed": "{0} konnte weder auf der GPU noch auf der CPU starten.",
+  "StableAudioSetup": "Stable Audio 3 wird für diesen PC eingerichtet (nur beim ersten Mal)",
+  "MusicEncodingPrompt": "Beschreibung wird gelesen…",
+  "MusicDecoding": "Wird in Audio umgewandelt…"
  },
  "it-IT": {
   "NewChat": "Nuova chat",
@@ -2733,7 +2748,10 @@
   "SearchNoVector": "Impossibile leggere questa ricerca.",
   "SearchFound": "{0} risultati in {1} s",
   "SearchPlay": "Riproduci",
-  "EmbedderFailed": "{0} non è partito né sulla GPU né sulla CPU."
+  "EmbedderFailed": "{0} non è partito né sulla GPU né sulla CPU.",
+  "StableAudioSetup": "Preparazione di Stable Audio 3 per questo PC (solo la prima volta)",
+  "MusicEncodingPrompt": "Lettura della descrizione…",
+  "MusicDecoding": "Conversione in audio…"
  },
  "ru-RU": {
   "NewChat": "Новый чат",
@@ -3189,6 +3207,9 @@
   "SearchNoVector": "Не удалось обработать запрос.",
   "SearchFound": "Найдено: {0} за {1} с",
   "SearchPlay": "Воспроизвести",
-  "EmbedderFailed": "{0} не запустилась ни на GPU, ни на CPU."
+  "EmbedderFailed": "{0} не запустилась ни на GPU, ни на CPU.",
+  "StableAudioSetup": "Подготовка Stable Audio 3 для этого ПК (только в первый раз)",
+  "MusicEncodingPrompt": "Читаем описание…",
+  "MusicDecoding": "Превращаем в звук…"
  }
 }

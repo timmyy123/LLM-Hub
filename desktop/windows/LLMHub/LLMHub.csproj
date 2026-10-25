@@ -27,6 +27,7 @@
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.5.1" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.2705" />
       <Content Include="..\..\shared\licenses\*" Link="Licenses\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+      <Content Include="..\..\shared\stable-audio\sa3_dml.py" Link="stable-audio\sa3_dml.py" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <!-- Snapdragon (Windows on Arm): Qualcomm's QNN execution provider for ONNX Runtime runs Studio's image models on the

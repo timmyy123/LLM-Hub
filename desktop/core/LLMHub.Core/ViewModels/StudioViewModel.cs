@@ -61,7 +61,11 @@ public sealed partial class StudioViewModel : ObservableObject
     private static readonly Lazy<bool> UsesNpuOnce = new(() => !ComfyService.IsSupported && SdNpuService.IsSupported);
 
     public IReadOnlyList<ComfyWorkflow> Workflows => UsesNpu ? ComfyWorkflow.NpuWorkflows : ComfyWorkflow.Visual;
-    public IReadOnlyList<ComfyWorkflow> MusicWorkflows => ComfyWorkflow.Music;
+    /// <summary>Snapdragon PCs make music clips with Stable Audio 3 Small on the Adreno GPU (<see cref="StableAudioDmlService"/>).</summary>
+    public static bool UsesGpuMusic => !ComfyService.IsSupported && StableAudioDmlService.IsSupported;
+    public IReadOnlyList<ComfyWorkflow> MusicWorkflows => UsesGpuMusic ? [ComfyWorkflow.StableAudioSmall] : ComfyWorkflow.Music;
+    /// <summary>Music clips work here: through ComfyUI, or on the GPU of Snapdragon PCs.</summary>
+    public bool MusicSupported => ComfyService.IsSupported || UsesGpuMusic;
     public ObservableCollection<GalleryItem> MusicClips { get; } = [];
     public static string MusicFolder => Directory.CreateDirectory(Path.Combine(ComfyService.Gallery, "Music")).FullName;
     /// <summary>The NPU models are compiled for one size: 512 x 512 images, and 512 x 320 (16:10) or 768 x 512 (3:2) video.</summary>
@@ -98,7 +102,9 @@ public sealed partial class StudioViewModel : ObservableObject
     [ObservableProperty] public partial string MusicStatus { get; set; }
 
     /// <summary>"2.3 GB to download on first use" for the chosen music model, or "".</summary>
-    public string MusicDownloadNote => ComfyService.HasModels(MusicWorkflow) ? "" : Loc.F("StudioDownloadNote", Fmt.Bytes(MusicWorkflow.DownloadSize));
+    public string MusicDownloadNote => UsesGpuMusic
+        ? StableAudioDmlService.IsInstalled ? "" : Loc.F("StudioDownloadNote", Fmt.Bytes(StableAudioDmlService.DownloadSize))
+        : ComfyService.HasModels(MusicWorkflow) ? "" : Loc.F("StudioDownloadNote", Fmt.Bytes(MusicWorkflow.DownloadSize));
 
     partial void OnMusicWorkflowChanged(ComfyWorkflow value)
     {
@@ -108,7 +114,10 @@ public sealed partial class StudioViewModel : ObservableObject
 
     private CancellationTokenSource? _music;
 
-    /// <summary>Stable Audio 3 through ComfyUI: one clip of <see cref="MusicSeconds"/>, saved to Pictures/LLM Hub/Music.</summary>
+    /// <summary>
+    /// Stable Audio 3 through ComfyUI (or on the Adreno GPU of Snapdragon PCs): one clip of <see cref="MusicSeconds"/>, saved to
+    /// Pictures/LLM Hub/Music.
+    /// </summary>
     [RelayCommand]
     private async Task GenerateMusicAsync()
     {
@@ -120,6 +129,11 @@ public sealed partial class StudioViewModel : ObservableObject
         var ct = _music.Token;
         try
         {
+            if (UsesGpuMusic)
+            {
+                await GenerateMusicOnSnapdragonAsync(ct);
+                return;
+            }
             MusicStatus = Loc.S("ComfyStarting");
             await _comfy.EnsureRunningAsync(ct);
             await _comfy.EnsureModelsAsync(MusicWorkflow, ct);
@@ -153,6 +167,22 @@ public sealed partial class StudioViewModel : ObservableObject
             _music.Dispose();
             _music = null;
         }
+    }
+
+    private async Task GenerateMusicOnSnapdragonAsync(CancellationToken ct)
+    {
+        var seed = long.TryParse(MusicSeed, out var s) ? s : Random.Shared.NextInt64(1, int.MaxValue);
+        var seconds = Math.Clamp(MusicSeconds, 1, StableAudioDmlService.MaxSeconds);
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+        var file = await Ioc.StableAudioDml.GenerateAsync(MusicPrompt.Trim(), seconds, seed, MusicFolder, (p, text) => UiThread.Post(() =>
+        {
+            MusicProgress = p;
+            MusicStatus = text;
+        }), ct);
+        OnPropertyChanged(nameof(MusicDownloadNote));
+        Log.Info($"Studio sa3-small-music (DirectML) {seconds}s seed {seed}: {file} in {clock.Elapsed.TotalSeconds:F1}s");
+        MusicStatus = Loc.F("StudioDone", "1", clock.Elapsed.TotalSeconds.ToString("F0"));
+        MusicClips.Insert(0, new GalleryItem(file));
     }
 
     [RelayCommand]

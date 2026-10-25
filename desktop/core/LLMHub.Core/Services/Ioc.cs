@@ -30,6 +30,8 @@ public static class Ioc
     public static Studio.Npu.SdNpuService SdNpu { get; } = new();
     /// <summary>Studio video on the Snapdragon NPU (LTX-Video through sd-cli.exe).</summary>
     public static Studio.Npu.LtxNpuService LtxNpu { get; } = new();
+    /// <summary>Stable Audio 3 music clips on the Adreno GPU (ONNX Runtime, DirectML) on Snapdragon PCs, where ComfyUI does not run.</summary>
+    public static Studio.StableAudioDmlService StableAudioDml { get; } = new();
     public static Design.DesignService Design { get; } = new();
 
     private static ChatViewModel? _chat;

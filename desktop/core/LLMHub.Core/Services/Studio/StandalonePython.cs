@@ -14,12 +14,14 @@ public static class StandalonePython
     public static string Exe(string root) =>
         OperatingSystem.IsWindows() ? Path.Combine(root, "python", "python.exe") : Path.Combine(root, "python", "bin", "python3");
 
-    public static async Task EnsureAsync(string root, Action<double> progress, CancellationToken ct)
+    /// <param name="x64">An x64 Python even on Windows on Arm (it runs under Windows' x64 emulation), for engines whose
+    /// packages have no win_arm64 wheels.</param>
+    public static async Task EnsureAsync(string root, Action<double> progress, CancellationToken ct, bool x64 = false)
     {
         if (File.Exists(Exe(root)))
             return;
         Directory.CreateDirectory(root);
-        var arm = Ioc.Hardware.IsArm64;
+        var arm = Ioc.Hardware.IsArm64 && !(x64 && OperatingSystem.IsWindows());
         var triple = OperatingSystem.IsWindows()
             ? arm ? "aarch64-pc-windows-msvc" : "x86_64-pc-windows-msvc"
             : arm ? "aarch64-unknown-linux-gnu" : "x86_64-unknown-linux-gnu";

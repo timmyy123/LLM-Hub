@@ -352,7 +352,7 @@
                                Visibility="{x:Bind local:Ui.Hide(ViewModel.ComfySupported)}" />
                     <Button x:Name="GenerateMusicButton" HorizontalAlignment="Stretch" Height="44" CornerRadius="10" FontWeight="SemiBold"
                             Content="{x:Bind services:Loc.S('StudioGenerate')}" Background="{ThemeResource AccentFillBrush}" Foreground="{ThemeResource OnAccentBrush}"
-                            BorderThickness="0" Command="{x:Bind ViewModel.GenerateMusicCommand}" IsEnabled="{x:Bind ViewModel.ComfySupported}"
+                            BorderThickness="0" Command="{x:Bind ViewModel.GenerateMusicCommand}" IsEnabled="{x:Bind ViewModel.MusicSupported}"
                             Visibility="{x:Bind local:Ui.Hide(ViewModel.IsGeneratingMusic), Mode=OneWay}" />
                     <Button HorizontalAlignment="Stretch" Height="44" CornerRadius="10" Content="{x:Bind services:Loc.S('Cancel')}" Command="{x:Bind ViewModel.CancelMusicCommand}"
                             Visibility="{x:Bind local:Ui.Show(ViewModel.IsGeneratingMusic), Mode=OneWay}" />

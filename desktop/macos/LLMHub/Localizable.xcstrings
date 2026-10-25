@@ -11188,6 +11188,53 @@
         }
       }
     },
+    "MusicDecoding": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turning it into audio…"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Convirtiéndolo en audio…"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transformando em áudio…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conversion en audio…"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wird in Audio umgewandelt…"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conversione in audio…"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Превращаем в звук…"
+          }
+        }
+      }
+    },
     "MusicDownloading": {
       "extractionState": "manual",
       "localizations": {
@@ -11231,6 +11278,53 @@
           "stringUnit": {
             "state": "translated",
             "value": "Загрузка Magenta RealTime (%1$@%%)"
+          }
+        }
+      }
+    },
+    "MusicEncodingPrompt": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reading the prompt…"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leyendo la descripción…"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lendo a descrição…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lecture de la description…"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beschreibung wird gelesen…"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lettura della descrizione…"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Читаем описание…"
           }
         }
       }
@@ -18610,6 +18704,53 @@
           "stringUnit": {
             "state": "translated",
             "value": "Скорость"
+          }
+        }
+      }
+    },
+    "StableAudioSetup": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Setting up Stable Audio 3 for this PC (one time)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preparando Stable Audio 3 para este equipo (solo la primera vez)"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preparando o Stable Audio 3 para este PC (só na primeira vez)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Installation de Stable Audio 3 sur ce PC (une seule fois)"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stable Audio 3 wird für diesen PC eingerichtet (nur beim ersten Mal)"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preparazione di Stable Audio 3 per questo PC (solo la prima volta)"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подготовка Stable Audio 3 для этого ПК (только в первый раз)"
           }
         }
       }
