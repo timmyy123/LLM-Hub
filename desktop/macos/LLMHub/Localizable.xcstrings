@@ -14813,43 +14813,43 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Download EmbeddingGemma 2 440M (photos) or 740M (photos and audio) in Settings › Models to search here."
+            "value": "Download EmbeddingGemma 2 440M (photos and videos) or 740M (photos, audio and videos with their sound) in Settings › Models to search here."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Descarga EmbeddingGemma 2 440M (fotos) o 740M (fotos y audio) en Ajustes › Modelos para buscar aquí."
+            "value": "Descarga EmbeddingGemma 2 440M (fotos y vídeos) o 740M (fotos, audio y vídeos con su sonido) en Ajustes › Modelos para buscar aquí."
           }
         },
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "Baixe o EmbeddingGemma 2 440M (fotos) ou 740M (fotos e áudio) em Ajustes › Modelos para buscar aqui."
+            "value": "Baixe o EmbeddingGemma 2 440M (fotos e vídeos) ou 740M (fotos, áudio e vídeos com o som) em Ajustes › Modelos para buscar aqui."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Téléchargez EmbeddingGemma 2 440M (photos) ou 740M (photos et audio) dans Réglages › Modèles pour chercher ici."
+            "value": "Téléchargez EmbeddingGemma 2 440M (photos et vidéos) ou 740M (photos, audio et vidéos avec leur son) dans Réglages › Modèles pour chercher ici."
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lade EmbeddingGemma 2 440M (Fotos) oder 740M (Fotos und Audio) unter Einstellungen › Modelle, um hier zu suchen."
+            "value": "Lade EmbeddingGemma 2 440M (Fotos und Videos) oder 740M (Fotos, Audio und Videos samt Ton) unter Einstellungen › Modelle, um hier zu suchen."
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Scarica EmbeddingGemma 2 440M (foto) o 740M (foto e audio) in Impostazioni › Modelli per cercare qui."
+            "value": "Scarica EmbeddingGemma 2 440M (foto e video) o 740M (foto, audio e video con il loro audio) in Impostazioni › Modelli per cercare qui."
           }
         },
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Скачайте EmbeddingGemma 2 440M (фото) или 740M (фото и аудио) в Настройках › Модели, чтобы искать здесь."
+            "value": "Скачайте EmbeddingGemma 2 440M (фото и видео) или 740M (фото, аудио и видео со звуком) в Настройках › Модели, чтобы искать здесь."
           }
         }
       }
@@ -14860,43 +14860,43 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "EmbeddingGemma 2 reads your photos and recordings on this computer; nothing is uploaded."
+            "value": "EmbeddingGemma 2 reads your photos, recordings and videos on this computer; nothing is uploaded."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "EmbeddingGemma 2 analiza tus fotos y grabaciones en este ordenador; no se sube nada."
+            "value": "EmbeddingGemma 2 analiza tus fotos, grabaciones y vídeos en este ordenador; no se sube nada."
           }
         },
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "O EmbeddingGemma 2 analisa suas fotos e gravações neste computador; nada é enviado."
+            "value": "O EmbeddingGemma 2 analisa suas fotos, gravações e vídeos neste computador; nada é enviado."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "EmbeddingGemma 2 analyse vos photos et enregistrements sur cet ordinateur ; rien n'est envoyé."
+            "value": "EmbeddingGemma 2 analyse vos photos, enregistrements et vidéos sur cet ordinateur ; rien n'est envoyé."
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "EmbeddingGemma 2 liest deine Fotos und Aufnahmen auf diesem Computer; nichts wird hochgeladen."
+            "value": "EmbeddingGemma 2 liest deine Fotos, Aufnahmen und Videos auf diesem Computer; nichts wird hochgeladen."
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "EmbeddingGemma 2 analizza foto e registrazioni su questo computer; non viene caricato nulla."
+            "value": "EmbeddingGemma 2 analizza foto, registrazioni e video su questo computer; non viene caricato nulla."
           }
         },
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "EmbeddingGemma 2 анализирует ваши фото и записи на этом компьютере, ничего не загружается в сеть."
+            "value": "EmbeddingGemma 2 анализирует ваши фото, записи и видео на этом компьютере, ничего не загружается в сеть."
           }
         }
       }
@@ -15183,6 +15183,53 @@
         }
       }
     },
+    "SearchIndexedVideos": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ videos indexed"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ vídeos indexados"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ vídeos indexados"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ vidéos indexées"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ Videos indexiert"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ video indicizzati"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Проиндексировано видео: %1$@"
+          }
+        }
+      }
+    },
     "SearchIndexing": {
       "extractionState": "manual",
       "localizations": {
@@ -15418,6 +15465,53 @@
         }
       }
     },
+    "SearchNoVideoDecoder": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To index videos, install ffmpeg or GStreamer (gst-launch-1.0)."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Para indexar vídeos, instala ffmpeg o GStreamer (gst-launch-1.0)."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Para indexar vídeos, instale o ffmpeg ou o GStreamer (gst-launch-1.0)."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pour indexer des vidéos, installez ffmpeg ou GStreamer (gst-launch-1.0)."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Um Videos zu indexieren, installiere ffmpeg oder GStreamer (gst-launch-1.0)."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Per indicizzare i video, installa ffmpeg o GStreamer (gst-launch-1.0)."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Чтобы индексировать видео, установите ffmpeg или GStreamer (gst-launch-1.0)."
+          }
+        }
+      }
+    },
     "SearchPhotos": {
       "extractionState": "manual",
       "localizations": {
@@ -15559,6 +15653,53 @@
         }
       }
     },
+    "SearchPlaceholderVideos": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Describe a moment, like cutting a cake"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Describe un momento, como cortar una tarta"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Descreva um momento, como cortar um bolo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Décrivez un moment, par exemple la découpe d'un gâteau"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beschreibe einen Moment, etwa das Anschneiden einer Torte"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Descrivi un momento, ad esempio il taglio di una torta"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Опишите момент, например как режут торт"
+          }
+        }
+      }
+    },
     "SearchPlay": {
       "extractionState": "manual",
       "localizations": {
@@ -15602,6 +15743,53 @@
           "stringUnit": {
             "state": "translated",
             "value": "Воспроизвести"
+          }
+        }
+      }
+    },
+    "SearchPlayFrom": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Play from %1$@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reproducir desde %1$@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reproduzir a partir de %1$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lire à partir de %1$@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ab %1$@ abspielen"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Riproduci da %1$@"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Воспроизвести с %1$@"
           }
         }
       }
@@ -15696,6 +15884,194 @@
           "stringUnit": {
             "state": "translated",
             "value": "Индексация остановлена, готовая часть сохранена."
+          }
+        }
+      }
+    },
+    "SearchUnreadable": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ could not be opened."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se pudieron abrir %1$@."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Não foi possível abrir %1$@."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ n'ont pas pu être ouvertes."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ ließen sich nicht öffnen."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossibile aprirne %1$@."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не удалось открыть: %1$@."
+          }
+        }
+      }
+    },
+    "SearchVideoFramesOnly": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "EmbeddingGemma 2 440M has no audio encoder, so moments are matched from the frames only. Get 740M in Settings › Models to search by sound too."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "EmbeddingGemma 2 440M no tiene codificador de audio, así que los momentos se buscan solo por los fotogramas. Descarga 740M en Ajustes › Modelos para buscar también por el sonido."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O EmbeddingGemma 2 440M não tem codificador de áudio, por isso os momentos são encontrados só pelos quadros. Baixe o 740M em Ajustes › Modelos para buscar também pelo som."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "EmbeddingGemma 2 440M n'a pas d'encodeur audio : les moments sont donc trouvés uniquement à partir des images. Téléchargez 740M dans Réglages › Modèles pour chercher aussi par le son."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "EmbeddingGemma 2 440M hat keinen Audio-Encoder, daher werden Momente nur anhand der Bilder gefunden. Lade 740M unter Einstellungen › Modelle, um auch nach Geräuschen zu suchen."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "EmbeddingGemma 2 440M non ha un encoder audio, quindi i momenti vengono trovati solo dai fotogrammi. Scarica 740M in Impostazioni › Modelli per cercare anche in base ai suoni."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "У EmbeddingGemma 2 440M нет аудиокодировщика, поэтому моменты ищутся только по кадрам. Скачайте 740M в Настройках › Модели, чтобы искать и по звуку."
+          }
+        }
+      }
+    },
+    "SearchVideoHelp": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Each video is split into 2 second moments. EmbeddingGemma 2 reads two frames and the sound of each one, so a description takes you to the right timestamp."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cada vídeo se divide en momentos de 2 segundos. EmbeddingGemma 2 analiza dos fotogramas y el sonido de cada uno, así que una descripción te lleva al instante exacto."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cada vídeo é dividido em momentos de 2 segundos. O EmbeddingGemma 2 analisa dois quadros e o som de cada um, então uma descrição leva você ao instante certo."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chaque vidéo est découpée en moments de 2 secondes. EmbeddingGemma 2 lit deux images et le son de chacun, pour qu'une description vous mène au bon instant."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jedes Video wird in Momente von 2 Sekunden geteilt. EmbeddingGemma 2 liest jeweils zwei Bilder und den Ton dazu, sodass dich eine Beschreibung direkt zur richtigen Stelle bringt."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ogni video viene diviso in momenti di 2 secondi. EmbeddingGemma 2 legge due fotogrammi e l'audio di ciascuno, così una descrizione ti porta all'istante giusto."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Каждое видео делится на фрагменты по 2 секунды. EmbeddingGemma 2 читает по два кадра и звук каждого фрагмента, поэтому по описанию можно сразу перейти к нужному моменту."
+          }
+        }
+      }
+    },
+    "SearchVideos": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Videos"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vídeos"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vídeos"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vidéos"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Videos"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Video"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Видео"
           }
         }
       }

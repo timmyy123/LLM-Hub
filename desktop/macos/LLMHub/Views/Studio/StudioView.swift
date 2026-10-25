@@ -38,6 +38,8 @@ private struct StudioHeader: View {
                     tab("search", L.s("StudioSearch"))
                 }
             }
+            // A group of its own, so each tab keeps its StudioTab_<mode> identifier.
+            .accessibilityElement(children: .contain)
             .accessibilityIdentifier("StudioTabs")
             Spacer()
             if studio.isImageOrVideo {

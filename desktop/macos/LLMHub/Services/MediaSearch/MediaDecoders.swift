@@ -10,6 +10,22 @@ enum MediaDecoders {
 
     static let imageExtensions: Set<String> = ["jpg", "jpeg", "png", "webp", "bmp", "gif", "heic", "heif", "tif", "tiff"]
     static let audioExtensions: Set<String> = ["wav", "mp3", "flac", "ogg", "oga", "opus", "m4a", "aac", "wma", "aiff", "aif", "caf"]
+    /// What AVFoundation plays.
+    static let videoExtensions: Set<String> = ["mp4", "m4v", "mov", "3gp", "3g2"]
+
+    /// One frame as a JPEG for a result thumbnail; nil if it cannot be read.
+    static func videoThumbnail(_ url: URL, ms: Int, maxEdge: Int) async -> Data? {
+        guard let video = await VideoFrames.open(url, maxEdge: maxEdge) else { return nil }
+        return await video.frames([ms]).first ?? nil
+    }
+
+    /// A JPEG of the image at the given quality.
+    static func jpeg(_ image: CGImage, quality: Double) -> Data? {
+        let data = NSMutableData()
+        guard let destination = CGImageDestinationCreateWithData(data, UTType.jpeg.identifier as CFString, 1, nil) else { return nil }
+        CGImageDestinationAddImage(destination, image, [kCGImageDestinationLossyCompressionQuality: quality] as CFDictionary)
+        return CGImageDestinationFinalize(destination) ? data as Data : nil
+    }
 
     /// A JPEG of the image, no larger than maxEdge on its long side and turned upright by its EXIF orientation; nil if
     /// it cannot be read.
@@ -116,5 +132,47 @@ enum MediaDecoders {
         var sum = 0.0
         for i in from ..< to { sum += Double(samples[i] * samples[i]) }
         return Float((sum / Double(to - from)).squareRoot())
+    }
+}
+
+/// An open video for frame grabs (core VideoFrames): AVAssetImageGenerator gives the exact frame at each time, upright
+/// and no larger than maxEdge, as a JPEG of quality 80 (as on Android).
+final class VideoFrames: @unchecked Sendable {
+    /// The video's length in milliseconds.
+    let durationMs: Int
+    private let generator: AVAssetImageGenerator
+
+    private init(generator: AVAssetImageGenerator, durationMs: Int) {
+        self.generator = generator
+        self.durationMs = durationMs
+    }
+
+    /// Nil when the file has no video track AVFoundation can read.
+    static func open(_ url: URL, maxEdge: Int) async -> VideoFrames? {
+        let asset = AVURLAsset(url: url)
+        guard let tracks = try? await asset.loadTracks(withMediaType: .video), !tracks.isEmpty,
+              let duration = try? await asset.load(.duration), duration.isNumeric else { return nil }
+        let generator = AVAssetImageGenerator(asset: asset)
+        generator.appliesPreferredTrackTransform = true
+        generator.maximumSize = CGSize(width: maxEdge, height: maxEdge)
+        generator.requestedTimeToleranceBefore = .zero
+        generator.requestedTimeToleranceAfter = .zero
+        return VideoFrames(generator: generator, durationMs: Int(duration.seconds * 1000))
+    }
+
+    /// A JPEG of the frame at each time (ms), in order; nil where a frame cannot be read.
+    func frames(_ timesMs: [Int]) async -> [Data?] {
+        var result = [Data?](repeating: nil, count: timesMs.count)
+        let last = max(0, durationMs - 1)
+        let clamped = timesMs.map { min(max(0, $0), last) }
+        var indices: [Int: [Int]] = [:]
+        for (i, ms) in clamped.enumerated() { indices[ms, default: []].append(i) }
+        let times = indices.keys.sorted().map { CMTime(value: CMTimeValue($0), timescale: 1000) }
+        for await item in generator.images(for: times) {
+            let ms = Int((item.requestedTime.seconds * 1000).rounded())
+            guard let image = try? item.image, let jpeg = MediaDecoders.jpeg(image, quality: 0.8) else { continue }
+            for i in indices[ms] ?? [] { result[i] = jpeg }
+        }
+        return result
     }
 }

@@ -19,11 +19,12 @@ enum EmbedPart {
 }
 
 /// An EmbeddingGemma 2 .litertlm file loaded for embeddings (text, images, audio) through LiteRT-LM's EmbeddingEngine,
-/// configured like Android's media search: 256 input tokens and 70 vision tokens per image, vectors L2-normalized (so
-/// the dot product is the cosine). A port of LiteRtEngine.LiteRtEmbedder in core/LLMHub.Core/Services/LiteRtEngine.cs.
-/// The engine is an actor, so calls are serialized.
+/// configured like Android's media search: 256 input tokens (1024 for video moments, whose windows mix frames, audio
+/// and timestamps) and 70 vision tokens per image, vectors L2-normalized (so the dot product is the cosine). A port of
+/// LiteRtEngine.LiteRtEmbedder in core/LLMHub.Core/Services/LiteRtEngine.cs. The engine is an actor, so calls are serialized.
 final class MediaEmbedder: @unchecked Sendable {
     static let maxInputTokens = 256
+    static let videoMaxInputTokens = 1024
     static let visionTokens = 70
     private static let queryPrefix = "task: search result | query: "
     private static let documentPrefix = "title: none | text: "
@@ -34,23 +35,28 @@ final class MediaEmbedder: @unchecked Sendable {
     let backend: String
     let supportsImages: Bool
     let supportsAudio: Bool
+    /// The longest input, in tokens, the engine was created for.
+    let maxInput: Int
     private let engine: EmbeddingEngine
 
-    private init(model: InstalledModel, backend: String, engine: EmbeddingEngine, vision: Bool, audio: Bool) {
+    private init(model: InstalledModel, backend: String, engine: EmbeddingEngine, vision: Bool, audio: Bool, maxInput: Int) {
         self.model = model
         self.backend = backend
         self.engine = engine
         supportsImages = vision
         supportsAudio = audio
+        self.maxInput = maxInput
     }
 
     /// GPU (Metal) first, CPU if the GPU engine cannot start. A GPU engine can be created and still fail on the first
     /// input, so each one is probed with a short text before it is used.
-    static func open(_ model: InstalledModel) async throws -> MediaEmbedder {
+    static func open(_ model: InstalledModel, maxInputTokens: Int = MediaEmbedder.maxInputTokens) async throws -> MediaEmbedder {
         let vision = model.tags.contains("vision")
         let audio = model.tags.contains("audio")
         for backend in [Backend.gpu, Backend.cpu()] {
-            let cache = model.folder.appendingPathComponent("cache", isDirectory: true).appendingPathComponent("embed-" + backend.rawValue, isDirectory: true)
+            // Compiled GPU programs depend on the input length, so each length gets its own cache (256 keeps the old name).
+            let name = "embed-" + backend.rawValue + (maxInputTokens == Self.maxInputTokens ? "" : "-t\(maxInputTokens)")
+            let cache = model.folder.appendingPathComponent("cache", isDirectory: true).appendingPathComponent(name, isDirectory: true)
             try? FileManager.default.createDirectory(at: cache, withIntermediateDirectories: true)
             // Audio always runs on the CPU, as on Windows, Linux and Android.
             let config = EmbeddingEngineConfig(modelPath: model.primaryPath.path, backend: backend, visionBackend: vision ? backend : nil,
@@ -63,9 +69,9 @@ final class MediaEmbedder: @unchecked Sendable {
                 Log.error("LiteRT-LM embeddings \(model.id): \(backend.rawValue) failed", error)
                 continue
             }
-            let embedder = MediaEmbedder(model: model, backend: backend.rawValue, engine: engine, vision: vision, audio: audio)
+            let embedder = MediaEmbedder(model: model, backend: backend.rawValue, engine: engine, vision: vision, audio: audio, maxInput: maxInputTokens)
             if let probe = await embedder.embedText("test", query: true), !probe.isEmpty {
-                Log.info("LiteRT-LM embeddings \(model.id) on \(backend.rawValue) (\(probe.count) dimensions)")
+                Log.info("LiteRT-LM embeddings \(model.id) on \(backend.rawValue) (\(probe.count) dimensions, \(maxInputTokens) input tokens)")
                 return embedder
             }
             Log.info("LiteRT-LM embeddings \(model.id): \(backend.rawValue) probe failed")
@@ -120,15 +126,18 @@ final class MediaEmbedderHost {
     /// Loads and unloads run one at a time.
     private var chain: Task<Void, Never>?
 
-    func get(_ model: InstalledModel, status: @escaping @MainActor (String) -> Void = { _ in }) async throws -> MediaEmbedder {
+    /// The model's engine, loaded if needed. An engine made for longer inputs (video moments) also serves shorter ones,
+    /// so photo, audio and API requests never reload it while videos are indexed.
+    func get(_ model: InstalledModel, maxInputTokens: Int = MediaEmbedder.maxInputTokens,
+             status: @escaping @MainActor (String) -> Void = { _ in }) async throws -> MediaEmbedder {
         try await serialized { [self] in
-            if let loaded, loaded.model.id == model.id { return loaded }
+            if let loaded, loaded.model.id == model.id, loaded.maxInput >= maxInputTokens { return loaded }
             if let old = loaded {
                 loaded = nil
                 await old.close()
             }
             status(L.f("LoadingModel", model.name))
-            let embedder = try await MediaEmbedder.open(model)
+            let embedder = try await MediaEmbedder.open(model, maxInputTokens: maxInputTokens)
             loaded = embedder
             return embedder
         }

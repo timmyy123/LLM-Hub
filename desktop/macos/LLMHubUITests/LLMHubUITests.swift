@@ -450,4 +450,20 @@ final class LLMHubUITests: XCTestCase {
         app.terminate()
         wait(10, "llama-server to stop after the app was killed") { !serverRunning }
     }
+
+    // MARK: Studio
+
+    func test22_SearchVideosTab() {
+        el("NavStudio").click()
+        XCTAssertTrue(el("StudioTab_search").waitForExistence(timeout: 10), "Studio › Search tab")
+        el("StudioTab_search").click()
+        XCTAssertTrue(el("SearchMode_videos").waitForExistence(timeout: 5), "Videos, next to Photos and Audio")
+        XCTAssertTrue(el("SearchMode_photos").exists && el("SearchMode_audio").exists)
+        el("SearchMode_videos").click()
+        wait(5, "Videos selected") { el("SearchMode_videos").isSelected }
+        XCTAssertTrue(el("SearchIndexButton").exists, "Index button")
+        XCTAssertFalse(text(el("SearchFolder")).isEmpty, "video folder shown")
+        XCTAssertTrue(el("SearchQuery").exists, "query field")
+        el("SearchMode_photos").click()
+    }
 }

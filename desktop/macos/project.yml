@@ -73,6 +73,8 @@ targets:
         product: onnxruntime
       - package: WhisperCpp
         product: whisper
+      # Studio › Search › Videos plays moments in SwiftUI's VideoPlayer (AVPlayerView); linked so its class resolves.
+      - sdk: AVKit.framework
     entitlements:
       path: LLMHub/LLMHub.entitlements
       properties:
