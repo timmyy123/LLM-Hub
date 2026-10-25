@@ -27,12 +27,12 @@ public sealed partial class DownloadJob : ObservableObject
 /// <summary>Resumable, hash-checked downloads from Hugging Face. Partial files survive restarts as *.part.</summary>
 public sealed class DownloadManager(HuggingFaceClient hf, ModelStore store)
 {
-    private readonly HttpClient _http = new(new SocketsHttpHandler
+    private readonly HttpClient _http = new(new RetryHandler(new SocketsHttpHandler
     {
         AllowAutoRedirect = true,
         MaxAutomaticRedirections = 10,
         PooledConnectionLifetime = TimeSpan.FromMinutes(5),
-    })
+    }))
     {
         Timeout = Timeout.InfiniteTimeSpan,
     };

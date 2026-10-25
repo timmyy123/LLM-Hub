@@ -523,6 +523,8 @@ Test("Hugging Face search finds repos and lists fitting quants", () =>
 
 Test("Download from the Hugging Face tab", () =>
 {
+    // Only the small LFM2.5 repo: never start a download on whatever else is showing (a trending repo can be 10 GB).
+    Check(Find("RepoDetail")?.Name.Contains("LFM2.5") == true, "LFM2.5 repo is not the one shown");
     // The first on-screen Download (the file table recycles rows; recycled ones stay in the tree, offscreen).
     var download = WaitFor(() => window!.FindAllDescendants(cf => cf.ByAutomationId("HfFileDownload")).FirstOrDefault(e => e.IsEnabled && !e.IsOffscreen),
         TimeSpan.FromSeconds(30), "Download in the file table");

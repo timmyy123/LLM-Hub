@@ -43,6 +43,8 @@ public sealed partial class MediaSearchViewModel : ObservableObject
     private readonly MediaIndex _audio = new(Path.Combine(AppPaths.Root, "media_search", "audio.idx"));
     private CancellationTokenSource? _indexing;
 
+    private readonly bool _ready;
+
     public MediaSearchViewModel()
     {
         Mode = "photos";
@@ -55,6 +57,7 @@ public sealed partial class MediaSearchViewModel : ObservableObject
         _audio.Load();
         Ioc.Models.Installed.CollectionChanged += (_, _) => UiThread.Post(RefreshModels);
         RefreshModels();
+        _ready = true;
     }
 
     /// <summary>Downloaded EmbeddingGemma 2 builds that understand images (440M) or images and audio (740M).</summary>
@@ -99,26 +102,30 @@ public sealed partial class MediaSearchViewModel : ObservableObject
     {
         OnPropertyChanged(nameof(HasModel));
         OnPropertyChanged(nameof(ModelFitsMode));
-        if (value is not null)
+        // Choosing a model is the user's; loading the view model must not rewrite settings.
+        if (value is not null && _ready)
         {
             AppSettings.Current.MediaModelId = value.Id;
             AppSettings.Save();
         }
-        _ = UnloadAsync();
     }
 
     partial void OnPhotoFolderChanged(string value)
     {
+        OnPropertyChanged(nameof(Folder));
+        if (!_ready)
+            return;
         AppSettings.Current.MediaPhotoFolder = value;
         AppSettings.Save();
-        OnPropertyChanged(nameof(Folder));
     }
 
     partial void OnAudioFolderChanged(string value)
     {
+        OnPropertyChanged(nameof(Folder));
+        if (!_ready)
+            return;
         AppSettings.Current.MediaAudioFolder = value;
         AppSettings.Save();
-        OnPropertyChanged(nameof(Folder));
     }
 
     public void SetFolder(string folder)

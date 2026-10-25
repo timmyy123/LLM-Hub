@@ -34,7 +34,7 @@ public partial class App : Application
             Ioc.Comfy.Stop();
             Ioc.OpenClaw.StopGateway();
             Ioc.SdNpu.Unload();
-            _ = Ioc.MediaSearchVm.UnloadAsync();
+            _ = Ioc.MediaEmbedder.UnloadAsync();
         };
         Window.Activate();
         _ = Ioc.Api.RestartAsync();

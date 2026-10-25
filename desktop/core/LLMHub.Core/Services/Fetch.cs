@@ -10,7 +10,7 @@ public static class Fetch
 
     private static HttpClient CreateClient()
     {
-        var http = new HttpClient { Timeout = Timeout.InfiniteTimeSpan };
+        var http = new HttpClient(new RetryHandler(new SocketsHttpHandler { AllowAutoRedirect = true })) { Timeout = Timeout.InfiniteTimeSpan };
         http.DefaultRequestHeaders.UserAgent.ParseAdd("LLMHub-Desktop/0.1");
         return http;
     }

@@ -28,7 +28,7 @@ public sealed partial class HuggingFaceClient
 
     public HuggingFaceClient()
     {
-        _http = new HttpClient(new SocketsHttpHandler { AutomaticDecompression = System.Net.DecompressionMethods.All })
+        _http = new HttpClient(new RetryHandler(new SocketsHttpHandler { AutomaticDecompression = System.Net.DecompressionMethods.All }))
         {
             Timeout = TimeSpan.FromSeconds(30),
         };

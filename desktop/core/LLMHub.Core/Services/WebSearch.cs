@@ -23,7 +23,7 @@ public static partial class WebSearch
 
     private static HttpClient CreateClient()
     {
-        var http = new HttpClient(new SocketsHttpHandler { AutomaticDecompression = DecompressionMethods.All, AllowAutoRedirect = true })
+        var http = new HttpClient(new RetryHandler(new SocketsHttpHandler { AutomaticDecompression = DecompressionMethods.All, AllowAutoRedirect = true }))
         {
             Timeout = TimeSpan.FromSeconds(12),
         };

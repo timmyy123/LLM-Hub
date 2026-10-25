@@ -57,7 +57,7 @@ app.OnShutdown += (_, _) =>
     Ioc.Comfy.Stop();
     Ioc.OpenClaw.StopGateway();
     Ioc.Magenta.Shutdown();
-    _ = Ioc.MediaSearchVm.UnloadAsync();
+    _ = Ioc.MediaEmbedder.UnloadAsync();
 };
 return app.RunWithSynchronizationContext(null);
 
