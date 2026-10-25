@@ -187,7 +187,20 @@ void WaitIdle(int timeoutSeconds)
 string AssistantText()
 {
     var all = FindAll("AssistantMessage");
-    return all.Length == 0 ? "" : all[^1].Name;
+    return all.Length == 0 ? "" : SafeName(all[^1]);
+}
+
+/// <summary>An element's name, or "" if it went away while being read (a reply re-rendering).</summary>
+string SafeName(AutomationElement e)
+{
+    try
+    {
+        return e.Name;
+    }
+    catch (Exception ex) when (ex is FlaUI.Core.Exceptions.PropertyNotSupportedException or System.Runtime.InteropServices.COMException)
+    {
+        return "";
+    }
 }
 
 /// <summary>Types a message, sends it and waits for the reply to finish. Returns the reply text.</summary>
@@ -208,7 +221,7 @@ string Send(string text, int timeoutSeconds = 240, bool useEnter = false)
     // A loaded model can answer a short prompt before the Stop button is ever seen.
     WaitUntil(() => Visible("StopButton") || AssistantText().Length > 0, TimeSpan.FromSeconds(30), "generation to start");
     WaitIdle(timeoutSeconds);
-    var status = FindAll("MessageStatus").Select(e => e.Name).LastOrDefault(n => !string.IsNullOrEmpty(n));
+    var status = FindAll("MessageStatus").Select(SafeName).LastOrDefault(n => !string.IsNullOrEmpty(n));
     var reply = AssistantText();
     Check(reply.Length > 0, $"empty reply (status: {status})");
     return reply;
