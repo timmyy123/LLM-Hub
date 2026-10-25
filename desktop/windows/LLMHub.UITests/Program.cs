@@ -58,8 +58,12 @@ void Test(string name, Action body)
     }
     catch (Exception e)
     {
-        results.Add((name, false, e.Message));
-        Log($"FAIL {name} ({clock.Elapsed.TotalSeconds:F1}s): {e.Message}");
+        // A crash in the test itself (not a failed check) also says where it happened.
+        var at = e is NullReferenceException or InvalidCastException or ArgumentException
+            ? " at " + e.StackTrace?.Split('\n').FirstOrDefault(l => l.Contains("Program.cs"))?.Trim()
+            : "";
+        results.Add((name, false, e.Message + at));
+        Log($"FAIL {name} ({clock.Elapsed.TotalSeconds:F1}s): {e.Message}{at}");
         Shot("FAIL-" + string.Concat(name.Where(char.IsLetterOrDigit)));
     }
 }
@@ -240,7 +244,8 @@ string Send(string text, int timeoutSeconds = 240, bool useEnter = false)
     }
     else
         Invoke("SendButton");
-    WaitUntil(() => FindAll("AssistantMessage").Length > before, TimeSpan.FromSeconds(20), "reply bubble");
+    // Loading Gemma 4 12B takes about 25 s on a Snapdragon X Elite before the reply bubble appears.
+    WaitUntil(() => FindAll("AssistantMessage").Length > before, TimeSpan.FromSeconds(90), "reply bubble");
     // A loaded model can answer a short prompt before the Stop button is ever seen.
     WaitUntil(() => Visible("StopButton") || AssistantText().Length > 0, TimeSpan.FromSeconds(30), "generation to start");
     WaitIdle(timeoutSeconds);
@@ -559,7 +564,7 @@ Test("Gated model shows a clear token message", () =>
         TimeSpan.FromSeconds(60), "google/gemma-3-1b-it-qat-q4_0-gguf in results").Click();
     WaitFor(() =>
         {
-            ScrollDownTo("HfFileTable");
+            ScrollDownTo("RepoDetail");
             return window!.FindAllDescendants(cf => cf.ByAutomationId("HfFileDownload")).FirstOrDefault(b => b.IsEnabled && !b.IsOffscreen);
         }, TimeSpan.FromSeconds(60), "Download in the file table")
         .AsButton().Invoke();
@@ -593,7 +598,7 @@ Test("Download from the Hugging Face tab", () =>
     // The first on-screen Download (the file table recycles rows; recycled ones stay in the tree, offscreen).
     var download = WaitFor(() =>
         {
-            ScrollDownTo("HfFileTable");
+            ScrollDownTo("RepoDetail");
             return window!.FindAllDescendants(cf => cf.ByAutomationId("HfFileDownload")).FirstOrDefault(e => e.IsEnabled && !e.IsOffscreen);
         }, TimeSpan.FromSeconds(30), "Download in the file table");
     download.AsButton().Invoke();
