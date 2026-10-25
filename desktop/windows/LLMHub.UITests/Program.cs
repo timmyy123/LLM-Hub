@@ -316,6 +316,13 @@ Test("Agent, Design and Studio pages open", () =>
     Get("SearchIndexButton");
     Check(Find("SearchFolder")?.Name.Length > 0, "search folder shown");
     Shot("02-StudioSearch");
+    // Videos: the third kind, with its own folder and the moment list.
+    Get("SearchVideosTab").AsToggleButton().Toggle();
+    WaitUntil(() => Find("SearchVideoResults") is not null, TimeSpan.FromSeconds(5), "video results list");
+    Get("SearchIndexButton");
+    Check(Find("SearchFolder")?.Name.Length > 0, "video folder shown");
+    Shot("02-StudioSearchVideos");
+    Get("SearchPhotosTab").AsToggleButton().Toggle();
     Get("TabImage").AsToggleButton().Toggle();
     Select("NavChat");
     Get("Composer");

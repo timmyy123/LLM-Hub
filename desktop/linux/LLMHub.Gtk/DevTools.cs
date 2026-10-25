@@ -33,9 +33,13 @@ internal static class DevTools
         {
             await DevTests.MediaSearchAsync(searchMode, Value(args, "--folder")!, Value(args, "--model") ?? "embeddinggemma-2-740m",
                 (Value(args, "--queries") ?? "").Split('|', StringSplitOptions.RemoveEmptyEntries));
-            if (args.Contains("--exit"))
-                window.Window.Close();
-            return;
+            // With --capture, the page and capture below show the results.
+            if (Value(args, "--capture") is null)
+            {
+                if (args.Contains("--exit"))
+                    window.Window.Close();
+                return;
+            }
         }
         if (Value(args, "--exportdesign") is { } exportFormat)
         {
@@ -93,6 +97,15 @@ internal static class DevTools
             default: window.ShowChat(); break;
         }
         await Task.Delay(int.TryParse(Value(args, "--wait"), out var ms) ? ms : 2500);
+        // --playmoment: plays the best video moment found by --searchtest videos, muted, and logs where playback is 3 s after it starts.
+        if (args.Contains("--playmoment") && SearchPane.Instance is { } searchPane && Ioc.MediaSearchVm.Videos.FirstOrDefault() is { } moment)
+        {
+            searchPane.PlayMoment(moment, muted: true);
+            for (var i = 0; i < 20 && !searchPane.PlayerState.Contains("playing True"); i++)
+                await Task.Delay(500);
+            await Task.Delay(3000);
+            Log.Info($"PLAYTEST {moment.Name} from {moment.Label}: {searchPane.PlayerState}");
+        }
         if (Value(args, "--capture") is { } path)
         {
             Capture(window.Window, path);

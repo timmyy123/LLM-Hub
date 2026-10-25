@@ -82,6 +82,12 @@ internal sealed class UiTests(MainWindow main)
         await Until(() => Visible("WorkflowPicker") && Visible("GenerateButton"), "Studio page");
         Ioc.StudioVm.Mode = "search";
         await Until(() => Visible("SearchQueryBox") && Visible("SearchIndexButton") && Visible("SearchFolder"), "Studio search tab");
+        // Videos: the third kind, with its own folder and the moment list.
+        await Activate(One("SearchVideosTab"));
+        await Until(() => Ioc.MediaSearchVm.IsVideos && Visible("SearchVideoResults") && Visible("SearchIndexButton")
+                          && ((Gtk.Label)One("SearchFolder")).GetText() == Ioc.MediaSearchVm.VideoFolder, "Search › Videos");
+        await Activate(One("SearchPhotosTab"));
+        await Until(() => Ioc.MediaSearchVm.IsPhotos, "back to Search › Photos");
         Ioc.StudioVm.Mode = "image";
         await Activate(One("NavChat"));
         await Until(() => Visible("Composer") && Visible("ChatList") && Visible("NewChatButton"), "back on Chat with the full sidebar");

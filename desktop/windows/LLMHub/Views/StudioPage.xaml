@@ -178,7 +178,7 @@
             </Grid>
         </Grid>
 
-        <!-- Search: photos and audio by description or by example, with EmbeddingGemma 2 on this computer -->
+        <!-- Search: photos, audio and video moments by description or by example, with EmbeddingGemma 2 on this computer -->
         <Grid Grid.Row="1" Visibility="{x:Bind local:Ui.Show(ViewModel.IsSearch), Mode=OneWay}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="320" />
@@ -189,6 +189,7 @@
                     <StackPanel Orientation="Horizontal" Spacing="6">
                         <ToggleButton x:Name="SearchPhotosTab" Tag="photos" Content="{x:Bind services:Loc.S('SearchPhotos')}" Click="OnSearchModeClick" CornerRadius="14" IsChecked="True" />
                         <ToggleButton x:Name="SearchAudioTab" Tag="audio" Content="{x:Bind services:Loc.S('SearchAudio')}" Click="OnSearchModeClick" CornerRadius="14" />
+                        <ToggleButton x:Name="SearchVideosTab" Tag="videos" Content="{x:Bind services:Loc.S('SearchVideos')}" Click="OnSearchModeClick" CornerRadius="14" />
                     </StackPanel>
                     <TextBlock Text="{x:Bind services:Loc.S('SearchGetModel')}" Style="{StaticResource MutedTextStyle}" TextWrapping="Wrap"
                                Visibility="{x:Bind local:Ui.Hide(Search.HasModel), Mode=OneWay}" AutomationProperties.AutomationId="SearchGetModel" />
@@ -222,6 +223,10 @@
                     <TextBlock Text="{x:Bind Search.IndexedText, Mode=OneWay}" FontSize="12" Foreground="{ThemeResource TextMutedBrush}" AutomationProperties.AutomationId="SearchIndexed" />
                     <TextBlock Text="{x:Bind Search.Status, Mode=OneWay}" FontSize="12" Foreground="{ThemeResource TextMutedBrush}" TextWrapping="Wrap"
                                Visibility="{x:Bind local:Ui.ShowText(Search.Status), Mode=OneWay}" AutomationProperties.AutomationId="SearchStatus" />
+                    <TextBlock Text="{x:Bind services:Loc.S('SearchVideoFramesOnly')}" FontSize="12" Foreground="{ThemeResource WarningBrush}" TextWrapping="Wrap"
+                               Visibility="{x:Bind local:Ui.Show(Search.VideoFramesOnly), Mode=OneWay}" AutomationProperties.AutomationId="SearchVideoFramesOnly" />
+                    <TextBlock Text="{x:Bind services:Loc.S('SearchVideoHelp')}" FontSize="12" Foreground="{ThemeResource TextFaintBrush}" TextWrapping="Wrap"
+                               Visibility="{x:Bind local:Ui.Show(Search.IsVideos), Mode=OneWay}" />
                     <TextBlock Text="{x:Bind services:Loc.S('SearchHelp')}" FontSize="12" Foreground="{ThemeResource TextFaintBrush}" TextWrapping="Wrap" />
                 </StackPanel>
             </ScrollViewer>
@@ -237,7 +242,7 @@
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <TextBox x:Name="SearchQueryBox" Text="{x:Bind Search.Query, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" KeyDown="OnSearchKeyDown"
-                             PlaceholderText="{x:Bind SearchPlaceholder, Mode=OneWay}" />
+                             PlaceholderText="{x:Bind Search.Placeholder, Mode=OneWay}" />
                     <Button x:Name="SearchButton" Grid.Column="1" Command="{x:Bind Search.SearchCommand}" AutomationProperties.Name="{x:Bind services:Loc.S('StudioSearch')}">
                         <FontIcon Glyph="&#xE721;" FontSize="14" />
                     </Button>
@@ -289,6 +294,44 @@
                         </DataTemplate>
                     </ListView.ItemTemplate>
                 </ListView>
+                <!-- Videos: the best moments; choosing one plays its video from that timestamp in the player above them. -->
+                <Grid Grid.Row="1" RowSpacing="12" Visibility="{x:Bind local:Ui.Show(Search.IsVideos), Mode=OneWay}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <Border x:Name="SearchVideoStage" CornerRadius="10" Background="Black" MaxHeight="420" Visibility="Collapsed">
+                        <MediaPlayerElement x:Name="SearchVideoPlayer" AreTransportControlsEnabled="True" Stretch="Uniform" AutomationProperties.AutomationId="SearchVideoPlayer" />
+                    </Border>
+                    <ListView x:Name="SearchVideoResults" Grid.Row="1" ItemsSource="{x:Bind Search.Videos}" SelectionMode="None" IsItemClickEnabled="True"
+                              ItemClick="OnVideoMomentClick" ContainerContentChanging="OnVideoMomentContainer">
+                        <ListView.ItemTemplate>
+                            <DataTemplate x:DataType="vm:VideoMomentMatch">
+                                <Grid ColumnSpacing="14" Padding="0,8" AutomationProperties.AutomationId="SearchVideoMoment" AutomationProperties.Name="{x:Bind Name}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid Width="160" Height="90" CornerRadius="8" Background="{ThemeResource SurfaceAltBrush}">
+                                        <Image Stretch="UniformToFill" />
+                                        <Border VerticalAlignment="Bottom" HorizontalAlignment="Left" Margin="6" Padding="6,2" CornerRadius="6" Background="#99000000">
+                                            <StackPanel Orientation="Horizontal" Spacing="5">
+                                                <FontIcon Glyph="&#xE768;" FontSize="9" Foreground="White" />
+                                                <TextBlock Text="{x:Bind Label}" FontSize="11" Foreground="White" AutomationProperties.AutomationId="SearchVideoTime" />
+                                            </StackPanel>
+                                        </Border>
+                                    </Grid>
+                                    <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
+                                        <TextBlock Text="{x:Bind Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" AutomationProperties.AutomationId="SearchVideoName" />
+                                        <TextBlock Text="{x:Bind local:Ui.PlayFrom(Label)}" FontSize="12" Foreground="{ThemeResource TextMutedBrush}" />
+                                    </StackPanel>
+                                    <TextBlock Grid.Column="2" Text="{x:Bind ScoreText}" FontSize="12" Foreground="{ThemeResource TextMutedBrush}" VerticalAlignment="Center" />
+                                </Grid>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                </Grid>
             </Grid>
         </Grid>
 

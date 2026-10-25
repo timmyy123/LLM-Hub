@@ -308,9 +308,11 @@ public sealed class LiteRtEngine
 
     /// <summary>
     /// An EmbeddingGemma 2 .litertlm file loaded for embeddings (text, images, audio), configured like Android's media
-    /// search: 256 input tokens and 70 vision tokens per image. GPU first, CPU if the GPU build cannot start.
+    /// search: 256 input tokens (1024 for video moments, whose windows mix frames and audio) and 70 vision tokens per
+    /// image. GPU first, CPU if the GPU build cannot start.
     /// </summary>
-    public async Task<LiteRtEmbedder> OpenEmbedderAsync(InstalledModel model, Action<string> status, CancellationToken ct)
+    public async Task<LiteRtEmbedder> OpenEmbedderAsync(InstalledModel model, Action<string> status, CancellationToken ct,
+        int maxInputTokens = LiteRtEmbedder.MaxInputTokens)
     {
         if (!IsSupported)
             throw new PlatformNotSupportedException(Loc.S("LiteRtNoArm"));
@@ -320,25 +322,25 @@ public sealed class LiteRtEngine
         var audio = model.Tags.Contains("audio");
         // On Linux a GPU that LiteRT-LM cannot drive crashes the process, so the first GPU start is tried in a child process.
         var backends = Backends().ToList();
-        if (backends.Contains("gpu") && !await GpuEmbedSurvivesAsync(model, vision, audio, status, ct))
+        if (backends.Contains("gpu") && !await GpuEmbedSurvivesAsync(model, vision, audio, maxInputTokens, status, ct))
             backends.Remove("gpu");
         return await Task.Run(() =>
         {
             foreach (var backend in backends)
             {
-                var cacheDir = Directory.CreateDirectory(Path.Combine(model.Folder, "cache", "embed-" + backend)).FullName;
+                var cacheDir = Directory.CreateDirectory(Path.Combine(model.Folder, "cache", EmbedCacheName(backend, maxInputTokens))).FullName;
                 var engine = api.CreateEmbeddingEngine(model.PrimaryPath, backend, vision ? backend : null, audio ? "cpu" : null, cacheDir,
-                    LiteRtEmbedder.MaxInputTokens, LiteRtEmbedder.VisionTokens);
+                    maxInputTokens, LiteRtEmbedder.VisionTokens);
                 if (engine == IntPtr.Zero)
                 {
                     Log.Info($"LiteRT-LM embeddings {model.Id}: {backend} failed: {api.LastError()}");
                     continue;
                 }
-                var embedder = new LiteRtEmbedder(api, engine, model, backend, vision, audio);
+                var embedder = new LiteRtEmbedder(api, engine, model, backend, vision, audio, maxInputTokens);
                 // A GPU engine can be created and still fail on the first input: probe it once.
                 if (embedder.EmbedText("test", query: true) is { Length: > 0 })
                 {
-                    Log.Info($"LiteRT-LM embeddings {model.Id} on {backend}");
+                    Log.Info($"LiteRT-LM embeddings {model.Id} on {backend}, {maxInputTokens} input tokens");
                     return embedder;
                 }
                 Log.Info($"LiteRT-LM embeddings {model.Id}: {backend} probe failed: {api.LastError()}");
@@ -348,21 +350,25 @@ public sealed class LiteRtEngine
         }, ct);
     }
 
-    private async Task<bool> GpuEmbedSurvivesAsync(InstalledModel model, bool vision, bool audio, Action<string> status, CancellationToken ct)
+    /// <summary>Compiled GPU programs depend on the input length, so each length gets its own cache (256 keeps the old name).</summary>
+    private static string EmbedCacheName(string backend, int maxInputTokens) =>
+        maxInputTokens == LiteRtEmbedder.MaxInputTokens ? "embed-" + backend : $"embed-{backend}-t{maxInputTokens}";
+
+    private async Task<bool> GpuEmbedSurvivesAsync(InstalledModel model, bool vision, bool audio, int maxInputTokens, Action<string> status, CancellationToken ct)
     {
         if (!OperatingSystem.IsLinux() || Environment.ProcessPath is not { } exe)
             return true;
         var results = Path.Combine(Root, "gpu-probe.txt");
-        var key = $"{_api!.LibraryPath}|{model.Id}|embed=";
+        var key = $"{_api!.LibraryPath}|{model.Id}|embed{(maxInputTokens == LiteRtEmbedder.MaxInputTokens ? "" : $"-t{maxInputTokens}")}=";
         var known = File.Exists(results) ? File.ReadLines(results).LastOrDefault(l => l.StartsWith(key, StringComparison.Ordinal)) : null;
         if (known is not null)
             return known.EndsWith("ok", StringComparison.Ordinal);
         status(Loc.F("LoadingModel", model.Name));
-        var cacheDir = Directory.CreateDirectory(Path.Combine(model.Folder, "cache", "embed-gpu")).FullName;
+        var cacheDir = Directory.CreateDirectory(Path.Combine(model.Folder, "cache", EmbedCacheName("gpu", maxInputTokens))).FullName;
         var info = new System.Diagnostics.ProcessStartInfo(exe) { UseShellExecute = false, RedirectStandardError = true, RedirectStandardOutput = true };
         if (Path.GetFileNameWithoutExtension(exe) == "dotnet" && System.Reflection.Assembly.GetEntryAssembly()?.Location is { Length: > 0 } entry)
             info.ArgumentList.Add(entry);
-        foreach (var arg in new[] { "--litert-embed-probe", _api.LibraryPath, model.PrimaryPath, cacheDir, vision ? "1" : "0", audio ? "1" : "0" })
+        foreach (var arg in new[] { "--litert-embed-probe", _api.LibraryPath, model.PrimaryPath, cacheDir, vision ? "1" : "0", audio ? "1" : "0", maxInputTokens.ToString() })
             info.ArgumentList.Add(arg);
         using var probe = System.Diagnostics.Process.Start(info)!;
         _ = probe.StandardOutput.ReadToEndAsync(ct);
@@ -385,14 +391,16 @@ public sealed class LiteRtEngine
     }
 
     /// <summary>
-    /// Entry point for the embedding GPU probe child process: <c>--litert-embed-probe lib model cacheDir vision audio</c>.
+    /// Entry point for the embedding GPU probe child process:
+    /// <c>--litert-embed-probe lib model cacheDir vision audio [maxInputTokens]</c>.
     /// Exit 0 when a GPU embedding engine starts and embeds a short text.
     /// </summary>
     public static int RunEmbedProbe(string[] args)
     {
         var api = Api.Load(args[0]);
+        var maxInput = args.Length > 5 && int.TryParse(args[5], out var tokens) ? tokens : LiteRtEmbedder.MaxInputTokens;
         var engine = api.CreateEmbeddingEngine(args[1], "gpu", args[3] == "1" ? "gpu" : null, args[4] == "1" ? "cpu" : null, args[2],
-            LiteRtEmbedder.MaxInputTokens, LiteRtEmbedder.VisionTokens);
+            maxInput, LiteRtEmbedder.VisionTokens);
         if (engine == IntPtr.Zero)
             return 2;
         var vector = api.ComputeEmbedding(engine, [(EmbedKind.Text, Encoding.UTF8.GetBytes("task: search result | query: test"))], LiteRtEmbedder.VisionTokens);
@@ -404,6 +412,8 @@ public sealed class LiteRtEngine
     public sealed class LiteRtEmbedder : IDisposable
     {
         public const int MaxInputTokens = 256;
+        /// <summary>Video moment windows interleave timestamps, audio and frames, so they get Android's longer input.</summary>
+        public const int VideoMaxInputTokens = 1024;
         public const int VisionTokens = 70;
         private const string QueryPrefix = "task: search result | query: ";
         private const string DocumentPrefix = "title: none | text: ";
@@ -412,7 +422,7 @@ public sealed class LiteRtEngine
         private readonly object _lock = new();
         private IntPtr _engine;
 
-        internal LiteRtEmbedder(object api, IntPtr engine, InstalledModel model, string backend, bool vision, bool audio)
+        internal LiteRtEmbedder(object api, IntPtr engine, InstalledModel model, string backend, bool vision, bool audio, int maxInput)
         {
             _api = (Api)api;
             _engine = engine;
@@ -420,12 +430,15 @@ public sealed class LiteRtEngine
             Backend = backend;
             SupportsImages = vision;
             SupportsAudio = audio;
+            MaxInput = maxInput;
         }
 
         public InstalledModel Model { get; }
         public string Backend { get; }
         public bool SupportsImages { get; }
         public bool SupportsAudio { get; }
+        /// <summary>The longest input, in tokens, the engine was created for.</summary>
+        public int MaxInput { get; }
 
         /// <summary>A search query or a document, with EmbeddingGemma's task prompts.</summary>
         public float[]? EmbedText(string text, bool query)
