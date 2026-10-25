@@ -73,8 +73,9 @@ ONNX uses Android NNAPI (`OrtSession.SessionOptions.addNnapi()`):
 - **HuggingFace Token**: Add to `local.properties` (not committed):
   ```properties
   HF_TOKEN=hf_xxxxx
+  HF_TOKEN_FALLBACK=hf_yyyyy
   ```
-  Read at build time as `BuildConfig.HF_TOKEN`
+  Read at build time as `BuildConfig.HF_TOKEN` / `BuildConfig.HF_TOKEN_FALLBACK`; `HfDefaultToken` uses the fallback once the primary is rejected
 
 ## Database & Persistence
 [Room](gradle/libs.versions.toml) (v2.8.4) stores chat history, user settings, model metadata. DAOs in `app/src/main/java/com/llmhub/llmhub/data/`. Migrations auto-applied; model.isDownloaded boolean updated after successful downloads.

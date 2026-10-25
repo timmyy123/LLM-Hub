@@ -4,6 +4,7 @@ import kotlinx.coroutines.flow.retryWhen
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.llmhub.llmhub.data.HfDefaultToken
 import com.llmhub.llmhub.data.LLMModel
 import com.llmhub.llmhub.data.ModelData
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -75,19 +76,19 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
         fun getCustomToken(context: Context): String {
             val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             val custom = prefs.getString(KEY_CUSTOM_HF_TOKEN, null)?.trim()
-            if (!custom.isNullOrEmpty() && custom != BuildConfig.HF_TOKEN) {
+            if (!custom.isNullOrEmpty() && !HfDefaultToken.isBundled(custom)) {
                 return custom
             }
             return ""
         }
 
         /**
-         * Returns the effective token: custom user token if configured, else BuildConfig.HF_TOKEN fallback.
+         * Returns the effective token: custom user token if configured, else the bundled token (HfDefaultToken).
          */
         fun getEffectiveToken(context: Context): String? {
             val custom = getCustomToken(context)
             if (custom.isNotEmpty()) return custom
-            return BuildConfig.HF_TOKEN.takeIf { it.isNotEmpty() }
+            return HfDefaultToken.current
         }
 
         /**
@@ -95,7 +96,7 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
          */
         fun setCustomToken(context: Context, token: String?) {
             val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            val clean = token?.trim()?.takeIf { it.isNotEmpty() && it != BuildConfig.HF_TOKEN }
+            val clean = token?.trim()?.takeIf { it.isNotEmpty() && !HfDefaultToken.isBundled(it) }
             if (clean == null) {
                 prefs.edit().remove(KEY_CUSTOM_HF_TOKEN).remove("hf_token").apply()
             } else {
@@ -105,7 +106,7 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
     }
 
     init {
-        // Load custom HF token if user provided one, otherwise use BuildConfig.HF_TOKEN fallback.
+        // Load custom HF token if user provided one, otherwise use the bundled token (HfDefaultToken).
         // Default token is NEVER stored into custom token preferences or exposed to the user.
         val effectiveToken = getEffectiveToken(context)
         val hasCustom = getCustomToken(context).isNotEmpty()

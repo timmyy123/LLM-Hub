@@ -2,6 +2,7 @@ import Foundation
 import SwiftUI
 import AVFoundation
 import NaturalLanguage
+import os
 
 private final class LocalizationBundleProbe {}
 
@@ -101,6 +102,39 @@ enum AppTheme: String, CaseIterable, Identifiable, Sendable {
 }
 
 // MARK: - Settings Store
+/// The bundled Hugging Face tokens (Secrets xcconfig HF_TOKEN, then HF_TOKEN_FALLBACK). The primary is
+/// used until Hugging Face rejects it (expired or revoked), then the fallback.
+enum HFDefaultToken {
+    private static let tokens: [String] = ["HF_TOKEN", "HF_TOKEN_FALLBACK"].reduce(into: []) { tokens, key in
+        let token = (Bundle.main.object(forInfoDictionaryKey: key) as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if !token.isEmpty, !token.hasPrefix("$("), !tokens.contains(token) { tokens.append(token) }
+    }
+    private static let selected = OSAllocatedUnfairLock<String?>(initialState: tokens.first)
+
+    static var current: String? { selected.withLock { $0 } }
+
+    static func isBundled(_ token: String?) -> Bool { token.map(tokens.contains) ?? false }
+
+    /// Checks the tokens in order and keeps the first one Hugging Face accepts.
+    static func verify() async {
+        for token in tokens {
+            var request = URLRequest(url: URL(string: "https://huggingface.co/api/whoami-v2")!, timeoutInterval: 10)
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            guard let (_, response) = try? await URLSession.shared.data(for: request),
+                  let status = (response as? HTTPURLResponse)?.statusCode else { return } // Offline: keep the current token
+            if status == 200 { selected.withLock { $0 = token }; return }
+            if status != 401 { return }
+        }
+    }
+
+    /// After `token` got HTTP 401: re-checks the bundled tokens and returns true if another one is now in use.
+    static func replaceRejected(_ token: String?) async -> Bool {
+        guard isBundled(token) else { return false }
+        if token == current { await verify() }
+        return current != token
+    }
+}
+
 @MainActor
 final class AppSettings: ObservableObject {
     static let shared = AppSettings()
@@ -137,8 +171,7 @@ final class AppSettings: ObservableObject {
     var effectiveHfToken: String? {
         let trimmed = customHfToken.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmed.isEmpty { return trimmed }
-        let defaultToken = (Bundle.main.object(forInfoDictionaryKey: "HF_TOKEN") as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
-        return defaultToken?.isEmpty == false ? defaultToken : nil
+        return HFDefaultToken.current
     }
 
     var hasCustomHfToken: Bool {

@@ -182,7 +182,9 @@ class ModelDownloader(
         if (custom.isNotEmpty()) {
             return custom
         }
-        return hfToken ?: com.llmhub.llmhub.viewmodels.ModelDownloadViewModel.getEffectiveToken(context)
+        // A bundled token passed in earlier may have been replaced by the fallback since.
+        return hfToken?.takeUnless { HfDefaultToken.isBundled(it) }
+            ?: com.llmhub.llmhub.viewmodels.ModelDownloadViewModel.getEffectiveToken(context)
     }
 
     /**
@@ -259,6 +261,10 @@ class ModelDownloader(
                     // If request failed with 401/403 without token, retry with active token if available
                     // in case the repository is gated and requires authentication/license.
                     val activeToken = getActiveToken()
+                    if (useToken && responseCode == 401 && HfDefaultToken.replaceRejected(activeToken)) {
+                        Log.i(TAG, "Bundled token rejected (HTTP 401) — retrying with the fallback token...")
+                        return openConnectionWithAuthRedirects(initialUrl, rangeStart, useToken = true)
+                    }
                     if (!useToken && !activeToken.isNullOrBlank() && (responseCode == 401 || responseCode == 403)) {
                         Log.i(TAG, "HTTP $responseCode without token. Repository appears gated — retrying with token...")
                         try {
