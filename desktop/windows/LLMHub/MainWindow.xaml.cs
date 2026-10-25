@@ -51,19 +51,25 @@ public sealed partial class MainWindow : Window
         _ => ElementTheme.Dark,
     };
 
-    /// <summary>AppWindow sizes are physical pixels; scale the design size (1440 x 920) by the monitor DPI.</summary>
+    /// <summary>
+    /// AppWindow sizes are physical pixels; scale the design size (1440 x 920) by the monitor DPI. The minimum size never
+    /// exceeds the screen's work area: on a small display (a 1024 x 768 Snapdragon test PC) it pushed the composer's Send
+    /// button off the screen.
+    /// </summary>
     private void SizeToScreen()
     {
         var scale = GetDpiForWindow(WinRT.Interop.WindowNative.GetWindowHandle(this)) / 96.0;
         var area = DisplayArea.GetFromWindowId(AppWindow.Id, DisplayAreaFallback.Primary).WorkArea;
-        var width = Math.Min((int)(1440 * scale), (int)(area.Width * 0.94));
-        var height = Math.Min((int)(920 * scale), (int)(area.Height * 0.94));
-        AppWindow.MoveAndResize(new RectInt32(area.X + (area.Width - width) / 2, area.Y + (area.Height - height) / 2, width, height));
+        var minWidth = Math.Min((int)(1000 * scale), area.Width);
+        var minHeight = Math.Min((int)(600 * scale), area.Height);
+        var width = Math.Max(Math.Min((int)(1440 * scale), (int)(area.Width * 0.94)), minWidth);
+        var height = Math.Max(Math.Min((int)(920 * scale), (int)(area.Height * 0.94)), minHeight);
         if (AppWindow.Presenter is OverlappedPresenter presenter)
         {
-            presenter.PreferredMinimumWidth = (int)(1000 * scale);
-            presenter.PreferredMinimumHeight = (int)(600 * scale);
+            presenter.PreferredMinimumWidth = minWidth;
+            presenter.PreferredMinimumHeight = minHeight;
         }
+        AppWindow.MoveAndResize(new RectInt32(area.X + (area.Width - width) / 2, area.Y + (area.Height - height) / 2, width, height));
     }
 
     [LibraryImport("user32.dll")]
