@@ -23,7 +23,9 @@ public static partial class AudioIO
         if (OperatingSystem.IsWindows())
         {
             Mci("open new type waveaudio alias llmhubrec");
-            Mci("set llmhubrec bitspersample 16 samplespersec 16000 channels 1");
+            // The byte rate and block alignment must match, or MCI keeps its 8-bit 11 kHz ones and "record" fails with
+            // "No wave device is installed that can record files in the current format".
+            Mci("set llmhubrec bitspersample 16 samplespersec 16000 channels 1 bytespersec 32000 alignment 2");
             Mci("record llmhubrec");
             return;
         }

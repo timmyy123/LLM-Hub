@@ -802,7 +802,8 @@ if (File.Exists(fluxCheckpoint))
 else
     Log("   (Flux.1 schnell is not installed: Studio test not run)");
 
-// Needs speakers and a microphone near them; runs when asked for by name or with LLMHUB_UITEST_MIC=1.
+// Needs the default playback device to be speakers the default microphone can hear (not headphones); runs when asked
+// for by name or with LLMHUB_UITEST_MIC=1.
 if (filter is not null || Environment.GetEnvironmentVariable("LLMHUB_UITEST_MIC") == "1")
 {
     Test("Dictation from the microphone", () =>
