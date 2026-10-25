@@ -131,41 +131,25 @@ public sealed class DownloadManager(HuggingFaceClient hf, ModelStore store)
     private async Task DownloadFileAsync(string repo, HfFile file, string target, Action<long> progress, CancellationToken ct)
     {
         var part = target + ".part";
-        var existing = File.Exists(part) ? new FileInfo(part).Length : 0;
-        if (existing > file.Size && file.Size > 0)
+        // A connection that drops partway through a large file resumes from the .part; give up after six drops in a row
+        // with no new data. Refusals (401, 403, 404) are not retried.
+        for (var failures = 0; ; )
         {
-            File.Delete(part);
-            existing = 0;
-        }
-
-        using var request = hf.Request(HttpMethod.Get, HuggingFaceClient.ResolveUrl(repo, file.Path));
-        if (existing > 0)
-            request.Headers.Range = new System.Net.Http.Headers.RangeHeaderValue(existing, null);
-
-        using var response = await _http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
-        if (response.StatusCode == HttpStatusCode.RequestedRangeNotSatisfiable)
-            existing = file.Size;
-        else
-        {
-            response.EnsureSuccessStatusCode();
-            if (existing > 0 && response.StatusCode != HttpStatusCode.PartialContent)
-                existing = 0; // Server ignored the range; start over.
-
-            await using var input = await response.Content.ReadAsStreamAsync(ct);
-            await using var output = new FileStream(part, existing > 0 ? FileMode.Append : FileMode.Create, FileAccess.Write, FileShare.None, 1 << 20, useAsync: true);
-            var buffer = new byte[1 << 20];
-            var done = existing;
-            var clock = Stopwatch.StartNew();
-            int read;
-            while ((read = await input.ReadAsync(buffer, ct)) > 0)
+            var before = File.Exists(part) ? new FileInfo(part).Length : 0;
+            try
             {
-                await output.WriteAsync(buffer.AsMemory(0, read), ct);
-                done += read;
-                if (clock.ElapsedMilliseconds > 250)
-                {
-                    progress(done);
-                    clock.Restart();
-                }
+                await TransferAsync(repo, file, part, progress, ct);
+                break;
+            }
+            catch (Exception e) when (!ct.IsCancellationRequested
+                                      && e is IOException or HttpRequestException { StatusCode: null or >= HttpStatusCode.InternalServerError })
+            {
+                var after = File.Exists(part) ? new FileInfo(part).Length : 0;
+                failures = after > before ? 0 : failures + 1;
+                if (failures > 5)
+                    throw;
+                Log.Info($"Download {file.FileName}: connection lost at {Fmt.Bytes(after)} ({e.Message}), resuming");
+                await Task.Delay(TimeSpan.FromSeconds(Math.Clamp(2 * failures, 1, 30)), ct);
             }
         }
 
@@ -182,6 +166,45 @@ public sealed class DownloadManager(HuggingFaceClient hf, ModelStore store)
 
         File.Move(part, target, overwrite: true);
         progress(file.Size);
+    }
+
+    /// <summary>Appends the rest of <paramref name="file"/> to <paramref name="part"/> (from its current length).</summary>
+    private async Task TransferAsync(string repo, HfFile file, string part, Action<long> progress, CancellationToken ct)
+    {
+        var existing = File.Exists(part) ? new FileInfo(part).Length : 0;
+        if (existing > file.Size && file.Size > 0)
+        {
+            File.Delete(part);
+            existing = 0;
+        }
+
+        using var request = hf.Request(HttpMethod.Get, HuggingFaceClient.ResolveUrl(repo, file.Path));
+        if (existing > 0)
+            request.Headers.Range = new System.Net.Http.Headers.RangeHeaderValue(existing, null);
+
+        using var response = await _http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
+        if (response.StatusCode == HttpStatusCode.RequestedRangeNotSatisfiable)
+            return; // The .part already holds the whole file.
+        response.EnsureSuccessStatusCode();
+        if (existing > 0 && response.StatusCode != HttpStatusCode.PartialContent)
+            existing = 0; // Server ignored the range; start over.
+
+        await using var input = await response.Content.ReadAsStreamAsync(ct);
+        await using var output = new FileStream(part, existing > 0 ? FileMode.Append : FileMode.Create, FileAccess.Write, FileShare.None, 1 << 20, useAsync: true);
+        var buffer = new byte[1 << 20];
+        var done = existing;
+        var clock = Stopwatch.StartNew();
+        int read;
+        while ((read = await input.ReadAsync(buffer, ct)) > 0)
+        {
+            await output.WriteAsync(buffer.AsMemory(0, read), ct);
+            done += read;
+            if (clock.ElapsedMilliseconds > 250)
+            {
+                progress(done);
+                clock.Restart();
+            }
+        }
     }
 
     private static void Report(DownloadJob job, long done, long total) => UiThread.Run(() =>
