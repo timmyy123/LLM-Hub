@@ -17,8 +17,7 @@ struct VoiceView: View {
                         .scrollContentBackground(.hidden)
                         .padding(8)
                         .frame(minHeight: 140, maxHeight: 320)
-                        .background(Theme.surfaceAlt, in: .rect(cornerRadius: 10))
-                        .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Theme.controlBorder))
+                        .glassEffect(.regular, in: .rect(cornerRadius: 10))
                         .accessibilityIdentifier("VoiceTextBox")
                 }
                 HStack(spacing: 10) {

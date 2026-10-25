@@ -20,7 +20,6 @@ struct AgentView: View {
                 AgentEmptyState()
             }
         }
-        .background(Theme.background)
     }
 }
 
@@ -139,7 +138,7 @@ private struct Chip: View {
         }
         .padding(.horizontal, 8)
         .frame(height: 24)
-        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 6))
+        .background(.fill.tertiary, in: RoundedRectangle(cornerRadius: 6))
     }
 }
 
@@ -220,8 +219,7 @@ private struct TasksCard: View {
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Theme.surfaceAlt, in: RoundedRectangle(cornerRadius: 12))
-        .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Theme.controlBorder))
+        .glassEffect(.regular, in: .rect(cornerRadius: 12))
         .accessibilityIdentifier("AgentTasks")
     }
 
@@ -254,7 +252,7 @@ private struct StepCard: View {
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 10)
-            .background(expanded ? Theme.surfaceAlt : .clear)
+            .background(expanded ? AnyShapeStyle(.fill.quaternary) : AnyShapeStyle(.clear))
             if !item.diff.isEmpty {
                 DiffLines(lines: item.diff, fontSize: 12.5, horizontalPadding: 14)
                     .padding(.vertical, 8)
@@ -349,7 +347,7 @@ private struct PermissionCard: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 8)
-                .background(Theme.background, in: RoundedRectangle(cornerRadius: 8))
+                .background(.fill.tertiary, in: RoundedRectangle(cornerRadius: 8))
             HStack(spacing: 8) {
                 Button(L.s("AgentAllow")) { vm.allow() }
                     .buttonStyle(.glassProminent)
@@ -365,7 +363,7 @@ private struct PermissionCard: View {
             .controlSize(.large)
         }
         .padding(14)
-        .background(Theme.warning.opacity(0.07), in: RoundedRectangle(cornerRadius: 12))
+        .glassEffect(.regular.tint(Theme.warning.opacity(0.12)), in: .rect(cornerRadius: 12))
         .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Theme.warning.opacity(0.45)))
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("PermissionCard")

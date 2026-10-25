@@ -100,7 +100,7 @@ enum Markdown {
             if let code = group(m, "code") {
                 piece = AttributedString(code)
                 piece.font = .system(size: 13.5, design: .monospaced)
-                piece.backgroundColor = Theme.surfaceAlt
+                piece.backgroundColor = Color(nsColor: .quaternarySystemFill)
             } else if let bi = group(m, "bi") {
                 piece = AttributedString(bi)
                 piece.inlinePresentationIntent = [.stronglyEmphasized, .emphasized]
@@ -153,7 +153,7 @@ struct MarkdownView: View {
                     ScrollView(.horizontal, showsIndicators: false) {
                         Text(block.text).font(.system(size: 13, design: .monospaced)).textSelection(.enabled).padding(.horizontal, 14).padding(.vertical, 10)
                     }
-                    .background(Theme.surfaceAlt, in: RoundedRectangle(cornerRadius: 10))
+                    .background(.fill.quaternary, in: RoundedRectangle(cornerRadius: 10))
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.divider))
                 case .bullet:
                     HStack(alignment: .firstTextBaseline, spacing: 10) {

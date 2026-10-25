@@ -6,7 +6,12 @@ extension DevTools {
     /// an end-to-end Agent run on this Mac, results in the log. Installs the engine if missing, allows every permission
     /// request (logging each) and opens the session so a `--capture` shows it. `--session` continues a saved session
     /// (after a relaunch, to check resume) instead of starting one in the folder.
+    /// `--agentask "<command>"` shows a permission request for that command on the open session (nothing runs), for captures.
     static func agentTest(_ args: [String]) async {
+        if let command = value("--agentask", args), let session = AppModel.shared.agent.ui.selected {
+            session.pending = PermissionRequest(tool: "Bash", summary: command, question: L.s("AgentRunCommand"))
+            session.status = .needsYou
+        }
         guard let folder = value("--agenttest", args) else { return }
         let app = AppModel.shared
         let agent = app.agent

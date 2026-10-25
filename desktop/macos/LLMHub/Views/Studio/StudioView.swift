@@ -19,7 +19,6 @@ struct StudioView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .background(Theme.background)
     }
 }
 

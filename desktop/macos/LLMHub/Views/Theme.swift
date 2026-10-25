@@ -1,15 +1,15 @@
 import AppKit
 import SwiftUI
 
-/// Design tokens from the LLM Hub Desktop canvas, in light and dark.
+/// Design tokens from the LLM Hub Desktop canvas, in light and dark. Surfaces are the window's own background and Liquid
+/// Glass (macOS 26+), never a painted colour: these are for text, tags, rules and highlights inside content.
 enum Theme {
-    static let background = dynamic(light: 0xFAFAF8, dark: 0x1B1B1A)
-    static let surface = dynamic(light: 0xFFFFFF, dark: 0x252523)
     static let surfaceAlt = dynamic(light: 0xF5F4F0, dark: 0x1F1F1D)
     static let divider = dynamic(light: 0xE2E0D9, dark: 0x2C2C29)
     static let controlBorder = dynamic(light: 0xD6D4CC, dark: 0x3A3A36)
     static let textMuted = dynamic(light: 0x5F5E59, dark: 0xA5A49E)
-    static let userBubble = dynamic(light: 0xECEBE6, dark: 0x2B2B29)
+    /// The user's message bubble and grey tags: a system fill, so they stand out on the window and on glass alike.
+    static let userBubble = Color(nsColor: .secondarySystemFill)
     static let tag = dynamic(light: 0xE3ECFC, dark: 0x262C38)
     static let tagText = dynamic(light: 0x1D4FAE, dark: 0xB8CDF5)
     static let success = dynamic(light: 0x1E8A4C, dark: 0x5FD38D)
