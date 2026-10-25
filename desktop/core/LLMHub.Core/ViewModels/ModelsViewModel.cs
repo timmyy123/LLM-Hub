@@ -180,7 +180,7 @@ public sealed partial class CatalogItemViewModel(CatalogModel model) : Downloada
                 Status = NothingFits ? Loc.S("NothingFits") : "";
             });
         }
-        catch (Exception e) when (e is not OperationCanceledException)
+        catch (Exception e) when (!ct.IsCancellationRequested) // a timeout is a TaskCanceledException too
         {
             Log.Error($"Variants for {source.Repo}", e);
             Status = Loc.S("VariantsError");
@@ -314,7 +314,7 @@ public sealed partial class HfRepoViewModel(HfRepo repo) : DownloadableViewModel
                 Status = variants.Count == 0 ? Loc.S("HfNoGguf") : Variants.Count == 0 ? Loc.S("NothingFits") : "";
             });
         }
-        catch (Exception e) when (e is not OperationCanceledException)
+        catch (Exception e) when (!ct.IsCancellationRequested) // a timeout is a TaskCanceledException too
         {
             Log.Error($"Variants for {Repo.Id}", e);
             Status = Loc.S("VariantsError");
@@ -442,6 +442,8 @@ public sealed partial class ModelsViewModel : ObservableObject
 
     [ObservableProperty] public partial string Query { get; set; }
     [ObservableProperty] public partial bool IsSearching { get; set; }
+    /// <summary>"Could not reach Hugging Face" when the last search failed, or null.</summary>
+    [ObservableProperty] public partial string? HfSearchError { get; set; }
     [ObservableProperty] public partial HfRepoViewModel? SelectedRepo { get; set; }
 
     public async Task LoadCatalogAsync()
@@ -482,6 +484,7 @@ public sealed partial class ModelsViewModel : ObservableObject
         _search = new CancellationTokenSource();
         var ct = _search.Token;
         IsSearching = true;
+        HfSearchError = null;
         try
         {
             var formats = HfFormat == "all" ? new[] { "gguf", "litert-lm" } : [HfFormat == "litertlm" ? "litert-lm" : "gguf"];
@@ -500,12 +503,13 @@ public sealed partial class ModelsViewModel : ObservableObject
                 SearchResults.Add(new HfRepoViewModel(repo));
             SelectedRepo = SearchResults.FirstOrDefault();
         }
-        catch (OperationCanceledException)
-        {
-        }
-        catch (Exception e)
+        catch (Exception e) when (!ct.IsCancellationRequested)
         {
             Log.Error("HF search failed", e);
+            HfSearchError = Loc.S("VariantsError");
+        }
+        catch (OperationCanceledException)
+        {
         }
         finally
         {

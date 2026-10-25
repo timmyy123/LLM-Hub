@@ -35,15 +35,29 @@ public static partial class WebSearch
 
     public static async Task<List<WebSource>> SearchAsync(string query, int max, CancellationToken ct)
     {
-        var results = await SearchHtmlAsync(query, max, ct);
+        var results = await TryAsync("DuckDuckGo", () => SearchHtmlAsync(query, max, ct), ct);
         // DuckDuckGo throttles repeated queries from one address with an empty or challenge page; its lite page often still answers.
         if (results.Count == 0)
-            results = await SearchLiteAsync(query, max, ct);
+            results = await TryAsync("DuckDuckGo lite", () => SearchLiteAsync(query, max, ct), ct);
         // Search engines answer scripted queries with bot challenges at times; Wikipedia's API is made for programs.
         if (results.Count == 0)
-            results = await SearchWikipediaAsync(query, max, ct);
+            results = await TryAsync("Wikipedia", () => SearchWikipediaAsync(query, max, ct), ct);
         Log.Info($"Web search \"{query}\": {results.Count} results");
         return results;
+    }
+
+    /// <summary>A source that can't be reached or times out (HttpClient throws TaskCanceledException) hands over to the next one.</summary>
+    private static async Task<List<WebSource>> TryAsync(string source, Func<Task<List<WebSource>>> search, CancellationToken ct)
+    {
+        try
+        {
+            return await search();
+        }
+        catch (Exception e) when (!ct.IsCancellationRequested && e is HttpRequestException or TaskCanceledException or IOException)
+        {
+            Log.Info($"Web search: {source} failed ({e.Message})");
+            return [];
+        }
     }
 
     private static async Task<List<WebSource>> SearchHtmlAsync(string query, int max, CancellationToken ct)

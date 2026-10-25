@@ -351,7 +351,8 @@ public sealed partial class ChatViewModel : ObservableObject
                     if (context.Length > 0)
                         history.Insert(history.Count - 1, new ChatTurn("system", context));
                 }
-                catch (Exception e) when (e is not OperationCanceledException)
+                // A search that times out throws TaskCanceledException too; only the user's Stop ends the reply here.
+                catch (Exception e) when (!ct.IsCancellationRequested)
                 {
                     Log.Error("Web search failed", e);
                     reply.Activity = Loc.S("WebSearchFailed");

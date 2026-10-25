@@ -272,8 +272,16 @@ internal sealed class SettingsPages
                 results.Append(row);
             }
         });
+        var error = Ui.Label("", "warning").Named("HfSearchError");
+        error.SetVisible(false);
         _models.PropertyChanged += (_, e) =>
         {
+            if (e.PropertyName == nameof(ModelsViewModel.HfSearchError))
+                UiThread.Run(() =>
+                {
+                    error.SetText(_models.HfSearchError ?? "");
+                    error.SetVisible(_models.HfSearchError is not null);
+                });
             if (e.PropertyName != nameof(ModelsViewModel.SelectedRepo))
                 return;
             detail.Clear();
@@ -281,7 +289,7 @@ internal sealed class SettingsPages
                 detail.Append(RepoDetail(repo));
         };
 
-        var left = Ui.VBox(10, Ui.HBox(8, query, search), Ui.HBox(8, formats.DropDown, sorts.DropDown), Scroll(results, margins: false));
+        var left = Ui.VBox(10, Ui.HBox(8, query, search), Ui.HBox(8, formats.DropDown, sorts.DropDown), error, Scroll(results, margins: false));
         left.SetSizeRequest(340, -1);
         return Ui.HBox(16, left, Scroll(detail, margins: false)).Margins(8, 28, 24, 28);
     }

@@ -43,11 +43,11 @@ enum WebSearch {
     private static let liteSnippetRegex = regex(#"<td[^>]*class=['"]result-snippet['"][^>]*>(?<snippet>.*?)</td>"#, .dotMatchesLineSeparators)
 
     static func search(_ query: String, max: Int) async throws -> [WebSource] {
-        let html = try await get("https://duckduckgo.com/html/", query)
+        let html = try await fetch("https://duckduckgo.com/html/", query)
         var results = parseHtml(html, max: max)
         if results.isEmpty {
             Log.info("Web search \"\(query)\": no results from the HTML endpoint\(isChallenge(html) ? " (bot check)" : ""), trying Lite")
-            let lite = try await get("https://lite.duckduckgo.com/lite/", query)
+            let lite = try await fetch("https://lite.duckduckgo.com/lite/", query)
             results = parseLite(lite, max: max)
             // Search engines answer scripted queries with bot checks at times; Wikipedia's API is made for programs.
             if results.isEmpty { results = await searchWikipedia(query, max: max) }
@@ -59,6 +59,20 @@ enum WebSearch {
         }
         Log.info("Web search \"\(query)\": \(results.count) results")
         return results
+    }
+
+    /// A source that can't be reached or times out hands over to the next one; the user's Stop still ends the search.
+    private static func fetch(_ endpoint: String, _ query: String) async throws -> String {
+        do {
+            return try await get(endpoint, query)
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch let error as URLError where error.code == .cancelled {
+            throw error
+        } catch {
+            Log.info("Web search: \(endpoint) failed (\(error.localizedDescription))")
+            return ""
+        }
     }
 
     /// Wikipedia in the app's language (same as the Windows and Linux apps): keywords first, since its search matches every
