@@ -16,6 +16,7 @@ public sealed partial class StudioPage : Page
     {
         InitializeComponent();
         UpdateTabs();
+        Loaded += (_, _) => UpdateSearchTabs();
         CountPicker.SelectedItem = ViewModel.Count;
         StepsBox.Value = ViewModel.Steps;
         MusicSecondsBox.Value = ViewModel.MusicSeconds;
@@ -45,20 +46,31 @@ public sealed partial class StudioPage : Page
 
     public StudioViewModel ViewModel => Ioc.StudioVm;
     public MediaSearchViewModel Search => Ioc.MediaSearchVm;
-    public string SearchPlaceholder => Loc.S(Search.IsPhotos ? "SearchPlaceholderPhotos" : "SearchPlaceholderAudio");
 
     private void OnSearchModeClick(object sender, RoutedEventArgs e)
     {
         if (sender is FrameworkElement { Tag: string mode })
             Search.Mode = mode;
+        UpdateSearchTabs();
+        if (!Search.IsVideos)
+            _momentPlayer?.Pause();
+        Bindings.Update();
+    }
+
+    /// <summary>The Photos, Audio and Videos switch follows the view model (dev runs change the mode before the page opens).</summary>
+    private void UpdateSearchTabs()
+    {
         SearchPhotosTab.IsChecked = Search.IsPhotos;
         SearchAudioTab.IsChecked = Search.IsAudio;
-        Bindings.Update();
+        SearchVideosTab.IsChecked = Search.IsVideos;
     }
 
     private async void OnSearchFolder(object sender, RoutedEventArgs e)
     {
-        var picker = new FolderPicker { SuggestedStartLocation = Search.IsPhotos ? PickerLocationId.PicturesLibrary : PickerLocationId.MusicLibrary };
+        var picker = new FolderPicker
+        {
+            SuggestedStartLocation = Search.Mode switch { "photos" => PickerLocationId.PicturesLibrary, "audio" => PickerLocationId.MusicLibrary, _ => PickerLocationId.VideosLibrary },
+        };
         picker.FileTypeFilter.Add("*");
         WinRT.Interop.InitializeWithWindow.Initialize(picker, WinRT.Interop.WindowNative.GetWindowHandle(App.Window));
         if (await picker.PickSingleFolderAsync() is { } folder)
@@ -96,6 +108,88 @@ public sealed partial class StudioPage : Page
         var match = Search.Audio.FirstOrDefault(a => a.Moments.Contains(moment));
         if (match is not null)
             await Search.PlayMomentAsync(match, moment);
+    }
+
+    // ---------------------------------------------------------------- Search › Videos
+
+    private Windows.Media.Playback.MediaPlayer? _momentPlayer;
+    private string? _momentPath;
+    private int _momentStartMs;
+
+    private async void OnVideoMomentClick(object sender, ItemClickEventArgs e)
+    {
+        if (e.ClickedItem is not VideoMomentMatch moment)
+            return;
+        try
+        {
+            await PlayMomentAsync(moment);
+        }
+        catch (Exception ex)
+        {
+            Log.Error($"Could not play {moment.Path}", ex);
+            Search.Status = Loc.F("ErrorPrefix", ex.Message);
+        }
+    }
+
+    /// <summary>Where the moment player is and whether it is muted (dev runs check it started at the moment).</summary>
+    internal (TimeSpan? Position, bool Muted) MomentState => (_momentPlayer?.PlaybackSession.Position, _momentPlayer?.IsMuted ?? false);
+
+    /// <summary>Plays the moment's video in the player above the results, from the moment's start (silently for dev runs).</summary>
+    internal async Task PlayMomentAsync(VideoMomentMatch moment, bool muted = false)
+    {
+        if (!File.Exists(moment.Path))
+            return;
+        if (_momentPlayer is null)
+        {
+            _momentPlayer = new Windows.Media.Playback.MediaPlayer { AutoPlay = false };
+            // The position can only be set once the video is open.
+            _momentPlayer.MediaOpened += (player, _) =>
+            {
+                player.PlaybackSession.Position = TimeSpan.FromMilliseconds(_momentStartMs);
+                player.Play();
+            };
+            SearchVideoPlayer.SetMediaPlayer(_momentPlayer);
+            Unloaded += (_, _) => _momentPlayer?.Pause();
+        }
+        SearchVideoStage.Visibility = Visibility.Visible;
+        _momentStartMs = moment.StartMs;
+        _momentPlayer.IsMuted = muted;
+        if (_momentPath == moment.Path)
+        {
+            _momentPlayer.PlaybackSession.Position = TimeSpan.FromMilliseconds(moment.StartMs);
+            _momentPlayer.Play();
+            return;
+        }
+        _momentPath = moment.Path;
+        _momentPlayer.Source = Windows.Media.Core.MediaSource.CreateFromStorageFile(await Windows.Storage.StorageFile.GetFileFromPathAsync(moment.Path));
+    }
+
+    /// <summary>Each result shows the frame where its moment starts.</summary>
+    private async void OnVideoMomentContainer(ListViewBase sender, ContainerContentChangingEventArgs args)
+    {
+        if (args.InRecycleQueue || args.Item is not VideoMomentMatch moment || args.ItemContainer.ContentTemplateRoot is not Grid root
+            || root.Children.FirstOrDefault() is not Grid thumb || thumb.Children.FirstOrDefault() is not Microsoft.UI.Xaml.Controls.Image image)
+            return;
+        image.Source = null;
+        image.Tag = moment;
+        try
+        {
+            var jpeg = await MediaDecoders.VideoThumbnail(moment.Path, moment.StartMs, 320, CancellationToken.None);
+            // The container may show another moment by the time the frame is ready.
+            if (jpeg is null || !ReferenceEquals(image.Tag, moment))
+                return;
+            var bitmap = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage();
+            using var stream = new Windows.Storage.Streams.InMemoryRandomAccessStream();
+            await stream.WriteAsync(System.Runtime.InteropServices.WindowsRuntime.WindowsRuntimeBufferExtensions.AsBuffer(jpeg));
+            stream.Seek(0);
+            await bitmap.SetSourceAsync(stream);
+            if (ReferenceEquals(image.Tag, moment))
+                image.Source = bitmap;
+        }
+        catch (Exception ex)
+        {
+            Log.Info($"Media search: no thumbnail for {moment.Path} at {moment.Label}: {ex.Message}");
+        }
     }
 
     private void OnModeClick(object sender, RoutedEventArgs e)

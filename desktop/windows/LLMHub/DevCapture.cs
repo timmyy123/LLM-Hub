@@ -83,6 +83,14 @@ internal static class DevCapture
             await Task.Delay(int.TryParse(ValueOf(args, "--wait"), out var ms) ? ms : 2500);
             if (ValueOf(args, "--page") == "design" && window.Content is FrameworkElement && FindPage<Views.DesignPage>(window) is { } designPage)
                 await designPage.ProbePreviewAsync();
+            // --playmoment: plays the best video moment found by --searchtest videos, muted, and logs where the player is after 3 s.
+            if (args.Contains("--playmoment") && FindPage<Views.StudioPage>(window) is { } studioPage && Ioc.MediaSearchVm.Videos.FirstOrDefault() is { } moment)
+            {
+                await studioPage.PlayMomentAsync(moment, muted: true);
+                await Task.Delay(3000);
+                var (position, muted) = studioPage.MomentState;
+                Log.Info($"PLAYTEST {moment.Name} from {moment.Label}: player at {position?.TotalSeconds:F1}s after 3 s, muted {muted}");
+            }
 
             var root = (UIElement)window.Content;
             var bitmap = new RenderTargetBitmap();

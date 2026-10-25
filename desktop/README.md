@@ -37,7 +37,9 @@ dotnet run --project desktop\windows\LLMHub.UITests -- <path\to\LLMHub.exe> C:\t
 ## Linux
 
 Build requirements: .NET 10 SDK. Runtime packages (Ubuntu names): `libgtk-4-1`, `libadwaita-1-0`, and `libgomp1`
-(llama.cpp's Linux builds link OpenMP; without it `llama-server` exits with code 127).
+(llama.cpp's Linux builds link OpenMP; without it `llama-server` exits with code 127). Studio › Search reads audio
+and videos with `ffmpeg` or GStreamer's `gst-launch-1.0` (`gstreamer1.0-tools`), whichever is installed; GStreamer
+needs `gstreamer1.0-libav` for H.264 and AAC.
 
 ```bash
 cd desktop/linux/LLMHub.Gtk
@@ -65,6 +67,10 @@ xcodebuild -project LLMHub.xcodeproj -scheme LLMHub -derivedDataPath build-tests
 llmhub --capture shot.png --page models --wait 9000
 # Download a catalog model if needed, send a message through the real UI, log the reply and speed, then capture
 llmhub --selftest gemma-4-12b [--format litertlm] [--quant "LiteRT GPU"] [--prompt "..."] --capture shot.png --exit
+# Studio › Search: index a folder (photos, audio or videos) and run queries; "=>" names the right answer
+# (a file, or for videos file@from-to seconds), logged as SEARCHTEST PASS/FAIL. --playmoment then plays the best
+# video moment, muted, and logs where the player is (macOS: --page studio).
+llmhub --searchtest videos --folder <dir> --queries "fireworks at night=>clip.mp4@20-30" --playmoment --capture shot.png --page search --exit
 # Linux only: run the built-in UI suite (optionally a comma-separated subset); exits with the failure count
 llmhub --uitest [ChatReplyWithFooter,MtpToggle]
 # macOS only: the chat mic on the live microphone for N seconds (play speech meanwhile), transcript to the log

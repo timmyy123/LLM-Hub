@@ -1,9 +1,11 @@
 import AppKit
+import AVKit
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// Studio › Search: photos and audio found by description or by example with EmbeddingGemma 2 on this Mac, as in the
-/// Android app's Photo Search and Audio Search. The folder and index on the left, the query and results on the right.
+/// Studio › Search: photos, audio and video moments found by description or by example with EmbeddingGemma 2 on this
+/// Mac, as in the Android app's Photo Search, Audio Search and Video Moment Finder. The folder and index on the left,
+/// the query and results on the right.
 struct SearchView: View {
     var body: some View {
         HStack(spacing: 0) {
@@ -22,13 +24,11 @@ private struct SearchSidebar: View {
         @Bindable var search = app.studio.search
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                GlassEffectContainer(spacing: 4) {
-                    HStack(spacing: 4) {
-                        modeTab("photos", L.s("SearchPhotos"), "photo")
-                        modeTab("audio", L.s("SearchAudio"), "waveform")
-                    }
+                // Icons and titles when the three tabs fit the sidebar, titles alone when they do not.
+                ViewThatFits(in: .horizontal) {
+                    modeTabs(icons: true)
+                    modeTabs(icons: false)
                 }
-                .accessibilityIdentifier("SearchModes")
 
                 if search.hasModel {
                     VStack(alignment: .leading, spacing: 6) {
@@ -101,6 +101,15 @@ private struct SearchSidebar: View {
                         .textSelection(.enabled)
                         .accessibilityIdentifier("SearchStatus")
                 }
+                if search.videoFramesOnly {
+                    Text(L.s("SearchVideoFramesOnly")).font(.system(size: 12)).foregroundStyle(.orange)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier("SearchVideoFramesOnly")
+                }
+                if search.isVideos {
+                    Text(L.s("SearchVideoHelp")).font(.system(size: 12)).foregroundStyle(Theme.textFaint)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
                 Text(L.s("SearchHelp")).font(.system(size: 12)).foregroundStyle(Theme.textFaint)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -108,14 +117,29 @@ private struct SearchSidebar: View {
         }
     }
 
-    private func modeTab(_ mode: String, _ title: String, _ icon: String) -> some View {
+    private func modeTabs(icons: Bool) -> some View {
+        GlassEffectContainer(spacing: 4) {
+            HStack(spacing: 4) {
+                modeTab("photos", L.s("SearchPhotos"), "photo", icon: icons)
+                modeTab("audio", L.s("SearchAudio"), "waveform", icon: icons)
+                modeTab("videos", L.s("SearchVideos"), "film", icon: icons)
+            }
+        }
+        // A group of its own, so each tab keeps its SearchMode_<mode> identifier.
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("SearchModes")
+    }
+
+    private func modeTab(_ mode: String, _ title: String, _ symbol: String, icon: Bool) -> some View {
         let search = app.studio.search
         let selected = search.mode == mode
         return Button {
             search.mode = mode
         } label: {
-            Label(title, systemImage: icon)
+            Label(title, systemImage: symbol)
+                .labelStyle(TitleAndOptionalIcon(icon: icon))
                 .font(.system(size: 13))
+                .fixedSize()
                 .padding(.horizontal, 14)
                 .frame(height: 30)
                 .contentShape(Rectangle())
@@ -185,6 +209,13 @@ private struct SearchResults: View {
                 }
             }
 
+            if search.isVideos, search.playingMoment != nil {
+                VideoPlayer(player: search.videoPlayer)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 320)
+                    .clipShape(.rect(cornerRadius: 12))
+                    .accessibilityIdentifier("SearchVideoPlayer")
+            }
             ScrollView {
                 if search.isPhotos {
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 200), spacing: 12)], spacing: 12) {
@@ -192,6 +223,11 @@ private struct SearchResults: View {
                     }
                     .padding(2)
                     .accessibilityIdentifier("SearchPhotoResults")
+                } else if search.isVideos {
+                    LazyVStack(spacing: 8) {
+                        ForEach(search.videos) { VideoMomentRow(moment: $0) }
+                    }
+                    .accessibilityIdentifier("SearchVideoResults")
                 } else {
                     LazyVStack(spacing: 8) {
                         ForEach(search.audio) { AudioMatchRow(match: $0) }
@@ -289,5 +325,100 @@ private struct AudioMatchRow: View {
         .padding(.vertical, 10)
         .background(Theme.surfaceAlt.opacity(0.6), in: .rect(cornerRadius: 12))
         .accessibilityIdentifier("SearchAudioMatch")
+    }
+}
+
+/// A label with or without its icon.
+private struct TitleAndOptionalIcon: LabelStyle {
+    let icon: Bool
+
+    @ViewBuilder
+    func makeBody(configuration: Configuration) -> some View {
+        if icon {
+            TitleAndIconLabelStyle().makeBody(configuration: configuration)
+        } else {
+            configuration.title
+        }
+    }
+}
+
+/// A matching video moment: the frame where it starts, the video and timestamp; choosing it plays the video from there.
+private struct VideoMomentRow: View {
+    @Environment(AppModel.self) private var app
+    let moment: VideoMomentMatch
+
+    var body: some View {
+        let search = app.studio.search
+        HStack(spacing: 14) {
+            Button {
+                Task { await search.play(moment) }
+            } label: {
+                HStack(spacing: 14) {
+                    VideoFrameThumbnail(url: moment.url, ms: moment.startMs)
+                        .frame(width: 160, height: 90)
+                        .clipShape(.rect(cornerRadius: 8))
+                        .overlay(alignment: .bottomLeading) {
+                            Label(moment.label, systemImage: "play.fill")
+                                .font(.system(size: 11, weight: .medium))
+                                .monospacedDigit()
+                                .padding(.horizontal, 7)
+                                .padding(.vertical, 2)
+                                .glassEffect(.regular, in: .capsule)
+                                .padding(6)
+                                .accessibilityIdentifier("SearchVideoTime")
+                        }
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(moment.name).fontWeight(.semibold).lineLimit(1).truncationMode(.middle)
+                            .accessibilityIdentifier("SearchVideoName")
+                        Text(L.f("SearchPlayFrom", moment.label)).font(.system(size: 12)).foregroundStyle(Theme.textMuted)
+                    }
+                    Spacer()
+                    Text(moment.scoreText).font(.system(size: 12)).foregroundStyle(Theme.textMuted).monospacedDigit()
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .help(L.f("SearchPlayFrom", moment.label))
+            Button {
+                NSWorkspace.shared.activateFileViewerSelecting([moment.url])
+            } label: {
+                Image(systemName: "folder")
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(Theme.textMuted)
+            .help(L.s("StudioShowInFinder"))
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(search.playingMoment == moment ? Theme.surfaceAlt : Theme.surfaceAlt.opacity(0.6), in: .rect(cornerRadius: 12))
+        .accessibilityIdentifier("SearchVideoMoment")
+    }
+}
+
+/// The frame of a video at a time, read with AVFoundation off the main thread and cached.
+private struct VideoFrameThumbnail: View {
+    let url: URL
+    let ms: Int
+    @State private var image: NSImage?
+
+    private static let cache = NSCache<NSString, NSImage>()
+
+    var body: some View {
+        ZStack {
+            Theme.surfaceAlt
+            if let image {
+                Image(nsImage: image).resizable().scaledToFill()
+            }
+        }
+        .task(id: "\(url.path)#\(ms)") {
+            let key = "\(url.path)#\(ms)" as NSString
+            if let cached = Self.cache.object(forKey: key) {
+                image = cached
+                return
+            }
+            guard let jpeg = await MediaDecoders.videoThumbnail(url, ms: ms, maxEdge: 320), let loaded = NSImage(data: jpeg) else { return }
+            Self.cache.setObject(loaded, forKey: key)
+            image = loaded
+        }
     }
 }

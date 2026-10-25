@@ -31,6 +31,8 @@ public static class Ui
     public static bool HasText(string? value) => !string.IsNullOrEmpty(value);
     public static Visibility ShowChecked(bool? value) => value == true ? Visibility.Visible : Visibility.Collapsed;
     public static string Numbered(int n) => $"{n}.";
+    /// <summary>Studio › Search › Videos: "Play from 0:24".</summary>
+    public static string PlayFrom(string label) => Services.Loc.F("SearchPlayFrom", label);
     /// <summary>"Thinking…" while the reply streams, then the design's "Thought for a few seconds" pill label.</summary>
     public static string ThinkingLabel(bool done) => Services.Loc.S(done ? "ThoughtLabel" : "Thinking");
 

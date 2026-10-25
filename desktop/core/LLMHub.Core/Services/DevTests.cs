@@ -218,8 +218,10 @@ public static class DevTests
     }
 
     /// <summary>
-    /// Studio › Search: installs an EmbeddingGemma 2 build from the catalog if needed, indexes a folder of photos or audio,
-    /// then logs the best matches for each query (text, or a photo path for photo-to-photo).
+    /// Studio › Search: installs an EmbeddingGemma 2 build from the catalog if needed, indexes a folder of photos, audio or
+    /// videos, then logs the best matches for each query (text, or a photo path for photo-to-photo). A query can name its
+    /// right answer after "=>": a file name, or for videos "file.mp4@20-30", where the best moment must start between
+    /// those seconds. Each such query logs PASS or FAIL, then a total: <c>SEARCHTEST RESULT 4/4 passed</c>.
     /// </summary>
     public static async Task MediaSearchAsync(string mode, string folder, string catalogId, IReadOnlyList<string> queries)
     {
@@ -227,10 +229,12 @@ public static class DevTests
         {
             var model = Ioc.Catalog.Models.First(m => m.Id == catalogId);
             var source = model.Sources.First(s => s.Format == "litertlm");
-            var variant = (await Ioc.HuggingFace.GetLiteRtVariantsAsync(source.Repo, CancellationToken.None))[0];
-            var id = InstalledModel.MakeId(variant.Repo, variant.Quant);
-            if (Ioc.Models.Find(id) is null)
+            // An installed build is used as it is, without asking the Hub (so a flaky network does not stop the test).
+            var id = Ioc.Models.Installed.FirstOrDefault(m => m.CatalogId == catalogId && m.Format == "litertlm")?.Id;
+            if (id is null)
             {
+                var variant = (await Ioc.HuggingFace.GetLiteRtVariantsAsync(source.Repo, CancellationToken.None))[0];
+                id = InstalledModel.MakeId(variant.Repo, variant.Quant);
                 var clock = System.Diagnostics.Stopwatch.StartNew();
                 Ioc.Downloads.Start(variant, model.Name, model.Id, model.Tags, model.ContextLength);
                 while (Ioc.Downloads.Find(id) is not null)
@@ -244,9 +248,14 @@ public static class DevTests
             search.SetFolder(folder);
             var watch = System.Diagnostics.Stopwatch.StartNew();
             await search.IndexCommand.ExecuteAsync(null);
-            Log.Info($"SEARCHTEST index {mode} in {watch.Elapsed.TotalSeconds:F1}s: {search.Status} ({search.IndexedText})");
-            foreach (var query in queries)
+            Log.Info($"SEARCHTEST index {mode} with {search.SelectedModel?.Id} on {Ioc.MediaEmbedder.Loaded?.Backend} ({Ioc.MediaEmbedder.Loaded?.MaxInput} tokens) " +
+                     $"in {watch.Elapsed.TotalSeconds:F1}s: {search.Status} ({search.IndexedText})");
+            int passed = 0, checkedCount = 0;
+            foreach (var entry in queries)
             {
+                var arrow = entry.IndexOf("=>", StringComparison.Ordinal);
+                var query = arrow < 0 ? entry : entry[..arrow].Trim();
+                var expected = arrow < 0 ? null : entry[(arrow + 2)..].Trim();
                 watch.Restart();
                 if (File.Exists(query))
                     await search.SearchByPhotoAsync(query);
@@ -255,16 +264,67 @@ public static class DevTests
                     search.Query = query;
                     await search.SearchCommand.ExecuteAsync(null);
                 }
-                var top = mode == "photos"
-                    ? search.Photos.Take(4).Select(p => $"{p.Name} {p.ScoreText}")
-                    : search.Audio.Take(4).Select(a => $"{a.Name} {a.ScoreText} @{string.Join("/", a.Moments.Select(m => m.Label))}");
+                var top = mode switch
+                {
+                    "photos" => search.Photos.Take(4).Select(p => $"{p.Name} {p.ScoreText}"),
+                    "audio" => search.Audio.Take(4).Select(a => $"{a.Name} {a.ScoreText} @{string.Join("/", a.Moments.Select(m => m.Label))}"),
+                    _ => search.Videos.Select(v => $"{v.Name}@{v.Label} {v.ScoreText}"),
+                };
                 Log.Info($"SEARCHTEST \"{Path.GetFileName(query)}\" in {watch.Elapsed.TotalSeconds:F2}s: {string.Join(" | ", top)}");
+                if (expected is null)
+                    continue;
+                checkedCount++;
+                var (ok, got) = mode switch
+                {
+                    "photos" => (search.Photos.FirstOrDefault()?.Name == expected, search.Photos.FirstOrDefault()?.Name),
+                    "audio" => (search.Audio.FirstOrDefault()?.Name == expected, search.Audio.FirstOrDefault()?.Name),
+                    _ => VideoMatches(search.Videos.FirstOrDefault(), expected),
+                };
+                if (ok)
+                    passed++;
+                Log.Info($"SEARCHTEST {(ok ? "PASS" : "FAIL")} \"{query}\": expected {expected}, got {got ?? "nothing"}");
             }
+            if (checkedCount > 0)
+                Log.Info($"SEARCHTEST RESULT {passed}/{checkedCount} passed");
+            if (mode == "videos" && queries.Count > 0 && Ioc.MediaEmbedder.Loaded is { } longer)
+                await CompareInputLengthsAsync(longer, queries[0].Split("=>")[0].Trim());
         }
         catch (Exception e)
         {
             Log.Error("SEARCHTEST failed", e);
         }
+    }
+
+    /// <summary>"name@from-to" (seconds): the top moment is in that file and starts inside the range.</summary>
+    private static (bool Ok, string? Got) VideoMatches(ViewModels.VideoMomentMatch? top, string expected)
+    {
+        if (top is null)
+            return (false, null);
+        var got = $"{top.Name}@{top.StartMs / 1000.0:0.#}s ({top.ScoreText})";
+        var at = expected.LastIndexOf('@');
+        var name = at < 0 ? expected : expected[..at];
+        if (!string.Equals(top.Name, name, StringComparison.OrdinalIgnoreCase))
+            return (false, got);
+        if (at < 0)
+            return (true, got);
+        var range = expected[(at + 1)..].Split('-');
+        var from = double.Parse(range[0], System.Globalization.CultureInfo.InvariantCulture);
+        var to = range.Length > 1 ? double.Parse(range[1], System.Globalization.CultureInfo.InvariantCulture) : from + 2;
+        return (top.StartMs >= from * 1000 && top.StartMs < to * 1000, got);
+    }
+
+    /// <summary>
+    /// The shared engine made for video moments (1024 input tokens) also answers photo, audio and API requests; checks it
+    /// embeds a text like the usual 256-token engine does.
+    /// </summary>
+    private static async Task CompareInputLengthsAsync(LiteRtEngine.LiteRtEmbedder longer, string text)
+    {
+        if (longer.MaxInput == LiteRtEngine.LiteRtEmbedder.MaxInputTokens)
+            return;
+        using var shorter = await Ioc.LiteRt.OpenEmbedderAsync(longer.Model, _ => { }, CancellationToken.None);
+        var a = await Task.Run(() => longer.EmbedText(text, query: true));
+        var b = await Task.Run(() => shorter.EmbedText(text, query: true));
+        Log.Info($"SEARCHTEST {longer.MaxInput} vs {shorter.MaxInput} input tokens on {longer.Backend}/{shorter.Backend}: cosine {(a is null || b is null ? -1 : MediaSearch.MediaIndex.Dot(a, b)):F4}");
     }
 
     /// <summary>Exports the most recent design project (or the one with <paramref name="kind"/>) to <paramref name="path"/>.</summary>

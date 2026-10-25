@@ -22,9 +22,10 @@ public sealed class AppSettings
     public double SpeechSpeed { get; set; } = 1.05;
     /// <summary>Model new Agent sessions use (defaults to the catalog's agent pick, Gemma 4 26B-A4B).</summary>
     public string? AgentModelId { get; set; }
-    /// <summary>Studio › Search: the folders indexed for photos and audio, and the EmbeddingGemma 2 build used.</summary>
+    /// <summary>Studio › Search: the folders indexed for photos, audio and videos, and the EmbeddingGemma 2 build used.</summary>
     public string MediaPhotoFolder { get; set; } = "";
     public string MediaAudioFolder { get; set; } = "";
+    public string MediaVideoFolder { get; set; } = "";
     public string? MediaModelId { get; set; }
     /// <summary>"claude" or "openclaw", for new Agent sessions.</summary>
     public string AgentEngine { get; set; } = "claude";

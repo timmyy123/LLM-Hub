@@ -1,9 +1,9 @@
 namespace LLMHub.Services.MediaSearch;
 
 /// <summary>
-/// Image and audio decoding for media search. Each app plugs in its platform's decoders (WinRT imaging and media
-/// transcoding on Windows, GdkPixbuf and GStreamer on Linux); without them, photos are passed as their own JPEG/PNG bytes
-/// and only WAV audio is read.
+/// Image, audio and video decoding for media search. Each app plugs in its platform's decoders (WinRT imaging, media
+/// transcoding and media editing on Windows; GdkPixbuf and GStreamer or ffmpeg on Linux); without them, photos are passed
+/// as their own JPEG/PNG bytes, only WAV audio is read and videos cannot be opened.
 /// </summary>
 public static class MediaDecoders
 {
@@ -12,11 +12,30 @@ public static class MediaDecoders
     /// <summary>A JPEG of the image, no larger than maxEdge on its long side; null if it cannot be read.</summary>
     public static Func<string, int, CancellationToken, Task<byte[]?>> Image { get; set; } = DefaultImageAsync;
 
-    /// <summary>The first maxSeconds of an audio file as 16 kHz mono floats; null if it cannot be decoded.</summary>
+    /// <summary>The first maxSeconds of an audio file (or a video's sound) as 16 kHz mono floats; null if it cannot be decoded.</summary>
     public static Func<string, int, CancellationToken, Task<float[]?>> Audio { get; set; } = (path, maxSeconds, ct) => Task.FromResult(ReadWav(path, maxSeconds));
+
+    /// <summary>
+    /// Opens a video (path, maxEdge, maxSeconds) for frame grabs, frames no larger than maxEdge and none past maxSeconds;
+    /// null if it cannot be read.
+    /// </summary>
+    public static Func<string, int, int, CancellationToken, Task<VideoFrames?>> Video { get; set; } = (_, _, _, _) => Task.FromResult<VideoFrames?>(null);
+
+    /// <summary>One frame (path, timeMs, maxEdge) as a JPEG for a result thumbnail; null if it cannot be read.</summary>
+    public static Func<string, int, int, CancellationToken, Task<byte[]?>> VideoThumbnail { get; set; } = DefaultVideoThumbnailAsync;
+
+    /// <summary>Why no video can be opened on this computer (say, no decoder installed), or null when videos can be read.</summary>
+    public static Func<string?> VideoUnavailable { get; set; } = () => null;
 
     public static readonly string[] ImageExtensions = [".jpg", ".jpeg", ".png", ".webp", ".bmp", ".gif", ".heic", ".tif", ".tiff"];
     public static readonly string[] AudioExtensions = [".wav", ".mp3", ".flac", ".ogg", ".oga", ".opus", ".m4a", ".aac", ".wma", ".aiff", ".aif"];
+    public static readonly string[] VideoExtensions = [".mp4", ".m4v", ".mov", ".mkv", ".webm", ".avi", ".wmv", ".mpg", ".mpeg", ".3gp", ".ogv"];
+
+    private static async Task<byte[]?> DefaultVideoThumbnailAsync(string path, int timeMs, int maxEdge, CancellationToken ct)
+    {
+        using var video = await Video(path, maxEdge, timeMs / 1000 + 1, ct);
+        return video is null ? null : (await video.FramesAsync([timeMs], ct))[0];
+    }
 
     private static async Task<byte[]?> DefaultImageAsync(string path, int maxEdge, CancellationToken ct)
     {
@@ -139,5 +158,19 @@ public static class MediaDecoders
         for (var i = from; i < to; i++)
             sum += samples[i] * samples[i];
         return (float)Math.Sqrt(sum / (to - from));
+    }
+}
+
+/// <summary>An open video: its length and JPEG frames at chosen times, from the platform's decoder.</summary>
+public abstract class VideoFrames : IDisposable
+{
+    /// <summary>The video's length in milliseconds (0 when unknown).</summary>
+    public abstract int DurationMs { get; }
+
+    /// <summary>A JPEG of the frame at each time (ms), in order; null where a frame cannot be read.</summary>
+    public abstract Task<byte[]?[]> FramesAsync(IReadOnlyList<int> timesMs, CancellationToken ct);
+
+    public virtual void Dispose()
+    {
     }
 }

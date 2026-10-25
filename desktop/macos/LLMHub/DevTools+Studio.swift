@@ -12,9 +12,12 @@ extension DevTools {
     ///   one per length: `CLIPTEST <model> <s>s seed <n> in <s>s (load, encode, sample, decode) peak <p> rms <r>: <path>`
     /// - `--musiclive <seconds>` plays the live jam muted, changes a style halfway, records and exports: `MUSICLIVE …`
     /// - `--voicetest "<text>"` speaks through Studio › Voice (SpeechService): `VOICETEST <voice>: <status>; file <path>`
-    /// - `--searchtest photos|audio --folder <dir> [--model embeddinggemma-2-440m] --queries "a red car|/path/photo.jpg"`
+    /// - `--searchtest photos|audio|videos --folder <dir> [--model embeddinggemma-2-440m] --queries "a red car|/path/photo.jpg"`
     ///   installs the EmbeddingGemma 2 build if needed, indexes the folder in Studio › Search and logs the best matches for
-    ///   each query (text, or a photo path for photo-to-photo): `SEARCHTEST "<query>" in <s>s: name score | …`
+    ///   each query (text, or a photo path for photo-to-photo): `SEARCHTEST "<query>" in <s>s: name score | …`. A query can
+    ///   name its right answer after "=>" (a file name, or for videos "file.mp4@20-30", where the best moment must start
+    ///   between those seconds): `SEARCHTEST PASS|FAIL …`, then `SEARCHTEST RESULT 4/4 passed`. With `--playmoment`, the
+    ///   best video moment then plays, muted: `PLAYTEST <name> from <m:ss>: player at <s>s`.
     /// - `--studiomode image|video|music|voice|search` picks the Studio tab for captures.
     /// - `--studiouse latest|<file name>` selects that picture in the gallery and does what Use in Chat does (attach it to
     ///   the chat and open Chat): `STUDIOUSE <name>: section <s>, attached [...]`
@@ -27,6 +30,12 @@ extension DevTools {
         if let mode = value("--searchtest", args), let folder = value("--folder", args) {
             await runSearch(mode, folder: folder, catalogId: value("--model", args) ?? "embeddinggemma-2-740m",
                             queries: (value("--queries", args) ?? "").split(separator: "|").map(String.init))
+            if args.contains("--playmoment"), let moment = studio.search.videos.first {
+                await studio.search.play(moment, muted: true)
+                try? await Task.sleep(for: .seconds(3))
+                let player = studio.search.videoPlayer
+                Log.info("PLAYTEST \(moment.name) from \(moment.label): player at \(String(format: "%.1f", player.currentTime().seconds))s after 3 s, muted \(player.isMuted)")
+            }
         }
         if let id = value("--studiotest", args) {
             await runStudio(id, prompt: value("--prompt", args) ?? "a cozy cafe interior in morning light, film photo", image: value("--image", args))
@@ -57,24 +66,31 @@ extension DevTools {
         do {
             guard let model = app.catalog.models.first(where: { $0.id == catalogId }),
                   let source = model.sources.first(where: { $0.format == "litertlm" }) else { throw ComfyService.error("\(catalogId) is not in the catalog") }
-            let variants = try await app.hub.liteRtVariants(source.repo)
-            Log.info("SEARCHTEST variants: \(variants.map { "\($0.quant) \($0.files[0].fileName) \(Fmt.bytes($0.totalBytes))" }.joined(separator: ", "))")
-            let variant = variants[0]
-            if app.modelStore.find(variant.modelId) == nil {
+            // An installed build is used as it is, without asking the Hub.
+            var modelId = app.modelStore.installed.first { $0.catalogId == catalogId && $0.format == "litertlm" }?.id
+            if modelId == nil {
+                let variants = try await app.hub.liteRtVariants(source.repo)
+                Log.info("SEARCHTEST variants: \(variants.map { "\($0.quant) \($0.files[0].fileName) \(Fmt.bytes($0.totalBytes))" }.joined(separator: ", "))")
+                let variant = variants[0]
                 let clock = Date()
                 app.downloads.start(variant, name: model.name, catalogId: model.id, tags: model.tags, contextLength: model.contextLength)
                 while app.downloads.find(variant.modelId) != nil { try await Task.sleep(for: .seconds(1)) }
                 Log.info("SEARCHTEST downloaded \(variant.modelId) (\(Fmt.bytes(variant.totalBytes))) in \(Int(Date().timeIntervalSince(clock)))s")
+                modelId = variant.modelId
             }
             let search = app.studio.search
             app.studio.mode = "search"
             search.mode = mode
-            search.selectedModelId = variant.modelId
+            search.selectedModelId = modelId
             search.setFolder(folder)
             var clock = Date()
             await search.index()
-            Log.info("SEARCHTEST index \(mode) with \(search.selectedModel?.id ?? "-") on \(app.mediaEmbedder.loaded?.backend ?? "-") in \(String(format: "%.1f", Date().timeIntervalSince(clock)))s: \(search.status) (\(search.indexedText))")
-            for query in queries {
+            Log.info("SEARCHTEST index \(mode) with \(search.selectedModel?.id ?? "-") on \(app.mediaEmbedder.loaded?.backend ?? "-") (\(app.mediaEmbedder.loaded?.maxInput ?? 0) tokens) in \(String(format: "%.1f", Date().timeIntervalSince(clock)))s: \(search.status) (\(search.indexedText))")
+            var passed = 0, checked = 0
+            for entry in queries {
+                let parts = entry.components(separatedBy: "=>")
+                let query = parts[0].trimmingCharacters(in: .whitespaces)
+                let expected = parts.count > 1 ? parts[1].trimmingCharacters(in: .whitespaces) : nil
                 clock = Date()
                 if FileManager.default.fileExists(atPath: query) {
                     await search.searchByPhoto(URL(fileURLWithPath: query))
@@ -82,10 +98,32 @@ extension DevTools {
                     search.query = query
                     await search.search()
                 }
-                let top = mode == "photos"
-                    ? search.photos.prefix(5).map { "\($0.name) \($0.scoreText)" }
-                    : search.audio.prefix(5).map { "\($0.name) \($0.scoreText) @\($0.moments.map(\.label).joined(separator: "/"))" }
+                let top = switch mode {
+                case "photos": search.photos.prefix(5).map { "\($0.name) \($0.scoreText)" }
+                case "audio": search.audio.prefix(5).map { "\($0.name) \($0.scoreText) @\($0.moments.map(\.label).joined(separator: "/"))" }
+                default: search.videos.map { "\($0.name)@\($0.label) \($0.scoreText)" }
+                }
                 Log.info("SEARCHTEST \"\((query as NSString).lastPathComponent)\" in \(String(format: "%.2f", Date().timeIntervalSince(clock)))s: \(top.joined(separator: " | "))")
+                guard let expected else { continue }
+                checked += 1
+                let (ok, got): (Bool, String?) = switch mode {
+                case "photos": (search.photos.first?.name == expected, search.photos.first?.name)
+                case "audio": (search.audio.first?.name == expected, search.audio.first?.name)
+                default: videoMatches(search.videos.first, expected)
+                }
+                if ok { passed += 1 }
+                Log.info("SEARCHTEST \(ok ? "PASS" : "FAIL") \"\(query)\": expected \(expected), got \(got ?? "nothing")")
+            }
+            if checked > 0 { Log.info("SEARCHTEST RESULT \(passed)/\(checked) passed") }
+            // The shared engine made for video moments (1024 input tokens) also answers photo, audio and API requests:
+            // check it embeds a text like the usual 256-token engine.
+            if mode == "videos", let longer = app.mediaEmbedder.loaded, longer.maxInput != MediaEmbedder.maxInputTokens,
+               let text = queries.first?.components(separatedBy: "=>").first {
+                let shorter = try await MediaEmbedder.open(longer.model)
+                if let a = await longer.embedText(text, query: true), let b = await shorter.embedText(text, query: true) {
+                    Log.info("SEARCHTEST \(longer.maxInput) vs \(shorter.maxInput) input tokens on \(longer.backend)/\(shorter.backend): cosine \(String(format: "%.4f", MediaIndex.dot(a, b)))")
+                }
+                await shorter.close()
             }
         } catch {
             Log.error("SEARCHTEST failed", error)
@@ -105,6 +143,19 @@ extension DevTools {
         studio.selected = item
         studio.useInChat(item)
         Log.info("STUDIOUSE \(item.name): section \(app.section), attached \(app.chat.pendingAttachments.map { "\($0.name) [\($0.kind)]" }) error='\(app.chat.attachError)'")
+    }
+
+    /// "name@from-to" (seconds): the top moment is in that file and starts inside the range.
+    private static func videoMatches(_ top: VideoMomentMatch?, _ expected: String) -> (Bool, String?) {
+        guard let top else { return (false, nil) }
+        let got = "\(top.name)@\(String(format: "%g", Double(top.startMs) / 1000))s (\(top.scoreText))"
+        let pieces = expected.components(separatedBy: "@")
+        guard top.name.caseInsensitiveCompare(pieces[0]) == .orderedSame else { return (false, got) }
+        guard pieces.count > 1 else { return (true, got) }
+        let range = pieces[1].split(separator: "-").compactMap { Double($0) }
+        guard let from = range.first else { return (false, got) }
+        let to = range.count > 1 ? range[1] : from + 2
+        return (Double(top.startMs) >= from * 1000 && Double(top.startMs) < to * 1000, got)
     }
 
     private static func runStudio(_ id: String, prompt: String, image: String?) async {
