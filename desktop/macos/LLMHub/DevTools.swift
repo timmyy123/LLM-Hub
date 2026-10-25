@@ -62,15 +62,19 @@ enum DevTools {
             window.makeKeyAndOrderFront(nil)
             try? await Task.sleep(for: .milliseconds(400))
             let content = try await SCShareableContent.currentProcess
-            guard let shared = content.windows.first(where: { $0.windowID == CGWindowID(window.windowNumber) }) else {
+            guard let shared = content.windows.first(where: { $0.windowID == CGWindowID(window.windowNumber) }),
+                  let display = content.displays.first(where: { $0.frame.intersects(shared.frame) }) ?? content.displays.first else {
                 throw NSError(domain: "capture", code: 1, userInfo: [NSLocalizedDescriptionKey: "window \(window.windowNumber) not shareable"])
             }
-            let filter = SCContentFilter(desktopIndependentWindow: shared)
+            // The window alone, cut from its display: a single-window filter would also take the input-source bubble macOS
+            // shows at a focused text field (a separate window) and scale both into the picture.
+            let filter = SCContentFilter(display: display, including: [shared])
             let config = SCStreamConfiguration()
-            config.width = Int(filter.contentRect.width * CGFloat(filter.pointPixelScale))
-            config.height = Int(filter.contentRect.height * CGFloat(filter.pointPixelScale))
+            config.sourceRect = shared.frame.offsetBy(dx: -display.frame.minX, dy: -display.frame.minY)
+            config.width = Int(shared.frame.width * CGFloat(filter.pointPixelScale))
+            config.height = Int(shared.frame.height * CGFloat(filter.pointPixelScale))
             config.showsCursor = false
-            config.ignoreShadowsSingleWindow = true
+            config.backgroundColor = .clear
             let image = try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: config)
             try NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: path))
             Log.info("Captured \(path) (window server, \(image.width)x\(image.height))")
