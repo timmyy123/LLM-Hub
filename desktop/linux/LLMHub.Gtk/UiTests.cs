@@ -29,6 +29,7 @@ internal sealed class UiTests(MainWindow main)
             ("SettingsSingleSidebar", SettingsSingleSidebar),
             ("SettingsSectionsContent", SettingsSectionsContent),
             ("LiveMusicLine", LiveMusicLine),
+            ("ChatDropFiles", ChatDropFiles),
             ("CatalogContents", CatalogContents),
             ("LanguageAndContext", LanguageAndContext),
             ("HuggingFaceSearchAndGated", HuggingFaceSearchAndGated),
@@ -133,6 +134,36 @@ internal sealed class UiTests(MainWindow main)
         Log.Info($"UITEST music line ({(live ? "live" : "clips only")}): {line}");
         Ioc.StudioVm.Mode = "image";
         await GoToChat();
+    }
+
+    /// <summary>Files dropped on the chat (a GdkFileList, as a file manager sends) become attachments; unsupported ones say why.</summary>
+    private async Task ChatDropFiles()
+    {
+        await GoToChat();
+        var folder = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), $"llmhub-drop-{_tag}")).FullName;
+        var files = new[] { Path.Combine(folder, "pixel.png"), Path.Combine(folder, "notes.txt"), Path.Combine(folder, "tool.bin") };
+        File.WriteAllBytes(files[0], Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg=="));
+        File.WriteAllText(files[1], $"{_tag} dropped notes");
+        File.WriteAllBytes(files[2], [0, 1, 2, 3]);
+        var before = Ioc.Chat.PendingAttachments.Count;
+        try
+        {
+            using var list = Gdk.FileList.NewFromArray(files.Select(Gio.FileHelper.NewForPath).ToArray(), (nuint)files.Length);
+            using var value = new GObject.Value(Gdk.FileList.GetGType());
+            value.SetBoxed(list.Handle.DangerousGetHandle());
+            Expect(main.Chat.AttachDropped(value), "drop accepted");
+            await Until(() => Shown("AttachmentChip").Count() == before + 2, "chips for the picture and the text file");
+            var names = Ioc.Chat.PendingAttachments.Skip(before).Select(a => $"{a.Name}:{a.Kind}").ToList();
+            Expect(names.SequenceEqual(["pixel.png:image", "notes.txt:document"]), $"attachments: {string.Join(", ", names)}");
+            await Until(() => Visible("AttachError") && TextOf(One("AttachError")).Contains("tool.bin"), "unsupported file named in the error");
+        }
+        finally
+        {
+            foreach (var a in Ioc.Chat.PendingAttachments.Skip(before).ToList())
+                Ioc.Chat.RemoveAttachmentCommand.Execute(a);
+            Ioc.Chat.AttachError = "";
+            Directory.Delete(folder, true);
+        }
     }
 
     private async Task WebSearchSources()
