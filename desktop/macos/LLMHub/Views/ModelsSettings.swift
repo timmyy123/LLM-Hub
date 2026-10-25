@@ -263,6 +263,9 @@ private struct HuggingFaceTab: View {
                 .fixedSize()
                 .accessibilityIdentifier("HfSort")
             }
+            if let error = vm.searchError {
+                Text(error).font(.system(size: 12)).foregroundStyle(Theme.warning).accessibilityIdentifier("HfSearchError")
+            }
             HStack(alignment: .top, spacing: 16) {
                 List(vm.results, selection: $vm.selectedRepoId) { repo in
                     VStack(alignment: .leading, spacing: 3) {

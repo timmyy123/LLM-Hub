@@ -477,7 +477,8 @@ public sealed partial class ModelsViewModel : ObservableObject
             _ = value.LoadVariantsAsync(CancellationToken.None);
     }
 
-    [RelayCommand]
+    /// <summary>A new search replaces one still running (the trending list that loads when the tab opens, on a slow network).</summary>
+    [RelayCommand(AllowConcurrentExecutions = true)]
     private async Task SearchAsync()
     {
         _search?.Cancel();
@@ -498,6 +499,7 @@ public sealed partial class ModelsViewModel : ObservableObject
                     _ => merged.OrderByDescending(r => r.Trending).ThenByDescending(r => r.Downloads),
                 };
             var results = merged.Take(40).ToList();
+            ct.ThrowIfCancellationRequested(); // replaced by a newer search while this one was answering
             SearchResults.Clear();
             foreach (var repo in results)
                 SearchResults.Add(new HfRepoViewModel(repo));
@@ -513,7 +515,8 @@ public sealed partial class ModelsViewModel : ObservableObject
         }
         finally
         {
-            IsSearching = false;
+            if (_search?.Token == ct)
+                IsSearching = false;
         }
     }
 

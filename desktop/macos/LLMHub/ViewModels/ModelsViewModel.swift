@@ -218,6 +218,8 @@ final class ModelsViewModel {
     }
     var query = ""
     var isSearching = false
+    /// "Could not reach Hugging Face" when the last search failed.
+    var searchError: String?
     var tab = ModelsTab.catalog
     var filter = "all"
     var hfFormat = "all" { didSet { if hfFormat != oldValue { search() } } }
@@ -311,6 +313,7 @@ final class ModelsViewModel {
         let hub = app.hub
         let filters = hfFormat == "all" ? ["gguf", "litert-lm"] : [hfFormat == "litertlm" ? "litert-lm" : "gguf"]
         isSearching = true
+        searchError = nil
         searchTask = Task {
             do {
                 var merged: [HfRepo] = []
@@ -332,6 +335,7 @@ final class ModelsViewModel {
                 // A newer search cancelled this one (URLSession reports that as URLError.cancelled); it owns the spinner.
                 if Task.isCancelled { return }
                 Log.error("HF search failed", error)
+                searchError = L.s("VariantsError")
             }
             isSearching = false
         }
