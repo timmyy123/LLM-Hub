@@ -412,14 +412,24 @@ public sealed partial class DesignService : ObservableObject
             var heading = FirstHeadingRegex().Match(part);
             var title = heading.Success ? Clean(heading.Groups[2].Value) : project.Name;
             var rest = heading.Success ? part.Remove(heading.Index, heading.Length) : part;
-            var lines = LineRegex().Matches(rest).Select(m => Clean(m.Groups[2].Value)).Where(l => l.Length > 0 && !l.StartsWith('[')).Take(9)
-                .Select(l => l.Length > 220 ? l[..217] + "…" : l).ToList();
+            var lines = TextLines(rest).Select(l => l.Length > 220 ? l[..217] + "…" : l).ToList();
             var image = LocalImageRegex().Match(part) is { Success: true } img && Path.Combine(project.Folder, img.Groups["file"].Value) is var path && File.Exists(path) ? path : null;
-            if (title.Length > 0 || lines.Count > 0)
-                slides.Add(new PptxSlide(title.Length > 0 ? title : project.Name, lines, image));
+            if (title.Length == 0 && lines.Count == 0)
+                continue;
+            // Nine lines fit a slide; a longer section goes on (up to two more) with the same title.
+            for (var start = 0; start < Math.Max(lines.Count, 1) && start < 27 && slides.Count < 40; start += 9)
+                slides.Add(new PptxSlide(title.Length > 0 ? title : project.Name, lines.Skip(start).Take(9).ToList(), start == 0 ? image : null));
         }
         return slides;
     }
+
+    /// <summary>
+    /// The text of every block in a section, one line each (subheadings, paragraphs, list items, and the &lt;div&gt;/&lt;span&gt;
+    /// rows models often use for menus and hours), without "[placeholder]" lines.
+    /// </summary>
+    public static IReadOnlyList<string> TextLines(string html) =>
+        // Split at the block tags only: line breaks in the source are just spaces, as in a browser.
+        BlockBoundaryRegex().Replace(html, "\u001F").Split('\u001F').Select(Clean).Where(l => l.Length > 0 && !l.StartsWith('[')).ToList();
 
     private static string Clean(string html) => WhitespaceRegex().Replace(System.Net.WebUtility.HtmlDecode(TagRegex().Replace(html, " ")), " ").Trim();
 
@@ -470,6 +480,6 @@ public sealed partial class DesignService : ObservableObject
     private static partial Regex SectionRegex();
     [GeneratedRegex(@"<h([1-3])[^>]*>(.*?)</h\1>", RegexOptions.Singleline | RegexOptions.IgnoreCase)]
     private static partial Regex FirstHeadingRegex();
-    [GeneratedRegex(@"<(p|li|h[4-6]|blockquote|figcaption|dt|dd|td)\b[^>]*>(.*?)</\1>", RegexOptions.Singleline | RegexOptions.IgnoreCase)]
-    private static partial Regex LineRegex();
+    [GeneratedRegex(@"<(?:/?(?:p|div|li|ul|ol|dl|dt|dd|h[1-6]|blockquote|figure|figcaption|table|tr|td|th|nav|article|aside)\b[^>]*|br\b[^>]*)>", RegexOptions.IgnoreCase)]
+    private static partial Regex BlockBoundaryRegex();
 }
