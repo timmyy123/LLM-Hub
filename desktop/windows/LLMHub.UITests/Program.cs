@@ -169,6 +169,7 @@ void WriteSetting(string key, JsonNode? value)
 {
     var s = ReadSettings();
     s[key] = value;
+    Directory.CreateDirectory(Path.GetDirectoryName(settingsPath)!); // a fresh PC has no LLMHub folder before the first launch
     File.WriteAllText(settingsPath, s.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
 }
 

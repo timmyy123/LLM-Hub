@@ -178,6 +178,10 @@ public sealed partial class HardwareInfo
         var needed = modelBytes * 1.2;
         if (GpuVramBytes > 0 && needed <= GpuVramBytes * 0.92)
             return ModelFit.Gpu;
+        // An integrated GPU (Snapdragon Adreno, Intel) runs the whole model from system memory, which Windows lets it use up
+        // to half of as shared GPU memory.
+        if (!HasDedicatedGpu && (HasAdrenoGpu || HasIntelGpu) && needed <= TotalRamBytes * 0.5 * 0.92)
+            return ModelFit.Gpu;
         if (needed <= GpuVramBytes * 0.92 + TotalRamBytes * 0.55)
             return ModelFit.Partial;
         return ModelFit.TooLarge;
