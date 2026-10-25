@@ -38,6 +38,30 @@ extension DevTools {
         if let folder = value("--designexport", args) { await exportAll(to: URL(fileURLWithPath: folder, isDirectory: true)) }
     }
 
+    /// `--exportdesign html|pdf|pptx|zip|md [--out <path>] [--kind Prototype|Slides|Image|Motion]`, as on Windows: exports the
+    /// newest design that has a version, without generating, and logs the slides a PPTX is made from.
+    static func exportDesignTest(_ args: [String]) async {
+        guard let format = value("--exportdesign", args) else { return }
+        let design = AppModel.shared.design
+        let kind = value("--kind", args)?.lowercased()
+        guard let project = design.projects.filter({ $0.versions > 0 && (kind == nil || $0.kind.rawValue.lowercased() == kind) })
+            .max(by: { $0.updatedAt < $1.updatedAt }), let file = project.currentFile else {
+            Log.info("EXPORTTEST no design project")
+            return
+        }
+        design.select(project.id)
+        let target = URL(fileURLWithPath: value("--out", args) ?? NSTemporaryDirectory() + "design.\(format)")
+        do {
+            try await design.export(format, to: target)
+            let bytes = (try? FileManager.default.attributesOfItem(atPath: target.path))?[.size] as? Int ?? 0
+            let slides = DesignDocument.slides((try? String(contentsOf: file, encoding: .utf8)) ?? "", folder: project.folder, name: project.name)
+            Log.info("EXPORTTEST \(project.name) (\(project.kind.rawValue)) -> \(target.path): \(bytes) bytes, \(slides.count) slides: "
+                + slides.map { "\($0.title) [\($0.lines.count)\($0.picture == nil ? "" : " + photo")]" }.joined(separator: " | "))
+        } catch {
+            Log.error("EXPORTTEST \(format) failed", error)
+        }
+    }
+
     /// `--designexport <folder>`: writes the open design as HTML, PDF, PPTX, ZIP and Markdown there (the menu's formats, no
     /// save panel), and logs the slides the PPTX was made from.
     private static func exportAll(to folder: URL) async {

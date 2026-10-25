@@ -229,15 +229,24 @@ enum DesignDocument {
             let heading = firstHeading.firstMatch(in: part, range: NSRange(location: 0, length: ns.length))
             let title = heading.map { clean(ns.substring(with: $0.range(at: 2))) } ?? name
             let rest = heading.map { ns.replacingCharacters(in: $0.range, with: "") } ?? part
-            let lines = groups(line, in: rest, group: 2).map(clean).filter { !$0.isEmpty && !$0.hasPrefix("[") }.prefix(9)
-                .map { $0.count > 220 ? String($0.prefix(217)) + "…" : $0 }
+            let lines = textLines(rest).map { $0.count > 220 ? String($0.prefix(217)) + "…" : $0 }
             let picture = groups(localImage, in: part).first.map { folder.appendingPathComponent($0) }
                 .flatMap { FileManager.default.fileExists(atPath: $0.path) ? $0 : nil }
-            if !title.isEmpty || !lines.isEmpty {
-                slides.append(PptxSlide(title: title.isEmpty ? name : title, lines: Array(lines), picture: picture))
+            guard !title.isEmpty || !lines.isEmpty else { continue }
+            // Nine lines fit a slide; a longer section goes on (up to two more) with the same title.
+            for (page, start) in stride(from: 0, to: max(lines.count, 1), by: 9).prefix(3).enumerated() where slides.count < 40 {
+                slides.append(PptxSlide(title: title.isEmpty ? name : title, lines: Array(lines[start..<min(start + 9, lines.count)]),
+                                        picture: page == 0 ? picture : nil))
             }
         }
         return slides
+    }
+
+    /// The text of every block in a section, one line each (subheadings, paragraphs, list items, and the <div>/<span> rows
+    /// models often use for menus and hours), without "[placeholder]" lines.
+    static func textLines(_ html: String) -> [String] {
+        // Split at the block tags only: line breaks in the source are just spaces, as in a browser.
+        replace(blockBoundary, in: html, with: "\u{1F}").components(separatedBy: "\u{1F}").map(clean).filter { !$0.isEmpty && !$0.hasPrefix("[") }
     }
 
     private static func clean(_ html: String) -> String {
@@ -282,7 +291,7 @@ enum DesignDocument {
     private static let slideSection = regex(#"<section\b[^>]*class="[^"]*\bslide\b[^"]*"[^>]*>(.*?)</section>"#)
     private static let section = regex(#"<(?:section|header|footer)\b[^>]*>(.*?)</(?:section|header|footer)>"#)
     private static let firstHeading = regex(#"<h([1-3])[^>]*>(.*?)</h\1>"#)
-    private static let line = regex(#"<(p|li|h[4-6]|blockquote|figcaption|dt|dd|td)\b[^>]*>(.*?)</\1>"#)
+    private static let blockBoundary = regex(#"<(?:/?(?:p|div|li|ul|ol|dl|dt|dd|h[1-6]|blockquote|figure|figcaption|table|tr|td|th|nav|article|aside)\b[^>]*|br\b[^>]*)>"#, [.caseInsensitive])
 
     /// Group `group` of every match.
     private static func groups(_ regex: NSRegularExpression, in text: String, group: Int = 1) -> [String] {

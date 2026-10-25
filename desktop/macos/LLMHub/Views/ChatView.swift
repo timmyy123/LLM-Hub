@@ -593,26 +593,10 @@ private struct Composer: View {
 
     /// First click records; the second stops, transcribes with Whisper and adds the text to the draft.
     private func dictate() {
-        let speech = app.speech
-        let chat = app.chat
         Task {
-            if !speech.isRecording {
-                do {
-                    chat.attachError = ""
-                    try await speech.startDictation()
-                } catch {
-                    Log.error("Dictation failed", error)
-                    chat.attachError = L.f("ErrorPrefix", error.localizedDescription)
-                }
-                return
-            }
-            let text = await speech.stopDictation()
-            if !text.isEmpty {
-                chat.draft = chat.draft.isEmpty ? text : chat.draft.trimmingCharacters(in: .whitespaces) + " " + text
-            } else if !speech.status.isEmpty {
-                chat.attachError = speech.status
-            }
-            focused = true
+            let stopping = app.speech.isRecording
+            await app.chat.toggleDictation()
+            if stopping { focused = true }
         }
     }
 }

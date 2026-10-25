@@ -2,3 +2,6 @@ build/
 build-tests/
 *.xcresult
 xcuserdata/
+# App data written by a debug run started here with LLMHUB_HOME=.
+/settings.json
+/llmhub.sqlite*

@@ -765,6 +765,79 @@ Test("Local API switch starts and stops the server", () =>
     GoToChat();
 });
 
+// ---------------------------------------------------------------- Studio and speech on real hardware
+// Flux.1 schnell is a 16 GB download on first use, so this runs only where Studio has it already.
+var fluxCheckpoint = Path.Combine(dataDir, "engines", "comfyui", "data", "models", "checkpoints", "flux1-schnell-fp8.safetensors");
+if (File.Exists(fluxCheckpoint))
+{
+    Test("Studio makes an image with Flux.1 schnell", () =>
+    {
+        GoToChat();
+        Select("NavStudio");
+        if (Get("TabImage").AsToggleButton().ToggleState != ToggleState.On)
+            Get("TabImage").AsToggleButton().Toggle();
+        var picker = Get("WorkflowPicker").AsComboBox();
+        picker.Expand();
+        Thread.Sleep(400);
+        var flux = picker.Items.FirstOrDefault(i => i.Text.Contains("Flux.1 schnell")) ?? throw new Exception($"no Flux.1 schnell in {string.Join(", ", picker.Items.Select(i => i.Text))}");
+        flux.Select();
+        picker.Collapse();
+        SetText("PromptBox", "a red fox sitting in fresh snow at sunrise, detailed fur, photo");
+        SetText("SeedBox", "42");
+        var gallery = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "LLM Hub");
+        var started = DateTime.Now;
+        Invoke("GenerateButton");
+        WaitUntil(() => Visible("CancelGenerateButton"), TimeSpan.FromSeconds(10), "generation to start");
+        WaitUntil(() => Visible("GenerateButton") && !Visible("CancelGenerateButton"), TimeSpan.FromMinutes(15), "generation to finish");
+        var status = Find("StudioStatus")?.Name ?? "";
+        var made = Directory.EnumerateFiles(gallery, "*flux-schnell*.png").Select(f => new FileInfo(f)).Where(f => f.LastWriteTime >= started).ToList();
+        Check(made.Count == 1 && made[0].Length > 100_000, $"no new Flux picture in {gallery} (status: {status})");
+        WaitUntil(() => FindAll("GalleryItem").FirstOrDefault()?.Name == made[0].Name, TimeSpan.FromSeconds(10), "new picture first in the gallery");
+        Log($"   {status}: {made[0].Name} ({made[0].Length / 1024} KB)");
+        File.Copy(made[0].FullName, Path.Combine(outDir, "13-flux.png"), overwrite: true);
+        Shot("13-studio-flux");
+        Select("NavChat");
+    });
+}
+else
+    Log("   (Flux.1 schnell is not installed: Studio test not run)");
+
+// Needs the default playback device to be speakers the default microphone can hear (not headphones); runs when asked
+// for by name or with LLMHUB_UITEST_MIC=1.
+if (filter is not null || Environment.GetEnvironmentVariable("LLMHUB_UITEST_MIC") == "1")
+{
+    Test("Dictation from the microphone", () =>
+    {
+        // Windows' own voice reads a sentence aloud through the speakers while the chat mic records.
+        const string sentence = "The lighthouse keeper rowed across the quiet harbor at dawn.";
+        var wav = Path.Combine(outDir, "dictation-source.wav");
+        var speak = Process.Start(new ProcessStartInfo("powershell.exe",
+            $"-NoProfile -Command \"Add-Type -AssemblyName System.Speech; $s = New-Object System.Speech.Synthesis.SpeechSynthesizer; $s.SetOutputToWaveFile('{wav}'); $s.Speak('{sentence}'); $s.Dispose()\"")
+            { UseShellExecute = false, CreateNoWindow = true })!;
+        speak.WaitForExit(30_000);
+        Check(File.Exists(wav), "could not make the spoken sentence");
+        GoToChat();
+        Invoke("NewChatButton");
+        SetText("Composer", "");
+        Invoke("DictateButton");
+        WaitUntil(() => Get("DictateButton").Name.StartsWith("Listening"), TimeSpan.FromSeconds(10), "recording");
+        Thread.Sleep(800);
+        Sound.PlaySync(wav);
+        Thread.Sleep(800);
+        Invoke("DictateButton");
+        // Whisper downloads on first use.
+        WaitUntil(() => Get("Composer").AsTextBox().Text.Length > 0, TimeSpan.FromMinutes(15), "transcript in the composer");
+        var heard = Get("Composer").AsTextBox().Text;
+        static string[] Words(string s) => s.ToLowerInvariant().Split(s.Where(c => !char.IsLetterOrDigit(c)).Distinct().ToArray(), StringSplitOptions.RemoveEmptyEntries);
+        var expected = Words(sentence);
+        var share = expected.Count(Words(heard).Contains) / (double)expected.Length;
+        Log($"   heard ({share:P0} of the words): {heard}");
+        Shot("14-dictation");
+        Check(share >= 0.7, $"transcript: {heard}");
+        SetText("Composer", "");
+    });
+}
+
 // ---------------------------------------------------------------- Engine
 Test("Engine falls back when a GPU backend fails", () =>
 {
@@ -795,3 +868,14 @@ Close();
 var passed = results.Count(r => r.Pass);
 Log($"DONE {passed}/{results.Count} passed");
 return passed == results.Count ? 0 : 1;
+
+/// <summary>Plays a WAV through the default speakers and returns when it ends.</summary>
+static class Sound
+{
+    private const uint SndSync = 0x0000, SndFilename = 0x00020000, SndNoDefault = 0x0002;
+
+    public static void PlaySync(string wav) => PlaySound(wav, IntPtr.Zero, SndFilename | SndSync | SndNoDefault);
+
+    [System.Runtime.InteropServices.DllImport("winmm.dll", EntryPoint = "PlaySoundW", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+    private static extern bool PlaySound(string? sound, IntPtr module, uint flags);
+}

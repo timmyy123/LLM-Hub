@@ -84,6 +84,20 @@ targets:
         GENERATE_INFOPLIST_FILE: NO
         # Same logo as the iOS and Android apps (desktop/shared/icons, from the iOS AppIcon master).
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+  # Unit tests hosted in the app (no UI automation, so they run without Automation Mode).
+  LLMHubTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: LLMHubTests
+    dependencies:
+      - target: LLMHub
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.llm-hub.desktop.tests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/LLMHub.app/Contents/MacOS/LLMHub
+        BUNDLE_LOADER: $(TEST_HOST)
   LLMHubUITests:
     type: bundle.ui-testing
     platform: macOS
@@ -101,10 +115,12 @@ schemes:
     build:
       targets:
         LLMHub: all
+        LLMHubTests: [test]
         LLMHubUITests: [test]
     run:
       config: Debug
     test:
       config: Debug
       targets:
+        - LLMHubTests
         - LLMHubUITests
