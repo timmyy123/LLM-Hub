@@ -63,7 +63,9 @@ public sealed partial class StudioViewModel : ObservableObject
     public IReadOnlyList<ComfyWorkflow> Workflows => UsesNpu ? ComfyWorkflow.NpuWorkflows : ComfyWorkflow.Visual;
     /// <summary>Snapdragon PCs make music clips with Stable Audio 3 Small on the Adreno GPU (<see cref="StableAudioDmlService"/>).</summary>
     public static bool UsesGpuMusic => !ComfyService.IsSupported && StableAudioDmlService.IsSupported;
-    public IReadOnlyList<ComfyWorkflow> MusicWorkflows => UsesGpuMusic ? [ComfyWorkflow.StableAudioSmall] : ComfyWorkflow.Music;
+    // One stored list: a new list on every read made Bindings.Update() reset the picker, which wrote null back.
+    private static readonly IReadOnlyList<ComfyWorkflow> SnapdragonMusic = [ComfyWorkflow.StableAudioSmall];
+    public IReadOnlyList<ComfyWorkflow> MusicWorkflows => UsesGpuMusic ? SnapdragonMusic : ComfyWorkflow.Music;
     /// <summary>Music clips work here: through ComfyUI, or on the GPU of Snapdragon PCs.</summary>
     public bool MusicSupported => ComfyService.IsSupported || UsesGpuMusic;
     public ObservableCollection<GalleryItem> MusicClips { get; } = [];
@@ -111,6 +113,12 @@ public sealed partial class StudioViewModel : ObservableObject
 
     partial void OnMusicWorkflowChanged(ComfyWorkflow value)
     {
+        // A picker whose list is set again clears its selection and writes null back through the two-way binding.
+        if (value is null)
+        {
+            MusicWorkflow = MusicWorkflows[0];
+            return;
+        }
         MusicSeconds = Math.Min(MusicSeconds, value.MaxSeconds);
         OnPropertyChanged(nameof(MusicDownloadNote));
     }
@@ -250,12 +258,24 @@ public sealed partial class StudioViewModel : ObservableObject
 
     partial void OnWorkflowChanged(ComfyWorkflow value)
     {
+        if (value is null)
+        {
+            Workflow = Workflows[0];
+            return;
+        }
         Steps = value.DefaultSteps;
         OnPropertyChanged(nameof(NeedsReference));
         OnPropertyChanged(nameof(DownloadNote));
         OnPropertyChanged(nameof(IsNpu));
         OnPropertyChanged(nameof(Aspects));
         if (Aspect is not null && !Aspects.Contains(Aspect))
+            Aspect = Aspects[0];
+    }
+
+    partial void OnAspectChanged(string value)
+    {
+        // Aspects is a new list on each read, so refreshing the page's bindings resets the picker to no selection.
+        if (value is null && Workflow is not null)
             Aspect = Aspects[0];
     }
 
