@@ -53,8 +53,10 @@ BUILT=$WORK/dd/Build/Products/Release/LLMHub.app
 STAGE=$WORK/dmg
 rm -rf "$STAGE"
 mkdir -p "$STAGE"
-ditto "$BUILT" "$STAGE/LLMHub.app"
-APP=$STAGE/LLMHub.app
+# Named "LLM Hub Desktop" so dragging it to Applications never replaces the LLM Hub iPhone and iPad app
+# (LLMHub.app), which Apple silicon Macs can install from the App Store.
+ditto "$BUILT" "$STAGE/LLM Hub Desktop.app"
+APP="$STAGE/LLM Hub Desktop.app"
 ENTITLEMENTS=$DESKTOP/macos/LLMHub/LLMHub.entitlements
 SIGN=(codesign --force --sign "$IDENTITY" --options runtime)
 if [[ $IDENTITY == "-" ]]; then SIGN+=(--timestamp=none); else SIGN+=(--timestamp); fi

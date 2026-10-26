@@ -204,7 +204,7 @@ To ship outside the Mac App Store it must be signed with Developer ID and notari
    <Name> (76K65T869A)" --notarize llmhub-notary`. If Apple rejects it, `xcrun notarytool log <submission id>
    --keychain-profile llmhub-notary` says why.
 4. Check: `spctl -a -t open --context context:primary-signature -vv <dmg>` says "accepted, source=Notarized Developer
-   ID", and so does `spctl -a -t exec -vv /Applications/LLMHub.app` after installing it.
+   ID", and so does `spctl -a -t exec -vv "/Applications/LLM Hub Desktop.app"` after installing it.
 
 ### Linux (x64)
 
