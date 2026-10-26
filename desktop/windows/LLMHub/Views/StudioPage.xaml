@@ -302,7 +302,7 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
-                    <!-- The player is created on the first moment played: realizing a MediaPlayerElement crashed the app on Windows on Arm. -->
+                    <!-- The player is created on the first moment played, so the page does not build one it may never use. -->
                     <Border x:Name="SearchVideoStage" CornerRadius="10" Background="Black" MaxHeight="420" Visibility="Collapsed" />
                     <ListView x:Name="SearchVideoResults" Grid.Row="1" ItemsSource="{x:Bind Search.Videos}" SelectionMode="None" IsItemClickEnabled="True"
                               ItemClick="OnVideoMomentClick" ContainerContentChanging="OnVideoMomentContainer">
