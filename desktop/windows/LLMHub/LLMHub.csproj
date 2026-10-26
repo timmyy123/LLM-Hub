@@ -1,0 +1,88 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.26100.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.19041.0</TargetPlatformMinVersion>
+    <SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
+    <RootNamespace>LLMHub</RootNamespace>
+    <AssemblyName>LLMHub</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Platforms>x64;ARM64</Platforms>
+    <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
+    <UseWinUI>true</UseWinUI>
+    <EnableMsixTooling>true</EnableMsixTooling>
+    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <DefaultLanguage>en-US</DefaultLanguage>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Version: desktop/version.xcconfig, through desktop/Directory.Build.props. -->
+    <!-- Same logo as the iOS and Android apps. -->
+    <ApplicationIcon>..\..\shared\icons\llmhub.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.5.1" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.2705" />
+      <Content Include="..\..\shared\licenses\*" Link="Licenses\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+      <Content Include="..\..\shared\stable-audio\sa3_dml.py" Link="stable-audio\sa3_dml.py" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!-- Snapdragon (Windows on Arm): Qualcomm's QNN execution provider for ONNX Runtime runs Studio's image models on the
+       Hexagon NPU (QnnHtp.dll, QnnSystem.dll, signed Hexagon v73/v81 skeletons). -->
+  <ItemGroup Condition="'$(Platform)' == 'ARM64' Or '$(RuntimeIdentifier)' == 'win-arm64'">
+    <PackageReference Include="Qualcomm.ML.OnnxRuntime.QNN" Version="2.7.0" />
+    <!-- LTX-Video on the NPU: stable-diffusion.cpp's sd-cli.exe, built beforehand by ..\sdcpp\build.ps1 (Studio hides
+         the NPU video workflow when it is missing). -->
+    <Content Include="..\sdcpp\out\sd-cli.exe" Link="sd-cli.exe" CopyToOutputDirectory="PreserveNewest" Condition="Exists('..\sdcpp\out\sd-cli.exe')" />
+  </ItemGroup>
+
+  <!-- Parts of the QNN package Studio does not use: Genie (LLM runtime), the Adreno GPU backend and net-run tooling. -->
+  <Target Name="DropUnusedQnnLibraries" AfterTargets="ResolvePackageAssets" Condition="'$(Platform)' == 'ARM64' Or '$(RuntimeIdentifier)' == 'win-arm64'">
+    <ItemGroup>
+      <RuntimeTargetsCopyLocalItems Remove="@(RuntimeTargetsCopyLocalItems)" Condition="'%(Filename)%(Extension)' == 'Genie.dll' Or '%(Filename)%(Extension)' == 'QnnGpu.dll' Or '%(Filename)%(Extension)' == 'QnnHtpNetRunExtensions.dll'" />
+      <NativeCopyLocalItems Remove="@(NativeCopyLocalItems)" Condition="'%(Filename)%(Extension)' == 'Genie.dll' Or '%(Filename)%(Extension)' == 'QnnGpu.dll' Or '%(Filename)%(Extension)' == 'QnnHtpNetRunExtensions.dll'" />
+    </ItemGroup>
+  </Target>
+
+  <ItemGroup>
+    <!-- Engines, downloads, chat, Local API and view models, shared with the Linux app. -->
+    <ProjectReference Include="..\..\core\LLMHub.Core\LLMHub.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="..\..\shared\icons\llmhub.ico" Link="Assets\llmhub.ico" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\shared\icons\llmhub.png" Link="Assets\llmhub.png" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!-- Installers (desktop/tools/package/windows/package-windows.ps1 sets LLMHubVcRuntimeDir to Visual Studio's VC\Redist
+       folder): the Visual C++ runtime next to LLMHub.exe. ONNX Runtime needs it, and so do the llama.cpp and LiteRT-LM
+       builds the app downloads (App.xaml.cs), on PCs without the Visual C++ Redistributable. -->
+  <ItemGroup Condition="'$(LLMHubVcRuntimeDir)' != ''">
+    <Content Include="$(LLMHubVcRuntimeDir)\*.dll" Link="%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!-- Microsoft Store package, built by package-windows.ps1 with -p:WindowsPackageType=MSIX. The manifest is copied to obj
+       with the version from desktop/version.xcconfig and, when given, the Partner Center identity (StoreIdentityName,
+       StorePublisher, StorePublisherDisplayName). Unpackaged builds ignore Package.appxmanifest. -->
+  <ItemGroup Condition="'$(WindowsPackageType)' == 'MSIX'">
+    <Content Include="Assets\Package\*.png" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <Target Name="LLMHubStampAppxManifest" BeforeTargets="_ValidatePresenceOfAppxManifestItems" Condition="'$(WindowsPackageType)' == 'MSIX'">
+    <PropertyGroup>
+      <_LLMHubManifest>$(IntermediateOutputPath)LLMHubManifest\Package.appxmanifest</_LLMHubManifest>
+      <_LLMHubAppxNs>&lt;Namespace Prefix='m' Uri='http://schemas.microsoft.com/appx/manifest/foundation/windows10' /&gt;</_LLMHubAppxNs>
+    </PropertyGroup>
+    <Copy SourceFiles="Package.appxmanifest" DestinationFiles="$(_LLMHubManifest)" />
+    <XmlPoke XmlInputPath="$(_LLMHubManifest)" Namespaces="$(_LLMHubAppxNs)" Query="/m:Package/m:Identity/@Version" Value="$(Version).0" />
+    <XmlPoke Condition="'$(StoreIdentityName)' != ''" XmlInputPath="$(_LLMHubManifest)" Namespaces="$(_LLMHubAppxNs)" Query="/m:Package/m:Identity/@Name" Value="$(StoreIdentityName)" />
+    <XmlPoke Condition="'$(StorePublisher)' != ''" XmlInputPath="$(_LLMHubManifest)" Namespaces="$(_LLMHubAppxNs)" Query="/m:Package/m:Identity/@Publisher" Value="$(StorePublisher)" />
+    <XmlPoke Condition="'$(StorePublisherDisplayName)' != ''" XmlInputPath="$(_LLMHubManifest)" Namespaces="$(_LLMHubAppxNs)" Query="/m:Package/m:Properties/m:PublisherDisplayName" Value="$(StorePublisherDisplayName)" />
+    <ItemGroup>
+      <AppxManifest Remove="@(AppxManifest)" />
+      <AppxManifest Include="$(_LLMHubManifest)" />
+    </ItemGroup>
+  </Target>
+</Project>

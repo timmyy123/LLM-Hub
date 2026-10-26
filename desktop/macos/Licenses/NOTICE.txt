@@ -1,0 +1,23 @@
+LLM Hub for Mac: notices for third-party models
+
+Stable Audio 3 (Studio > Music > Clips)
+---------------------------------------
+This Stability AI Model is licensed under the Stability AI Community License, Copyright © Stability AI Ltd. All Rights Reserved.
+
+Powered by Stability AI.
+
+The Stable Audio 3 Small-Music and Medium weights are downloaded unchanged from
+https://huggingface.co/stabilityai/stable-audio-3-optimized on first use; LLM Hub does not modify or bundle them.
+A copy of the Stability AI Community License is in Stability-AI-Community-License.md next to this file.
+
+The code that runs them (desktop/macos/Packages/StableAudioMac) is LLM Hub's Swift port of Stability AI's MLX
+runtime (https://github.com/Stability-AI/stable-audio-3, optimized/mlx, MIT License, Copyright (c) 2026 Stability AI;
+see stable-audio-3-code-MIT.txt). Changes from the original: rewritten in Swift for mlx-swift instead of Python,
+the .npz weight files are read directly, and only text to audio without classifier-free guidance is implemented
+(the runtime's default settings: 8 ping-pong steps, CFG 1).
+
+T5Gemma (the Stable Audio 3 text encoder)
+-----------------------------------------
+Gemma is provided under and subject to the Gemma Terms of Use found at ai.google.dev/gemma/terms.
+A copy is in Gemma-Terms-of-Use.md next to this file, including the use restrictions in its Section 3.2,
+which apply to every use of the text encoder in LLM Hub.

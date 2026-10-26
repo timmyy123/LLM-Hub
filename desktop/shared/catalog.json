@@ -1,0 +1,469 @@
+{
+  "version": 1,
+  "defaults": {
+    "chat": "gemma-4-12b",
+    "agent": "gemma-4-26b-a4b"
+  },
+  "models": [
+    {
+      "id": "gemma-4-12b",
+      "name": "Gemma 4 12B",
+      "maker": "Google",
+      "tags": [
+        "vision",
+        "agent"
+      ],
+      "contextLength": 32768,
+      "minRamGB": 6,
+      "sources": [
+        {
+          "repo": "litert-community/gemma-4-12B-it-litert-lm",
+          "format": "litertlm",
+          "mtp": false
+        },
+        {
+          "repo": "unsloth/gemma-4-12b-it-GGUF",
+          "format": "gguf",
+          "preferredQuant": "Q4_K_M"
+        }
+      ]
+    },
+    {
+      "id": "gemma-4-26b-a4b",
+      "name": "Gemma 4 26B-A4B",
+      "maker": "Google",
+      "tags": [
+        "vision",
+        "agent"
+      ],
+      "contextLength": 32768,
+      "minRamGB": 12,
+      "sources": [
+        {
+          "repo": "unsloth/gemma-4-26B-A4B-it-GGUF",
+          "format": "gguf",
+          "preferredQuant": "UD-IQ3_XXS"
+        }
+      ]
+    },
+    {
+      "id": "gemma-4-31b",
+      "name": "Gemma 4 31B",
+      "maker": "Google",
+      "tags": [
+        "vision",
+        "agent"
+      ],
+      "contextLength": 32768,
+      "minRamGB": 12,
+      "sources": [
+        {
+          "repo": "unsloth/gemma-4-31B-it-GGUF",
+          "format": "gguf",
+          "preferredQuant": "UD-IQ3_XXS"
+        }
+      ]
+    },
+    {
+      "id": "gemma-4-e2b",
+      "name": "Gemma 4 E2B",
+      "maker": "Google",
+      "tags": [
+        "vision",
+        "audio"
+      ],
+      "contextLength": 32768,
+      "minRamGB": 2,
+      "sources": [
+        {
+          "repo": "litert-community/gemma-4-E2B-it-litert-lm",
+          "format": "litertlm",
+          "mtp": true
+        }
+      ]
+    },
+    {
+      "id": "gemma-4-e4b",
+      "name": "Gemma 4 E4B",
+      "maker": "Google",
+      "tags": [
+        "vision",
+        "audio"
+      ],
+      "contextLength": 32768,
+      "minRamGB": 4,
+      "sources": [
+        {
+          "repo": "litert-community/gemma-4-E4B-it-litert-lm",
+          "format": "litertlm",
+          "mtp": true
+        }
+      ]
+    },
+    {
+      "id": "gpt-oss-20b",
+      "name": "GPT-OSS 20B",
+      "maker": "OpenAI",
+      "tags": [
+        "agent"
+      ],
+      "contextLength": 131072,
+      "minRamGB": 14,
+      "sources": [
+        {
+          "repo": "unsloth/gpt-oss-20b-GGUF",
+          "format": "gguf",
+          "preferredQuant": "Q4_K_M"
+        }
+      ]
+    },
+    {
+      "id": "granite-4-2-30b",
+      "name": "Granite 4.2 30B",
+      "maker": "IBM",
+      "tags": [
+        "thinking",
+        "agent"
+      ],
+      "contextLength": 131072,
+      "minRamGB": 12,
+      "sources": [
+        {
+          "repo": "ibm-granite/granite-4.2-30b-GGUF",
+          "format": "gguf",
+          "preferredQuant": "Q4_K_M"
+        }
+      ]
+    },
+    {
+      "id": "granite-4-2-3b",
+      "name": "Granite 4.2 3B",
+      "maker": "IBM",
+      "tags": [
+        "thinking"
+      ],
+      "contextLength": 131072,
+      "minRamGB": 3,
+      "sources": [
+        {
+          "repo": "ibm-granite/granite-4.2-3b-GGUF",
+          "format": "gguf",
+          "preferredQuant": "Q4_K_M"
+        }
+      ]
+    },
+    {
+      "id": "granite-4-2-8b",
+      "name": "Granite 4.2 8B",
+      "maker": "IBM",
+      "tags": [
+        "thinking",
+        "agent"
+      ],
+      "contextLength": 131072,
+      "minRamGB": 4,
+      "sources": [
+        {
+          "repo": "ibm-granite/granite-4.2-8b-GGUF",
+          "format": "gguf",
+          "preferredQuant": "Q4_K_M"
+        }
+      ]
+    },
+    {
+      "id": "lfm2-24b-a2b",
+      "name": "LFM2-24B-A2B",
+      "maker": "Liquid AI",
+      "tags": [],
+      "contextLength": 32768,
+      "minRamGB": 16,
+      "sources": [
+        {
+          "repo": "LiquidAI/LFM2-24B-A2B-GGUF",
+          "format": "gguf",
+          "preferredQuant": "Q4_K_M"
+        }
+      ]
+    },
+    {
+      "id": "lfm2-5-1-2b",
+      "name": "LFM2.5 1.2B",
+      "maker": "Liquid AI",
+      "tags": [],
+      "contextLength": 128000,
+      "minRamGB": 2,
+      "sources": [
+        {
+          "repo": "LiquidAI/LFM2.5-1.2B-Instruct-GGUF",
+          "format": "gguf",
+          "preferredQuant": "Q4_K_M"
+        }
+      ]
+    },
+    {
+      "id": "lfm2-5-1-2b-thinking",
+      "name": "LFM2.5 1.2B Thinking",
+      "maker": "Liquid AI",
+      "tags": [],
+      "contextLength": 128000,
+      "minRamGB": 2,
+      "sources": [
+        {
+          "repo": "LiquidAI/LFM2.5-1.2B-Thinking-GGUF",
+          "format": "gguf",
+          "preferredQuant": "Q4_K_M"
+        }
+      ]
+    },
+    {
+      "id": "lfm2-5-2-6b",
+      "name": "LFM2.5 2.6B",
+      "maker": "Liquid AI",
+      "tags": [],
+      "contextLength": 128000,
+      "minRamGB": 3,
+      "sources": [
+        {
+          "repo": "LiquidAI/LFM2.5-2.6B-GGUF",
+          "format": "gguf",
+          "preferredQuant": "Q4_K_M"
+        }
+      ]
+    },
+    {
+      "id": "lfm2-5-vl-1-6b",
+      "name": "LFM2.5 VL 1.6B",
+      "maker": "Liquid AI",
+      "tags": [
+        "vision"
+      ],
+      "contextLength": 128000,
+      "minRamGB": 3,
+      "sources": [
+        {
+          "repo": "LiquidAI/LFM2.5-VL-1.6B-GGUF",
+          "format": "gguf",
+          "preferredQuant": "Q4_0"
+        }
+      ]
+    },
+    {
+      "id": "lfm2-5-vl-3b",
+      "name": "LFM2.5 VL 3B",
+      "maker": "Liquid AI",
+      "tags": [
+        "vision"
+      ],
+      "contextLength": 128000,
+      "minRamGB": 3,
+      "sources": [
+        {
+          "repo": "LiquidAI/LFM2.5-VL-3B-GGUF",
+          "format": "gguf",
+          "preferredQuant": "Q4_K_M"
+        }
+      ]
+    },
+    {
+      "id": "lfm2-5-24b-a2b",
+      "name": "LFM2.5-24B-A2B",
+      "maker": "Liquid AI",
+      "tags": [
+        "agent"
+      ],
+      "contextLength": 131072,
+      "minRamGB": 10,
+      "sources": [
+        {
+          "repo": "unsloth/LFM2.5-24B-A2B-GGUF",
+          "format": "gguf",
+          "preferredQuant": "UD-Q3_K_XL"
+        }
+      ]
+    },
+    {
+      "id": "lfm2-5-8b-a1b",
+      "name": "LFM2.5-8B-A1B",
+      "maker": "Liquid AI",
+      "tags": [],
+      "contextLength": 131072,
+      "minRamGB": 6,
+      "sources": [
+        {
+          "repo": "LiquidAI/LFM2.5-8B-A1B-GGUF",
+          "format": "gguf",
+          "preferredQuant": "Q4_K_M"
+        }
+      ]
+    },
+    {
+      "id": "llama-3-2-1b",
+      "name": "Llama 3.2 1B",
+      "maker": "Meta",
+      "tags": [],
+      "contextLength": 131072,
+      "minRamGB": 2,
+      "sources": [
+        {
+          "repo": "bartowski/Llama-3.2-1B-Instruct-GGUF",
+          "format": "gguf",
+          "preferredQuant": "Q4_K_M"
+        }
+      ]
+    },
+    {
+      "id": "llama-3-2-3b",
+      "name": "Llama 3.2 3B",
+      "maker": "Meta",
+      "tags": [],
+      "contextLength": 131072,
+      "minRamGB": 3,
+      "sources": [
+        {
+          "repo": "bartowski/Llama-3.2-3B-Instruct-GGUF",
+          "format": "gguf",
+          "preferredQuant": "Q4_K_M"
+        }
+      ]
+    },
+    {
+      "id": "ministral-3-14b",
+      "name": "Ministral 3 14B",
+      "maker": "Mistral AI",
+      "tags": [
+        "vision",
+        "agent"
+      ],
+      "contextLength": 131072,
+      "minRamGB": 10,
+      "sources": [
+        {
+          "repo": "mistralai/Ministral-3-14B-Instruct-2512-GGUF",
+          "format": "gguf",
+          "preferredQuant": "Q4_K_M"
+        }
+      ]
+    },
+    {
+      "id": "ministral-3-3b",
+      "name": "Ministral 3 3B",
+      "maker": "Mistral AI",
+      "tags": [
+        "vision"
+      ],
+      "contextLength": 262144,
+      "minRamGB": 4,
+      "sources": [
+        {
+          "repo": "mistralai/Ministral-3-3B-Instruct-2512-GGUF",
+          "format": "gguf",
+          "preferredQuant": "Q4_K_M"
+        }
+      ]
+    },
+    {
+      "id": "ministral-3-8b",
+      "name": "Ministral 3 8B",
+      "maker": "Mistral AI",
+      "tags": [
+        "vision",
+        "agent"
+      ],
+      "contextLength": 131072,
+      "minRamGB": 6,
+      "sources": [
+        {
+          "repo": "mistralai/Ministral-3-8B-Instruct-2512-GGUF",
+          "format": "gguf",
+          "preferredQuant": "Q4_K_M"
+        }
+      ]
+    },
+    {
+      "id": "muse-glimmer-30b",
+      "name": "Muse Glimmer 30B",
+      "maker": "Meta",
+      "tags": [
+        "vision",
+        "thinking",
+        "agent"
+      ],
+      "contextLength": 131072,
+      "minRamGB": 18,
+      "sources": [
+        {
+          "repo": "unsloth/Muse-Glimmer-30B-GGUF",
+          "format": "gguf",
+          "preferredQuant": "UD-Q4_K_XL"
+        }
+      ]
+    },
+    {
+      "id": "phi-4-mini",
+      "name": "Phi-4 Mini",
+      "maker": "Microsoft",
+      "tags": [],
+      "contextLength": 4096,
+      "minRamGB": 5,
+      "sources": [
+        {
+          "repo": "litert-community/Phi-4-mini-instruct",
+          "format": "litertlm",
+          "mtp": true
+        }
+      ]
+    },
+    {
+      "id": "embeddinggemma-2",
+      "name": "EmbeddingGemma 2 270M",
+      "maker": "Google",
+      "tags": [
+        "embedding"
+      ],
+      "contextLength": 8192,
+      "minRamGB": 1,
+      "sources": [
+        {
+          "repo": "ggml-org/embeddinggemma-2-GGUF",
+          "format": "gguf",
+          "preferredQuant": "Q8_0"
+        }
+      ]
+    },
+    {
+      "id": "embeddinggemma-2-740m",
+      "name": "EmbeddingGemma 2 740M",
+      "maker": "Google",
+      "tags": [
+        "embedding",
+        "vision",
+        "audio"
+      ],
+      "contextLength": 8192,
+      "minRamGB": 2,
+      "sources": [
+        {
+          "repo": "litert-community/embeddinggemma-2-740m-litert-lm",
+          "format": "litertlm"
+        }
+      ]
+    },
+    {
+      "id": "embeddinggemma-2-440m",
+      "name": "EmbeddingGemma 2 440M",
+      "maker": "Google",
+      "tags": [
+        "embedding",
+        "vision"
+      ],
+      "contextLength": 8192,
+      "minRamGB": 2,
+      "sources": [
+        {
+          "repo": "litert-community/embeddinggemma-2-text-vision-440m-litert-lm",
+          "format": "litertlm"
+        }
+      ]
+    }
+  ]
+}

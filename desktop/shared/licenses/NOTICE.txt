@@ -1,0 +1,7 @@
+LLM Hub - third-party model notices
+
+Stable Audio 3 (Small-Music, Medium) and SoundGen (Stable Audio Open Small)
+This Stability AI Model is licensed under the Stability AI Community License, Copyright © Stability AI Ltd. All Rights Reserved
+Powered by Stability AI
+The models are used unmodified; LLM Hub downloads them from Hugging Face on first use. The full license is in
+STABILITY-AI-COMMUNITY-LICENSE.md next to this file.

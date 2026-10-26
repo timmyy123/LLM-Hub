@@ -1,0 +1,10 @@
+# .NET build output (Windows, Linux, shared core)
+bin/
+obj/
+*.user
+
+# macOS: build folders and the Xcode project, which XcodeGen generates from project.yml
+macos/build*/
+macos/LLMHub.xcodeproj/
+*.xcresult
+.DS_Store

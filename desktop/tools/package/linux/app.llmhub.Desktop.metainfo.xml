@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- AppStream metadata (software centres, AppImage catalogues). package-linux.sh fills in @VERSION@ and @DATE@. -->
+<component type="desktop-application">
+  <id>app.llmhub.Desktop</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>PolyForm-Noncommercial-1.0.0</project_license>
+  <name>LLM Hub</name>
+  <summary>Run AI models on this computer</summary>
+  <description>
+    <p>
+      LLM Hub runs language models on your own computer with llama.cpp and LiteRT-LM. Chat with Gemma and other open
+      models, let an agent work in a folder, design pages and slides, and make images, video and music in the studio.
+    </p>
+    <p>
+      A local API serves the installed models to other apps in OpenAI and Anthropic format. Engines and models are
+      downloaded on first use, and chats stay on this computer.
+    </p>
+  </description>
+  <launchable type="desktop-id">app.llmhub.Desktop.desktop</launchable>
+  <url type="homepage">https://github.com/timmyy123/LLM-Hub</url>
+  <developer id="app.llm-hub">
+    <name>LLM Hub</name>
+  </developer>
+  <provides>
+    <binary>llmhub</binary>
+  </provides>
+  <content_rating type="oars-1.1" />
+  <releases>
+    <release version="@VERSION@" date="@DATE@" />
+  </releases>
+</component>

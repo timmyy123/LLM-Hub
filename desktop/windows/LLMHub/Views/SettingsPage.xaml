@@ -1,0 +1,700 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="LLMHub.Views.SettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:LLMHub"
+    xmlns:services="using:LLMHub.Services"
+    xmlns:vm="using:LLMHub.ViewModels"
+    Background="{ThemeResource AppBackgroundBrush}">
+
+    <Page.Resources>
+        <!-- Local API endpoint row: method badge, path, what serves it. -->
+        <DataTemplate x:Key="EndpointTemplate" x:DataType="services:ApiEndpoint">
+            <Grid ColumnSpacing="10" Padding="0,3">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="46" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Border CornerRadius="5" Padding="6,1" Background="{ThemeResource SourceChipBrush}" HorizontalAlignment="Left">
+                    <TextBlock Text="{x:Bind Method}" FontFamily="Cascadia Mono, Consolas" FontSize="11" Foreground="{ThemeResource LinkBrush}" />
+                </Border>
+                <TextBlock Grid.Column="1" Text="{x:Bind Path}" FontFamily="Cascadia Mono, Consolas" FontSize="13" IsTextSelectionEnabled="True" />
+                <TextBlock Grid.Column="2" Text="{x:Bind ServedBy}" FontSize="12" Foreground="{ThemeResource TextMutedBrush}" VerticalAlignment="Center" />
+            </Grid>
+        </DataTemplate>
+        <!-- One row: name, variant picker, fit, and download / progress / installed state. Shared by the catalog and Hugging Face tabs. -->
+        <DataTemplate x:Key="VariantPickerTemplate" x:DataType="vm:DownloadableViewModel">
+            <Grid ColumnSpacing="14">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="250" />
+                    <ColumnDefinition Width="160" />
+                </Grid.ColumnDefinitions>
+                <ComboBox HorizontalAlignment="Stretch" AutomationProperties.AutomationId="VariantPicker" ItemsSource="{x:Bind Variants}" SelectedItem="{x:Bind SelectedVariant, Mode=TwoWay}"
+                          IsEnabled="{x:Bind local:Ui.Not(IsLoadingVariants), Mode=OneWay}"
+                          Visibility="{x:Bind local:Ui.Show(CanPick), Mode=OneWay}">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:VariantOption">
+                            <StackPanel>
+                                <TextBlock Text="{x:Bind Label}" />
+                                <TextBlock Text="{x:Bind FitText}" Style="{StaticResource MutedTextStyle}" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+                <Grid Grid.Column="1" VerticalAlignment="Center">
+                    <Button HorizontalAlignment="Stretch" Style="{StaticResource AccentButtonStyle}" CornerRadius="9"
+                            Content="{x:Bind services:Loc.S('Download')}" Command="{x:Bind DownloadCommand}" AutomationProperties.AutomationId="DownloadButton"
+                            Visibility="{x:Bind local:Ui.Show(CanDownload), Mode=OneWay}" />
+                    <Grid ColumnSpacing="8" Visibility="{x:Bind local:Ui.Show(IsDownloading), Mode=OneWay}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center" Spacing="4">
+                            <ProgressBar Value="{x:Bind Job.Percent, Mode=OneWay, FallbackValue=0}" Maximum="100" AutomationProperties.AutomationId="DownloadProgress" />
+                            <TextBlock Text="{x:Bind Job.Status, Mode=OneWay, FallbackValue=''}" Style="{StaticResource MutedTextStyle}" />
+                        </StackPanel>
+                        <Button Grid.Column="1" Style="{StaticResource SubtleIconButtonStyle}" Command="{x:Bind CancelCommand}" AutomationProperties.AutomationId="CancelDownloadButton"
+                                ToolTipService.ToolTip="{x:Bind services:Loc.S('Cancel')}" AutomationProperties.Name="{x:Bind services:Loc.S('Cancel')}">
+                            <FontIcon Glyph="&#xE711;" FontSize="12" />
+                        </Button>
+                    </Grid>
+                    <Grid ColumnSpacing="8" Visibility="{x:Bind local:Ui.Show(IsInstalled), Mode=OneWay}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                            <FontIcon Glyph="&#xE73E;" FontSize="12" Foreground="{ThemeResource SuccessBrush}" />
+                            <TextBlock Text="{x:Bind services:Loc.S('Installed')}" AutomationProperties.AutomationId="InstalledLabel" />
+                        </StackPanel>
+                        <Button Grid.Column="1" Style="{StaticResource SubtleIconButtonStyle}" Command="{x:Bind DeleteCommand}" AutomationProperties.AutomationId="DeleteModelButton"
+                                ToolTipService.ToolTip="{x:Bind services:Loc.S('Delete')}" AutomationProperties.Name="{x:Bind services:Loc.S('Delete')}">
+                            <FontIcon Glyph="&#xE74D;" FontSize="14" />
+                        </Button>
+                    </Grid>
+                </Grid>
+            </Grid>
+        </DataTemplate>
+    </Page.Resources>
+
+    <Grid>
+        <!-- General -->
+        <ScrollViewer x:Name="GeneralPanel" Padding="28,24" Visibility="Collapsed">
+            <StackPanel Spacing="20" MaxWidth="640" HorizontalAlignment="Left">
+                <TextBlock Text="{x:Bind services:Loc.S('SettingsGeneral')}" FontSize="20" FontWeight="SemiBold" />
+                <StackPanel Spacing="6">
+                    <ComboBox x:Name="LanguageBox" Header="{x:Bind services:Loc.S('Language')}" MinWidth="260" SelectionChanged="OnLanguageChanged" />
+                    <TextBlock x:Name="RestartHint" Text="{x:Bind services:Loc.S('LanguageRestart')}" Style="{StaticResource MutedTextStyle}" Visibility="Collapsed" />
+                </StackPanel>
+                <ComboBox x:Name="AppearanceBox" Header="{x:Bind services:Loc.S('Appearance')}" MinWidth="260" SelectionChanged="OnAppearanceChanged" />
+                <ComboBox x:Name="ContextBox" Header="{x:Bind services:Loc.S('ContextLength')}" MinWidth="260" SelectionChanged="OnContextChanged" />
+                <StackPanel Spacing="6">
+                    <PasswordBox x:Name="TokenBox" Header="{x:Bind services:Loc.S('HfToken')}" MinWidth="360" PasswordChanged="OnTokenChanged" />
+                    <TextBlock Text="{x:Bind services:Loc.S('HfTokenHelp')}" Style="{StaticResource MutedTextStyle}" />
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Models (Settings.dc.html, HuggingFace.dc.html) -->
+        <Grid x:Name="ModelsPanel" Padding="28,24,28,0" RowSpacing="14" Visibility="Collapsed">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <Grid ColumnSpacing="16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Spacing="4">
+                    <TextBlock Text="{x:Bind services:Loc.S('SettingsModels')}" FontSize="20" FontWeight="SemiBold" />
+                    <TextBlock Text="{x:Bind Models.HardwareText}" Style="{StaticResource MutedTextStyle}" />
+                    <TextBlock x:Name="AddLocalStatus" Style="{StaticResource MutedTextStyle}" TextWrapping="Wrap" Visibility="Collapsed" AutomationProperties.AutomationId="AddLocalStatus" />
+                </StackPanel>
+                <Button x:Name="AddLocalButton" Grid.Column="1" VerticalAlignment="Top" CornerRadius="9" Click="OnAddLocalFile" AutomationProperties.AutomationId="AddLocalButton">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="&#xE710;" FontSize="12" />
+                        <TextBlock Text="{x:Bind services:Loc.S('ModelsAddLocalFile')}" />
+                    </StackPanel>
+                </Button>
+            </Grid>
+            <SelectorBar x:Name="ModelTabs" Grid.Row="1" SelectionChanged="OnModelTabChanged">
+                <SelectorBarItem Tag="catalog" AutomationProperties.AutomationId="TabCatalog" Text="{x:Bind services:Loc.S('TabCatalog')}" IsSelected="True" />
+                <SelectorBarItem Tag="hf" AutomationProperties.AutomationId="TabHuggingFace" Text="{x:Bind services:Loc.S('TabHuggingFace')}" />
+                <SelectorBarItem x:Name="InstalledTab" Tag="installed" AutomationProperties.AutomationId="TabInstalled" Text="{x:Bind services:Loc.S('TabInstalled')}" />
+            </SelectorBar>
+
+            <!-- Catalog: engine cards, filter chips, models -->
+            <Grid x:Name="CatalogPanel" Grid.Row="2" RowSpacing="12">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <Grid ColumnSpacing="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Border Style="{StaticResource CardStyle}" Padding="14,10">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <Ellipse Width="8" Height="8" Fill="{x:Bind local:Ui.RunningBrush(Models.LlamaRunning), Mode=OneWay}" VerticalAlignment="Center" />
+                            <StackPanel>
+                                <TextBlock Text="llama.cpp" FontWeight="SemiBold" />
+                                <TextBlock Text="{x:Bind Models.LlamaEngineLine, Mode=OneWay}" Style="{StaticResource MutedTextStyle}" AutomationProperties.AutomationId="LlamaEngineLine" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Column="1" Style="{StaticResource CardStyle}" Padding="14,10">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <Ellipse Width="8" Height="8" Fill="{x:Bind local:Ui.RunningBrush(Models.LiteRtRunning), Mode=OneWay}" VerticalAlignment="Center" />
+                            <StackPanel>
+                                <TextBlock Text="LiteRT-LM" FontWeight="SemiBold" />
+                                <TextBlock Text="{x:Bind Models.LiteRtEngineLine, Mode=OneWay}" Style="{StaticResource MutedTextStyle}" AutomationProperties.AutomationId="LiteRtEngineLine" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+                <StackPanel x:Name="FilterChips" Grid.Row="1" Orientation="Horizontal" Spacing="8" />
+                <ListView x:Name="CatalogList" Grid.Row="2" SelectionMode="None" ItemsSource="{x:Bind Models.VisibleCatalog}" Padding="0,0,0,24">
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem" BasedOn="{StaticResource DefaultListViewItemStyle}">
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                            <Setter Property="Padding" Value="12,10" />
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                    <ListView.ItemTemplate>
+                        <DataTemplate x:DataType="vm:CatalogItemViewModel">
+                            <Grid ColumnSpacing="14" HorizontalAlignment="Stretch">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" MinWidth="180" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel VerticalAlignment="Center" Spacing="2">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <TextBlock Text="{x:Bind Name}" FontWeight="SemiBold" AutomationProperties.AutomationId="CatalogName" />
+                                        <Border Style="{StaticResource TagBorderStyle}">
+                                            <TextBlock Text="{x:Bind EngineLabel}" FontSize="11" Foreground="{ThemeResource TagTextBrush}" />
+                                        </Border>
+                                    </StackPanel>
+                                    <TextBlock Text="{x:Bind Subtitle}" Style="{StaticResource MutedTextStyle}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Text="{x:Bind FitText, Mode=OneWay}" FontSize="12" Foreground="{x:Bind local:Ui.FitBrush(FitLevel), Mode=OneWay}"
+                                               Visibility="{x:Bind local:Ui.ShowText(FitText), Mode=OneWay}" AutomationProperties.AutomationId="CatalogFit" />
+                                    <TextBlock Text="{x:Bind Status, Mode=OneWay}" Style="{StaticResource MutedTextStyle}"
+                                               Visibility="{x:Bind local:Ui.ShowText(Status), Mode=OneWay}" />
+                                </StackPanel>
+                                <ContentControl Grid.Column="1" Content="{x:Bind}" ContentTemplate="{StaticResource VariantPickerTemplate}" />
+                            </Grid>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </Grid>
+
+            <!-- Hugging Face: search with format and sort, then the repo's files and how each fits -->
+            <Grid x:Name="HfPanel" Grid.Row="2" ColumnSpacing="16" Visibility="Collapsed" Padding="0,0,0,24">
+                <!-- The repo list is 320 wide, and gives way to the files when the window is narrow. -->
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" MinWidth="220" MaxWidth="320" />
+                    <ColumnDefinition Width="2*" />
+                </Grid.ColumnDefinitions>
+                <Grid RowSpacing="10">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <Grid ColumnSpacing="8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="HfQuery" Text="{x:Bind Models.Query, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                 PlaceholderText="{x:Bind services:Loc.S('SearchHf')}" KeyDown="OnHfSearchKeyDown" />
+                        <Button x:Name="HfSearchButton" Grid.Column="1" Command="{x:Bind Models.SearchCommand}" AutomationProperties.Name="{x:Bind services:Loc.S('SearchHf')}">
+                            <FontIcon Glyph="&#xE721;" FontSize="14" />
+                        </Button>
+                    </Grid>
+                    <Grid Grid.Row="1" ColumnSpacing="8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <ComboBox x:Name="HfFormatBox" HorizontalAlignment="Stretch" SelectionChanged="OnHfFormatChanged" AutomationProperties.AutomationId="HfFormatBox" />
+                        <ComboBox x:Name="HfSortBox" Grid.Column="1" HorizontalAlignment="Stretch" SelectionChanged="OnHfSortChanged" AutomationProperties.AutomationId="HfSortBox"
+                                  AutomationProperties.Name="{x:Bind services:Loc.S('HfSort')}" />
+                    </Grid>
+                    <TextBlock Grid.Row="2" Text="{x:Bind Models.HfSearchError, Mode=OneWay}" Foreground="{ThemeResource WarningBrush}" TextWrapping="Wrap"
+                               Visibility="{x:Bind local:Ui.ShowText(Models.HfSearchError), Mode=OneWay}" AutomationProperties.AutomationId="HfSearchError" />
+                    <ListView x:Name="HfResults" Grid.Row="2" ItemsSource="{x:Bind Models.SearchResults}" SelectedItem="{x:Bind Models.SelectedRepo, Mode=TwoWay}">
+                        <ListView.ItemTemplate>
+                            <DataTemplate x:DataType="vm:HfRepoViewModel">
+                                <StackPanel Padding="0,8" Spacing="3">
+                                    <TextBlock Text="{x:Bind Id}" FontFamily="Cascadia Mono, Consolas" FontSize="13" TextTrimming="CharacterEllipsis" AutomationProperties.AutomationId="HfRepoId" />
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <Border Style="{StaticResource TagBorderStyle}">
+                                            <TextBlock Text="{x:Bind FormatLabel}" FontSize="11" Foreground="{ThemeResource TagTextBrush}" />
+                                        </Border>
+                                        <TextBlock Text="{x:Bind Meta}" Style="{StaticResource MutedTextStyle}" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                </Grid>
+                <ScrollViewer Grid.Column="1" Visibility="{x:Bind local:Ui.Show(Models.HasSelectedRepo), Mode=OneWay}">
+                    <Border CornerRadius="14" BorderThickness="1" BorderBrush="{ThemeResource DividerBrush}" Background="{ThemeResource SurfaceAltBrush}" Padding="18" VerticalAlignment="Top">
+                        <StackPanel Spacing="12">
+                            <Grid ColumnSpacing="12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Spacing="4">
+                                    <TextBlock Text="{x:Bind Models.SelectedRepo.Id, Mode=OneWay, FallbackValue=''}" FontFamily="Cascadia Mono, Consolas" FontSize="15" TextWrapping="Wrap" />
+                                    <TextBlock Text="{x:Bind Models.SelectedRepo.Detail, Mode=OneWay, FallbackValue=''}" Style="{StaticResource MutedTextStyle}" TextWrapping="Wrap" AutomationProperties.AutomationId="RepoDetail" />
+                                </StackPanel>
+                                <HyperlinkButton Grid.Column="1" Content="{x:Bind services:Loc.S('HfOpenOnHub')}" Click="OnOpenOnHub" VerticalAlignment="Top" />
+                            </Grid>
+                            <InfoBar IsOpen="{x:Bind Models.SelectedRepo.IsGated, Mode=OneWay, FallbackValue=False}" IsClosable="False" Severity="Warning"
+                                     Message="{x:Bind services:Loc.S('HfGated')}" AutomationProperties.AutomationId="HfGatedBar">
+                                <InfoBar.ActionButton>
+                                    <Button x:Name="HfSignInButton" Content="{x:Bind services:Loc.S('HfSignIn')}" Click="OnHfSignIn" />
+                                </InfoBar.ActionButton>
+                            </InfoBar>
+                            <StackPanel x:Name="HfTokenPanel" Spacing="6" Visibility="Collapsed">
+                                <PasswordBox x:Name="HfTokenBox" Header="{x:Bind services:Loc.S('HfToken')}" PasswordChanged="OnHfTokenChanged" />
+                                <TextBlock Text="{x:Bind services:Loc.S('HfSignInHelp')}" Style="{StaticResource MutedTextStyle}" />
+                            </StackPanel>
+                            <TextBlock Text="{x:Bind Models.SelectedRepo.Status, Mode=OneWay, FallbackValue=''}" Style="{StaticResource MutedTextStyle}" AutomationProperties.AutomationId="RepoStatus" />
+                            <!-- Quant, size and file share the first column, so the table fits a narrow window. -->
+                            <Grid ColumnSpacing="12" Padding="10,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="112" />
+                                    <ColumnDefinition Width="96" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="{x:Bind services:Loc.S('HfColFile')}" Style="{StaticResource SectionLabelStyle}" />
+                                <TextBlock Grid.Column="1" Text="{x:Bind services:Loc.S('HfColFit')}" Style="{StaticResource SectionLabelStyle}" />
+                                <TextBlock Grid.Column="2" Text="{x:Bind services:Loc.S('HfColAction')}" Style="{StaticResource SectionLabelStyle}" />
+                            </Grid>
+                            <ItemsRepeater ItemsSource="{x:Bind Models.SelectedRepo.Rows, Mode=OneWay}" AutomationProperties.AutomationId="HfFileTable">
+                                <ItemsRepeater.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:HfFileRow">
+                                        <Grid ColumnSpacing="12" Padding="10,6" CornerRadius="8" Background="{x:Bind local:Ui.BestRowBrush(IsBest)}">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="112" />
+                                                <ColumnDefinition Width="96" />
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock Text="{x:Bind QuantAndSize}" FontFamily="Cascadia Mono, Consolas" FontSize="13" />
+                                                <TextBlock Text="{x:Bind File}" FontFamily="Cascadia Mono, Consolas" FontSize="11" Foreground="{ThemeResource TextMutedBrush}" TextTrimming="CharacterEllipsis"
+                                                           ToolTipService.ToolTip="{x:Bind File}" />
+                                            </StackPanel>
+                                            <TextBlock Grid.Column="1" Text="{x:Bind FitText}" FontSize="12" Foreground="{x:Bind local:Ui.FitBrush(FitLevel)}" VerticalAlignment="Center"
+                                                       TextWrapping="Wrap" AutomationProperties.AutomationId="HfFileFit" />
+                                            <Button Grid.Column="2" HorizontalAlignment="Stretch" CornerRadius="8" Content="{x:Bind services:Loc.S('Download')}" Click="OnHfFileDownload" Tag="{x:Bind}"
+                                                    IsEnabled="{x:Bind CanDownload}" Visibility="{x:Bind local:Ui.Hide(IsInstalled)}" AutomationProperties.AutomationId="HfFileDownload" />
+                                            <TextBlock Grid.Column="2" Text="{x:Bind services:Loc.S('Installed')}" FontSize="12" VerticalAlignment="Center"
+                                                       Visibility="{x:Bind local:Ui.Show(IsInstalled)}" AutomationProperties.AutomationId="HfFileInstalled" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsRepeater.ItemTemplate>
+                            </ItemsRepeater>
+                            <ContentControl x:Name="HfDetail" Content="{x:Bind Models.SelectedRepo, Mode=OneWay}" ContentTemplate="{StaticResource VariantPickerTemplate}"
+                                            Visibility="{x:Bind local:Ui.Show(Models.SelectedRepo.IsDownloading), Mode=OneWay, FallbackValue=Collapsed}" />
+                            <TextBlock Text="{x:Bind services:Loc.S('HfMmprojNote')}" Style="{StaticResource MutedTextStyle}" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+                </ScrollViewer>
+            </Grid>
+            <!-- Installed -->
+            <Grid x:Name="InstalledPanel" Grid.Row="2" Visibility="Collapsed">
+                <TextBlock Text="{x:Bind services:Loc.S('NoInstalled')}" Style="{StaticResource MutedTextStyle}"
+                           Visibility="{x:Bind local:Ui.Hide(Models.HasInstalled), Mode=OneWay}" />
+                <ListView x:Name="InstalledList" ItemsSource="{x:Bind Models.Installed}" SelectionMode="None">
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem" BasedOn="{StaticResource DefaultListViewItemStyle}">
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                            <Setter Property="Padding" Value="12,10" />
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                    <ListView.ItemTemplate>
+                        <DataTemplate x:DataType="services:InstalledModel">
+                            <Grid ColumnSpacing="14">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="{x:Bind DisplayName}" FontWeight="SemiBold" AutomationProperties.AutomationId="InstalledName" />
+                                    <TextBlock Text="{x:Bind Repo}" Style="{StaticResource MutedTextStyle}" FontFamily="Cascadia Mono, Consolas" />
+                                </StackPanel>
+                                <TextBlock Grid.Column="1" Text="{x:Bind SizeText}" VerticalAlignment="Center" Style="{StaticResource MutedTextStyle}" />
+                                <Button Grid.Column="2" Style="{StaticResource SubtleIconButtonStyle}" Click="OnDeleteInstalled" Tag="{x:Bind}" AutomationProperties.AutomationId="DeleteInstalledButton"
+                                        ToolTipService.ToolTip="{x:Bind services:Loc.S('Delete')}" AutomationProperties.Name="{x:Bind services:Loc.S('Delete')}">
+                                    <FontIcon Glyph="&#xE74D;" FontSize="14" />
+                                </Button>
+                            </Grid>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </Grid>
+        </Grid>
+
+        <!-- Local API -->
+        <ScrollViewer x:Name="ApiPanel" Padding="28,24" Visibility="Collapsed">
+            <StackPanel Spacing="18" MaxWidth="860" HorizontalAlignment="Left">
+                <Grid ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="{x:Bind services:Loc.S('SettingsLocalApi')}" FontSize="20" FontWeight="SemiBold" />
+                        <TextBlock Text="{x:Bind services:Loc.S('ApiIntro')}" Style="{StaticResource MutedTextStyle}" />
+                    </StackPanel>
+                    <ToggleSwitch x:Name="ApiToggle" Grid.Column="1" Header="{x:Bind services:Loc.S('ApiServing')}" Toggled="OnApiToggled" />
+                </Grid>
+                <TextBlock Text="{x:Bind Api.Error, Mode=OneWay}" Foreground="{ThemeResource DangerBrush}" TextWrapping="Wrap"
+                           Visibility="{x:Bind local:Ui.ShowText(Api.Error), Mode=OneWay}" AutomationProperties.AutomationId="ApiError" />
+
+                <Grid ColumnSpacing="12" RowSpacing="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Border Style="{StaticResource CardStyle}">
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="{x:Bind services:Loc.S('ApiBaseUrl')}" Style="{StaticResource SectionLabelStyle}" />
+                            <Grid ColumnSpacing="8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBox x:Name="BaseUrlBox" IsReadOnly="True" FontFamily="Cascadia Mono, Consolas" />
+                                <Button Grid.Column="1" Click="OnCopyBaseUrl" AutomationProperties.Name="{x:Bind services:Loc.S('Copy')}">
+                                    <FontIcon Glyph="&#xE8C8;" FontSize="14" />
+                                </Button>
+                            </Grid>
+                            <NumberBox x:Name="PortBox" Header="{x:Bind services:Loc.S('ApiPort')}" Minimum="1024" Maximum="65535" SpinButtonPlacementMode="Compact"
+                                       ValueChanged="OnPortChanged" HorizontalAlignment="Left" MinWidth="160" />
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Column="1" Style="{StaticResource CardStyle}">
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="{x:Bind services:Loc.S('ApiAccess')}" Style="{StaticResource SectionLabelStyle}" />
+                            <ToggleSwitch x:Name="LanToggle" Header="{x:Bind services:Loc.S('ApiAllowLan')}" Toggled="OnAccessChanged" />
+                            <TextBlock Text="{x:Bind services:Loc.S('ApiAllowLanHelp')}" Style="{StaticResource MutedTextStyle}" />
+                            <ToggleSwitch x:Name="KeyToggle" Header="{x:Bind services:Loc.S('ApiRequireKey')}" Toggled="OnAccessChanged" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <Border Style="{StaticResource CardStyle}">
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="{x:Bind services:Loc.S('ApiKey')}" Style="{StaticResource SectionLabelStyle}" />
+                        <Grid ColumnSpacing="8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <PasswordBox x:Name="KeyBox" IsEnabled="False" />
+                            <Button Grid.Column="1" Click="OnCopyKey" AutomationProperties.Name="{x:Bind services:Loc.S('Copy')}">
+                                <FontIcon Glyph="&#xE8C8;" FontSize="14" />
+                            </Button>
+                            <Button Grid.Column="2" Content="{x:Bind services:Loc.S('ApiNewKey')}" Click="OnNewKey" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource CardStyle}">
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="{x:Bind services:Loc.S('ApiEndpoints')}" Style="{StaticResource SectionLabelStyle}" />
+                        <TextBlock Text="{x:Bind services:Loc.S('ApiOpenAiCompatible')}" FontWeight="SemiBold" FontSize="13" />
+                        <ItemsRepeater ItemsSource="{x:Bind OpenAiEndpoints}" ItemTemplate="{StaticResource EndpointTemplate}" AutomationProperties.AutomationId="ApiEndpointList" />
+                        <TextBlock Text="{x:Bind services:Loc.S('ApiAnthropicCompatible')}" FontWeight="SemiBold" FontSize="13" Margin="0,8,0,0" />
+                        <ItemsRepeater ItemsSource="{x:Bind AnthropicEndpoints}" ItemTemplate="{StaticResource EndpointTemplate}" />
+                        <TextBlock Text="{x:Bind services:Loc.S('ApiClaudeCode')}" Style="{StaticResource SectionLabelStyle}" Margin="0,8,0,0" />
+                        <TextBox x:Name="ClaudeSnippet" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" FontFamily="Cascadia Mono, Consolas" FontSize="12" />
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource CardStyle}">
+                    <StackPanel Spacing="10">
+                        <Grid ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="{x:Bind services:Loc.S('ApiModelsOffered')}" FontWeight="SemiBold" />
+                                <TextBlock Text="{x:Bind services:Loc.S('ApiModelsOfferedHelp')}" Style="{StaticResource MutedTextStyle}" />
+                            </StackPanel>
+                            <ComboBox x:Name="UnloadBox" Grid.Column="1" Header="{x:Bind services:Loc.S('ApiUnloadAfter')}" MinWidth="170" SelectionChanged="OnUnloadChanged" />
+                        </Grid>
+                        <ItemsRepeater ItemsSource="{x:Bind Models.Installed}" AutomationProperties.AutomationId="ApiModelsOffered">
+                            <ItemsRepeater.ItemTemplate>
+                                <DataTemplate x:DataType="services:InstalledModel">
+                                    <Grid ColumnSpacing="12" Padding="0,3">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{x:Bind services:LocalApiServer.ApiName((services:InstalledModel))}" FontFamily="Cascadia Mono, Consolas" FontSize="13"
+                                                   IsTextSelectionEnabled="True" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Grid.Column="1" Text="{x:Bind local:Ui.EngineLabel((services:InstalledModel))}" FontSize="12" Foreground="{ThemeResource TextMutedBrush}" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsRepeater.ItemTemplate>
+                        </ItemsRepeater>
+                    </StackPanel>
+                </Border>
+
+                <StackPanel Spacing="8">
+                    <TextBlock Text="{x:Bind services:Loc.S('ApiRecent')}" FontWeight="SemiBold" />
+                    <TextBlock Text="{x:Bind services:Loc.S('ApiNoRequests')}" Style="{StaticResource MutedTextStyle}"
+                               Visibility="{x:Bind local:Ui.Hide(HasApiRequests), Mode=OneWay}" />
+                    <ItemsRepeater ItemsSource="{x:Bind Api.Requests}">
+                        <ItemsRepeater.ItemTemplate>
+                            <DataTemplate x:DataType="services:ApiRequestLog">
+                                <Grid ColumnSpacing="12" Padding="0,4">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="80" />
+                                        <ColumnDefinition Width="120" />
+                                        <ColumnDefinition Width="220" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="120" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{x:Bind Time}" Style="{StaticResource MutedTextStyle}" />
+                                    <TextBlock Grid.Column="1" Text="{x:Bind Client}" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Grid.Column="2" Text="{x:Bind Path}" FontFamily="Cascadia Mono, Consolas" FontSize="12" />
+                                    <TextBlock Grid.Column="3" Text="{x:Bind Model}" FontFamily="Cascadia Mono, Consolas" FontSize="12" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Grid.Column="4" Text="{x:Bind Status}" AutomationProperties.AutomationId="ApiRequestStatus" />
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsRepeater.ItemTemplate>
+                    </ItemsRepeater>
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+        <!-- Engines -->
+        <ScrollViewer x:Name="EnginesPanel" Padding="28,24" Visibility="Collapsed">
+            <StackPanel Spacing="18" MaxWidth="760" HorizontalAlignment="Left">
+                <StackPanel Spacing="4">
+                    <TextBlock Text="{x:Bind services:Loc.S('SettingsEngines')}" FontSize="20" FontWeight="SemiBold" />
+                    <TextBlock Text="{x:Bind services:Loc.S('SettingsEnginesHelp')}" Style="{StaticResource MutedTextStyle}" />
+                </StackPanel>
+                <ItemsRepeater ItemsSource="{x:Bind Settings.Engines}">
+                    <ItemsRepeater.Layout>
+                        <StackLayout Spacing="10" />
+                    </ItemsRepeater.Layout>
+                    <ItemsRepeater.ItemTemplate>
+                        <DataTemplate x:DataType="vm:EngineInfo">
+                            <Border Style="{StaticResource CardStyle}" AutomationProperties.AutomationId="EngineCard" AutomationProperties.Name="{x:Bind Name}">
+                                <Grid ColumnSpacing="14">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Ellipse Width="8" Height="8" VerticalAlignment="Center" Fill="{x:Bind local:Ui.RunningBrush(Installed)}" />
+                                    <StackPanel Grid.Column="1" Spacing="2">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <TextBlock Text="{x:Bind Name}" FontWeight="SemiBold" />
+                                            <TextBlock Text="{x:Bind Version}" FontFamily="Cascadia Mono, Consolas" FontSize="12" Foreground="{ThemeResource TextFaintBrush}" VerticalAlignment="Center" />
+                                        </StackPanel>
+                                        <TextBlock Text="{x:Bind Detail}" Style="{StaticResource MutedTextStyle}" />
+                                    </StackPanel>
+                                    <Button Grid.Column="2" Style="{StaticResource OutlineButtonStyle}" Content="{x:Bind services:Loc.S('SettingsOpenFolder')}" Tag="{x:Bind Folder}"
+                                            Click="OnOpenFolder" Visibility="{x:Bind local:Ui.ShowText(Folder)}" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsRepeater.ItemTemplate>
+                </ItemsRepeater>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Speech and voice -->
+        <ScrollViewer x:Name="SpeechPanel" Padding="28,24" Visibility="Collapsed">
+            <StackPanel Spacing="18" MaxWidth="760" HorizontalAlignment="Left">
+                <StackPanel Spacing="4">
+                    <TextBlock Text="{x:Bind services:Loc.S('SettingsSpeech')}" FontSize="20" FontWeight="SemiBold" />
+                    <TextBlock Text="{x:Bind services:Loc.S('SettingsSpeechHelp')}" Style="{StaticResource MutedTextStyle}" />
+                </StackPanel>
+                <Border Style="{StaticResource CardStyle}">
+                    <StackPanel Spacing="12">
+                        <StackPanel Spacing="2">
+                            <TextBlock Text="{x:Bind services:Loc.S('SettingsTts')}" Style="{StaticResource SectionLabelStyle}" />
+                            <TextBlock Text="{x:Bind Settings.TtsLine, Mode=OneWay}" AutomationProperties.AutomationId="TtsLine" />
+                        </StackPanel>
+                        <StackPanel Spacing="2">
+                            <TextBlock Text="{x:Bind services:Loc.S('SettingsAsr')}" Style="{StaticResource SectionLabelStyle}" />
+                            <TextBlock Text="{x:Bind Settings.AsrLine, Mode=OneWay}" AutomationProperties.AutomationId="AsrLine" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <ComboBox x:Name="VoiceBox" Header="{x:Bind services:Loc.S('StudioVoice')}" ItemsSource="{x:Bind Settings.Voices}" SelectionChanged="OnVoiceChanged" MinWidth="140" />
+                            <Button Style="{StaticResource OutlineButtonStyle}" Content="{x:Bind services:Loc.S('SettingsTestVoice')}" Command="{x:Bind Settings.TestVoiceCommand}" VerticalAlignment="Bottom" />
+                            <Button x:Name="ImportVoiceButton" Style="{StaticResource OutlineButtonStyle}" Content="{x:Bind services:Loc.S('ImportVoice')}" Click="OnImportVoice" VerticalAlignment="Bottom" />
+                            <Button x:Name="DeleteVoiceButton" Style="{StaticResource SubtleIconButtonStyle}" Click="OnDeleteVoice" VerticalAlignment="Bottom"
+                                    ToolTipService.ToolTip="{x:Bind services:Loc.S('DeleteVoice')}" AutomationProperties.Name="{x:Bind services:Loc.S('DeleteVoice')}">
+                                <FontIcon Glyph="&#xE74D;" FontSize="13" />
+                            </Button>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <ComboBox x:Name="SpeechModelBox" Header="{x:Bind services:Loc.S('SpeechModel')}" MinWidth="190" SelectionChanged="OnSpeechModelChanged" />
+                            <ComboBox x:Name="SpeechLanguageBox" Header="{x:Bind services:Loc.S('SpeechLanguage')}" MinWidth="210" MaxDropDownHeight="420" SelectionChanged="OnSpeechLanguageChanged" />
+                        </StackPanel>
+                        <Slider x:Name="SpeechSpeedSlider" Header="{x:Bind services:Loc.S('SpeechSpeed')}" Minimum="0.5" Maximum="2" StepFrequency="0.05" MaxWidth="360"
+                                HorizontalAlignment="Left" Width="360" ValueChanged="OnSpeechSpeedChanged" />
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <Button x:Name="SetUpSpeechButton" Style="{StaticResource AccentButtonStyle}" CornerRadius="9" Content="{x:Bind services:Loc.S('SettingsSetUpNow')}"
+                                    Command="{x:Bind Settings.SetUpSpeechCommand}" />
+                            <Button Style="{StaticResource OutlineButtonStyle}" Content="{x:Bind services:Loc.S('SettingsRemove')}" Command="{x:Bind Settings.RemoveSpeechCommand}" />
+                            <TextBlock Text="{x:Bind Settings.SpeechStatus, Mode=OneWay}" Style="{StaticResource MutedTextStyle}" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Studio backends -->
+        <ScrollViewer x:Name="StudioPanel" Padding="28,24" Visibility="Collapsed">
+            <StackPanel Spacing="18" MaxWidth="760" HorizontalAlignment="Left">
+                <StackPanel Spacing="4">
+                    <TextBlock Text="{x:Bind services:Loc.S('SettingsStudio')}" FontSize="20" FontWeight="SemiBold" />
+                    <TextBlock Text="{x:Bind Settings.StudioHelp}" Style="{StaticResource MutedTextStyle}" TextWrapping="Wrap" />
+                </StackPanel>
+                <Border Style="{StaticResource CardStyle}">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="{x:Bind Settings.ComfyLine, Mode=OneWay}" FontWeight="SemiBold" AutomationProperties.AutomationId="ComfyLine" />
+                        <TextBlock Text="{x:Bind Settings.ComfyFolder}" FontFamily="Cascadia Mono, Consolas" FontSize="12" Foreground="{ThemeResource TextFaintBrush}" />
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <Button Style="{StaticResource OutlineButtonStyle}" Content="{x:Bind services:Loc.S('SettingsStart')}" Command="{x:Bind Settings.StartComfyCommand}"
+                                    Visibility="{x:Bind local:Ui.Hide(Settings.UsesNpu)}" />
+                            <Button Style="{StaticResource OutlineButtonStyle}" Content="{x:Bind services:Loc.S('SettingsStop')}" Command="{x:Bind Settings.StopComfyCommand}" />
+                            <Button Style="{StaticResource OutlineButtonStyle}" Content="{x:Bind services:Loc.S('SettingsOpenFolder')}" Tag="{x:Bind Settings.ComfyFolder}" Click="OnOpenFolder" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+                <StackPanel Spacing="8">
+                    <TextBlock Text="{x:Bind services:Loc.S('SettingsStudioModels')}" Style="{StaticResource SectionLabelStyle}" />
+                    <ItemsRepeater ItemsSource="{x:Bind Settings.StudioModels}">
+                        <ItemsRepeater.Layout>
+                            <StackLayout Spacing="6" />
+                        </ItemsRepeater.Layout>
+                        <ItemsRepeater.ItemTemplate>
+                            <DataTemplate x:DataType="vm:StorageItem">
+                                <Grid ColumnSpacing="12" Padding="12,8" CornerRadius="9" Background="{ThemeResource SurfaceAltBrush}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{x:Bind Name}" FontFamily="Cascadia Mono, Consolas" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Grid.Column="1" Text="{x:Bind Size}" Style="{StaticResource MutedTextStyle}" VerticalAlignment="Center" />
+                                    <Button Grid.Column="2" Style="{StaticResource SubtleIconButtonStyle}" Tag="{x:Bind}" Click="OnDeleteStudioModel"
+                                            ToolTipService.ToolTip="{x:Bind services:Loc.S('Delete')}" AutomationProperties.Name="{x:Bind services:Loc.S('Delete')}">
+                                        <FontIcon Glyph="&#xE74D;" FontSize="13" />
+                                    </Button>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsRepeater.ItemTemplate>
+                    </ItemsRepeater>
+                </StackPanel>
+                <Border Style="{StaticResource CardStyle}">
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="{x:Bind services:Loc.S('SettingsMusic')}" Style="{StaticResource SectionLabelStyle}" />
+                        <TextBlock Text="{x:Bind Settings.MusicLine}" Style="{StaticResource MutedTextStyle}" AutomationProperties.AutomationId="MusicLine" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Agent -->
+        <ScrollViewer x:Name="AgentPanel" Padding="28,24" Visibility="Collapsed">
+            <StackPanel Spacing="18" MaxWidth="760" HorizontalAlignment="Left">
+                <StackPanel Spacing="4">
+                    <TextBlock Text="{x:Bind services:Loc.S('SettingsAgent')}" FontSize="20" FontWeight="SemiBold" />
+                    <TextBlock Text="{x:Bind services:Loc.S('SettingsAgentHelp')}" Style="{StaticResource MutedTextStyle}" />
+                </StackPanel>
+                <Border Style="{StaticResource CardStyle}">
+                    <StackPanel Spacing="10">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBlock Text="{x:Bind services:Loc.S('SettingsClaudeCode')}" FontWeight="SemiBold" />
+                            <TextBlock Text="{x:Bind Settings.ClaudeVersion, Mode=OneWay}" FontFamily="Cascadia Mono, Consolas" FontSize="12" Foreground="{ThemeResource TextFaintBrush}"
+                                       VerticalAlignment="Center" AutomationProperties.AutomationId="ClaudeVersion" />
+                        </StackPanel>
+                        <TextBlock Text="{x:Bind Settings.ClaudePath, Mode=OneWay}" FontFamily="Cascadia Mono, Consolas" FontSize="12" Foreground="{ThemeResource TextMutedBrush}" TextWrapping="Wrap" />
+                        <Button Style="{StaticResource AccentButtonStyle}" CornerRadius="9" Content="{x:Bind services:Loc.S('AgentInstall')}" Command="{x:Bind Settings.InstallClaudeCommand}"
+                                Visibility="{x:Bind local:Ui.Hide(Settings.ClaudeInstalled), Mode=OneWay}" />
+                    </StackPanel>
+                </Border>
+                <StackPanel Spacing="6">
+                    <ComboBox x:Name="AgentContextBox" Header="{x:Bind services:Loc.S('SettingsAgentContext')}" MinWidth="260" SelectionChanged="OnAgentContextChanged" />
+                    <TextBlock Text="{x:Bind services:Loc.S('SettingsAgentContextHelp')}" Style="{StaticResource MutedTextStyle}" />
+                </StackPanel>
+                <TextBlock Text="{x:Bind services:Loc.S('SettingsAgentNote')}" FontSize="12" Foreground="{ThemeResource TextFaintBrush}" TextWrapping="Wrap" />
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Web search -->
+        <ScrollViewer x:Name="WebSearchPanel" Padding="28,24" Visibility="Collapsed">
+            <StackPanel Spacing="18" MaxWidth="760" HorizontalAlignment="Left">
+                <TextBlock Text="{x:Bind services:Loc.S('SettingsWebSearch')}" FontSize="20" FontWeight="SemiBold" />
+                <ToggleSwitch x:Name="WebSearchToggle" Header="{x:Bind services:Loc.S('SettingsWebSearchDefault')}" Toggled="OnWebSearchToggled" />
+                <TextBlock Text="{x:Bind services:Loc.S('SettingsWebSearchHelp')}" Style="{StaticResource MutedTextStyle}" />
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Storage -->
+        <ScrollViewer x:Name="StoragePanel" Padding="28,24" Visibility="Collapsed">
+            <StackPanel Spacing="18" MaxWidth="760" HorizontalAlignment="Left">
+                <Grid>
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="{x:Bind services:Loc.S('SettingsStorage')}" FontSize="20" FontWeight="SemiBold" />
+                        <TextBlock Text="{x:Bind services:Loc.S('SettingsStorageHelp')}" Style="{StaticResource MutedTextStyle}" />
+                    </StackPanel>
+                    <TextBlock Text="{x:Bind local:Ui.Total(Settings.StorageTotal), Mode=OneWay}" HorizontalAlignment="Right" VerticalAlignment="Top" FontWeight="SemiBold"
+                               AutomationProperties.AutomationId="StorageTotal" />
+                </Grid>
+                <ItemsRepeater ItemsSource="{x:Bind Settings.Storage}">
+                    <ItemsRepeater.Layout>
+                        <StackLayout Spacing="6" />
+                    </ItemsRepeater.Layout>
+                    <ItemsRepeater.ItemTemplate>
+                        <DataTemplate x:DataType="vm:StorageItem">
+                            <Grid ColumnSpacing="12" Padding="14,10" CornerRadius="10" Background="{ThemeResource SurfaceAltBrush}" AutomationProperties.AutomationId="StorageRow"
+                                  AutomationProperties.Name="{x:Bind Name}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="{x:Bind Name}" FontWeight="Medium" />
+                                    <TextBlock Text="{x:Bind Folder}" FontFamily="Cascadia Mono, Consolas" FontSize="11" Foreground="{ThemeResource TextFaintBrush}" TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                                <TextBlock Grid.Column="1" Text="{x:Bind Size}" VerticalAlignment="Center" Foreground="{ThemeResource TextSecondaryBrush}" />
+                                <Button Grid.Column="2" Style="{StaticResource OutlineButtonStyle}" Content="{x:Bind services:Loc.S('SettingsClear')}" Tag="{x:Bind}" Click="OnClearStorage"
+                                        Visibility="{x:Bind local:Ui.Show(CanClear)}" />
+                                <Button Grid.Column="3" Style="{StaticResource SubtleIconButtonStyle}" Tag="{x:Bind Folder}" Click="OnOpenFolder"
+                                        ToolTipService.ToolTip="{x:Bind services:Loc.S('SettingsOpenFolder')}" AutomationProperties.Name="{x:Bind services:Loc.S('SettingsOpenFolder')}">
+                                    <FontIcon Glyph="&#xE838;" FontSize="13" />
+                                </Button>
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsRepeater.ItemTemplate>
+                </ItemsRepeater>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Page>

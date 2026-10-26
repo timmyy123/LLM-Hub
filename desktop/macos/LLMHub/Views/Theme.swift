@@ -1,0 +1,46 @@
+import AppKit
+import SwiftUI
+
+/// Design tokens from the LLM Hub Desktop canvas, in light and dark. Surfaces are the window's own background and Liquid
+/// Glass (macOS 26+), never a painted colour: these are for text, tags, rules and highlights inside content.
+enum Theme {
+    static let surfaceAlt = dynamic(light: 0xF5F4F0, dark: 0x1F1F1D)
+    static let divider = dynamic(light: 0xE2E0D9, dark: 0x2C2C29)
+    static let controlBorder = dynamic(light: 0xD6D4CC, dark: 0x3A3A36)
+    static let textMuted = dynamic(light: 0x5F5E59, dark: 0xA5A49E)
+    /// The user's message bubble and grey tags: a system fill, so they stand out on the window and on glass alike.
+    static let userBubble = Color(nsColor: .secondarySystemFill)
+    static let tag = dynamic(light: 0xE3ECFC, dark: 0x262C38)
+    static let tagText = dynamic(light: 0x1D4FAE, dark: 0xB8CDF5)
+    static let success = dynamic(light: 0x1E8A4C, dark: 0x5FD38D)
+    static let warning = dynamic(light: 0x9A6400, dark: 0xE8B04A)
+    static let danger = dynamic(light: 0xB3261E, dark: 0xFF9A9A)
+    static let accent = dynamic(light: 0x2F6FE4, dark: 0x8AB4FF)
+    static let textFaint = dynamic(light: 0x8A8983, dark: 0x8F8E88)
+    static let diffAddedBackground = dynamic(light: 0xE3F5E8, dark: 0x1E3326)
+    static let diffAddedText = dynamic(light: 0x1C6B3A, dark: 0xC5F0D3)
+    static let diffRemovedBackground = dynamic(light: 0xFBE6E6, dark: 0x3A2222)
+    static let diffRemovedText = dynamic(light: 0x9E2A2A, dark: 0xFFB4B4)
+
+    private static func dynamic(light: UInt32, dark: UInt32) -> Color {
+        Color(nsColor: NSColor(name: nil) { appearance in
+            let hex = appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? dark : light
+            return NSColor(srgbRed: CGFloat((hex >> 16) & 0xFF) / 255, green: CGFloat((hex >> 8) & 0xFF) / 255,
+                           blue: CGFloat(hex & 0xFF) / 255, alpha: 1)
+        })
+    }
+}
+
+struct Tag: View {
+    let text: String
+    /// Grey instead of blue, for capability tags (Vision, Agent) next to the engine tag.
+    var neutral = false
+    var body: some View {
+        Text(text)
+            .font(.system(size: 11))
+            .foregroundStyle(neutral ? Theme.textMuted : Theme.tagText)
+            .padding(.horizontal, 7)
+            .padding(.vertical, 1)
+            .background(neutral ? Theme.userBubble : Theme.tag, in: RoundedRectangle(cornerRadius: 6))
+    }
+}

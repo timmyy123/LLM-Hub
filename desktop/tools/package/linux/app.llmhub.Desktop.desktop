@@ -1,0 +1,24 @@
+[Desktop Entry]
+Type=Application
+Name=LLM Hub
+GenericName=AI Assistant
+GenericName[es]=Asistente de IA
+GenericName[pt_BR]=Assistente de IA
+GenericName[fr]=Assistant IA
+GenericName[de]=KI-Assistent
+GenericName[it]=Assistente IA
+GenericName[ru]=ИИ-ассистент
+Comment=Run AI models on this computer
+Comment[es]=Ejecuta modelos de IA en este ordenador
+Comment[pt_BR]=Execute modelos de IA neste computador
+Comment[fr]=Exécutez des modèles d'IA sur cet ordinateur
+Comment[de]=KI-Modelle auf diesem Computer ausführen
+Comment[it]=Esegui modelli di IA su questo computer
+Comment[ru]=Запускайте модели ИИ на этом компьютере
+Exec=llmhub
+Icon=app.llmhub.Desktop
+Terminal=false
+Categories=Utility;
+Keywords=AI;LLM;Chat;Gemma;llama.cpp;Local;Offline;
+StartupNotify=true
+StartupWMClass=app.llmhub.Desktop

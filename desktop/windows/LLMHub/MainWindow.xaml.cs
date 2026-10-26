@@ -1,0 +1,292 @@
+using System.ComponentModel;
+using System.Runtime.InteropServices;
+using LLMHub.Services;
+using LLMHub.ViewModels;
+using LLMHub.Views;
+using Microsoft.UI.Windowing;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Data;
+using Microsoft.UI.Xaml.Media;
+using Windows.Graphics;
+
+namespace LLMHub;
+
+public sealed partial class MainWindow : Window
+{
+    public MainWindow()
+    {
+        UiThread.Initialize(action => DispatcherQueue.TryEnqueue(() => action()), () => DispatcherQueue.HasThreadAccess);
+        ChatGroupsSource = new CollectionViewSource { IsSourceGrouped = true, Source = Chat.Groups };
+        InitializeComponent();
+
+        ExtendsContentIntoTitleBar = true;
+        SetTitleBar(AppTitleBar);
+        SizeToScreen();
+        AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "Assets", "llmhub.ico"));
+        ApplyAppearance();
+
+        UpdateEngineCard();
+        Engine.PropertyChanged += OnEnginePropertyChanged;
+        Root.ActualThemeChanged += (_, _) => UpdateEngineDot();
+        UpdateEngineDot();
+
+        DesignVm.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName is nameof(DesignViewModel.Selected) or nameof(DesignViewModel.IsGenerating))
+                UpdateDesignTitle();
+        };
+        DesignVm.Projects.CollectionChanged += (_, _) => UpdateDesignTitle();
+        NavList.SelectedIndex = 0;
+#if DEBUG
+        if (Environment.GetCommandLineArgs().SkipWhile(a => a != "--theme").Skip(1).FirstOrDefault() is { } theme)
+            Root.RequestedTheme = theme == "dark" ? ElementTheme.Dark : ElementTheme.Light;
+#endif
+    }
+
+    public void ApplyAppearance() => Root.RequestedTheme = AppSettings.Current.Appearance switch
+    {
+        "light" => ElementTheme.Light,
+        "system" => ElementTheme.Default,
+        _ => ElementTheme.Dark,
+    };
+
+    /// <summary>
+    /// AppWindow sizes are physical pixels; scale the design size (1440 x 920) by the monitor DPI. The minimum size never
+    /// exceeds the screen's work area: on a small display (a 1024 x 768 Snapdragon test PC) it pushed the composer's Send
+    /// button off the screen.
+    /// </summary>
+    private void SizeToScreen()
+    {
+        var scale = GetDpiForWindow(WinRT.Interop.WindowNative.GetWindowHandle(this)) / 96.0;
+        var area = DisplayArea.GetFromWindowId(AppWindow.Id, DisplayAreaFallback.Primary).WorkArea;
+        var minWidth = Math.Min((int)(1000 * scale), area.Width);
+        var minHeight = Math.Min((int)(600 * scale), area.Height);
+        var width = Math.Max(Math.Min((int)(1440 * scale), (int)(area.Width * 0.94)), minWidth);
+        var height = Math.Max(Math.Min((int)(920 * scale), (int)(area.Height * 0.94)), minHeight);
+        if (AppWindow.Presenter is OverlappedPresenter presenter)
+        {
+            presenter.PreferredMinimumWidth = minWidth;
+            presenter.PreferredMinimumHeight = minHeight;
+        }
+        AppWindow.MoveAndResize(new RectInt32(area.X + (area.Width - width) / 2, area.Y + (area.Height - height) / 2, width, height));
+    }
+
+    [LibraryImport("user32.dll")]
+    private static partial uint GetDpiForWindow(IntPtr hwnd);
+
+    public ChatViewModel Chat => Ioc.Chat;
+    public AgentViewModel AgentVm => Ioc.AgentVm;
+    public DesignViewModel DesignVm => Ioc.DesignVm;
+    public CollectionViewSource AgentGroupsSource { get; } = new() { IsSourceGrouped = true, Source = Ioc.AgentVm.Groups };
+    public EngineHub Engine => Ioc.Engines;
+    public CollectionViewSource ChatGroupsSource { get; }
+
+    public void ShowSettings(string? section = null)
+    {
+        section ??= "models";
+        SetSettingsMode(true);
+        SectionTitle.Text = Loc.S("NavSettings");
+        if (ContentFrame.Content is not SettingsPage)
+            ContentFrame.Navigate(typeof(SettingsPage), section);
+        SettingsSectionList.SelectedItem = SettingsSectionList.Items.Cast<ListViewItem>().First(i => (string)i.Tag == section);
+    }
+
+    private void SetSettingsMode(bool on)
+    {
+        var app = on ? Visibility.Collapsed : Visibility.Visible;
+        NewChatButton.Visibility = app;
+        NavList.Visibility = app;
+        SettingsNav.Visibility = on ? Visibility.Visible : Visibility.Collapsed;
+        if (on)
+        {
+            NavList.SelectedItem = null;
+            SetSidebarChatsVisible(false);
+        }
+    }
+
+    private void OnSettingsSectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (SettingsSectionList.SelectedItem is ListViewItem { Tag: string tag } && ContentFrame.Content is SettingsPage page)
+            page.ShowSection(tag);
+    }
+
+    private void OnBackFromSettings(object sender, RoutedEventArgs e)
+    {
+        SetSettingsMode(false);
+        ShowChat();
+    }
+
+    public void ShowChat()
+    {
+        NavList.SelectedIndex = 0;
+    }
+
+    /// <summary>Shows an app section by tag: chat, agent, design or studio.</summary>
+    public void ShowSection(string tag)
+    {
+        SetSettingsMode(false);
+        var item = NavList.Items.Cast<ListViewItem>().First(i => (string)i.Tag == tag);
+        if (NavList.SelectedItem == item)
+        {
+            // Already selected, so no SelectionChanged: re-apply the section's sidebar (rail, lists, New button) here.
+            SetCompact(tag is "design" or "studio");
+            SetSidebarChatsVisible(tag == "chat");
+        }
+        NavList.SelectedItem = item;
+    }
+
+    private void OnNavChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (NavList.SelectedItem is not ListViewItem { Tag: string tag })
+            return;
+        SetCompact(tag is "design" or "studio");
+        SetSidebarChatsVisible(tag == "chat");
+        switch (tag)
+        {
+            case "chat":
+                SectionTitle.Text = Loc.S("NavChat");
+                if (ContentFrame.Content is not ChatPage)
+                    ContentFrame.Navigate(typeof(ChatPage));
+                break;
+            case "agent":
+                SectionTitle.Text = Loc.S("NavAgent");
+                if (ContentFrame.Content is not AgentPage)
+                    ContentFrame.Navigate(typeof(AgentPage));
+                break;
+            case "design":
+                UpdateDesignTitle();
+                if (ContentFrame.Content is not DesignPage)
+                    ContentFrame.Navigate(typeof(DesignPage));
+                break;
+            case "studio":
+                SectionTitle.Text = Loc.S("NavStudio");
+                if (ContentFrame.Content is not StudioPage)
+                    ContentFrame.Navigate(typeof(StudioPage));
+                break;
+        }
+    }
+
+    /// <summary>Collapses the sidebar to the design's 64px icon rail (nav icons and the engine dot) or expands it.</summary>
+    private void SetCompact(bool compact)
+    {
+        SidebarColumn.Width = new GridLength(compact ? 64 : 260);
+        foreach (var item in NavList.Items.Cast<ListViewItem>())
+        {
+            if (item.Content is StackPanel { Children: [FontIcon icon, TextBlock label] } panel)
+            {
+                label.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
+                panel.HorizontalAlignment = compact ? HorizontalAlignment.Center : HorizontalAlignment.Left;
+                ToolTipService.SetToolTip(item, compact ? label.Text : null);
+                item.Padding = compact ? new Thickness(0) : new Thickness(12, 0, 12, 0);
+                item.MinWidth = compact ? 0 : 88;
+                item.HorizontalContentAlignment = compact ? HorizontalAlignment.Center : HorizontalAlignment.Stretch;
+                icon.FontSize = compact ? 17 : 15;
+            }
+        }
+        EngineTexts.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
+        SettingsGlyph.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
+        SettingsButton.Padding = compact ? new Thickness(0, 12, 0, 12) : new Thickness(12, 10, 12, 10);
+        SettingsButton.HorizontalContentAlignment = compact ? HorizontalAlignment.Center : HorizontalAlignment.Stretch;
+        ToolTipService.SetToolTip(SettingsButton, compact ? EngineStatus.Text : null);
+    }
+
+    /// <summary>"Design · Crumb &amp; Co" in the title bar, as in the design.</summary>
+    private void UpdateDesignTitle()
+    {
+        if (NavList.SelectedItem is ListViewItem { Tag: "design" })
+            SectionTitle.Text = DesignVm.Selected is { Name.Length: > 0 } p ? $"{Loc.S("NavDesign")} · {p.Name}" : Loc.S("NavDesign");
+    }
+
+    private void SetSidebarChatsVisible(bool visible)
+    {
+        var v = visible ? Visibility.Visible : Visibility.Collapsed;
+        SearchField.Visibility = v;
+        ChatList.Visibility = v;
+        var section = NavList.SelectedItem is ListViewItem { Tag: string tag } ? tag : "chat";
+        AgentSessionList.Visibility = section == "agent" ? Visibility.Visible : Visibility.Collapsed;
+        DesignProjectList.Visibility = section == "design" ? Visibility.Visible : Visibility.Collapsed;
+        NewButtonLabel.Text = Loc.S(section switch { "agent" => "NewSession", "design" => "DesignNewProject", _ => "NewChat" });
+        NewChatButton.Visibility = section is "chat" or "agent" && SettingsNav.Visibility != Visibility.Visible ? Visibility.Visible : Visibility.Collapsed;
+        DesignProjectList.Visibility = Visibility.Collapsed;
+        UpdateEngineCard();
+    }
+
+    private async void OnNewChat(object sender, RoutedEventArgs e)
+    {
+        if (NavList.SelectedItem is ListViewItem { Tag: "agent" })
+        {
+            await AgentPage.PickFolderAndStartAsync();
+            return;
+        }
+        if (NavList.SelectedItem is ListViewItem { Tag: "design" })
+        {
+            DesignVm.NewProjectCommand.Execute(null);
+            return;
+        }
+        Chat.NewChatCommand.Execute(null);
+        ShowChat();
+    }
+
+    private void OnDeleteDesign(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { Tag: Services.Design.DesignProject project })
+            DesignVm.DeleteProjectCommand.Execute(project);
+    }
+
+    private void OnDeleteSession(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { Tag: Services.Agent.AgentSession session })
+            AgentVm.DeleteSessionCommand.Execute(session);
+    }
+
+    /// <summary>In Agent mode the card names the engine (as in the design); elsewhere it shows the loaded model.</summary>
+    private void UpdateEngineCard()
+    {
+        if (NavList.SelectedItem is ListViewItem { Tag: "agent" })
+        {
+            EngineStatus.Text = Loc.S("AgentEngine");
+            HardwareLine.Text = AgentVm.EngineLine;
+        }
+        else
+        {
+            EngineStatus.Text = Engine.StatusText;
+            HardwareLine.Text = Ioc.Hardware.Summary(withRam: false);
+        }
+    }
+
+    private void OnStarChat(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { Tag: ChatSummary chat })
+            Chat.ToggleStarCommand.Execute(chat);
+    }
+
+    private void OnDeleteChat(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { Tag: ChatSummary chat })
+            Chat.DeleteChatCommand.Execute(chat);
+    }
+
+    private void OnOpenSettings(object sender, RoutedEventArgs e) => ShowSettings(ContentFrame.Content is SettingsPage ? "models" : null);
+
+    private void OnEnginePropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(EngineHub.State))
+            UpdateEngineDot();
+        if (e.PropertyName == nameof(EngineHub.StatusText))
+            UpdateEngineCard();
+    }
+
+    private void UpdateEngineDot()
+    {
+        var key = Engine.State switch
+        {
+            EngineState.Ready => "SuccessBrush",
+            EngineState.Installing or EngineState.Loading => "WarningBrush",
+            EngineState.Error => "DangerBrush",
+            _ => "TextFaintBrush",
+        };
+        if (Ui.ThemeBrush(Root, key) is { } brush)
+            EngineDot.Fill = brush;
+    }
+}

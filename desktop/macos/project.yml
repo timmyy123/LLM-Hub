@@ -1,0 +1,133 @@
+name: LLMHub
+options:
+  bundleIdPrefix: app.llm-hub
+  deploymentTarget:
+    macOS: "26.0"
+  createIntermediateGroups: true
+  developmentLanguage: en
+# MARKETING_VERSION and CURRENT_PROJECT_VERSION come from desktop/version.xcconfig (shared with Windows and Linux).
+configFiles:
+  Debug: ../version.xcconfig
+  Release: ../version.xcconfig
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    CODE_SIGN_IDENTITY: "-"
+    CODE_SIGN_STYLE: Manual
+    DEVELOPMENT_TEAM: ""
+    ENABLE_HARDENED_RUNTIME: NO
+    LOCALIZATION_PREFERS_STRING_CATALOGS: YES
+    SWIFT_EMIT_LOC_STRINGS: YES
+  configs:
+    Debug:
+      # Studio › Music: MLX and the Magenta driver are 4x too slow for live audio at -O0. Optimizing C/C++ in Debug
+      # roughly doubles Debug speed (mlx-swift stays -Onone there); Release plays live at about 1.3x real time.
+      GCC_OPTIMIZATION_LEVEL: "3"
+packages:
+  LiteRTLM:
+    path: ../../ios/LLMHub/LocalPackages/LiteRT-LM
+  # Studio › Music: Magenta RealTime 2 on MLX (reuses the iOS runtime; see Packages/MagentaMac/Package.swift).
+  MagentaMac:
+    path: Packages/MagentaMac
+  # Studio › Music clips: Stable Audio 3 on MLX (a Swift port of Stability AI's official MLX runtime).
+  StableAudioMac:
+    path: Packages/StableAudioMac
+  # Read aloud: Supertonic 3 runs on Microsoft's official ONNX Runtime package.
+  onnxruntime:
+    url: https://github.com/microsoft/onnxruntime-swift-package-manager
+    exactVersion: 1.24.2
+  # Dictation: whisper.cpp's official Apple xcframework (Metal).
+  WhisperCpp:
+    path: Packages/WhisperCpp
+targets:
+  LLMHub:
+    type: application
+    platform: macOS
+    sources:
+      - path: LLMHub
+      - path: ../shared/catalog.json
+        buildPhase: resources
+      # Stability AI Community License, NOTICE and Gemma terms for Stable Audio 3 (Contents/Resources/Licenses).
+      - path: Licenses
+        type: folder
+        buildPhase: resources
+    info:
+      path: LLMHub/Info.plist
+      properties:
+        CFBundleName: LLM Hub
+        CFBundleDisplayName: LLM Hub
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        LSApplicationCategoryType: public.app-category.productivity
+        LSMinimumSystemVersion: $(MACOSX_DEPLOYMENT_TARGET)
+        CFBundleLocalizations: [en, es, pt-BR, fr, de, it, ru]
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+        NSMicrophoneUsageDescription: LLM Hub uses the microphone for dictation. Speech is transcribed on this Mac by Whisper and never leaves it.
+    dependencies:
+      - package: LiteRTLM
+        product: LiteRTLM
+      - package: MagentaMac
+        product: MagentaMac
+      - package: StableAudioMac
+        product: StableAudioMac
+      - package: onnxruntime
+        product: onnxruntime
+      - package: WhisperCpp
+        product: whisper
+      # Studio › Search › Videos plays moments in SwiftUI's VideoPlayer (AVPlayerView); linked so its class resolves.
+      - sdk: AVKit.framework
+    entitlements:
+      path: LLMHub/LLMHub.entitlements
+      properties:
+        com.apple.security.app-sandbox: false
+        # Dictation under the hardened runtime (Developer ID builds from tools/package/macos). Not sandboxed, so no
+        # network or file entitlements are needed.
+        com.apple.security.device.audio-input: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.llm-hub.desktop
+        PRODUCT_NAME: LLMHub
+        GENERATE_INFOPLIST_FILE: NO
+        # Same logo as the iOS and Android apps (desktop/shared/icons, from the iOS AppIcon master).
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+  # Unit tests hosted in the app (no UI automation, so they run without Automation Mode).
+  LLMHubTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: LLMHubTests
+    dependencies:
+      - target: LLMHub
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.llm-hub.desktop.tests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/LLMHub.app/Contents/MacOS/LLMHub
+        BUNDLE_LOADER: $(TEST_HOST)
+  LLMHubUITests:
+    type: bundle.ui-testing
+    platform: macOS
+    sources:
+      - path: LLMHubUITests
+    dependencies:
+      - target: LLMHub
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.llm-hub.desktop.uitests
+        TEST_TARGET_NAME: LLMHub
+        GENERATE_INFOPLIST_FILE: YES
+schemes:
+  LLMHub:
+    build:
+      targets:
+        LLMHub: all
+        LLMHubTests: [test]
+        LLMHubUITests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - LLMHubTests
+        - LLMHubUITests
