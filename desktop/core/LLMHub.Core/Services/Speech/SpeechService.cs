@@ -315,52 +315,22 @@ public sealed partial class SpeechService : ObservableObject
         {
             if (_whisper is { HasExited: false } && _whisperUrl is not null)
                 return _whisperUrl;
-            var server = await EnsureWhisperBinaryAsync(ct);
             var model = Path.Combine(WhisperRoot, "models", WhisperModel);
             await Fetch.FileAsync(WhisperModelUrl, model, p => UiThread.Post(() => Status = Loc.F("DownloadingWhisper", p.ToString("F0"))), ct);
             UiThread.Post(() => Status = "");
-
-            var port = FreePort();
-            var info = new ProcessStartInfo(server)
+            // A GPU build that crashes on this machine (the Adreno OpenCL one did, 0xC0000005, on a Snapdragon X Elite) is
+            // set aside and the next build in the list is installed, as llama.cpp does.
+            for (var attempt = 0; ; attempt++)
             {
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                RedirectStandardError = true,
-                RedirectStandardOutput = true,
-                WorkingDirectory = Path.GetDirectoryName(server)!,
-            };
-            foreach (var arg in new[] { "-m", model, "--host", "127.0.0.1", "--port", port.ToString(), "-t", Math.Max(4, Environment.ProcessorCount / 2).ToString() })
-                info.ArgumentList.Add(arg);
-            if (!OperatingSystem.IsWindows())
-                info.Environment["LD_LIBRARY_PATH"] = Path.GetDirectoryName(server) + ":" + Environment.GetEnvironmentVariable("LD_LIBRARY_PATH");
-            _whisper = Process.Start(info)!;
-            _whisper.ErrorDataReceived += (_, _) => { };
-            _whisper.OutputDataReceived += (_, _) => { };
-            _whisper.BeginErrorReadLine();
-            _whisper.BeginOutputReadLine();
-            Ioc.Engines.Llama.Track(_whisper);
-            var url = $"http://127.0.0.1:{port}";
-            var deadline = DateTime.UtcNow.AddMinutes(2);
-            while (DateTime.UtcNow < deadline)
-            {
-                if (_whisper.HasExited)
-                    throw new InvalidOperationException($"whisper-server exited with {_whisper.ExitCode}");
+                var server = await EnsureWhisperBinaryAsync(ct);
                 try
                 {
-                    using var health = await _http.GetAsync(url + "/health", ct);
-                    if (health.IsSuccessStatusCode)
-                    {
-                        _whisperUrl = url;
-                        Log.Info($"whisper-server ready on {port}");
-                        return url;
-                    }
+                    return await StartWhisperAsync(server, model, ct);
                 }
-                catch (HttpRequestException)
+                catch (WhisperCrashedException e) when (attempt < 2 && MarkFailed(server, e.Message))
                 {
                 }
-                await Task.Delay(300, ct);
             }
-            throw new TimeoutException("whisper-server did not start");
         }
         finally
         {
@@ -368,11 +338,94 @@ public sealed partial class SpeechService : ObservableObject
         }
     }
 
+    private sealed class WhisperCrashedException(string message) : InvalidOperationException(message);
+
+    private static string FailedFile => Path.Combine(WhisperRoot, "failed.txt");
+
+    private static HashSet<string> FailedBuilds => File.Exists(FailedFile) ? [.. File.ReadAllLines(FailedFile)] : [];
+
+    /// <summary>The release asset a server was installed from (build.txt next to it), or null for older installs.</summary>
+    private static string? BuildOf(string server)
+    {
+        for (var dir = Path.GetDirectoryName(server); dir is not null && dir.Length > WhisperRoot.Length; dir = Path.GetDirectoryName(dir))
+            if (File.Exists(Path.Combine(dir, "build.txt")))
+                return File.ReadAllText(Path.Combine(dir, "build.txt")).Trim();
+        return null;
+    }
+
+    /// <summary>Records the server's build as failing on this machine and removes it; false if it can't be told apart.</summary>
+    private static bool MarkFailed(string server, string reason)
+    {
+        if (BuildOf(server) is not { } build)
+            return false;
+        Log.Info($"whisper.cpp {build} crashed on start ({reason}); trying the next build");
+        File.AppendAllLines(FailedFile, [build]);
+        var dir = Path.GetDirectoryName(server)!;
+        while (Path.GetDirectoryName(dir) is { } parent && parent.Length > WhisperRoot.Length && !File.Exists(Path.Combine(dir, "build.txt")))
+            dir = parent;
+        try
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+        catch (IOException)
+        {
+            // Still locked by the crashed process: it is skipped by build name below anyway.
+        }
+        return true;
+    }
+
+    private async Task<string> StartWhisperAsync(string server, string model, CancellationToken ct)
+    {
+        var port = FreePort();
+        var info = new ProcessStartInfo(server)
+        {
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            RedirectStandardError = true,
+            RedirectStandardOutput = true,
+            WorkingDirectory = Path.GetDirectoryName(server)!,
+        };
+        foreach (var arg in new[] { "-m", model, "--host", "127.0.0.1", "--port", port.ToString(), "-t", Math.Max(4, Environment.ProcessorCount / 2).ToString() })
+            info.ArgumentList.Add(arg);
+        if (!OperatingSystem.IsWindows())
+            info.Environment["LD_LIBRARY_PATH"] = Path.GetDirectoryName(server) + ":" + Environment.GetEnvironmentVariable("LD_LIBRARY_PATH");
+        _whisper = Process.Start(info)!;
+        _whisper.ErrorDataReceived += (_, _) => { };
+        _whisper.OutputDataReceived += (_, _) => { };
+        _whisper.BeginErrorReadLine();
+        _whisper.BeginOutputReadLine();
+        Ioc.Engines.Llama.Track(_whisper);
+        var url = $"http://127.0.0.1:{port}";
+        var deadline = DateTime.UtcNow.AddMinutes(2);
+        while (DateTime.UtcNow < deadline)
+        {
+            if (_whisper.HasExited)
+                throw new WhisperCrashedException($"whisper-server exited with {_whisper.ExitCode}");
+            try
+            {
+                using var health = await _http.GetAsync(url + "/health", ct);
+                if (health.IsSuccessStatusCode)
+                {
+                    _whisperUrl = url;
+                    Log.Info($"whisper-server ready on {port}");
+                    return url;
+                }
+            }
+            catch (HttpRequestException)
+            {
+            }
+            await Task.Delay(300, ct);
+        }
+        throw new TimeoutException("whisper-server did not start");
+    }
+
     /// <summary>Official whisper.cpp build for this machine: CUDA on NVIDIA, Adreno OpenCL on Snapdragon, BLAS/CPU otherwise.</summary>
     private static async Task<string> EnsureWhisperBinaryAsync(CancellationToken ct)
     {
         var exe = OperatingSystem.IsWindows() ? "whisper-server.exe" : "whisper-server";
-        if (Directory.Exists(WhisperRoot) && Directory.EnumerateFiles(WhisperRoot, exe, SearchOption.AllDirectories).FirstOrDefault() is { } found)
+        var failed = FailedBuilds;
+        if (Directory.Exists(WhisperRoot)
+            && Directory.EnumerateFiles(WhisperRoot, exe, SearchOption.AllDirectories).FirstOrDefault(f => BuildOf(f) is not { } b || !failed.Contains(b)) is { } found)
             return found;
 
         var hw = Ioc.Hardware;
@@ -381,16 +434,17 @@ public sealed partial class SpeechService : ObservableObject
                 ? hw.HasAdrenoGpu ? ["whisper-bin-win-opencl-adreno-arm64.zip", "whisper-bin-win-cpu-arm64.zip"] : ["whisper-bin-win-cpu-arm64.zip"]
                 : hw.HasNvidiaGpu ? ["whisper-bin-win-cuda-12.4.0-x64.zip", "whisper-blas-bin-x64.zip"] : ["whisper-blas-bin-x64.zip", "whisper-bin-x64.zip"]
             : hw.IsArm64 ? ["whisper-bin-ubuntu-arm64.tar.gz"] : ["whisper-bin-ubuntu-x64.tar.gz"];
-        foreach (var name in wanted)
+        foreach (var name in wanted.Where(n => !failed.Contains(n)))
         {
             if (await Fetch.GitHubAssetAsync("ggml-org/whisper.cpp", n => n == name, ct) is not { } asset)
                 continue;
             var archive = Path.Combine(WhisperRoot, name);
             Log.Info($"Installing whisper.cpp {asset.Tag} ({name})");
             await Fetch.FileAsync(asset.Url, archive, p => UiThread.Post(() => Ioc.Speech.Status = Loc.F("DownloadingWhisper", p.ToString("F0"))), ct);
-            var target = Path.Combine(WhisperRoot, asset.Tag);
+            var target = Path.Combine(WhisperRoot, asset.Tag, name.Split('.')[0]);
             Fetch.Extract(archive, target);
             File.Delete(archive);
+            File.WriteAllText(Path.Combine(target, "build.txt"), name);
             if (Directory.EnumerateFiles(target, exe, SearchOption.AllDirectories).FirstOrDefault() is { } server)
             {
                 if (!OperatingSystem.IsWindows())
