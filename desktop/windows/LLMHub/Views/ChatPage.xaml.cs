@@ -17,9 +17,16 @@ namespace LLMHub.Views;
 
 public sealed partial class ChatPage : Page
 {
+    /// <summary>Keeps a streaming reply in view: on until the reader scrolls up, back on once they return to the bottom.</summary>
+    private bool _follow = true;
+    private double _lastOffset;
+
     public ChatPage()
     {
         InitializeComponent();
+        Scroller.ViewChanged += OnScrollerViewChanged;
+        Scroller.SizeChanged += OnMessagesResized;
+        MessageList.SizeChanged += OnMessagesResized;
         ViewModel.Messages.CollectionChanged += OnMessagesChanged;
         Ioc.Speech.PropertyChanged += OnSpeechChanged;
         Unloaded += (_, _) =>
@@ -155,16 +162,27 @@ public sealed partial class ChatPage : Page
 
     private void OnMessagesChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
-        if (e.NewItems is not null)
-            foreach (MessageItem item in e.NewItems)
-                item.PropertyChanged += OnMessagePropertyChanged;
+        _follow = true;
         ScrollToEnd();
     }
 
-    private void OnMessagePropertyChanged(object? sender, PropertyChangedEventArgs e)
+    // New text changes the height but not the offset, so an offset that moves up means the reader scrolled. Deciding
+    // here, rather than per token, keeps a reply that grows by several lines at once (Markdown re-renders in batches)
+    // from looking like the reader left the bottom.
+    private void OnScrollerViewChanged(object? sender, ScrollViewerViewChangedEventArgs e)
     {
-        // Follow the stream only while the reader is already at the bottom.
-        if (Scroller.VerticalOffset >= Scroller.ScrollableHeight - 80)
+        var offset = Scroller.VerticalOffset;
+        if (offset >= Scroller.ScrollableHeight - 40)
+            _follow = true;
+        else if (offset < _lastOffset - 1)
+            _follow = false;
+        _lastOffset = offset;
+    }
+
+    // After layout, so following scrolls to where the new text actually ends.
+    private void OnMessagesResized(object sender, SizeChangedEventArgs e)
+    {
+        if (_follow)
             ScrollToEnd();
     }
 

@@ -27,6 +27,9 @@ internal sealed class ChatPage
     private readonly Adw.StatusPage _empty = Adw.StatusPage.New();
     private readonly Gtk.Button _getModel;
     private bool _syncingModels;
+    /// <summary>Keeps a streaming reply in view: on until the reader scrolls up, back on once they return to the bottom.</summary>
+    private bool _follow = true;
+    private double _lastOffset;
 
     public Gtk.Widget Root { get; }
 
@@ -48,6 +51,25 @@ internal sealed class ChatPage
         _body.AddNamed(_empty, "empty");
         _body.AddNamed(_scroll, "messages");
         _body.SetVexpand(true);
+        var adj = _scroll.GetVadjustment()!;
+        // New text changes the upper bound but not the value, so a value that moves up means the reader scrolled.
+        // Deciding here, rather than per token, keeps a reply that grows by several lines at once from looking like
+        // the reader left the bottom.
+        adj.OnValueChanged += (_, _) =>
+        {
+            var offset = adj.GetValue();
+            if (adj.GetUpper() - adj.GetPageSize() - offset < 40)
+                _follow = true;
+            else if (offset < _lastOffset - 1)
+                _follow = false;
+            _lastOffset = offset;
+        };
+        // Emitted after layout when the text grows or the window resizes, so following lands where the new text ends.
+        adj.OnChanged += (_, _) =>
+        {
+            if (_follow)
+                FollowToEnd();
+        };
 
         _input.SetWrapMode(Gtk.WrapMode.WordChar);
         _input.SetAcceptsTab(false);
@@ -400,21 +422,21 @@ internal sealed class ChatPage
             sources.SetVisible(item.HasSources);
         }
         Update();
-        item.PropertyChanged += (_, _) =>
-        {
-            Update();
-            ScrollToEnd();
-        };
+        item.PropertyChanged += (_, _) => Update();
         item.Sources.CollectionChanged += (_, _) => Update();
         return box;
     }
 
-    private void ScrollToEnd() => GLib.Functions.IdleAdd(GLib.Constants.PRIORITY_LOW, () =>
+    private void ScrollToEnd()
     {
-        var adj = _scroll.GetVadjustment();
-        // Follow the stream only while the reader is near the bottom.
-        if (adj.GetUpper() - adj.GetPageSize() - adj.GetValue() < 200)
-            adj.SetValue(adj.GetUpper());
+        _follow = true;
+        FollowToEnd();
+    }
+
+    private void FollowToEnd() => GLib.Functions.IdleAdd(GLib.Constants.PRIORITY_LOW, () =>
+    {
+        var adj = _scroll.GetVadjustment()!;
+        adj.SetValue(adj.GetUpper() - adj.GetPageSize());
         return false;
     });
 }

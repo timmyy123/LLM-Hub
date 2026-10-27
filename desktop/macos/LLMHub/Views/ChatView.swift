@@ -102,25 +102,57 @@ private struct EmptyChat: View {
 
 private struct MessageList: View {
     @Environment(AppModel.self) private var app
+    @State private var position = ScrollPosition(edge: .bottom)
+    /// Keeps a streaming reply in view: on until the reader scrolls up, back on once they return to the bottom.
+    @State private var follow = true
 
     var body: some View {
-        ScrollViewReader { proxy in
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 28) {
-                    ForEach(app.chat.messages) { message in
-                        MessageRow(message: message, isLast: message === app.chat.messages.last).id(message.id)
-                    }
-                    Color.clear.frame(height: 1).id("bottom")
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 28) {
+                ForEach(app.chat.messages) { message in
+                    MessageRow(message: message, isLast: message === app.chat.messages.last).id(message.id)
                 }
-                .frame(maxWidth: 760)
-                .padding(EdgeInsets(top: 32, leading: 24, bottom: 16, trailing: 24))
-                .frame(maxWidth: .infinity)
             }
-            .onChange(of: app.chat.messages.last?.content) { proxy.scrollTo("bottom", anchor: .bottom) }
-            .onChange(of: app.chat.messages.last?.reasoning) { proxy.scrollTo("bottom", anchor: .bottom) }
-            .onChange(of: app.chat.messages.count) { proxy.scrollTo("bottom", anchor: .bottom) }
-            .onAppear { proxy.scrollTo("bottom", anchor: .bottom) }
+            .frame(maxWidth: 760)
+            .padding(EdgeInsets(top: 32, leading: 24, bottom: 16, trailing: 24))
+            .frame(maxWidth: .infinity)
         }
+        .scrollPosition($position)
+        // Runs after layout, so following scrolls to where the new text actually ends rather than one update behind.
+        .onScrollGeometryChange(for: ScrollMetrics.self) { ScrollMetrics($0) } action: { old, new in
+            if new.atBottom {
+                follow = true
+            } else if new.offset < old.offset - 1 {
+                follow = false
+            }
+            if follow && (new.contentHeight != old.contentHeight || new.visibleHeight != old.visibleHeight) {
+                position.scrollTo(edge: .bottom)
+            }
+        }
+        .onChange(of: app.chat.messages.count) { scrollToEnd() }
+        .onChange(of: app.chat.selectedChatId) { scrollToEnd() }
+    }
+
+    private func scrollToEnd() {
+        follow = true
+        position.scrollTo(edge: .bottom)
+    }
+}
+
+/// Where the message list is scrolled to. New text changes the height but not the offset, so an offset that moves up
+/// means the reader scrolled.
+private struct ScrollMetrics: Equatable {
+    let offset: CGFloat
+    let contentHeight: CGFloat
+    let visibleHeight: CGFloat
+    let atBottom: Bool
+
+    init(_ geometry: ScrollGeometry) {
+        offset = geometry.contentOffset.y
+        contentHeight = geometry.contentSize.height
+        visibleHeight = geometry.containerSize.height
+        // The visible rect also covers the toolbar's inset at the top, so its end meets the content's end at the bottom.
+        atBottom = geometry.visibleRect.maxY >= geometry.contentSize.height - 40
     }
 }
 
