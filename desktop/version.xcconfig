@@ -3,5 +3,5 @@
 // MARKETING_VERSION is major.minor.patch. Store uploads need a higher version each time (the Microsoft Store also
 // needs the patch number to go up, since MSIX versions are major.minor.patch.0).
 // CURRENT_PROJECT_VERSION is the build number (macOS CFBundleVersion, the fourth part of the Windows file version).
-MARKETING_VERSION = 0.1.0
-CURRENT_PROJECT_VERSION = 1
+MARKETING_VERSION = 0.1.1
+CURRENT_PROJECT_VERSION = 2
