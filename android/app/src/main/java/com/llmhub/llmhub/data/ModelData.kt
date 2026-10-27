@@ -1,11 +1,23 @@
 package com.llmhub.llmhub.data
 
+import android.content.Context
+import android.content.pm.PackageManager
 import android.os.Build
 
 /**
  * Device SOC detection for optimal model selection
  */
 object DeviceInfo {
+    /**
+     * ggml's Vulkan backend needs a Vulkan 1.2 driver. Mali-G57 phones ship 1.1 and crashed loading
+     * models on the GPU (null vkGetBufferDeviceAddress, 4.5.7-4.5.8). Set by [init] at app start.
+     */
+    @Volatile var hasVulkan12 = true
+        private set
+
+    fun init(context: Context) {
+        hasVulkan12 = context.packageManager.hasSystemFeature(PackageManager.FEATURE_VULKAN_HARDWARE_VERSION, 0x402000)
+    }
     fun getDeviceSoc(): String {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             Build.SOC_MODEL
@@ -73,10 +85,10 @@ object DeviceInfo {
     )
 
     /**
-     * llama.cpp Vulkan crashes on Adreno drivers (pipeline creation failures and driver faults,
-     * Adreno 730 to 840), so GGUF GPU runs always use OpenCL on Snapdragon and the setting is hidden.
+     * llama.cpp Vulkan is unusable on Adreno drivers (Snapdragon uses OpenCL) and on drivers below
+     * Vulkan 1.2, so the setting is hidden there.
      */
-    fun isLlamaCppVulkanBlocked(): Boolean = isSnapdragon()
+    fun isLlamaCppVulkanBlocked(): Boolean = isSnapdragon() || !hasVulkan12
 
     /**
      * SoC tag used in the chip-specific EmbeddingGemma 2 file names

@@ -76,7 +76,15 @@ class SDBackendService : Service() {
     }
     
     override fun onBind(intent: Intent?): IBinder? = null
-    
+
+    // Android 15+ caps dataSync services per day; after onTimeout the service has seconds to stop or the
+    // app is killed (ForegroundServiceDidNotStopInTimeException, 4.5.8). onDestroy stops the backend.
+    override fun onTimeout(startId: Int, fgsType: Int) {
+        Log.w(TAG, "Foreground service time limit reached, stopping")
+        stopForeground(STOP_FOREGROUND_REMOVE)
+        stopSelf()
+    }
+
     override fun onDestroy() {
         Log.i(TAG, "SDBackendService destroyed")
         stopBackend()

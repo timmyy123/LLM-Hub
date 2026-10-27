@@ -6,6 +6,7 @@ import android.net.Uri
 import android.util.Log
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import com.llmhub.llmhub.R
+import com.llmhub.llmhub.data.DeviceInfo
 import com.llmhub.llmhub.data.LLMModel
 import com.llmhub.llmhub.data.effectiveContextWindow
 import com.llmhub.llmhub.data.localFileName
@@ -207,6 +208,8 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
             val accelerator = when {
                 preferredBackend != LlmInference.Backend.GPU -> null
                 !wantsNpu && useVulkan -> "Vulkan0"
+                // No GPU runtime: the OpenCL build is for Snapdragon and Vulkan needs a 1.2 driver.
+                !wantsNpu && !DeviceInfo.isSnapdragon() && !DeviceInfo.hasVulkan12 -> null
                 !LlamaCppNative.nativeHasIlrcpc() -> {
                     // The packaged Snapdragon libggml-cpu.so uses STLUR during prompt decode.
                     // Loading on GPU/NPU may succeed without ILRCPC, then SIGILL on generation.

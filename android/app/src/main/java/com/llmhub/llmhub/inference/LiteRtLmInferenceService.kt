@@ -29,7 +29,11 @@ import com.llmhub.llmhub.websearch.WebSearchCitationStore
 import com.llmhub.llmhub.websearch.WebSearchService
 import com.google.ai.edge.litertlm.Message
 import com.google.ai.edge.litertlm.MessageCallback
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -76,6 +80,8 @@ class LiteRtLmInferenceService(private val applicationContext: Context) : Infere
     private var overrideEnableThinking: Boolean = true
 
     private val engineMutex = Mutex()
+    // Conversations whose reply may still run on LiteRT-LM's worker thread; see closeEngineLocked.
+    private val liveConversations = java.util.concurrent.ConcurrentHashMap.newKeySet<Conversation>()
     private val sessionResetTimes = mutableMapOf<String, Long>()
     private val webSearchService: WebSearchService = DuckDuckGoSearchService()
 
@@ -193,10 +199,7 @@ class LiteRtLmInferenceService(private val applicationContext: Context) : Infere
         engineMutex.withLock {
             if (currentModel?.name == model.name && engine != null) return@withLock
 
-            engine?.let {
-                try { it.close() } catch (e: Exception) { Log.w(TAG, "Error closing engine: ${e.message}") }
-            }
-            engine = null
+            closeEngineLocked()
 
             val modelFile = withContext(Dispatchers.IO) { resolveModelFile(model) }
             isVisionDisabled = disableVision
@@ -234,12 +237,33 @@ class LiteRtLmInferenceService(private val applicationContext: Context) : Infere
     // a screen that unloads froze the app (ANR in LiteRtLmJni.nativeDeleteEngine, 4.5.5).
     override suspend fun unloadModel(): Unit = withContext(Dispatchers.IO) {
         engineMutex.withLock {
-            engine?.let {
-                try { it.close() } catch (e: Exception) { Log.w(TAG, "Error unloading engine: ${e.message}") }
-            }
-            engine = null
+            closeEngineLocked()
             currentModel = null
             Log.d(TAG, "Engine unloaded")
+        }
+    }
+
+    /**
+     * Call with [engineMutex] held. Replies still running on this engine are cancelled and awaited
+     * first: freeing the engine under LiteRT-LM's worker thread crashed in nativeDeleteEngine (4.5.7).
+     */
+    private suspend fun closeEngineLocked() {
+        val eng = engine ?: return
+        liveConversations.forEach { runCatching { it.cancelProcess() } }
+        withTimeoutOrNull(10_000) { while (liveConversations.isNotEmpty()) delay(50) }
+        try { eng.close() } catch (e: Exception) { Log.w(TAG, "Error closing engine: ${e.message}") }
+        engine = null
+    }
+
+    /** A Conversation registered in [liveConversations] until [block] returns and it is closed. */
+    private inline fun <R> Engine.withConversation(config: ConversationConfig, block: (Conversation) -> R): R {
+        val conv = createConversation(config)
+        liveConversations += conv
+        try {
+            return block(conv)
+        } finally {
+            liveConversations -= conv
+            conv.close()
         }
     }
 
@@ -252,10 +276,7 @@ class LiteRtLmInferenceService(private val applicationContext: Context) : Infere
     override suspend fun onCleared() {
         withContext(Dispatchers.IO) {
             engineMutex.withLock {
-                engine?.let {
-                    try { it.close() } catch (e: Exception) { Log.w(TAG, "Error on onCleared: ${e.message}") }
-                }
-                engine = null
+                closeEngineLocked()
                 currentModel = null
             }
         }
@@ -341,7 +362,7 @@ class LiteRtLmInferenceService(private val applicationContext: Context) : Infere
         val eng = engine ?: throw IllegalStateException("No engine loaded")
         return withContext(Dispatchers.IO) {
             val sb = StringBuilder()
-            eng.createConversation(buildConversationConfig()).use { conv ->
+            eng.withConversation(buildConversationConfig()) { conv ->
                 conv.sendMessageAsyncWithCallback(prompt).collect { msg ->
                     sb.append(msg.contents.contents.filterIsInstance<Content.Text>().joinToString("") { it.text })
                 }
@@ -354,7 +375,7 @@ class LiteRtLmInferenceService(private val applicationContext: Context) : Infere
         ensureEngineLoaded(model)
         val eng = engine ?: throw IllegalStateException("No engine loaded")
         return flow {
-            eng.createConversation(buildConversationConfig()).use { conv ->
+            eng.withConversation(buildConversationConfig()) { conv ->
                 conv.sendMessageAsyncWithCallback(prompt).collect { msg ->
                     val chunk = msg.contents.contents.filterIsInstance<Content.Text>().joinToString("") { it.text }
                     if (chunk.isNotEmpty()) emit(chunk)
@@ -470,7 +491,7 @@ class LiteRtLmInferenceService(private val applicationContext: Context) : Infere
                 Log.d(TAG, "Using agent conversation config with ${localAgentTools.javaClass.simpleName}")
                 var sentThinkOpen = false
                 var sentThinkClose = false
-                eng.createConversation(agentConfig).use { conv ->
+                eng.withConversation(agentConfig) { conv ->
                     conv.sendMessageAsyncWithCallback(contents).collect { msg ->
                         val chunk = msg.contents.contents.filterIsInstance<Content.Text>().joinToString("") { it.text }
                         val thinkingChunk = if (useThinking) {
@@ -492,7 +513,7 @@ class LiteRtLmInferenceService(private val applicationContext: Context) : Infere
             } else {
                 var sentThinkOpen = false
                 var sentThinkClose = false
-                eng.createConversation(buildConversationConfig()).use { conv ->
+                eng.withConversation(buildConversationConfig()) { conv ->
                     conv.sendMessageAsyncWithCallback(contents).collect { msg ->
                         val chunk = msg.contents.contents.filterIsInstance<Content.Text>().joinToString("") { it.text }
                         val thinkingChunk = if (useThinking) {
@@ -548,41 +569,65 @@ class LiteRtLmInferenceService(private val applicationContext: Context) : Infere
     }
 
     private fun Conversation.sendMessageAsyncWithCallback(prompt: String): Flow<Message> = callbackFlow {
+        val finished = CompletableDeferred<Unit>()
         try {
             sendMessageAsync(prompt, object : MessageCallback {
                 override fun onMessage(message: Message) {
                     trySend(message)
                 }
                 override fun onDone() {
+                    finished.complete(Unit)
                     close()
                 }
                 override fun onError(throwable: Throwable) {
+                    finished.complete(Unit)
                     close(throwable)
                 }
             })
         } catch (e: Exception) {
+            finished.complete(Unit)
             close(e)
         }
-        awaitClose {}
+        // A cancelled collector (Stop, leaving the screen) must not let the caller close the
+        // Conversation while the worker thread still generates into it (SIGSEGV in liblitertlm_jni,
+        // 4.5.8): stop the native process and wait until it reports done.
+        awaitClose {
+            if (!finished.isCompleted) {
+                runCatching { cancelProcess() }
+                runBlocking { withTimeoutOrNull(10_000) { finished.await() } }
+            }
+        }
     }
 
     private fun Conversation.sendMessageAsyncWithCallback(contents: Contents): Flow<Message> = callbackFlow {
+        val finished = CompletableDeferred<Unit>()
         try {
             sendMessageAsync(contents, object : MessageCallback {
                 override fun onMessage(message: Message) {
                     trySend(message)
                 }
                 override fun onDone() {
+                    finished.complete(Unit)
                     close()
                 }
                 override fun onError(throwable: Throwable) {
+                    finished.complete(Unit)
                     close(throwable)
                 }
             })
         } catch (e: Exception) {
+            finished.complete(Unit)
             close(e)
         }
-        awaitClose {}
+        // A cancelled collector (Stop, leaving the screen) must not let the caller close the
+        // Conversation while the worker thread still generates into it (SIGSEGV in liblitertlm_jni,
+        // 4.5.8): stop the native process and wait until it reports done.
+        awaitClose {
+            if (!finished.isCompleted) {
+                runCatching { cancelProcess() }
+                runBlocking { withTimeoutOrNull(10_000) { finished.await() } }
+            }
+        }
     }
 
 }

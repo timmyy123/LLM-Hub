@@ -31,7 +31,7 @@ class LiteRtUpscaler private constructor(
         private const val TILE_SIZE = 128
         private const val SCALE = 4
         private const val INNER_STEP = 112 // 8px boundary padding on each side for artifact-free convolution
-        private const val MAX_DIMENSION = 1024 // Keep output within 4096px (GL texture & memory limit)
+        const val MAX_DIMENSION = 1024 // Keep output within 4096px (GL texture & memory limit)
 
         /**
          * Creates a LiteRtUpscaler instance.

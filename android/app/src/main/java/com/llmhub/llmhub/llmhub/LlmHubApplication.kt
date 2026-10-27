@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Context
 import android.content.res.Configuration
 import com.llmhub.llmhub.billing.BillingManager
+import com.llmhub.llmhub.data.DeviceInfo
 import com.llmhub.llmhub.data.HfDefaultToken
 import com.llmhub.llmhub.data.LlmHubDatabase
 import com.llmhub.llmhub.data.ThemePreferences
@@ -34,6 +35,7 @@ class LlmHubApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        DeviceInfo.init(this)
         // The :npu_probe and :litert_sd processes only run one model (EmbeddingNpuProbe, LiteRtSdService).
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P &&
             (getProcessName().endsWith(":npu_probe") || getProcessName().endsWith(":litert_sd"))) return

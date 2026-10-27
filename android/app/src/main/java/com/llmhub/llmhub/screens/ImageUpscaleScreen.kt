@@ -423,10 +423,18 @@ fun ImageUpscaleScreen(
                                             }
 
                                             val result = withContext(Dispatchers.IO) {
-                                                val width = bitmap.width
-                                                val height = bitmap.height
+                                                // Same input cap as LiteRtUpscaler: the 4x result of a 4096 px photo is
+                                                // over the 100 MB a Canvas can draw (RecordingCanvas crash, 4.5.8).
+                                                val longest = maxOf(bitmap.width, bitmap.height)
+                                                val source = if (longest > LiteRtUpscaler.MAX_DIMENSION) {
+                                                    val scale = LiteRtUpscaler.MAX_DIMENSION.toFloat() / longest
+                                                    Bitmap.createScaledBitmap(bitmap, (bitmap.width * scale).toInt().coerceAtLeast(1),
+                                                        (bitmap.height * scale).toInt().coerceAtLeast(1), true)
+                                                } else bitmap
+                                                val width = source.width
+                                                val height = source.height
                                                 val pixels = IntArray(width * height)
-                                                bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
+                                                source.getPixels(pixels, 0, width, 0, 0, width, height)
                                                 val rgbBytes = ByteArray(width * height * 3)
                                                 for (i in pixels.indices) {
                                                     val pixel = pixels[i]

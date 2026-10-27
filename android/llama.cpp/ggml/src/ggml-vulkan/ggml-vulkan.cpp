@@ -5435,7 +5435,7 @@ void ggml_vk_instance_init() {
         // If only CPU devices are available, return without devices.
         if (vk_instance.device_indices.empty()) {
             for (size_t i = 0; i < devices.size(); i++) {
-                if (devices[i].getProperties().deviceType != vk::PhysicalDeviceType::eCpu) {
+                if (devices[i].getProperties().deviceType != vk::PhysicalDeviceType::eCpu && ggml_vk_device_is_supported(devices[i])) {
                     vk_instance.device_indices.push_back(i);
                     break;
                 }
@@ -16366,6 +16366,11 @@ bool ggml_vk_instance_debug_utils_ext_available(
 }
 
 bool ggml_vk_device_is_supported(const vk::PhysicalDevice & vkdev) {
+    // LLM Hub: the instance can be 1.2 while the driver is 1.1 (Mali-G57); its 1.2 functions such as vkGetBufferDeviceAddress are then null.
+    if (vkdev.getProperties().apiVersion < VK_API_VERSION_1_2) {
+        return false;
+    }
+
     VkPhysicalDeviceFeatures2 device_features2;
     device_features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 

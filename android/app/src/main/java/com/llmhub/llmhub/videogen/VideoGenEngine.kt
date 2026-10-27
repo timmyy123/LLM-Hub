@@ -2,6 +2,7 @@ package com.llmhub.llmhub.videogen
 
 import android.content.Context
 import android.graphics.Bitmap
+import com.llmhub.llmhub.data.DeviceInfo
 import com.llmhub.llmhub.data.LLMModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -114,7 +115,9 @@ class VideoGenEngine(context: Context) {
             // the NPU models instead, so GGUF models run on the CPU there. The Tensor G5's PowerVR
             // D-Series driver runs the transformer but computes noise (with or without ggml's
             // integer-dot, cooperative-matrix and FP16 paths), so it gets the CPU too.
-            else -> if (isAdreno() || isTensorG5()) listOf(VideoGenBackend.CPU) else listOf(VideoGenBackend.GPU, VideoGenBackend.CPU)
+            // ggml's Vulkan backend also needs a Vulkan 1.2 driver (Mali-G57 phones have 1.1).
+            else -> if (isAdreno() || isTensorG5() || !DeviceInfo.hasVulkan12) listOf(VideoGenBackend.CPU)
+                else listOf(VideoGenBackend.GPU, VideoGenBackend.CPU)
         }
 
         private fun isTensorG5(): Boolean =

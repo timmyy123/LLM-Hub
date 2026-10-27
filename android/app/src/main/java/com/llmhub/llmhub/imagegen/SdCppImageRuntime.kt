@@ -22,7 +22,8 @@ internal class SdCppImageRuntime {
          * Imported checkpoints run on the CPU where ggml's Vulkan backend is unusable, as video GGUF models do:
          * Adreno drivers fail its shaders, and the Tensor G5's PowerVR driver produces noise.
          */
-        fun usesGpu(requested: Boolean) = requested && !DeviceInfo.isSnapdragon() && !DeviceInfo.isTensorG5()
+        fun usesGpu(requested: Boolean) =
+            requested && !DeviceInfo.isSnapdragon() && !DeviceInfo.isTensorG5() && DeviceInfo.hasVulkan12
     }
     private var handle = 0L
     fun load(path: String, options: ImageGenerationOptions, gpu: Boolean) {
