@@ -8,11 +8,12 @@
 static void * portable_aligned_malloc(size_t align, size_t size) {
 #ifdef _WIN32
     return _aligned_malloc(size, align);
-#elif defined(__ANDROID__) && __ANDROID_API__ < 28
-    void * ptr = nullptr;
-    return posix_memalign(&ptr, align, size) == 0 ? ptr : nullptr;
 #else
-    return std::aligned_alloc(align, size);
+    void * ptr = nullptr;
+    if (posix_memalign(&ptr, align, size) != 0) {
+        return nullptr;
+    }
+    return ptr;
 #endif
 }
 

@@ -1,9 +1,9 @@
 # Vendored llama.cpp
 
 - Upstream: https://github.com/ggml-org/llama.cpp
-- Version: `b11797`
-- Commit: `9b56ccf00d755b0bf780140f6352a67db1ac0378`
-- Source archive SHA-256: `7f4e54d8d2389c9b3d62624067cc4b51b2b1cf0d863be45a7dd83734b7e113ca`
+- Version: `b11946`
+- Commit: `8ca4060b7e30e76baaa5670ee1ec1b760b7f8552`
+- Source archive SHA-256: `76ad58014a4ec1093ffe1fd8e23e263a1fe76fd1aa44e3db788ca0b6023a2b71`
 - License: MIT (see `LICENSE`)
 
 This source builds the baseline ARMv8 CPU runtime (`libllmhub_llama_cpu.so`) and
@@ -11,17 +11,20 @@ the Vulkan GPU runtime (`libllmhub_llama_vulkan.so`) for arm64 devices.
 Android Studio builds Vulkan with NDK shader tools and vendored Vulkan-Headers.
 Local patches in `ggml/src/ggml-opencl/ggml-opencl.cpp` (below) and `ggml/src/ggml-vulkan/ggml-vulkan.cpp`: the Android API 27 compatibility
 fix uses the Vulkan dispatcher for `vkGetPhysicalDeviceFeatures2`; a failed pipeline compile
-releases its claim so waiting threads fail instead of hanging; and pipeline creation
-failures are logged with `GGML_LOG_ERROR`, which reaches logcat.
-The buffer allocator in `ggml/src/ggml-vulkan/ggml-vulkan-buffers.cpp` uses
-`posix_memalign` below Android API 28, where `aligned_alloc` is unavailable.
+releases its claim so waiting threads fail instead of hanging; pipeline creation
+failures are logged with `GGML_LOG_ERROR`, which reaches logcat; and `ggml_vk_device_is_supported`
+rejects devices whose driver is below Vulkan 1.2 (Mali-G57 reports 1.1 under a 1.2 instance, and
+its 1.2 entry points such as `vkGetBufferDeviceAddress` are null), including in the
+first-non-CPU-device fallback.
+Since b11946 upstream's buffer allocator (`ggml/src/ggml-vulkan/ggml-vulkan-buffers.cpp`) uses
+`posix_memalign` on every non-Windows platform, so the old API 27 `aligned_alloc` patch is gone.
 
-The Android app also vendors the official **b11797 Snapdragon** Android release
-(`llama-b11797-bin-android-arm64-snapdragon.tar.gz`, SHA-256
-`e7fa9c06d9729f0df3608e32c0fb253c6b5d30b0b55547c3d94b6e1769af7653`).
+The Android app also vendors the official **b11946 Snapdragon** Android release
+(`llama-b11946-bin-android-arm64-snapdragon.tar.gz`, SHA-256
+`15dc2e7cb188fd40c119272bb8315786bace7ce1e042c55427700e79a0d95963`).
 Its headers and stripped arm64 runtime libraries are under `app/src/main/cpp/llama-prebuilt`
 and `app/src/main/jniLibs/arm64-v8a`; Hexagon v73/v75/v79/v81/v85 skels are under
-`app/src/main/assets/llama_htp`. Android Studio links these into the separate
+`app/src/main/assets/llama_htp` (copied unstripped, as released). Android Studio links these into the separate
 `libllmhub_llama_snapdragon.so` JNI bridge. The Snapdragon bridge is loaded for
 OpenCL or Hexagon selection; Vulkan uses the source-built runtime instead.
 
@@ -40,9 +43,11 @@ OpenCL headers and an NDK build of the OpenCL ICD loader, then strip it with
 `llvm-strip --strip-unneeded`. Its exports match the release library's.
 
 To upgrade the accelerator runtime, obtain the matching official Android Snapdragon
-release archive, replace its headers and libraries together, strip debug symbols from
-the arm64 libraries, and update the `llama_htp_<version>` asset-cache name (and the skel list) in
-`LlamaCppInferenceService.kt`. Keep source and Snapdragon package versions aligned.
+release archive (verify its digest with the GitHub releases API), replace its headers and
+libraries together, strip the arm64 libraries with `llvm-strip --strip-unneeded` (`libggml`,
+`libggml-base`, `libggml-cpu`, `libggml-hexagon`, `libggml-rpc`, `libllama`, `libmtmd`), copy every
+`libggml-htp-v*.so` skel the release ships, and update the `llama_htp_<version>` asset-cache name
+(and the skel list) in `LlamaCppInferenceService.kt`. Keep source and Snapdragon package versions aligned.
 
 `libggml-opencl.so` is rebuilt with `bash android/tools/llama_opencl/build.sh` after the source is updated.
 

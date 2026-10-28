@@ -174,6 +174,22 @@ fun LLMModel.hasDownloadedVisionProjector(context: Context): Boolean {
     return false
 }
 
+/**
+ * True when [fileName] is the download of a catalog vision projector for a different catalog model
+ * family (e.g. an LFM-2.5 VL projector seen while loading LFM3 VL 2B). Both families use 2048-wide
+ * embeddings, so the wrong projector can load without an error and garble image input instead.
+ * Imported models keep matching any projector by file name.
+ */
+fun LLMModel.isOtherCatalogModelsProjector(fileName: String): Boolean {
+    if (source == "Custom" || ModelData.models.none { it.name == name }) return false
+    val owner = ModelData.models.firstOrNull { candidate ->
+        candidate.modelFormat.equals("gguf", ignoreCase = true) &&
+            candidate.name.contains("Projector", ignoreCase = true) &&
+            candidate.localFileName().equals(fileName, ignoreCase = true)
+    } ?: return false
+    return normalizeVisionPairBaseName(owner.name) != normalizeVisionPairBaseName(name)
+}
+
 private fun normalizeVisionPairBaseName(modelName: String): String {
     return modelName
         .substringBefore(" (")

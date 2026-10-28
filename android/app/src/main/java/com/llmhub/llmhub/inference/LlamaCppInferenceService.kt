@@ -9,6 +9,7 @@ import com.llmhub.llmhub.R
 import com.llmhub.llmhub.data.DeviceInfo
 import com.llmhub.llmhub.data.LLMModel
 import com.llmhub.llmhub.data.effectiveContextWindow
+import com.llmhub.llmhub.data.isOtherCatalogModelsProjector
 import com.llmhub.llmhub.data.localFileName
 import com.llmhub.llmhub.data.ThemePreferences
 import com.llmhub.llmhub.websearch.DuckDuckGoSearchService
@@ -82,7 +83,7 @@ internal object LlamaCppNative : LlamaCppRuntime {
     external override fun nativeModelEpoch(): Int
 }
 
-/** Official b11797 Snapdragon OpenCL/Hexagon runtime, loaded only for GPU/NPU selection. */
+/** Official b11946 Snapdragon OpenCL/Hexagon runtime, loaded only for GPU/NPU selection. */
 internal object LlamaCppSnapdragonNative : LlamaCppRuntime {
     init { System.loadLibrary("llmhub_llama_snapdragon") }
 
@@ -170,7 +171,7 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
     private var overrideEnableThinking: Boolean? = null
 
     private fun prepareHtpLibraries(): String {
-        val directory = File(context.filesDir, "llama_htp_b11797")
+        val directory = File(context.filesDir, "llama_htp_b11946")
         // Skels staged for an older llama.cpp release are unused after an upgrade.
         context.filesDir.listFiles { file -> file.isDirectory && file.name.startsWith("llama_htp_") && file != directory }
             ?.forEach { it.deleteRecursively() }
@@ -459,7 +460,8 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
 
         val sessionPrompt = mergePromptIntoChatSession(chatId, effectivePrompt)
         val promptWithMedia = if (imagePaths.isNotEmpty()) {
-            injectMediaMarkersIntoLatestUser(sessionPrompt, imagePaths.size)
+            // LFM3's template puts each image span directly before the text it belongs to.
+            injectMediaMarkersIntoLatestUser(sessionPrompt, imagePaths.size, if (isLfm3Model(model)) "" else "\n")
         } else {
             sessionPrompt
         }
@@ -606,7 +608,7 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
     }
 
     /** Put mtmd media markers inside the newest user turn before applying the model chat template. */
-    private fun injectMediaMarkersIntoLatestUser(prompt: String, imageCount: Int): String {
+    private fun injectMediaMarkersIntoLatestUser(prompt: String, imageCount: Int, separator: String = "\n"): String {
         if (imageCount <= 0) return prompt
         val userMarker = "user: "
         val lastUser = prompt.lastIndexOf(userMarker)
@@ -614,7 +616,7 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
         val insertAt = lastUser + userMarker.length
         val mediaMarkers = buildString {
             repeat(imageCount) { append(runtime.nativeMediaMarker()) }
-            append('\n')
+            append(separator)
         }
         return prompt.substring(0, insertAt) + mediaMarkers + prompt.substring(insertAt)
     }
@@ -651,7 +653,7 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
             model.name.contains("LFM2.5-8B-A1B", true) ||
             model.name.contains("LFM2.5-24B-A2B", true) ||
             model.name.contains("LFM-2.5 2.6B", true)) && !model.name.contains("muse", true)) ||
-            (isGranite42 && thinkingEnabled))
+            ((isGranite42 || isLfm3Model(model)) && thinkingEnabled))
         when {
             isMuseModel(model) -> emitMuse(text, thinkingEnabled, output::add)
             isHarmonyModel(model) -> emitHarmony(text, output::add)
@@ -960,6 +962,9 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
     private fun isGranite42Model(model: LLMModel): Boolean =
         model.name.contains("granite-4.2", true) || model.name.contains("granite 4.2", true)
 
+    /** LFM3 text and VL models (catalog names "LFM3 ..." and imported files such as "LFM3-1.7B-Q4_K_M"). */
+    private fun isLfm3Model(model: LLMModel): Boolean = model.name.contains("lfm3", true)
+
     /**
      * GenieX's text prompt pipeline, using llama.cpp only for the model-owned chat template.
      * Conversation parsing, feature/RAG preservation, thinking controls and manual fallbacks are
@@ -985,6 +990,10 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
 
         if (isGranite42Model(model)) {
             return buildGranite42Prompt(messages, cleanPrompt, thinkingEnabled)
+        }
+
+        if (isLfm3Model(model)) {
+            return buildLfm3Prompt(messages, thinkingEnabled)
         }
 
         val formatted = runtime.nativeFormatChat(
@@ -1210,6 +1219,46 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
         return sb.toString()
     }
 
+    /**
+     * The chat template embedded in LFM3 1.7B and LFM3 VL 2B GGUFs, rendered by hand for text turns.
+     * llama.cpp's built-in template matcher treats it as plain ChatML, which drops two things LFM3
+     * needs: the leading <|startoftext|> (the GGUFs set add_bos_token=false and the template emits
+     * bos_token itself) and the <think> opener that turns reasoning on, or the empty <think></think>
+     * block that turns it off. Earlier assistant turns keep only their answer, after an empty think
+     * block, as the template does for every turn before the last user message.
+     */
+    private fun buildLfm3Prompt(messages: List<VlmPromptTurn>, thinkingEnabled: Boolean): String {
+        val sb = StringBuilder("<|startoftext|>")
+        var turns: List<VlmPromptTurn> = messages
+        turns.firstOrNull()?.takeIf { it.role == "system" }?.let { system ->
+            turns = turns.drop(1)
+            if (system.text.isNotEmpty()) sb.append("<|im_start|>system\n").append(system.text).append("<|im_end|>\n")
+        }
+        turns.forEach { turn ->
+            if (turn.role == "assistant") {
+                val answer = stripThinkingForHistory(turn.text)
+                if (answer.isNotEmpty()) {
+                    sb.append("<|im_start|>assistant\n<think></think>").append(answer).append("<|im_end|>\n")
+                }
+            } else {
+                sb.append("<|im_start|>").append(turn.role).append('\n').append(turn.text).append("<|im_end|>\n")
+            }
+        }
+        sb.append("<|im_start|>assistant\n").append(if (thinkingEnabled) "<think>" else "<think></think>")
+        return sb.toString()
+    }
+
+    /** The answer of an earlier reply: what follows its thinking block, or nothing if it never left it. */
+    private fun stripThinkingForHistory(reply: String): String {
+        var answer = reply
+        for (tag in listOf(sentinelEndThink, "</think>")) {
+            val end = answer.lastIndexOf(tag)
+            if (end >= 0) answer = answer.substring(end + tag.length)
+        }
+        if (answer.contains(sentinelThink) || answer.contains("<think>")) return ""
+        return answer.trim()
+    }
+
     private fun buildMuseGlimmerPrompt(
         messages: List<VlmPromptTurn>,
         cleanPrompt: String,
@@ -1263,7 +1312,8 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
         val allProjectors = searchDirs.flatMap { directory ->
             directory.listFiles { file ->
                 file.isFile && file.extension.equals("gguf", true) &&
-                    (file.name.contains("mmproj", true) || file.name.contains("projector", true))
+                    (file.name.contains("mmproj", true) || file.name.contains("projector", true)) &&
+                    !model.isOtherCatalogModelsProjector(file.name)
             }?.toList().orEmpty()
         }.distinctBy { it.absolutePath }
         if (allProjectors.isEmpty()) return null
