@@ -48,6 +48,7 @@ import com.llmhub.llmhub.R
 import com.llmhub.llmhub.data.DeviceInfo
 import com.llmhub.llmhub.data.LLMModel
 import com.llmhub.llmhub.data.GgufLayerLimits
+import com.llmhub.llmhub.data.isLfm3
 import com.llmhub.llmhub.data.ModelConfig
 import com.llmhub.llmhub.data.ModelPreferences
 import com.llmhub.llmhub.data.hasDownloadedVisionProjector
@@ -170,6 +171,9 @@ fun FeatureModelSettingsSheet(
         derivedStateOf {
             val model = selectedModel ?: return@derivedStateOf false
             val name = model.name.lowercase()
+            if (model.isLfm3()) {
+                return@derivedStateOf true
+            }
             if (name.contains("lfm2.5-8b-a1b") || name.contains("lfm-2.5 2.6b") || name.contains("lfm")) {
                 return@derivedStateOf false
             }

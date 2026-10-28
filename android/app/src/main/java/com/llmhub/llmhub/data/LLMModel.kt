@@ -37,3 +37,6 @@ fun LLMModel.hasNativeVoiceSupport(): Boolean {
             this.name.contains("Gemma-4 E2", ignoreCase = true) ||
             this.name.contains("Gemma-4 E4", ignoreCase = true))
 }
+
+/** LiquidAI's LFM3 family: thinks in a <think> block by default and can be switched off per request. */
+fun LLMModel.isLfm3(): Boolean = name.contains("lfm3", ignoreCase = true)

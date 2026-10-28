@@ -9,6 +9,7 @@ import com.llmhub.llmhub.data.DeviceInfo
 import com.llmhub.llmhub.data.LLMModel
 import com.llmhub.llmhub.data.ModelAvailabilityProvider
 import com.llmhub.llmhub.data.hasNativeVoiceSupport
+import com.llmhub.llmhub.data.isLfm3
 import com.llmhub.llmhub.inference.WhisperBackend
 import com.llmhub.llmhub.inference.InferenceService
 import com.llmhub.llmhub.inference.UnifiedInferenceService
@@ -86,6 +87,9 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
         if (DeviceInfo.isQualcommNpuSupported()) WhisperBackend.NPU else WhisperBackend.CPU
     )
     val selectedAsrBackend: StateFlow<WhisperBackend> = _selectedAsrBackend.asStateFlow()
+
+    private val _enableThinking = MutableStateFlow(true)
+    val enableThinking: StateFlow<Boolean> = _enableThinking.asStateFlow()
 
     private val _transcription = MutableStateFlow("")
     val transcription: StateFlow<String> = _transcription.asStateFlow()
@@ -193,6 +197,7 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
             LlmInference.Backend.GPU
         }
         _selectedNpuDeviceId.value = prefs.getString("selected_npu_device_id", null)
+        _enableThinking.value = prefs.getBoolean("enable_thinking", true)
         val defaultAsrBackend = if (DeviceInfo.isQualcommNpuSupported()) WhisperBackend.NPU else WhisperBackend.CPU
         val savedAsrBackendName = prefs.getString("selected_asr_backend", defaultAsrBackend.name)
         _selectedAsrBackend.value = try {
@@ -209,6 +214,7 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
             putString("selected_backend", _selectedBackend.value.name)
             putString("selected_npu_device_id", _selectedNpuDeviceId.value)
             putString("selected_asr_backend", _selectedAsrBackend.value.name)
+            putBoolean("enable_thinking", _enableThinking.value)
             apply()
         }
     }
@@ -242,6 +248,24 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
         _selectedNpuDeviceId.value = deviceId
         saveSettings()
         clearConversation()
+    }
+
+    fun setEnableThinking(enabled: Boolean) {
+        _enableThinking.value = enabled
+        saveSettings()
+        // Read per request, so a loaded model picks it up on the next reply.
+        _selectedModel.value?.let { if (_isModelLoaded.value) applyGenerationParameters(it) }
+    }
+
+    private fun applyGenerationParameters(model: LLMModel) {
+        val isMuseGlimmer = model.name.contains("Muse Glimmer", ignoreCase = true) || model.name.contains("muse-glimmer", ignoreCase = true)
+        val isGranite42 = model.name.contains("granite-4.2", ignoreCase = true) || model.name.contains("granite 4.2", ignoreCase = true)
+        val useThinking = when {
+            model.name.contains("Gemma-4", ignoreCase = true) || isMuseGlimmer || isGranite42 -> false
+            model.isLfm3() -> _enableThinking.value
+            else -> null
+        }
+        inferenceService.setGenerationParameters(null, null, null, null, enableThinking = useThinking, contextWindow = minOf(model.contextWindowSize, 4096))
     }
 
     fun selectAsrBackend(backend: WhisperBackend) {
@@ -281,11 +305,7 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
                 val isUsingAsr = voiceModel != null
                 val disableAudio = isUsingAsr
                 (inferenceService as? UnifiedInferenceService)?.setAgentToolsEnabled(false)
-                val vibeVoiceCtx = minOf(model.contextWindowSize, 4096)
-                val isMuseGlimmer = model.name.contains("Muse Glimmer", ignoreCase = true) || model.name.contains("muse-glimmer", ignoreCase = true)
-                val isGranite42 = model.name.contains("granite-4.2", ignoreCase = true) || model.name.contains("granite 4.2", ignoreCase = true)
-                val useThinking = if (model.name.contains("Gemma-4", ignoreCase = true) || isMuseGlimmer || isGranite42) false else null
-                inferenceService.setGenerationParameters(null, null, null, null, enableThinking = useThinking, contextWindow = vibeVoiceCtx)
+                applyGenerationParameters(model)
                 inferenceService.loadModel(
                     model = model,
                     preferredBackend = _selectedBackend.value,

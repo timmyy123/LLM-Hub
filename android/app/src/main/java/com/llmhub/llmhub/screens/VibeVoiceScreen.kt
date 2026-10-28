@@ -49,6 +49,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -77,6 +78,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.llmhub.llmhub.LlmHubApplication
 import com.llmhub.llmhub.R
 import com.llmhub.llmhub.components.ModelSelectorCard
+import com.llmhub.llmhub.data.isLfm3
 import com.llmhub.llmhub.debug.ScreenshotHooks
 import com.llmhub.llmhub.ui.components.AudioInputService
 import com.llmhub.llmhub.ui.components.TtsService
@@ -94,6 +96,7 @@ fun VibeVoiceScreen(
     val availableLlmModels by viewModel.availableLlmModels.collectAsState()
     val availableAsrModels by viewModel.availableAsrModels.collectAsState()
     val selectedModel by viewModel.selectedModel.collectAsState()
+    val enableThinking by viewModel.enableThinking.collectAsState()
     val selectedVoiceModel by viewModel.selectedVoiceModel.collectAsState()
     val hasRequiredModels by viewModel.hasRequiredModels.collectAsState()
     val selectedBackend by viewModel.selectedBackend.collectAsState()
@@ -590,6 +593,27 @@ fun VibeVoiceScreen(
                     voiceModelLabel = stringResource(R.string.voice_model),
                     backendLabel = stringResource(R.string.llm_model_backend)
                 )
+
+                // Thinking toggle (LFM3 thinks before it answers; the thinking is never spoken)
+                if (selectedModel?.isLfm3() == true) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = stringResource(R.string.enable_thinking),
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Switch(
+                            checked = enableThinking,
+                            onCheckedChange = { viewModel.setEnableThinking(it) }
+                        )
+                    }
+                }
             }
         }
     }
