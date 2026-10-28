@@ -410,7 +410,8 @@ fun CreatorGenerationScreen(
                 viewModel.loadModel()
             },
             onUnloadModel = { viewModel.unloadModel() },
-            onDismiss = { showSettingsSheet = false }
+            onDismiss = { showSettingsSheet = false },
+            lfm3Thinking = viewModel::lfm3Thinking
         )
     }
 }

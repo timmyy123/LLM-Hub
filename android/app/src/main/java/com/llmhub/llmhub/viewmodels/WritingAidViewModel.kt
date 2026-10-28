@@ -6,6 +6,8 @@ import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.llmhub.llmhub.data.LLMModel
+import com.llmhub.llmhub.data.featureThinking
+import com.llmhub.llmhub.data.putFeatureThinking
 import com.llmhub.llmhub.data.effectiveContextWindow
 import com.llmhub.llmhub.data.ModelAvailabilityProvider
 import com.llmhub.llmhub.data.ModelConfig
@@ -74,6 +76,9 @@ class WritingAidViewModel(application: Application) : AndroidViewModel(applicati
     init {
         loadSavedSettings()
         loadAvailableModels()
+        viewModelScope.launch {
+            _selectedModel.collect { _enableThinking.value = prefs.featureThinking(it, "enable_thinking", true) }
+        }
     }
     
     private fun loadSavedSettings() {
@@ -85,7 +90,6 @@ class WritingAidViewModel(application: Application) : AndroidViewModel(applicati
             LlmInference.Backend.GPU
         }
         _selectedNpuDeviceId.value = prefs.getString("npu_device_id", null)
-        _enableThinking.value = prefs.getBoolean("enable_thinking", true)
         
         // Restore writing mode
         val savedModeName = prefs.getString("selected_mode", WritingMode.FRIENDLY.name)
@@ -111,7 +115,6 @@ class WritingAidViewModel(application: Application) : AndroidViewModel(applicati
             putString("selected_mode", _selectedMode.value.name)
             putInt("max_tokens", _selectedMaxTokens.value)
             putInt("n_gpu_layers", _selectedNGpuLayers.value ?: 999)
-            putBoolean("enable_thinking", _enableThinking.value)
             apply()
         }
     }
@@ -193,7 +196,7 @@ class WritingAidViewModel(application: Application) : AndroidViewModel(applicati
     
     fun setEnableThinking(enabled: Boolean) {
         _enableThinking.value = enabled
-        saveSettings()
+        prefs.edit().putFeatureThinking(_selectedModel.value, "enable_thinking", enabled).apply()
         applyGenerationParametersToService()
     }
 

@@ -9,6 +9,8 @@ import com.llmhub.llmhub.inference.InferenceService
 import com.llmhub.llmhub.inference.UnifiedInferenceService
 import com.llmhub.llmhub.repository.ChatRepository
 import com.llmhub.llmhub.data.LLMModel
+import com.llmhub.llmhub.data.featureThinking
+import com.llmhub.llmhub.data.putFeatureThinking
 import com.llmhub.llmhub.data.effectiveContextWindow
 import com.llmhub.llmhub.data.ModelAvailabilityProvider
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
@@ -88,6 +90,9 @@ class CreatorViewModel(
         loadAvailableModels()
         loadSavedSettings()
         checkIfModelIsAlreadyLoaded()
+        viewModelScope.launch {
+            _selectedModel.collect { _enableThinking.value = prefs.featureThinking(it, "enable_thinking", true) }
+        }
     }
 
     private fun checkIfModelIsAlreadyLoaded() {
@@ -106,7 +111,6 @@ class CreatorViewModel(
             LlmInference.Backend.GPU
         }
         _selectedNpuDeviceId.value = prefs.getString("selected_npu_device", null)
-        _enableThinking.value = prefs.getBoolean("enable_thinking", true)
         _selectedNGpuLayers.value = prefs.getInt("n_gpu_layers", 999).let { if (it == 999) null else it }
 
         val savedModelName = prefs.getString("selected_model_name", null)
@@ -134,7 +138,6 @@ class CreatorViewModel(
                 putInt("max_tokens_$name", _selectedMaxTokens.value)
             }
             putString("selected_npu_device", _selectedNpuDeviceId.value)
-            putBoolean("enable_thinking", _enableThinking.value)
             putInt("n_gpu_layers", _selectedNGpuLayers.value ?: 999)
             apply()
         }
@@ -236,9 +239,11 @@ class CreatorViewModel(
         applyGenerationParametersToService()
     }
 
+    fun lfm3Thinking(model: LLMModel): Boolean = prefs.featureThinking(model, "enable_thinking", true)
+
     fun setEnableThinking(enabled: Boolean) {
         _enableThinking.value = enabled
-        saveSettings()
+        prefs.edit().putFeatureThinking(_selectedModel.value, "enable_thinking", enabled).apply()
         applyGenerationParametersToService()
     }
 

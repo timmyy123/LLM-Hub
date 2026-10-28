@@ -1,5 +1,7 @@
 package com.llmhub.llmhub.data
 
+import android.content.SharedPreferences
+
 data class ModelRequirements(
     val minRamGB: Int,
     val recommendedRamGB: Int
@@ -40,3 +42,13 @@ fun LLMModel.hasNativeVoiceSupport(): Boolean {
 
 /** LiquidAI's LFM3 family: thinks in a <think> block by default and can be switched off per request. */
 fun LLMModel.isLfm3(): Boolean = name.contains("lfm3", ignoreCase = true)
+
+/**
+ * A feature's thinking switch outside AI Chat. LFM3 starts with thinking off and remembers its own choice per
+ * model; every other model keeps the feature's existing [key] and [default].
+ */
+fun SharedPreferences.featureThinking(model: LLMModel?, key: String, default: Boolean): Boolean =
+    if (model?.isLfm3() == true) getBoolean("lfm3_thinking_${model.name}", false) else getBoolean(key, default)
+
+fun SharedPreferences.Editor.putFeatureThinking(model: LLMModel?, key: String, enabled: Boolean): SharedPreferences.Editor =
+    if (model?.isLfm3() == true) putBoolean("lfm3_thinking_${model.name}", enabled) else putBoolean(key, enabled)

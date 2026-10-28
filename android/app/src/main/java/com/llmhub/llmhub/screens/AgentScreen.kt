@@ -44,6 +44,8 @@ import com.llmhub.llmhub.agent.TERMUX_RUN_COMMAND_PERMISSION
 import com.llmhub.llmhub.agent.isTermuxRunCommandAvailable
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import com.llmhub.llmhub.components.FeatureModelSettingsSheet
+import com.llmhub.llmhub.data.featureThinking
+import com.llmhub.llmhub.data.putFeatureThinking
 import com.llmhub.llmhub.components.MessageInput
 import com.llmhub.llmhub.components.ThinkingAwareResultContent
 import com.llmhub.llmhub.components.SelectableMarkdownText
@@ -352,6 +354,7 @@ fun AgentScreen(
                             .putString("selected_npu_device_id", deviceId)
                             .apply()
                     },
+                    lfm3Thinking = { agentPrefs.featureThinking(it, "agent_enable_thinking", true) },
                     onMaxTokensChanged = { tokens ->
                         selectedMaxTokens = tokens
                         agentPrefs.edit().putInt("selected_max_tokens", tokens).apply()
@@ -364,7 +367,7 @@ fun AgentScreen(
                         agentPrefs.edit()
                             .putString("selected_model_name", model.name)
                             .putInt("selected_max_tokens", maxTokens)
-                            .putBoolean("agent_enable_thinking", enableThinking)
+                            .putFeatureThinking(model, "agent_enable_thinking", enableThinking)
                             .putString("selected_backend", backend?.name)
                             .putString("selected_npu_device_id", deviceId)
                             .putInt("selected_gpu_layers", nGpuLayers)

@@ -15,6 +15,9 @@ import kotlinx.coroutines.sync.withLock
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.llmhub.llmhub.data.LLMModel
+import com.llmhub.llmhub.data.featureThinking
+import com.llmhub.llmhub.data.isLfm3
+import com.llmhub.llmhub.data.putFeatureThinking
 import com.llmhub.llmhub.data.effectiveContextWindow
 import com.llmhub.llmhub.data.ModelAvailabilityProvider
 import com.llmhub.llmhub.data.ModelConfig
@@ -448,7 +451,8 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
             null
         }
 
-        _enableThinking.value = prefs.getBoolean("enable_thinking_${model.name}", prefs.getBoolean("enable_thinking", true))
+        _enableThinking.value = if (model.isLfm3()) prefs.featureThinking(model, "enable_thinking", true)
+            else prefs.getBoolean("enable_thinking_${model.name}", prefs.getBoolean("enable_thinking", true))
         _selectedNGpuLayers.value = prefs.getInt("n_gpu_layers_${model.name}", 999).let { if (it == 999) null else it }
         val savedLangName = prefs.getString("code_language_${model.name}", prefs.getString("code_language", ProgrammingLanguage.WEB.name))
         _preferredLanguage.value = try {
@@ -474,7 +478,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
             }
             putString("selected_backend", _selectedBackend.value?.name)
             putString("selected_npu_device_id", _selectedNpuDeviceId.value)
-            putBoolean("enable_thinking", _enableThinking.value)
+            putFeatureThinking(_selectedModel.value, "enable_thinking", _enableThinking.value)
             putString("code_language", _preferredLanguage.value.name)
             putString("last_opened_file_uri", _currentFileUri.value)
             putString("last_opened_file_name", _currentFileName.value)
@@ -717,6 +721,8 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
     /**
      * Load the selected model into memory
      */
+    fun lfm3Thinking(model: LLMModel): Boolean = prefs.featureThinking(model, "enable_thinking", true)
+
     fun setEnableThinking(enabled: Boolean) {
         _enableThinking.value = enabled
         saveSettings()

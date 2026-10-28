@@ -8,6 +8,8 @@ import com.llmhub.llmhub.utils.loadInferenceBitmap
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.llmhub.llmhub.data.LLMModel
+import com.llmhub.llmhub.data.featureThinking
+import com.llmhub.llmhub.data.putFeatureThinking
 import com.llmhub.llmhub.data.effectiveContextWindow
 import com.llmhub.llmhub.data.ModelAvailabilityProvider
 import com.llmhub.llmhub.data.ModelConfig
@@ -102,6 +104,9 @@ class ScamDetectorViewModel(application: Application) : AndroidViewModel(applica
     init {
         loadAvailableModels()
         loadSavedSettings()
+        viewModelScope.launch {
+            _selectedModel.collect { _enableThinking.value = prefs.featureThinking(it, "enable_thinking", true) }
+        }
     }
     
     private fun loadSavedSettings() {
@@ -241,6 +246,7 @@ class ScamDetectorViewModel(application: Application) : AndroidViewModel(applica
     
     fun setEnableThinking(enabled: Boolean) {
         _enableThinking.value = enabled
+        prefs.edit().putFeatureThinking(_selectedModel.value, "enable_thinking", enabled).apply()
     }
 
     fun setMaxTokens(maxTokens: Int) {

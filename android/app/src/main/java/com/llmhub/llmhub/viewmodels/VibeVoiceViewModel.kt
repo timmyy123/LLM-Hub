@@ -88,7 +88,7 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
     )
     val selectedAsrBackend: StateFlow<WhisperBackend> = _selectedAsrBackend.asStateFlow()
 
-    private val _enableThinking = MutableStateFlow(true)
+    private val _enableThinking = MutableStateFlow(false)
     val enableThinking: StateFlow<Boolean> = _enableThinking.asStateFlow()
 
     private val _transcription = MutableStateFlow("")
@@ -197,7 +197,7 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
             LlmInference.Backend.GPU
         }
         _selectedNpuDeviceId.value = prefs.getString("selected_npu_device_id", null)
-        _enableThinking.value = prefs.getBoolean("enable_thinking", true)
+        _enableThinking.value = prefs.getBoolean("enable_thinking", false)
         val defaultAsrBackend = if (DeviceInfo.isQualcommNpuSupported()) WhisperBackend.NPU else WhisperBackend.CPU
         val savedAsrBackendName = prefs.getString("selected_asr_backend", defaultAsrBackend.name)
         _selectedAsrBackend.value = try {

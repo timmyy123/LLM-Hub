@@ -797,6 +797,7 @@ fun VibeCoderScreen(
                     viewModel.loadModel()
                 }
             },
+            lfm3Thinking = viewModel::lfm3Thinking,
             onUnloadModel = { viewModel.unloadModel() },
             onDismiss = { showSettingsSheet = false },
             extraModelConfigsContent = {

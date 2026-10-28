@@ -75,6 +75,8 @@ fun FeatureModelSettingsSheet(
     onLoadModel: (model: LLMModel, maxTokens: Int, backend: LlmInference.Backend?, deviceId: String?, nGpuLayers: Int, enableThinking: Boolean) -> Unit,
     onUnloadModel: () -> Unit,
     onDismiss: () -> Unit,
+    /** This feature's own saved thinking choice for an LFM3 model (off until the user turns it on). */
+    lfm3Thinking: (LLMModel) -> Boolean = { false },
     extraModelConfigsContent: (@Composable ColumnScope.() -> Unit)? = null
 ) {
     val context = LocalContext.current
@@ -164,6 +166,8 @@ fun FeatureModelSettingsSheet(
                     useNpu = false
                 }
             }
+            // The saved per-model config belongs to AI Chat, where LFM3 thinks by default.
+            if (model.isLfm3()) enableThinking = lfm3Thinking(model)
         }
     }
 
@@ -466,14 +470,16 @@ fun FeatureModelSettingsSheet(
                                         val deviceId = if (useNpu) "dev0" else null
                                         scope.launch(Dispatchers.IO) {
                                             try {
-                                                val cfg = (modelPrefs.getModelConfig(model.name)
-                                                    ?: com.llmhub.llmhub.data.defaultConfigForModel(model)).copy(
+                                                val base = modelPrefs.getModelConfig(model.name)
+                                                    ?: com.llmhub.llmhub.data.defaultConfigForModel(model)
+                                                val cfg = base.copy(
                                                     maxTokens = finalMax,
                                                     contextWindow = finalMax,
                                                     backend = backend?.name,
                                                     deviceId = deviceId,
                                                     nGpuLayers = gpuLayers,
-                                                    enableThinking = enableThinking
+                                                    // LFM3's feature choice is kept by the feature, not in AI Chat's config
+                                                    enableThinking = if (model.isLfm3()) base.enableThinking else enableThinking
                                                 )
                                                 modelPrefs.setModelConfig(model.name, cfg)
                                             } catch (_: Exception) {}

@@ -10,6 +10,7 @@ import androidx.lifecycle.viewModelScope
 import com.llmhub.llmhub.R
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import com.llmhub.llmhub.data.LLMModel
+import com.llmhub.llmhub.data.featureThinking
 import com.llmhub.llmhub.data.DeviceInfo
 import com.llmhub.llmhub.data.ModelAvailabilityProvider
 import com.llmhub.llmhub.inference.InferenceService
@@ -217,7 +218,7 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
         _loadingModelName.value = model.name
         try {
             val maxTokens = agentPrefs.getInt("selected_max_tokens", 4096)
-            val enableThinking = agentPrefs.getBoolean("agent_enable_thinking", true)
+            val enableThinking = agentPrefs.featureThinking(model, "agent_enable_thinking", true)
             inferenceService.setGenerationParameters(
                 maxTokens = maxTokens,
                 topK = null,
@@ -429,7 +430,7 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
         (inferenceService as? UnifiedInferenceService)?.setAgentToolsEnabled(false)
         val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
         val agentPrefs = getApplication<Application>().getSharedPreferences("agent_prefs", Context.MODE_PRIVATE)
-        val enableThinking = agentPrefs.getBoolean("agent_enable_thinking", true)
+        val enableThinking = agentPrefs.featureThinking(inferenceService.getCurrentlyLoadedModel(), "agent_enable_thinking", true)
         val maxTokens = agentPrefs.getInt("selected_max_tokens", 4096)
         setGenerationParameters(maxTokens = maxTokens, enableThinking = enableThinking, contextWindow = maxTokens)
 
@@ -502,7 +503,7 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
 
             val isThinkingEnabled = try {
                 val prefs = getApplication<Application>().getSharedPreferences("agent_prefs", Context.MODE_PRIVATE)
-                prefs.getBoolean("agent_enable_thinking", true)
+                prefs.featureThinking(inferenceService.getCurrentlyLoadedModel(), "agent_enable_thinking", true)
             } catch (_: Exception) { true }
 
             try {
