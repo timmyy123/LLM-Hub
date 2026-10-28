@@ -19,15 +19,15 @@
 
 ### 💻 LLM Hub Desktop
 
-**LLM Hub Desktop 0.1.1** is out: native apps for Windows, macOS and Linux. Chat with local models, run Claude Code and OpenClaw on them, turn prompts into slides and pages, generate images, video and music, and serve OpenAI and Anthropic compatible APIs to your other apps. No account and no cloud. See the [release notes](https://github.com/timmyy123/LLM-Hub/releases/tag/desktop-v0.1.1) for what's new and checksums.
+**LLM Hub Desktop 0.1.2** is out: native apps for Windows, macOS and Linux. Chat with local models, run Claude Code and OpenClaw on them, turn prompts into slides and pages, generate images, video and music, and serve OpenAI and Anthropic compatible APIs to your other apps. No account and no cloud. See the [release notes](https://github.com/timmyy123/LLM-Hub/releases/tag/desktop-v0.1.2) for what's new and checksums.
 
 | Download | For |
 |---|---|
-| [macOS](https://github.com/timmyy123/LLM-Hub/releases/download/desktop-v0.1.1/LLMHub-0.1.1-macos-arm64.dmg) | Mac with Apple silicon, macOS 26 or later. Signed and notarized. |
-| [Windows x64](https://github.com/timmyy123/LLM-Hub/releases/download/desktop-v0.1.1/LLMHub-0.1.1-win-x64-setup.exe) | Windows 10 (version 2004) or later on an Intel or AMD PC |
-| [Windows on Arm](https://github.com/timmyy123/LLM-Hub/releases/download/desktop-v0.1.1/LLMHub-0.1.1-win-arm64-setup.exe) | Snapdragon PCs |
-| [Linux .deb](https://github.com/timmyy123/LLM-Hub/releases/download/desktop-v0.1.1/llmhub_0.1.1_amd64.deb) | Ubuntu 24.04 or later, Debian and their derivatives |
-| [Linux AppImage](https://github.com/timmyy123/LLM-Hub/releases/download/desktop-v0.1.1/LLMHub-0.1.1-x86_64.AppImage) | Other x64 distributions with GTK 4 and libadwaita 1.4 or later |
+| [macOS](https://github.com/timmyy123/LLM-Hub/releases/download/desktop-v0.1.2/LLMHub-0.1.2-macos-arm64.dmg) | Mac with Apple silicon, macOS 26 or later. Signed and notarized. |
+| [Windows x64](https://github.com/timmyy123/LLM-Hub/releases/download/desktop-v0.1.2/LLMHub-0.1.2-win-x64-setup.exe) | Windows 10 (version 2004) or later on an Intel or AMD PC |
+| [Windows on Arm](https://github.com/timmyy123/LLM-Hub/releases/download/desktop-v0.1.2/LLMHub-0.1.2-win-arm64-setup.exe) | Snapdragon PCs |
+| [Linux .deb](https://github.com/timmyy123/LLM-Hub/releases/download/desktop-v0.1.2/llmhub_0.1.2_amd64.deb) | Ubuntu 24.04 or later, Debian and their derivatives |
+| [Linux AppImage](https://github.com/timmyy123/LLM-Hub/releases/download/desktop-v0.1.2/LLMHub-0.1.2-x86_64.AppImage) | Other x64 distributions with GTK 4 and libadwaita 1.4 or later |
 
 The Windows installers aren't code signed yet, so Windows may show "Windows protected your PC": click **More info**, then **Run anyway**. To build it yourself, see [desktop/README.md](desktop/README.md).
 
@@ -122,7 +122,7 @@ The iOS Music Generator supports **Live generation** with Magenta Realtime 2: he
 - **Advanced Media Generation** — Professional-grade image/video synthesis with ComfyUI/Draw Things feature parity and extended controls
 
 Quick Start
-1. Download from **Google Play** or the **App Store**, get [LLM Hub Desktop](https://github.com/timmyy123/LLM-Hub/releases/tag/desktop-v0.1.1) for your computer, or build from source
+1. Download from **Google Play** or the **App Store**, get [LLM Hub Desktop](https://github.com/timmyy123/LLM-Hub/releases/tag/desktop-v0.1.2) for your computer, or build from source
 2. Open Settings → Download Models → Download or Import a model
 3. Select a model and start chatting or generating images
 
