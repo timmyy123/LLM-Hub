@@ -89,7 +89,10 @@ Results and timings go to the daily log (see Data below).
   (Windows: CUDA, ROCm, SYCL, Vulkan, Adreno OpenCL or CPU; Linux: CUDA, ROCm, SYCL, Vulkan or CPU; macOS: Metal)
   and runs `llama-server` as a child process on a random localhost port. If a build fails to start the next one is
   tried, and the one that works is remembered. The CUDA builds ship their runtime libraries, so users only need the
-  NVIDIA driver, not the CUDA Toolkit.
+  NVIDIA driver, not the CUDA Toolkit. `MinimumBuild` in `LlamaEngine.cs` and `minimumBuild` in `LlamaEngine.swift`
+  name the oldest build the catalog's models run on (b11946, for LFM3): an older install is replaced on the next model
+  load and its folder removed, or kept if the new one can't be downloaded. Raise both when a catalog model needs a
+  newer llama.cpp.
 - **LiteRT-LM**: `.litertlm` models run in-process through LiteRT-LM's C API, taken from Google's official
   `litert-lm-api` wheel on PyPI (Windows x64, Linux) or the Swift package (macOS). GPU first, then CPU. Models whose
   catalog entry has a drafter get an **MTP** (multi-token prediction) toggle in the composer, on by default.

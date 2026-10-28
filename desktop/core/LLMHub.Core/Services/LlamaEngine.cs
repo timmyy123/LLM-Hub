@@ -25,6 +25,12 @@ public sealed partial class LlamaEngine : ObservableObject
 {
     private const string ReleasesApi = "https://api.github.com/repos/ggml-org/llama.cpp/releases?per_page=20";
 
+    /// <summary>
+    /// The oldest llama.cpp build the catalog's models run on (LFM3 arrived in b11946). An older install is replaced on the
+    /// next model load, or kept when the newer build can't be downloaded (offline).
+    /// </summary>
+    private const int MinimumBuild = 11946;
+
     private readonly HttpClient _http = new() { Timeout = Timeout.InfiniteTimeSpan };
     private readonly JobObject? _job = OperatingSystem.IsWindows() ? new JobObject() : null;
     private static readonly string ServerExe = OperatingSystem.IsWindows() ? "llama-server.exe" : "llama-server";
@@ -259,17 +265,68 @@ public sealed partial class LlamaEngine : ObservableObject
         StatusText = text;
     });
 
-    /// <summary>Returns the installed build for a variant, downloading the newest release that has it. Null if no release ships it.</summary>
+    /// <summary>
+    /// Returns the installed build for a variant, downloading the newest release that has it when there is none or it is
+    /// older than <see cref="MinimumBuild"/>. Null if no release ships the variant.
+    /// </summary>
     private async Task<InstalledEngine?> EnsureInstalledAsync(string variant, CancellationToken ct)
     {
         Directory.CreateDirectory(EngineRoot);
         var existing = Directory.EnumerateDirectories(EngineRoot, $"*-{variant}")
-            .OrderByDescending(d => d, StringComparer.Ordinal)
+            .OrderByDescending(BuildNumber)
             .Select(d => (Dir: d, Server: Directory.EnumerateFiles(d, ServerExe, SearchOption.AllDirectories).FirstOrDefault()))
             .FirstOrDefault(x => x.Server is not null);
-        if (existing.Server is not null)
-            return new InstalledEngine(Path.GetFileName(existing.Dir).Split('-')[0], variant, existing.Server);
+        var installed = existing.Server is null ? null : new InstalledEngine(Path.GetFileName(existing.Dir).Split('-')[0], variant, existing.Server);
+        if (installed is not null && BuildNumber(existing.Dir) >= MinimumBuild)
+        {
+            RemoveOlderBuilds(variant, installed.Tag);
+            return installed;
+        }
 
+        try
+        {
+            var newest = await DownloadNewestAsync(variant, installed is null ? 0 : BuildNumber(installed.Tag), ct);
+            if (newest is null)
+                return installed;
+            RemoveOlderBuilds(variant, newest.Tag);
+            return newest;
+        }
+        catch (Exception e) when (installed is not null && e is not OperationCanceledException)
+        {
+            Log.Error($"Could not update llama.cpp {installed.Tag} ({variant}); using it", e);
+            return installed;
+        }
+    }
+
+    /// <summary>The build number in a tag or install folder name: b11946-win-cpu-x64 is 11946.</summary>
+    private static int BuildNumber(string dirOrTag) =>
+        int.TryParse(new string(Path.GetFileName(dirOrTag).Skip(1).TakeWhile(char.IsDigit).ToArray()), out var build) ? build : 0;
+
+    /// <summary>
+    /// Deletes the builds an update replaced; only the newest of a variant ever runs. One still in use (a running server on
+    /// Windows) stays until the next load.
+    /// </summary>
+    private static void RemoveOlderBuilds(string variant, string keepTag)
+    {
+        foreach (var dir in Directory.EnumerateDirectories(EngineRoot, $"*-{variant}"))
+        {
+            if (Path.GetFileName(dir) == $"{keepTag}-{variant}")
+                continue;
+            try
+            {
+                Directory.Delete(dir, recursive: true);
+                Log.Info($"Removed llama.cpp {Path.GetFileName(dir)}");
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+                Log.Info($"llama.cpp {Path.GetFileName(dir)} is in use; removing it on the next load");
+            }
+        }
+    }
+
+    /// <summary>Downloads the newest release that ships the variant, if it is newer than <paramref name="installedBuild"/>.</summary>
+    private async Task<InstalledEngine?> DownloadNewestAsync(string variant, int installedBuild, CancellationToken ct)
+    {
         SetState(EngineState.Installing, Loc.S("InstallingEngine"));
         _releases ??= JsonDocument.Parse(await _http.GetStringAsync(ReleasesApi, ct));
 
@@ -278,6 +335,8 @@ public sealed partial class LlamaEngine : ObservableObject
             var tag = release.GetProperty("tag_name").GetString() ?? "";
             if (!tag.StartsWith('b'))
                 continue; // Build tags look like b11836; skip the vX.Y.Z summary releases.
+            if (BuildNumber(tag) <= installedBuild)
+                return null; // Nothing newer ships this variant yet.
             var assets = release.GetProperty("assets").EnumerateArray()
                 .Select(a => (Name: a.GetProperty("name").GetString() ?? "", Url: a.GetProperty("browser_download_url").GetString() ?? "", Size: a.GetProperty("size").GetInt64()))
                 .ToList();

@@ -23,7 +23,7 @@ internal static class DevCapture
             return;
 
         if (ValueOf(args, "--selftest") is { } catalogId)
-            await SelfTestAsync(catalogId, ValueOf(args, "--format") ?? "gguf", ValueOf(args, "--quant"), ValueOf(args, "--prompt"));
+            await SelfTestAsync(catalogId, ValueOf(args, "--format") ?? "gguf", ValueOf(args, "--quant"), ValueOf(args, "--prompt"), ValueOf(args, "--attach"));
         if (ValueOf(args, "--studiotest") is { } workflowId)
             await DevTests.StudioAsync(workflowId, ValueOf(args, "--prompt") ?? "a cozy cafe interior in morning light, film photo", ValueOf(args, "--image"), ValueOf(args, "--seed"));
         if (ValueOf(args, "--designtest") is { } request)
@@ -116,7 +116,8 @@ internal static class DevCapture
             window.Close();
     }
 
-    private static async Task SelfTestAsync(string catalogId, string format, string? quant, string? prompt)
+    /// <param name="attach">Comma-separated files to send with the prompt, e.g. a photo for a vision model.</param>
+    private static async Task SelfTestAsync(string catalogId, string format, string? quant, string? prompt, string? attach)
     {
         try
         {
@@ -151,11 +152,13 @@ internal static class DevCapture
             var chat = Ioc.Chat;
             chat.NewChatCommand.Execute(null);
             chat.SelectedModel = installed;
+            if (attach is not null)
+                chat.AttachFiles(attach.Split(','));
             chat.Draft = prompt ?? "In two sentences, what makes Lisbon worth visiting?";
             var watch = System.Diagnostics.Stopwatch.StartNew();
             await chat.SendCommand.ExecuteAsync(null);
             var reply = chat.Messages.LastOrDefault();
-            Log.Info($"SELFTEST reply in {watch.Elapsed.TotalSeconds:F1}s (incl. load) status='{reply?.Status}': {reply?.Content}");
+            Log.Info($"SELFTEST reply in {watch.Elapsed.TotalSeconds:F1}s (incl. load) status='{reply?.Status}' reasoning={reply?.Reasoning.Length ?? 0} chars: {reply?.Content}");
         }
         catch (Exception e)
         {

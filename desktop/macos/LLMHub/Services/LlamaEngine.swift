@@ -8,6 +8,9 @@ enum EngineState { case idle, installing, loading, ready, error }
 @MainActor @Observable
 final class LlamaEngine {
     private static let releasesAPI = URL(string: "https://api.github.com/repos/ggml-org/llama.cpp/releases?per_page=20")!
+    /// The oldest llama.cpp build the catalog's models run on (LFM3 arrived in b11946). An older install is replaced on
+    /// the next model load, or kept when the newer build can't be downloaded (offline).
+    private static let minimumBuild = 11946
 
     private(set) var state = EngineState.idle
     private(set) var statusText = L.s("EngineIdle")
@@ -120,21 +123,54 @@ final class LlamaEngine {
         return try await task.value
     }
 
+    /// Install folders for this Mac's build, newest first.
     private var installedDirs: [URL] {
         ((try? FileManager.default.contentsOfDirectory(at: engineRoot, includingPropertiesForKeys: nil)) ?? [])
             .filter { $0.lastPathComponent.hasSuffix("-\(variant)") }
-            .sorted { $0.lastPathComponent > $1.lastPathComponent }
+            .sorted { Self.build($0.lastPathComponent) > Self.build($1.lastPathComponent) }
     }
+
+    /// The build number in a tag or install folder name: b11946-macos-arm64 is 11946.
+    private static func build(_ name: String) -> Int { Int(name.dropFirst().prefix { $0.isNumber }) ?? 0 }
 
     /// Whether a llama.cpp build is on disk already (Settings › Models shows "ready" rather than "downloads on first use").
     var isInstalled: Bool { installedDirs.contains { Self.findServer(in: $0) != nil } }
 
     private func install() async throws -> URL {
         try? FileManager.default.createDirectory(at: engineRoot, withIntermediateDirectories: true)
-        for dir in installedDirs {
-            if let server = Self.findServer(in: dir) { return server }
+        let installed = installedDirs.lazy.compactMap { dir in Self.findServer(in: dir).map { (dir: dir, server: $0) } }.first
+        if let installed, Self.build(installed.dir.lastPathComponent) >= Self.minimumBuild {
+            removeOlderBuilds(keeping: installed.dir)
+            return installed.server
         }
+        do {
+            guard let newest = try await download(newerThan: installed.map { Self.build($0.dir.lastPathComponent) } ?? 0) else {
+                if let installed { return installed.server }
+                throw NSError(domain: "LLMHub", code: 3, userInfo: [NSLocalizedDescriptionKey: "No llama.cpp build found for this Mac"])
+            }
+            removeOlderBuilds(keeping: newest.dir)
+            return newest.server
+        } catch {
+            guard let installed, !(error is CancellationError) else { throw error }
+            Log.error("Could not update llama.cpp \(installed.dir.lastPathComponent); using it", error)
+            return installed.server
+        }
+    }
 
+    /// Deletes the builds an update replaced; only the newest ever runs.
+    private func removeOlderBuilds(keeping dir: URL) {
+        for old in installedDirs where old.lastPathComponent != dir.lastPathComponent {
+            do {
+                try FileManager.default.removeItem(at: old)
+                Log.info("Removed llama.cpp \(old.lastPathComponent)")
+            } catch {
+                Log.error("Could not remove llama.cpp \(old.lastPathComponent)", error)
+            }
+        }
+    }
+
+    /// Downloads the newest release for this Mac, if it is newer than `installedBuild`.
+    private func download(newerThan installedBuild: Int) async throws -> (dir: URL, server: URL)? {
         set(.installing, L.s("InstallingEngine"))
         var request = URLRequest(url: Self.releasesAPI)
         request.setValue("LLMHub-Desktop/0.1", forHTTPHeaderField: "User-Agent")
@@ -142,6 +178,7 @@ final class LlamaEngine {
         let releases = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] ?? []
         for release in releases {
             guard let tag = release["tag_name"] as? String, tag.hasPrefix("b") else { continue } // Build tags look like b11836.
+            if Self.build(tag) <= installedBuild { return nil } // Nothing newer for this Mac yet.
             let assets = release["assets"] as? [[String: Any]] ?? []
             guard let asset = assets.first(where: { $0["name"] as? String == "llama-\(tag)-bin-\(variant).tar.gz" }),
                   let urlString = asset["browser_download_url"] as? String, let url = URL(string: urlString) else { continue }
@@ -158,9 +195,9 @@ final class LlamaEngine {
             try? FileManager.default.removeItem(at: archive)
             guard let server = Self.findServer(in: target) else { throw NSError(domain: "LLMHub", code: 2, userInfo: [NSLocalizedDescriptionKey: "llama-server not found in release"]) }
             Log.info("Installed llama.cpp \(tag) (\(variant))")
-            return server
+            return (target, server)
         }
-        throw NSError(domain: "LLMHub", code: 3, userInfo: [NSLocalizedDescriptionKey: "No llama.cpp build found for this Mac"])
+        return nil
     }
 
     private static func findServer(in dir: URL) -> URL? {
