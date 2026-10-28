@@ -463,7 +463,8 @@ struct FeatureModelSettingsSheet: View {
     private var selectedModelSupportsThinking: Bool {
         guard let model = selectedModel else { return false }
         let name = model.name.lowercased()
-        if name.contains("lfm") { return false }
+        // LFM2.5 thinking models always reason; LFM3's template can switch reasoning off.
+        if name.contains("lfm") && !LLMBackend.isLfm3ModelName(name) { return false }
         if name.contains("granite-4.2") || name.contains("granite 4.2") { return false }
         return model.supportsThinking
     }

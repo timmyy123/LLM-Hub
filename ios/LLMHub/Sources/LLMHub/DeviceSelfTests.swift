@@ -7,7 +7,7 @@ import SQLite3
 import UIKit
 
 /// Device checks that download real models and run them on this device's GPU. ImageExtrasDeviceTests runs them
-/// through XCTest. Launching a Debug build with `-LLMHubSelfTest encoders,llama` runs them without XCTest, e.g. on a
+/// through XCTest. Launching a Debug build with `-LLMHubSelfTest encoders,llama` (or `lfm3,lfm3-vl`) runs them without XCTest, e.g. on a
 /// Mac as "Designed for iPad", where hosted test bundles do not bootstrap. Results go to stdout and
 /// Documents/llmhub-self-test.log, ending with `SELF_TEST PASS` or `SELF_TEST FAIL`.
 @MainActor
@@ -27,6 +27,8 @@ enum DeviceSelfTests {
                     switch check {
                     case "encoders": failures += try await checkImportedClipGAndT5(download: true)
                     case "llama": failures += try await checkGgufOnMetal()
+                    case "lfm3": failures += try await checkLfm3Text()
+                    case "lfm3-vl": failures += try await checkLfm3Vision()
                     default: failures.append("Unknown self-test \(check)")
                     }
                 } catch {
@@ -195,6 +197,113 @@ enum DeviceSelfTests {
         }
         log("LLAMA_TEST: reply=\(reply.prefix(200)) seconds=\(Int(Date().timeIntervalSince(started)))")
         return reply.localizedCaseInsensitiveContains("Paris") ? [] : ["Unexpected answer: \(reply)"]
+    }
+
+    // MARK: - LFM3 (llama.cpp b11946)
+
+    private static let lfm3TextURL = "https://huggingface.co/LiquidAI/LFM3-1.7B-GGUF/resolve/b3f2ae5d73cd3c91bf40e8ba752c648aa05dffdf/LFM3-1.7B-QAD-Q4_0.gguf"
+    private static let lfm3TextSHA256 = "43a7d09a0e9cba91b63eb7052488b9564569bddfd65754d2e426465e572a7452"
+    private static let lfm3VisionURL = "https://huggingface.co/LiquidAI/LFM3-VL-2B-GGUF/resolve/7c3b4a43c9023e80bf234fec5e826a3365c8dda8/LFM3-VL-2B-QAD-Q4_0.gguf"
+    private static let lfm3VisionSHA256 = "621c455376cb96a20891697deb9975c6fb47dd5ea98ed3ad1f3b7e8f24f0b1e6"
+    private static let lfm3ProjectorURL = "https://huggingface.co/LiquidAI/LFM3-VL-2B-GGUF/resolve/7c3b4a43c9023e80bf234fec5e826a3365c8dda8/mmproj-LFM3-VL-2B-Q8_0.gguf"
+    private static let lfm3ProjectorSHA256 = "c5c5b58d544a18da919172d2d0368090ea1a4a351b6feb7f8a326a264a5918ab"
+
+    /// Downloads LFM3 1.7B Q4_0 (pinned, SHA-256 checked, about 1.05 GB), loads every layer on the GPU, and checks
+    /// answers through the app's LFM3 prompt format: a direct answer, a chat history in the app's ChatML shape, and an
+    /// answer after `<think>` reasoning. Returns failures.
+    static func checkLfm3Text() async throws -> [String] {
+        let model = try await downloadPinned(lfm3TextURL, sha256: lfm3TextSHA256)
+        defer { try? FileManager.default.removeItem(at: model) }
+        let backend = DirectLlamaCppBackend.shared
+        let started = Date()
+        try await backend.load(path: model.path, projector: nil, contextSize: 4096, gpuLayers: 99)
+        defer { Task { await backend.unload() } }
+
+        var failures = [String]()
+        let question = "What is the capital of France? Answer in one word."
+        let direct = try await lfm3Reply(
+            LLMBackend.buildLfm3Prompt(prompt: question, systemPrompt: nil, thinkingEnabled: false), maxTokens: 32)
+        log("LFM3_TEST: direct reply=\(direct.prefix(200))")
+        if !direct.localizedCaseInsensitiveContains("Paris") { failures.append("LFM3 direct answer: \(direct)") }
+
+        // The shape ChatScreen builds for every "lfm" model, normalized by LLMBackend for LFM3.
+        let chat = "<|startoftext|>\n<|im_start|>user\nMy name is Ada.<|im_end|>\n<|im_start|>assistant\nNice to meet you, Ada!<|im_end|>\n<|im_start|>user\nWhat is my name? Answer in one word.<|im_end|>\n<|im_start|>assistant\n"
+        let remembered = try await lfm3Reply(
+            LLMBackend.buildLfm3Prompt(prompt: chat, systemPrompt: nil, thinkingEnabled: false), maxTokens: 32)
+        log("LFM3_TEST: history reply=\(remembered.prefix(200))")
+        if !remembered.localizedCaseInsensitiveContains("Ada") { failures.append("LFM3 history answer: \(remembered)") }
+
+        let reasoned = try await lfm3Reply(
+            LLMBackend.buildLfm3Prompt(prompt: question, systemPrompt: nil, thinkingEnabled: true), maxTokens: 2048)
+        let answer = reasoned.components(separatedBy: "</think>").dropFirst().joined(separator: "</think>")
+        log("LFM3_TEST: reasoning chars=\(reasoned.count) answer=\(answer.prefix(200)) seconds=\(Int(Date().timeIntervalSince(started)))")
+        if !reasoned.contains("</think>") {
+            failures.append("LFM3 reasoning did not reach </think> in 2048 tokens: \(reasoned.suffix(200))")
+        } else if !answer.localizedCaseInsensitiveContains("Paris") {
+            failures.append("LFM3 answer after reasoning: \(answer)")
+        }
+        return failures
+    }
+
+    /// Downloads LFM3-VL 2B Q4_0 and its Q8_0 projector (pinned, SHA-256 checked, about 1.25 GB), loads every layer on
+    /// the GPU, and asks for the color of a drawn red circle with the image inside the user turn. Returns failures.
+    static func checkLfm3Vision() async throws -> [String] {
+        let model = try await downloadPinned(lfm3VisionURL, sha256: lfm3VisionSHA256)
+        defer { try? FileManager.default.removeItem(at: model) }
+        let projector = try await downloadPinned(lfm3ProjectorURL, sha256: lfm3ProjectorSHA256)
+        defer { try? FileManager.default.removeItem(at: projector) }
+        let backend = DirectLlamaCppBackend.shared
+        let started = Date()
+        try await backend.load(path: model.path, projector: projector.path, contextSize: 4096, gpuLayers: 99)
+        defer { Task { await backend.unload() } }
+
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        let image = UIGraphicsImageRenderer(size: CGSize(width: 448, height: 448), format: format).image { context in
+            UIColor.white.setFill()
+            context.fill(CGRect(x: 0, y: 0, width: 448, height: 448))
+            UIColor.red.setFill()
+            context.cgContext.fillEllipse(in: CGRect(x: 74, y: 74, width: 300, height: 300))
+        }
+        guard let jpeg = image.jpegData(compressionQuality: 0.95) else { return ["Could not encode the test image"] }
+        let prompt = LLMBackend.insertingLfm3ImageMarker(
+            DirectLlamaCppBackend.mediaMarker,
+            into: LLMBackend.buildLfm3Prompt(
+                prompt: "What color is the circle in this image? Answer in one word.",
+                systemPrompt: nil, thinkingEnabled: false))
+        let reply = try await lfm3Reply(prompt, imageData: jpeg, maxTokens: 32)
+        log("LFM3_VL_TEST: reply=\(reply.prefix(200)) seconds=\(Int(Date().timeIntervalSince(started)))")
+        return reply.localizedCaseInsensitiveContains("red") ? [] : ["LFM3-VL answer: \(reply)"]
+    }
+
+    private static func lfm3Reply(_ prompt: String, imageData: Data? = nil, maxTokens: Int) async throws -> String {
+        var reply = ""
+        let stream = await DirectLlamaCppBackend.shared.stream(
+            prompt: prompt, imageData: imageData, maxTokens: maxTokens,
+            temperature: 0, topK: 1, topP: 1, stopSequences: [])
+        for try await update in stream { reply = update.text }
+        return reply
+    }
+
+    private struct ChecksumMismatch: LocalizedError {
+        let file: String
+        let digest: String
+        var errorDescription: String? { "\(file) SHA-256 mismatch: \(digest)" }
+    }
+
+    /// Downloads a pinned file to Documents/llmhub-test-<name> and checks its SHA-256. The caller deletes it.
+    private static func downloadPinned(_ urlString: String, sha256 expected: String) async throws -> URL {
+        let url = URL(string: urlString)!
+        let file = documents.appendingPathComponent("llmhub-test-" + url.lastPathComponent)
+        try? FileManager.default.removeItem(at: file)
+        let (temporary, _) = try await URLSession.shared.download(from: url)
+        try FileManager.default.moveItem(at: temporary, to: file)
+        let digest = try sha256(file)
+        guard digest == expected else {
+            try? FileManager.default.removeItem(at: file)
+            throw ChecksumMismatch(file: url.lastPathComponent, digest: digest)
+        }
+        return file
     }
 
     private static func sha256(_ file: URL) throws -> String {

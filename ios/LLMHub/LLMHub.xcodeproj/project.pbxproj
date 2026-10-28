@@ -417,7 +417,7 @@
 			mainGroup = 60C52022B63693117913378C;
 			packageReferences = (
 				F1A2B3C4D5E6F708192A3B5D /* XCLocalSwiftPackageReference "LocalPackages/magenta-runtime" */,
-				DC1100000000000000000001 /* XCLocalSwiftPackageReference "LocalPackages/llama-b11738" */,
+				DC1100000000000000000001 /* XCLocalSwiftPackageReference "LocalPackages/llama-b11946" */,
 				FA001122334455667788AA55 /* XCRemoteSwiftPackageReference "ZIPFoundation" */,
 				AD000002000000000000BB07 /* XCLocalSwiftPackageReference "LocalPackages/LiteRT-LM" */,
 				MGK00001000000000000MG03 /* XCLocalSwiftPackageReference "LocalPackages/media-generation-kit" */,
@@ -865,9 +865,9 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = "LocalPackages/LiteRT-LM";
 		};
-		DC1100000000000000000001 /* XCLocalSwiftPackageReference "LocalPackages/llama-b11738" */ = {
+		DC1100000000000000000001 /* XCLocalSwiftPackageReference "LocalPackages/llama-b11946" */ = {
 			isa = XCLocalSwiftPackageReference;
-			relativePath = "LocalPackages/llama-b11738";
+			relativePath = "LocalPackages/llama-b11946";
 		};
 		F1A2B3C4D5E6F708192A3B5D /* XCLocalSwiftPackageReference "LocalPackages/magenta-runtime" */ = {
 			isa = XCLocalSwiftPackageReference;
@@ -902,7 +902,7 @@
 		};
 		DC1100000000000000000004 /* LlamaCppBinary */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = DC1100000000000000000001 /* XCLocalSwiftPackageReference "LocalPackages/llama-b11738" */;
+			package = DC1100000000000000000001 /* XCLocalSwiftPackageReference "LocalPackages/llama-b11946" */;
 			productName = LlamaCppBinary;
 		};
 		F1A2B3C4D5E6F708192A3B5C /* MagentaRuntime */ = {

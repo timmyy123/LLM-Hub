@@ -328,7 +328,43 @@ public class AgentViewModel: ObservableObject {
         if let explicitTool = parseBracketedToolCall(from: text, requireToolPrefix: true) {
             return explicitTool
         }
+        if let nativeTool = parseFunctionTagToolCall(from: text) {
+            return nativeTool
+        }
         return parseBracketedToolCall(from: text, requireToolPrefix: false)
+    }
+
+    /// LFM3's native tool call format, which it may emit instead of `[TOOL: ...]`:
+    /// `<tool_call>\n<function=name>\n<parameter=key>\nvalue\n</parameter>\n</function>\n</tool_call>`.
+    /// Only a complete call to a known tool is accepted.
+    private func parseFunctionTagToolCall(from text: String) -> ParsedTool? {
+        guard let start = text.range(of: "<function="),
+              let nameEnd = text.range(of: ">", range: start.upperBound..<text.endIndex),
+              let end = text.range(of: "</function>", range: nameEnd.upperBound..<text.endIndex) else { return nil }
+        let name = text[start.upperBound..<nameEnd.lowerBound]
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+            .replacingOccurrences(of: ".", with: "_")
+        guard !name.isEmpty, isKnownToolName(name),
+              let regex = try? NSRegularExpression(pattern: "<parameter=([^>]+)>\\s*([\\s\\S]*?)\\s*</parameter>") else { return nil }
+
+        let body = String(text[nameEnd.upperBound..<end.lowerBound])
+        let nsBody = body as NSString
+        let parameters = regex.matches(in: body, range: NSRange(location: 0, length: nsBody.length)).map {
+            (key: nsBody.substring(with: $0.range(at: 1)).trimmingCharacters(in: .whitespacesAndNewlines),
+             value: nsBody.substring(with: $0.range(at: 2)))
+        }
+        let isMCPTool = mcpTools.contains { canonicalToolName($0.exposedName) == canonicalToolName(name) }
+        if isMCPTool {
+            var object: [String: Any] = [:]
+            for parameter in parameters { object[parameter.key] = parseLooseMCPValue(parameter.value) }
+            let data = try? JSONSerialization.data(withJSONObject: object, options: [.sortedKeys])
+            return ParsedTool(name: name, args: data.flatMap { String(data: $0, encoding: .utf8) } ?? "{}")
+        }
+        let args = parameters
+            .map { "\($0.key): \"\($0.value.replacingOccurrences(of: "\"", with: "'"))\"" }
+            .joined(separator: ", ")
+        return ParsedTool(name: name, args: args)
     }
 
     private func parseBracketedToolCall(from text: String, requireToolPrefix: Bool) -> ParsedTool? {

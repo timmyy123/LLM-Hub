@@ -212,6 +212,26 @@ final class ImageExtrasDeviceTests: XCTestCase {
         try await DeviceSelfTests.checkGgufOnMetal().forEach { XCTFail($0) }
     }
 
+    /// llama.cpp b11946 `lfm3`: LFM3 1.7B Q4_0 (about 1.05 GB download) answers through the app's LFM3 prompt
+    /// format, with and without reasoning. Opt-in: set LLMHUB_LFM3_TESTS=1 (xcodebuild: TEST_RUNNER_LLMHUB_LFM3_TESTS=1).
+    func testLfm3AnswersAfterDownload() async throws {
+        #if targetEnvironment(simulator)
+        throw XCTSkip("Run LFM3 coverage on a physical device")
+        #endif
+        try XCTSkipUnless(ProcessInfo.processInfo.environment["LLMHUB_LFM3_TESTS"] == "1", "Opt-in: set LLMHUB_LFM3_TESTS=1")
+        try await DeviceSelfTests.checkLfm3Text().forEach { XCTFail($0) }
+    }
+
+    /// llama.cpp b11946 `lfm3vl` in mtmd: LFM3-VL 2B Q4_0 with its Q8_0 projector (about 1.25 GB download) names the
+    /// color of a drawn circle. Opt-in like testLfm3AnswersAfterDownload.
+    func testLfm3VisionDescribesImageAfterDownload() async throws {
+        #if targetEnvironment(simulator)
+        throw XCTSkip("Run LFM3-VL coverage on a physical device")
+        #endif
+        try XCTSkipUnless(ProcessInfo.processInfo.environment["LLMHUB_LFM3_TESTS"] == "1", "Opt-in: set LLMHUB_LFM3_TESTS=1")
+        try await DeviceSelfTests.checkLfm3Vision().forEach { XCTFail($0) }
+    }
+
     func testZZRemoveOwnedTestFixtures() throws {
         let fm = FileManager.default
         let names = ["llmhub-test-lora", "llmhub-test-portable-lora", "llmhub-test-embedding", "LLMHUB-TEST-EMBEDDING"]

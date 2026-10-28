@@ -95,6 +95,72 @@ class LLMBackend: ObservableObject {
         return parts.joined()
     }
 
+    // MARK: - LFM3 (LiquidAI)
+
+    /// LFM3 and LFM3-VL. LFM2/LFM2.5 names ("LFM-2.5 ...", "LFM2.5-...") do not match.
+    nonisolated static func isLfm3ModelName(_ name: String) -> Bool {
+        let lower = name.lowercased()
+        return lower.contains("lfm3") || lower.contains("lfm-3")
+    }
+
+    /// Formats a prompt the way LFM3's embedded GGUF chat template does: `<|startoftext|>` directly followed by the
+    /// ChatML turns, every assistant turn opening with `<think>` (earlier turns as `<think></think>answer`), and a
+    /// generation prompt of `<|im_start|>assistant\n<think>` to reason (the template default) or
+    /// `<|im_start|>assistant\n<think></think>` to answer directly.
+    /// A plain prompt is wrapped as one user turn. A ChatML prompt from the shared "lfm" builders (which stay in the
+    /// LFM2/2.5 format) is normalized to that template; a prompt that already ends inside an assistant turn's
+    /// `<think>` is left to the caller.
+    nonisolated static func buildLfm3Prompt(prompt: String, systemPrompt: String?, thinkingEnabled: Bool) -> String {
+        let bos = "<|startoftext|>"
+        let assistantHeader = "<|im_start|>assistant\n"
+        let thinkTag = thinkingEnabled ? "<think>" : "<think></think>"
+
+        guard prompt.contains("<|im_start|>") else {
+            let system = systemPrompt?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            var result = bos
+            if !system.isEmpty {
+                result += "<|im_start|>system\n\(system)<|im_end|>\n"
+            }
+            result += "<|im_start|>user\n\(prompt.trimmingCharacters(in: .whitespacesAndNewlines))<|im_end|>\n"
+            return result + assistantHeader + thinkTag
+        }
+
+        var body = Substring(prompt).drop(while: { $0.isWhitespace })
+        if body.hasPrefix(bos) {
+            body = body.dropFirst(bos.count).drop(while: { $0.isWhitespace })
+        }
+
+        var turns = String(body).components(separatedBy: assistantHeader)
+        for index in turns.indices.dropFirst() {
+            let isGenerationPrompt = index == turns.count - 1
+                && turns[index].trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            if isGenerationPrompt {
+                turns[index] = thinkTag
+            } else if !turns[index].hasPrefix("<think>") {
+                turns[index] = "<think></think>" + turns[index]
+            }
+        }
+        var result = bos + turns.joined(separator: assistantHeader)
+
+        let trimmedEnd = result.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmedEnd.hasSuffix("<|im_end|>") {
+            result = trimmedEnd + "\n" + assistantHeader + thinkTag
+        } else if trimmedEnd.hasSuffix("<|im_start|>assistant") {
+            result = trimmedEnd + "\n" + thinkTag
+        }
+        return result
+    }
+
+    /// LFM3-VL's template puts the image at the start of the user turn's content. mtmd replaces the marker with
+    /// `<|vision_start|>` image embeddings `<|vision_end|>`.
+    nonisolated static func insertingLfm3ImageMarker(_ marker: String, into prompt: String) -> String {
+        guard !prompt.contains(marker),
+              let userTurn = prompt.range(of: "<|im_start|>user\n", options: .backwards) else { return prompt }
+        var result = prompt
+        result.insert(contentsOf: marker, at: userTurn.upperBound)
+        return result
+    }
+
     /// Muse Glimmer may emit an ATEM recipient header before its text and may
     /// produce a private `self` reasoning turn before the answer for `user`.
     /// Convert those protocol fields to the same thinking sentinels used by the UI.
@@ -1024,6 +1090,7 @@ class LLMBackend: ObservableObject {
         }
 
         let isLfmModel = loadedModelName.contains("LFM2.5-8B-A1B") || loadedModelName.contains("LFM2.5-24B-A2B") || loadedModelName.contains("LFM-2.5 2.6B") || loadedModelName.contains("LFM-2.5 1.2B Thinking")
+        let isLfm3Model = Self.isLfm3ModelName(loadedModelName)
         let isPhi4MiniModel = loadedModelName.lowercased().contains("phi-4") || loadedModelName.lowercased().contains("phi 4") || loadedModelName.lowercased().contains("phi4")
         var usePrompt: String
         do {
@@ -1036,7 +1103,13 @@ class LLMBackend: ObservableObject {
                 strippedPrompt = rawPrompt
             }
 
-            if isLfmModel {
+            if isLfm3Model {
+                usePrompt = Self.buildLfm3Prompt(
+                    prompt: strippedPrompt,
+                    systemPrompt: effectiveSystemPrompt,
+                    thinkingEnabled: modelSupportsThinking && enableThinking
+                )
+            } else if isLfmModel {
                 if !strippedPrompt.contains("<|im_start|>") && !strippedPrompt.contains("[INST]") {
                     let sys = (effectiveSystemPrompt ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
                     if !sys.isEmpty {
@@ -1094,7 +1167,7 @@ class LLMBackend: ObservableObject {
         // DirectLlamaCppBackend feeds text verbatim, so non-raw prompts that no
         // family-specific branch above formatted still need the GGUF's chat template.
         // Without it the model treats the prompt as a document and just continues it.
-        let handledByFamilyTemplate = isLfmModel || isPhi4MiniModel || isHarmonyModel || isMuseGlimmerModel || isGranite42Model
+        let handledByFamilyTemplate = isLfmModel || isLfm3Model || isPhi4MiniModel || isHarmonyModel || isMuseGlimmerModel || isGranite42Model
         if let model = loadedModel, model.modelFormat == .gguf,
            !prompt.hasPrefix("__RAW_PROMPT__"), !handledByFamilyTemplate,
            let templated = await DirectLlamaCppBackend.shared.applyChatTemplate(
@@ -1132,6 +1205,9 @@ class LLMBackend: ObservableObject {
                 #else
                 imageData = try Data(contentsOf: imageURL)
                 #endif
+            }
+            if imageData != nil, isLfm3Model {
+                usePrompt = Self.insertingLfm3ImageMarker(DirectLlamaCppBackend.mediaMarker, into: usePrompt)
             }
 
             let effectiveStops = stopSequences.isEmpty && isPhi4MiniModel
