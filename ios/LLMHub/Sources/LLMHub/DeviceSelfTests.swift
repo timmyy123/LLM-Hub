@@ -207,6 +207,9 @@ enum DeviceSelfTests {
     private static let lfm3VisionSHA256 = "621c455376cb96a20891697deb9975c6fb47dd5ea98ed3ad1f3b7e8f24f0b1e6"
     private static let lfm3ProjectorURL = "https://huggingface.co/LiquidAI/LFM3-VL-2B-GGUF/resolve/7c3b4a43c9023e80bf234fec5e826a3365c8dda8/mmproj-LFM3-VL-2B-Q8_0.gguf"
     private static let lfm3ProjectorSHA256 = "c5c5b58d544a18da919172d2d0368090ea1a4a351b6feb7f8a326a264a5918ab"
+    /// llama.cpp's own vision test photo: the New York Times front page of July 21, 1969 ("MEN WALK ON MOON").
+    private static let newspaperURL = "https://raw.githubusercontent.com/ggml-org/llama.cpp/8ca4060b7e30e76baaa5670ee1ec1b760b7f8552/tools/mtmd/test-1.jpeg"
+    private static let newspaperSHA256 = "2dff664c0c8aaea18aff8cbe7e868845b775e90cdd7a0bac98df709b131deaa3"
 
     /// Downloads LFM3 1.7B Q4_0 (pinned, SHA-256 checked, about 1.05 GB), loads every layer on the GPU, and checks
     /// answers through the app's LFM3 prompt format: a direct answer, a chat history in the app's ChatML shape, and an
@@ -246,7 +249,8 @@ enum DeviceSelfTests {
     }
 
     /// Downloads LFM3-VL 2B Q4_0 and its Q8_0 projector (pinned, SHA-256 checked, about 1.25 GB), loads every layer on
-    /// the GPU, and asks for the color of a drawn red circle with the image inside the user turn. Returns failures.
+    /// the GPU, and asks for the color of a drawn red circle and the headline of a photographed newspaper, with the
+    /// image inside the user turn. Returns failures.
     static func checkLfm3Vision() async throws -> [String] {
         let model = try await downloadPinned(lfm3VisionURL, sha256: lfm3VisionSHA256)
         defer { try? FileManager.default.removeItem(at: model) }
@@ -273,7 +277,19 @@ enum DeviceSelfTests {
                 systemPrompt: nil, thinkingEnabled: false))
         let reply = try await lfm3Reply(prompt, imageData: jpeg, maxTokens: 32)
         log("LFM3_VL_TEST: reply=\(reply.prefix(200)) seconds=\(Int(Date().timeIntervalSince(started)))")
-        return reply.localizedCaseInsensitiveContains("red") ? [] : ["LFM3-VL answer: \(reply)"]
+        var failures = reply.localizedCaseInsensitiveContains("red") ? [String]() : ["LFM3-VL answer: \(reply)"]
+
+        let photo = try await downloadPinned(newspaperURL, sha256: newspaperSHA256)
+        defer { try? FileManager.default.removeItem(at: photo) }
+        let headlinePrompt = LLMBackend.insertingLfm3ImageMarker(
+            DirectLlamaCppBackend.mediaMarker,
+            into: LLMBackend.buildLfm3Prompt(
+                prompt: "What is the main headline of this newspaper? Reply with the headline only.",
+                systemPrompt: nil, thinkingEnabled: false))
+        let headline = try await lfm3Reply(headlinePrompt, imageData: try Data(contentsOf: photo), maxTokens: 48)
+        log("LFM3_VL_TEST: headline=\(headline.prefix(200)) seconds=\(Int(Date().timeIntervalSince(started)))")
+        if !headline.localizedCaseInsensitiveContains("moon") { failures.append("LFM3-VL headline: \(headline)") }
+        return failures
     }
 
     private static func lfm3Reply(_ prompt: String, imageData: Data? = nil, maxTokens: Int) async throws -> String {
