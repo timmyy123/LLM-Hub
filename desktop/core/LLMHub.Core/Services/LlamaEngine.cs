@@ -26,10 +26,10 @@ public sealed partial class LlamaEngine : ObservableObject
     private const string ReleasesApi = "https://api.github.com/repos/ggml-org/llama.cpp/releases?per_page=20";
 
     /// <summary>
-    /// The oldest llama.cpp build the catalog's models run on (LFM3 arrived in b11946). An older install is replaced on the
-    /// next model load, or kept when the newer build can't be downloaded (offline).
+    /// The oldest llama.cpp build this app accepts: the one it was last tested with (b12020; LFM3 needs b11946 or newer).
+    /// An older install is replaced on the next model load, or kept when the newer build can't be downloaded (offline).
     /// </summary>
-    private const int MinimumBuild = 11946;
+    private const int MinimumBuild = 12020;
 
     private readonly HttpClient _http = new() { Timeout = Timeout.InfiniteTimeSpan };
     private readonly JobObject? _job = OperatingSystem.IsWindows() ? new JobObject() : null;
@@ -369,9 +369,16 @@ public sealed partial class LlamaEngine : ObservableObject
 
     private JsonDocument? _releases;
 
+    /// <summary>
+    /// Unpacks every asset into a staging folder and moves it into place only when all of them arrived, so an interrupted
+    /// download (e.g. the CUDA runtime after the engine) never looks like a complete install.
+    /// </summary>
     private async Task DownloadAndExtractAsync(List<(string Name, string Url, long Size)> assets, string target, CancellationToken ct)
     {
-        Directory.CreateDirectory(target);
+        var staging = target + ".partial";
+        if (Directory.Exists(staging))
+            Directory.Delete(staging, recursive: true);
+        Directory.CreateDirectory(staging);
         var total = assets.Sum(a => a.Size);
         long done = 0;
         foreach (var asset in assets)
@@ -400,15 +407,18 @@ public sealed partial class LlamaEngine : ObservableObject
             {
                 if (zip.EndsWith(".zip", StringComparison.Ordinal))
                 {
-                    ZipFile.ExtractToDirectory(zip, target, overwriteFiles: true);
+                    ZipFile.ExtractToDirectory(zip, staging, overwriteFiles: true);
                     return;
                 }
                 using var file = File.OpenRead(zip);
                 using var gz = new GZipStream(file, CompressionMode.Decompress);
-                System.Formats.Tar.TarFile.ExtractToDirectory(gz, target, overwriteFiles: true);
+                System.Formats.Tar.TarFile.ExtractToDirectory(gz, staging, overwriteFiles: true);
             }, ct);
             File.Delete(zip);
         }
+        if (Directory.Exists(target))
+            Directory.Delete(target, recursive: true); // an incomplete install from a build before this check
+        Directory.Move(staging, target);
     }
 
     private async Task StartServerAsync(InstalledEngine engine, InstalledModel model, int context, CancellationToken ct)

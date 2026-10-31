@@ -15,7 +15,13 @@ namespace LLMHub.Services;
 /// </summary>
 public sealed class LiteRtEngine
 {
-    private const string WheelIndex = "https://pypi.org/pypi/litert-lm-api/json";
+    /// <summary>
+    /// The litert-lm-api release this app is built against. The C API changes between releases (0.19.0 moved to C API
+    /// 1.0, where every call returns a status), so an install of any other version is replaced on the next load.
+    /// </summary>
+    public const string Version = "0.19.0";
+    private const int ApiMajor = 1;
+    private const string WheelIndex = "https://pypi.org/pypi/litert-lm-api/" + Version + "/json";
 
     private readonly HttpClient _http = new() { Timeout = Timeout.InfiniteTimeSpan };
     private readonly SemaphoreSlim _gate = new(1, 1);
@@ -273,18 +279,18 @@ public sealed class LiteRtEngine
 
     private async Task<string> EnsureInstalledAsync(Action<string> status, CancellationToken ct)
     {
-        var existing = Directory.Exists(Root)
-            ? Directory.EnumerateFiles(Root, LibName, SearchOption.AllDirectories).OrderByDescending(p => p, StringComparer.Ordinal).FirstOrDefault()
+        var target = Path.Combine(Root, Version);
+        var existing = Directory.Exists(target)
+            ? Directory.EnumerateFiles(target, LibName, SearchOption.AllDirectories).FirstOrDefault()
             : null;
+        RemoveOtherVersions();
         if (existing is not null)
             return existing;
 
         status(Loc.S("InstallingLiteRt"));
         using var index = JsonDocument.Parse(await _http.GetStringAsync(WheelIndex, ct));
-        var version = index.RootElement.GetProperty("info").GetProperty("version").GetString()!;
         var wheel = index.RootElement.GetProperty("urls").EnumerateArray()
             .First(u => u.GetProperty("filename").GetString()!.EndsWith(WheelTag, StringComparison.Ordinal));
-        var target = Path.Combine(Root, version);
         Directory.CreateDirectory(target);
         var file = Path.Combine(Root, wheel.GetProperty("filename").GetString()!);
         await using (var input = await _http.GetStreamAsync(wheel.GetProperty("url").GetString(), ct))
@@ -302,8 +308,27 @@ public sealed class LiteRtEngine
             }
         }
         File.Delete(file);
-        Log.Info($"Installed LiteRT-LM {version}");
+        Log.Info($"Installed LiteRT-LM {Version}");
         return Directory.EnumerateFiles(target, LibName, SearchOption.AllDirectories).First();
+    }
+
+    /// <summary>Best effort: a library still loaded by another LLM Hub process stays until the next load.</summary>
+    private static void RemoveOtherVersions()
+    {
+        if (!Directory.Exists(Root))
+            return;
+        foreach (var dir in Directory.EnumerateDirectories(Root).Where(d => Path.GetFileName(d) != Version))
+        {
+            try
+            {
+                Directory.Delete(dir, recursive: true);
+                Log.Info($"Removed LiteRT-LM {Path.GetFileName(dir)}");
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+                Log.Info($"LiteRT-LM {Path.GetFileName(dir)} is in use; removing it on the next load");
+            }
+        }
     }
 
     /// <summary>
@@ -502,11 +527,13 @@ public sealed class LiteRtEngine
                 writer.TryComplete();
                 return;
             }
-            var final = api.ChunkIsFinal(chunk) != 0;
+            var final = api.ChunkIsFinal(chunk);
             writer.TryWrite((Marshal.PtrToStringUTF8(api.ChunkText(chunk)), null, final));
             if (final)
                 writer.TryComplete();
         }
+
+        private const int Ok = 0; // kLiteRtLmStatusOk
 
         private readonly IntPtr _lib;
 
@@ -520,9 +547,14 @@ public sealed class LiteRtEngine
             if (OperatingSystem.IsWindows())
                 SetDllDirectory(Path.GetDirectoryName(dllPath)!);
             var lib = NativeLibrary.Load(dllPath);
-            Current = new Api(lib, dllPath);
-            ((delegate* unmanaged[Cdecl]<int, void>)Current.Fn("litert_lm_set_min_log_level"))(3);
-            return Current;
+            var api = new Api(lib, dllPath);
+            int major = 0, minor = 0, patch = 0;
+            if (!NativeLibrary.TryGetExport(lib, "litert_lm_get_api_version", out var version)
+                || ((delegate* unmanaged[Cdecl]<int*, int*, int*, int>)version)(&major, &minor, &patch) != Ok || major != ApiMajor)
+                throw new InvalidOperationException($"LiteRT-LM at {dllPath} has C API {major}.{minor}.{patch}, expected {ApiMajor}.x");
+            Current = api;
+            ((delegate* unmanaged[Cdecl]<int, int>)api.Fn("litert_lm_set_min_log_level"))(3);
+            return api;
         }
 
         private IntPtr Fn(string name) => NativeLibrary.GetExport(_lib, name);
@@ -535,12 +567,13 @@ public sealed class LiteRtEngine
             try
             {
                 CallPS("litert_lm_engine_settings_set_cache_dir", settings, cacheDir);
-                ((delegate* unmanaged[Cdecl]<IntPtr, int, void>)Fn("litert_lm_engine_settings_set_max_num_tokens"))(settings, maxTokens);
+                ((delegate* unmanaged[Cdecl]<IntPtr, int, int>)Fn("litert_lm_engine_settings_set_max_num_tokens"))(settings, maxTokens);
                 if (speculative)
-                    ((delegate* unmanaged[Cdecl]<IntPtr, byte, void>)Fn("litert_lm_engine_settings_set_enable_speculative_decoding"))(settings, 1);
+                    ((delegate* unmanaged[Cdecl]<IntPtr, byte, int>)Fn("litert_lm_engine_settings_set_enable_speculative_decoding"))(settings, 1);
                 // Real decode tokens/s for the reply footer (stream chunks can hold several tokens, especially with MTP).
-                ((delegate* unmanaged[Cdecl]<IntPtr, void>)Fn("litert_lm_engine_settings_enable_benchmark"))(settings);
-                return ((delegate* unmanaged[Cdecl]<IntPtr, IntPtr>)Fn("litert_lm_engine_create"))(settings);
+                ((delegate* unmanaged[Cdecl]<IntPtr, int>)Fn("litert_lm_engine_settings_enable_benchmark"))(settings);
+                IntPtr engine;
+                return ((delegate* unmanaged[Cdecl]<IntPtr, IntPtr*, int>)Fn("litert_lm_engine_create"))(settings, &engine) == Ok ? engine : IntPtr.Zero;
             }
             finally
             {
@@ -554,12 +587,13 @@ public sealed class LiteRtEngine
             var path = Utf8(modelPath);
             try
             {
-                var file = ((delegate* unmanaged[Cdecl]<IntPtr, IntPtr>)Fn("litert_lm_loaded_file_create"))(path);
-                if (file == IntPtr.Zero)
+                IntPtr file;
+                if (((delegate* unmanaged[Cdecl]<IntPtr, IntPtr*, int>)Fn("litert_lm_loaded_file_create"))(path, &file) != Ok)
                     return false;
-                var has = ((delegate* unmanaged[Cdecl]<IntPtr, byte>)Fn("litert_lm_loaded_file_has_speculative_decoding_support"))(file) != 0;
+                byte has = 0;
+                var rc = ((delegate* unmanaged[Cdecl]<IntPtr, byte*, int>)Fn("litert_lm_loaded_file_has_speculative_decoding_support"))(file, &has);
                 ((delegate* unmanaged[Cdecl]<IntPtr, void>)Fn("litert_lm_loaded_file_delete"))(file);
-                return has;
+                return rc == Ok && has != 0;
             }
             finally
             {
@@ -571,24 +605,30 @@ public sealed class LiteRtEngine
 
         public IntPtr CreateConversation(IntPtr engine, string historyJson)
         {
-            var session = ((delegate* unmanaged[Cdecl]<IntPtr>)Fn("litert_lm_session_config_create"))();
-            var config = ((delegate* unmanaged[Cdecl]<IntPtr>)Fn("litert_lm_conversation_config_create"))();
+            IntPtr session = IntPtr.Zero, config = IntPtr.Zero;
             try
             {
-                ((delegate* unmanaged[Cdecl]<IntPtr, IntPtr, void>)Fn("litert_lm_conversation_config_set_session_config"))(config, session);
+                if (((delegate* unmanaged[Cdecl]<IntPtr*, int>)Fn("litert_lm_session_config_create"))(&session) != Ok
+                    || ((delegate* unmanaged[Cdecl]<IntPtr*, int>)Fn("litert_lm_conversation_config_create"))(&config) != Ok)
+                    return IntPtr.Zero;
+                ((delegate* unmanaged[Cdecl]<IntPtr, IntPtr, int>)Fn("litert_lm_conversation_config_set_session_config"))(config, session);
                 if (historyJson != "[]")
                     CallPS("litert_lm_conversation_config_set_messages", config, historyJson);
-                return ((delegate* unmanaged[Cdecl]<IntPtr, IntPtr, IntPtr>)Fn("litert_lm_conversation_create"))(engine, config);
+                IntPtr conversation;
+                return ((delegate* unmanaged[Cdecl]<IntPtr, IntPtr, IntPtr*, int>)Fn("litert_lm_conversation_create"))(engine, config, &conversation) == Ok
+                    ? conversation : IntPtr.Zero;
             }
             finally
             {
-                ((delegate* unmanaged[Cdecl]<IntPtr, void>)Fn("litert_lm_session_config_delete"))(session);
-                ((delegate* unmanaged[Cdecl]<IntPtr, void>)Fn("litert_lm_conversation_config_delete"))(config);
+                if (session != IntPtr.Zero)
+                    ((delegate* unmanaged[Cdecl]<IntPtr, void>)Fn("litert_lm_session_config_delete"))(session);
+                if (config != IntPtr.Zero)
+                    ((delegate* unmanaged[Cdecl]<IntPtr, void>)Fn("litert_lm_conversation_config_delete"))(config);
             }
         }
 
         public void ConversationDelete(IntPtr c) => ((delegate* unmanaged[Cdecl]<IntPtr, void>)Fn("litert_lm_conversation_delete"))(c);
-        public void ConversationCancel(IntPtr c) => ((delegate* unmanaged[Cdecl]<IntPtr, void>)Fn("litert_lm_conversation_cancel_process"))(c);
+        public void ConversationCancel(IntPtr c) => ((delegate* unmanaged[Cdecl]<IntPtr, int>)Fn("litert_lm_conversation_cancel_process"))(c);
 
         public int SendStream(IntPtr conversation, string messageJson, IntPtr userData)
         {
@@ -606,22 +646,30 @@ public sealed class LiteRtEngine
             }
         }
 
-        public IntPtr ChunkText(IntPtr chunk) => ((delegate* unmanaged[Cdecl]<IntPtr, IntPtr>)Fn("litert_lm_stream_chunk_get_text"))(chunk);
-        public IntPtr ChunkError(IntPtr chunk) => ((delegate* unmanaged[Cdecl]<IntPtr, IntPtr>)Fn("litert_lm_stream_chunk_get_error"))(chunk);
+        public IntPtr ChunkText(IntPtr chunk) => ChunkString("litert_lm_stream_chunk_get_text", chunk);
+        public IntPtr ChunkError(IntPtr chunk) => ChunkString("litert_lm_stream_chunk_get_error", chunk);
+
+        private IntPtr ChunkString(string name, IntPtr chunk)
+        {
+            IntPtr text;
+            return ((delegate* unmanaged[Cdecl]<IntPtr, IntPtr*, int>)Fn(name))(chunk, &text) == Ok ? text : IntPtr.Zero;
+        }
+
         /// <summary>Token count and engine-reported decode rate of the last reply (0 when there is no benchmark data).</summary>
         public (int Tokens, double Rate) LastDecode(IntPtr conversation)
         {
-            var info = ((delegate* unmanaged[Cdecl]<IntPtr, IntPtr>)Fn("litert_lm_conversation_get_benchmark_info"))(conversation);
-            if (info == IntPtr.Zero)
+            IntPtr info;
+            if (((delegate* unmanaged[Cdecl]<IntPtr, IntPtr*, int>)Fn("litert_lm_conversation_get_benchmark_info"))(conversation, &info) != Ok || info == IntPtr.Zero)
                 return (0, 0);
             try
             {
-                var turns = ((delegate* unmanaged[Cdecl]<IntPtr, int>)Fn("litert_lm_benchmark_info_get_num_decode_turns"))(info);
-                if (turns <= 0)
+                nuint turns = 0, tokens = 0;
+                double rate = 0;
+                if (((delegate* unmanaged[Cdecl]<IntPtr, nuint*, int>)Fn("litert_lm_benchmark_info_get_num_decode_turns"))(info, &turns) != Ok || turns == 0)
                     return (0, 0);
-                var tokens = ((delegate* unmanaged[Cdecl]<IntPtr, int, int>)Fn("litert_lm_benchmark_info_get_decode_token_count_at"))(info, turns - 1);
-                var rate = ((delegate* unmanaged[Cdecl]<IntPtr, int, double>)Fn("litert_lm_benchmark_info_get_decode_tokens_per_sec_at"))(info, turns - 1);
-                return (tokens, rate);
+                ((delegate* unmanaged[Cdecl]<IntPtr, nuint, nuint*, int>)Fn("litert_lm_benchmark_info_get_decode_token_count_at"))(info, turns - 1, &tokens);
+                ((delegate* unmanaged[Cdecl]<IntPtr, nuint, double*, int>)Fn("litert_lm_benchmark_info_get_decode_tokens_per_sec_at"))(info, turns - 1, &rate);
+                return ((int)tokens, rate);
             }
             finally
             {
@@ -629,7 +677,11 @@ public sealed class LiteRtEngine
             }
         }
 
-        public byte ChunkIsFinal(IntPtr chunk) => ((delegate* unmanaged[Cdecl]<IntPtr, byte>)Fn("litert_lm_stream_chunk_is_final"))(chunk);
+        public bool ChunkIsFinal(IntPtr chunk)
+        {
+            byte final = 0;
+            return ((delegate* unmanaged[Cdecl]<IntPtr, byte*, int>)Fn("litert_lm_stream_chunk_is_final"))(chunk, &final) == Ok && final != 0;
+        }
 
         public string LastError() => Marshal.PtrToStringUTF8(((delegate* unmanaged[Cdecl]<IntPtr>)Fn("litert_lm_get_last_error_message"))()) ?? "";
 
@@ -641,9 +693,10 @@ public sealed class LiteRtEngine
             try
             {
                 CallPS("litert_lm_embedding_engine_settings_set_cache_dir", settings, cacheDir);
-                ((delegate* unmanaged[Cdecl]<IntPtr, int, void>)Fn("litert_lm_embedding_engine_settings_set_max_input_length"))(settings, maxInput);
-                ((delegate* unmanaged[Cdecl]<IntPtr, int, void>)Fn("litert_lm_embedding_engine_settings_set_vision_tokens_per_image"))(settings, visionTokens);
-                return ((delegate* unmanaged[Cdecl]<IntPtr, IntPtr>)Fn("litert_lm_embedding_engine_create"))(settings);
+                ((delegate* unmanaged[Cdecl]<IntPtr, int, int>)Fn("litert_lm_embedding_engine_settings_set_max_input_length"))(settings, maxInput);
+                ((delegate* unmanaged[Cdecl]<IntPtr, int, int>)Fn("litert_lm_embedding_engine_settings_set_vision_tokens_per_image"))(settings, visionTokens);
+                IntPtr engine;
+                return ((delegate* unmanaged[Cdecl]<IntPtr, IntPtr*, int>)Fn("litert_lm_embedding_engine_create"))(settings, &engine) == Ok ? engine : IntPtr.Zero;
             }
             finally
             {
@@ -656,28 +709,35 @@ public sealed class LiteRtEngine
         public float[]? ComputeEmbedding(IntPtr engine, IReadOnlyList<(EmbedKind Kind, byte[] Data)> parts, int visionTokens)
         {
             var inputs = new IntPtr[parts.Count];
-            var options = ((delegate* unmanaged[Cdecl]<IntPtr>)Fn("litert_lm_embedding_options_create"))();
+            IntPtr options;
+            if (((delegate* unmanaged[Cdecl]<IntPtr*, int>)Fn("litert_lm_embedding_options_create"))(&options) != Ok)
+                return null;
             try
             {
                 for (var i = 0; i < parts.Count; i++)
                 {
+                    IntPtr input;
                     fixed (byte* data = parts[i].Data)
-                        inputs[i] = ((delegate* unmanaged[Cdecl]<int, byte*, nuint, IntPtr>)Fn("litert_lm_input_data_create"))((int)parts[i].Kind, data, (nuint)parts[i].Data.Length);
-                    if (inputs[i] == IntPtr.Zero)
-                        return null;
+                        if (((delegate* unmanaged[Cdecl]<int, byte*, nuint, IntPtr*, int>)Fn("litert_lm_input_data_create"))((int)parts[i].Kind, data, (nuint)parts[i].Data.Length, &input) != Ok)
+                            return null;
+                    inputs[i] = input;
                 }
-                ((delegate* unmanaged[Cdecl]<IntPtr, byte, void>)Fn("litert_lm_embedding_options_set_normalize"))(options, 1);
-                ((delegate* unmanaged[Cdecl]<IntPtr, int, void>)Fn("litert_lm_embedding_options_set_vision_tokens_per_image"))(options, visionTokens);
+                ((delegate* unmanaged[Cdecl]<IntPtr, byte, int>)Fn("litert_lm_embedding_options_set_normalize"))(options, 1);
+                ((delegate* unmanaged[Cdecl]<IntPtr, int, int>)Fn("litert_lm_embedding_options_set_vision_tokens_per_image"))(options, visionTokens);
                 IntPtr response;
+                int rc;
                 fixed (IntPtr* list = inputs)
-                    response = ((delegate* unmanaged[Cdecl]<IntPtr, IntPtr*, nuint, IntPtr, IntPtr>)Fn("litert_lm_embedding_engine_compute_embedding"))(engine, list, (nuint)inputs.Length, options);
-                if (response == IntPtr.Zero)
+                    rc = ((delegate* unmanaged[Cdecl]<IntPtr, IntPtr*, nuint, IntPtr, IntPtr*, int>)Fn("litert_lm_embedding_engine_compute_embedding"))(engine, list, (nuint)inputs.Length, options, &response);
+                if (rc != Ok || response == IntPtr.Zero)
                     return null;
                 try
                 {
-                    var size = (int)((delegate* unmanaged[Cdecl]<IntPtr, nuint>)Fn("litert_lm_embedding_response_get_size"))(response);
-                    var values = ((delegate* unmanaged[Cdecl]<IntPtr, float*>)Fn("litert_lm_embedding_response_get_values"))(response);
-                    return size > 0 ? new ReadOnlySpan<float>(values, size).ToArray() : null;
+                    nuint size = 0;
+                    float* values = null;
+                    if (((delegate* unmanaged[Cdecl]<IntPtr, nuint*, int>)Fn("litert_lm_embedding_response_get_size"))(response, &size) != Ok
+                        || ((delegate* unmanaged[Cdecl]<IntPtr, float**, int>)Fn("litert_lm_embedding_response_get_values"))(response, &values) != Ok)
+                        return null;
+                    return size > 0 ? new ReadOnlySpan<float>(values, (int)size).ToArray() : null;
                 }
                 finally
                 {
@@ -692,12 +752,14 @@ public sealed class LiteRtEngine
             }
         }
 
+        /// <summary>A settings constructor taking four strings; IntPtr.Zero when it fails.</summary>
         private IntPtr Call4S(string name, string? a, string? b, string? c, string? d)
         {
             IntPtr pa = Utf8(a), pb = Utf8(b), pc = Utf8(c), pd = Utf8(d);
             try
             {
-                return ((delegate* unmanaged[Cdecl]<IntPtr, IntPtr, IntPtr, IntPtr, IntPtr>)Fn(name))(pa, pb, pc, pd);
+                IntPtr result;
+                return ((delegate* unmanaged[Cdecl]<IntPtr, IntPtr, IntPtr, IntPtr, IntPtr*, int>)Fn(name))(pa, pb, pc, pd, &result) == Ok ? result : IntPtr.Zero;
             }
             finally
             {
@@ -713,7 +775,7 @@ public sealed class LiteRtEngine
             var ps = Utf8(s);
             try
             {
-                ((delegate* unmanaged[Cdecl]<IntPtr, IntPtr, void>)Fn(name))(p, ps);
+                ((delegate* unmanaged[Cdecl]<IntPtr, IntPtr, int>)Fn(name))(p, ps);
             }
             finally
             {

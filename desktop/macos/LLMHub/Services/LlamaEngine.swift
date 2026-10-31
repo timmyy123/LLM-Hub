@@ -8,9 +8,9 @@ enum EngineState { case idle, installing, loading, ready, error }
 @MainActor @Observable
 final class LlamaEngine {
     private static let releasesAPI = URL(string: "https://api.github.com/repos/ggml-org/llama.cpp/releases?per_page=20")!
-    /// The oldest llama.cpp build the catalog's models run on (LFM3 arrived in b11946). An older install is replaced on
-    /// the next model load, or kept when the newer build can't be downloaded (offline).
-    private static let minimumBuild = 11946
+    /// The oldest llama.cpp build this app accepts: the one it was last tested with (b12020; LFM3 needs b11946 or newer).
+    /// An older install is replaced on the next model load, or kept when the newer build can't be downloaded (offline).
+    private static let minimumBuild = 12020
 
     private(set) var state = EngineState.idle
     private(set) var statusText = L.s("EngineIdle")

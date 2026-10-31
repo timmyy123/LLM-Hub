@@ -90,11 +90,13 @@ Results and timings go to the daily log (see Data below).
   and runs `llama-server` as a child process on a random localhost port. If a build fails to start the next one is
   tried, and the one that works is remembered. The CUDA builds ship their runtime libraries, so users only need the
   NVIDIA driver, not the CUDA Toolkit. `MinimumBuild` in `LlamaEngine.cs` and `minimumBuild` in `LlamaEngine.swift`
-  name the oldest build the catalog's models run on (b11946, for LFM3): an older install is replaced on the next model
-  load and its folder removed, or kept if the new one can't be downloaded. Raise both when a catalog model needs a
-  newer llama.cpp.
+  name the oldest build the app accepts, the one it was last tested with (b12020; LFM3 needs b11946): an older install
+  is replaced on the next model load and its folder removed, or kept if the new one can't be downloaded. Raise both
+  when updating llama.cpp or when a catalog model needs a newer build.
 - **LiteRT-LM**: `.litertlm` models run in-process through LiteRT-LM's C API, taken from Google's official
-  `litert-lm-api` wheel on PyPI (Windows x64, Linux) or the Swift package (macOS). GPU first, then CPU. Models whose
+  `litert-lm-api` wheel on PyPI (Windows x64, Linux) or the Swift package (macOS). `LiteRtEngine.Version` pins the
+  exact wheel (0.19.0, C API 1.0): the C API changes between releases, so any other installed version is replaced on
+  the next load. Raise it together with the Swift package in `ios/LLMHub/LocalPackages/LiteRT-LM`. GPU first, then CPU. Models whose
   catalog entry has a drafter get an **MTP** (multi-token prediction) toggle in the composer, on by default.
   On Linux the first GPU load of each model runs in a child process, because a broken GPU driver (for example WSL's
   software Vulkan) crashes the process instead of returning an error.
