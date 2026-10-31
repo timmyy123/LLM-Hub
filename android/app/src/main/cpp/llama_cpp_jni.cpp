@@ -9,6 +9,7 @@
 #include <mutex>
 #include <cstdlib>
 #include <cstdint>
+#include <cstring>
 #include <string>
 #include <thread>
 #include <vector>
@@ -47,11 +48,16 @@ int32_t g_max_tokens = 0;
 int64_t g_decode_start_us = 0;
 std::string g_utf8_buffer;
 bool g_backend_initialized = false;
+// Set when ggml fails to allocate a buffer. clip's warmup ignores a failed compute-buffer reserve
+// and then encodes into the missing buffer (null dereference), so the projector load checks this.
+std::atomic_bool g_alloc_failed{false};
 
 void log_callback(ggml_log_level level, const char * text, void *) {
     int priority = ANDROID_LOG_DEBUG;
-    if (level == GGML_LOG_LEVEL_ERROR) priority = ANDROID_LOG_ERROR;
-    else if (level == GGML_LOG_LEVEL_WARN) priority = ANDROID_LOG_WARN;
+    if (level == GGML_LOG_LEVEL_ERROR) {
+        priority = ANDROID_LOG_ERROR;
+        if (text != nullptr && std::strstr(text, "failed to allocate") != nullptr) g_alloc_failed = true;
+    } else if (level == GGML_LOG_LEVEL_WARN) priority = ANDROID_LOG_WARN;
     else if (level == GGML_LOG_LEVEL_INFO) priority = ANDROID_LOG_INFO;
     __android_log_write(priority, TAG, text);
 }
@@ -278,7 +284,18 @@ LLAMA_JNI(nativeLoadModel)(
 #endif
         mtmd_params.n_threads = thread_count;
         mtmd_params.print_timings = true;
+        g_alloc_failed = false;
         g_mtmd = mtmd_init_from_file(projector_path.c_str(), g_model, mtmd_params);
+        if (g_mtmd != nullptr && mtmd_params.use_gpu && g_alloc_failed) {
+            // The encoder's compute buffer did not fit on the accelerator (LFM3 VL warms up at
+            // 1472x1472 and Adreno OpenCL has no flash attention for it, so it asks for one 4.4 GB
+            // buffer). Run the encoder on the CPU; the text model stays on the accelerator.
+            __android_log_write(ANDROID_LOG_WARN, TAG, "Vision encoder does not fit on the accelerator; using the CPU for it");
+            mtmd_free(g_mtmd);
+            mtmd_params.use_gpu = false;
+            mtmd_params.device = nullptr;
+            g_mtmd = mtmd_init_from_file(projector_path.c_str(), g_model, mtmd_params);
+        }
         if (g_mtmd == nullptr || !mtmd_support_vision(g_mtmd)) {
             __android_log_print(
                 ANDROID_LOG_ERROR, TAG, "Failed to load vision projector: %s", projector_path.c_str());
