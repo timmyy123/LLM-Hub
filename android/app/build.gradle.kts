@@ -370,7 +370,7 @@ dependencies {
 
     // LiteRT-LM: native Kotlin API for .litertlm models (Gemma-3n, Gemma-4, etc.)
     // Replaces tasks-genai for litertlm format models. GPU enabled once 0.10.1 hits Maven.
-    implementation("com.google.ai.edge.litertlm:litertlm-android:0.18.1")
+    implementation("com.google.ai.edge.litertlm:litertlm-android:0.19.0")
 
     // LiteRT NPU dispatch libraries for the SoC-specific EmbeddingGemma 2 .litertlm files.
     // Qualcomm also needs QAIRT 2.50 (QNN system API 1.14). The libs in assets/qnnlibs are

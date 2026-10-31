@@ -1,9 +1,9 @@
 # Vendored llama.cpp
 
 - Upstream: https://github.com/ggml-org/llama.cpp
-- Version: `b11946`
-- Commit: `8ca4060b7e30e76baaa5670ee1ec1b760b7f8552`
-- Source archive SHA-256: `76ad58014a4ec1093ffe1fd8e23e263a1fe76fd1aa44e3db788ca0b6023a2b71`
+- Version: `b12020`
+- Commit: `0ec4027a2a0183de87c007069adddc06e665f7de`
+- Source archive SHA-256: `5496c675a36bcba53660a922f26cff75a8d24222d0554d337b450b552a30b502`
 - License: MIT (see `LICENSE`)
 
 This source builds the baseline ARMv8 CPU runtime (`libllmhub_llama_cpu.so`) and
@@ -15,13 +15,14 @@ releases its claim so waiting threads fail instead of hanging; pipeline creation
 failures are logged with `GGML_LOG_ERROR`, which reaches logcat; and `ggml_vk_device_is_supported`
 rejects devices whose driver is below Vulkan 1.2 (Mali-G57 reports 1.1 under a 1.2 instance, and
 its 1.2 entry points such as `vkGetBufferDeviceAddress` are null), including in the
-first-non-CPU-device fallback.
+first-non-CPU-device fallback. Upstream's `ggml-vulkan.cpp` is unchanged from b11946 to b12020, so
+these patches apply as they were.
 Since b11946 upstream's buffer allocator (`ggml/src/ggml-vulkan/ggml-vulkan-buffers.cpp`) uses
 `posix_memalign` on every non-Windows platform, so the old API 27 `aligned_alloc` patch is gone.
 
-The Android app also vendors the official **b11946 Snapdragon** Android release
-(`llama-b11946-bin-android-arm64-snapdragon.tar.gz`, SHA-256
-`15dc2e7cb188fd40c119272bb8315786bace7ce1e042c55427700e79a0d95963`).
+The Android app also vendors the official **b12020 Snapdragon** Android release
+(`llama-b12020-bin-android-arm64-snapdragon.tar.gz`, SHA-256
+`fae6ee720a8df3f7a84ebe82e049da243f73c7c2b21c70fca8457e5494bbbb4a`).
 Its headers and stripped arm64 runtime libraries are under `app/src/main/cpp/llama-prebuilt`
 and `app/src/main/jniLibs/arm64-v8a`; Hexagon v73/v75/v79/v81/v85 skels are under
 `app/src/main/assets/llama_htp` (copied unstripped, as released). Android Studio links these into the separate
@@ -37,6 +38,10 @@ the release, with `LLMHub:` patches in `ggml/src/ggml-opencl/ggml-opencl.cpp`:
 - Flash-attention "split" kernels are registered only when their dispatch work-group size fits,
   as upstream already does for its other flash-attention kernels.
 - A failed kernel launch logs the kernel name and global/local sizes before aborting.
+
+b12020 still has none of these guards (its new tiled multi-column `kernel_gemv_noshuffle_q6_K_f32_tiled_mc3`
+is opt-in via `GGML_OPENCL_Q6K_MC3` and only runs when the tiled layout was chosen, so the tiled check covers it).
+
 Build it with the release preset's flags (`docs/backend/snapdragon/CMakeUserPresets.json`,
 `arm64-android-snapdragon`) but `-DGGML_HEXAGON=OFF -DBUILD_SHARED_LIBS=ON`, against the Khronos
 OpenCL headers and an NDK build of the OpenCL ICD loader, then strip it with

@@ -28,7 +28,7 @@ import org.junit.Test
 import java.io.File
 
 /**
- * Opt-in physical-device check of llama.cpp b11946 with LiquidAI LFM3 (lfm3 architecture, lfm3vl projector):
+ * Opt-in physical-device check of llama.cpp b12020 with LiquidAI LFM3 (lfm3 architecture, lfm3vl projector):
  * LFM3 1.7B Q4_0 (QAD) and LFM3 VL 2B Q4_0 (QAD) with its projector are fetched on the device from the
  * pinned catalog URLs and checked against their SHA-256 (the Hugging Face LFS oid). Every scenario loads
  * through [LlamaCppInferenceService] as the app does and asserts the backend it really ran on (a failed
