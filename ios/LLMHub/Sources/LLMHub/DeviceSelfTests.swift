@@ -8,7 +8,7 @@ import UIKit
 
 /// Device checks that download real models and run them on this device's GPU. ImageExtrasDeviceTests runs them
 /// through XCTest. Launching a Debug build with `-LLMHubSelfTest encoders,llama` (or `lfm3,lfm3-vl`) runs them without XCTest, e.g. on a
-/// Mac as "Designed for iPad", where hosted test bundles do not bootstrap. Results go to stdout and
+/// Mac as "Designed for iPad", where hosted test bundles do not bootstrap. `gemma4` runs Gemma 4 E2B on LiteRT-LM. Results go to stdout and
 /// Documents/llmhub-self-test.log, ending with `SELF_TEST PASS` or `SELF_TEST FAIL`.
 @MainActor
 enum DeviceSelfTests {
@@ -29,6 +29,7 @@ enum DeviceSelfTests {
                     case "llama": failures += try await checkGgufOnMetal()
                     case "lfm3": failures += try await checkLfm3Text()
                     case "lfm3-vl": failures += try await checkLfm3Vision()
+                    case "gemma4": failures += try await checkGemma4LiteRT()
                     default: failures.append("Unknown self-test \(check)")
                     }
                 } catch {
@@ -289,6 +290,37 @@ enum DeviceSelfTests {
         let headline = try await lfm3Reply(headlinePrompt, imageData: try Data(contentsOf: photo), maxTokens: 48)
         log("LFM3_VL_TEST: headline=\(headline.prefix(200)) seconds=\(Int(Date().timeIntervalSince(started)))")
         if !headline.localizedCaseInsensitiveContains("moon") { failures.append("LFM3-VL headline: \(headline)") }
+        return failures
+    }
+
+    // MARK: - Gemma 4 (LiteRT-LM)
+
+    private static let gemma4URL = "https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/a4a831c060880f3733135ad22f10e0e9f758f45d/gemma-4-E2B-it.litertlm"
+    private static let gemma4SHA256 = "181938105e0eefd105961417e8da75903eacda102c4fce9ce90f50b97139a63c"
+
+    /// Downloads Gemma 4 E2B (pinned, SHA-256 checked, about 2.6 GB), loads it on the GPU with MTP as the app does,
+    /// and checks a direct answer and one after thinking. Returns failures.
+    static func checkGemma4LiteRT() async throws -> [String] {
+        let model = try await downloadPinned(gemma4URL, sha256: gemma4SHA256)
+        defer { try? FileManager.default.removeItem(at: model) }
+        let backend = LiteRTLMBackend.shared
+        let started = Date()
+        try await backend.loadModel(
+            at: model.path, modelName: "Gemma 4 E2B (LiteRT-LM)", supportsVision: true, supportsAudio: false, maxTokens: 4096)
+        log("GEMMA4_TEST: loaded in \(Int(Date().timeIntervalSince(started))) s")
+
+        var failures = [String]()
+        for thinking in [false, true] {
+            var reply = ""
+            var speed = 0.0
+            try await backend.generateStream(
+                prompt: "What is the capital of France? Answer in one word.", imageURL: nil, audioURL: nil, systemPrompt: nil,
+                temperature: 0, topK: 1, topP: 1, maxTokens: 1024, useThinking: thinking, enableAgentTools: false
+            ) { text, _, tokensPerSecond in reply = text; speed = tokensPerSecond }
+            log("GEMMA4_TEST: thinking=\(thinking) tok/s=\(Int(speed)) reply=\(reply.suffix(200))")
+            if !reply.localizedCaseInsensitiveContains("Paris") { failures.append("Gemma 4 thinking=\(thinking): \(reply.suffix(200))") }
+        }
+        await backend.unload()
         return failures
     }
 
