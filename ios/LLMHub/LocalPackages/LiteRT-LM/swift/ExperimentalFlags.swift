@@ -126,13 +126,19 @@ public struct ExperimentalFlags {
 
   private static var _enableSpeculativeDecoding: Bool? = nil
 
+  /// The value of the deprecated `enableSpeculativeDecoding`, for the engine to read without a
+  /// deprecation warning.
+  static var legacyEnableSpeculativeDecoding: Bool? { _enableSpeculativeDecoding }
+
   /// Whether to enable speculative decoding.
   ///
-  /// If true, enable speculative decoding; an error will be thrown if the model does not support it.
-  /// If false, disable speculative decoding.
+  /// Deprecated: use `EngineConfig.speculativeDecodingConfig` instead. Read only when that config
+  /// sets no mode: `true` is mode `.on` and `false` is mode `.off`; `nil` leaves the runtime
+  /// default (`.off`).
   ///
   /// Note: This flag is read only when a new [Engine] is created. Changing this value will not
   /// affect any existing [Engine] or [Conversation] instances.
+  @available(*, deprecated, message: "Use EngineConfig.speculativeDecodingConfig instead.")
   public static var enableSpeculativeDecoding: Bool? {
     get { return _enableSpeculativeDecoding }
     set {
@@ -199,6 +205,41 @@ public struct ExperimentalFlags {
         return
       }
       _gpuEnableMetalResidencySet = newValue
+    }
+  }
+
+  private static var _enableYnnpack: Bool? = nil
+
+  /// Whether YNNPACK should delegate supported CPU operations before XNNPACK.
+  ///
+  /// If nil, use the engine's default. If true, force enable YNNPACK. If false, force disable
+  /// YNNPACK.
+  ///
+  /// Note: This flag is read only when a new [Engine] is initialized or [benchmark] is called.
+  /// Changing this value will not affect any existing [Engine] or [Conversation] instances.
+  ///
+  /// This feature requires build-time flag "--define=litert_enable_ynnpack=true". The release
+  /// version might not have it.
+  public static var enableYnnpack: Bool? {
+    get {
+      if let ynnpack = _enableYnnpack {
+        return ynnpack
+      }
+      let env = ProcessInfo.processInfo.environment
+      if env["ENABLE_YNNPACK"] == "true" || env["enable_ynnpack"] == "true" {
+        return true
+      }
+      if ProcessInfo.processInfo.arguments.contains(where: { $0.contains("enable_ynnpack=true") }) {
+        return true
+      }
+      return nil
+    }
+    set {
+      guard optedIn else {
+        logger.error("LiteRTLM: Must opt into experimental APIs before setting this flag.")
+        return
+      }
+      _enableYnnpack = newValue
     }
   }
 

@@ -3,7 +3,7 @@ import PackageDescription
 
 // Upstream device/Metal binaries plus the matching source-built simulator slice.
 let package = Package(
-    name: "llama-b11946",
+    name: "llama-b12020",
     platforms: [.iOS("17.5"), .macOS(.v14)],
     products: [.library(name: "LlamaCppBinary", targets: ["LlamaCppRuntime"])],
     targets: [

@@ -67,7 +67,6 @@ final class LiteRTLMBackend {
         self.isGemma4_12B = identifier.contains("12b") || identifier.contains("gemma-4-12b") || identifier.contains("gemma4_12b")
 
         ExperimentalFlags.optIntoExperimentalAPIs()
-        ExperimentalFlags.enableSpeculativeDecoding = supportsMtp
         ExperimentalFlags.enableBenchmark = true
 
         let fileHasMtp = ModelInfo(modelPath: path)?.llm?.hasSpeculativeDecodingSupport() ?? false
@@ -79,7 +78,10 @@ final class LiteRTLMBackend {
             visionBackend: supportsVision ? .cpu() : nil,
             audioBackend: supportsAudio ? .cpu() : nil,
             maxNumTokens: maxTokens,
-            cacheDir: liteRTCacheDir()
+            cacheDir: liteRTCacheDir(),
+            // MTP (speculative decoding) on or off for the engine's conversations; LiteRT-LM 0.19 replaced the
+            // ExperimentalFlags.enableSpeculativeDecoding switch with this config (same meaning: on loads the drafter).
+            speculativeDecodingConfig: SpeculativeDecodingConfig(mode: supportsMtp ? .on : .off)
         )
         let eng = Engine(engineConfig: config)
         try await eng.initialize()

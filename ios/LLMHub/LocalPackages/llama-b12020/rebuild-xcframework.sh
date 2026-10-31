@@ -2,9 +2,9 @@
 set -euo pipefail
 
 # Build only the missing simulator slice; keep upstream device/Metal binaries.
-VERSION=b11946
-SOURCE_SHA256=76ad58014a4ec1093ffe1fd8e23e263a1fe76fd1aa44e3db788ca0b6023a2b71
-ARTIFACT_SHA256=3d126a914f8527838764902af8fabe7a48a20833918349b57df5f1b889097db6
+VERSION=b12020
+SOURCE_SHA256=5496c675a36bcba53660a922f26cff75a8d24222d0554d337b450b552a30b502
+ARTIFACT_SHA256=78fdf6ec32fad1f0e55a3fd78401841ba0a7b34f26b30078c6dc8d7951d81ae5
 PACKAGE_DIR="$(cd "$(dirname "$0")" && pwd)"
 WORK_DIR="$(mktemp -d "${TMPDIR:-/tmp}/llmhub-llama-apple.XXXXXX")"
 echo "Native dependency build files: $WORK_DIR"

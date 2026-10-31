@@ -135,11 +135,13 @@ final class LiteRtEngine {
                     // MTP (speculative decoding) only on the GPU, and only for files that ship a drafter; it throws otherwise.
                     let mtp = fileHasMtp && backend == .gpu
                     ExperimentalFlags.optIntoExperimentalAPIs()
-                    ExperimentalFlags.enableSpeculativeDecoding = mtp ? true : nil
                     // Real decode tokens/s for the reply footer (stream chunks can hold several tokens, especially with MTP).
                     ExperimentalFlags.enableBenchmark = true
+                    // LiteRT-LM 0.19 sets MTP per engine (it replaced ExperimentalFlags.enableSpeculativeDecoding); nil keeps
+                    // the runtime default, off.
                     let config = try EngineConfig(modelPath: model.primaryPath.path, backend: backend, visionBackend: vision ? backend : nil,
-                                                  maxNumTokens: tokens, cacheDir: cache.path)
+                                                  maxNumTokens: tokens, cacheDir: cache.path,
+                                                  speculativeDecodingConfig: mtp ? SpeculativeDecodingConfig(mode: .on) : nil)
                     let engine = Engine(engineConfig: config)
                     try await engine.initialize()
                     self.engine = engine
