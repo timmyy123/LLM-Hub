@@ -286,16 +286,24 @@ LLAMA_JNI(nativeLoadModel)(
         mtmd_params.print_timings = true;
         g_alloc_failed = false;
         g_mtmd = mtmd_init_from_file(projector_path.c_str(), g_model, mtmd_params);
+#if defined(LLMHUB_SNAPDRAGON) || defined(LLMHUB_VULKAN)
         if (g_mtmd != nullptr && mtmd_params.use_gpu && g_alloc_failed) {
             // The encoder's compute buffer did not fit on the accelerator (LFM3 VL warms up at
             // 1472x1472 and Adreno OpenCL has no flash attention for it, so it asks for one 4.4 GB
-            // buffer). Run the encoder on the CPU; the text model stays on the accelerator.
-            __android_log_write(ANDROID_LOG_WARN, TAG, "Vision encoder does not fit on the accelerator; using the CPU for it");
+            // buffer). On a GPU, run the encoder on the CPU and keep the text model on the GPU.
+            // An NPU request never moves the encoder to the CPU: it fails the projector load instead.
             mtmd_free(g_mtmd);
-            mtmd_params.use_gpu = false;
-            mtmd_params.device = nullptr;
-            g_mtmd = mtmd_init_from_file(projector_path.c_str(), g_model, mtmd_params);
+            g_mtmd = nullptr;
+            if (requested_device.rfind("HTP", 0) == 0) {
+                __android_log_write(ANDROID_LOG_ERROR, TAG, "Vision encoder does not fit on the NPU");
+            } else {
+                __android_log_write(ANDROID_LOG_WARN, TAG, "Vision encoder does not fit on the GPU; using the CPU for it");
+                mtmd_params.use_gpu = false;
+                mtmd_params.device = nullptr;
+                g_mtmd = mtmd_init_from_file(projector_path.c_str(), g_model, mtmd_params);
+            }
         }
+#endif
         if (g_mtmd == nullptr || !mtmd_support_vision(g_mtmd)) {
             __android_log_print(
                 ANDROID_LOG_ERROR, TAG, "Failed to load vision projector: %s", projector_path.c_str());
