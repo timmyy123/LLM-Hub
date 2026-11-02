@@ -29,7 +29,9 @@ internal class CodexAgent(private val context: Context) {
         infer: suspend (prompt: String, grammar: String?, onDelta: (String) -> Unit) -> String,
         onThread: (String) -> Unit,
         onMessage: (CodexActivity) -> Unit,
-        editorDirty: Boolean = false
+        editorDirty: Boolean = false,
+        /** Normal mode's rule for the file's language, so agent output meets the same bar. */
+        target: String? = null
     ): Map<String, Uri> = coroutineScope {
         check(Build.VERSION.SDK_INT >= 29 && Build.SUPPORTED_ABIS.contains("arm64-v8a")) {
             context.getString(R.string.vibe_codex_requirements)
@@ -101,24 +103,8 @@ internal class CodexAgent(private val context: Context) {
             val threadId = resumed.getJSONObject("thread").getString("id")
             onThread(threadId)
             status(R.string.vibe_codex_generating)
-            val turnPrompt = buildString {
-                if (!editorName.isNullOrBlank()) {
-                    append("Active editor file: ").append(editorName).append("\n")
-                    // Small models edit from memory instead of reading first, dropping everything they forgot.
-                    // A file that fits comfortably in the context is given to them as it is now.
-                    if (editorCode.isEmpty()) {
-                        append(editorName).append(" is currently empty. Create its complete contents with write_file.\n")
-                    } else if (editorCode.length <= contextWindow * 3 / 4) {
-                        append("Current contents of ").append(editorName).append(":\n```\n").append(editorCode).append("\n```\n")
-                        append("Keep everything the request does not change. Use replace_in_file with an exact fragment from these ")
-                        append("contents, or write_file with the complete updated file.\n")
-                    } else {
-                        append("Read the current file from disk using tools. Its contents may have changed since earlier turns.\n")
-                    }
-                    append("\nUser request:\n")
-                }
-                append(prompt)
-            }
+            val turnPrompt = AgentTurnPrompt.build(prompt, editorName, editorName, editorCode, contextWindow, target,
+                writeTool = "write_file", editTool = "replace_in_file")
             val turn = rpc.request("turn/start", JSONObject().put("threadId", threadId).put("cwd", workspace.remote)
                 .put("approvalPolicy", CodexApprovals.POLICY)
                 .put("input", JSONArray().put(JSONObject().put("type", "text").put("text", turnPrompt)

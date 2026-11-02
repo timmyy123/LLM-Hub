@@ -52,7 +52,7 @@ internal object ClaudeMessages {
             Use absolute paths inside the working directory.
             To create a file or replace all of it, use Write with the complete content. For a small change to an
             existing file, Read it first, then Edit with old_string copied exactly from what Read returned.
-            Keep everything the request does not change.
+            Keep everything the request does not change. Write complete, working code with real content: no placeholders or stubs.
             If a tool failed, change the call to fix its actual error instead of repeating it.
             When the request is done, return tool_calls: [] and a one-sentence summary of what changed.
             Never claim a change without a successful tool result.

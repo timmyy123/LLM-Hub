@@ -242,6 +242,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
         val editorName = _currentFileName.value
         val editorCode = _generatedCode.value
         val editorDirty = _isDirty.value
+        val target = languagePromptConfig()?.let { (name, rule, _) -> "$name. $rule" }
         appendChat("user", prompt.trim())
         _lastUserPrompt.value = prompt.trim()
         _isProcessing.value = true
@@ -277,12 +278,13 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
                         // Claude Code edits the project folder in place; the editor reloads the active file below.
                         ClaudeCodeAgent(app).run(prompt.trim(), folder, prefs.getString("claude_session_$session", null),
                             editorUri, editorName, editorCode, editorDirty, codexContextWindow, infer,
-                            onSession = { prefs.edit().putString("claude_session_$session", it).apply() }, onMessage = update)
+                            onSession = { prefs.edit().putString("claude_session_$session", it).apply() }, onMessage = update,
+                            target = target)
                         emptyMap()
                     } else CodexAgent(app).run(prompt.trim(), folder, session, prefs.getString("codex_thread_$session", null),
                         editorUri, editorName, editorCode, codexContextWindow, infer,
                         onThread = { prefs.edit().putString("codex_thread_$session", it).apply() },
-                        onMessage = update, editorDirty = editorDirty)
+                        onMessage = update, editorDirty = editorDirty, target = target)
                 }
                 val activeUri = (if (editorName != null) published[editorName] else null)
                     ?: published.values.firstOrNull { it.toString() == editorUri }

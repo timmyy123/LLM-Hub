@@ -59,7 +59,9 @@ internal class ClaudeCodeAgent(private val context: Context) {
         editorUri: String?, editorName: String?, editorCode: String, editorDirty: Boolean, contextWindow: Int,
         infer: suspend (prompt: String, grammar: String?, onDelta: (String) -> Unit) -> String,
         onSession: (String) -> Unit,
-        onMessage: (CodexActivity) -> Unit
+        onMessage: (CodexActivity) -> Unit,
+        /** Normal mode's rule for the file's language, so agent output meets the same bar. */
+        target: String? = null
     ) = coroutineScope {
         check(Build.VERSION.SDK_INT >= 29 && Build.SUPPORTED_ABIS.contains("arm64-v8a")) {
             context.getString(R.string.vibe_codex_requirements)
@@ -76,16 +78,8 @@ internal class ClaudeCodeAgent(private val context: Context) {
         val terminal = TerminalOutputBuffer()
         try {
             onMessage(CodexActivity("status", context.getString(R.string.vibe_claude_code_starting), "status", "running"))
-            val turnPrompt = buildString {
-                if (!editorName.isNullOrBlank()) {
-                    append("Active editor file: ").append(path.trimEnd('/')).append('/').append(editorName).append("\n")
-                    if (editorCode.isEmpty()) append(editorName).append(" is currently empty. Create its complete contents with Write.\n")
-                    else if (editorCode.length <= contextWindow * 3 / 4)
-                        append("Current contents of ").append(editorName).append(":\n```\n").append(editorCode).append("\n```\n")
-                    append("\nUser request:\n")
-                }
-                append(prompt)
-            }
+            val turnPrompt = AgentTurnPrompt.build(prompt, editorName?.let { path.trimEnd('/') + "/" + it }, editorName, editorCode,
+                contextWindow, target, writeTool = "Write", editTool = "Edit")
             val encoded = java.util.Base64.getEncoder().encodeToString(turnPrompt.toByteArray())
             val quote = CodexConfig::shellQuote
             fun command(resume: String?) = """

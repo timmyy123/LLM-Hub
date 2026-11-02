@@ -44,6 +44,7 @@ internal object CodexResponses {
                 If a command failed, change the command to address its actual error.
                 For HTML, URLs, quotes and multiline changes, use replace_in_file or write_file with literal text. Do not put them in sed substitutions or shell quoting.
                 Fix the user's requested change, not unrelated issues from earlier assistant reasoning.
+                Write complete, working code with real content: no placeholders or stubs.
                 Use relative paths in the current project. Use the exact argument names in the tool schema.
                 For a small typo, perform a targeted replacement rather than rewriting the entire file.
                 For other edits, replace only the smallest necessary fragment; do not copy the whole existing file into old_text.
