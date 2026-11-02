@@ -65,6 +65,8 @@ interface InferenceService {
     fun wasSessionRecentlyReset(chatId: String): Boolean
     // Allow runtime update of generation parameters (from UI dialog)
     fun setGenerationParameters(maxTokens: Int?, topK: Int?, topP: Float?, temperature: Float?, nGpuLayers: Int? = null, enableThinking: Boolean? = null, contextWindow: Int? = null)
+    /** GBNF grammar the next replies must follow, or null for free text. Only llama.cpp models apply it. */
+    fun setOutputGrammar(grammar: String?) {}
     // Get current modality disabled states
     fun isVisionCurrentlyDisabled(): Boolean
     fun isAudioCurrentlyDisabled(): Boolean

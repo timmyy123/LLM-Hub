@@ -126,10 +126,19 @@ class LocalCodexServerTest {
             assertFalse(stream.contains("response.failed"))
         }
     }
+    @Test fun inferenceIsConstrainedToTheOfferedTools() {
+        var seen: String? = null
+        LocalCodexServer(infer = { error("Expected streaming inference") }, modelError = "Invalid",
+            streamInfer = { _, grammar, _ -> seen = grammar; """{"text":"Listing","tool_calls":[{"name":"exec_command","arguments":{"cmd":"ls"}}]}""" }).use { server ->
+            post("${server.baseUrl}/responses", """{"input":"list files","tools":[{"type":"function","name":"exec_command","parameters":{"type":"object","properties":{"cmd":{"type":"string"}},"required":["cmd"]}}]}""")
+            assertTrue(seen.orEmpty().contains("\"\\\"exec_command\\\"\""))
+            assertTrue(seen.orEmpty().contains("\"\\\"cmd\\\"\" ws \":\" ws string"))
+        }
+    }
     @Test fun reportsProgressBeforeInferenceFinishesAndAcrossAgentSteps() {
         val updates = mutableListOf<Pair<Int, String>>()
         LocalCodexServer(infer = { error("Expected streaming inference") }, modelError = "Invalid response",
-            streamInfer = { _, emit ->
+            streamInfer = { _, _, emit ->
                 emit("<think>Reading files")
                 assertTrue(updates.any { it.second.contains("Reading files") })
                 """{"text":"Ready","tool_calls":[]}"""
@@ -142,7 +151,7 @@ class LocalCodexServerTest {
     @Test fun malformedCompletionIsRetriedWithoutPublishingIt() {
         var attempts = 0
         LocalCodexServer(infer = { error("Expected streaming inference") }, modelError = "Invalid response",
-            streamInfer = { prompt, emit ->
+            streamInfer = { prompt, _, emit ->
                 attempts++
                 if (attempts == 1) {
                     val broken = """{"text":"I finished updating everything!"]}"""

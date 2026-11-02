@@ -4,6 +4,7 @@
 #include <sys/auxv.h>
 
 #include <algorithm>
+#include <cmath>
 #include <atomic>
 #include <chrono>
 #include <mutex>
@@ -34,6 +35,8 @@ constexpr const char * TAG = "LlamaCppFallback";
 llama_model * g_model = nullptr;
 llama_context * g_context = nullptr;
 llama_sampler * g_sampler = nullptr;
+// Optional output grammar (GBNF), checked per token like llama.cpp common_sampler: see sample_next().
+llama_sampler * g_grammar = nullptr;
 mtmd_context * g_mtmd = nullptr;
 std::atomic_bool g_stop{false};
 // One model per library, shared by every Kotlin service that uses it (Chat and Agent each have
@@ -99,6 +102,34 @@ void free_sampler() {
         llama_sampler_free(g_sampler);
         g_sampler = nullptr;
     }
+    if (g_grammar != nullptr) {
+        llama_sampler_free(g_grammar);
+        g_grammar = nullptr;
+    }
+}
+
+// Sample with the normal chain and keep the token when the grammar allows it. Only when it does not is the grammar
+// applied to the whole vocabulary first, which is the expensive part (the same approach as llama.cpp's common_sampler).
+llama_token sample_next(const llama_vocab * vocab) {
+    if (g_grammar == nullptr) return llama_sampler_sample(g_sampler, g_context, -1);
+    const float * logits = llama_get_logits_ith(g_context, -1);
+    const int32_t n_vocab = llama_vocab_n_tokens(vocab);
+    std::vector<llama_token_data> candidates(static_cast<size_t>(n_vocab));
+    auto sample = [&](bool constrained) {
+        for (int32_t i = 0; i < n_vocab; ++i) candidates[static_cast<size_t>(i)] = {i, logits[i], 0.0f};
+        llama_token_data_array array = {candidates.data(), candidates.size(), -1, false};
+        if (constrained) llama_sampler_apply(g_grammar, &array);
+        llama_sampler_apply(g_sampler, &array);
+        return array.data[array.selected].id;
+    };
+    llama_token token = sample(false);
+    llama_token_data single = {token, 1.0f, 0.0f};
+    llama_token_data_array check = {&single, 1, -1, false};
+    llama_sampler_apply(g_grammar, &check);
+    if (std::isinf(single.logit) && single.logit < 0) token = sample(true);
+    llama_sampler_accept(g_grammar, token);
+    llama_sampler_accept(g_sampler, token);
+    return token;
 }
 
 void unload_model() {
@@ -353,7 +384,7 @@ LLAMA_JNI(nativeFormatChat)(
 extern "C" JNIEXPORT jint JNICALL
 LLAMA_JNI(nativeStartCompletion)(
     JNIEnv * env, jobject, jstring formatted_prompt, jobjectArray image_path_array,
-    jint max_tokens, jfloat temperature, jint top_k, jfloat top_p) {
+    jint max_tokens, jfloat temperature, jint top_k, jfloat top_p, jstring grammar) {
     std::lock_guard<std::recursive_mutex> lock(g_mutex);
     if (g_model == nullptr || g_context == nullptr) return 1;
 
@@ -371,6 +402,12 @@ LLAMA_JNI(nativeStartCompletion)(
     llama_sampler_chain_add(g_sampler, llama_sampler_init_temp(
         std::max(0.0f, static_cast<float>(temperature))));
     llama_sampler_chain_add(g_sampler, llama_sampler_init_dist(LLAMA_DEFAULT_SEED));
+    const std::string grammar_text = from_jstring(env, grammar);
+    if (!grammar_text.empty()) {
+        g_grammar = llama_sampler_init_grammar(llama_model_get_vocab(g_model), grammar_text.c_str(), "root");
+        // An invalid grammar is a caller bug; generate unconstrained rather than fail the reply.
+        if (g_grammar == nullptr) __android_log_print(ANDROID_LOG_ERROR, TAG, "Output grammar rejected; generating without it");
+    }
 
     const std::string prompt = from_jstring(env, formatted_prompt);
     if (prompt.empty()) return 2;
@@ -514,8 +551,8 @@ LLAMA_JNI(nativeNextToken)(JNIEnv * env, jobject) {
         return nullptr;
     }
 
-    llama_token token = llama_sampler_sample(g_sampler, g_context, -1);
     const llama_vocab * vocab = llama_model_get_vocab(g_model);
+    llama_token token = sample_next(vocab);
     if (llama_vocab_is_eog(vocab, token)) return nullptr;
 
     int32_t piece_size = llama_token_to_piece(vocab, token, nullptr, 0, 0, true);

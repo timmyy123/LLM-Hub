@@ -21,8 +21,7 @@ internal object CodexResponses {
             if (instructions.isNotEmpty()) {
                 append("Instructions:\n").append(instructions).append("\n\n")
             }
-            val running = CodexProgressGuard.latestResult(request)?.second?.contains("Process running with session ID") == true
-            append("Available tools:\n").append(toolManifest(toolsArray, running).toString()).append("\n\n")
+            append("Available tools:\n").append(offeredTools(request).toString()).append("\n\n")
             tools(toolsArray).entries.firstOrNull { isShellTool(it.key) }?.let { (name, _) ->
                 append("Use ").append(name).append(" for reading files and running checks. Use replace_in_file for exact edits and write_file for complete files. Example:\n")
                 append(JSONObject().put("text", "Applying a targeted edit").put("tool_calls", JSONArray().put(JSONObject()
@@ -89,6 +88,10 @@ internal object CodexResponses {
             result.contains("Process exited with code 0") && result.contains("Output:") &&
             result.substringAfter("Output:").isBlank()
     }
+
+    /** The tools shown to the model for this request; [CodexGrammar] allows exactly these. */
+    fun offeredTools(request: JSONObject): JSONArray = toolManifest(request.optJSONArray("tools") ?: JSONArray(),
+        CodexProgressGuard.latestResult(request)?.second?.contains("Process running with session ID") == true)
 
     private fun toolManifest(array: JSONArray, running: Boolean): JSONArray = JSONArray().apply {
         for ((name, spec) in tools(array)) {

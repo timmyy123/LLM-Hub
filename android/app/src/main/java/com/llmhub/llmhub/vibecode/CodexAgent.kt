@@ -26,7 +26,7 @@ internal class CodexAgent(private val context: Context) {
     suspend fun run(
         prompt: String, folder: String, session: String, thread: String?,
         editorUri: String?, editorName: String?, editorCode: String, contextWindow: Int,
-        infer: suspend (String, (String) -> Unit) -> String,
+        infer: suspend (prompt: String, grammar: String?, onDelta: (String) -> Unit) -> String,
         onThread: (String) -> Unit,
         onMessage: (CodexActivity) -> Unit,
         editorDirty: Boolean = false
@@ -40,7 +40,7 @@ internal class CodexAgent(private val context: Context) {
         val home = "/data/data/com.termux/files/home/.llmhub-codex"
         val workspace = CodexWorkspace(context, Uri.parse(folder), home)
         val renderer = CodexActivityRenderer()
-        val server = LocalCodexServer({ infer(it) {} }, context.getString(R.string.vibe_codex_model_error), streamInfer = infer,
+        val server = LocalCodexServer({ infer(it, null) {} }, context.getString(R.string.vibe_codex_model_error), streamInfer = infer,
             verifiedFileSummary = { context.getString(R.string.vibe_codex_saved_verified, it) },
             onProgress = { id, step, attempt, raw ->
                 onMessage(CodexActivity("progress-$id", context.getString(R.string.vibe_codex_step_progress,

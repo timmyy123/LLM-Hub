@@ -188,6 +188,10 @@ class UnifiedInferenceService(private val context: Context) : InferenceService {
         llamaCppService.setGenerationParameters(maxTokens, topK, topP, temperature, nGpuLayers, enableThinking, contextWindow)
     }
 
+    override fun setOutputGrammar(grammar: String?) {
+        llamaCppService.setOutputGrammar(grammar)
+    }
+
     override fun isVisionCurrentlyDisabled(): Boolean {
         return currentService.isVisionCurrentlyDisabled()
     }

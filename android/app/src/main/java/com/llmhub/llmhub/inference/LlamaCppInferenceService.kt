@@ -37,7 +37,7 @@ internal interface LlamaCppRuntime {
     fun nativeSupportsVision(): Boolean
     fun nativeMediaMarker(): String
     fun nativeFormatChat(roles: Array<String>, contents: Array<String>): String?
-    fun nativeStartCompletion(formattedPrompt: String, imagePaths: Array<String>, maxTokens: Int, temperature: Float, topK: Int, topP: Float): Int
+    fun nativeStartCompletion(formattedPrompt: String, imagePaths: Array<String>, maxTokens: Int, temperature: Float, topK: Int, topP: Float, grammar: String?): Int
     fun nativeNextToken(): String?
     fun nativeStop()
     fun nativeReset()
@@ -74,6 +74,7 @@ internal object LlamaCppNative : LlamaCppRuntime {
         temperature: Float,
         topK: Int,
         topP: Float,
+        grammar: String?,
     ): Int
     external override fun nativeNextToken(): String?
     external override fun nativeStop()
@@ -92,7 +93,7 @@ internal object LlamaCppSnapdragonNative : LlamaCppRuntime {
     external override fun nativeSupportsVision(): Boolean
     external override fun nativeMediaMarker(): String
     external override fun nativeFormatChat(roles: Array<String>, contents: Array<String>): String?
-    external override fun nativeStartCompletion(formattedPrompt: String, imagePaths: Array<String>, maxTokens: Int, temperature: Float, topK: Int, topP: Float): Int
+    external override fun nativeStartCompletion(formattedPrompt: String, imagePaths: Array<String>, maxTokens: Int, temperature: Float, topK: Int, topP: Float, grammar: String?): Int
     external override fun nativeNextToken(): String?
     external override fun nativeStop()
     external override fun nativeReset()
@@ -110,7 +111,7 @@ internal object LlamaCppVulkanNative : LlamaCppRuntime {
     external override fun nativeSupportsVision(): Boolean
     external override fun nativeMediaMarker(): String
     external override fun nativeFormatChat(roles: Array<String>, contents: Array<String>): String?
-    external override fun nativeStartCompletion(formattedPrompt: String, imagePaths: Array<String>, maxTokens: Int, temperature: Float, topK: Int, topP: Float): Int
+    external override fun nativeStartCompletion(formattedPrompt: String, imagePaths: Array<String>, maxTokens: Int, temperature: Float, topK: Int, topP: Float, grammar: String?): Int
     external override fun nativeNextToken(): String?
     external override fun nativeStop()
     external override fun nativeReset()
@@ -166,6 +167,7 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
     private var overrideMaxTokens: Int? = null
     private var overrideContextWindow: Int? = null
     private var overrideTopK: Int? = null
+    @Volatile private var outputGrammar: String? = null
     private var overrideTopP: Float? = null
     private var overrideTemperature: Float? = null
     private var overrideEnableThinking: Boolean? = null
@@ -487,6 +489,7 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
             temperature,
             topK,
             topP,
+            outputGrammar,
         )
         check(startResult == 0) { "llama.cpp prompt evaluation failed with code $startResult" }
 
@@ -549,6 +552,9 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
         overrideGpuLayers = nGpuLayers
         overrideEnableThinking = enableThinking
         overrideContextWindow = contextWindow
+    }
+    override fun setOutputGrammar(grammar: String?) {
+        outputGrammar = grammar
     }
     override fun isVisionCurrentlyDisabled(): Boolean = visionDisabled
     override fun isAudioCurrentlyDisabled(): Boolean = audioDisabled

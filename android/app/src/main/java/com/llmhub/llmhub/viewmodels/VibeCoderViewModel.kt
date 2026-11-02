@@ -114,6 +114,10 @@ data class VibeChatSessionSummary(
  * Users provide a prompt, and the model generates HTML/Python/JavaScript code.
  */
 class VibeCoderViewModel(application: Application) : AndroidViewModel(application) {
+    private companion object {
+        const val CODEX_MIN_CONTEXT = 16384
+    }
+
     
     private val inferenceService = (application as com.llmhub.llmhub.LlmHubApplication).inferenceService
     private val prefs = application.getSharedPreferences("vibe_coder_prefs", Context.MODE_PRIVATE)
@@ -234,12 +238,17 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
                 val published = withContext(Dispatchers.IO) {
                     CodexAgent(app).run(prompt.trim(), folder, session, prefs.getString("codex_thread_$session", null),
                         editorUri, editorName, editorCode, codexContextWindow,
-                        infer = { request, onDelta ->
+                        infer = { request, grammar, onDelta ->
                             codexInferenceLock.withLock {
                                 val output = StringBuilder()
-                                inferenceService.generateResponseStream(request, model).collect { chunk ->
-                                    output.append(chunk)
-                                    onDelta(chunk)
+                                inferenceService.setOutputGrammar(grammar)
+                                try {
+                                    inferenceService.generateResponseStream(request, model).collect { chunk ->
+                                        output.append(chunk)
+                                        onDelta(chunk)
+                                    }
+                                } finally {
+                                    inferenceService.setOutputGrammar(null)
                                 }
                                 // Codex events own assistant messages; rendering here duplicates every answer.
                                 output.toString()
@@ -1067,9 +1076,13 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
     
     suspend fun loadModelInternal() {
         val model = _selectedModel.value ?: return
+        // Codex's instructions, tools and history alone take about 3,000 tokens, so a small context
+        // leaves no room for a reply; Codex mode loads with at least CODEX_MIN_CONTEXT.
+        val contextWindow = if (!_codexEnabled.value) _selectedMaxTokens.value
+            else maxOf(_selectedMaxTokens.value, CODEX_MIN_CONTEXT).coerceAtMost(model.effectiveContextWindow(getApplication<Application>()))
         val isSameConfig = lastAppliedConfig != null &&
-            lastAppliedConfig?.contextWindow == _selectedMaxTokens.value &&
-            lastAppliedConfig?.maxTokens == _selectedMaxTokens.value &&
+            lastAppliedConfig?.contextWindow == contextWindow &&
+            lastAppliedConfig?.maxTokens == contextWindow &&
             lastAppliedConfig?.backend == _selectedBackend.value?.name &&
             lastAppliedConfig?.deviceId == _selectedNpuDeviceId.value &&
             lastAppliedConfig?.nGpuLayers == (_selectedNGpuLayers.value ?: 999) &&
@@ -1089,8 +1102,8 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
                 inferenceService = inferenceService,
                 backendOverride = _selectedBackend.value,
                 deviceIdOverride = _selectedNpuDeviceId.value,
-                contextWindowOverride = _selectedMaxTokens.value,
-                maxTokensOverride = _selectedMaxTokens.value,
+                contextWindowOverride = contextWindow,
+                maxTokensOverride = contextWindow,
                 nGpuLayersOverride = _selectedNGpuLayers.value,
                 enableThinkingOverride = _enableThinking.value,
                 onConfigApplied = { cfg ->

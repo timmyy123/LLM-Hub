@@ -13,7 +13,8 @@ import java.util.UUID
 internal class LocalCodexServer(
     private val infer: suspend (String) -> String,
     private val modelError: String,
-    private val streamInfer: (suspend (String, (String) -> Unit) -> String)? = null,
+    /** Streams a reply to the prompt; the second argument is a GBNF grammar the reply must follow, if any. */
+    private val streamInfer: (suspend (String, String?, (String) -> Unit) -> String)? = null,
     private val onRequest: (JSONObject) -> Unit = {},
     private val onProgress: (String, Int, Int, String) -> Unit = { _, _, _, _ -> },
     private val verifiedFileSummary: (String) -> String = { "Saved $it and verified its contents." }
@@ -121,6 +122,7 @@ internal class LocalCodexServer(
                 }
                 // A successful read-back that this server requested ends the turn; asking the model again for a
                 // closing line invites it to doubt or redo the edit it just made.
+                val grammar = CodexGrammar.build(request)
                 var output: org.json.JSONArray? = CodexProgressGuard.latestResult(request)?.takeIf { (call, result) ->
                     call.optString("call_id").startsWith(READ_BACK_CALL) && result.contains("Process exited with code 0")
                 }?.let { (call, _) ->
@@ -135,7 +137,7 @@ internal class LocalCodexServer(
                     var lastUpdate = 0L
                     onProgress(messageId, step, attempt + 1, "")
                     // Publish assistant text only after validation; rejected attempts stay out of chat.
-                    val raw = streamInfer?.invoke(inferencePrompt) { chunk ->
+                    val raw = streamInfer?.invoke(inferencePrompt, grammar) { chunk ->
                         preview.append(chunk)
                         val now = System.nanoTime()
                         if (now - lastUpdate >= 200_000_000) {
