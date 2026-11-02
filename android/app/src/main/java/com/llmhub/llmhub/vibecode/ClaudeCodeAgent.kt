@@ -88,36 +88,48 @@ internal class ClaudeCodeAgent(private val context: Context) {
             }
             val encoded = java.util.Base64.getEncoder().encodeToString(turnPrompt.toByteArray())
             val quote = CodexConfig::shellQuote
-            val command = """
+            fun command(resume: String?) = """
                 export PATH=/data/data/com.termux/files/usr/bin:${'$'}PATH
                 [ -x $HOME/claude ] || { echo ${quote(context.getString(R.string.vibe_claude_code_install_help))} >&2; exit 1; }
-                cd ${quote(path)} || exit 1
+                mkdir -p ${quote(path)} 2>/dev/null
+                cd ${quote(path)} || { echo ${quote(context.getString(R.string.vibe_claude_code_folder_required))} >&2; exit 1; }
                 printf '%s' ${quote(encoded)} | base64 -d | env -u LD_PRELOAD CLAUDE_CONFIG_DIR=$HOME/config \
                   ANTHROPIC_BASE_URL=${quote(server.baseUrl)} ANTHROPIC_AUTH_TOKEN=llmhub-local \
                   ANTHROPIC_MODEL=llmhub-local ANTHROPIC_SMALL_FAST_MODEL=llmhub-local ANTHROPIC_DEFAULT_HAIKU_MODEL=llmhub-local \
                   CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1 DISABLE_AUTOUPDATER=1 DISABLE_TELEMETRY=1 DISABLE_ERROR_REPORTING=1 \
                   API_TIMEOUT_MS=1800000 CLAUDE_CODE_MAX_OUTPUT_TOKENS=4096 MAX_THINKING_TOKENS=0 \
                   $HOME/claude -p --output-format stream-json --verbose --permission-mode bypassPermissions \
-                  --allowedTools Read,Write,Edit,Bash,Glob,Grep,LS${session?.let { " --resume " + quote(it) }.orEmpty()}
+                  --allowedTools Read,Write,Edit,Bash,Glob,Grep,LS${resume?.let { " --resume " + quote(it) }.orEmpty()}
             """.trimIndent()
-            val lines = StringBuilder()
-            var result: JSONObject? = null
-            TermuxStreamingCommand.run(context, command, 35 * 60_000L) { chunk ->
-                terminal.append(chunk)
-                lines.append(chunk)
-                while (true) {
-                    val end = lines.indexOf("\n").takeIf { it >= 0 } ?: break
-                    val line = lines.substring(0, end).trim()
-                    lines.delete(0, end + 1)
-                    val event = line.takeIf { it.startsWith("{") }?.let { runCatching { JSONObject(it) }.getOrNull() } ?: continue
-                    event.optString("session_id").takeIf { it.isNotEmpty() && event.optString("type") == "system" }?.let(onSession)
-                    if (event.optString("type") == "result") result = event
-                    renderer.render(event).forEach(onMessage)
-                }
-            }
-            val done = checkNotNull(result) { terminal.append("").takeLast(2000).ifBlank { context.getString(R.string.vibe_claude_code_failed) } }
-            check(!done.optBoolean("is_error") && done.optString("subtype") == "success") {
-                done.optString("result").ifBlank { done.optString("subtype") }
+            // A saved session Claude Code no longer has (its data was cleared) would fail every turn: start afresh once.
+            for (resume in listOf(session?.takeIf { it.isNotBlank() }, null).distinct()) {
+                val lines = StringBuilder()
+                var result: JSONObject? = null
+                val output = TerminalOutputBuffer()
+                val failure = try {
+                    TermuxStreamingCommand.run(context, command(resume), 35 * 60_000L) { chunk ->
+                        terminal.append(chunk)
+                        output.append(chunk)
+                        lines.append(chunk)
+                        while (true) {
+                            val end = lines.indexOf("\n").takeIf { it >= 0 } ?: break
+                            val line = lines.substring(0, end).trim()
+                            lines.delete(0, end + 1)
+                            val event = line.takeIf { it.startsWith("{") }?.let { runCatching { JSONObject(it) }.getOrNull() } ?: continue
+                            event.optString("session_id").takeIf { it.isNotEmpty() && event.optString("type") == "system" }?.let(onSession)
+                            if (event.optString("type") == "result") result = event
+                            renderer.render(event).forEach(onMessage)
+                        }
+                    }
+                    null
+                } catch (e: CancellationException) { throw e } catch (e: Exception) { e }
+                // Claude Code's own words (install help, a missing folder, an API error) say more than an exit code.
+                val said = output.append("").trim().takeLast(2000)
+                if (resume != null && said.contains("No conversation found")) { onSession(""); continue }
+                val done = result
+                if (done != null && !done.optBoolean("is_error") && done.optString("subtype") == "success") return@coroutineScope
+                throw IllegalStateException(done?.optString("result")?.takeIf { it.isNotBlank() }
+                    ?: said.ifBlank { failure?.message ?: context.getString(R.string.vibe_claude_code_failed) }, failure)
             }
         } finally {
             withContext(NonCancellable) { withTimeoutOrNull(10_000) { server.shutdown() } }
