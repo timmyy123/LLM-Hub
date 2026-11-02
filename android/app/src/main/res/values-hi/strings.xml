@@ -1017,6 +1017,7 @@
     <string name="agent_mcp_termux_not_installed">Termux 0.109 या नया संस्करण आवश्यक है।</string>
     <string name="agent_mcp_termux_timed_out">समय-सीमा से पहले Termux ने कोई परिणाम नहीं लौटाया।</string>
     <string name="agent_mcp_termux_run_command_unavailable">Google Play वाला Termux बिल्ड बाहरी कमांड का समर्थन नहीं करता। stdio के लिए F-Droid/GitHub वाला Termux इस्तेमाल करें या रिमोट HTTP चुनें।</string>
+    <string name="agent_mcp_termux_disabled">Termux बंद है या Android ने उसे स्लीप में डाल दिया है, इसलिए LLM Hub उसमें कमांड नहीं चला सकता। Termux को एक बार खोलें, या सेटिंग्स खोलें पर टैप करके उसे फिर से चालू करें, फिर दोबारा कोशिश करें।</string>
     <string name="gguf_engine">GGUF इंजन</string>
     <string name="gguf_engine_geniex_default">GenieX (डिफ़ॉल्ट)</string>
     <string name="gguf_engine_llama_cpp">llama.cpp</string>

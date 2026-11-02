@@ -993,6 +993,7 @@
     <string name="agent_mcp_termux_not_installed">Diperlukan Termux 0.109 atau yang lebih baru.</string>
     <string name="agent_mcp_termux_timed_out">Termux tidak mengembalikan hasil sebelum waktu habis.</string>
     <string name="agent_mcp_termux_run_command_unavailable">Termux versi Google Play ini tidak mendukung perintah eksternal. Gunakan Termux versi F-Droid/GitHub untuk stdio, atau pilih HTTP Jarak Jauh.</string>
+    <string name="agent_mcp_termux_disabled">Termux dinonaktifkan atau ditidurkan oleh Android, jadi LLM Hub tidak bisa menjalankan perintah di dalamnya. Buka Termux sekali, atau ketuk Buka Setelan lalu aktifkan lagi, kemudian coba lagi.</string>
     <string name="gguf_engine">Mesin GGUF</string>
     <string name="gguf_engine_geniex_default">GenieX (default)</string>
     <string name="gguf_engine_llama_cpp">llama.cpp</string>

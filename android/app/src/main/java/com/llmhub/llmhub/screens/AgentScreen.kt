@@ -41,7 +41,8 @@ import com.llmhub.llmhub.agent.AgentViewModel
 import com.llmhub.llmhub.agent.VoiceMode
 import com.llmhub.llmhub.agent.McpSettings
 import com.llmhub.llmhub.agent.TERMUX_RUN_COMMAND_PERMISSION
-import com.llmhub.llmhub.agent.isTermuxRunCommandAvailable
+import com.llmhub.llmhub.agent.termuxAppInfoIntent
+import com.llmhub.llmhub.agent.termuxRunCommandProblem
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import com.llmhub.llmhub.components.FeatureModelSettingsSheet
 import com.llmhub.llmhub.data.featureThinking
@@ -571,11 +572,17 @@ private fun McpConfigContent(viewModel: AgentViewModel) {
                     "connected" -> stringResource(R.string.agent_mcp_connected_tools, tools.size)
                     "termux_permission_required" -> stringResource(R.string.agent_mcp_termux_permission_required)
                     "termux_run_command_unavailable" -> stringResource(R.string.agent_mcp_termux_run_command_unavailable)
+                    "termux_disabled" -> stringResource(R.string.agent_mcp_termux_disabled)
                     "termux_not_installed" -> stringResource(R.string.agent_mcp_termux_not_installed)
                     "termux_command_timed_out" -> stringResource(R.string.agent_mcp_termux_timed_out)
                     else -> stringResource(R.string.agent_mcp_error, status)
                 }
                 Text(text, color = if (status == "connected") Color(0xFF10B981) else MaterialTheme.colorScheme.error)
+                if (status == "termux_disabled") {
+                    TextButton(onClick = { runCatching { context.startActivity(termuxAppInfoIntent()) } }) {
+                        Text(stringResource(R.string.gguf_engine_open_settings))
+                    }
+                }
             }
             if (tools.isNotEmpty()) {
                 tools.forEach { tool -> Text("• ${tool.name}", style = MaterialTheme.typography.bodySmall) }
@@ -584,8 +591,9 @@ private fun McpConfigContent(viewModel: AgentViewModel) {
                 Button(
                     onClick = {
                         val settings = McpSettings(true, transport, url, token, command)
-                        if (transport == "termux" && !isTermuxRunCommandAvailable(context)) {
-                            viewModel.reportMcpError("termux_run_command_unavailable")
+                        val termuxProblem = if (transport == "termux") termuxRunCommandProblem(context) else null
+                        if (termuxProblem != null) {
+                            viewModel.reportMcpError(termuxProblem)
                         } else if (transport == "termux" && androidx.core.content.ContextCompat.checkSelfPermission(
                                 context,
                                 TERMUX_RUN_COMMAND_PERMISSION

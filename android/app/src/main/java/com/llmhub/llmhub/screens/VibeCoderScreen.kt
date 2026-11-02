@@ -140,18 +140,30 @@ fun VibeCoderScreen(
     val codexEnabled by viewModel.codexEnabled.collectAsState()
     val workspaceRevision by viewModel.workspaceRevision.collectAsState()
     var installAfterPermission by remember { mutableStateOf(false) }
+    // Why Codex mode can't turn on, shown under its switch: the settings sheet covers the snackbar.
+    var codexProblem by remember { mutableStateOf<String?>(null) }
     val termuxPermission = androidx.activity.compose.rememberLauncherForActivityResult(
         androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
     ) { granted ->
         if (granted) {
+            codexProblem = null
             viewModel.setCodexEnabled(true)
             if (installAfterPermission) viewModel.installCodex()
-        } else viewModel.setError(context.getString(R.string.agent_mcp_termux_permission_required))
+        } else {
+            codexProblem = "termux_permission_required"
+            viewModel.setError(context.getString(R.string.agent_mcp_termux_permission_required))
+        }
         installAfterPermission = false
     }
     fun enableCodex(install: Boolean = false) {
-        if (!com.llmhub.llmhub.agent.isTermuxRunCommandAvailable(context)) {
-            viewModel.setError(context.getString(R.string.agent_mcp_termux_run_command_unavailable))
+        val problem = com.llmhub.llmhub.agent.termuxRunCommandProblem(context)
+        codexProblem = problem
+        if (problem != null) {
+            viewModel.setError(context.getString(when (problem) {
+                "termux_disabled" -> R.string.agent_mcp_termux_disabled
+                "termux_not_installed" -> R.string.agent_mcp_termux_not_installed
+                else -> R.string.agent_mcp_termux_run_command_unavailable
+            }))
         } else if (androidx.core.content.ContextCompat.checkSelfPermission(context,
                 com.llmhub.llmhub.agent.TERMUX_RUN_COMMAND_PERMISSION) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
             installAfterPermission = install
@@ -805,6 +817,19 @@ fun VibeCoderScreen(
                     Text(stringResource(R.string.vibe_codex_mode), modifier = Modifier.weight(1f))
                     Switch(checked = codexEnabled, enabled = !isProcessing,
                         onCheckedChange = { if (it) enableCodex() else viewModel.setCodexEnabled(false) })
+                }
+                codexProblem?.takeIf { !codexEnabled }?.let { problem ->
+                    Text(stringResource(when (problem) {
+                        "termux_disabled" -> R.string.agent_mcp_termux_disabled
+                        "termux_not_installed" -> R.string.agent_mcp_termux_not_installed
+                        "termux_permission_required" -> R.string.agent_mcp_termux_permission_required
+                        else -> R.string.agent_mcp_termux_run_command_unavailable
+                    }), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                    if (problem == "termux_disabled") {
+                        TextButton(onClick = { runCatching { context.startActivity(com.llmhub.llmhub.agent.termuxAppInfoIntent()) } }) {
+                            Text(stringResource(R.string.gguf_engine_open_settings))
+                        }
+                    }
                 }
                 if (codexEnabled) {
                     Text(stringResource(R.string.vibe_codex_description), style = MaterialTheme.typography.bodySmall)

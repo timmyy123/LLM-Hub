@@ -898,6 +898,7 @@
     <string name="agent_mcp_termux_not_installed">Termux 0.109 of nieuwer is vereist.</string>
     <string name="agent_mcp_termux_timed_out">Termux heeft vóór de time-out geen resultaat teruggestuurd.</string>
     <string name="agent_mcp_termux_run_command_unavailable">Deze Google Play-versie van Termux ondersteunt geen externe opdrachten. Gebruik voor stdio de F-Droid/GitHub-versie van Termux of selecteer Externe HTTP.</string>
+    <string name="agent_mcp_termux_disabled">Termux staat uit of is door Android in de slaapstand gezet, dus LLM Hub kan er geen opdrachten in uitvoeren. Open Termux één keer, of tik op Instellingen openen en zet het weer aan. Probeer het daarna opnieuw.</string>
     <string name="gguf_engine">GGUF-engine</string>
     <string name="gguf_engine_geniex_default">GenieX (standaard)</string>
     <string name="gguf_engine_llama_cpp">llama.cpp</string>

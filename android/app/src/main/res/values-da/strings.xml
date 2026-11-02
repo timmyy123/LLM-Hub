@@ -959,6 +959,7 @@ Du forsøger at sende et billede, men den nuværende model er **kun-tekst**:
     <string name="agent_mcp_termux_not_installed">Termux 0.109 eller nyere er påkrævet.</string>
     <string name="agent_mcp_termux_timed_out">Termux returnerede intet resultat før timeout.</string>
     <string name="agent_mcp_termux_run_command_unavailable">Denne Google Play-version af Termux understøtter ikke eksterne kommandoer. Brug F-Droid/GitHub-versionen af Termux til stdio, eller vælg Ekstern HTTP.</string>
+    <string name="agent_mcp_termux_disabled">Termux er slået fra eller sat i dvale af Android, så LLM Hub kan ikke køre kommandoer i det. Åbn Termux én gang, eller tryk på Åbn Indstillinger og slå det til igen, og prøv så igen.</string>
     <string name="gguf_engine">GGUF-motor</string>
     <string name="gguf_engine_geniex_default">GenieX (standard)</string>
     <string name="gguf_engine_llama_cpp">llama.cpp</string>

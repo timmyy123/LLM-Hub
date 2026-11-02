@@ -988,6 +988,7 @@
     <string name="agent_mcp_termux_not_installed">Termux 0.109 以降が必要です。</string>
     <string name="agent_mcp_termux_timed_out">タイムアウトまでに Termux から結果が返されませんでした。</string>
     <string name="agent_mcp_termux_run_command_unavailable">Google Play 版の Termux は外部コマンドに対応していません。stdio には F-Droid/GitHub 版の Termux を使用するか、リモート HTTP を選択してください。</string>
+    <string name="agent_mcp_termux_disabled">Termux がオフになっているか、Android によってスリープ状態にされているため、LLM Hub からコマンドを実行できません。Termux を一度開くか、［設定を開く］から有効に戻してから、もう一度お試しください。</string>
     <string name="gguf_engine">GGUF エンジン</string>
     <string name="gguf_engine_geniex_default">GenieX（デフォルト）</string>
     <string name="gguf_engine_llama_cpp">llama.cpp</string>

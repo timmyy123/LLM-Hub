@@ -182,6 +182,8 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
         _errorMessage.value = when (error.message) {
             "termux_permission_required" -> app.getString(R.string.agent_mcp_termux_permission_required)
             "termux_run_command_unavailable" -> app.getString(R.string.agent_mcp_termux_run_command_unavailable)
+            "termux_disabled" -> app.getString(R.string.agent_mcp_termux_disabled)
+            "termux_not_installed" -> app.getString(R.string.agent_mcp_termux_not_installed)
             "workspace_conflict" -> app.getString(R.string.vibe_codex_conflict)
             app.getString(R.string.vibe_codex_requirements) -> app.getString(R.string.vibe_codex_requirements)
             app.getString(R.string.vibe_codex_connection_error) -> app.getString(R.string.vibe_codex_connection_error)

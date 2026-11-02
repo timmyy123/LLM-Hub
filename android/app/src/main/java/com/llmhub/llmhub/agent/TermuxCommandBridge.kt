@@ -6,8 +6,10 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.IBinder
+import android.provider.Settings
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.withTimeout
@@ -18,14 +20,33 @@ internal const val TERMUX_RUN_COMMAND_PERMISSION = "com.termux.permission.RUN_CO
 private const val TERMUX_PACKAGE = "com.termux"
 private const val TERMUX_SERVICE = "com.termux.app.RunCommandService"
 
-internal fun isTermuxRunCommandAvailable(context: Context): Boolean {
-    val permissionExists = runCatching {
-        context.packageManager.getPermissionInfo(TERMUX_RUN_COMMAND_PERMISSION, 0)
-    }.isSuccess
-    if (!permissionExists) return false
+/**
+ * Why LLM Hub can't run commands in Termux, as an McpException code, or null when it can:
+ * "termux_not_installed", "termux_disabled" (turned off, or put to sleep by the system for being unused, which hides
+ * its RunCommandService until Termux is opened again) or "termux_run_command_unavailable" (the Google Play build).
+ */
+internal fun termuxRunCommandProblem(context: Context): String? {
+    val pm = context.packageManager
+    val enabledSetting = try {
+        pm.getApplicationEnabledSetting(TERMUX_PACKAGE)
+    } catch (_: IllegalArgumentException) {
+        return "termux_not_installed"
+    }
+    if (enabledSetting == PackageManager.COMPONENT_ENABLED_STATE_DISABLED ||
+        enabledSetting == PackageManager.COMPONENT_ENABLED_STATE_DISABLED_USER ||
+        enabledSetting == PackageManager.COMPONENT_ENABLED_STATE_DISABLED_UNTIL_USED
+    ) return "termux_disabled"
+    val permissionExists = runCatching { pm.getPermissionInfo(TERMUX_RUN_COMMAND_PERMISSION, 0) }.isSuccess
     val intent = Intent("com.termux.RUN_COMMAND").setClassName(TERMUX_PACKAGE, TERMUX_SERVICE)
-    return context.packageManager.resolveService(intent, 0) != null
+    return if (permissionExists && pm.resolveService(intent, 0) != null) null else "termux_run_command_unavailable"
 }
+
+internal fun isTermuxRunCommandAvailable(context: Context): Boolean = termuxRunCommandProblem(context) == null
+
+/** Termux's App info page, where a disabled or sleeping Termux can be turned back on. */
+internal fun termuxAppInfoIntent(): Intent =
+    Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", TERMUX_PACKAGE, null))
+        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 
 internal data class TermuxCommandResult(
     val stdout: String,
@@ -46,9 +67,7 @@ internal object TermuxCommandBridge {
     private val pending = ConcurrentHashMap<Int, CompletableDeferred<TermuxCommandResult>>()
 
     suspend fun run(context: Context, command: String, timeoutMs: Long): String {
-        if (!isTermuxRunCommandAvailable(context)) {
-            throw McpException("termux_run_command_unavailable")
-        }
+        termuxRunCommandProblem(context)?.let { throw McpException(it) }
         if (ContextCompat.checkSelfPermission(context, TERMUX_RUN_COMMAND_PERMISSION) != PackageManager.PERMISSION_GRANTED) {
             throw McpException("termux_permission_required")
         }
