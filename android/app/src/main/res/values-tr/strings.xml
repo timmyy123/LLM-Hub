@@ -1108,6 +1108,14 @@
     <string name="vibe_codex_syncing">Proje değişiklikleri uygulanıyor…</string>
     <string name="vibe_codex_step_progress">Ajan adımı %1$d · deneme %2$d · %3$d karakter üretildi</string>
     <string name="vibe_codex_saved_verified">%1$s kaydedildi ve içeriği doğrulandı.</string>
+    <string name="vibe_claude_code_mode">Claude Code modu</string>
+    <string name="vibe_claude_code_install">Claude Code’i Termux’a yükle</string>
+    <string name="vibe_claude_code_install_help">Termux’ta harici uygulama komutlarını etkinleştirin ve başlamadan önce Claude Code’i yükleyin.</string>
+    <string name="vibe_claude_code_installing">Claude Code Termux’a yükleniyor…</string>
+    <string name="vibe_claude_code_installed">Claude Code yüklendi. Seçtiğiniz yerel model kullanıma hazır.</string>
+    <string name="vibe_claude_code_failed">Claude Code başarısız oldu. Termux kurulumunu, yerel modeli ve uygulama günlüklerini kontrol edin.</string>
+    <string name="vibe_claude_code_starting">Claude Code başlatılıyor…</string>
+    <string name="vibe_claude_code_folder_required">Claude Code modu dahili depolamada bir klasör gerektirir. Önce bir klasör açın.</string>
     <string name="tts_voice_name">Ses adı</string>
     <string name="tts_voice_rename_failed">Bu sesin adı değiştirilemedi. Lütfen tekrar deneyin.</string>
     <!-- Video Generator -->

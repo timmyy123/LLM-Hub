@@ -1078,6 +1078,14 @@ Du forsøger at sende et billede, men den nuværende model er **kun-tekst**:
     <string name="vibe_codex_syncing">Anvender projektændringer…</string>
     <string name="vibe_codex_step_progress">Agenttrin %1$d · forsøg %2$d · %3$d tegn genereret</string>
     <string name="vibe_codex_saved_verified">Gemte %1$s og bekræftede indholdet.</string>
+    <string name="vibe_claude_code_mode">Claude Code-tilstand</string>
+    <string name="vibe_claude_code_install">Installer Claude Code i Termux</string>
+    <string name="vibe_claude_code_install_help">Aktivér kommandoer fra eksterne apps i Termux, og installer Claude Code før start.</string>
+    <string name="vibe_claude_code_installing">Installerer Claude Code i Termux…</string>
+    <string name="vibe_claude_code_installed">Claude Code er installeret. Din valgte lokale model er klar til brug.</string>
+    <string name="vibe_claude_code_failed">Claude Code mislykkedes. Kontrollér Termux-opsætningen, den lokale model og appens logfiler.</string>
+    <string name="vibe_claude_code_starting">Starter Claude Code…</string>
+    <string name="vibe_claude_code_folder_required">Claude Code-tilstand kræver en mappe i det interne lager. Åbn en mappe først.</string>
     <string name="tts_voice_name">Stemmenavn</string>
     <string name="tts_voice_rename_failed">Stemmen kunne ikke omdøbes. Prøv igen.</string>
     <!-- Video Generator -->

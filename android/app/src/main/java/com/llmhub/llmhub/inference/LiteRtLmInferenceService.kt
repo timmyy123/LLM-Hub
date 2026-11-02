@@ -70,10 +70,12 @@ class LiteRtLmInferenceService(private val applicationContext: Context) : Infere
     private var currentBackendIsGpu: Boolean = false
 
     // Generation parameters from UI
-    // NOTE: contextWindow is stored but not forwarded to the Engine — the LiteRT-LM API
-    // manages KV cache automatically. topK/topP/temperature are applied per Conversation.
+    // contextWindow becomes the Engine's maxNumTokens when set; otherwise the model file's default applies
+    // (4,096 for Gemma 4 E2B/E4B, the same as the default config). topK/topP/temperature are applied per Conversation.
     private var overrideMaxTokens: Int? = null
     private var overrideContextWindow: Int? = null
+    /** The engine's maxNumTokens when LLM Hub set it; null when the model file's default applies. */
+    private var loadedContextSize: Int? = null
     private var overrideTopK: Int? = null
     private var overrideTopP: Float? = null
     private var overrideTemperature: Float? = null
@@ -122,6 +124,8 @@ class LiteRtLmInferenceService(private val applicationContext: Context) : Infere
             else -> Backend.CPU()
         }
     }
+
+    override fun getLoadedContextSize(): Int? = loadedContextSize?.takeIf { engine != null }
 
     override fun getEffectiveMaxTokens(model: LLMModel): Int {
         val isGemma4_12B = model.name.contains("Gemma-4 12B", ignoreCase = true) || model.name.contains("Gemma 4 12B", ignoreCase = true)
@@ -218,12 +222,13 @@ class LiteRtLmInferenceService(private val applicationContext: Context) : Infere
                 backend = backend,
                 visionBackend = if (model.supportsVision && !disableVision && !isGemma4_12B) backend else null,
                 audioBackend = if (model.supportsAudio && !disableAudio && !isGemma4_12B) Backend.CPU() else null,
-                maxNumTokens = if (isGemma4_12B) getEffectiveMaxTokens(model) else null,
+                maxNumTokens = if (isGemma4_12B) getEffectiveMaxTokens(model) else overrideContextWindow?.coerceIn(1, model.contextWindowSize),
                 cacheDir = applicationContext.cacheDir.path
             )
 
             Log.d(TAG, "Initializing engine for ${model.name} | backend=$backend | vision=${model.supportsVision && !disableVision} | audio=${model.supportsAudio && !disableAudio}")
 
+            loadedContextSize = engineConfig.maxNumTokens
             val newEngine = Engine(engineConfig)
             withContext(Dispatchers.IO) { newEngine.initialize() }
             engine = newEngine

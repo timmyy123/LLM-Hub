@@ -1017,6 +1017,14 @@
     <string name="vibe_codex_syncing">Đang áp dụng thay đổi cho dự án…</string>
     <string name="vibe_codex_step_progress">Bước tác nhân %1$d · lần thử %2$d · đã tạo %3$d ký tự</string>
     <string name="vibe_codex_saved_verified">Đã lưu %1$s và xác minh nội dung.</string>
+    <string name="vibe_claude_code_mode">Chế độ Claude Code</string>
+    <string name="vibe_claude_code_install">Cài Claude Code trong Termux</string>
+    <string name="vibe_claude_code_install_help">Bật lệnh từ ứng dụng bên ngoài trong Termux rồi cài Claude Code trước khi bắt đầu.</string>
+    <string name="vibe_claude_code_installing">Đang cài Claude Code trong Termux…</string>
+    <string name="vibe_claude_code_installed">Đã cài Claude Code. Mô hình cục bộ đã chọn đã sẵn sàng.</string>
+    <string name="vibe_claude_code_failed">Claude Code thất bại. Kiểm tra thiết lập Termux, mô hình cục bộ và nhật ký ứng dụng.</string>
+    <string name="vibe_claude_code_starting">Đang khởi động Claude Code…</string>
+    <string name="vibe_claude_code_folder_required">Chế độ Claude Code cần một thư mục trong bộ nhớ trong. Hãy mở một thư mục trước.</string>
     <string name="tts_voice_name">Tên giọng nói</string>
     <string name="tts_voice_rename_failed">Không thể đổi tên giọng nói này. Vui lòng thử lại.</string>
     <!-- Video Generator -->

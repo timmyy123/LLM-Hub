@@ -1118,6 +1118,14 @@
     <string name="vibe_codex_syncing">正在应用项目更改…</string>
     <string name="vibe_codex_step_progress">代理步骤 %1$d · 第 %2$d 次尝试 · 已生成 %3$d 个字符</string>
     <string name="vibe_codex_saved_verified">已保存 %1$s 并验证其内容。</string>
+    <string name="vibe_claude_code_mode">Claude Code 模式</string>
+    <string name="vibe_claude_code_install">在 Termux 中安装 Claude Code</string>
+    <string name="vibe_claude_code_install_help">在 Termux 中启用外部应用命令，并在开始前安装 Claude Code。</string>
+    <string name="vibe_claude_code_installing">正在 Termux 中安装 Claude Code…</string>
+    <string name="vibe_claude_code_installed">Claude Code 已安装。你选择的本地模型已可使用。</string>
+    <string name="vibe_claude_code_failed">Claude Code 运行失败。请检查 Termux 设置、本地模型和应用日志。</string>
+    <string name="vibe_claude_code_starting">正在启动 Claude Code…</string>
+    <string name="vibe_claude_code_folder_required">Claude Code 模式需要内部存储中的文件夹。请先打开一个文件夹。</string>
     <string name="tts_voice_name">声音名称</string>
     <string name="tts_voice_rename_failed">无法重命名此声音。请重试。</string>
     <!-- Video Generator -->

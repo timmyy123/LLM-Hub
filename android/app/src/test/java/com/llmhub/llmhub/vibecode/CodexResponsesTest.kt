@@ -223,6 +223,35 @@ class CodexResponsesTest {
         val cmd = JSONObject(CodexResponses.output(raw, request).getJSONObject(1).getString("arguments")).getString("command")
         assertEquals("replace_in_file({\"path\":\"dog.html\",\"old_text_bytes\":4,\"replacement_bytes\":22})", CodexFileEdits.commandSummary(cmd))
     }
+    @Test fun readsGemmasNativeToolCallFormat() {
+        val q = "<|\"|>"
+        val output = CodexResponses.output("Checking it.<|tool_call>call:exec{command:${q}cat dog.html${q},max_output_tokens:2048}<tool_call|>", request)
+        assertEquals("message", output.getJSONObject(0).getString("type"))
+        val args = JSONObject(output.getJSONObject(1).getString("arguments"))
+        assertEquals("cat dog.html", args.getString("command"))
+        val (_, calls) = CodexResponses.gemmaToolCalls("<|tool_call>call:Read{file_path:${q}/a/b, c.html${q}}")!!
+        assertEquals("/a/b, c.html", calls.getJSONObject(0).getJSONObject("arguments").getString("file_path"))
+        val (_, write) = CodexResponses.gemmaToolCalls("<|tool_call>call:write_file{path:${q}a.css${q},content:${q}body { color: red; }${q}}<tool_call|>")!!
+        assertEquals("body { color: red; }", write.getJSONObject(0).getJSONObject("arguments").getString("content"))
+    }
+
+    @Test fun recognisesOutputThatCollapsedIntoRepetition() {
+        val start = "```json\n{\n  \"text\": \"Adding a button\",\n  \"tool_calls\": [\n    {\n      \"name\"\": \"\"\",\n"
+        val collapsed = start + (1..200).joinToString("") { if (it % 3 == 0) "          \n" else "          \"\n" }
+        assertTrue(CodexResponses.degenerate(collapsed))
+        assertTrue(CodexResponses.degenerate(start + "abcabcabc".repeat(150)))
+        val page = (1..60).joinToString("\n") { "<p class=\"item-$it\">Golden retriever fact number $it: they love to fetch and swim.</p>" }
+        assertFalse(CodexResponses.degenerate(page))
+        assertFalse(CodexResponses.degenerate(java.util.Base64.getEncoder().encodeToString(page.toByteArray())))
+    }
+
+    @Test fun knowsWhenAStreamedReplyIsComplete() {
+        assertFalse(CodexResponses.replyComplete("""{"text":"a}","tool_calls":[{"name":"x","arguments":{}}"""))
+        assertTrue(CodexResponses.replyComplete("```json\n{\"text\":\"a\",\"tool_calls\":[]}\n``` and then more chatter {"))
+        assertFalse(CodexResponses.replyComplete("<think>{\"text\":1}"))
+        assertTrue(CodexResponses.replyComplete("<think>plan {x}</think>{\"text\":\"done\",\"tool_calls\":[]}"))
+    }
+
     @Test(expected = org.json.JSONException::class) fun doesNotSaveAFileCutOffMidContent() {
         CodexResponses.output("""{"text":"","tool_calls":[{"name":"write_file","arguments":{"path":"dog.html","content":"<html><body>""", request)
     }

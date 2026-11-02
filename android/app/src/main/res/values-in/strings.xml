@@ -1112,6 +1112,14 @@
     <string name="vibe_codex_syncing">Menerapkan perubahan proyek…</string>
     <string name="vibe_codex_step_progress">Langkah agen %1$d · percobaan %2$d · %3$d karakter dihasilkan</string>
     <string name="vibe_codex_saved_verified">%1$s disimpan dan isinya diverifikasi.</string>
+    <string name="vibe_claude_code_mode">Mode Claude Code</string>
+    <string name="vibe_claude_code_install">Instal Claude Code di Termux</string>
+    <string name="vibe_claude_code_install_help">Aktifkan perintah aplikasi eksternal di Termux, lalu instal Claude Code sebelum memulai.</string>
+    <string name="vibe_claude_code_installing">Menginstal Claude Code di Termux…</string>
+    <string name="vibe_claude_code_installed">Claude Code sudah terinstal. Model lokal pilihan Anda siap digunakan.</string>
+    <string name="vibe_claude_code_failed">Claude Code gagal. Periksa pengaturan Termux, model lokal, dan log aplikasi.</string>
+    <string name="vibe_claude_code_starting">Memulai Claude Code…</string>
+    <string name="vibe_claude_code_folder_required">Mode Claude Code memerlukan folder di penyimpanan internal. Buka folder terlebih dahulu.</string>
     <string name="tts_voice_name">Nama suara</string>
     <string name="tts_voice_rename_failed">Tidak dapat mengganti nama suara ini. Silakan coba lagi.</string>
     <!-- Video Generator -->

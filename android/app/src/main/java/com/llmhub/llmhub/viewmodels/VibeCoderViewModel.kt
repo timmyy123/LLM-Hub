@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Context
 import android.util.Log
 import com.llmhub.llmhub.R
+import com.llmhub.llmhub.vibecode.ClaudeCodeAgent
 import com.llmhub.llmhub.vibecode.CodexAgent
 import com.llmhub.llmhub.vibecode.CodexActivity
 import com.llmhub.llmhub.agent.TerminalOutputBuffer
@@ -129,10 +130,24 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
     val workspaceRevision = _workspaceRevision.asStateFlow()
     private val codexInferenceLock = Mutex()
 
+    /** Claude Code in Termux on the local model; at most one of Codex and Claude Code mode is on. */
+    private val _claudeCodeEnabled = MutableStateFlow(prefs.getBoolean("claude_code_enabled", false) && !_codexEnabled.value)
+    val claudeCodeEnabled = _claudeCodeEnabled.asStateFlow()
+    private fun agentModeOn() = _codexEnabled.value || _claudeCodeEnabled.value
+
     fun setCodexEnabled(enabled: Boolean) {
         if (_isProcessing.value) return
         _codexEnabled.value = enabled
-        prefs.edit().putBoolean("codex_enabled", enabled).apply()
+        if (enabled) _claudeCodeEnabled.value = false
+        prefs.edit().putBoolean("codex_enabled", enabled).putBoolean("claude_code_enabled", _claudeCodeEnabled.value).apply()
+        saveSettings()
+    }
+
+    fun setClaudeCodeEnabled(enabled: Boolean) {
+        if (_isProcessing.value) return
+        _claudeCodeEnabled.value = enabled
+        if (enabled) _codexEnabled.value = false
+        prefs.edit().putBoolean("claude_code_enabled", enabled).putBoolean("codex_enabled", _codexEnabled.value).apply()
         saveSettings()
     }
 
@@ -154,7 +169,11 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
         } }
     }
 
-    fun installCodex() {
+    fun installCodex() = installAgent(CodexAgent.INSTALL, R.string.vibe_codex_installing, R.string.vibe_codex_installed)
+
+    fun installClaudeCode() = installAgent(ClaudeCodeAgent.INSTALL, R.string.vibe_claude_code_installing, R.string.vibe_claude_code_installed)
+
+    private fun installAgent(script: String, installing: Int, installed: Int) {
         if (_isProcessing.value) return
         _isProcessing.value = true
         _errorMessage.value = null
@@ -163,13 +182,13 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
             val output = TerminalOutputBuffer()
             var state = "failed"
             try {
-                appendChat("assistant", getApplication<Application>().getString(R.string.vibe_codex_installing))
-                update(CodexActivity("install", "$ ${CodexAgent.INSTALL}\n", "terminal", "running"))
-                TermuxStreamingCommand.run(getApplication(), CodexAgent.INSTALL, 10 * 60_000L) { chunk ->
-                    update(CodexActivity("install", "$ ${CodexAgent.INSTALL}\n" + output.append(chunk), "terminal", "running"))
+                appendChat("assistant", getApplication<Application>().getString(installing))
+                update(CodexActivity("install", "$ $script\n", "terminal", "running"))
+                TermuxStreamingCommand.run(getApplication(), script, 20 * 60_000L) { chunk ->
+                    update(CodexActivity("install", "$ $script\n" + output.append(chunk), "terminal", "running"))
                 }
                 state = "succeeded"
-                appendChat("assistant", getApplication<Application>().getString(R.string.vibe_codex_installed))
+                appendChat("assistant", getApplication<Application>().getString(installed))
             } catch (e: CancellationException) { state = "stopped"; throw e }
             catch (e: Exception) { reportCodexError(e) }
             finally {
@@ -191,8 +210,10 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
             "workspace_conflict" -> app.getString(R.string.vibe_codex_conflict)
             app.getString(R.string.vibe_codex_requirements) -> app.getString(R.string.vibe_codex_requirements)
             app.getString(R.string.vibe_codex_connection_error) -> app.getString(R.string.vibe_codex_connection_error)
+            app.getString(R.string.vibe_claude_code_folder_required) -> app.getString(R.string.vibe_claude_code_folder_required)
             else -> if (error.message?.contains(app.getString(R.string.vibe_codex_model_error)) == true)
-                app.getString(R.string.vibe_codex_model_error) else app.getString(R.string.vibe_codex_failed)
+                app.getString(R.string.vibe_codex_model_error)
+            else app.getString(if (_claudeCodeEnabled.value) R.string.vibe_claude_code_failed else R.string.vibe_codex_failed)
         }
         appendChat("assistant", _errorMessage.value.orEmpty())
         error.message?.takeIf { it != _errorMessage.value }?.let {
@@ -200,7 +221,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
-    private fun generateWithCodex(prompt: String) {
+    private fun generateWithAgent(prompt: String, claudeCode: Boolean) {
         if (_isProcessing.value) return
         val model = _selectedModel.value ?: return
         val app = getApplication<Application>()
@@ -235,25 +256,31 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
                 // Context capacity and one tool-response budget are different limits.
                 applyGenerationParametersToService(maxTokens = codexContextWindow, topK = 40, topP = 0.95f,
                     temperature = 0.2f, responseMaxTokens = 4096)
-                val published = withContext(Dispatchers.IO) {
-                    CodexAgent(app).run(prompt.trim(), folder, session, prefs.getString("codex_thread_$session", null),
-                        editorUri, editorName, editorCode, codexContextWindow,
-                        infer = { request, grammar, onDelta ->
-                            codexInferenceLock.withLock {
-                                val output = StringBuilder()
-                                inferenceService.setOutputGrammar(grammar)
-                                try {
-                                    inferenceService.generateResponseStream(request, model).collect { chunk ->
-                                        output.append(chunk)
-                                        onDelta(chunk)
-                                    }
-                                } finally {
-                                    inferenceService.setOutputGrammar(null)
-                                }
-                                // Codex events own assistant messages; rendering here duplicates every answer.
-                                output.toString()
+                val infer: suspend (String, String?, (String) -> Unit) -> String = { request, grammar, onDelta ->
+                    codexInferenceLock.withLock {
+                        val output = StringBuilder()
+                        inferenceService.setOutputGrammar(grammar)
+                        try {
+                            inferenceService.generateResponseStream(request, model).collect { chunk ->
+                                output.append(chunk)
+                                onDelta(chunk)
                             }
-                        },
+                        } finally {
+                            inferenceService.setOutputGrammar(null)
+                        }
+                        // Agent events own assistant messages; rendering here duplicates every answer.
+                        output.toString()
+                    }
+                }
+                val published = withContext(Dispatchers.IO) {
+                    if (claudeCode) {
+                        // Claude Code edits the project folder in place; the editor reloads the active file below.
+                        ClaudeCodeAgent(app).run(prompt.trim(), folder, prefs.getString("claude_session_$session", null),
+                            editorUri, editorName, editorCode, editorDirty, codexContextWindow, infer,
+                            onSession = { prefs.edit().putString("claude_session_$session", it).apply() }, onMessage = update)
+                        emptyMap()
+                    } else CodexAgent(app).run(prompt.trim(), folder, session, prefs.getString("codex_thread_$session", null),
+                        editorUri, editorName, editorCode, codexContextWindow, infer,
                         onThread = { prefs.edit().putString("codex_thread_$session", it).apply() },
                         onMessage = update, editorDirty = editorDirty)
                 }
@@ -604,7 +631,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun createNewChatSession() {
-        if (_codexEnabled.value && _isProcessing.value) return
+        if (agentModeOn() && _isProcessing.value) return
         val index = chatSessionStore.size + 1
         val id = UUID.randomUUID().toString()
         chatSessionStore[id] = SessionPayload(id, "Chat $index", "vibe-coder-$id", mutableListOf(), mutableListOf(), null)
@@ -614,7 +641,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun selectChatSession(sessionId: String) {
-        if (_codexEnabled.value && _isProcessing.value) return
+        if (agentModeOn() && _isProcessing.value) return
         val s = chatSessionStore[sessionId] ?: return
         _activeChatSessionId.value = sessionId
         _chatMessages.value = s.messages.toList()
@@ -629,7 +656,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun deleteChatSession(sessionId: String) {
-        if (_codexEnabled.value && _isProcessing.value) return
+        if (agentModeOn() && _isProcessing.value) return
         if (!chatSessionStore.containsKey(sessionId)) return
         if (chatSessionStore.size <= 1) {
             // Keep at least one session available.
@@ -677,7 +704,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
      * Select a different model for code generation
      */
     fun selectModel(model: LLMModel) {
-        if (_codexEnabled.value && _isProcessing.value) return
+        if (agentModeOn() && _isProcessing.value) return
         if (_isModelLoaded.value) {
             unloadModel()
         }
@@ -746,7 +773,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun openEditorFile(fileUri: String, fileName: String, content: String) {
-        if (_codexEnabled.value && _isProcessing.value) return
+        if (agentModeOn() && _isProcessing.value) return
         _currentFileUri.value = fileUri
         _currentFileName.value = fileName
         _generatedCode.value = content
@@ -759,7 +786,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun openFolder(folderUri: String) {
-        if (_codexEnabled.value && _isProcessing.value) return
+        if (agentModeOn() && _isProcessing.value) return
         _currentFolderUri.value = folderUri
         saveSettings()
         appendChat("assistant", "Opened folder workspace")
@@ -831,7 +858,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun clearChatSession() {
-        if (_codexEnabled.value && _isProcessing.value) return
+        if (agentModeOn() && _isProcessing.value) return
         val session = UUID.nameUUIDFromBytes("${_activeChatSessionId.value}|${_currentFolderUri.value}|${_selectedModel.value?.name}".toByteArray()).toString()
         prefs.edit().remove("codex_thread_$session").apply()
         _chatMessages.value = emptyList()
@@ -1076,9 +1103,9 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
     
     suspend fun loadModelInternal() {
         val model = _selectedModel.value ?: return
-        // Codex's instructions, tools and history alone take about 3,000 tokens, so a small context
-        // leaves no room for a reply; Codex mode loads with at least CODEX_MIN_CONTEXT.
-        val contextWindow = if (!_codexEnabled.value) _selectedMaxTokens.value
+        // An agent's instructions, tools and history alone take about 3,000 tokens, so a small context
+        // leaves no room for a reply; Codex and Claude Code modes load with at least CODEX_MIN_CONTEXT.
+        val contextWindow = if (!agentModeOn()) _selectedMaxTokens.value
             else maxOf(_selectedMaxTokens.value, CODEX_MIN_CONTEXT).coerceAtMost(model.effectiveContextWindow(getApplication<Application>()))
         val isSameConfig = lastAppliedConfig != null &&
             lastAppliedConfig?.contextWindow == contextWindow &&
@@ -1133,7 +1160,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
      * Unload the current model from memory
      */
     fun unloadModel() {
-        if (_codexEnabled.value && _isProcessing.value) return
+        if (agentModeOn() && _isProcessing.value) return
         viewModelScope.launch {
             try {
                 cancelGenerationInternal()
@@ -1159,7 +1186,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
      */
     fun generateCode(prompt: String) {
         if (prompt.isBlank()) return
-        if (_codexEnabled.value) { generateWithCodex(prompt); return }
+        if (agentModeOn()) { generateWithAgent(prompt, claudeCode = _claudeCodeEnabled.value); return }
         val model = _selectedModel.value ?: return
         
         if (_currentFileName.value.isNullOrBlank()) {

@@ -1114,6 +1114,14 @@
     <string name="vibe_codex_syncing">Wprowadzanie zmian w projekcie…</string>
     <string name="vibe_codex_step_progress">Krok agenta %1$d · próba %2$d · wygenerowano %3$d znaków</string>
     <string name="vibe_codex_saved_verified">Zapisano %1$s i zweryfikowano jego zawartość.</string>
+    <string name="vibe_claude_code_mode">Tryb Claude Code</string>
+    <string name="vibe_claude_code_install">Zainstaluj Claude Code w Termux</string>
+    <string name="vibe_claude_code_install_help">Włącz polecenia aplikacji zewnętrznych w Termux, a następnie zainstaluj Claude Code przed rozpoczęciem.</string>
+    <string name="vibe_claude_code_installing">Instalowanie Claude Code w Termux…</string>
+    <string name="vibe_claude_code_installed">Claude Code jest zainstalowany. Wybrany model lokalny jest gotowy do użycia.</string>
+    <string name="vibe_claude_code_failed">Claude Code nie powiódł się. Sprawdź konfigurację Termux, model lokalny i dzienniki aplikacji.</string>
+    <string name="vibe_claude_code_starting">Uruchamianie Claude Code…</string>
+    <string name="vibe_claude_code_folder_required">Tryb Claude Code wymaga folderu w pamięci wewnętrznej. Najpierw otwórz folder.</string>
     <string name="tts_voice_name">Nazwa głosu</string>
     <string name="tts_voice_rename_failed">Nie udało się zmienić nazwy tego głosu. Spróbuj ponownie.</string>
     <!-- Video Generator -->

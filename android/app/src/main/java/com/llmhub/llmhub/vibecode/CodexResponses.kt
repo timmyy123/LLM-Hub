@@ -287,6 +287,49 @@ internal object CodexResponses {
         return after.substring(0, marker).trim() to after.substring(marker).trim()
     }
 
+    /**
+     * Whether streamed output already holds a whole reply object: its first top-level JSON object (after any thinking)
+     * has closed. Anything a model generates after that is noise, and backends without a grammar (LiteRT-LM) can keep
+     * going until the context is full.
+     */
+    fun replyComplete(raw: String): Boolean {
+        if (raw.contains(SENTINEL_THINK) && !raw.contains(SENTINEL_ENDTHINK)) return false
+        if (raw.contains("<think>") && !raw.contains("</think>")) return false
+        val text = stripThinking(raw)
+        var depth = 0
+        var inString = false
+        var escape = false
+        for (c in text.substring(text.indexOf('{').takeIf { it >= 0 } ?: return false)) {
+            if (inString) {
+                if (escape) escape = false else if (c == '\\') escape = true else if (c == '"') inString = false
+                continue
+            }
+            when (c) {
+                '"' -> inString = true
+                '{', '[' -> depth++
+                '}', ']' -> if (--depth == 0) return true
+            }
+        }
+        return false
+    }
+
+    /**
+     * Whether streamed output has collapsed into repetition, as small models do in long contexts (for example hundreds
+     * of lines of quotes and spaces): its last 512 characters repeat a short pattern or hold at most four distinct
+     * non-space characters. Code and prose never look like that, so generation can stop and be retried.
+     */
+    fun degenerate(raw: String): Boolean {
+        if (raw.length < 1024) return false
+        val tail = raw.takeLast(512)
+        if (tail.filterNot { it.isWhitespace() }.toSet().size <= 4) return true
+        return (1..64).any { period ->
+            (period until tail.length).count { tail[it] == tail[it - period] } >= (tail.length - period) * 97 / 100
+        }
+    }
+
+    /** The reply object in a model's raw output (thinking removed, small JSON slips repaired), or null. */
+    fun replyJson(raw: String): JSONObject? = extractJson(stripThinking(raw))?.let { runCatching { JSONObject(it) }.getOrNull() }
+
     private fun extractJson(text: String): String? {
         val trimmed = text.trim()
         // 1. Try markdown code fences first: ```json ... ```
@@ -361,6 +404,10 @@ internal object CodexResponses {
                         if (open.isEmpty()) return null
                         if (comma) repaired.append(',')
                         repaired.append('"')
+                    } else if (open.lastOrNull() == '}' && repaired.dropLast(1).trimEnd().lastOrNull() == ':' && isObjectKey(text, index)) {
+                        // A key where a value belongs, as in `{"text": "tool_calls": [...]`: the value was left out.
+                        repaired.setLength(repaired.length - 1)
+                        repaired.append("\"\", \"")
                     }
                 }
                 '{' -> open.addLast('}')
@@ -408,7 +455,46 @@ internal object CodexResponses {
         return clean
     }
 
+    /**
+     * Gemma 4's native call format, which it falls back to on LiteRT-LM where no grammar holds it to JSON:
+     * `<|tool_call>call:name{key:<|"|>text<|"|>,count:3}<tool_call|>` (the closing tag may be missing).
+     */
+    fun gemmaToolCalls(text: String): Pair<String, JSONArray>? {
+        val quote = "<|\"|>"
+        val starts = Regex("<\\|tool_call>\\s*call:([\\w.\\-]+)\\{").findAll(text).toList()
+        if (starts.isEmpty()) return null
+        val calls = JSONArray()
+        for (start in starts) {
+            // Scan key:value pairs; quoted values may hold braces and commas (CSS, code), so skip over them.
+            val args = JSONObject()
+            var i = start.range.last + 1
+            while (i < text.length && text[i] != '}') {
+                val colon = text.indexOf(':', i).takeIf { it >= 0 } ?: break
+                val key = text.substring(i, colon).trim().trim(',').trim()
+                var j = colon + 1
+                val value: Any
+                if (text.startsWith(quote, j)) {
+                    val end = text.indexOf(quote, j + quote.length).takeIf { it >= 0 } ?: text.length
+                    value = text.substring(j + quote.length, end)
+                    j = minOf(text.length, end + quote.length)
+                } else {
+                    var end = j
+                    while (end < text.length && text[end] != ',' && text[end] != '}') end++
+                    val raw = text.substring(j, end).trim()
+                    value = raw.toLongOrNull() ?: raw.toDoubleOrNull() ?: raw.toBooleanStrictOrNull() ?: raw
+                    j = end
+                }
+                if (key.isNotEmpty()) args.put(key, value)
+                while (j < text.length && text[j].isWhitespace()) j++
+                i = if (j < text.length && text[j] == ',') j + 1 else j
+            }
+            calls.put(JSONObject().put("name", start.groupValues[1]).put("arguments", args))
+        }
+        return text.substring(0, starts.first().range.first).trim() to calls
+    }
+
     private fun extractTaggedToolCalls(text: String): Pair<String, JSONArray>? {
+        gemmaToolCalls(text)?.let { return it }
         // 1. Explicit tags: <tool_call>...</tool_call> or <|tool_call_start|>...<|tool_call_end|>
         val tagRegex = Regex("(?s)(?:<\\|tool_call_start\\|>|<tool_call>)(.*?)(?:<\\|tool_call_end\\|>|</tool_call>)")
         val tagMatches = tagRegex.findAll(text).toList()

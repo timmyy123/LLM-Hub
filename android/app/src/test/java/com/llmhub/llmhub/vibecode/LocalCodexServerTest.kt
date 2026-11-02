@@ -135,6 +135,27 @@ class LocalCodexServerTest {
             assertTrue(seen.orEmpty().contains("\"\\\"cmd\\\"\" ws \":\" ws string"))
         }
     }
+    @Test fun proseAfterASuccessfulWriteFinishesThroughTheReadBack() {
+        val encoded = java.util.Base64.getEncoder().encodeToString("<h1>Dogs</h1>".toByteArray())
+        var attempts = 0
+        LocalCodexServer(infer = { attempts++; "The previous write_file call succeeded, so the dog site is done." },
+            modelError = "Invalid").use { server ->
+            val request = org.json.JSONObject().put("input", org.json.JSONArray()
+                .put(org.json.JSONObject().put("type", "message").put("role", "user").put("content", "make a dog site"))
+                .put(org.json.JSONObject().put("type", "function_call").put("name", "exec_command").put("call_id", "write")
+                    .put("arguments", org.json.JSONObject().put("cmd", "printf '%s' '$encoded' | base64 -d > 'dog.html'").toString()))
+                .put(org.json.JSONObject().put("type", "function_call_output").put("call_id", "write")
+                    .put("output", "Process exited with code 0\nOutput:\n")))
+                .put("tools", org.json.JSONArray().put(org.json.JSONObject().put("type", "function").put("name", "exec_command")
+                    .put("parameters", org.json.JSONObject().put("required", org.json.JSONArray().put("cmd")))))
+            val (_, stream) = post("${server.baseUrl}/responses", request.toString())
+            assertEquals(1, attempts)
+            assertFalse(stream.contains("response.failed"))
+            val call = stream.lineSequence().filter { it.startsWith("data: ") }.map { org.json.JSONObject(it.removePrefix("data: ")) }
+                .mapNotNull { it.optJSONObject("item") }.first { it.optString("type") == "function_call" }
+            assertEquals("cat \"dog.html\"", org.json.JSONObject(call.getString("arguments")).getString("cmd"))
+        }
+    }
     @Test fun reportsProgressBeforeInferenceFinishesAndAcrossAgentSteps() {
         val updates = mutableListOf<Pair<Int, String>>()
         LocalCodexServer(infer = { error("Expected streaming inference") }, modelError = "Invalid response",
@@ -215,7 +236,8 @@ class LocalCodexServerTest {
     }
     @Test fun malformedToolOutputFailsWithoutReportingSuccess() {
         LocalCodexServer(infer = { "pretend edits" }, modelError = "Invalid local response").use {
-            val (_, stream) = post("${it.baseUrl}/responses", """{"input":"edit","tools":[]}""")
+            // Prose is a final answer, but an edit request still needs evidence that something changed.
+            val (_, stream) = post("${it.baseUrl}/responses", """{"input":[{"type":"message","role":"user","content":"edit index.html"}],"tools":[]}""")
             assertTrue(stream.contains("local_model_error"))
             assertFalse(stream.contains("response.completed"))
         }

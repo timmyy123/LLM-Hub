@@ -1017,6 +1017,14 @@
     <string name="vibe_codex_syncing">กำลังนำการเปลี่ยนแปลงไปใช้กับโปรเจ็กต์…</string>
     <string name="vibe_codex_step_progress">ขั้นตอนเอเจนต์ %1$d · ครั้งที่ %2$d · สร้างแล้ว %3$d อักขระ</string>
     <string name="vibe_codex_saved_verified">บันทึก %1$s และตรวจสอบเนื้อหาแล้ว</string>
+    <string name="vibe_claude_code_mode">โหมด Claude Code</string>
+    <string name="vibe_claude_code_install">ติดตั้ง Claude Code ใน Termux</string>
+    <string name="vibe_claude_code_install_help">เปิดใช้คำสั่งจากแอปภายนอกใน Termux แล้วติดตั้ง Claude Code ก่อนเริ่มต้น</string>
+    <string name="vibe_claude_code_installing">กำลังติดตั้ง Claude Code ใน Termux…</string>
+    <string name="vibe_claude_code_installed">ติดตั้ง Claude Code แล้ว โมเดลในเครื่องที่คุณเลือกพร้อมใช้งาน</string>
+    <string name="vibe_claude_code_failed">Claude Code ทำงานไม่สำเร็จ ตรวจสอบการตั้งค่า Termux โมเดลในเครื่อง และบันทึกของแอป</string>
+    <string name="vibe_claude_code_starting">กำลังเริ่ม Claude Code…</string>
+    <string name="vibe_claude_code_folder_required">โหมด Claude Code ต้องใช้โฟลเดอร์ในพื้นที่เก็บข้อมูลภายใน เปิดโฟลเดอร์ก่อน</string>
     <string name="tts_voice_name">ชื่อเสียง</string>
     <string name="tts_voice_rename_failed">ไม่สามารถเปลี่ยนชื่อเสียงนี้ได้ โปรดลองอีกครั้ง</string>
     <!-- Video Generator -->

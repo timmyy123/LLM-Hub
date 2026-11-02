@@ -1017,6 +1017,14 @@
     <string name="vibe_codex_syncing">Projectwijzigingen toepassen…</string>
     <string name="vibe_codex_step_progress">Agentstap %1$d · poging %2$d · %3$d tekens gegenereerd</string>
     <string name="vibe_codex_saved_verified">%1$s opgeslagen en de inhoud gecontroleerd.</string>
+    <string name="vibe_claude_code_mode">Claude Code-modus</string>
+    <string name="vibe_claude_code_install">Claude Code installeren in Termux</string>
+    <string name="vibe_claude_code_install_help">Schakel opdrachten van externe apps in Termux in en installeer Claude Code voordat je begint.</string>
+    <string name="vibe_claude_code_installing">Claude Code wordt geïnstalleerd in Termux…</string>
+    <string name="vibe_claude_code_installed">Claude Code is geïnstalleerd. Je geselecteerde lokale model is klaar voor gebruik.</string>
+    <string name="vibe_claude_code_failed">Claude Code is mislukt. Controleer de Termux-instellingen, het lokale model en de app-logboeken.</string>
+    <string name="vibe_claude_code_starting">Claude Code starten…</string>
+    <string name="vibe_claude_code_folder_required">De Claude Code-modus heeft een map in de interne opslag nodig. Open eerst een map.</string>
     <string name="tts_voice_name">Stemnaam</string>
     <string name="tts_voice_rename_failed">Deze stem kon niet worden hernoemd. Probeer het opnieuw.</string>
     <!-- Video Generator -->

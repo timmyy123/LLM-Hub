@@ -1110,6 +1110,14 @@
     <string name="vibe_codex_syncing">در حال اعمال تغییرات پروژه…</string>
     <string name="vibe_codex_step_progress">مرحلهٔ عامل %1$d · تلاش %2$d · %3$d نویسه تولید شد</string>
     <string name="vibe_codex_saved_verified">%1$s ذخیره و محتوای آن بررسی شد.</string>
+    <string name="vibe_claude_code_mode">حالت Claude Code</string>
+    <string name="vibe_claude_code_install">نصب Claude Code در Termux</string>
+    <string name="vibe_claude_code_install_help">فرمان‌های برنامه‌های خارجی را در Termux فعال کنید و پیش از شروع Claude Code را نصب کنید.</string>
+    <string name="vibe_claude_code_installing">در حال نصب Claude Code در Termux…</string>
+    <string name="vibe_claude_code_installed">Claude Code نصب شد. مدل محلی انتخابی شما آماده استفاده است.</string>
+    <string name="vibe_claude_code_failed">Claude Code ناموفق بود. تنظیمات Termux، مدل محلی و گزارش‌های برنامه را بررسی کنید.</string>
+    <string name="vibe_claude_code_starting">در حال راه‌اندازی Claude Code…</string>
+    <string name="vibe_claude_code_folder_required">حالت Claude Code به پوشه‌ای در حافظه داخلی نیاز دارد. ابتدا یک پوشه باز کنید.</string>
     <string name="tts_voice_name">نام صدا</string>
     <string name="tts_voice_rename_failed">تغییر نام این صدا ممکن نشد. دوباره تلاش کنید.</string>
     <!-- Video Generator -->

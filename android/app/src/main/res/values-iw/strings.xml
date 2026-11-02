@@ -1110,6 +1110,14 @@
     <string name="vibe_codex_syncing">מחיל שינויים בפרויקט…</string>
     <string name="vibe_codex_step_progress">שלב סוכן %1$d · ניסיון %2$d · נוצרו %3$d תווים</string>
     <string name="vibe_codex_saved_verified">%1$s נשמר והתוכן שלו אומת.</string>
+    <string name="vibe_claude_code_mode">מצב Claude Code</string>
+    <string name="vibe_claude_code_install">התקנת Claude Code ב-Termux</string>
+    <string name="vibe_claude_code_install_help">יש להפעיל פקודות מיישומים חיצוניים ב-Termux ולהתקין את Claude Code לפני ההתחלה.</string>
+    <string name="vibe_claude_code_installing">מתקין את Claude Code ב-Termux…</string>
+    <string name="vibe_claude_code_installed">Claude Code מותקן. המודל המקומי שבחרת מוכן לשימוש.</string>
+    <string name="vibe_claude_code_failed">Claude Code נכשל. בדוק את הגדרות Termux, המודל המקומי ויומני היישום.</string>
+    <string name="vibe_claude_code_starting">מפעיל את Claude Code…</string>
+    <string name="vibe_claude_code_folder_required">מצב Claude Code צריך תיקייה באחסון הפנימי. פתחו תיקייה קודם.</string>
     <string name="tts_voice_name">שם הקול</string>
     <string name="tts_voice_rename_failed">לא ניתן לשנות את שם הקול הזה. נסו שוב.</string>
     <!-- Video Generator -->

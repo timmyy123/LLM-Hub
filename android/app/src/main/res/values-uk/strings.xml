@@ -1110,6 +1110,14 @@
     <string name="vibe_codex_syncing">Застосування змін проєкту…</string>
     <string name="vibe_codex_step_progress">Крок агента %1$d · спроба %2$d · згенеровано символів: %3$d</string>
     <string name="vibe_codex_saved_verified">%1$s збережено, вміст перевірено.</string>
+    <string name="vibe_claude_code_mode">Режим Claude Code</string>
+    <string name="vibe_claude_code_install">Встановити Claude Code у Termux</string>
+    <string name="vibe_claude_code_install_help">Увімкніть команди зовнішніх застосунків у Termux і встановіть Claude Code перед початком роботи.</string>
+    <string name="vibe_claude_code_installing">Встановлення Claude Code у Termux…</string>
+    <string name="vibe_claude_code_installed">Claude Code встановлено. Вибрана локальна модель готова до роботи.</string>
+    <string name="vibe_claude_code_failed">Помилка Claude Code. Перевірте налаштування Termux, локальну модель і журнали застосунку.</string>
+    <string name="vibe_claude_code_starting">Запуск Claude Code…</string>
+    <string name="vibe_claude_code_folder_required">Для режиму Claude Code потрібна папка у внутрішній пам’яті. Спершу відкрийте папку.</string>
     <string name="tts_voice_name">Назва голосу</string>
     <string name="tts_voice_rename_failed">Не вдалося перейменувати цей голос. Спробуйте ще раз.</string>
     <!-- Video Generator -->

@@ -1076,6 +1076,14 @@
     <string name="vibe_codex_syncing">Projektänderungen werden angewendet…</string>
     <string name="vibe_codex_step_progress">Agentenschritt %1$d · Versuch %2$d · %3$d Zeichen generiert</string>
     <string name="vibe_codex_saved_verified">%1$s gespeichert und Inhalt überprüft.</string>
+    <string name="vibe_claude_code_mode">Claude-Code-Modus</string>
+    <string name="vibe_claude_code_install">Claude Code in Termux installieren</string>
+    <string name="vibe_claude_code_install_help">Aktiviere Befehle externer Apps in Termux und installiere Claude Code vor dem Start.</string>
+    <string name="vibe_claude_code_installing">Claude Code wird in Termux installiert…</string>
+    <string name="vibe_claude_code_installed">Claude Code ist installiert. Dein ausgewähltes lokales Modell ist einsatzbereit.</string>
+    <string name="vibe_claude_code_failed">Claude Code ist fehlgeschlagen. Prüfe die Termux-Einrichtung, das lokale Modell und die App-Protokolle.</string>
+    <string name="vibe_claude_code_starting">Claude Code wird gestartet…</string>
+    <string name="vibe_claude_code_folder_required">Der Claude-Code-Modus braucht einen Ordner im internen Speicher. Öffne zuerst einen Ordner.</string>
     <string name="tts_voice_name">Name der Stimme</string>
     <string name="tts_voice_rename_failed">Diese Stimme konnte nicht umbenannt werden. Bitte versuche es erneut.</string>
     <!-- Video Generator -->

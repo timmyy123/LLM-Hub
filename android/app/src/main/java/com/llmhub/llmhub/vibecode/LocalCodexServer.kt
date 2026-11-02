@@ -2,7 +2,6 @@ package com.llmhub.llmhub.vibecode
 
 import kotlinx.coroutines.*
 import org.json.JSONObject
-import java.io.BufferedInputStream
 import java.io.Closeable
 import java.net.InetAddress
 import java.net.ServerSocket
@@ -19,7 +18,10 @@ internal class LocalCodexServer(
     private val onProgress: (String, Int, Int, String) -> Unit = { _, _, _, _ -> },
     private val verifiedFileSummary: (String) -> String = { "Saved $it and verified its contents." }
 ) : Closeable {
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    // A dropped connection or a bad request ends that request, never the app.
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO + CoroutineExceptionHandler { _, e ->
+        runCatching { android.util.Log.w("LocalCodexServer", "Request ended", e) }
+    })
     private val listener = ServerSocket(0, 4, InetAddress.getByName("127.0.0.1"))
     private val token = UUID.randomUUID().toString()
     val baseUrl = "http://127.0.0.1:${listener.localPort}/$token/v1"
@@ -37,60 +39,21 @@ internal class LocalCodexServer(
     }
 
     private suspend fun handle(socket: Socket) {
-        socket.soTimeout = 30_000
-        val input = BufferedInputStream(socket.getInputStream())
-        fun line(): String {
-            val bytes = java.io.ByteArrayOutputStream()
-            while (true) {
-                val c = input.read()
-                require(c >= 0) { "Incomplete HTTP header" }
-                if (c == 10) break
-                require(bytes.size() < 8192)
-                if (c != 13) bytes.write(c)
-            }
-            return bytes.toString("UTF-8")
-        }
-        val first = line().split(' ')
-        val headers = mutableMapOf<String, String>()
-        var headerBytes = 0
-        while (true) {
-            val header = line()
-            if (header.isEmpty()) break
-            headerBytes += header.length
-            require(headerBytes < 32768)
-            headers[header.substringBefore(':').lowercase()] = header.substringAfter(':').trim()
-        }
-        val out = socket.getOutputStream()
-        fun json(status: String, value: JSONObject) {
-            val bytes = value.toString().toByteArray()
-            out.write("HTTP/1.1 $status\r\nContent-Type: application/json\r\nContent-Length: ${bytes.size}\r\nConnection: close\r\n\r\n".toByteArray())
-            out.write(bytes); out.flush()
-        }
-        if (first.getOrNull(0) == "GET" && first.getOrNull(1)?.substringBefore('?') == "/$token/v1/models") {
+        val http = LoopbackRequest.read(socket)
+        val out = http.out
+        if (http.method == "GET" && http.path == "/$token/v1/models") {
             val modelObj = JSONObject()
                 .put("id", "llmhub-local")
                 .put("slug", "llmhub-local")
                 .put("name", "LLM Hub local")
                 .put("supports_parallel_tool_calls", false)
-            json("200 OK", JSONObject().put("models", org.json.JSONArray().put(modelObj)))
+            http.json("200 OK", JSONObject().put("models", org.json.JSONArray().put(modelObj)))
             return
         }
-        if (first.getOrNull(0) != "POST" || first.getOrNull(1)?.substringBefore('?') != "/$token/v1/responses") {
-            json("404 Not Found", JSONObject()); return
+        if (http.method != "POST" || http.path != "/$token/v1/responses") {
+            http.json("404 Not Found", JSONObject()); return
         }
-        if (headers["expect"]?.lowercase() == "100-continue") {
-            out.write("HTTP/1.1 100 Continue\r\n\r\n".toByteArray()); out.flush()
-        }
-        val length = headers["content-length"]?.toIntOrNull()
-        if (length == null || length !in 1..8_388_608 || headers.containsKey("transfer-encoding")) {
-            json("413 Payload Too Large", JSONObject()); return
-        }
-        val body = ByteArray(length)
-        var read = 0
-        while (read < length) {
-            val n = input.read(body, read, length - read)
-            require(n > 0); read += n
-        }
+        val body = http.body() ?: return
         val request = JSONObject(String(body, Charsets.UTF_8))
         onRequest(request)
         val id = "resp_${UUID.randomUUID()}"
@@ -102,10 +65,12 @@ internal class LocalCodexServer(
         }
         event(CodexResponses.event("response.created", "response" to JSONObject().put("id", id)))
         coroutineScope {
+            // A failed write means Codex is gone: cancel the request, inference included, instead of failing.
+            val requestScope = this
             val heartbeat = launch {
                 while (isActive) {
                     delay(5_000)
-                    synchronized(lock) { out.write(": keepalive\n\n".toByteArray()); out.flush() }
+                    if (runCatching { synchronized(lock) { out.write(": keepalive\n\n".toByteArray()); out.flush() } }.isFailure) requestScope.cancel()
                 }
             }
             try {
@@ -137,21 +102,30 @@ internal class LocalCodexServer(
                     var lastUpdate = 0L
                     onProgress(messageId, step, attempt + 1, "")
                     // Publish assistant text only after validation; rejected attempts stay out of chat.
-                    val raw = streamInfer?.invoke(inferencePrompt, grammar) { chunk ->
-                        preview.append(chunk)
-                        val now = System.nanoTime()
-                        if (now - lastUpdate >= 200_000_000) {
-                            onProgress(messageId, step, attempt + 1, preview.toString())
-                            lastUpdate = now
+                    val raw = try {
+                        streamInfer?.invoke(inferencePrompt, grammar) { chunk ->
+                            preview.append(chunk)
+                            val now = System.nanoTime()
+                            if (now - lastUpdate >= 200_000_000) {
+                                onProgress(messageId, step, attempt + 1, preview.toString())
+                                lastUpdate = now
+                            }
+                            // Backends without a grammar keep generating after the reply; stop at its last brace.
+                            if (preview.length > MAX_REPLY_CHARS || preview.length % 256 < chunk.length && CodexResponses.degenerate(preview.toString()) ||
+                        ('}' in chunk || ']' in chunk) && CodexResponses.replyComplete(preview.toString())) throw ReplyComplete()
                         }
-                    }
+                    } catch (_: ReplyComplete) { preview.toString() }
                         ?: infer(inferencePrompt)
                     onProgress(messageId, step, attempt + 1, raw)
                     try {
                         var nativeSummary: String? = null
                         var candidate = try { CodexResponses.output(raw, request) }
                             catch (error: org.json.JSONException) {
-                                val completion = CodexResponses.nativeCompletion(raw) ?: throw error
+                                // Plain prose with no JSON or tool markup is a final answer (LiteRT-LM has no grammar to
+                                // keep Gemma to JSON); the progress guard still demands evidence before accepting it.
+                                val completion = CodexResponses.nativeCompletion(raw)
+                                    ?: CodexResponses.stripThinking(raw).takeIf { it.isNotBlank() && '{' !in it && "tool_call" !in it }
+                                    ?: throw error
                                 nativeSummary = completion
                                 CodexResponses.output(completion, request, allowPlainText = true)
                             }

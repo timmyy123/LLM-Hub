@@ -10,8 +10,14 @@ import org.json.JSONObject
  * arguments impossible, whatever the prompt or model; the short text keeps it from spending its reply budget narrating.
  */
 internal object CodexGrammar {
-    fun build(request: JSONObject): String? {
-        val tools = CodexResponses.offeredTools(request)
+    fun build(request: JSONObject): String? = forTools(CodexResponses.offeredTools(request))
+
+    /**
+     * [tools]: objects with name, type ("custom" takes raw input) and a JSON schema in parameters.
+     * [requireCall]: at least one call, for a model that keeps ending without using any tool.
+     * At most three calls: small models otherwise loop through the tool list until the reply limit cuts them off.
+     */
+    fun forTools(tools: JSONArray, requireCall: Boolean = false): String? {
         if (tools.length() == 0) return null
         val rules = StringBuilder()
         val calls = (0 until tools.length()).map { i ->
@@ -23,7 +29,7 @@ internal object CodexGrammar {
             "call$i"
         }
         return """
-            root ::= "{" ws "\"text\"" ws ":" ws note ws "," ws "\"tool_calls\"" ws ":" ws "[" ws (call (ws "," ws call)*)? ws "]" ws "}"
+            root ::= "{" ws "\"text\"" ws ":" ws note ws "," ws "\"tool_calls\"" ws ":" ws "[" ws ${if (requireCall) "call (ws \",\" ws call){0,2}" else "(call (ws \",\" ws call){0,2})?"} ws "]" ws "}"
             call ::= ${calls.joinToString(" | ")}
         """.trimIndent() + "\n" + rules + JSON_RULES
     }

@@ -138,8 +138,12 @@ fun VibeCoderScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val isProcessing by viewModel.isProcessing.collectAsState()
     val codexEnabled by viewModel.codexEnabled.collectAsState()
+    val claudeCodeEnabled by viewModel.claudeCodeEnabled.collectAsState()
+    // Codex or Claude Code: an agent in Termux edits the project folder instead of the editor's in-app flow.
+    val agentMode = codexEnabled || claudeCodeEnabled
     val workspaceRevision by viewModel.workspaceRevision.collectAsState()
     var installAfterPermission by remember { mutableStateOf(false) }
+    var claudeAfterPermission by remember { mutableStateOf(false) }
     // Why Codex mode can't turn on, shown under its switch: the settings sheet covers the snackbar.
     var codexProblem by remember { mutableStateOf<String?>(null) }
     val termuxPermission = androidx.activity.compose.rememberLauncherForActivityResult(
@@ -147,15 +151,20 @@ fun VibeCoderScreen(
     ) { granted ->
         if (granted) {
             codexProblem = null
-            viewModel.setCodexEnabled(true)
-            if (installAfterPermission) viewModel.installCodex()
+            if (claudeAfterPermission) {
+                viewModel.setClaudeCodeEnabled(true)
+                if (installAfterPermission) viewModel.installClaudeCode()
+            } else {
+                viewModel.setCodexEnabled(true)
+                if (installAfterPermission) viewModel.installCodex()
+            }
         } else {
             codexProblem = "termux_permission_required"
             viewModel.setError(context.getString(R.string.agent_mcp_termux_permission_required))
         }
         installAfterPermission = false
     }
-    fun enableCodex(install: Boolean = false) {
+    fun enableAgent(claudeCode: Boolean, install: Boolean = false) {
         val problem = com.llmhub.llmhub.agent.termuxRunCommandProblem(context)
         codexProblem = problem
         if (problem != null) {
@@ -167,7 +176,11 @@ fun VibeCoderScreen(
         } else if (androidx.core.content.ContextCompat.checkSelfPermission(context,
                 com.llmhub.llmhub.agent.TERMUX_RUN_COMMAND_PERMISSION) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
             installAfterPermission = install
+            claudeAfterPermission = claudeCode
             termuxPermission.launch(com.llmhub.llmhub.agent.TERMUX_RUN_COMMAND_PERMISSION)
+        } else if (claudeCode) {
+            viewModel.setClaudeCodeEnabled(true)
+            if (install) viewModel.installClaudeCode()
         } else {
             viewModel.setCodexEnabled(true)
             if (install) viewModel.installCodex()
@@ -500,7 +513,7 @@ fun VibeCoderScreen(
     }
 
     LaunchedEffect(generatedCode, isDirty, currentFileUri, currentFileName, isProcessing) {
-        if (codexEnabled && isProcessing) return@LaunchedEffect
+        if (agentMode && isProcessing) return@LaunchedEffect
         if (!isDirty) return@LaunchedEffect
         val uri = currentFileUri ?: return@LaunchedEffect
         delay(500)
@@ -648,7 +661,7 @@ fun VibeCoderScreen(
                                 onCodeChange = { viewModel.updateGeneratedCode(it) },
                                 isProcessing = isProcessing,
                                 codeLanguage = codeLanguage,
-                                canDiscardLastAiEdit = !codexEnabled && editCheckpoints.isNotEmpty(),
+                                canDiscardLastAiEdit = !agentMode && editCheckpoints.isNotEmpty(),
                                 onDiscardLastAiEdit = { viewModel.revertLastCheckpoint() },
                                 currentFileName = currentFileName,
                                 hasFileSession = currentFileName != null,
@@ -691,11 +704,11 @@ fun VibeCoderScreen(
                                     input = chatInput,
                                     onInputChange = { chatInput = it },
                                     isProcessing = isProcessing,
-                                    hasFileSession = codexEnabled || currentFileName != null,
+                                    hasFileSession = agentMode || currentFileName != null,
                                     contextUsage = contextUsage,
                                     contextLabel = contextLabel,
-                                    showContextPercent = !codexEnabled,
-                                    allowPromptEditing = !codexEnabled,
+                                    showContextPercent = !agentMode,
+                                    allowPromptEditing = !agentMode,
                                     showHideButton = true,
                                     onHidePanel = { chatPaneVisible = false },
                                     onNewChat = { viewModel.createNewChatSession() },
@@ -705,7 +718,7 @@ fun VibeCoderScreen(
                                     onStopGeneration = { viewModel.cancelGeneration() },
                                     onSend = {
                                         val p = chatInput.trim()
-                                        if (p.isNotEmpty() && (codexEnabled || currentFileName != null)) {
+                                        if (p.isNotEmpty() && (agentMode || currentFileName != null)) {
                                             chatInput = ""
                                             viewModel.generateCode(p)
                                         }
@@ -733,11 +746,11 @@ fun VibeCoderScreen(
                             input = chatInput,
                             onInputChange = { chatInput = it },
                             isProcessing = isProcessing,
-                            hasFileSession = codexEnabled || currentFileName != null,
+                            hasFileSession = agentMode || currentFileName != null,
                             contextUsage = contextUsage,
                             contextLabel = contextLabel,
-                            showContextPercent = !codexEnabled,
-                            allowPromptEditing = !codexEnabled,
+                            showContextPercent = !agentMode,
+                            allowPromptEditing = !agentMode,
                             showHideButton = false,
                             onHidePanel = null,
                             onNewChat = { viewModel.createNewChatSession() },
@@ -747,7 +760,7 @@ fun VibeCoderScreen(
                             onStopGeneration = { viewModel.cancelGeneration() },
                             onSend = {
                                 val p = chatInput.trim()
-                                if (p.isNotEmpty() && (codexEnabled || currentFileName != null)) {
+                                if (p.isNotEmpty() && (agentMode || currentFileName != null)) {
                                     chatInput = ""
                                     viewModel.generateCode(p)
                                 }
@@ -760,7 +773,7 @@ fun VibeCoderScreen(
                             onCodeChange = { viewModel.updateGeneratedCode(it) },
                             isProcessing = isProcessing,
                             codeLanguage = codeLanguage,
-                            canDiscardLastAiEdit = !codexEnabled && editCheckpoints.isNotEmpty(),
+                            canDiscardLastAiEdit = !agentMode && editCheckpoints.isNotEmpty(),
                             onDiscardLastAiEdit = { viewModel.revertLastCheckpoint() },
                             currentFileName = currentFileName,
                             hasFileSession = currentFileName != null,
@@ -816,9 +829,14 @@ fun VibeCoderScreen(
                 Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Text(stringResource(R.string.vibe_codex_mode), modifier = Modifier.weight(1f))
                     Switch(checked = codexEnabled, enabled = !isProcessing,
-                        onCheckedChange = { if (it) enableCodex() else viewModel.setCodexEnabled(false) })
+                        onCheckedChange = { if (it) enableAgent(claudeCode = false) else viewModel.setCodexEnabled(false) })
                 }
-                codexProblem?.takeIf { !codexEnabled }?.let { problem ->
+                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text(stringResource(R.string.vibe_claude_code_mode), modifier = Modifier.weight(1f))
+                    Switch(checked = claudeCodeEnabled, enabled = !isProcessing,
+                        onCheckedChange = { if (it) enableAgent(claudeCode = true) else viewModel.setClaudeCodeEnabled(false) })
+                }
+                codexProblem?.takeIf { !agentMode }?.let { problem ->
                     Text(stringResource(when (problem) {
                         "termux_disabled" -> R.string.agent_mcp_termux_disabled
                         "termux_not_installed" -> R.string.agent_mcp_termux_not_installed
@@ -831,16 +849,18 @@ fun VibeCoderScreen(
                         }
                     }
                 }
-                if (codexEnabled) {
-                    Text(stringResource(R.string.vibe_codex_description), style = MaterialTheme.typography.bodySmall)
+                if (agentMode) {
+                    Text(stringResource(R.string.vibe_codex_description),
+                        style = MaterialTheme.typography.bodySmall)
                     Text(stringResource(R.string.agent_termux_guide_desc), style = MaterialTheme.typography.bodySmall)
                     androidx.compose.foundation.text.selection.SelectionContainer {
                         Text("mkdir -p ~/.termux && echo \"allow-external-apps = true\" >> ~/.termux/termux.properties",
                             style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace))
                     }
-                    Text(stringResource(R.string.vibe_codex_install_help), style = MaterialTheme.typography.bodySmall)
-                    OutlinedButton(onClick = { enableCodex(install = true) }, enabled = !isProcessing) {
-                        Text(stringResource(R.string.vibe_codex_install))
+                    Text(stringResource(if (claudeCodeEnabled) R.string.vibe_claude_code_install_help else R.string.vibe_codex_install_help),
+                        style = MaterialTheme.typography.bodySmall)
+                    OutlinedButton(onClick = { enableAgent(claudeCode = claudeCodeEnabled, install = true) }, enabled = !isProcessing) {
+                        Text(stringResource(if (claudeCodeEnabled) R.string.vibe_claude_code_install else R.string.vibe_codex_install))
                     }
                 }
             }
