@@ -13,6 +13,11 @@ class CodexFileEditsTest {
         assertTrue(summary.length < 200)
         assertFalse(summary.contains("body"))
     }
+    @Test fun executedWriteHistoryNamesTheFileInsteadOfItsEncodedContents() {
+        val cmd = "printf '%s' '" + java.util.Base64.getEncoder().encodeToString("<h1>Dogs</h1>".toByteArray()) + "' | base64 -d > 'dog.html'"
+        assertEquals("""write_file({"path":"dog.html","bytes":13})""", CodexFileEdits.commandSummary(cmd))
+        assertEquals("dog.html", CodexFileEdits.editedFile(cmd))
+    }
     private fun edit(source: String, old: String, replacement: String, extension: String = "html"): Pair<Int, String> {
         val dir = Files.createTempDirectory("codex-indentation-").toFile()
         try {

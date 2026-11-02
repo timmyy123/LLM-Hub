@@ -3,8 +3,35 @@ package com.llmhub.llmhub.vibecode
 import org.json.JSONArray
 import org.json.JSONObject
 
+/** A final reply to an editing request that no successful check backs up. */
+internal class UnverifiedCompletionException(message: String) : IllegalArgumentException(message)
+
 /** Prevent a successful inspection from being executed forever while the model repeats its plan. */
 internal object CodexProgressGuard {
+    /**
+     * The file whose literal edit succeeded last and has not been read or checked since, in the latest user turn.
+     * Small models often skip the read-back and just announce success; the server then reads it back for them.
+     */
+    fun unverifiedEdit(request: JSONObject): String? {
+        val input = request.optJSONArray("input") ?: return null
+        val calls = mutableMapOf<String, JSONObject>()
+        var edited: String? = null
+        for (i in 0 until input.length()) {
+            val item = input.optJSONObject(i) ?: continue
+            if (item.optString("role") == "user") edited = null
+            when (item.optString("type")) {
+                "function_call" -> calls[item.optString("call_id")] = item
+                "function_call_output" -> {
+                    val call = calls[item.optString("call_id")] ?: continue
+                    val cmd = command(call) ?: continue
+                    if (!item.optString("output").contains("Process exited with code 0")) continue
+                    edited = CodexFileEdits.editedFile(cmd) ?: if (inspectionKey(call) != null) null else edited
+                }
+            }
+        }
+        return edited
+    }
+
     /** End a redundant verification only when a literal write and its exact read-back succeeded. */
     fun verifiedDuplicateRead(output: JSONArray, request: JSONObject): String? {
         val proposed = (0 until output.length()).map { output.getJSONObject(it) }
@@ -55,6 +82,39 @@ internal object CodexProgressGuard {
             }
         }
         return latest
+    }
+
+    /**
+     * File names known to be empty in the latest user turn: the request says so (Vibe Code states it for an empty
+     * editor file) or a complete read returned nothing, until a successful edit of that file.
+     */
+    fun emptyFiles(request: JSONObject): Set<String> {
+        val input = request.optJSONArray("input") ?: return emptySet()
+        val calls = mutableMapOf<String, JSONObject>()
+        val empty = mutableSetOf<String>()
+        for (i in 0 until input.length()) {
+            val item = input.optJSONObject(i) ?: continue
+            if (item.optString("role") == "user") {
+                empty.clear()
+                val content = item.optJSONArray("content")
+                val text = if (content == null) item.optString("content") else
+                    (0 until content.length()).joinToString("\n") { content.optJSONObject(it)?.optString("text").orEmpty() }
+                Regex("(?m)^(\\S+) is currently empty\\.").findAll(text).forEach { empty.add(it.groupValues[1].substringAfterLast('/')) }
+            }
+            when (item.optString("type")) {
+                "function_call" -> calls[item.optString("call_id")] = item
+                "function_call_output" -> {
+                    val cmd = calls[item.optString("call_id")]?.let(::command) ?: continue
+                    val output = item.optString("output")
+                    if (!output.contains("Process exited with code 0")) continue
+                    CodexFileEdits.editedFile(cmd)?.let { empty.remove(it.substringAfterLast('/')) }
+                    val read = Regex("^cat\\s+[\"']?([^\"'\\s]+)[\"']?\\s*$").matchEntire(cmd)?.groupValues?.get(1)
+                    if (read != null && completeInspection(output) && output.substringAfter("Output:", "x").isBlank())
+                        empty.add(read.substringAfterLast('/'))
+                }
+            }
+        }
+        return empty
     }
 
     internal fun command(call: JSONObject): String? {
@@ -151,10 +211,17 @@ internal object CodexProgressGuard {
                 }
             }
         }
+        val empty = emptyFiles(request)
+        for (i in 0 until output.length()) {
+            val replaced = command(output.getJSONObject(i))?.takeIf { CodexFileEdits.writtenFile(it) == null }
+                ?.let(CodexFileEdits::editedFile)?.substringAfterLast('/') ?: continue
+            if (replaced in empty) throw IllegalArgumentException("$replaced is empty, so replace_in_file has nothing to replace. " +
+                "Call write_file with path $replaced and the complete file content.")
+        }
         val finalReply = (0 until output.length()).none {
             output.getJSONObject(it).optString("type") in setOf("function_call", "custom_tool_call")
         }
-        if (finalReply && editingRequest && !verifiedAction) throw IllegalArgumentException(
+        if (finalReply && editingRequest && !verifiedAction) throw UnverifiedCompletionException(
             "Unverified completion: no successful verification establishes this request is complete. " +
                 "If you edited, check the resulting file or run relevant tests. If no edit was needed, run a targeted check (such as grep for the required import) that proves the request is already satisfied.")
         for (i in 0 until output.length()) {

@@ -119,8 +119,18 @@ internal class LocalCodexServer(
                     return CodexResponses.recoveryPrompt(request,
                         IllegalArgumentException(rejectionReasons.joinToString("\nPrevious rejection: ")))
                 }
-                var output: org.json.JSONArray? = null
+                // A successful read-back that this server requested ends the turn; asking the model again for a
+                // closing line invites it to doubt or redo the edit it just made.
+                var output: org.json.JSONArray? = CodexProgressGuard.latestResult(request)?.takeIf { (call, result) ->
+                    call.optString("call_id").startsWith(READ_BACK_CALL) && result.contains("Process exited with code 0")
+                }?.let { (call, _) ->
+                    val summary = JSONObject().put("text", verifiedFileSummary(CodexProgressGuard.inspectionKey(call).orEmpty()
+                        .removePrefix("cat "))).put("tool_calls", org.json.JSONArray()).toString()
+                    onProgress(messageId, step, 1, summary)
+                    CodexResponses.output(summary, request)
+                }
                 for (attempt in 0..2) {
+                    if (output != null) break
                     val preview = StringBuilder()
                     var lastUpdate = 0L
                     onProgress(messageId, step, attempt + 1, "")
@@ -148,7 +158,18 @@ internal class LocalCodexServer(
                             candidate = CodexResponses.output(JSONObject().put("text", nativeSummary)
                                 .put("tool_calls", org.json.JSONArray()).toString(), request)
                         }
-                        CodexProgressGuard.validate(candidate, request)
+                        try {
+                            CodexProgressGuard.validate(candidate, request)
+                        } catch (e: UnverifiedCompletionException) {
+                            // The edit itself succeeded; read the file back for the model instead of failing the turn.
+                            val path = CodexProgressGuard.unverifiedEdit(request) ?: throw e
+                            candidate = CodexResponses.output(JSONObject().put("text", "").put("tool_calls", org.json.JSONArray()
+                                .put(JSONObject().put("name", "read_file").put("arguments", JSONObject().put("path", path)))).toString(), request)
+                            for (i in 0 until candidate.length()) candidate.getJSONObject(i).takeIf { it.has("call_id") }
+                                ?.put("call_id", READ_BACK_CALL + UUID.randomUUID())
+                            CodexProgressGuard.validate(candidate, request)
+                            nativeSummary = null
+                        }
                         nativeSummary?.let { summary ->
                             // Replace the provisional thinking preview before publishing this same final text.
                             onProgress(messageId, step, attempt + 1,
@@ -186,6 +207,10 @@ internal class LocalCodexServer(
                         .put("code", "local_model_error").put("message", e.message ?: modelError))))
             } finally { heartbeat.cancel() }
         }
+    }
+
+    private companion object {
+        const val READ_BACK_CALL = "call_llmhub_readback_"
     }
 
     suspend fun shutdown() {

@@ -15,6 +15,16 @@ class CodexResponsesTest {
         assertFalse(prompt("Process exited with code 1\nOutput:\nNo such file").contains("NEXT action is write_file"))
         assertFalse(prompt("Process exited with code 0\nOutput:\n<html>").contains("NEXT action is write_file"))
     }
+    @Test fun successfulWriteTellsModelNotToWriteTheSameFileAgain() {
+        val write = "printf '%s' '" + java.util.Base64.getEncoder().encodeToString("<h1>Dogs</h1>".toByteArray()) + "' | base64 -d > 'dog.html'"
+        fun prompt(result: String) = CodexResponses.prompt(JSONObject().put("input", JSONArray()
+            .put(JSONObject().put("type", "function_call").put("call_id", "w").put("name", "exec_command")
+                .put("arguments", JSONObject().put("cmd", write).toString()))
+            .put(JSONObject().put("type", "function_call_output").put("call_id", "w").put("output", result))))
+        assertTrue(prompt("Process exited with code 0\nOutput:\n").contains("Do not write it again"))
+        assertFalse(prompt("Process exited with code 1\nOutput:\nPermission denied").contains("Do not write it again"))
+        assertFalse(prompt("Process exited with code 0\nOutput:\n").contains(write))
+    }
     @Test fun nativeFinishEndsWithOneSummaryAndNoShellCommand() {
         val output = CodexResponses.output("Finished. <tool_call>[finish(summary='Verified the file change')]</tool_call>", request)
         assertEquals(1, output.length())
@@ -182,6 +192,39 @@ class CodexResponsesTest {
         val cmd = JSONObject(call.getString("arguments")).getString("command")
         assertTrue(cmd.contains("base64 -d > 'index.html'"))
         assertTrue(cmd.contains(java.util.Base64.getEncoder().encodeToString("<h1>hello</h1>".toByteArray())))
+    }
+
+    @Test fun repairsToolCallMissingItsClosingBrace() {
+        // LFM3 VL 2B's reply to "make a dog site": the tool-call object is never closed before "]".
+        val raw = """{"text":"Creating the site","tool_calls":[{"name":"write_file","arguments":{"path":"dog.html","content":"<h1>Dogs {}</h1>"}]}"""
+        val output = CodexResponses.output(raw, request)
+        val cmd = JSONObject(output.getJSONObject(1).getString("arguments")).getString("command")
+        assertTrue(cmd.contains("base64 -d > 'dog.html'"))
+        assertTrue(cmd.contains(java.util.Base64.getEncoder().encodeToString("<h1>Dogs {}</h1>".toByteArray())))
+    }
+    @Test fun repairsRepliesThatStopBeforeTheirFinalBraces() {
+        val output = CodexResponses.output("""{"text":"Listing","tool_calls":[{"name":"shell","arguments":{"command":"ls"}""", request)
+        assertEquals("function_call", output.getJSONObject(1).getString("type"))
+    }
+    @Test fun replaceInFileUsesTheProjectFileForAPathIntoCodexHome() {
+        val raw = """{"text":"","tool_calls":[{"name":"replace_in_file","arguments":{"path":"/storage/emulated/0/Code/data/data/com.termux/files/home/.llmhub-codex/skills/.system/dog.html","old_text":"blue","new_text":"red"}}]}"""
+        val cmd = JSONObject(CodexResponses.output(raw, request).getJSONObject(0).getString("arguments")).getString("command")
+        assertEquals("replace_in_file({\"path\":\"dog.html\",\"old_text_bytes\":4,\"replacement_bytes\":3})", CodexFileEdits.commandSummary(cmd))
+    }
+    @Test fun repairsAnArrayLeftOpenBeforeAnObjectKey() {
+        // LFM3 VL 2B: `"tool_calls":[{...},"summary":"..."}` never closes tool_calls.
+        val raw = """{"text":"Added","tool_calls":[{"name":"write_file","arguments":{"path":"dog.html","content":"<p>Goldens</p>"}},"summary":"Added a paragraph"}"""
+        val output = CodexResponses.output(raw, request)
+        val cmd = JSONObject(output.getJSONObject(1).getString("arguments")).getString("command")
+        assertTrue(cmd.contains(java.util.Base64.getEncoder().encodeToString("<p>Goldens</p>".toByteArray())))
+    }
+    @Test fun repairsAKeyMissingItsOpeningQuote() {
+        val raw = """{"text":"Red","tool_calls":[{"name":"replace_in_file","arguments":{"path":"dog.html","old_text":"<h1>",new_text":"<h1 style='color:red'>"}}]}"""
+        val cmd = JSONObject(CodexResponses.output(raw, request).getJSONObject(1).getString("arguments")).getString("command")
+        assertEquals("replace_in_file({\"path\":\"dog.html\",\"old_text_bytes\":4,\"replacement_bytes\":22})", CodexFileEdits.commandSummary(cmd))
+    }
+    @Test(expected = org.json.JSONException::class) fun doesNotSaveAFileCutOffMidContent() {
+        CodexResponses.output("""{"text":"","tool_calls":[{"name":"write_file","arguments":{"path":"dog.html","content":"<html><body>""", request)
     }
 
     @Test fun adaptsReadFileToShellCommand() {

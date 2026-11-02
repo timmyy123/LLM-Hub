@@ -147,8 +147,8 @@ class CodexProgressGuardTest {
     @Test fun executedToolResultsBecomeSubsequentModelChatTurns() {
         val prompt = CodexResponses.prompt(verifiedEdit())
         assertTrue(prompt.startsWith("system: "))
-        assertTrue(prompt.contains("\n\nassistant: Tool call already submitted:"))
-        assertTrue(prompt.contains("\n\nuser: Executed tool result:"))
+        assertFalse(prompt.contains("\n\nassistant: "))
+        assertTrue(prompt.contains("\n\nuser: Executed tool result for "))
         assertTrue(prompt.substringAfterLast("\n\nuser: ").contains("Most recent tool result"))
     }
     @Test fun processInputToolIsOfferedOnlyWhenACommandIsStillRunning() {
@@ -157,5 +157,28 @@ class CodexProgressGuardTest {
         assertFalse(CodexResponses.prompt(req).contains("\"name\":\"write_stdin\""))
         req.getJSONArray("input").getJSONObject(1).put("output", "Process running with session ID 123")
         assertTrue(CodexResponses.prompt(req).contains("\"name\":\"write_stdin\""))
+    }
+    @Test fun replacingInsideAFileKnownToBeEmptyAsksForWriteFileInstead() {
+        val replace = JSONArray().put(JSONObject().put("type", "function_call").put("call_id", "r").put("name", "exec_command")
+            .put("arguments", JSONObject().put("cmd", CodexFileEdits.replaceCommand("/storage/emulated/0/Code/dog.html", "<h1>", "<h1 class=x>")).toString()))
+        val stated = JSONObject().put("input", JSONArray().put(JSONObject().put("type", "message").put("role", "user")
+            .put("content", "Active editor file: dog.html\ndog.html is currently empty. Create its complete contents with write_file.\n\nUser request:\nmake a dog site")))
+        val error = runCatching { CodexProgressGuard.validate(replace, stated) }.exceptionOrNull()
+        assertTrue(error?.message.orEmpty().contains("write_file"))
+        val read = JSONObject().put("input", JSONArray().put(JSONObject().put("type", "message").put("role", "user").put("content", "make a dog site"))
+            .put(JSONObject().put("type", "function_call").put("call_id", "c").put("name", "exec_command").put("arguments", "{\"cmd\":\"cat \\\"dog.html\\\"\"}"))
+            .put(JSONObject().put("type", "function_call_output").put("call_id", "c").put("output", "Process exited with code 0\nOutput:\n")))
+        assertEquals(setOf("dog.html"), CodexProgressGuard.emptyFiles(read))
+        val filled = JSONObject().put("input", JSONArray().put(JSONObject().put("type", "message").put("role", "user")
+            .put("content", "Current contents of dog.html:\n<h1>Dogs</h1>\n\nUser request:\nmake it red")))
+        CodexProgressGuard.validate(replace, filled)
+    }
+    @Test fun recoveryAfterAFailedCommandDoesNotOfferToFinish() {
+        val req = JSONObject().put("input", JSONArray().put(JSONObject().put("type", "message").put("role", "user").put("content", "make it red"))
+            .put(JSONObject().put("type", "function_call").put("call_id", "r").put("name", "exec_command").put("arguments", "{\"cmd\":\"node -e x\"}"))
+            .put(JSONObject().put("type", "function_call_output").put("call_id", "r").put("output", "Process exited with code 1\nOutput:\nExact text not found")))
+        val prompt = CodexResponses.recoveryPrompt(req, IllegalArgumentException("Unverified completion"))
+        assertTrue(prompt.contains("Do not finish yet"))
+        assertFalse(prompt.contains("finish now"))
     }
 }

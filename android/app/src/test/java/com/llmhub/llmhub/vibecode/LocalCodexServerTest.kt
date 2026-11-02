@@ -71,6 +71,61 @@ class LocalCodexServerTest {
             assertFalse(stream.contains("Already completed"))
         }
     }
+    @Test fun recoveryBeforeAnyToolRanAsksForAToolInsteadOfAFinalReply() {
+        var attempts = 0
+        LocalCodexServer(infer = { prompt ->
+            when (++attempts) {
+                1 -> """{"text":"I've read the file dog.html and will now edit it.","tool_calls":[]}"""
+                else -> {
+                    assertTrue(prompt.contains("No tool has run yet"))
+                    assertFalse(prompt.contains("finish now"))
+                    """{"text":"Writing","tool_calls":[{"name":"exec_command","arguments":{"cmd":"ls"}}]}"""
+                }
+            }
+        }, modelError = "Invalid response").use { server ->
+            val (_, stream) = post("${server.baseUrl}/responses",
+                """{"input":[{"type":"message","role":"user","content":"Active editor file: dog.html\n\nUser request:\nmake a dog site"}],"tools":[{"type":"function","name":"exec_command","parameters":{"required":["cmd"]}}]}""")
+            assertEquals(2, attempts)
+            assertTrue(stream.contains("response.completed"))
+            assertFalse(stream.contains("will now edit it"))
+        }
+    }
+    @Test fun successClaimRightAfterALiteralWriteReadsTheFileBackInsteadOfFailing() {
+        val encoded = java.util.Base64.getEncoder().encodeToString("<h1>Dogs</h1>".toByteArray())
+        var attempts = 0
+        LocalCodexServer(infer = { attempts++; """{"text":"dog.html has been created.","tool_calls":[]}""" },
+            modelError = "Invalid").use { server ->
+            val request = org.json.JSONObject().put("input", org.json.JSONArray()
+                .put(org.json.JSONObject().put("type", "message").put("role", "user")
+                    .put("content", "Active editor file: dog.html\n\nUser request:\nmake a dog site"))
+                .put(org.json.JSONObject().put("type", "function_call").put("name", "exec_command").put("call_id", "write")
+                    .put("arguments", org.json.JSONObject().put("cmd", "printf '%s' '$encoded' | base64 -d > 'dog.html'").toString()))
+                .put(org.json.JSONObject().put("type", "function_call_output").put("call_id", "write")
+                    .put("output", "Process exited with code 0\nOutput:\n")))
+                .put("tools", org.json.JSONArray().put(org.json.JSONObject().put("type", "function").put("name", "exec_command")
+                    .put("parameters", org.json.JSONObject().put("required", org.json.JSONArray().put("cmd")))))
+            val (_, stream) = post("${server.baseUrl}/responses", request.toString())
+            assertEquals(1, attempts)
+            assertFalse(stream.contains("response.failed"))
+            val call = stream.lineSequence().filter { it.startsWith("data: ") }.map { org.json.JSONObject(it.removePrefix("data: ")) }
+                .mapNotNull { it.optJSONObject("item") }.first { it.optString("type") == "function_call" }
+            assertEquals("cat \"dog.html\"", org.json.JSONObject(call.getString("arguments")).getString("cmd"))
+            assertFalse(stream.contains("has been created"))
+        }
+    }
+    @Test fun theServersOwnSuccessfulReadBackEndsTheTurnWithoutAskingTheModel() {
+        var attempts = 0
+        LocalCodexServer(infer = { attempts++; """{"text":"I will now write the file again","tool_calls":[]}""" },
+            modelError = "Invalid", verifiedFileSummary = { "Saved and verified $it" }).use { server ->
+            val input = """[{"type":"message","role":"user","content":"change the heading color to red"},
+                {"type":"function_call","name":"exec_command","call_id":"call_llmhub_readback_1","arguments":"{\"cmd\":\"cat \\\"dog.html\\\"\"}"},
+                {"type":"function_call_output","call_id":"call_llmhub_readback_1","output":"Process exited with code 0\nOutput:\n<h1 style=\"color:red\">Dogs</h1>"}]"""
+            val (_, stream) = post("${server.baseUrl}/responses", """{"input":$input,"tools":[]}""")
+            assertEquals(0, attempts)
+            assertTrue(stream.contains("Saved and verified dog.html"))
+            assertFalse(stream.contains("response.failed"))
+        }
+    }
     @Test fun reportsProgressBeforeInferenceFinishesAndAcrossAgentSteps() {
         val updates = mutableListOf<Pair<Int, String>>()
         LocalCodexServer(infer = { error("Expected streaming inference") }, modelError = "Invalid response",

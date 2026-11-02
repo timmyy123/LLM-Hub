@@ -104,7 +104,17 @@ internal class CodexAgent(private val context: Context) {
             val turnPrompt = buildString {
                 if (!editorName.isNullOrBlank()) {
                     append("Active editor file: ").append(editorName).append("\n")
-                    append("Read the current file from disk using tools. Its contents may have changed since earlier turns.\n")
+                    // Small models edit from memory instead of reading first, dropping everything they forgot.
+                    // A file that fits comfortably in the context is given to them as it is now.
+                    if (editorCode.isEmpty()) {
+                        append(editorName).append(" is currently empty. Create its complete contents with write_file.\n")
+                    } else if (editorCode.length <= contextWindow * 3 / 4) {
+                        append("Current contents of ").append(editorName).append(":\n```\n").append(editorCode).append("\n```\n")
+                        append("Keep everything the request does not change. Use replace_in_file with an exact fragment from these ")
+                        append("contents, or write_file with the complete updated file.\n")
+                    } else {
+                        append("Read the current file from disk using tools. Its contents may have changed since earlier turns.\n")
+                    }
                     append("\nUser request:\n")
                 }
                 append(prompt)

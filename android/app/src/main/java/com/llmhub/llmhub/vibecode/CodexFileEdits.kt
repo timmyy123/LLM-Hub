@@ -9,7 +9,20 @@ internal object CodexFileEdits {
         val path = match.groupValues[2].removeSurrounding("'").replace("'\"'\"'", "'")
         return runCatching { path to String(java.util.Base64.getDecoder().decode(match.groupValues[1]), Charsets.UTF_8) }.getOrNull()
     }
+    /** The file a literal write_file or replace_in_file command changed, or null for any other command. */
+    fun editedFile(command: String): String? = writtenFile(command)?.first ?: replacedFile(command)
+
+    private fun replacedFile(command: String): String? {
+        if (!command.startsWith("node -e ") || !command.contains("const p=JSON.parse(Buffer.from(process.argv[1]")) return null
+        val encoded = Regex("'([A-Za-z0-9+/=]+)'$").find(command)?.groupValues?.get(1) ?: return null
+        return runCatching { JSONObject(String(java.util.Base64.getDecoder().decode(encoded), Charsets.UTF_8)).getString("path") }.getOrNull()
+    }
+
     fun commandSummary(command: String): String? {
+        writtenFile(command)?.let { (path, content) ->
+            // The encoded content means nothing to the model, which then writes the same file again.
+            return "write_file(" + JSONObject().put("path", path).put("bytes", content.toByteArray(Charsets.UTF_8).size) + ")"
+        }
         if (!command.startsWith("node -e ") || !command.contains("const p=JSON.parse(Buffer.from(process.argv[1]")) return null
         val encoded = Regex("'([A-Za-z0-9+/=]+)'$").find(command)?.groupValues?.get(1) ?: return null
         return runCatching {

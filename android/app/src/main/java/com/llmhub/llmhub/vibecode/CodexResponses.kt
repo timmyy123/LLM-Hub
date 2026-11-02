@@ -67,6 +67,12 @@ internal object CodexResponses {
                 append("\n\nMost recent executed tool: ").append(executedCall(call)).append("\n")
                 append("Most recent tool result (use this to choose the NEXT action):\n").append(result)
                 append("\nThe tool above already ran. Use its result; do not restart the same inspection.\n")
+                val written = CodexProgressGuard.command(call)?.let(CodexFileEdits::writtenFile)
+                if (written != null && result.contains("Process exited with code 0")) {
+                    append("\nThe write succeeded: ").append(written.first).append(" now contains exactly the content you supplied. ")
+                    append("Do not write it again. If that content fulfils the request, finish with tool_calls: []; ")
+                    append("otherwise make only the missing change.\n")
+                }
                 if (emptyFileRead(call, result)) {
                     append("\nThe file read succeeded: the file exists and contains zero bytes. There is no existing code to inspect or replace. ")
                     append("Your NEXT action is write_file with the same file path and complete new content implementing the user's request. ")
@@ -153,16 +159,32 @@ internal object CodexResponses {
             condensed.put(item)
         }
         val recovery = JSONObject(request.toString()).put("input", condensed)
-        return prompt(recovery) + "\n\nRecovery instruction: ${error.message?.take(2000)}\n" +
+        val latestFailed = CodexProgressGuard.latestResult(request)?.second
+            ?.let { it.contains("Process exited with code") && !it.contains("Process exited with code 0") } == true
+        val next = if (latestId != null && latestFailed) {
+            // Offering to finish after a failure makes small models end with an account of what went wrong.
+            "The latest command failed and changed nothing; it is shown above. Do not finish yet. Call a different tool " +
+                "that fixes its actual error. For a missing or empty file, use write_file with the complete content. "
+        } else if (latestId != null) {
             "The earlier commands and edits listed above already executed. You are continuing after them. " +
-            "Use the latest result to determine what remains. If it verifies the requested change, finish now with " +
-            "{\"text\":\"concise factual result\",\"tool_calls\":[]}. Otherwise call a different necessary tool. " +
-            "Your rejected tool calls were NOT executed. Return complete valid JSON with text and tool_calls."
+                "Use the latest result to determine what remains. If it verifies the requested change, finish now with " +
+                "{\"text\":\"concise factual result\",\"tool_calls\":[]}. Otherwise call a different necessary tool. "
+        } else {
+            // Inviting an empty tool_calls list here makes small models claim work they never started.
+            "No tool has run yet for the latest request: nothing has been read, written or verified, so do not claim " +
+                "progress and do not finish. Put the next necessary tool in tool_calls, for example " +
+                "{\"text\":\"Writing the file\",\"tool_calls\":[{\"name\":\"write_file\",\"arguments\":" +
+                "{\"path\":\"path/to/file\",\"content\":\"complete file content\"}}]}. "
+        }
+        return prompt(recovery) + "\n\nRecovery instruction: ${error.message?.take(2000)}\n" + next +
+            "Your rejected tool calls were NOT executed. Return complete valid JSON with text and tool_calls, " +
+            "closing every { and [."
     }
 
     private fun formatConversationInput(inputObj: Any?, superseded: Set<String> = emptySet()): String {
         if (inputObj !is JSONArray) return inputObj?.toString().orEmpty()
         val sb = StringBuilder()
+        val calls = mutableMapOf<String, JSONObject>()
         for (i in 0 until inputObj.length()) {
             val item = inputObj.optJSONObject(i)
             if (item == null) {
@@ -187,14 +209,15 @@ internal object CodexResponses {
                     } else item.optString("content")
                     if (text.isNotBlank()) sb.append("$role: $text\n\n")
                 }
-                "function_call" -> {
-                    sb.append("assistant: Tool call already submitted: ${executedCall(item)}\n\n")
-                }
+                // Executed calls appear with their results, not as assistant turns: small models copy an assistant
+                // line such as "Tool call already submitted: write_file(...)" as their next reply and repeat old calls.
+                "function_call" -> calls[item.optString("call_id")] = item
                 "function_call_output" -> {
                     val output = if (item.optString("call_id") in superseded)
                         "Earlier inspection superseded by a successful edit or later read. Use the current file contents, not this old snapshot."
                     else item.optString("output")
-                    sb.append("user: Executed tool result: $output\n\n")
+                    val call = calls[item.optString("call_id")]?.let { " for ${executedCall(it)}" }.orEmpty()
+                    sb.append("user: Executed tool result$call: $output\n\n")
                 }
                 else -> {
                     val text = item.optString("text")
@@ -294,7 +317,80 @@ internal object CodexResponses {
                 }
             }
         }
-        return null
+        return repairJson(trimmed.substring(start))
+    }
+
+    /**
+     * Small models often drop a closing brace or bracket, e.g. `...}]}` for `...}}]}`. Insert the missing closers
+     * where a later closer or the end of the reply shows them. A reply that ends inside a string was cut off,
+     * so it is not repaired: closing it would save a truncated file.
+     */
+    private fun repairJson(text: String): String? {
+        val repaired = StringBuilder()
+        val open = ArrayDeque<Char>()
+        var inString = false
+        var escape = false
+        for ((index, c) in text.withIndex()) {
+            repaired.append(c)
+            if (inString) {
+                if (escape) escape = false
+                else if (c == '\\') escape = true
+                else if (c == '"') inString = false
+                continue
+            }
+            // A key missing its opening quote, as in `,new_text":"..."`: the closing quote is already there.
+            if ((c.isLetter() || c == '_') && open.lastOrNull() == '}' &&
+                repaired.dropLast(1).trimEnd().lastOrNull().let { it == ',' || it == '{' }) {
+                repaired.insert(repaired.length - 1, '"')
+                inString = true
+                continue
+            }
+            when (c) {
+                '"' -> {
+                    inString = true
+                    // An object key while an array is open, as in `[{...},"summary":"..."}`: the array ended before it.
+                    if (open.lastOrNull() == ']' && isObjectKey(text, index)) {
+                        repaired.setLength(repaired.length - 1)
+                        val comma = repaired.trimEnd().endsWith(',')
+                        repaired.setLength(repaired.trimEnd().length)
+                        if (comma) repaired.setLength(repaired.length - 1)
+                        repaired.append(open.removeLast())
+                        if (open.isEmpty()) return null
+                        if (comma) repaired.append(',')
+                        repaired.append('"')
+                    }
+                }
+                '{' -> open.addLast('}')
+                '[' -> open.addLast(']')
+                '}', ']' -> {
+                    repaired.setLength(repaired.length - 1)
+                    while (open.isNotEmpty() && open.last() != c) repaired.append(open.removeLast())
+                    if (open.isEmpty()) return null
+                    repaired.append(open.removeLast())
+                    if (open.isEmpty()) break
+                }
+            }
+        }
+        if (inString) return null
+        while (open.isNotEmpty()) repaired.append(open.removeLast())
+        return repaired.toString().takeIf { runCatching { JSONObject(it) }.isSuccess }
+    }
+
+    /** Whether the string starting at [quote] is followed by a colon, i.e. is an object key. */
+    private fun isObjectKey(text: String, quote: Int): Boolean {
+        var i = quote + 1
+        while (i < text.length) {
+            when (text[i]) {
+                '\\' -> i++
+                '"' -> {
+                    var j = i + 1
+                    while (j < text.length && text[j].isWhitespace()) j++
+                    return j < text.length && text[j] == ':'
+                }
+            }
+            i++
+        }
+        return false
     }
 
     fun cleanToolName(name: String): String {
@@ -474,7 +570,9 @@ internal object CodexResponses {
                 args.remove("sandbox_permissions")
                 args.remove("prefix_rule")
                 if (lowerRaw == "replace_in_file") {
-                    val path = args.getString("path").removePrefix("/cwd/")
+                    // Like write_file: a path into Codex's own home (often glued onto the project folder) means the project file.
+                    var path = args.getString("path").removePrefix("/cwd/")
+                    if (path.contains(".llmhub-codex")) path = path.substringAfterLast('/')
                     val old = args.getString("old_text")
                     args.put("command", CodexFileEdits.replaceCommand(path, old, args.getString("new_text")))
                     listOf("path", "old_text", "new_text").forEach(args::remove)
