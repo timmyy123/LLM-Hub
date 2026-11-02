@@ -33,6 +33,9 @@ import com.llmhub.llmhub.data.hasCompleteDownloadedBundle
 import com.llmhub.llmhub.data.isVideoGenerationModel
 import com.llmhub.llmhub.data.bundleDirectory
 import com.llmhub.llmhub.videogen.VideoGenFormats
+import com.llmhub.llmhub.videogen.ImportedVideoModels
+import com.llmhub.llmhub.data.hasCompleteDownloadedBundle
+import kotlinx.coroutines.flow.first
 import com.google.gson.Gson
 import android.net.Uri
 import com.google.gson.JsonParser
@@ -122,6 +125,7 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
         
         loadModels()
         loadImportedModels()
+        loadImportedVideoModels()
         viewModelScope.launch {
             var previous = emptyMap<String, LLMModel>()
             com.llmhub.llmhub.service.ModelDownloadService.downloadStates.collect { snapshots ->
@@ -1135,6 +1139,13 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
         // First cancel any ongoing download
         cancelDownload(model)
         
+        // Imported video models: their folder holds a copy of the transformer and the downloaded encoder and VAE
+        if (model.source == ImportedVideoModels.SOURCE) {
+            _models.value = _models.value.filterNot { it.name == model.name }
+            viewModelScope.launch(Dispatchers.IO) { ImportedVideoModels.remove(context, model) }
+            return
+        }
+
         // Handle imported models differently - just remove from list, don't delete file
         if (model.source == "Custom") {
             val currentModels = _models.value.toMutableList()
@@ -1223,44 +1234,56 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
     }
 
     /**
-     * Imports an LTX-Video transformer GGUF as a Video Generator model. The transformer is copied into the model's folder;
-     * the T5 text encoder and VAE it needs come from the catalog's pinned LTX-Video repo, downloaded as for catalog models.
+     * Imports an LTX-Video transformer GGUF as a Video Generator model (see [ImportedVideoModels]): the T5 text encoder
+     * and VAE it needs are downloaded from the catalog's pinned LTX-Video repo, then the transformer is copied in.
      */
     fun importVideoModel(name: String, uri: Uri): Boolean {
         if (_models.value.any { it.name == name }) return false
         val reference = ModelData.videoGenerationModels.first { it.modelFormat == VideoGenFormats.GGUF }
         val (encoderUrl, vaeUrl) = reference.additionalFiles
-        val transformerBytes = runCatching {
-            context.contentResolver.openAssetFileDescriptor(uri, "r")?.use { it.length }
-        }.getOrNull()?.takeIf { it > 0 } ?: 0L
         val model = reference.copy(
             name = name,
             description = "Custom LTX-Video model: $name",
             url = encoderUrl,
             additionalFiles = listOf(vaeUrl),
-            // Transformer + T5 encoder + VAE, as the folder holds them all.
-            sizeBytes = transformerBytes + LTXV_ENCODER_BYTES + LTXV_VAE_BYTES,
-            source = "Custom",
+            sizeBytes = LTXV_ENCODER_BYTES + LTXV_VAE_BYTES,
+            source = ImportedVideoModels.SOURCE,
             isDownloaded = false,
-            isDownloading = true,
+            isDownloading = false,
             downloadProgress = 0f
         )
+        ImportedVideoModels.add(context, model, uri)
         _models.value = _models.value + model
+        downloadModel(model)
+        finishImportedVideoModel(model)
+        return true
+    }
+
+    /** Once the encoder and VAE are downloaded, copies the transformer in; also resumes an import cut short. */
+    private fun finishImportedVideoModel(model: LLMModel) {
         viewModelScope.launch(Dispatchers.IO) {
+            _models.first { models -> models.firstOrNull { it.name == model.name }?.let { it.isDownloaded || it.source != model.source } ?: true }
+            if (_models.value.none { it.name == model.name && it.isDownloaded }) return@launch
+            if (ImportedVideoModels.transformerFile(context, model).length() > 0) return@launch
             try {
-                val directory = model.bundleDirectory(context).apply { mkdirs() }
-                // The runtime tells the transformer from the encoder by "t5" in the encoder's name.
-                File(directory, "ltxv-transformer.gguf").outputStream().use { output ->
-                    context.contentResolver.openInputStream(uri)!!.use { it.copyTo(output, 1 shl 20) }
-                }
-                withContext(Dispatchers.Main) { downloadModel(model) }
+                updateModel(model.name) { it.copy(isDownloaded = false, isExtracting = true) }
+                ImportedVideoModels.copyTransformer(context, model)
+                updateModel(model.name) { it.copy(isDownloaded = true, isExtracting = false) }
             } catch (e: Exception) {
-                android.util.Log.e("ModelDownloadViewModel", "Video model import failed for $name", e)
-                model.bundleDirectory(context).deleteRecursively()
-                _models.value = _models.value.filterNot { it.name == name }
+                android.util.Log.e("ModelDownloadViewModel", "Could not copy the video transformer for ${model.name}", e)
+                updateModel(model.name) { it.copy(isDownloaded = false, isExtracting = false) }
             }
         }
-        return true
+    }
+
+    private fun loadImportedVideoModels() {
+        val imported = ImportedVideoModels.load(context).filter { model -> _models.value.none { it.name == model.name } }
+        // Downloaded means the encoder and VAE are; an import whose transformer copy was cut short finishes it now.
+        _models.value = _models.value + imported.map {
+            it.copy(isDownloaded = it.hasCompleteDownloadedBundle(context), isDownloading = false)
+        }
+        imported.filter { it.hasCompleteDownloadedBundle(context) && !ImportedVideoModels.isComplete(context, it) }
+            .forEach(::finishImportedVideoModel)
     }
 
     fun addExternalModel(externalModel: LLMModel): Boolean {

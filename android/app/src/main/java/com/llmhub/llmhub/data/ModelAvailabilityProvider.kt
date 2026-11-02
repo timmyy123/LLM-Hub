@@ -135,8 +135,6 @@ object ModelAvailabilityProvider {
                 it.isDownloaded &&
                 it.category != "qnn_npu" &&
                 it.category != "mnn_cpu" &&
-                it.category != "video_generation" &&
-                it.category != "music_generation" &&
                 !it.name.contains("mmproj", ignoreCase = true) &&
                 !it.name.contains("Vision Projector", ignoreCase = true) &&
                 !it.name.contains("projector", ignoreCase = true)
