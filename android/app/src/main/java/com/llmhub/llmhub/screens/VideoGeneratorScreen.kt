@@ -698,7 +698,7 @@ private fun fitVideo(view: TextureView, videoWidth: Int, videoHeight: Int) {
 
 private fun backendLabelRes(backend: VideoGenBackend): Int = when (backend) {
     VideoGenBackend.NPU -> R.string.video_generator_backend_npu
-    VideoGenBackend.GPU -> R.string.video_generator_backend_gpu
+    VideoGenBackend.GPU -> if (VideoGenEngine.gpuUsesOpenCl()) R.string.video_generator_backend_gpu_opencl else R.string.video_generator_backend_gpu
     VideoGenBackend.CPU -> R.string.backend_cpu
 }
 

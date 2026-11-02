@@ -1156,6 +1156,7 @@
     <string name="video_generator_generate_failed">فشل إنشاء الفيديو: %1$s</string>
     <string name="video_generator_backend_npu">وحدة NPU (Qualcomm Hexagon)</string>
     <string name="video_generator_backend_gpu">وحدة GPU (Vulkan)</string>
+    <string name="video_generator_backend_gpu_opencl">وحدة GPU (OpenCL)</string>
     <string name="video_generator_loaded_status">تم التحميل: %1$s على %2$s</string>
     <string name="video_generator_steps">الخطوات</string>
     <string name="video_generator_width">العرض</string>

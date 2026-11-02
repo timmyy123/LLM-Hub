@@ -1124,6 +1124,7 @@ Du forsøger at sende et billede, men den nuværende model er **kun-tekst**:
     <string name="video_generator_generate_failed">Videogenerering mislykkedes: %1$s</string>
     <string name="video_generator_backend_npu">NPU (Qualcomm Hexagon)</string>
     <string name="video_generator_backend_gpu">GPU (Vulkan)</string>
+    <string name="video_generator_backend_gpu_opencl">GPU (OpenCL)</string>
     <string name="video_generator_loaded_status">Indlæst: %1$s på %2$s</string>
     <string name="video_generator_steps">Trin</string>
     <string name="video_generator_width">Bredde</string>

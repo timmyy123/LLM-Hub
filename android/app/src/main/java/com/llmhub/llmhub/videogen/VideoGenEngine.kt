@@ -111,14 +111,21 @@ class VideoGenEngine(context: Context) {
 
         fun supportedBackends(model: LLMModel): List<VideoGenBackend> = when (model.modelFormat) {
             VideoGenFormats.QNN -> listOf(VideoGenBackend.NPU)
-            // Adreno's Vulkan driver crashes compiling ggml's video shaders; Snapdragon devices use
-            // the NPU models instead, so GGUF models run on the CPU there. The Tensor G5's PowerVR
-            // D-Series driver runs the transformer but computes noise (with or without ggml's
-            // integer-dot, cooperative-matrix and FP16 paths), so it gets the CPU too.
+            // On Adreno the GPU backend is ggml's OpenCL (Adreno's Vulkan driver crashes compiling
+            // ggml's video shaders), for Snapdragon chips without an NPU build. The Tensor G5's
+            // PowerVR D-Series driver runs the transformer but computes noise (with or without ggml's
+            // integer-dot, cooperative-matrix and FP16 paths), so it gets the CPU only.
             // ggml's Vulkan backend also needs a Vulkan 1.2 driver (Mali-G57 phones have 1.1).
-            else -> if (isAdreno() || isTensorG5() || !DeviceInfo.hasVulkan12) listOf(VideoGenBackend.CPU)
-                else listOf(VideoGenBackend.GPU, VideoGenBackend.CPU)
+            else -> when {
+                isTensorG5() -> listOf(VideoGenBackend.CPU)
+                isAdreno() -> listOf(VideoGenBackend.GPU, VideoGenBackend.CPU)
+                !DeviceInfo.hasVulkan12 -> listOf(VideoGenBackend.CPU)
+                else -> listOf(VideoGenBackend.GPU, VideoGenBackend.CPU)
+            }
         }
+
+        /** The GPU backend is OpenCL (Adreno) rather than Vulkan. */
+        fun gpuUsesOpenCl(): Boolean = isAdreno()
 
         private fun isTensorG5(): Boolean =
             android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S &&

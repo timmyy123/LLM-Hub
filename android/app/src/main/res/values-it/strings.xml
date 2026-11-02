@@ -1150,6 +1150,7 @@
     <string name="video_generator_generate_failed">Generazione video non riuscita: %1$s</string>
     <string name="video_generator_backend_npu">NPU (Qualcomm Hexagon)</string>
     <string name="video_generator_backend_gpu">GPU (Vulkan)</string>
+    <string name="video_generator_backend_gpu_opencl">GPU (OpenCL)</string>
     <string name="video_generator_loaded_status">Caricato: %1$s su %2$s</string>
     <string name="video_generator_steps">Passi</string>
     <string name="video_generator_width">Larghezza</string>

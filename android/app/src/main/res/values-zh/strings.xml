@@ -1164,6 +1164,7 @@
     <string name="video_generator_generate_failed">视频生成失败：%1$s</string>
     <string name="video_generator_backend_npu">NPU（高通 Hexagon）</string>
     <string name="video_generator_backend_gpu">GPU（Vulkan）</string>
+    <string name="video_generator_backend_gpu_opencl">GPU（OpenCL）</string>
     <string name="video_generator_loaded_status">已加载：%1$s（%2$s）</string>
     <string name="video_generator_steps">步数</string>
     <string name="video_generator_width">宽度</string>

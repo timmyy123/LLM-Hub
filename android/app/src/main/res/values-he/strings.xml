@@ -1155,6 +1155,7 @@
     <string name="video_generator_generate_failed">יצירת הווידאו נכשלה: %1$s</string>
     <string name="video_generator_backend_npu">NPU (Qualcomm Hexagon)</string>
     <string name="video_generator_backend_gpu">GPU (Vulkan)</string>
+    <string name="video_generator_backend_gpu_opencl">GPU (OpenCL)</string>
     <string name="video_generator_loaded_status">נטען: %1$s על %2$s</string>
     <string name="video_generator_steps">שלבים</string>
     <string name="video_generator_width">רוחב</string>

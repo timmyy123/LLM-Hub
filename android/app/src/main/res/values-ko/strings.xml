@@ -1156,6 +1156,7 @@
     <string name="video_generator_generate_failed">동영상 생성 실패: %1$s</string>
     <string name="video_generator_backend_npu">NPU(Qualcomm Hexagon)</string>
     <string name="video_generator_backend_gpu">GPU(Vulkan)</string>
+    <string name="video_generator_backend_gpu_opencl">GPU(OpenCL)</string>
     <string name="video_generator_loaded_status">불러옴: %1$s (%2$s)</string>
     <string name="video_generator_steps">단계 수</string>
     <string name="video_generator_width">너비</string>

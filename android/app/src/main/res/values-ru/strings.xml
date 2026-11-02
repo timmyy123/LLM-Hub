@@ -1128,6 +1128,7 @@
     <string name="video_generator_generate_failed">Ошибка генерации видео: %1$s</string>
     <string name="video_generator_backend_npu">NPU (Qualcomm Hexagon)</string>
     <string name="video_generator_backend_gpu">GPU (Vulkan)</string>
+    <string name="video_generator_backend_gpu_opencl">GPU (OpenCL)</string>
     <string name="video_generator_loaded_status">Загружено: %1$s на %2$s</string>
     <string name="video_generator_steps">Шаги</string>
     <string name="video_generator_width">Ширина</string>

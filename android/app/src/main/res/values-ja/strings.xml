@@ -1153,6 +1153,7 @@
     <string name="video_generator_generate_failed">動画の生成に失敗しました: %1$s</string>
     <string name="video_generator_backend_npu">NPU（Qualcomm Hexagon）</string>
     <string name="video_generator_backend_gpu">GPU（Vulkan）</string>
+    <string name="video_generator_backend_gpu_opencl">GPU（OpenCL）</string>
     <string name="video_generator_loaded_status">読み込み済み: %1$s（%2$s）</string>
     <string name="video_generator_steps">ステップ数</string>
     <string name="video_generator_width">幅</string>

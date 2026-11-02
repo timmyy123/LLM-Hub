@@ -1182,6 +1182,7 @@
     <string name="video_generator_generate_failed">वीडियो जनरेशन विफल रहा: %1$s</string>
     <string name="video_generator_backend_npu">NPU (Qualcomm Hexagon)</string>
     <string name="video_generator_backend_gpu">GPU (Vulkan)</string>
+    <string name="video_generator_backend_gpu_opencl">GPU (OpenCL)</string>
     <string name="video_generator_loaded_status">लोड किया गया: %1$s (%2$s)</string>
     <string name="video_generator_steps">चरण</string>
     <string name="video_generator_width">चौड़ाई</string>
