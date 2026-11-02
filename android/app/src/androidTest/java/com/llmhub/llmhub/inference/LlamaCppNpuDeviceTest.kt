@@ -23,8 +23,7 @@ import java.io.File
 /**
  * Physical-device check of GGUF generation on the Snapdragon Hexagon NPU across model sizes: under, near and over the
  * ~3.1 GB address window of the app's one NPU session, with a long prompt so the prompt is decoded in several batches.
- * Larger models run with the GPU layers setting lowered to what fits; at every layer they now fail to load instead
- * of aborting the app, and never fall back to the CPU.
+ * Larger models run with the GPU layers setting lowered to what fits.
  * Models are fetched on the device from the catalog URLs and checked against their SHA-256. Each scenario is its own
  * test, because a native crash ends the instrumentation process. Results go to logcat (tag LlamaCppNpu).
  */
@@ -47,20 +46,6 @@ class LlamaCppNpuDeviceTest {
 
     /** 5.1 GB with the GPU layers setting lowered to what fits. */
     @Test fun largeLayers() = runBlocking { run("Granite 4.2 8B (Q4_0)", GRANITE_8B_SHA256, gpuLayers = 14) }
-
-    /**
-     * 5.1 GB with every layer on the NPU, the default: it cannot fit. Before 4.6.3 this aborted the app on the first
-     * token; now the load fails cleanly, and never falls back to the CPU.
-     */
-    @Test fun largeAllLayersFailsCleanly() = runBlocking {
-        val model = ModelData.models.first { it.name == "Granite 4.2 8B (Q4_0)" }
-        fetch(model, GRANITE_8B_SHA256)
-        val service = LlamaCppInferenceService(context)
-        service.setGenerationParameters(maxTokens = 256, topK = 40, topP = 0.95f, temperature = 0.1f,
-            nGpuLayers = null, enableThinking = false, contextWindow = 4096)
-        assertFalse("All layers of a 5 GB model must not load on the NPU", service.loadModel(model, LlmInference.Backend.GPU, "HTP0"))
-        assertEquals("The NPU load must not fall back to the CPU", null, service.getCurrentlyLoadedBackend())
-    }
 
     /**
      * An imported GGUF is read where it is (here through the app's FileProvider, as a document on an SD card is),

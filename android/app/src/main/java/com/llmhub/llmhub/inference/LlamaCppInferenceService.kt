@@ -210,7 +210,7 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
             val useVulkan = ThemePreferences(context).ggufUseVulkan.first()
             val wantsNpu = !deviceId.isNullOrBlank() &&
                 (deviceId.startsWith("dev", true) || deviceId.startsWith("htp", true))
-            val requestedAccelerator = when {
+            val accelerator = when {
                 preferredBackend != LlmInference.Backend.GPU -> null
                 !wantsNpu && useVulkan -> "Vulkan0"
                 // No GPU runtime: the OpenCL build is for Snapdragon and Vulkan needs a 1.2 driver.
@@ -253,15 +253,8 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
             if (model.supportsVision && !disableVision && mmprojFile == null) {
                 Log.w(TAG, "Vision projector not found for '${model.name}'; loading text-only")
             }
-            val accelerator = requestedAccelerator
-            val acceleratorLayers = overrideGpuLayers ?: 999
-            // Retry GPU load failures on the CPU. The NPU never falls back: a model whose GPU layers do not fit the NPU
-            // (one ~3.1 GB window) fails to load, and the user lowers the GPU layers setting.
-            val attempts: List<String?> = when (accelerator) {
-                null -> listOf(null)
-                "HTP0" -> listOf(accelerator)
-                else -> listOf(accelerator, null)
-            }
+            // Retry only accelerator load failures, using the same model and settings on CPU.
+            val attempts: List<String?> = if (accelerator == null) listOf(null) else listOf(accelerator, null)
             for (attemptAccelerator in attempts) {
                 currentCoroutineContext().ensureActive()
                 val attemptName = attemptAccelerator ?: "CPU"
@@ -282,7 +275,7 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
                     Log.i(
                         TAG,
                         "Loading '${model.name}' with llama.cpp $attemptName: context=$contextSize " +
-                            "threads=$threads layers=${if (attemptAccelerator == null) 0 else acceleratorLayers} " +
+                            "threads=$threads layers=${if (attemptAccelerator == null) 0 else overrideGpuLayers ?: 999} " +
                             "mmproj=${mmprojFile?.name ?: "none"}",
                     )
                     val result = runtime.nativeLoadModel(
@@ -291,7 +284,7 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
                         contextSize,
                         threads,
                         attemptAccelerator,
-                        if (attemptAccelerator == null) 0 else acceleratorLayers,
+                        if (attemptAccelerator == null) 0 else overrideGpuLayers ?: 999,
                         flashAttention,
                     )
                     check(result == 0) { "llama.cpp model load failed on $attemptName with code $result" }
@@ -321,7 +314,7 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
                         }
                     }
                     nativeInitialized = false
-                    if (attemptAccelerator != attempts.last()) Log.w(TAG, "Retrying '${model.name}' on CPU")
+                    if (attemptAccelerator != null) Log.w(TAG, "Retrying '${model.name}' on CPU")
                 }
             }
             false
