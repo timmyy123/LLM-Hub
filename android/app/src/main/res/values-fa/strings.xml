@@ -118,6 +118,14 @@
     <string name="information">اطلاعات</string>
     <string name="source_code_section">کد منبع</string>
     <string name="download_models">دانلود مدل‌ها</string>
+    <string name="model_storage_title">محل ذخیره مدل‌ها</string>
+    <string name="model_storage_internal">حافظه داخلی</string>
+    <string name="model_storage_sd_card">کارت SD</string>
+    <string name="model_storage_free">%1$s آزاد</string>
+    <string name="model_storage_note">مدل‌های شما %1$s فضا گرفته‌اند. همه با هم منتقل می‌شوند و دانلودهای جدید هم همان‌جا ذخیره می‌شوند. وقتی کارت SD خارج شده باشد، مدل‌های روی آن در دسترس نیستند.</string>
+    <string name="model_storage_moving">در حال انتقال مدل‌ها: %1$d%%</string>
+    <string name="model_storage_failed">انتقال مدل‌ها انجام نشد: %1$s</string>
+    <string name="model_storage_move">انتقال مدل‌ها</string>
     <string name="browse_download_models">مرور و دانلود مدل‌های LLM</string>
     <string name="embedding_model">مدل امبدینگ</string>
     <string name="select_embedding_model">انتخاب مدل امبدینگ</string>
@@ -280,6 +288,7 @@
     <string name="documents">سندها</string>
     <string name="text_files">فایل‌های متنی</string>
     <string name="images_description">JPG، PNG، GIF، WebP</string>
+    <string name="images_need_vision_projector">برای پیوست تصویر، پروژکتور بینایی این مدل را از بخش دانلود مدل‌ها دریافت کنید</string>
     <string name="documents_description">PDF، Word، Excel، PowerPoint</string>
     <string name="text_files_description">TXT، MD، JSON، XML، CSV</string>
     <string name="text_file">فایل متنی</string>
@@ -428,6 +437,8 @@
     <string name="sd_models_link">مدل‌های Stable Diffusion در Hugging Face</string>
     <string name="supports_npu">پشتیبانی NPU</string>
     <string name="import_model_warning">⚠️ مهم: لطفاً README مدل در Hugging Face را قبل از وارد کردن بخوانید. قابلیت‌ها (بینایی، صوت، GPU) و اندازه پنجره زمینه را مطابق مستندات مدل وارد کنید. تنظیمات نادرست ممکن است باعث اختلال در عملکرد مدل شود. مهم: مدل‌های GGUF با پشتیبانی تصویر به Vision Projector (mmproj) نیاز دارند. برای فعال‌سازی ورودی تصویر، فایل پروجکتور را وارد کنید.</string>
+    <string name="import_gguf_is_projector">این فایل پروژکتور بینایی (mmproj) است، نه مدل. مدل مربوط به آن را وارد کنید، پشتیبانی از بینایی را روشن کنید و این فایل را به‌عنوان پروژکتور بینایی انتخاب کنید.</string>
+    <string name="import_gguf_not_chat_model">این GGUF مدل گفتگو نیست (معماری: %1$s)، پس LLM Hub نمی‌تواند آن را اجرا کند. سازنده ویدیو فایل‌های GGUF مدل LTX-Video را وارد می‌کند و سازنده موسیقی از مدل‌های SoundGen در بخش دانلود مدل‌ها استفاده می‌کند.</string>
 
     <!-- Home Screen -->
     <string name="home_welcome">به LLM Hub خوش آمدید</string>

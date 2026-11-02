@@ -119,6 +119,14 @@
     <string name="information">정보</string>
     <string name="source_code_section">소스 코드</string>
     <string name="download_models">모델 다운로드</string>
+    <string name="model_storage_title">모델 저장 위치</string>
+    <string name="model_storage_internal">내부 저장소</string>
+    <string name="model_storage_sd_card">SD 카드</string>
+    <string name="model_storage_free">%1$s 남음</string>
+    <string name="model_storage_note">모델이 %1$s를 사용합니다. 모두 함께 이동되며 새 다운로드도 같은 곳에 저장됩니다. SD 카드를 빼 두는 동안에는 카드에 있는 모델을 사용할 수 없습니다.</string>
+    <string name="model_storage_moving">모델 이동 중: %1$d%%</string>
+    <string name="model_storage_failed">모델을 이동하지 못했습니다: %1$s</string>
+    <string name="model_storage_move">모델 이동</string>
     <string name="browse_download_models">LLM 모델 탐색 및 다운로드</string>
     <string name="embedding_model">임베딩 모델</string>
     <string name="select_embedding_model">임베딩 모델 선택</string>
@@ -278,6 +286,7 @@
     <string name="documents">문서</string>
     <string name="text_files">텍스트 파일</string>
     <string name="images_description">JPG, PNG, GIF, WebP</string>
+    <string name="images_need_vision_projector">이미지를 첨부하려면 모델 다운로드에서 이 모델의 비전 프로젝터를 받으세요</string>
     <string name="documents_description">PDF, Word, Excel, PowerPoint</string>
     <string name="text_files_description">TXT, MD, JSON, XML, CSV</string>
     <string name="text_file">텍스트 파일</string>
@@ -425,6 +434,8 @@
     <string name="sd_models_link">Hugging Face의 Stable Diffusion 모델</string>
     <string name="supports_npu">NPU 지원</string>
     <string name="import_model_warning">⚠️ 중요: 가져오기 전에 Hugging Face에서 모델의 README를 읽어주세요. 모델 문서에 명시된 대로 올바른 기능(비전, 오디오, GPU) 및 컨텍스트 창 크기를 입력하세요. 잘못된 설정은 모델이 제대로 작동하지 않을 수 있습니다. 중요: 비전을 지원하는 GGUF 모델은 Vision Projector (mmproj)가 필요합니다. 이미지 입력을 사용하려면 프로젝터 파일을 가져오세요.</string>
+    <string name="import_gguf_is_projector">이 파일은 모델이 아니라 비전 프로젝터(mmproj)입니다. 해당 모델을 가져온 뒤 비전 지원을 켜고 이 파일을 비전 프로젝터로 선택하세요.</string>
+    <string name="import_gguf_not_chat_model">이 GGUF는 채팅 모델이 아니어서(아키텍처: %1$s) LLM Hub에서 실행할 수 없습니다. 동영상 생성기는 LTX-Video GGUF를 가져올 수 있고, 음악 생성기는 모델 다운로드의 SoundGen 모델을 사용합니다.</string>
     
     <!-- Home Screen -->
     <string name="home_welcome">LLM Hub에 오신 것을 환영합니다</string>

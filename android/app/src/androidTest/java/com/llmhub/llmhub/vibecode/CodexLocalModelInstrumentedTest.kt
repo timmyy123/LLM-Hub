@@ -52,7 +52,7 @@ class CodexLocalModelInstrumentedTest {
                 CodexAgent(context).run(
                     args.getString("codex_prompt") ?: "Read index.html. Fix the JavaScript typo randomAffation to randomAffirmation. Make the actual file edit, verify the typo is gone, then finish.",
                     project, UUID.randomUUID().toString(), null, null, fileName, "", 8192,
-                    infer = { prompt, emit ->
+                    infer = { prompt, _, emit ->
                         val raw = StringBuilder()
                         inference.generateResponseStream(prompt, model).collect { raw.append(it); emit(it) }
                         java.io.File(context.cacheDir, "codex-real-model-raw.txt").appendText("\nPROMPT\n$prompt\nRESPONSE\n$raw\n")

@@ -119,6 +119,14 @@
     <string name="information">Bilgi</string>
     <string name="source_code_section">Kaynak Kodu</string>
     <string name="download_models">Modelleri İndir</string>
+    <string name="model_storage_title">Model depolama</string>
+    <string name="model_storage_internal">Dahili depolama</string>
+    <string name="model_storage_sd_card">SD kart</string>
+    <string name="model_storage_free">%1$s boş</string>
+    <string name="model_storage_note">Modelleriniz %1$s yer kaplıyor. Hepsi birlikte taşınır ve yeni indirmeler de aynı yere kaydedilir. SD karttaki modeller, kart çıkarılmışken kullanılamaz.</string>
+    <string name="model_storage_moving">Modeller taşınıyor: %%%1$d</string>
+    <string name="model_storage_failed">Modeller taşınamadı: %1$s</string>
+    <string name="model_storage_move">Modelleri taşı</string>
     <string name="browse_download_models">LLM modellerine göz atın ve indirin</string>
     <string name="embedding_model">Gömme Modeli</string>
     <string name="select_embedding_model">Gömme Modeli Seç</string>
@@ -278,6 +286,7 @@
     <string name="documents">Belgeler</string>
     <string name="text_files">Metin Dosyaları</string>
     <string name="images_description">JPG, PNG, GIF, WebP</string>
+    <string name="images_need_vision_projector">Görsel eklemek için bu modelin görüş projektörünü Model İndir bölümünden indirin</string>
     <string name="documents_description">PDF, Word, Excel, PowerPoint</string>
     <string name="text_files_description">TXT, MD, JSON, XML, CSV</string>
     <string name="text_file">Metin Dosyası</string>
@@ -424,6 +433,8 @@
     <string name="sd_models_link">Hugging Face\'te Stable Diffusion modelleri</string>
     <string name="supports_npu">NPU\'yu Destekler</string>
     <string name="import_model_warning">⚠️ Önemli: İçe aktarmadan önce lütfen modelin README\'sini Hugging Face\'te okuyun. Doğru yetenekleri (görsel, ses, GPU) ve model belgelerinde belirtildiği şekilde bağlam penceresi boyutunu girin. Yanlış ayarlar modelin düzgün çalışmamasına neden olabilir. Önemli: Görsel destekli GGUF modelleri Vision Projector (mmproj) gerektirir. Görüntü girişi etkinleştirmek için projector dosyasını içe aktarın.</string>
+    <string name="import_gguf_is_projector">Bu dosya bir model değil, görüş projektörü (mmproj). Modelini içe aktarın, görüş desteğini açın ve bu dosyayı görüş projektörü olarak seçin.</string>
+    <string name="import_gguf_not_chat_model">Bu GGUF bir sohbet modeli değil (mimari: %1$s), bu yüzden LLM Hub onu çalıştıramaz. Video Oluşturucu LTX-Video GGUF dosyalarını içe aktarır, Müzik Oluşturucu ise Model İndir bölümündeki SoundGen modellerini kullanır.</string>
     
     <!-- Home Screen -->
     <string name="home_welcome">LLM Hub\'a Hoş Geldiniz</string>

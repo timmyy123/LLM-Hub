@@ -118,6 +118,14 @@
     <string name="information">Інформація</string>
     <string name="source_code_section">Вихідний код</string>
     <string name="download_models">Завантажити моделі</string>
+    <string name="model_storage_title">Зберігання моделей</string>
+    <string name="model_storage_internal">Внутрішня пам\'ять</string>
+    <string name="model_storage_sd_card">SD-карта</string>
+    <string name="model_storage_free">Вільно: %1$s</string>
+    <string name="model_storage_note">Ваші моделі займають %1$s. Вони переносяться разом, а нові завантаження зберігаються туди ж. Поки SD-карту вийнято, моделі на ній недоступні.</string>
+    <string name="model_storage_moving">Перенесення моделей: %1$d%%</string>
+    <string name="model_storage_failed">Не вдалося перенести моделі: %1$s</string>
+    <string name="model_storage_move">Перенести моделі</string>
     <string name="browse_download_models">Перегляд і завантаження моделей LLM</string>
     <string name="embedding_model">Embedding-модель</string>
     <string name="select_embedding_model">Вибрати embedding-модель</string>
@@ -280,6 +288,7 @@
     <string name="documents">Документи</string>
     <string name="text_files">Текстові файли</string>
     <string name="images_description">JPG, PNG, GIF, WebP</string>
+    <string name="images_need_vision_projector">Щоб додавати зображення, завантажте проєктор зору цієї моделі в розділі «Завантажити моделі»</string>
     <string name="documents_description">PDF, Word, Excel, PowerPoint</string>
     <string name="text_files_description">TXT, MD, JSON, XML, CSV</string>
     <string name="text_file">Текстовий файл</string>
@@ -428,6 +437,8 @@
     <string name="sd_models_link">Моделі Stable Diffusion на Hugging Face</string>
     <string name="supports_npu">Підтримка NPU</string>
     <string name="import_model_warning">⚠️ Важливо: перед імпортом прочитайте README моделі на Hugging Face. Вкажіть правильні можливості (зір, аудіо, GPU) і розмір контексту згідно з документацією моделі. Важливо: GGUF-моделі з підтримкою зору вимагають Vision Projector (mmproj). Імпортуйте файл проєктора, щоб увімкнути введення зображень.</string>
+    <string name="import_gguf_is_projector">Цей файл є проєктором зору (mmproj), а не моделлю. Імпортуйте його модель, увімкніть підтримку зору й виберіть цей файл як проєктор зору.</string>
+    <string name="import_gguf_not_chat_model">Цей GGUF не є моделлю для чату (архітектура: %1$s), тому LLM Hub не може його запустити. Генератор відео імпортує GGUF-файли LTX-Video, а генератор музики використовує моделі SoundGen із розділу «Завантажити моделі».</string>
 
     <!-- Home Screen -->
     <string name="home_welcome">Ласкаво просимо до LLM Hub</string>

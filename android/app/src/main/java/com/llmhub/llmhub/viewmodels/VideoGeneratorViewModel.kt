@@ -135,8 +135,15 @@ class VideoGeneratorViewModel(application: Application) : AndroidViewModel(appli
      * Same as Music Generator: the downloaded video models are found synchronously (file checks
      * only), so the main screen is there on the first frame with the last used model selected.
      */
+    /** LTX-Video transformers the user imported (Download Models, Import), saved with the other imported models. */
+    private fun importedVideoModels(): List<LLMModel> = runCatching {
+        val json = appContext.getSharedPreferences("model_prefs", Context.MODE_PRIVATE).getString("imported_models", null)
+        com.google.gson.Gson().fromJson(json ?: return emptyList(), Array<LLMModel>::class.java).filter { it.isVideoGenerationModel() }
+    }.getOrDefault(emptyList())
+
     fun refreshModels() {
-        val models = ModelData.videoGenerationModels.filter { it.hasCompleteDownloadedBundle(appContext) }
+        val models = (ModelData.videoGenerationModels + importedVideoModels())
+            .filter { it.hasCompleteDownloadedBundle(appContext) }
         _availableModels.value = models
         val current = selectedModel
         if (current == null || models.none { it.name == current.name }) {

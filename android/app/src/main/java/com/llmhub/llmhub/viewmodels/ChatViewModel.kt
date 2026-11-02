@@ -122,10 +122,19 @@ class ChatViewModel(
     private val _currentTtsMessageId = MutableStateFlow<String?>(null)
     val currentTtsMessageId: StateFlow<String?> = _currentTtsMessageId.asStateFlow()
 
+    /**
+     * Changes whenever the loaded model or its vision/audio switches change. The attach menu reads plain service state,
+     * so without this Compose kept the menu it built before the model finished loading (no Images item).
+     */
+    private val _inputCapabilitiesEpoch = MutableStateFlow(0)
+    val inputCapabilitiesEpoch: StateFlow<Int> = _inputCapabilitiesEpoch.asStateFlow()
+
     // Vision disabled state (for GPU with vision disabled on low RAM)
     private var isVisionDisabled: Boolean = false
+        set(value) { field = value; _inputCapabilitiesEpoch.value++ }
     // Audio disabled state (for GPU with audio disabled on low RAM)
     private var isAudioDisabled: Boolean = false
+        set(value) { field = value; _inputCapabilitiesEpoch.value++ }
 
     // Tracks the model name and config snapshot that was last successfully applied to the
     // inference service, so we can skip applySavedModelConfig + loadModel when nothing changed.
@@ -140,6 +149,11 @@ class ChatViewModel(
     init {
         // Load saved settings first
         loadSavedSettings()
+
+        // A load or generation finishing can change what the loaded model accepts.
+        viewModelScope.launch {
+            merge(_isLoadingModel, _isLoading, _currentlyLoadedModel).collect { _inputCapabilitiesEpoch.value++ }
+        }
         
         // Initialize RAG service in the background and track status
         viewModelScope.launch {
@@ -2715,6 +2729,12 @@ class ChatViewModel(
         } == true
     }
     
+    /** The loaded model reads images but its separately downloaded vision projector is missing. */
+    fun currentModelNeedsVisionProjector(): Boolean {
+        val model = inferenceService.getCurrentlyLoadedModel() ?: return false
+        return model.supportsVision && !isVisionDisabled && !model.hasDownloadedVisionProjector(context)
+    }
+
     fun currentModelSupportsAudio(): Boolean {
         val currentModel = inferenceService.getCurrentlyLoadedModel()
         return currentModel?.supportsAudio == true && !isAudioDisabled

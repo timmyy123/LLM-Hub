@@ -119,6 +119,14 @@
     <string name="information">المعلومات</string>
     <string name="source_code_section">الكود المصدري</string>
     <string name="download_models">تنزيل النماذج</string>
+    <string name="model_storage_title">تخزين النماذج</string>
+    <string name="model_storage_internal">التخزين الداخلي</string>
+    <string name="model_storage_sd_card">بطاقة SD</string>
+    <string name="model_storage_free">%1$s متاحة</string>
+    <string name="model_storage_note">تستخدم نماذجك %1$s. تُنقل معًا، وتُحفظ التنزيلات الجديدة في المكان نفسه. لا تتوفر النماذج الموجودة على بطاقة SD أثناء إخراجها.</string>
+    <string name="model_storage_moving">جارٍ نقل النماذج: %1$d%%</string>
+    <string name="model_storage_failed">تعذّر نقل النماذج: %1$s</string>
+    <string name="model_storage_move">نقل النماذج</string>
     <string name="browse_download_models">استعرض ونزّل نماذج LLM</string>
     <string name="embedding_model">نموذج التضمين</string>
     <string name="select_embedding_model">اختر نموذج التضمين</string>
@@ -278,6 +286,7 @@
     <string name="documents">مستندات</string>
     <string name="text_files">ملفات نصية</string>
     <string name="images_description">JPG, PNG, GIF, WebP</string>
+    <string name="images_need_vision_projector">نزّل مسقط الرؤية لهذا النموذج من تنزيل النماذج لإرفاق الصور</string>
     <string name="documents_description">PDF, Word, Excel, PowerPoint</string>
     <string name="text_files_description">TXT, MD, JSON, XML, CSV</string>
     <string name="text_file">ملف نصي</string>
@@ -424,6 +433,8 @@
     <string name="sd_models_link">نماذج Stable Diffusion على Hugging Face</string>
     <string name="supports_npu">يدعم NPU</string>
     <string name="import_model_warning">⚠️ مهم: يرجى قراءة ملف README للنموذج على Hugging Face قبل الاستيراد. أدخل القدرات الصحيحة (الرؤية، الصوت، GPU) وحجم نافذة السياق كما هو مذكور في توثيق النموذج. قد تؤدي الإعدادات غير الصحيحة إلى عدم عمل النموذج كما ينبغي. مهم: تتطلب نماذج GGUF الداعمة للرؤية Vision Projector (mmproj). استورد ملف الـ projector لتمكين إدخال الصور.</string>
+    <string name="import_gguf_is_projector">هذا الملف مسقط رؤية (mmproj) وليس نموذجًا. استورد النموذج الخاص به، وفعّل دعم الرؤية، واختر هذا الملف كمسقط رؤية.</string>
+    <string name="import_gguf_not_chat_model">ملف GGUF هذا ليس نموذج محادثة (البنية: %1$s)، لذا لا يستطيع LLM Hub تشغيله. يستورد مولّد الفيديو ملفات LTX-Video بصيغة GGUF، ويستخدم مولّد الموسيقى نماذج SoundGen من تنزيل النماذج.</string>
 
     <!-- Home Screen -->
     <string name="home_welcome">مرحبًا بك في LLM Hub</string>

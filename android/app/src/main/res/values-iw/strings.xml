@@ -118,6 +118,14 @@
     <string name="information">מידע</string>
     <string name="source_code_section">קוד מקור</string>
     <string name="download_models">הורד מודלים</string>
+    <string name="model_storage_title">אחסון מודלים</string>
+    <string name="model_storage_internal">אחסון פנימי</string>
+    <string name="model_storage_sd_card">כרטיס SD</string>
+    <string name="model_storage_free">%1$s פנויים</string>
+    <string name="model_storage_note">המודלים שלך תופסים %1$s. הם מועברים יחד, והורדות חדשות נשמרות באותו מקום. מודלים בכרטיס ה-SD אינם זמינים כל עוד הכרטיס הוצא.</string>
+    <string name="model_storage_moving">מעביר מודלים: %1$d%%</string>
+    <string name="model_storage_failed">לא ניתן להעביר את המודלים: %1$s</string>
+    <string name="model_storage_move">העברת מודלים</string>
     <string name="browse_download_models">עיין והורד מודלי LLM</string>
     <string name="embedding_model">מודל אימבדינג</string>
     <string name="select_embedding_model">בחר מודל אימבדינג</string>
@@ -280,6 +288,7 @@
     <string name="documents">מסמכים</string>
     <string name="text_files">קבצי טקסט</string>
     <string name="images_description">‏JPG, ‏PNG, ‏GIF, ‏WebP</string>
+    <string name="images_need_vision_projector">כדי לצרף תמונות, הורידו את מקרן הראייה של המודל הזה בהורדת מודלים</string>
     <string name="documents_description">‏PDF, ‏Word, ‏Excel, ‏PowerPoint</string>
     <string name="text_files_description">‏TXT, ‏MD, ‏JSON, ‏XML, ‏CSV</string>
     <string name="text_file">קובץ טקסט</string>
@@ -428,6 +437,8 @@
     <string name="sd_models_link">מודלי Stable Diffusion ב-Hugging Face</string>
     <string name="supports_npu">תומך ב-NPU</string>
     <string name="import_model_warning">⚠️ חשוב: קרא את README של המודל ב-Hugging Face לפני הייבוא. הזן יכולות נכונות (ראייה, אודיו, GPU) וגודל חלון ההקשר כמצוין בתיעוד המודל. חשוב: מודלים GGUF התומכים בראייה דורשים Vision Projector (mmproj). ייבא את קובץ ה-projection כדי לאפשר קלט תמונה.</string>
+    <string name="import_gguf_is_projector">הקובץ הזה הוא מקרן ראייה (mmproj) ולא מודל. ייבאו את המודל שלו, הפעילו תמיכה בראייה ובחרו בקובץ הזה כמקרן הראייה.</string>
+    <string name="import_gguf_not_chat_model">קובץ ה-GGUF הזה אינו מודל צ׳אט (ארכיטקטורה: %1$s), ולכן LLM Hub לא יכול להריץ אותו. מחולל הווידאו מייבא קובצי GGUF של LTX-Video, ומחולל המוזיקה משתמש במודלי SoundGen שבהורדת מודלים.</string>
 
     <!-- Home Screen -->
     <string name="home_welcome">ברוך הבא ל-LLM Hub</string>

@@ -67,7 +67,7 @@ class ImageExtrasInstrumentedTest {
 
     @Test fun imageFilesImportThroughModelImportDialog() {
         compose.setContent { MaterialTheme { ImportExternalModelDialog(onDismiss = {}, onSearchHuggingFace = { _, _, _ -> emptyList() },
-            onDownloadHuggingFace = { _, _, _, _, _, _, _ -> }, onImport = { _, _ -> true }) } }
+            onDownloadHuggingFace = { _, _, _, _, _, _, _ -> }, onImport = { _, _ -> true }, onImportVideo = { _, _ -> true }) } }
         // The dialog body is a height-limited lazy list; fields below the fold are composed on scroll.
         val list = compose.onNode(hasScrollToIndexAction())
         list.performScrollToNode(hasText("gguf"))

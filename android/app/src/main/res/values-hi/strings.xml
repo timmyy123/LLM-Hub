@@ -131,6 +131,14 @@
     <string name="information">जानकारी</string>
     <string name="source_code_section">स्रोत कोड</string>
     <string name="download_models">मॉडल डाउनलोड करें</string>
+    <string name="model_storage_title">मॉडल स्टोरेज</string>
+    <string name="model_storage_internal">इंटरनल स्टोरेज</string>
+    <string name="model_storage_sd_card">SD कार्ड</string>
+    <string name="model_storage_free">%1$s खाली</string>
+    <string name="model_storage_note">आपके मॉडल %1$s जगह लेते हैं। वे एक साथ ले जाए जाते हैं और नए डाउनलोड भी वहीं जाते हैं। SD कार्ड निकाले जाने पर उस पर रखे मॉडल उपलब्ध नहीं होते।</string>
+    <string name="model_storage_moving">मॉडल ले जाए जा रहे हैं: %1$d%%</string>
+    <string name="model_storage_failed">मॉडल नहीं ले जाए जा सके: %1$s</string>
+    <string name="model_storage_move">मॉडल ले जाएं</string>
     <string name="browse_download_models">LLM मॉडल ब्राउज़ करें और डाउनलोड करें</string>
     <string name="embedding_model">एम्बेडिंग मॉडल</string>
     <string name="select_embedding_model">एम्बेडिंग मॉडल चुनें</string>
@@ -306,6 +314,7 @@
     <string name="documents">दस्तावेज़</string>
     <string name="text_files">टेक्स्ट फ़ाइलें</string>
     <string name="images_description">JPG, PNG, GIF, WebP</string>
+    <string name="images_need_vision_projector">चित्र जोड़ने के लिए मॉडल डाउनलोड करें में इस मॉडल का विज़न प्रोजेक्टर डाउनलोड करें</string>
     <string name="documents_description">PDF, Word, Excel, PowerPoint</string>
     <string name="text_files_description">TXT, MD, JSON, XML, CSV</string>
     <string name="text_file">टेक्स्ट फ़ाइल</string>
@@ -461,6 +470,8 @@
     <string name="sd_models_link">Hugging Face पर Stable Diffusion मॉडल</string>
     <string name="supports_npu">NPU सपोर्ट</string>
     <string name="import_model_warning">⚠️ महत्वपूर्ण: इम्पोर्ट करने से पहले Hugging Face पर मॉडल की README पढ़ें। मॉडल दस्तावेज़ में निर्दिष्ट अनुसार सही क्षमताएं (विज़न, ऑडियो, GPU) और कॉन्टेक्स्ट विंडो आकार दर्ज करें। गलत सेटिंग्स के कारण मॉडल ठीक से काम नहीं कर सकता है। महत्वपूर्ण: विज़न GGUF मॉडल को विज़न प्रोजेक्टर (mmproj) की आवश्यकता होती है। छवि इनपुट सक्षम करने के लिए प्रोजेक्टर फ़ाइल इम्पोर्ट करें।</string>
+    <string name="import_gguf_is_projector">यह फ़ाइल एक विज़न प्रोजेक्टर (mmproj) है, मॉडल नहीं। इसका मॉडल इम्पोर्ट करें, विज़न सपोर्ट चालू करें और इस फ़ाइल को विज़न प्रोजेक्टर के रूप में चुनें।</string>
+    <string name="import_gguf_not_chat_model">यह GGUF चैट मॉडल नहीं है (आर्किटेक्चर: %1$s), इसलिए LLM Hub इसे नहीं चला सकता। वीडियो जनरेटर LTX-Video GGUF इम्पोर्ट करता है और म्यूज़िक जनरेटर मॉडल डाउनलोड करें के SoundGen मॉडल इस्तेमाल करता है।</string>
     
     <!-- Home Screen -->
     <string name="home_welcome">LLM Hub में आपका स्वागत है</string>

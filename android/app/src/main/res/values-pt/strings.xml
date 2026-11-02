@@ -93,6 +93,14 @@
     <string name="information">Informações</string>
     <string name="source_code_section">Código Fonte</string>
     <string name="download_models">Baixar Modelos</string>
+    <string name="model_storage_title">Armazenamento de modelos</string>
+    <string name="model_storage_internal">Armazenamento interno</string>
+    <string name="model_storage_sd_card">Cartão SD</string>
+    <string name="model_storage_free">%1$s livres</string>
+    <string name="model_storage_note">Seus modelos ocupam %1$s. Eles são movidos juntos, e novos downloads vão para o mesmo lugar. Os modelos no cartão SD ficam indisponíveis enquanto o cartão estiver removido.</string>
+    <string name="model_storage_moving">Movendo modelos: %1$d%%</string>
+    <string name="model_storage_failed">Não foi possível mover os modelos: %1$s</string>
+    <string name="model_storage_move">Mover modelos</string>
     <string name="browse_download_models">Navegar e baixar modelos LLM</string>
     <string name="web_search">Busca Web</string>
     <string name="web_search_enabled">Obter informações atuais da web</string>
@@ -291,6 +299,7 @@
     <string name="documents">Documentos</string>
     <string name="text_files">Arquivos de Texto</string>
     <string name="images_description">JPG, PNG, GIF, WebP</string>
+    <string name="images_need_vision_projector">Baixe o projetor de visão deste modelo em Baixar modelos para anexar imagens</string>
     <string name="documents_description">PDF, Word, Excel, PowerPoint</string>
     <string name="text_files_description">TXT, MD, JSON, XML, CSV</string>
     <string name="text_file">Arquivo de Texto</string>
@@ -391,6 +400,8 @@
     <string name="sd_models_link">Modelos Stable Diffusion no Hugging Face</string>
     <string name="supports_npu">Suporta NPU</string>
     <string name="import_model_warning">⚠️ Importante: Por favor leia o README do modelo no Hugging Face antes de importar. Digite as capacidades corretas (visão, áudio, GPU) e o tamanho da janela de contexto conforme especificado na documentação do modelo. Configurações incorretas podem fazer com que o modelo não funcione corretamente. Importante: Modelos GGUF com visão exigem um Vision Projector (mmproj). Importe o arquivo do projetor para habilitar a entrada de imagem.</string>
+    <string name="import_gguf_is_projector">Este arquivo é um projetor de visão (mmproj), não um modelo. Importe o modelo dele, ative Suporta visão e escolha este arquivo como projetor de visão.</string>
+    <string name="import_gguf_not_chat_model">Este GGUF não é um modelo de chat (arquitetura: %1$s), então o LLM Hub não consegue executá-lo. O gerador de vídeo importa GGUFs do LTX-Video e o gerador de música usa os modelos SoundGen em Baixar modelos.</string>
     
     <!-- Home Screen -->
     <string name="home_welcome">Bem-vindo ao LLM Hub</string>

@@ -119,6 +119,14 @@
     <string name="information">Informasi</string>
     <string name="source_code_section">Kode Sumber</string>
     <string name="download_models">Unduh Model</string>
+    <string name="model_storage_title">Penyimpanan model</string>
+    <string name="model_storage_internal">Penyimpanan internal</string>
+    <string name="model_storage_sd_card">Kartu SD</string>
+    <string name="model_storage_free">%1$s kosong</string>
+    <string name="model_storage_note">Model Anda memakai %1$s. Semuanya dipindahkan bersama, dan unduhan baru disimpan di tempat yang sama. Model di kartu SD tidak tersedia selama kartu dilepas.</string>
+    <string name="model_storage_moving">Memindahkan model: %1$d%%</string>
+    <string name="model_storage_failed">Model tidak dapat dipindahkan: %1$s</string>
+    <string name="model_storage_move">Pindahkan model</string>
     <string name="browse_download_models">Telusuri dan unduh model LLM</string>
     <string name="embedding_model">Model Penyematan</string>
     <string name="select_embedding_model">Pilih Model Penyematan</string>
@@ -278,6 +286,7 @@
     <string name="documents">Dokumen</string>
     <string name="text_files">File Teks</string>
     <string name="images_description">JPG, PNG, GIF, WebP</string>
+    <string name="images_need_vision_projector">Unduh proyektor visi model ini di Unduh Model untuk melampirkan gambar</string>
     <string name="documents_description">PDF, Word, Excel, PowerPoint</string>
     <string name="text_files_description">TXT, MD, JSON, XML, CSV</string>
     <string name="text_file">File Teks</string>
@@ -427,6 +436,8 @@
     <string name="sd_models_link">Model Stable Diffusion di Hugging Face</string>
     <string name="supports_npu">Mendukung NPU</string>
     <string name="import_model_warning">⚠️ Penting: Harap baca README model di Hugging Face sebelum mengimpor. Masukkan kemampuan yang benar (visi, audio, GPU) dan ukuran jendela konteks seperti yang ditentukan dalam dokumentasi model. Pengaturan yang salah dapat menyebabkan model tidak berfungsi dengan benar. Penting: Model GGUF yang mendukung visi memerlukan Vision Projector (mmproj). Impor file projector untuk mengaktifkan input gambar.</string>
+    <string name="import_gguf_is_projector">File ini adalah proyektor visi (mmproj), bukan model. Impor modelnya, aktifkan Dukungan Visi, lalu pilih file ini sebagai proyektor visi.</string>
+    <string name="import_gguf_not_chat_model">GGUF ini bukan model obrolan (arsitektur: %1$s), jadi LLM Hub tidak bisa menjalankannya. Generator Video mengimpor GGUF LTX-Video, sedangkan Generator Musik memakai model SoundGen di Unduh Model.</string>
     
     <!-- Home Screen -->
     <string name="home_welcome">Selamat Datang di LLM Hub</string>

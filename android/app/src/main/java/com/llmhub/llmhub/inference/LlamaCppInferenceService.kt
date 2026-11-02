@@ -8,6 +8,8 @@ import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import com.llmhub.llmhub.R
 import com.llmhub.llmhub.data.DeviceInfo
 import com.llmhub.llmhub.data.LLMModel
+import com.llmhub.llmhub.data.bundleDirectory
+import com.llmhub.llmhub.data.ImportedModelFiles
 import com.llmhub.llmhub.data.effectiveContextWindow
 import com.llmhub.llmhub.data.isOtherCatalogModelsProjector
 import com.llmhub.llmhub.data.localFileName
@@ -208,7 +210,7 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
             val useVulkan = ThemePreferences(context).ggufUseVulkan.first()
             val wantsNpu = !deviceId.isNullOrBlank() &&
                 (deviceId.startsWith("dev", true) || deviceId.startsWith("htp", true))
-            val accelerator = when {
+            val requestedAccelerator = when {
                 preferredBackend != LlmInference.Backend.GPU -> null
                 !wantsNpu && useVulkan -> "Vulkan0"
                 // No GPU runtime: the OpenCL build is for Snapdragon and Vulkan needs a 1.2 driver.
@@ -240,7 +242,9 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
                 ?: modelContextLimit)
                 .coerceIn(512, modelContextLimit.coerceAtLeast(512))
             val threads = (Runtime.getRuntime().availableProcessors() - 2).coerceIn(2, 8)
-            val modelDir = modelFile.parentFile ?: File(context.filesDir, "models")
+            // An imported model read in place has no folder of its own; its projector was copied next to the others.
+            val modelDir = if (modelFile.path.startsWith("/proc/")) model.bundleDirectory(context)
+                else modelFile.parentFile ?: File(context.filesDir, "models")
             val mmprojFile = if (model.supportsVision && !disableVision) {
                 findMmprojFile(modelDir, modelFile, model)
             } else {
@@ -249,8 +253,15 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
             if (model.supportsVision && !disableVision && mmprojFile == null) {
                 Log.w(TAG, "Vision projector not found for '${model.name}'; loading text-only")
             }
-            // Retry only accelerator load failures, using the same model and settings on CPU.
-            val attempts: List<String?> = if (accelerator == null) listOf(null) else listOf(accelerator, null)
+            val accelerator = requestedAccelerator
+            val acceleratorLayers = overrideGpuLayers ?: 999
+            // Retry GPU load failures on the CPU. The NPU never falls back: a model whose GPU layers do not fit the NPU
+            // (one ~3.1 GB window) fails to load, and the user lowers the GPU layers setting.
+            val attempts: List<String?> = when (accelerator) {
+                null -> listOf(null)
+                "HTP0" -> listOf(accelerator)
+                else -> listOf(accelerator, null)
+            }
             for (attemptAccelerator in attempts) {
                 currentCoroutineContext().ensureActive()
                 val attemptName = attemptAccelerator ?: "CPU"
@@ -271,7 +282,7 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
                     Log.i(
                         TAG,
                         "Loading '${model.name}' with llama.cpp $attemptName: context=$contextSize " +
-                            "threads=$threads layers=${if (attemptAccelerator == null) 0 else overrideGpuLayers ?: 999} " +
+                            "threads=$threads layers=${if (attemptAccelerator == null) 0 else acceleratorLayers} " +
                             "mmproj=${mmprojFile?.name ?: "none"}",
                     )
                     val result = runtime.nativeLoadModel(
@@ -280,7 +291,7 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
                         contextSize,
                         threads,
                         attemptAccelerator,
-                        if (attemptAccelerator == null) 0 else overrideGpuLayers ?: 999,
+                        if (attemptAccelerator == null) 0 else acceleratorLayers,
                         flashAttention,
                     )
                     check(result == 0) { "llama.cpp model load failed on $attemptName with code $result" }
@@ -310,7 +321,7 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
                         }
                     }
                     nativeInitialized = false
-                    if (attemptAccelerator != null) Log.w(TAG, "Retrying '${model.name}' on CPU")
+                    if (attemptAccelerator != attempts.last()) Log.w(TAG, "Retrying '${model.name}' on CPU")
                 }
             }
             false
@@ -1366,14 +1377,7 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
     private fun resolveModelFile(model: LLMModel): File {
         val modelsDir = File(context.filesDir, "models")
         if (model.source == "Custom" && model.url.startsWith("content://")) {
-            val target = File(modelsDir, model.localFileName())
-            target.parentFile?.mkdirs()
-            if (!target.exists()) {
-                context.contentResolver.openInputStream(Uri.parse(model.url))?.use { input ->
-                    target.outputStream().use { output -> input.copyTo(output) }
-                }
-            }
-            return target
+            return ImportedModelFiles.pathFor(context, model) ?: File(modelsDir, model.localFileName())
         }
 
         val modelDirectoryName = model.name

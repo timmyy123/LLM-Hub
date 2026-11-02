@@ -107,6 +107,14 @@
     <string name="information">ข้อมูล</string>
     <string name="source_code_section">ซอร์สโค้ด</string>
     <string name="download_models">ดาวน์โหลดโมเดล</string>
+    <string name="model_storage_title">ที่เก็บโมเดล</string>
+    <string name="model_storage_internal">ที่เก็บข้อมูลภายใน</string>
+    <string name="model_storage_sd_card">การ์ด SD</string>
+    <string name="model_storage_free">ว่าง %1$s</string>
+    <string name="model_storage_note">โมเดลของคุณใช้พื้นที่ %1$s โมเดลจะถูกย้ายไปพร้อมกัน และการดาวน์โหลดใหม่จะบันทึกไว้ที่เดียวกัน โมเดลบนการ์ด SD จะใช้ไม่ได้ขณะถอดการ์ดออก</string>
+    <string name="model_storage_moving">กำลังย้ายโมเดล: %1$d%%</string>
+    <string name="model_storage_failed">ย้ายโมเดลไม่สำเร็จ: %1$s</string>
+    <string name="model_storage_move">ย้ายโมเดล</string>
     <string name="browse_download_models">เรียกดูและดาวน์โหลดโมเดล LLM</string>
     <string name="embedding_model">การฝังโมเดล</string>
     <string name="select_embedding_model">เลือกโมเดลการฝัง</string>
@@ -262,6 +270,7 @@
     <string name="documents">เอกสาร</string>
     <string name="text_files">ไฟล์ข้อความ</string>
     <string name="images_description">JPG, PNG, GIF, WebP</string>
+    <string name="images_need_vision_projector">ดาวน์โหลดตัวฉายภาพวิชันของโมเดลนี้ในหน้าดาวน์โหลดโมเดลเพื่อแนบรูปภาพ</string>
     <string name="documents_description">PDF, Word, Excel, PowerPoint</string>
     <string name="text_files_description">TXT, MD, JSON, XML, CSV</string>
     <string name="text_file">ไฟล์ข้อความ</string>
@@ -394,6 +403,8 @@
     <string name="sd_models_link">โมเดล Stable Diffusion บน Hugging Face</string>
     <string name="supports_npu">รองรับ NPU</string>
     <string name="import_model_warning">⚠️ สำคัญ: โปรดอ่าน README ของโมเดลบน Hugging Face ก่อนที่จะนำเข้า ป้อนความสามารถที่ถูกต้อง (การมองเห็น เสียง GPU) และขนาดหน้าต่างบริบทตามที่ระบุไว้ในเอกสารประกอบโมเดล การตั้งค่าที่ไม่ถูกต้องอาจทำให้โมเดลทำงานไม่ถูกต้อง สำคัญ: รุ่น Vision GGUF ต้องใช้ Vision Projector (mmproj) นำเข้าไฟล์โปรเจ็กเตอร์เพื่อเปิดใช้งานอินพุตภาพ</string>
+    <string name="import_gguf_is_projector">ไฟล์นี้เป็นตัวฉายภาพวิชัน (mmproj) ไม่ใช่โมเดล นำเข้าโมเดลของไฟล์นี้ เปิดรองรับวิชัน แล้วเลือกไฟล์นี้เป็นตัวฉายภาพวิชัน</string>
+    <string name="import_gguf_not_chat_model">ไฟล์ GGUF นี้ไม่ใช่โมเดลแชต (สถาปัตยกรรม: %1$s) LLM Hub จึงเรียกใช้ไม่ได้ ตัวสร้างวิดีโอนำเข้า GGUF ของ LTX-Video ได้ ส่วนตัวสร้างเพลงใช้โมเดล SoundGen ในหน้าดาวน์โหลดโมเดล</string>
     <string name="home_welcome">ยินดีต้อนรับสู่ LLM Hub</string>
     <string name="home_subtitle">ปลดล็อกพลังของ AI ในกระเป๋าของคุณ — เป็นส่วนตัว รวดเร็ว และออฟไลน์!</string>
     <string name="feature_ai_chat">AI แชท</string>

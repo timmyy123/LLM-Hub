@@ -119,6 +119,14 @@
     <string name="information">信息</string>
     <string name="source_code_section">源代码</string>
     <string name="download_models">下载模型</string>
+    <string name="model_storage_title">模型存储位置</string>
+    <string name="model_storage_internal">内部存储</string>
+    <string name="model_storage_sd_card">SD 卡</string>
+    <string name="model_storage_free">可用 %1$s</string>
+    <string name="model_storage_note">你的模型占用 %1$s。它们会一起移动，新的下载也会保存到同一位置。取出 SD 卡时，卡上的模型将不可用。</string>
+    <string name="model_storage_moving">正在移动模型：%1$d%%</string>
+    <string name="model_storage_failed">无法移动模型：%1$s</string>
+    <string name="model_storage_move">移动模型</string>
     <string name="browse_download_models">浏览和下载 LLM 模型</string>
     <string name="embedding_model">嵌入模型</string>
     <string name="select_embedding_model">选择嵌入模型</string>
@@ -290,6 +298,7 @@
     <string name="documents">文档</string>
     <string name="text_files">文本文件</string>
     <string name="images_description">JPG, PNG, GIF, WebP</string>
+    <string name="images_need_vision_projector">要附加图片，请在下载模型中下载此模型的视觉投影器</string>
     <string name="documents_description">PDF, Word, Excel, PowerPoint</string>
     <string name="text_files_description">TXT, MD, JSON, XML, CSV</string>
     <string name="text_file">文本文件</string>
@@ -441,6 +450,8 @@
     <string name="sd_models_link">Hugging Face 上的 Stable Diffusion 模型</string>
     <string name="supports_npu">支持神经网络处理器</string>
     <string name="import_model_warning">⚠️ 重要提示：导入前请务必阅读 Hugging Face 平台上的模型 README 文档。请严格按照模型文档要求设置正确的功能参数（视觉、音频、显卡加速）及上下文窗口大小。错误设置可能导致模型运行异常。重要提示：视觉 GGUF 模型需配合视觉投影器（mmproj）使用。请导入投影器文件以启用图像输入功能</string>
+    <string name="import_gguf_is_projector">此文件是视觉投影器（mmproj），不是模型。请导入对应的模型，开启视觉支持，并将此文件选为视觉投影器。</string>
+    <string name="import_gguf_not_chat_model">此 GGUF 不是聊天模型（架构：%1$s），LLM Hub 无法运行。视频生成器可导入 LTX-Video GGUF，音乐生成器使用下载模型中的 SoundGen 模型。</string>
     
     <!-- Home Screen -->
     <string name="home_welcome">欢迎来到 LLM Hub</string>

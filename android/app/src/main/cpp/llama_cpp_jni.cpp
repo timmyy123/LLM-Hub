@@ -11,6 +11,7 @@
 #include <cstdlib>
 #include <cstdint>
 #include <cstring>
+#include <exception>
 #include <string>
 #include <thread>
 #include <vector>
@@ -200,6 +201,21 @@ bool read_messages(
     return true;
 }
 
+// An accelerator backend that throws (Hexagon cannot map a buffer into the NPU's address window) must not abort the
+// app: the exception becomes a decode error the caller reports.
+constexpr int DECODE_ACCELERATOR_ERROR = -100;
+
+int safe_decode(llama_batch batch) {
+    try {
+        return llama_decode(g_context, batch);
+    } catch (const std::exception & e) {
+        __android_log_print(ANDROID_LOG_ERROR, TAG, "Accelerator failed during decode: %s", e.what());
+    } catch (...) {
+        __android_log_write(ANDROID_LOG_ERROR, TAG, "Accelerator failed during decode");
+    }
+    return DECODE_ACCELERATOR_ERROR;
+}
+
 int decode_tokens(const std::vector<llama_token> & tokens) {
     const int32_t batch_size = static_cast<int32_t>(llama_n_batch(g_context));
     for (size_t offset = 0; offset < tokens.size(); offset += batch_size) {
@@ -208,7 +224,7 @@ int decode_tokens(const std::vector<llama_token> & tokens) {
             batch_size, static_cast<int32_t>(tokens.size() - offset));
         llama_batch batch = llama_batch_get_one(
             const_cast<llama_token *>(tokens.data() + offset), count);
-        const int result = llama_decode(g_context, batch);
+        const int result = safe_decode(batch);
         if (result != 0) return result;
     }
     return 0;
@@ -301,6 +317,21 @@ LLAMA_JNI(nativeLoadModel)(
         unload_model();
         return 2;
     }
+#ifdef LLMHUB_SNAPDRAGON
+    if (requested_device.rfind("HTP", 0) == 0) {
+        // One token maps every weight, KV cache and compute buffer into the NPU session, so a model that does not fit
+        // its ~3.1 GB address window fails here (code 6) instead of aborting on the first message.
+        llama_token token = llama_vocab_bos(llama_model_get_vocab(g_model));
+        if (token == LLAMA_TOKEN_NULL) token = 0;
+        const int warmup = safe_decode(llama_batch_get_one(&token, 1));
+        llama_memory_clear(llama_get_memory(g_context), false);
+        if (warmup != 0) {
+            __android_log_print(ANDROID_LOG_ERROR, TAG, "NPU warmup failed on %s (%d)", requested_device.c_str(), warmup);
+            unload_model();
+            return 6;
+        }
+    }
+#endif
 
     const std::string projector_path = from_jstring(env, mmproj_path);
     if (!projector_path.empty()) {
@@ -474,15 +505,22 @@ LLAMA_JNI(nativeStartCompletion)(
             1,
             std::min(requested_max_tokens, context_size - static_cast<int32_t>(prompt_tokens)));
         llama_pos new_n_past = 0;
-        const int32_t eval_result = mtmd_helper_eval_chunks(
-            g_mtmd,
-            g_context,
-            chunks,
-            0,
-            0,
-            static_cast<int32_t>(llama_n_batch(g_context)),
-            true,
-            &new_n_past);
+        int32_t eval_result = -1;
+        try {
+            eval_result = mtmd_helper_eval_chunks(
+                g_mtmd,
+                g_context,
+                chunks,
+                0,
+                0,
+                static_cast<int32_t>(llama_n_batch(g_context)),
+                true,
+                &new_n_past);
+        } catch (const std::exception & e) {
+            __android_log_print(ANDROID_LOG_ERROR, TAG, "Accelerator failed during vision prompt: %s", e.what());
+        } catch (...) {
+            __android_log_write(ANDROID_LOG_ERROR, TAG, "Accelerator failed during vision prompt");
+        }
         mtmd_input_chunks_free(chunks);
         if (eval_result != 0) {
             __android_log_print(
@@ -563,7 +601,7 @@ LLAMA_JNI(nativeNextToken)(JNIEnv * env, jobject) {
     if (written > 0) g_utf8_buffer.append(piece.data(), static_cast<size_t>(written));
 
     llama_batch batch = llama_batch_get_one(&token, 1);
-    if (llama_decode(g_context, batch) != 0) return nullptr;
+    if (safe_decode(batch) != 0) return nullptr;
     ++g_generated;
 
     if (!valid_utf8(g_utf8_buffer)) return env->NewStringUTF("");

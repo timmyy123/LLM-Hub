@@ -32,6 +32,7 @@ import com.llmhub.llmhub.data.isModelFileValid
 import com.llmhub.llmhub.data.hasCompleteDownloadedBundle
 import com.llmhub.llmhub.data.isVideoGenerationModel
 import com.llmhub.llmhub.data.bundleDirectory
+import com.llmhub.llmhub.videogen.VideoGenFormats
 import com.google.gson.Gson
 import android.net.Uri
 import com.google.gson.JsonParser
@@ -68,6 +69,9 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
     companion object {
         private const val PREFS_NAME = "model_prefs"
         private const val KEY_CUSTOM_HF_TOKEN = "custom_hf_token"
+        // x-linked-size of the catalog's t5xxl_fp16-q4_0.gguf and ltxv_0.9.5_vae_fp16.safetensors.
+        private const val LTXV_ENCODER_BYTES = 2896123072L
+        private const val LTXV_VAE_BYTES = 2493868876L
 
         /**
          * Returns ONLY the user-provided custom token (never the default secret token).
@@ -1216,6 +1220,47 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
                 downloadSpeedBytesPerSec = null
             )
         }
+    }
+
+    /**
+     * Imports an LTX-Video transformer GGUF as a Video Generator model. The transformer is copied into the model's folder;
+     * the T5 text encoder and VAE it needs come from the catalog's pinned LTX-Video repo, downloaded as for catalog models.
+     */
+    fun importVideoModel(name: String, uri: Uri): Boolean {
+        if (_models.value.any { it.name == name }) return false
+        val reference = ModelData.videoGenerationModels.first { it.modelFormat == VideoGenFormats.GGUF }
+        val (encoderUrl, vaeUrl) = reference.additionalFiles
+        val transformerBytes = runCatching {
+            context.contentResolver.openAssetFileDescriptor(uri, "r")?.use { it.length }
+        }.getOrNull()?.takeIf { it > 0 } ?: 0L
+        val model = reference.copy(
+            name = name,
+            description = "Custom LTX-Video model: $name",
+            url = encoderUrl,
+            additionalFiles = listOf(vaeUrl),
+            // Transformer + T5 encoder + VAE, as the folder holds them all.
+            sizeBytes = transformerBytes + LTXV_ENCODER_BYTES + LTXV_VAE_BYTES,
+            source = "Custom",
+            isDownloaded = false,
+            isDownloading = true,
+            downloadProgress = 0f
+        )
+        _models.value = _models.value + model
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val directory = model.bundleDirectory(context).apply { mkdirs() }
+                // The runtime tells the transformer from the encoder by "t5" in the encoder's name.
+                File(directory, "ltxv-transformer.gguf").outputStream().use { output ->
+                    context.contentResolver.openInputStream(uri)!!.use { it.copyTo(output, 1 shl 20) }
+                }
+                withContext(Dispatchers.Main) { downloadModel(model) }
+            } catch (e: Exception) {
+                android.util.Log.e("ModelDownloadViewModel", "Video model import failed for $name", e)
+                model.bundleDirectory(context).deleteRecursively()
+                _models.value = _models.value.filterNot { it.name == name }
+            }
+        }
+        return true
     }
 
     fun addExternalModel(externalModel: LLMModel): Boolean {

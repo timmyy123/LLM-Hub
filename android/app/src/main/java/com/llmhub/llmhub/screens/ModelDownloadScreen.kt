@@ -36,6 +36,8 @@ import android.content.Intent
 import android.util.Log
 import androidx.lifecycle.ViewModelProvider
 import com.llmhub.llmhub.data.LLMModel
+import com.llmhub.llmhub.data.GgufInspector
+import com.llmhub.llmhub.data.GgufKind
 import com.llmhub.llmhub.viewmodels.ModelDownloadViewModel
 import androidx.compose.ui.platform.LocalContext
 import android.content.Context
@@ -150,6 +152,9 @@ fun ModelDownloadScreen(
     val videoGenGrouped = videoGenModels.groupBy { it.name.substringBefore("(").trim() }
 
     var showImportDialog by remember { mutableStateOf(false) }
+    var showStorageDialog by remember { mutableStateOf(false) }
+    // The storage choice is offered while an SD card is in, or while models are on one.
+    val canChooseStorage = remember { com.llmhub.llmhub.data.ModelStorage.sdCardRoot(context) != null || com.llmhub.llmhub.data.ModelStorage.isOnSdCard(context) }
     var errorDialogInfo by remember { mutableStateOf<Pair<String, String>?>(null) }
     val tabs = listOf(
         DownloadCategory.MULTIMODAL,
@@ -204,6 +209,13 @@ fun ModelDownloadScreen(
                             contentDescription = stringResource(R.string.back),
                             tint = MaterialTheme.colorScheme.onSurface
                         )
+                    }
+                },
+                actions = {
+                    if (canChooseStorage) {
+                        IconButton(onClick = { showStorageDialog = true }) {
+                            Icon(Icons.Default.SdStorage, contentDescription = stringResource(R.string.model_storage_title))
+                        }
                     }
                 }
             )
@@ -446,6 +458,10 @@ fun ModelDownloadScreen(
             }
         }
         
+        if (showStorageDialog) {
+            com.llmhub.llmhub.components.ModelStorageDialog(onDismiss = { showStorageDialog = false }, onMoved = {})
+        }
+
         // Import External Model Dialog
         if (showImportDialog) {
             ImportExternalModelDialog(
@@ -454,6 +470,9 @@ fun ModelDownloadScreen(
                 onDownloadHuggingFace = { name, format, main, projector, vision, contextSize, mtp ->
                     downloadViewModel.downloadHuggingFaceImport(name, format, main, projector, vision, contextSize, mtp)
                     showImportDialog = false
+                },
+                onImportVideo = { name, uri ->
+                    downloadViewModel.importVideoModel(name, uri).also { if (it) showImportDialog = false }
                 },
                 onImport = { externalModel, projectorUri ->
                     val success = downloadViewModel.addExternalModel(externalModel)
@@ -1179,7 +1198,9 @@ internal fun ImportExternalModelDialog(
     onDismiss: () -> Unit,
     onSearchHuggingFace: suspend (String, String, Int) -> List<com.llmhub.llmhub.viewmodels.HuggingFaceModelFile>,
     onDownloadHuggingFace: (String, String, com.llmhub.llmhub.viewmodels.HuggingFaceModelFile, com.llmhub.llmhub.viewmodels.HuggingFaceModelFile?, Boolean, Int, Boolean) -> Unit,
-    onImport: (LLMModel, Uri?) -> Boolean
+    onImport: (LLMModel, Uri?) -> Boolean,
+    /** An LTX-Video transformer GGUF: imported as a Video Generator model (name, file). */
+    onImportVideo: (String, Uri) -> Boolean
 ) {
     val context = LocalContext.current
     var modelName by remember { mutableStateOf("") }
@@ -1770,37 +1791,7 @@ internal fun ImportExternalModelDialog(
                         }
                     } ?: 0L
                     
-                    // For image models (QNN_NPU or MNN_CPU), we need to extract the ZIP first
-                    if (modelFormat == ModelFormat.QNN_NPU || modelFormat == ModelFormat.MNN_CPU) {
-                        // Mark as extracting
-                        val externalModel = LLMModel(
-                            name = modelName,
-                            description = "Custom image generation model: $modelName",
-                            url = selectedFileUri.toString(),
-                            category = modelFormat.name.lowercase(),
-                            sizeBytes = fileSize,
-                            source = "Custom",
-                            supportsVision = false,
-                            supportsAudio = false,
-                            supportsGpu = false,
-                            requirements = ModelRequirements(
-                                minRamGB = 2,
-                                recommendedRamGB = 4
-                            ),
-                            contextWindowSize = 0,
-                            modelFormat = modelFormat.name.lowercase(),
-                            isDownloaded = false,
-                            isDownloading = false,
-                            isExtracting = true,
-                            downloadProgress = 0.0f
-                        )
-                        val success = onImport(externalModel, null)
-                        if (!success) {
-                            showError = true
-                            errorMessage = context.getString(R.string.model_name_already_exists, modelName)
-                            return@Button
-                        }
-                    } else {
+                    fun importChatModel(fileSize: Long) {
                         // For text models (TASK, LITERTLM, GGUF)
                         // For GGUF: always GPU=true, Vision=false, Audio=false
                         // GGUF can be vision-capable now — allow user to toggle 'Supports Vision' for GGUF as well
@@ -1837,8 +1828,68 @@ internal fun ImportExternalModelDialog(
                         if (!success) {
                             showError = true
                             errorMessage = context.getString(R.string.model_name_already_exists, modelName)
+                        }
+                    }
+
+                    // For image models (QNN_NPU or MNN_CPU), we need to extract the ZIP first
+                    if (modelFormat == ModelFormat.QNN_NPU || modelFormat == ModelFormat.MNN_CPU) {
+                        // Mark as extracting
+                        val externalModel = LLMModel(
+                            name = modelName,
+                            description = "Custom image generation model: $modelName",
+                            url = selectedFileUri.toString(),
+                            category = modelFormat.name.lowercase(),
+                            sizeBytes = fileSize,
+                            source = "Custom",
+                            supportsVision = false,
+                            supportsAudio = false,
+                            supportsGpu = false,
+                            requirements = ModelRequirements(
+                                minRamGB = 2,
+                                recommendedRamGB = 4
+                            ),
+                            contextWindowSize = 0,
+                            modelFormat = modelFormat.name.lowercase(),
+                            isDownloaded = false,
+                            isDownloading = false,
+                            isExtracting = true,
+                            downloadProgress = 0.0f
+                        )
+                        val success = onImport(externalModel, null)
+                        if (!success) {
+                            showError = true
+                            errorMessage = context.getString(R.string.model_name_already_exists, modelName)
                             return@Button
                         }
+                    } else if (modelFormat == ModelFormat.GGUF) {
+                        // Video, music and encoder GGUFs are not chat models: read the header before listing it.
+                        val uri = selectedFileUri!!
+                        importingImageFile = true
+                        coroutineScope.launch {
+                            val kind = withContext(Dispatchers.IO) {
+                                runCatching { context.contentResolver.openInputStream(uri)?.use(GgufInspector::inspect) }.getOrNull()
+                            }
+                            importingImageFile = false
+                            when (kind) {
+                                GgufKind.LtxVideo -> if (!onImportVideo(modelName, uri)) {
+                                    showError = true
+                                    errorMessage = context.getString(R.string.model_name_already_exists, modelName)
+                                }
+                                GgufKind.VisionProjector -> {
+                                    showError = true
+                                    errorMessage = context.getString(R.string.import_gguf_is_projector)
+                                }
+                                is GgufKind.Unsupported -> {
+                                    showError = true
+                                    errorMessage = context.getString(R.string.import_gguf_not_chat_model, kind.architecture)
+                                }
+                                // A chat model (or a header this reader does not know): import it as before.
+                                else -> importChatModel(fileSize)
+                            }
+                        }
+                        return@Button
+                    } else {
+                        importChatModel(fileSize)
                     }
                 },
                 enabled = !importingImageFile && modelName.isNotBlank() && (selectedFileUri != null || selectedHuggingFaceModel != null)

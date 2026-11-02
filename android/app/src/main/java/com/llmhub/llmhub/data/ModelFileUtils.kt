@@ -109,7 +109,12 @@ fun LLMModel.hasCompleteDownloadedBundle(context: Context): Boolean {
     }
     if (additional.any { !it.isFile || it.length() <= 0L }) return false
 
-    val downloadedBytes = primaryFile.length() + additional.sumOf { it.length() }
+    // An imported LTX-Video model also keeps its own transformer in the folder, next to the downloaded files.
+    val downloadedBytes = if (source == "Custom" && isVideoGenerationModel()) {
+        targetDir.listFiles()?.filter { it.isFile }?.sumOf { it.length() } ?: 0L
+    } else {
+        primaryFile.length() + additional.sumOf { it.length() }
+    }
     return sizeBytes <= 0L || downloadedBytes >= (sizeBytes * 0.98).toLong()
 }
 

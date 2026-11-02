@@ -1765,6 +1765,8 @@ fun MessageInput(
     enabled: Boolean,
     supportsAttachments: Boolean,
     supportsVision: Boolean = false,
+    /** A vision model whose projector is not downloaded: Images stays listed and says what is missing. */
+    visionProjectorMissing: Boolean = false,
     supportsAudio: Boolean = false, // New parameter for audio support
     isLoading: Boolean = false,
     onCancelGeneration: (() -> Unit)? = null,
@@ -2186,7 +2188,7 @@ fun MessageInput(
                             ) {
                                 Icon(
                                     Icons.Outlined.AttachFile,
-                                    contentDescription = "Attach file",
+                                    contentDescription = stringResource(R.string.attach_file),
                                     tint = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                                 )
                             }
@@ -2197,7 +2199,8 @@ fun MessageInput(
                                 onDismissRequest = { showAttachmentOptions = false }
                             ) {
                                 // Only show images option for vision models
-                                if (supportsVision) {
+                                if (supportsVision || visionProjectorMissing) {
+                                    val projectorHint = stringResource(R.string.images_need_vision_projector)
                                     DropdownMenuItem(
                                         text = { 
                                             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -2206,7 +2209,7 @@ fun MessageInput(
                                                 Column {
                                                     Text(stringResource(R.string.images))
                                                     Text(
-                                                        stringResource(R.string.images_description),
+                                                        if (supportsVision) stringResource(R.string.images_description) else projectorHint,
                                                         style = MaterialTheme.typography.bodySmall,
                                                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                                                     )
@@ -2215,7 +2218,8 @@ fun MessageInput(
                                         },
                                         onClick = {
                                             showAttachmentOptions = false
-                                            imagePickerLauncher.launch("image/*")
+                                            if (supportsVision) imagePickerLauncher.launch("image/*")
+                                            else android.widget.Toast.makeText(context, projectorHint, android.widget.Toast.LENGTH_LONG).show()
                                         }
                                     )
                                 }
