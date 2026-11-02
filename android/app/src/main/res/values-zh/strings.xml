@@ -450,8 +450,6 @@
     <string name="sd_models_link">Hugging Face 上的 Stable Diffusion 模型</string>
     <string name="supports_npu">支持神经网络处理器</string>
     <string name="import_model_warning">⚠️ 重要提示：导入前请务必阅读 Hugging Face 平台上的模型 README 文档。请严格按照模型文档要求设置正确的功能参数（视觉、音频、显卡加速）及上下文窗口大小。错误设置可能导致模型运行异常。重要提示：视觉 GGUF 模型需配合视觉投影器（mmproj）使用。请导入投影器文件以启用图像输入功能</string>
-    <string name="import_gguf_is_projector">此文件是视觉投影器（mmproj），不是模型。请导入对应的模型，开启视觉支持，并将此文件选为视觉投影器。</string>
-    <string name="import_gguf_not_chat_model">此 GGUF 不是聊天模型（架构：%1$s），LLM Hub 无法运行。视频生成器可导入 LTX-Video GGUF，音乐生成器使用下载模型中的 SoundGen 模型。</string>
     
     <!-- Home Screen -->
     <string name="home_welcome">欢迎来到 LLM Hub</string>

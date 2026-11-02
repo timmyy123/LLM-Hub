@@ -47,39 +47,6 @@ class LlamaCppNpuDeviceTest {
     /** 5.1 GB with the GPU layers setting lowered to what fits. */
     @Test fun largeLayers() = runBlocking { run("Granite 4.2 8B (Q4_0)", GRANITE_8B_SHA256, gpuLayers = 14) }
 
-    /**
-     * An imported GGUF is read where it is (here through the app's FileProvider, as a document on an SD card is),
-     * with no copy into files/models, on the CPU and on the NPU.
-     */
-    @Test fun importedInPlace() = runBlocking {
-        val catalog = ModelData.models.first { it.name == "Llama-3.2 1B (Q4_0)" }
-        fetch(catalog, LLAMA_1B_SHA256)
-        val document = File(context.cacheDir, "imports/imported-llama.gguf").apply { parentFile?.mkdirs() }
-        if (document.length() != File(modelsDir, catalog.localFileName()).length()) {
-            File(modelsDir, catalog.localFileName()).copyTo(document, overwrite = true)
-        }
-        val uri = androidx.core.content.FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", document)
-        val imported = catalog.copy(name = "Imported Llama in place", url = uri.toString(), source = "Custom")
-        val copy = File(modelsDir, imported.localFileName())
-        copy.delete()
-        for ((backend, device) in listOf(LlmInference.Backend.CPU to null, LlmInference.Backend.GPU to "HTP0")) {
-            if (device != null && !DeviceInfo.isLlamaCppHexagonSupported()) continue
-            val service = LlamaCppInferenceService(context)
-            service.setGenerationParameters(maxTokens = 64, topK = 40, topP = 0.95f, temperature = 0.1f,
-                nGpuLayers = null, enableThinking = false, contextWindow = 2048)
-            assertTrue("Imported model must load on ${device ?: "CPU"}", service.loadModel(imported, backend, device))
-            assertEquals(device, service.getCurrentlyLoadedDeviceId())
-            try {
-                val reply = service.generateResponse("What is the capital of France? Answer in one word.", imported)
-                Log.i(TAG, "RESULT imported in place on ${device ?: "CPU"}: $reply")
-                assertTrue(reply, reply.contains("Paris", ignoreCase = true))
-            } finally {
-                service.unloadModel()
-            }
-            assertFalse("The import was copied into files/models", copy.exists())
-        }
-    }
-
     private suspend fun run(name: String, sha256: String, gpuLayers: Int?, contextWindow: Int = 4096) {
         val model = ModelData.models.first { it.name == name }
         fetch(model, sha256)

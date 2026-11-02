@@ -20,7 +20,6 @@ object GgufLayerLimits {
 
     private fun modelFile(context: Context, model: LLMModel): File? {
         if (model.modelFormat != "gguf") return null
-        if (model.source == "Custom" && model.url.startsWith("content://")) return ImportedModelFiles.pathFor(context, model)
         val root = File(context.filesDir, "models")
         val folderName = model.name.replace(" ", "_").replace(Regex("[^a-zA-Z0-9_.-]"), "")
         val folder = File(root, folderName).takeIf { it.isDirectory } ?: root

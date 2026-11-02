@@ -437,8 +437,6 @@
     <string name="sd_models_link">Моделі Stable Diffusion на Hugging Face</string>
     <string name="supports_npu">Підтримка NPU</string>
     <string name="import_model_warning">⚠️ Важливо: перед імпортом прочитайте README моделі на Hugging Face. Вкажіть правильні можливості (зір, аудіо, GPU) і розмір контексту згідно з документацією моделі. Важливо: GGUF-моделі з підтримкою зору вимагають Vision Projector (mmproj). Імпортуйте файл проєктора, щоб увімкнути введення зображень.</string>
-    <string name="import_gguf_is_projector">Цей файл є проєктором зору (mmproj), а не моделлю. Імпортуйте його модель, увімкніть підтримку зору й виберіть цей файл як проєктор зору.</string>
-    <string name="import_gguf_not_chat_model">Цей GGUF не є моделлю для чату (архітектура: %1$s), тому LLM Hub не може його запустити. Генератор відео імпортує GGUF-файли LTX-Video, а генератор музики використовує моделі SoundGen із розділу «Завантажити моделі».</string>
 
     <!-- Home Screen -->
     <string name="home_welcome">Ласкаво просимо до LLM Hub</string>

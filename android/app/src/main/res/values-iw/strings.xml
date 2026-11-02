@@ -437,8 +437,6 @@
     <string name="sd_models_link">מודלי Stable Diffusion ב-Hugging Face</string>
     <string name="supports_npu">תומך ב-NPU</string>
     <string name="import_model_warning">⚠️ חשוב: קרא את README של המודל ב-Hugging Face לפני הייבוא. הזן יכולות נכונות (ראייה, אודיו, GPU) וגודל חלון ההקשר כמצוין בתיעוד המודל. חשוב: מודלים GGUF התומכים בראייה דורשים Vision Projector (mmproj). ייבא את קובץ ה-projection כדי לאפשר קלט תמונה.</string>
-    <string name="import_gguf_is_projector">הקובץ הזה הוא מקרן ראייה (mmproj) ולא מודל. ייבאו את המודל שלו, הפעילו תמיכה בראייה ובחרו בקובץ הזה כמקרן הראייה.</string>
-    <string name="import_gguf_not_chat_model">קובץ ה-GGUF הזה אינו מודל צ׳אט (ארכיטקטורה: %1$s), ולכן LLM Hub לא יכול להריץ אותו. מחולל הווידאו מייבא קובצי GGUF של LTX-Video, ומחולל המוזיקה משתמש במודלי SoundGen שבהורדת מודלים.</string>
 
     <!-- Home Screen -->
     <string name="home_welcome">ברוך הבא ל-LLM Hub</string>

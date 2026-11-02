@@ -403,8 +403,6 @@
     <string name="sd_models_link">Mô hình Stable Diffusion trên Hugging Face</string>
     <string name="supports_npu">Hỗ trợ NPU</string>
     <string name="import_model_warning">⚠️ Quan trọng: Vui lòng đọc README trên HuggingFace của mô hình trước khi nhập. Nhập các khả năng chính xác (hình ảnh, âm thanh, GPU) và kích thước cửa sổ ngữ cảnh như được chỉ định trong tài liệu mô hình. Cài đặt không chính xác có thể khiến mô hình không hoạt động bình thường. Quan trọng: Các mẫu Vision GGUF yêu cầu Máy chiếu Vision (mmproj). Nhập tệp máy chiếu để bật đầu vào hình ảnh.</string>
-    <string name="import_gguf_is_projector">Tệp này là bộ chiếu thị giác (mmproj), không phải mô hình. Hãy nhập mô hình của nó, bật Hỗ trợ thị giác rồi chọn tệp này làm bộ chiếu thị giác.</string>
-    <string name="import_gguf_not_chat_model">Tệp GGUF này không phải mô hình trò chuyện (kiến trúc: %1$s), nên LLM Hub không chạy được. Trình tạo video nhập được GGUF của LTX-Video, còn Trình tạo nhạc dùng các mô hình SoundGen trong Tải mô hình.</string>
     <string name="home_welcome">Chào mừng đến với LLM Hub</string>
     <string name="home_subtitle">Khai phá sức mạnh của AI trong túi của bạn - riêng tư, nhanh chóng và ngoại tuyến!</string>
     <string name="feature_ai_chat">Trò chuyện AI</string>

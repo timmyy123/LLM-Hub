@@ -433,8 +433,6 @@
     <string name="sd_models_link">نماذج Stable Diffusion على Hugging Face</string>
     <string name="supports_npu">يدعم NPU</string>
     <string name="import_model_warning">⚠️ مهم: يرجى قراءة ملف README للنموذج على Hugging Face قبل الاستيراد. أدخل القدرات الصحيحة (الرؤية، الصوت، GPU) وحجم نافذة السياق كما هو مذكور في توثيق النموذج. قد تؤدي الإعدادات غير الصحيحة إلى عدم عمل النموذج كما ينبغي. مهم: تتطلب نماذج GGUF الداعمة للرؤية Vision Projector (mmproj). استورد ملف الـ projector لتمكين إدخال الصور.</string>
-    <string name="import_gguf_is_projector">هذا الملف مسقط رؤية (mmproj) وليس نموذجًا. استورد النموذج الخاص به، وفعّل دعم الرؤية، واختر هذا الملف كمسقط رؤية.</string>
-    <string name="import_gguf_not_chat_model">ملف GGUF هذا ليس نموذج محادثة (البنية: %1$s)، لذا لا يستطيع LLM Hub تشغيله. يستورد مولّد الفيديو ملفات LTX-Video بصيغة GGUF، ويستخدم مولّد الموسيقى نماذج SoundGen من تنزيل النماذج.</string>
 
     <!-- Home Screen -->
     <string name="home_welcome">مرحبًا بك في LLM Hub</string>

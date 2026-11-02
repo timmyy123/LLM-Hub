@@ -8,8 +8,6 @@ import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import com.llmhub.llmhub.R
 import com.llmhub.llmhub.data.DeviceInfo
 import com.llmhub.llmhub.data.LLMModel
-import com.llmhub.llmhub.data.bundleDirectory
-import com.llmhub.llmhub.data.ImportedModelFiles
 import com.llmhub.llmhub.data.effectiveContextWindow
 import com.llmhub.llmhub.data.isOtherCatalogModelsProjector
 import com.llmhub.llmhub.data.localFileName
@@ -242,9 +240,7 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
                 ?: modelContextLimit)
                 .coerceIn(512, modelContextLimit.coerceAtLeast(512))
             val threads = (Runtime.getRuntime().availableProcessors() - 2).coerceIn(2, 8)
-            // An imported model read in place has no folder of its own; its projector was copied next to the others.
-            val modelDir = if (modelFile.path.startsWith("/proc/")) model.bundleDirectory(context)
-                else modelFile.parentFile ?: File(context.filesDir, "models")
+            val modelDir = modelFile.parentFile ?: File(context.filesDir, "models")
             val mmprojFile = if (model.supportsVision && !disableVision) {
                 findMmprojFile(modelDir, modelFile, model)
             } else {
@@ -1370,7 +1366,14 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
     private fun resolveModelFile(model: LLMModel): File {
         val modelsDir = File(context.filesDir, "models")
         if (model.source == "Custom" && model.url.startsWith("content://")) {
-            return ImportedModelFiles.pathFor(context, model) ?: File(modelsDir, model.localFileName())
+            val target = File(modelsDir, model.localFileName())
+            target.parentFile?.mkdirs()
+            if (!target.exists()) {
+                context.contentResolver.openInputStream(Uri.parse(model.url))?.use { input ->
+                    target.outputStream().use { output -> input.copyTo(output) }
+                }
+            }
+            return target
         }
 
         val modelDirectoryName = model.name

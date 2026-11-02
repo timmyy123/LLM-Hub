@@ -19,7 +19,6 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.llmhub.llmhub.R
 import com.llmhub.llmhub.data.LLMModel
-import com.llmhub.llmhub.videogen.ImportedVideoModels
 import com.llmhub.llmhub.data.ModelData
 import com.llmhub.llmhub.data.hasCompleteDownloadedBundle
 import com.llmhub.llmhub.data.isVideoGenerationModel
@@ -137,8 +136,7 @@ class VideoGeneratorViewModel(application: Application) : AndroidViewModel(appli
      * only), so the main screen is there on the first frame with the last used model selected.
      */
     fun refreshModels() {
-        val models = ModelData.videoGenerationModels.filter { it.hasCompleteDownloadedBundle(appContext) } +
-            ImportedVideoModels.load(appContext).filter { ImportedVideoModels.isComplete(appContext, it) }
+        val models = ModelData.videoGenerationModels.filter { it.hasCompleteDownloadedBundle(appContext) }
         _availableModels.value = models
         val current = selectedModel
         if (current == null || models.none { it.name == current.name }) {
