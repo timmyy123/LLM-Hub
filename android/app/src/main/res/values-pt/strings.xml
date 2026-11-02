@@ -299,7 +299,6 @@
     <string name="documents">Documentos</string>
     <string name="text_files">Arquivos de Texto</string>
     <string name="images_description">JPG, PNG, GIF, WebP</string>
-    <string name="images_need_vision_projector">Baixe o projetor de visão deste modelo em Baixar modelos para anexar imagens</string>
     <string name="documents_description">PDF, Word, Excel, PowerPoint</string>
     <string name="text_files_description">TXT, MD, JSON, XML, CSV</string>
     <string name="text_file">Arquivo de Texto</string>

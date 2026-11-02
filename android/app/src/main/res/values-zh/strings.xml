@@ -298,7 +298,6 @@
     <string name="documents">文档</string>
     <string name="text_files">文本文件</string>
     <string name="images_description">JPG, PNG, GIF, WebP</string>
-    <string name="images_need_vision_projector">要附加图片，请在下载模型中下载此模型的视觉投影器</string>
     <string name="documents_description">PDF, Word, Excel, PowerPoint</string>
     <string name="text_files_description">TXT, MD, JSON, XML, CSV</string>
     <string name="text_file">文本文件</string>

@@ -288,7 +288,6 @@
     <string name="documents">Документи</string>
     <string name="text_files">Текстові файли</string>
     <string name="images_description">JPG, PNG, GIF, WebP</string>
-    <string name="images_need_vision_projector">Щоб додавати зображення, завантажте проєктор зору цієї моделі в розділі «Завантажити моделі»</string>
     <string name="documents_description">PDF, Word, Excel, PowerPoint</string>
     <string name="text_files_description">TXT, MD, JSON, XML, CSV</string>
     <string name="text_file">Текстовий файл</string>

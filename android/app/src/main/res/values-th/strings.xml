@@ -270,7 +270,6 @@
     <string name="documents">เอกสาร</string>
     <string name="text_files">ไฟล์ข้อความ</string>
     <string name="images_description">JPG, PNG, GIF, WebP</string>
-    <string name="images_need_vision_projector">ดาวน์โหลดตัวฉายภาพวิชันของโมเดลนี้ในหน้าดาวน์โหลดโมเดลเพื่อแนบรูปภาพ</string>
     <string name="documents_description">PDF, Word, Excel, PowerPoint</string>
     <string name="text_files_description">TXT, MD, JSON, XML, CSV</string>
     <string name="text_file">ไฟล์ข้อความ</string>

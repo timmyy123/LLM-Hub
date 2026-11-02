@@ -286,7 +286,6 @@
     <string name="documents">مستندات</string>
     <string name="text_files">ملفات نصية</string>
     <string name="images_description">JPG, PNG, GIF, WebP</string>
-    <string name="images_need_vision_projector">نزّل مسقط الرؤية لهذا النموذج من تنزيل النماذج لإرفاق الصور</string>
     <string name="documents_description">PDF, Word, Excel, PowerPoint</string>
     <string name="text_files_description">TXT, MD, JSON, XML, CSV</string>
     <string name="text_file">ملف نصي</string>

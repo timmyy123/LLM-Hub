@@ -283,7 +283,6 @@
     <string name="documents">ドキュメント</string>
     <string name="text_files">テキストファイル</string>
     <string name="images_description">JPG、PNG、GIF、WebP</string>
-    <string name="images_need_vision_projector">画像を添付するには、モデルをダウンロードでこのモデルのビジョンプロジェクターを入手してください</string>
     <string name="documents_description">PDF、Word、Excel、PowerPoint</string>
     <string name="text_files_description">TXT、MD、JSON、XML、CSV</string>
     <string name="text_file">テキストファイル</string>

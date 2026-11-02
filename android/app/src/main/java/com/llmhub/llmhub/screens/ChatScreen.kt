@@ -97,7 +97,6 @@ fun ChatScreen(
     val streamingContents by viewModel.streamingContents.collectAsState()
     val isLoadingModel by viewModel.isLoadingModel.collectAsState()
     val currentlyLoadedModel by viewModel.currentlyLoadedModel.collectAsState()
-    val inputCapabilitiesEpoch by viewModel.inputCapabilitiesEpoch.collectAsState()
     val selectedModel by viewModel.selectedModel.collectAsState()
     val selectedBackend by viewModel.selectedBackend.collectAsState()
     val selectedNpuDeviceId by viewModel.selectedNpuDeviceId.collectAsState()
@@ -428,10 +427,8 @@ fun ChatScreen(
                     },
                     enabled = currentChat != null,
                     supportsAttachments = true, // Enable attachments for all models
-                    // Read the epoch here so this call recomposes once the model has loaded.
-                    supportsVision = inputCapabilitiesEpoch.let { viewModel.currentModelSupportsVision() },
-                    visionProjectorMissing = inputCapabilitiesEpoch.let { viewModel.currentModelNeedsVisionProjector() },
-                    supportsAudio = inputCapabilitiesEpoch.let { viewModel.currentModelSupportsAudio() },
+                    supportsVision = viewModel.currentModelSupportsVision(), // Only show images for vision models
+                    supportsAudio = viewModel.currentModelSupportsAudio(), // Only show audio for audio models
                     isLoading = isLoading,
                     onCancelGeneration = if (isLoading) {
                         { viewModel.stopGeneration() }

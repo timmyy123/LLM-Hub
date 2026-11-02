@@ -313,7 +313,6 @@
     <string name="documents">Dokumente</string>
     <string name="text_files">Textdateien</string>
     <string name="images_description">JPG, PNG, GIF, WebP</string>
-    <string name="images_need_vision_projector">Lade unter Modelle herunterladen den Vision-Projektor dieses Modells, um Bilder anzuhängen</string>
     <string name="documents_description">PDF, Word, Excel, PowerPoint</string>
     <string name="text_files_description">TXT, MD, JSON, XML, CSV</string>
     <string name="text_file">Textdatei</string>

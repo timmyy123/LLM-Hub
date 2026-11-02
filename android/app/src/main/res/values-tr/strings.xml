@@ -286,7 +286,6 @@
     <string name="documents">Belgeler</string>
     <string name="text_files">Metin Dosyaları</string>
     <string name="images_description">JPG, PNG, GIF, WebP</string>
-    <string name="images_need_vision_projector">Görsel eklemek için bu modelin görüş projektörünü Model İndir bölümünden indirin</string>
     <string name="documents_description">PDF, Word, Excel, PowerPoint</string>
     <string name="text_files_description">TXT, MD, JSON, XML, CSV</string>
     <string name="text_file">Metin Dosyası</string>

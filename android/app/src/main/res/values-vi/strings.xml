@@ -270,7 +270,6 @@
     <string name="documents">Tài liệu</string>
     <string name="text_files">Tệp văn bản</string>
     <string name="images_description">JPG, PNG, GIF, WebP</string>
-    <string name="images_need_vision_projector">Tải bộ chiếu thị giác của mô hình này trong Tải mô hình để đính kèm hình ảnh</string>
     <string name="documents_description">PDF, Word, Excel, PowerPoint</string>
     <string name="text_files_description">TXT, MD, JSON, XML, CSV</string>
     <string name="text_file">Tệp văn bản</string>

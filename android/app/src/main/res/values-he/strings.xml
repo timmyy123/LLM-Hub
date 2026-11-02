@@ -288,7 +288,6 @@
     <string name="documents">מסמכים</string>
     <string name="text_files">קבצי טקסט</string>
     <string name="images_description">‏JPG, ‏PNG, ‏GIF, ‏WebP</string>
-    <string name="images_need_vision_projector">כדי לצרף תמונות, הורידו את מקרן הראייה של המודל הזה בהורדת מודלים</string>
     <string name="documents_description">‏PDF, ‏Word, ‏Excel, ‏PowerPoint</string>
     <string name="text_files_description">‏TXT, ‏MD, ‏JSON, ‏XML, ‏CSV</string>
     <string name="text_file">קובץ טקסט</string>

@@ -318,7 +318,6 @@
     <string name="documents">Documentos</string>
     <string name="text_files">Archivos de Texto</string>
     <string name="images_description">JPG, PNG, GIF, WebP</string>
-    <string name="images_need_vision_projector">Descarga el proyector de visión de este modelo en Descargar modelos para adjuntar imágenes</string>
     <string name="documents_description">PDF, Word, Excel, PowerPoint</string>
     <string name="text_files_description">TXT, MD, JSON, XML, CSV</string>
     <string name="text_file">Archivo de Texto</string>

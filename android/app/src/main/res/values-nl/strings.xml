@@ -270,7 +270,6 @@
     <string name="documents">Documenten</string>
     <string name="text_files">Tekstbestanden</string>
     <string name="images_description">JPG, PNG, GIF, WebP</string>
-    <string name="images_need_vision_projector">Download de visieprojector van dit model bij Modellen downloaden om afbeeldingen toe te voegen</string>
     <string name="documents_description">PDF, Word, Excel, PowerPoint</string>
     <string name="text_files_description">TXT, MD, JSON, XML, CSV</string>
     <string name="text_file">Tekstbestand</string>

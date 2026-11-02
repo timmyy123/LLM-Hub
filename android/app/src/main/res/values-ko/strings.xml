@@ -286,7 +286,6 @@
     <string name="documents">문서</string>
     <string name="text_files">텍스트 파일</string>
     <string name="images_description">JPG, PNG, GIF, WebP</string>
-    <string name="images_need_vision_projector">이미지를 첨부하려면 모델 다운로드에서 이 모델의 비전 프로젝터를 받으세요</string>
     <string name="documents_description">PDF, Word, Excel, PowerPoint</string>
     <string name="text_files_description">TXT, MD, JSON, XML, CSV</string>
     <string name="text_file">텍스트 파일</string>

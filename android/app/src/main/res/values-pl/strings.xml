@@ -286,7 +286,6 @@
     <string name="documents">Dokumenty</string>
     <string name="text_files">Pliki Tekstowe</string>
     <string name="images_description">JPG, PNG, GIF, WebP</string>
-    <string name="images_need_vision_projector">Aby dołączać obrazy, pobierz projektor wizji tego modelu w sekcji Pobierz modele</string>
     <string name="documents_description">PDF, Word, Excel, PowerPoint</string>
     <string name="text_files_description">TXT, MD, JSON, XML, CSV</string>
     <string name="text_file">Plik Tekstowy</string>

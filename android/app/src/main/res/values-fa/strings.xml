@@ -288,7 +288,6 @@
     <string name="documents">سندها</string>
     <string name="text_files">فایل‌های متنی</string>
     <string name="images_description">JPG، PNG، GIF، WebP</string>
-    <string name="images_need_vision_projector">برای پیوست تصویر، پروژکتور بینایی این مدل را از بخش دانلود مدل‌ها دریافت کنید</string>
     <string name="documents_description">PDF، Word، Excel، PowerPoint</string>
     <string name="text_files_description">TXT، MD، JSON، XML، CSV</string>
     <string name="text_file">فایل متنی</string>

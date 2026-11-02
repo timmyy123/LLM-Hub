@@ -314,7 +314,6 @@
     <string name="documents">दस्तावेज़</string>
     <string name="text_files">टेक्स्ट फ़ाइलें</string>
     <string name="images_description">JPG, PNG, GIF, WebP</string>
-    <string name="images_need_vision_projector">चित्र जोड़ने के लिए मॉडल डाउनलोड करें में इस मॉडल का विज़न प्रोजेक्टर डाउनलोड करें</string>
     <string name="documents_description">PDF, Word, Excel, PowerPoint</string>
     <string name="text_files_description">TXT, MD, JSON, XML, CSV</string>
     <string name="text_file">टेक्स्ट फ़ाइल</string>

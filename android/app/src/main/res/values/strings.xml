@@ -302,7 +302,6 @@
     <string name="documents">Documents</string>
     <string name="text_files">Text Files</string>
     <string name="images_description">JPG, PNG, GIF, WebP</string>
-    <string name="images_need_vision_projector">Download this model\'s vision projector in Download Models to attach images</string>
     <string name="documents_description">PDF, Word, Excel, PowerPoint</string>
     <string name="text_files_description">TXT, MD, JSON, XML, CSV</string>
     <string name="text_file">Text File</string>

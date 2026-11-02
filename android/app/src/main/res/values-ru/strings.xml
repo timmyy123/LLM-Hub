@@ -319,7 +319,6 @@
     <string name="documents">Документы</string>
     <string name="text_files">Текстовые Файлы</string>
     <string name="images_description">JPG, PNG, GIF, WebP</string>
-    <string name="images_need_vision_projector">Чтобы прикреплять изображения, скачайте проектор зрения этой модели в разделе «Скачать модели»</string>
     <string name="documents_description">PDF, Word, Excel, PowerPoint</string>
     <string name="text_files_description">TXT, MD, JSON, XML, CSV</string>
     <string name="text_file">Текстовый Файл</string>
