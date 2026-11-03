@@ -51,11 +51,12 @@ set(GGML_SOURCE_DIR "${ANDROID_ROOT}/llama.cpp/ggml")
 # OpenCL backend (Adreno kernels) for GGUF video models on Snapdragon GPUs, whose Vulkan driver
 # crashes on ggml's shaders. opencl/cl_shim.cpp forwards the OpenCL calls to the vendor driver via
 # dlopen, so this library has no libOpenCL.so dependency and still loads on phones without one
-# (ggml then reports no OpenCL device). Regenerate the shim with opencl/gen_cl_shim.py when ggml
-# starts using new OpenCL functions.
+# (ggml then reports no OpenCL device). The shim also creates the context at low GPU priority and
+# keeps at most two kernels in flight, so ggml's kernels do not starve the UI (issue #133).
+# Regenerate the shim with opencl/gen_cl_shim.py when ggml starts using new OpenCL functions.
 add_library(llmhub_opencl_shim STATIC "${CMAKE_CURRENT_LIST_DIR}/opencl/cl_shim.cpp")
 target_include_directories(llmhub_opencl_shim PUBLIC "${CMAKE_CURRENT_LIST_DIR}/opencl/include")
-target_link_libraries(llmhub_opencl_shim PRIVATE dl)
+target_link_libraries(llmhub_opencl_shim PRIVATE dl log)
 set(OpenCL_INCLUDE_DIR "${CMAKE_CURRENT_LIST_DIR}/opencl/include" CACHE PATH "" FORCE)
 set(OpenCL_LIBRARY llmhub_opencl_shim CACHE STRING "" FORCE)
 set(GGML_OPENCL ON CACHE BOOL "" FORCE)

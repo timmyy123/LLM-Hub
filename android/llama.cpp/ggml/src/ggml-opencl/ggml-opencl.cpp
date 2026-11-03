@@ -31941,6 +31941,35 @@ static void ggml_cl_mul_mat(ggml_backend_t backend, const ggml_tensor * src0, co
         } else {
             int64_t ny = (ne11 + nrows - 1)/nrows;
 
+            // LLMHub: split long matrix-vector products into dispatches of at most 2^28 multiply-adds
+            // over src1 rows. A GPU cannot switch to the UI's rendering in the middle of a kernel:
+            // single dispatches of the LTX-Video VAE (F16 x F16) and long-clip attention (F32 x F32)
+            // ran for 1-5 s on Adreno and Android reported the app as not responding. These kernels
+            // index dst with the full ne1 and stop at ne11, so a chunk only shifts the src1 and dst
+            // offsets and passes its row count as ne11.
+            const bool splittable = kernel == backend_ctx->kernel_mul_mat_f16_f16 ||
+                                    kernel == backend_ctx->kernel_mul_mat_f32_f32 ||
+                                    kernel == backend_ctx->kernel_mul_mat_f16_f32;
+            const int64_t max_macs     = (int64_t)1 << 28;
+            const int64_t macs_per_row = (int64_t)ne00*ne01*ne12*ne13;
+            if (splittable && ny > 1 && macs_per_row*ne11 > max_macs) {
+                const int64_t rows_per_chunk = std::max<int64_t>(nrows, max_macs/macs_per_row/nrows*nrows);
+                for (int64_t r1 = 0; r1 < ne11; r1 += rows_per_chunk) {
+                    const int      rows       = (int)std::min<int64_t>(rows_per_chunk, ne11 - r1);
+                    const cl_ulong offset1_r1 = offset1 + r1*nb11;
+                    const cl_ulong offsetd_r1 = offsetd + r1*ne0*sizeof(float);
+                    CL_CHECK(clSetKernelArg(kernel,  3, sizeof(cl_ulong), &offset1_r1));
+                    CL_CHECK(clSetKernelArg(kernel,  5, sizeof(cl_ulong), &offsetd_r1));
+                    CL_CHECK(clSetKernelArg(kernel, 14, sizeof(int),      &rows));
+
+                    size_t global_work_size[] = {(size_t)ne01*nth0, (size_t)((rows + nrows - 1)/nrows)*nth1, (size_t)ne12*ne13};
+                    size_t local_work_size[] = {(size_t)nth0, (size_t)nth1, 1};
+
+                    backend_ctx->enqueue_ndrange_kernel(kernel, 3, global_work_size, local_work_size, dst);
+                }
+                return;
+            }
+
             size_t global_work_size[] = {(size_t)ne01*nth0, (size_t)ny*nth1, (size_t)ne12*ne13};
             size_t local_work_size[] = {(size_t)nth0, (size_t)nth1, 1};
 
@@ -34773,6 +34802,36 @@ static void ggml_cl_cpy(ggml_backend_t backend, const ggml_tensor * src0, const 
         const int lsz   = tpr * rpw;                       // <= base <= maxwg
         const int nrows = ne01*ne02*ne03;
         const int nwg   = (nrows + rpw - 1) / rpw;
+
+        // LLMHub: copy large tensors in dispatches of at most 2^20 elements along the outermost
+        // dimension, so the UI gets the GPU between them (the LTX-Video VAE's permute copies ran
+        // for over a second each on Adreno). The kernel places elements by their linear index, which
+        // for a contiguous dst is the byte offset / 4 whatever its shape, so a chunk only shifts the
+        // src and dst offsets and passes its own extent.
+        const int     split_dim  = ne03 > 1 ? 3 : (ne02 > 1 ? 2 : 1);
+        const int64_t split_ne   = split_dim == 3 ? ne03 : (split_dim == 2 ? ne02 : ne01);
+        const cl_ulong split_nb  = split_dim == 3 ? nb03 : (split_dim == 2 ? nb02 : nb01);
+        const int64_t elems_per  = ggml_nelements(src0) / split_ne;
+        const int64_t max_elems  = (int64_t)1 << 20;
+        if (ggml_is_contiguous(src1) && split_ne > 1 && ggml_nelements(src0) > max_elems) {
+            const int64_t per_chunk = std::max<int64_t>(1, max_elems / elems_per);
+            for (int64_t i = 0; i < split_ne; i += per_chunk) {
+                const int      n          = (int)std::min<int64_t>(per_chunk, split_ne - i);
+                const cl_ulong offset0_i  = offset0 + i*split_nb;
+                const cl_ulong offset1_i  = offset1 + i*elems_per*sizeof(float);
+                CL_CHECK(clSetKernelArg(kernel, 1, sizeof(cl_ulong), &offset0_i));
+                CL_CHECK(clSetKernelArg(kernel, 3, sizeof(cl_ulong), &offset1_i));
+                CL_CHECK(clSetKernelArg(kernel, 4 + split_dim, sizeof(int), &n));  // ne01/ne02/ne03
+
+                const int nrows_i = nrows / (int)split_ne * n;
+                const int nwg_i   = (nrows_i + rpw - 1) / rpw;
+                size_t global_work_size[] = {(size_t)nwg_i*lsz, 1, 1};
+                size_t local_work_size[]  = {(size_t)lsz, 1, 1};
+
+                backend_ctx->enqueue_ndrange_kernel(kernel, 1, global_work_size, local_work_size, src1);
+            }
+            return;
+        }
 
         size_t global_work_size[] = {(size_t)nwg*lsz, 1, 1};
         size_t local_work_size[]  = {(size_t)lsz, 1, 1};

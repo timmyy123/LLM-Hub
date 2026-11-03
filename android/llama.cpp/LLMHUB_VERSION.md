@@ -38,6 +38,12 @@ the release, with `LLMHub:` patches in `ggml/src/ggml-opencl/ggml-opencl.cpp`:
 - Flash-attention "split" kernels are registered only when their dispatch work-group size fits,
   as upstream already does for its other flash-attention kernels.
 - A failed kernel launch logs the kernel name and global/local sizes before aborting.
+- The generic matrix-vector products (`kernel_mul_mat_f16_f16`, `_f32_f32`, `_f16_f32`) are split
+  into dispatches of at most 2^28 multiply-adds over src1 rows, and `kernel_cpy_f32_f32_pack`
+  copies into a contiguous dst in dispatches of at most 2^20 elements. A GPU cannot switch to the
+  UI in the middle of a kernel: the LTX-Video VAE and long-clip attention (video generation, which
+  compiles this source into `libllmhub_sdcpp.so`) ran single dispatches of 1-5 s on Adreno, and
+  Android reported the app as not responding (issue #133). The chunks compute the same values.
 
 b12020 still has none of these guards (its new tiled multi-column `kernel_gemv_noshuffle_q6_K_f32_tiled_mc3`
 is opt-in via `GGML_OPENCL_Q6K_MC3` and only runs when the tiled layout was chosen, so the tiled check covers it).
