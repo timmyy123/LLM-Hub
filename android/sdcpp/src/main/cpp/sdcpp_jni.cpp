@@ -11,6 +11,9 @@
 #include <string>
 #include <vector>
 
+#define CL_TARGET_OPENCL_VERSION 300
+#include <CL/cl.h>
+
 #include "ggml.h"
 #include "stable-diffusion.h"
 
@@ -170,6 +173,21 @@ extern "C" JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void*) {
     });
     sd_set_progress_callback(on_sd_progress, nullptr);
     return JNI_VERSION_1_6;
+}
+
+// CL_DEVICE_VERSION of the first OpenCL GPU (e.g. "OpenCL 3.0 Adreno(TM) 740"), empty without a
+// driver. The app offers the OpenCL backend by Adreno generation (see VideoGenEngine).
+extern "C" JNIEXPORT jstring JNICALL
+Java_com_llmhub_llmhub_videogen_SdCppNative_nativeOpenClDeviceVersion(JNIEnv* env, jobject) {
+    char version[256] = {0};
+    cl_platform_id platform = nullptr;
+    cl_device_id device     = nullptr;
+    cl_uint count           = 0;
+    if (clGetPlatformIDs(1, &platform, &count) == CL_SUCCESS && count > 0 &&
+        clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, 1, &device, &count) == CL_SUCCESS && count > 0) {
+        clGetDeviceInfo(device, CL_DEVICE_VERSION, sizeof(version) - 1, version, nullptr);
+    }
+    return env->NewStringUTF(version);
 }
 
 extern "C" JNIEXPORT jstring JNICALL

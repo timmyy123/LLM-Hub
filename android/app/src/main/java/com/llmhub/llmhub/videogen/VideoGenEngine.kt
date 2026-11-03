@@ -118,7 +118,8 @@ class VideoGenEngine(context: Context) {
             // ggml's Vulkan backend also needs a Vulkan 1.2 driver (Mali-G57 phones have 1.1).
             else -> when {
                 isTensorG5() -> listOf(VideoGenBackend.CPU)
-                isAdreno() -> listOf(VideoGenBackend.GPU, VideoGenBackend.CPU)
+                isAdreno() && adrenoOpenClUsable -> listOf(VideoGenBackend.GPU, VideoGenBackend.CPU)
+                isAdreno() -> listOf(VideoGenBackend.CPU)
                 !DeviceInfo.hasVulkan12 -> listOf(VideoGenBackend.CPU)
                 else -> listOf(VideoGenBackend.GPU, VideoGenBackend.CPU)
             }
@@ -126,6 +127,20 @@ class VideoGenEngine(context: Context) {
 
         /** The GPU backend is OpenCL (Adreno) rather than Vulkan. */
         fun gpuUsesOpenCl(): Boolean = isAdreno()
+
+        /**
+         * Adreno 7xx and newer. Older Adreno OpenCL drivers abort the app while compiling ggml's
+         * kernels (Adreno 642L, Galaxy A73: CL_OUT_OF_HOST_MEMORY), so those phones get the CPU only.
+         */
+        private val adrenoOpenClUsable: Boolean by lazy {
+            runCatching {
+                SdCppNative.ensureLoaded()
+                val version = SdCppNative.nativeOpenClDeviceVersion()
+                (ADRENO_MODEL.find(version)?.groupValues?.get(1)?.toInt() ?: 0) >= 700
+            }.getOrDefault(false)
+        }
+
+        private val ADRENO_MODEL = Regex("""Adreno\D{0,8}(\d{3})""")
 
         private fun isTensorG5(): Boolean =
             android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S &&

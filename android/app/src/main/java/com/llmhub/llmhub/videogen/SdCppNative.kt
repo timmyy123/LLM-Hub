@@ -28,6 +28,7 @@ internal object SdCppNative {
     }
 
     external fun nativeListDevices(): String
+    external fun nativeOpenClDeviceVersion(): String
     external fun nativeLastError(): String
 
     external fun nativeCreate(

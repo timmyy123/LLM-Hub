@@ -55,6 +55,8 @@ class LtxVideoDeviceTest {
 
             SdCppNative.ensureLoaded()
             result.put("devices", SdCppNative.nativeListDevices().trim())
+            result.put("opencl", SdCppNative.nativeOpenClDeviceVersion())
+            result.put("backends", VideoGenEngine.supportedBackends(model).joinToString())
             val engine = VideoGenEngine(context)
             val t1 = System.currentTimeMillis()
             runBlocking { engine.load(model, backend) {} }.getOrThrow()

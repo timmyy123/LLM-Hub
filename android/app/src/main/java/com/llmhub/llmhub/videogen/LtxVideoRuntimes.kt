@@ -65,6 +65,9 @@ internal open class SdCppLtxVideoRuntime(
                 android.system.Os.setenv("SD_DUMP_LATENT_PATH", File(context.cacheDir, "ltxv_latent.raw").absolutePath, true)
             }
             SdCppNative.ensureLoaded()
+            // ggml-opencl caches compiled kernels under TMPDIR, which Android apps do not always have
+            // (Galaxy A73: "/data/local/tmp", not writable), and then recompiles them on every load.
+            android.system.Os.setenv("GGML_OPENCL_KERNEL_CACHE_DIR", File(context.cacheDir, "ggml-cl-cache").absolutePath, false)
             val files = modelDir.listFiles()?.filter { it.length() > 0 } ?: emptyList()
             val t5 = files.firstOrNull { it.name.endsWith(".gguf") && it.name.contains("t5", ignoreCase = true) }
                 ?: error("T5 text encoder file is missing in ${modelDir.name}")
