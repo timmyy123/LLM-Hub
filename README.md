@@ -29,7 +29,16 @@
 | [Linux .deb](https://github.com/timmyy123/LLM-Hub/releases/download/desktop-v0.1.3/llmhub_0.1.3_amd64.deb) | Ubuntu 24.04 or later, Debian and their derivatives |
 | [Linux AppImage](https://github.com/timmyy123/LLM-Hub/releases/download/desktop-v0.1.3/LLMHub-0.1.3-x86_64.AppImage) | Other x64 distributions with GTK 4 and libadwaita 1.4 or later |
 
-The Windows installers aren't code signed yet, so Windows may show "Windows protected your PC": click **More info**, then **Run anyway**. To build it yourself, see [desktop/README.md](desktop/README.md).
+The Windows installers aren't code signed yet, so Windows may show "Windows protected your PC": click **More info**, then **Run anyway**. Signing is being set up, see the [code signing policy](#code-signing-policy). To build it yourself, see [desktop/README.md](desktop/README.md).
+
+### Code signing policy
+
+Free code signing provided by [SignPath.io](https://about.signpath.io), certificate by [SignPath Foundation](https://signpath.org).
+
+- Signed Windows builds are built only from this repository's source, by the [Desktop Windows installers](.github/workflows/desktop-windows.yml) workflow on GitHub-hosted runners.
+- Committers and reviewers: [Timmy Qian](https://github.com/timmyy123)
+- Approvers: [Timmy Qian](https://github.com/timmyy123), who approves every signing request in SignPath
+- Privacy: see the [LLM Hub privacy policy](https://llm-hub.app/privacy)
 
 
 ## 📸 Demo & Screenshots

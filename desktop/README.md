@@ -166,6 +166,13 @@ the publisher has a reputation. To sign `LLMHub.exe`, the installer and its unin
 for example on a token), or `LLMHUB_SIGN_COMMAND` (any command line with `{file}`, for example Azure Trusted Signing's
 `signtool /dlib` command). `LLMHUB_SIGN_TIMESTAMP` changes the timestamp server.
 
+Release builds are signed by SignPath (see the [code signing policy](../README.md#code-signing-policy)): run the
+"Desktop Windows installers" workflow (`.github/workflows/desktop-windows.yml`) from the Actions tab with the
+`release-signing` policy, approve its two signing requests in SignPath (the app's binaries, then the installers), and
+download the signed `setup.exe` files and `SHA256SUMS-windows.txt` from the run. `test-signing` checks the pipeline with
+SignPath's test certificate, which Windows does not trust. The workflow builds `sd-cli.exe` itself and leaves the
+uninstaller unsigned (`-Stage publish` / `-Stage installer` in `package-windows.ps1`).
+
 Microsoft Store: reserve the name in Partner Center, then build with the values from Product management › Product
 identity and upload the `.msixbundle`:
 

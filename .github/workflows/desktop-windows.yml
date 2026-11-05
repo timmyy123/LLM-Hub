@@ -1,0 +1,139 @@
+# Builds the LLM Hub desktop installers for Windows x64 and Arm64 and signs them through SignPath
+# (https://signpath.org, free code signing for open source, certificate by SignPath Foundation).
+#
+# Two signing requests per run, both with the "windows-zip" artifact configuration: first the app's own binaries
+# (LLMHub.exe, LLMHub.dll, LLMHub.Core.dll) so the installers ship them signed, then the two setup.exe files.
+# release-signing requests wait for a SignPath approver; test-signing uses SignPath's test certificate, which Windows
+# does not trust (for checking the pipeline only).
+#
+# Needs the repository secret SIGNPATH_API_TOKEN (the SignPath CI user's API token).
+name: Desktop Windows installers
+
+on:
+  workflow_dispatch:
+    inputs:
+      signing-policy:
+        description: SignPath signing policy
+        type: choice
+        options: [test-signing, release-signing]
+        default: test-signing
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  SIGNPATH_ORGANIZATION_ID: a302ccb8-9133-460b-be6a-3253acd4ebbd
+  SIGNPATH_PROJECT: LLM-Hub
+  LLVM_MINGW: "20261020"
+
+jobs:
+  installers:
+    runs-on: windows-latest
+    timeout-minutes: 300
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Install Inno Setup
+        run: |
+          if (-not (Test-Path "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe")) { choco install innosetup -y --no-progress }
+
+      - name: Build sd-cli.exe (Arm64 NPU video)
+        run: |
+          $name = "llvm-mingw-$env:LLVM_MINGW-ucrt-x86_64"
+          Invoke-WebRequest "https://github.com/mstorsjo/llvm-mingw/releases/download/$env:LLVM_MINGW/$name.zip" -OutFile "$env:RUNNER_TEMP\$name.zip"
+          Expand-Archive "$env:RUNNER_TEMP\$name.zip" $env:RUNNER_TEMP
+          desktop\windows\sdcpp\build.ps1 -Toolchain "$env:RUNNER_TEMP\$name"
+
+      - name: Publish the app
+        run: desktop\tools\package\windows\package-windows.ps1 -Kind setup -Stage publish -Work "$env:RUNNER_TEMP\work" -Out "$env:RUNNER_TEMP\out"
+
+      - name: Collect the app binaries
+        run: |
+          foreach ($a in "x64", "arm64") {
+            $dir = New-Item -ItemType Directory -Force "$env:RUNNER_TEMP\unsigned-app\$a"
+            foreach ($f in "LLMHub.exe", "LLMHub.dll", "LLMHub.Core.dll") { Copy-Item "$env:RUNNER_TEMP\work\publish-$a\$f" $dir }
+          }
+
+      - id: upload-app
+        uses: actions/upload-artifact@v7
+        with:
+          name: unsigned-app
+          path: ${{ runner.temp }}/unsigned-app
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Sign the app binaries
+        uses: signpath/github-action-submit-signing-request@v2
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ env.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ env.SIGNPATH_PROJECT }}
+          signing-policy-slug: ${{ inputs.signing-policy }}
+          artifact-configuration-slug: windows-zip
+          github-artifact-id: ${{ steps.upload-app.outputs.artifact-id }}
+          wait-for-completion-timeout-in-seconds: 7200
+          output-artifact-directory: ${{ runner.temp }}/signed-app
+
+      - name: Put the signed binaries back
+        run: |
+          foreach ($a in "x64", "arm64") {
+            foreach ($f in "LLMHub.exe", "LLMHub.dll", "LLMHub.Core.dll") {
+              $signed = "$env:RUNNER_TEMP\signed-app\$a\$f"
+              if (-not (Get-AuthenticodeSignature $signed).SignerCertificate) { throw "not signed: $signed" }
+              Copy-Item $signed "$env:RUNNER_TEMP\work\publish-$a\$f" -Force
+            }
+          }
+
+      - name: Build the installers
+        run: |
+          desktop\tools\package\windows\package-windows.ps1 -Kind setup -Stage installer -Work "$env:RUNNER_TEMP\work" -Out "$env:RUNNER_TEMP\out"
+          foreach ($a in "x64", "arm64") {
+            $dir = New-Item -ItemType Directory -Force "$env:RUNNER_TEMP\unsigned-setup\$a"
+            Copy-Item "$env:RUNNER_TEMP\out\LLMHub-*-win-$a-setup.exe" $dir
+          }
+
+      - id: upload-setup
+        uses: actions/upload-artifact@v7
+        with:
+          name: unsigned-setup
+          path: ${{ runner.temp }}/unsigned-setup
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Sign the installers
+        uses: signpath/github-action-submit-signing-request@v2
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ env.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ env.SIGNPATH_PROJECT }}
+          signing-policy-slug: ${{ inputs.signing-policy }}
+          artifact-configuration-slug: windows-zip
+          github-artifact-id: ${{ steps.upload-setup.outputs.artifact-id }}
+          wait-for-completion-timeout-in-seconds: 7200
+          output-artifact-directory: ${{ runner.temp }}/signed-setup
+
+      - name: Check the signatures
+        run: |
+          $dir = New-Item -ItemType Directory -Force "$env:RUNNER_TEMP\release"
+          Get-ChildItem "$env:RUNNER_TEMP\signed-setup" -Recurse -Filter *-setup.exe | ForEach-Object {
+            $signature = Get-AuthenticodeSignature $_.FullName
+            if (-not $signature.SignerCertificate) { throw "not signed: $($_.Name)" }
+            "{0}: {1} ({2})" -f $_.Name, $signature.SignerCertificate.Subject, $signature.Status
+            Copy-Item $_.FullName $dir
+          }
+          Get-ChildItem $dir -Filter *.exe | ForEach-Object { "{0}  {1}" -f (Get-FileHash $_.FullName SHA256).Hash.ToLower(), $_.Name } |
+            Set-Content "$dir\SHA256SUMS-windows.txt" -Encoding ascii
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: LLMHub-windows-${{ inputs.signing-policy }}
+          path: ${{ runner.temp }}/release
+          if-no-files-found: error

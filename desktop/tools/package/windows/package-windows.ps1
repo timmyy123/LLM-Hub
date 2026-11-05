@@ -23,6 +23,10 @@ Code signing (optional; unsigned installers work but SmartScreen warns until the
 LLMHUB_SIGN_TIMESTAMP overrides the RFC 3161 timestamp server. LLMHub.exe, the installer and its uninstaller are signed.
 MSIX packages stay unsigned for the Store; -SignMsix signs them too (for sideloading: the certificate subject must then
 equal the manifest Publisher, so pass -StorePublisher).
+
+Signing services that take files rather than a command (SignPath, from .github/workflows/desktop-windows.yml) split the
+setup build in two: -Stage publish stops after the app is published to <Work>\publish-<arch>, the files are signed there,
+and -Stage installer builds the installers from those folders. The uninstaller then stays unsigned.
 #>
 param(
     [ValidateSet("x64", "arm64", "all")][string]$Arch = "all",
@@ -34,7 +38,9 @@ param(
     [string]$StoreIdentityName = "",
     [string]$StorePublisher = "",
     [string]$StorePublisherDisplayName = "",
-    [switch]$SignMsix
+    [switch]$SignMsix,
+    # setup only: "publish" stops before the installer, "installer" reuses <Work>\publish-<arch> from a publish stage.
+    [ValidateSet("all", "publish", "installer")][string]$Stage = "all"
 )
 $ErrorActionPreference = "Stop"
 
@@ -166,12 +172,17 @@ foreach ($a in $Arches) {
     $common = @("-c", "Release", "-p:Platform=$platform", "-r", $rid, "--self-contained", "-p:LLMHubVcRuntimeDir=$vcRuntime", "-nologo", "-v:q")
 
     if ($Kind -ne "msix") {
-        "[$a] publishing"
         $publish = Join-Path $Work "publish-$a"
-        if (Test-Path $publish) { Remove-Item $publish -Recurse -Force }
-        Clear-ProjectOutput $platform
-        Invoke-Logged (Join-Path $Work "publish-$a.log") "dotnet" (@("publish", $Project, "-o", $publish) + $common)
-        Invoke-Sign @((Join-Path $publish "LLMHub.exe"), (Join-Path $publish "LLMHub.dll"), (Join-Path $publish "LLMHub.Core.dll"))
+        if ($Stage -ne "installer") {
+            "[$a] publishing"
+            if (Test-Path $publish) { Remove-Item $publish -Recurse -Force }
+            Clear-ProjectOutput $platform
+            Invoke-Logged (Join-Path $Work "publish-$a.log") "dotnet" (@("publish", $Project, "-o", $publish) + $common)
+            Invoke-Sign @((Join-Path $publish "LLMHub.exe"), (Join-Path $publish "LLMHub.dll"), (Join-Path $publish "LLMHub.Core.dll"))
+        } elseif (-not (Test-Path (Join-Path $publish "LLMHub.exe"))) {
+            throw "no $publish\LLMHub.exe: run -Stage publish first"
+        }
+        if ($Stage -eq "publish") { "  $publish"; continue }
 
         "[$a] building the installer"
         $iscc = Find-Iscc
