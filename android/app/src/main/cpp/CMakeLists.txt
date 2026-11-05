@@ -91,7 +91,7 @@ target_link_libraries(llmhub_llama_vulkan PRIVATE llama mtmd android log)
 # The official b12020 Snapdragon release is packaged alongside the app, not fetched
 # by Gradle. It is loaded only when the user selects Adreno GPU or Hexagon NPU.
 set(LLAMA_PREBUILT_LIB_DIR "${CMAKE_CURRENT_LIST_DIR}/../jniLibs/arm64-v8a")
-foreach(prebuilt IN ITEMS ggml llama mtmd)
+foreach(prebuilt IN ITEMS ggml ggml-base llama mtmd)
     add_library(llmhub_prebuilt_${prebuilt} SHARED IMPORTED)
     set_target_properties(llmhub_prebuilt_${prebuilt} PROPERTIES
         IMPORTED_LOCATION "${LLAMA_PREBUILT_LIB_DIR}/lib${prebuilt}.so")
@@ -102,7 +102,7 @@ target_compile_definitions(llmhub_llama_snapdragon PRIVATE LLMHUB_SNAPDRAGON=1)
 target_include_directories(llmhub_llama_snapdragon PRIVATE
     "${CMAKE_CURRENT_LIST_DIR}/llama-prebuilt/include")
 target_link_libraries(llmhub_llama_snapdragon PRIVATE
-    llmhub_prebuilt_llama llmhub_prebuilt_mtmd llmhub_prebuilt_ggml android log)
+    llmhub_prebuilt_llama llmhub_prebuilt_mtmd llmhub_prebuilt_ggml llmhub_prebuilt_ggml-base android log)
 target_link_options(llmhub_llama_snapdragon PRIVATE "-Wl,--allow-shlib-undefined")
 
 add_subdirectory(pocket_tts)

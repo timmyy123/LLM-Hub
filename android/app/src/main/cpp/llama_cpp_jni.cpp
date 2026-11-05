@@ -20,6 +20,12 @@
 #include "mtmd-helper.h"
 #include "mtmd.h"
 
+#ifdef LLMHUB_SNAPDRAGON
+#include <sys/stat.h>
+#include <unistd.h>
+#include "gguf.h"
+#endif
+
 #if defined(LLMHUB_VULKAN)
 #define LLAMA_JNI(name) Java_com_llmhub_llmhub_inference_LlamaCppVulkanNative_##name
 #elif defined(LLMHUB_SNAPDRAGON)
@@ -214,6 +220,96 @@ int decode_tokens(const std::vector<llama_token> & tokens) {
     return 0;
 }
 
+#ifdef LLMHUB_SNAPDRAGON
+// One Hexagon NPU session can map only ~3.1 GB (2.9 GB before v75) of weights, KV cache and compute buffers into the
+// NPU's address space, however much RAM the phone has. A larger model aborted on its first token with
+// "fastrpc_mmap failed" (Play vitals 4.6.3, Xiaomi 14 Ultra). llama.cpp's answer is to split the layers across several
+// virtual sessions on the same NPU, each with its own window: the model still runs entirely on the NPU.
+// llama.cpp opens them only on v75 and newer (8 Gen 3 onwards).
+constexpr int NPU_MAX_SESSIONS = 4;
+
+// Extra sessions open only when the app reaches the FastRPC device itself. Where SELinux keeps apps away from it,
+// FastRPC goes through Qualcomm's DSP HAL, which accepts session 0 alone ("open_hal_session: invalid argument(s) ...
+// domain 7" on a Galaxy S24 Ultra, Android 14), so a split model would fail to load.
+bool npu_sessions_supported() {
+    return access("/dev/fastrpc-cdsp-secure", R_OK | W_OK) == 0 || access("/dev/fastrpc-cdsp", R_OK | W_OK) == 0;
+}
+// Weights plus KV cache per session, leaving room in the window for compute buffers and the output logits.
+constexpr int64_t NPU_SESSION_BUDGET = 2200LL * 1024 * 1024;
+
+int64_t file_bytes(const std::string & path) {
+    struct stat st {};
+    return path.empty() || stat(path.c_str(), &st) != 0 ? 0 : static_cast<int64_t>(st.st_size);
+}
+
+int64_t gguf_int(const gguf_context * ctx, int64_t id) {
+    switch (gguf_get_kv_type(ctx, id)) {
+        case GGUF_TYPE_UINT32: return gguf_get_val_u32(ctx, id);
+        case GGUF_TYPE_INT32:  return gguf_get_val_i32(ctx, id);
+        case GGUF_TYPE_UINT64: return static_cast<int64_t>(gguf_get_val_u64(ctx, id));
+        default:               return -1;
+    }
+}
+
+// A per-layer count stored as one value or as an array (hybrid models have 0 KV heads on their recurrent or
+// convolution layers). Empty when the key is missing or not an integer.
+std::vector<int64_t> gguf_per_layer(const gguf_context * ctx, const std::string & key, int64_t n_layer) {
+    const int64_t id = gguf_find_key(ctx, key.c_str());
+    if (id < 0) return {};
+    if (gguf_get_kv_type(ctx, id) != GGUF_TYPE_ARRAY) {
+        const int64_t value = gguf_int(ctx, id);
+        return value < 0 ? std::vector<int64_t>{} : std::vector<int64_t>(static_cast<size_t>(n_layer), value);
+    }
+    const size_t n = gguf_get_arr_n(ctx, id);
+    const void * data = gguf_get_arr_data(ctx, id);
+    std::vector<int64_t> values;
+    for (size_t i = 0; i < n; ++i) {
+        switch (gguf_get_arr_type(ctx, id)) {
+            case GGUF_TYPE_UINT32: values.push_back(static_cast<const uint32_t *>(data)[i]); break;
+            case GGUF_TYPE_INT32:  values.push_back(static_cast<const int32_t *>(data)[i]); break;
+            default: return {};
+        }
+    }
+    return values;
+}
+
+// F16 KV cache bytes for n_ctx tokens and the layer count, from the GGUF header (no tensor data is read).
+// Overestimates sliding-window and hybrid layers, which only means one session more than needed.
+int64_t estimate_kv_bytes(const std::string & path, int32_t n_ctx, int64_t * n_layer_out) {
+    gguf_init_params params = { /*no_alloc =*/ true, /*ctx =*/ nullptr };
+    gguf_context * ctx = gguf_init_from_file(path.c_str(), params);
+    if (ctx == nullptr) return 0;
+    int64_t kv_bytes = 0;
+    const int64_t arch_id = gguf_find_key(ctx, "general.architecture");
+    if (arch_id >= 0) {
+        const std::string arch = gguf_get_val_str(ctx, arch_id);
+        const int64_t layer_id = gguf_find_key(ctx, (arch + ".block_count").c_str());
+        const int64_t n_layer = layer_id >= 0 ? gguf_int(ctx, layer_id) : -1;
+        if (n_layer > 0) {
+            *n_layer_out = n_layer;
+            const int64_t embd_id = gguf_find_key(ctx, (arch + ".embedding_length").c_str());
+            const int64_t n_embd = embd_id >= 0 ? gguf_int(ctx, embd_id) : -1;
+            const auto heads = gguf_per_layer(ctx, arch + ".attention.head_count", n_layer);
+            const int64_t n_head = heads.empty() ? -1 : *std::max_element(heads.begin(), heads.end());
+            const int64_t k_id = gguf_find_key(ctx, (arch + ".attention.key_length").c_str());
+            const int64_t v_id = gguf_find_key(ctx, (arch + ".attention.value_length").c_str());
+            const int64_t head_dim = n_embd > 0 && n_head > 0 ? n_embd / n_head : 128;
+            const int64_t k_len = k_id >= 0 ? gguf_int(ctx, k_id) : head_dim;
+            const int64_t v_len = v_id >= 0 ? gguf_int(ctx, v_id) : head_dim;
+            const auto kv_per_layer = gguf_per_layer(ctx, arch + ".attention.head_count_kv", n_layer);
+            int64_t kv_heads = 0;
+            for (const int64_t h : kv_per_layer) kv_heads += h;
+            if (kv_per_layer.empty() && n_head > 0) kv_heads = n_head * n_layer;
+            if (kv_heads > 0 && k_len > 0 && v_len > 0) {
+                kv_bytes = static_cast<int64_t>(n_ctx) * kv_heads * (k_len + v_len) * 2;
+            }
+        }
+    }
+    gguf_free(ctx);
+    return kv_bytes;
+}
+#endif
+
 } // namespace
 
 #ifndef LLMHUB_SNAPDRAGON
@@ -235,6 +331,12 @@ LLAMA_JNI(nativeInit)(JNIEnv * env, jobject, jstring library_dir, jstring htp_di
             const std::string path = htp_path + (old_path != nullptr ? ";" + std::string(old_path) : "");
             setenv("ADSP_LIBRARY_PATH", path.c_str(), 1);
         }
+        // Register the virtual NPU sessions HTP0..HTP3 on NPU 0 so a large model can be split across them. A session
+        // only opens when a model is loaded on it, so small models still use HTP0 alone.
+        const bool sessions = npu_sessions_supported();
+        if (sessions) setenv("GGML_HEXAGON_DEVICES", std::to_string(NPU_MAX_SESSIONS).c_str(), 0);
+        __android_log_print(ANDROID_LOG_INFO, TAG, sessions ? "NPU: up to %d sessions"
+            : "NPU: one session, FastRPC goes through the DSP HAL (would allow %d)", NPU_MAX_SESSIONS);
         const std::string native_path = from_jstring(env, library_dir);
         ggml_backend_load_all_from_path(native_path.c_str());
 #else
@@ -285,8 +387,6 @@ LLAMA_JNI(nativeLoadModel)(
     (void) gpu_layers;
     model_params.n_gpu_layers = 0;
 #endif
-    g_model = llama_model_load_from_file(path.c_str(), model_params);
-    if (g_model == nullptr) return 1;
 
     llama_context_params context_params = llama_context_default_params();
     context_params.n_ctx = static_cast<uint32_t>(context_size);
@@ -296,10 +396,57 @@ LLAMA_JNI(nativeLoadModel)(
     context_params.n_threads_batch = thread_count;
     context_params.flash_attn_type = flash_attention < 0 ? LLAMA_FLASH_ATTN_TYPE_AUTO
         : flash_attention == 0 ? LLAMA_FLASH_ATTN_TYPE_DISABLED : LLAMA_FLASH_ATTN_TYPE_ENABLED;
-    g_context = llama_init_from_model(g_model, context_params);
-    if (g_context == nullptr) {
-        unload_model();
-        return 2;
+
+    auto load = [&]() -> int {
+        g_model = llama_model_load_from_file(path.c_str(), model_params);
+        if (g_model == nullptr) return 1;
+        g_context = llama_init_from_model(g_model, context_params);
+        if (g_context == nullptr) {
+            unload_model();
+            return 2;
+        }
+        return 0;
+    };
+
+#ifdef LLMHUB_SNAPDRAGON
+    if (requested_device == "HTP0") {
+        ggml_backend_dev_t htp[NPU_MAX_SESSIONS] = {};
+        int available = 0;
+        while (available < NPU_MAX_SESSIONS) {
+            ggml_backend_dev_t dev = ggml_backend_dev_by_name(("HTP" + std::to_string(available)).c_str());
+            if (dev == nullptr) break;
+            htp[available++] = dev;
+        }
+        ggml_backend_dev_t npu_devices[NPU_MAX_SESSIONS + 1] = {};
+        // Sessions needed for the layers on the NPU plus their KV cache. The vision encoder shares HTP0's window.
+        int64_t n_layer = 0;
+        const int64_t kv_bytes = estimate_kv_bytes(path, context_size, &n_layer);
+        int64_t weight_bytes = file_bytes(path);
+        if (n_layer > 0 && gpu_layers < n_layer) weight_bytes = weight_bytes * std::max(0, static_cast<int>(gpu_layers)) / n_layer;
+        const int64_t projector_bytes = file_bytes(from_jstring(env, mmproj_path));
+        const int64_t budget = std::max<int64_t>(NPU_SESSION_BUDGET - projector_bytes, NPU_SESSION_BUDGET / 4);
+        int sessions = static_cast<int>(std::clamp<int64_t>((weight_bytes + kv_bytes + budget - 1) / budget, 1, std::max(1, available)));
+        __android_log_print(ANDROID_LOG_INFO, TAG, "NPU: weights %lld MB, KV %lld MB, projector %lld MB -> %d of %d sessions",
+            static_cast<long long>(weight_bytes >> 20), static_cast<long long>(kv_bytes >> 20),
+            static_cast<long long>(projector_bytes >> 20), sessions, available);
+
+        // Layers split evenly across the sessions; each layer's KV cache stays with its layer.
+        std::vector<float> split(llama_max_devices(), 0.0f);
+        for (int i = 0; i < sessions; ++i) {
+            split[i] = 1.0f;
+            npu_devices[i] = htp[i];
+        }
+        npu_devices[sessions] = nullptr;
+        model_params.devices = npu_devices;
+        model_params.split_mode = LLAMA_SPLIT_MODE_LAYER;
+        model_params.tensor_split = split.data();
+        const int status = load();
+        if (status != 0) return status;
+    } else
+#endif
+    {
+        const int status = load();
+        if (status != 0) return status;
     }
 
     const std::string projector_path = from_jstring(env, mmproj_path);
