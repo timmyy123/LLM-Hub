@@ -24,7 +24,7 @@
     <string name="ready_to_chat">Sohbete hazır! Lütfen yukarıdan bir model seçin.</string>
     <string name="start_chatting">Aşağıdan bir mesaj yazarak sohbete başlayın!</string>
     <string name="type_a_message">Bir mesaj yazın...</string>
-    <string name="loading_model_format">%1$s yükleniyor</string>
+    <string name="loading_model_format">%1$s yükleniyor…</string>
     <string name="please_wait_model_initialize">Model başlatılırken lütfen bekleyin...</string>
     <string name="initializing_neural_network">Sinir ağı başlatılıyor...</string>
     <string name="attached_image">Ekli görsel</string>
@@ -799,19 +799,6 @@
     <string name="creator_system_prompt_label">Sistem Yönergesi (PCTF):</string>
     <string name="creator_save_and_chat">Kaydet ve Sohbet Et</string>
 
-    <!-- Kid Mode -->
-    <string name="kid_mode_title">Çocuk Modu</string>
-    <string name="kid_mode_enabled_status">Etkin - Güvenlik korumaları aktif</string>
-    <string name="kid_mode_disabled_status">Devre dışı</string>
-    <string name="kid_mode_incorrect_pin">Yanlış PIN</string>
-    <string name="kid_mode_set_pin_title">Çocuk Modu PIN Belirle</string>
-    <string name="kid_mode_set_pin_body">Çocuk Modunu etkinleştirmek için 4 haneli bir PIN girin. Daha sonra devre dışı bırakmak için bu PIN gerekli olacak.</string>
-    <string name="kid_mode_pin_label">4 Haneli PIN</string>
-    <string name="kid_mode_pin_error">PIN 4 haneli olmalıdır</string>
-    <string name="kid_mode_enable">Etkinleştir</string>
-    <string name="kid_mode_disable_title">Çocuk Modunu Devre Dışı Bırak</string>
-    <string name="kid_mode_verify_body">Çocuk Modunu devre dışı bırakmak için 4 haneli PIN\'inizi girin.</string>
-    <string name="kid_mode_disable">Devre Dışı Bırak</string>
 
     <string name="gpu_layers_label">GPU Layers: %1$d</string>
     <string name="gpu_layers_hint">Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers</string>

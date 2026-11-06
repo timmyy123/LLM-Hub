@@ -31,7 +31,7 @@
     <string name="ready_to_chat">Bereit zum Chatten! Bitte wählen Sie oben ein Modell aus.</string>
     <string name="start_chatting">Beginnen Sie zu chatten, indem Sie unten eine Nachricht eingeben!</string>
     <string name="type_a_message">Nachricht eingeben...</string>
-    <string name="loading_model_format">Lade %1$s</string>
+    <string name="loading_model_format">Lade %1$s…</string>
     <string name="please_wait_model_initialize">Bitte warten Sie, während das Modell initialisiert wird...</string>
     <string name="initializing_neural_network">Neuronales Netzwerk wird initialisiert...</string>
     <string name="attached_image">Angehängtes Bild</string>
@@ -766,19 +766,6 @@
     <string name="creator_system_prompt_label">System-Prompt (PCTF):</string>
     <string name="creator_save_and_chat">Speichern &amp; Chatten</string>
 
-    <!-- Kid Mode -->
-    <string name="kid_mode_title">Kindermodus</string>
-    <string name="kid_mode_enabled_status">Aktiviert – Sicherheitseinschränkungen aktiv</string>
-    <string name="kid_mode_disabled_status">Deaktiviert</string>
-    <string name="kid_mode_incorrect_pin">Falsche PIN</string>
-    <string name="kid_mode_set_pin_title">PIN für Kindermodus festlegen</string>
-    <string name="kid_mode_set_pin_body">Gib eine 4-stellige PIN ein, um den Kindermodus zu aktivieren. Du benötigst diese PIN zum späteren Deaktivieren.</string>
-    <string name="kid_mode_pin_label">4-stellige PIN</string>
-    <string name="kid_mode_pin_error">PIN muss 4 Ziffern haben</string>
-    <string name="kid_mode_enable">Aktivieren</string>
-    <string name="kid_mode_disable_title">Kindermodus deaktivieren</string>
-    <string name="kid_mode_verify_body">Gib deine 4-stellige PIN ein, um den Kindermodus zu deaktivieren.</string>
-    <string name="kid_mode_disable">Deaktivieren</string>
 
     <string name="gpu_layers_label">GPU Layers: %1$d</string>
     <string name="gpu_layers_hint">Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers</string>

@@ -79,6 +79,12 @@ fun AgentScreen(
     val availableModels = availableModelsState.value
     val loadingModelName by viewModel.loadingModelName.collectAsState()
     val activeModelName by viewModel.activeModelName.collectAsState()
+    val modelLoadError by viewModel.modelLoadError.collectAsState()
+    LaunchedEffect(modelLoadError) {
+        val failedModel = modelLoadError ?: return@LaunchedEffect
+        Toast.makeText(context, "${context.getString(R.string.model_loading_error)}: $failedModel", Toast.LENGTH_LONG).show()
+        viewModel.clearModelLoadError()
+    }
 
     val listState = rememberLazyListState()
 
@@ -126,12 +132,7 @@ fun AgentScreen(
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier.padding(top = 2.dp)
                             ) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(12.dp),
-                                    strokeWidth = 1.5.dp,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
+                                // Static text, no spinner: animating while a model loads on the GPU can cause an ANR.
                                 Text(
                                     text = stringResource(R.string.loading_model_format, loadingModelName!!),
                                     style = MaterialTheme.typography.bodySmall,

@@ -24,7 +24,7 @@
     <string name="ready_to_chat">جاهز للدردشة! يرجى اختيار نموذج من الأعلى.</string>
     <string name="start_chatting">ابدأ الدردشة بكتابة رسالة أدناه!</string>
     <string name="type_a_message">اكتب رسالة...</string>
-    <string name="loading_model_format">جارٍ تحميل %1$s</string>
+    <string name="loading_model_format">جارٍ تحميل %1$s…</string>
     <string name="please_wait_model_initialize">يرجى الانتظار أثناء تهيئة النموذج...</string>
     <string name="initializing_neural_network">جارٍ تهيئة الشبكة العصبية...</string>
     <string name="attached_image">تم إرفاق صورة</string>
@@ -800,19 +800,6 @@
     <string name="creator_system_prompt_label">موجه النظام (PCTF):</string>
     <string name="creator_save_and_chat">حفظ والدردشة</string>
 
-    <!-- Kid Mode -->
-    <string name="kid_mode_title">وضع الأطفال</string>
-    <string name="kid_mode_enabled_status">مفعّل - حماية السلامة نشطة</string>
-    <string name="kid_mode_disabled_status">معطّل</string>
-    <string name="kid_mode_incorrect_pin">رمز PIN غير صحيح</string>
-    <string name="kid_mode_set_pin_title">تعيين رمز PIN لوضع الأطفال</string>
-    <string name="kid_mode_set_pin_body">أدخل رمز PIN مكوناً من 4 أرقام لتفعيل وضع الأطفال. ستحتاج هذا الرمز لإلغاء التفعيل لاحقاً.</string>
-    <string name="kid_mode_pin_label">رمز PIN من 4 أرقام</string>
-    <string name="kid_mode_pin_error">يجب أن يتكون رمز PIN من 4 أرقام</string>
-    <string name="kid_mode_enable">تفعيل</string>
-    <string name="kid_mode_disable_title">تعطيل وضع الأطفال</string>
-    <string name="kid_mode_verify_body">أدخل رمز PIN من 4 أرقام لتعطيل وضع الأطفال.</string>
-    <string name="kid_mode_disable">تعطيل</string>
 
     <string name="gpu_layers_label">GPU Layers: %1$d</string>
     <string name="gpu_layers_hint">Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers</string>

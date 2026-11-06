@@ -779,7 +779,8 @@ class ChatViewModel(
      * Load downloaded models synchronously so callers can rely on the result immediately.
      */
     private suspend fun loadAvailableModelsSync(context: Context) {
-        val downloadedModels: List<LLMModel> = ModelData.models
+        // Checks hundreds of model files: keep it off the main thread (Play vitals ANR in 4.6.3).
+        val downloadedModels: List<LLMModel> = withContext(Dispatchers.IO) { ModelData.models
             .filter { it.category != "embedding" && it.category != "asr" && it.category != "tts" && it.category != "music_generation" && it.category != "video_generation" && !it.name.contains("Projector", ignoreCase = true) }
             .mapNotNull { model: LLMModel ->
             var isAvailable = false
@@ -856,22 +857,12 @@ class ChatViewModel(
             } else {
                 null
             }
-        }
+        } }
 
-        // Get imported models from ModelDownloadViewModel
-        val importedModels = try {
-            // Get ModelDownloadViewModel instance to access imported models
-            val modelDownloadViewModel = androidx.lifecycle.ViewModelProvider(
-                context as androidx.activity.ComponentActivity,
-                androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.getInstance(context.application)
-            )[ModelDownloadViewModel::class.java]
-            // Filter out image generation models (qnn_npu, mnn_cpu) - those are for Image Generator, not AI Chat
-            modelDownloadViewModel.getImportedModels().filter { 
-                it.category != "qnn_npu" && it.category != "mnn_cpu" 
-            }
-        } catch (e: Exception) {
-            Log.w("ChatViewModel", "Could not get imported models: ${e.message}")
-            emptyList<LLMModel>()
+        // Imported models, read from preferences without creating ModelDownloadViewModel, whose constructor scans
+        // every model folder on the main thread. Image generation imports (qnn_npu, mnn_cpu) are already excluded.
+        val importedModels = withContext(Dispatchers.IO) {
+            com.llmhub.llmhub.data.ModelAvailabilityProvider.loadImportedModels(context)
         }
         
         // Combine downloaded and imported models

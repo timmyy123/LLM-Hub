@@ -1,6 +1,8 @@
 package com.llmhub.llmhub.agent
 
 import android.content.Context
+import android.content.SharedPreferences
+import android.util.Log
 import com.llmhub.llmhub.BuildConfig
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
@@ -65,15 +67,41 @@ class McpClient(private val context: Context) {
     companion object {
         private const val CURRENT_PROTOCOL = "2026-07-28"
         private const val LEGACY_PROTOCOL = "2025-06-18"
+        private const val PREFS_NAME = "agent_mcp_secure"
+        private const val TAG = "McpClient"
     }
 
-    private val prefs = EncryptedSharedPreferences.create(
-        context,
-        "agent_mcp_secure",
-        MasterKey.Builder(context).setKeyScheme(MasterKey.KeyScheme.AES256_GCM).build(),
-        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-    )
+    /**
+     * Opens the encrypted MCP settings. If they can no longer be decrypted (for example a backup restored onto
+     * another device, whose Keystore does not have the key), deletes them and starts empty: the user enters the
+     * MCP server again. Only this file is deleted, not the master key.
+     */
+    private fun openSecurePrefs(): SharedPreferences? {
+        fun create(): SharedPreferences = EncryptedSharedPreferences.create(
+            context,
+            PREFS_NAME,
+            MasterKey.Builder(context).setKeyScheme(MasterKey.KeyScheme.AES256_GCM).build(),
+            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+        )
+        return try {
+            create()
+        } catch (e: Exception) {
+            Log.w(TAG, "MCP settings can't be decrypted, resetting them: ${e.javaClass.simpleName}")
+            context.deleteSharedPreferences(PREFS_NAME)
+            try {
+                create()
+            } catch (e: Exception) {
+                // The Keystore itself is unusable: never fall back to storing the token unencrypted.
+                Log.e(TAG, "Encrypted storage unavailable; MCP settings won't be saved", e)
+                null
+            }
+        }
+    }
+
+    /** Null only when the device's Keystore can't be used; settings then last for this session only. */
+    private val prefs: SharedPreferences? = openSecurePrefs()
+    private var unsavedSettings = McpSettings(enabled = false, transport = "termux", url = "", token = "", command = "")
     private val http = OkHttpClient.Builder()
         .connectTimeout(10, TimeUnit.SECONDS)
         .readTimeout(45, TimeUnit.SECONDS)
@@ -89,20 +117,29 @@ class McpClient(private val context: Context) {
     private fun clientInfo(name: String = "LLM Hub Android") =
         JSONObject().put("name", name).put("version", BuildConfig.VERSION_NAME)
 
-    fun loadSettings() = McpSettings(
-        enabled = prefs.getBoolean("enabled", false),
-        transport = prefs.getString("transport", "termux") ?: "termux",
-        url = prefs.getString("url", "") ?: "",
-        token = prefs.getString("token", "") ?: "",
-        command = prefs.getString("command", "") ?: ""
-    )
+    fun loadSettings(): McpSettings {
+        val prefs = prefs ?: return unsavedSettings
+        return McpSettings(
+            enabled = prefs.getBoolean("enabled", false),
+            transport = prefs.getString("transport", "termux") ?: "termux",
+            url = prefs.getString("url", "") ?: "",
+            token = prefs.getString("token", "") ?: "",
+            command = prefs.getString("command", "") ?: ""
+        )
+    }
 
     fun saveSettings(settings: McpSettings) {
-        prefs.edit().putBoolean("enabled", settings.enabled)
-            .putString("transport", settings.transport)
-            .putString("url", settings.url.trim())
-            .putString("token", settings.token.trim())
-            .putString("command", settings.command.trim()).apply()
+        val trimmed = settings.copy(url = settings.url.trim(), token = settings.token.trim(), command = settings.command.trim())
+        val prefs = prefs
+        if (prefs == null) {
+            unsavedSettings = trimmed
+        } else {
+            prefs.edit().putBoolean("enabled", trimmed.enabled)
+                .putString("transport", trimmed.transport)
+                .putString("url", trimmed.url)
+                .putString("token", trimmed.token)
+                .putString("command", trimmed.command).apply()
+        }
         if (!settings.enabled) disconnect()
     }
 

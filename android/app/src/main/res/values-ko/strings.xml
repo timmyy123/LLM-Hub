@@ -24,7 +24,7 @@
     <string name="ready_to_chat">채팅 준비 완료! 위에서 모델을 선택하세요.</string>
     <string name="start_chatting">아래에 메시지를 입력하여 채팅을 시작하세요!</string>
     <string name="type_a_message">메시지 입력...</string>
-    <string name="loading_model_format">%1$s 로딩 중</string>
+    <string name="loading_model_format">%1$s 로딩 중…</string>
     <string name="please_wait_model_initialize">모델 초기화 중입니다. 잠시 기다려주세요...</string>
     <string name="initializing_neural_network">신경망 초기화 중...</string>
     <string name="attached_image">첨부된 이미지</string>
@@ -800,19 +800,6 @@
     <string name="creator_system_prompt_label">시스템 프롬프트 (PCTF):</string>
     <string name="creator_save_and_chat">저장 및 채팅</string>
 
-    <!-- Kid Mode -->
-    <string name="kid_mode_title">어린이 모드</string>
-    <string name="kid_mode_enabled_status">활성화됨 - 안전 보호 기능 활성</string>
-    <string name="kid_mode_disabled_status">비활성화됨</string>
-    <string name="kid_mode_incorrect_pin">잘못된 PIN</string>
-    <string name="kid_mode_set_pin_title">어린이 모드 PIN 설정</string>
-    <string name="kid_mode_set_pin_body">어린이 모드를 활성화하려면 4자리 PIN을 입력하세요. 나중에 비활성화할 때 이 PIN이 필요합니다.</string>
-    <string name="kid_mode_pin_label">4자리 PIN</string>
-    <string name="kid_mode_pin_error">PIN은 4자리여야 합니다</string>
-    <string name="kid_mode_enable">활성화</string>
-    <string name="kid_mode_disable_title">어린이 모드 비활성화</string>
-    <string name="kid_mode_verify_body">어린이 모드를 비활성화하려면 4자리 PIN을 입력하세요.</string>
-    <string name="kid_mode_disable">비활성화</string>
 
     <string name="gpu_layers_label">GPU Layers: %1$d</string>
     <string name="gpu_layers_hint">Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers</string>

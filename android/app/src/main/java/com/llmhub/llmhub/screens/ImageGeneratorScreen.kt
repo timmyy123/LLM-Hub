@@ -392,11 +392,7 @@ fun ImageGeneratorScreen(
                                 )
                             ) {
                                 if (isModelLoading) {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.size(20.dp),
-                                        color = MaterialTheme.colorScheme.onPrimary
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
+                                    // Static text, no spinner: animating while a model loads on the GPU can cause an ANR.
                                     Text(stringResource(R.string.model_loading), fontWeight = FontWeight.Bold)
                                 } else {
                                     Text(

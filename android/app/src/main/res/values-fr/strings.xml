@@ -25,7 +25,7 @@
     <string name="ready_to_chat">Prêt à discuter ! Veuillez sélectionner un modèle ci-dessus.</string>
     <string name="start_chatting">Commencez à discuter en tapant un message ci-dessous !</string>
     <string name="type_a_message">Tapez un message...</string>
-    <string name="loading_model_format">Chargement de %1$s</string>
+    <string name="loading_model_format">Chargement de %1$s…</string>
     <string name="please_wait_model_initialize">Veuillez patienter pendant l\'initialisation du modèle...</string>
     <string name="initializing_neural_network">Initialisation du réseau de neurones...</string>
     <string name="attached_image">Image jointe</string>
@@ -788,19 +788,6 @@
     <string name="creator_system_prompt_label">Invite Système (PCTF) :</string>
     <string name="creator_save_and_chat">Sauvegarder et Chatter</string>
 
-    <!-- Kid Mode -->
-    <string name="kid_mode_title">Mode Enfant</string>
-    <string name="kid_mode_enabled_status">Activé - Protections de sécurité actives</string>
-    <string name="kid_mode_disabled_status">Désactivé</string>
-    <string name="kid_mode_incorrect_pin">Code PIN incorrect</string>
-    <string name="kid_mode_set_pin_title">Définir le PIN du Mode Enfant</string>
-    <string name="kid_mode_set_pin_body">Entrez un PIN à 4 chiffres pour activer le Mode Enfant. Vous aurez besoin de ce PIN pour le désactiver ultérieurement.</string>
-    <string name="kid_mode_pin_label">PIN à 4 Chiffres</string>
-    <string name="kid_mode_pin_error">Le PIN doit comporter 4 chiffres</string>
-    <string name="kid_mode_enable">Activer</string>
-    <string name="kid_mode_disable_title">Désactiver le Mode Enfant</string>
-    <string name="kid_mode_verify_body">Entrez votre PIN à 4 chiffres pour désactiver le Mode Enfant.</string>
-    <string name="kid_mode_disable">Désactiver</string>
 
     <string name="gpu_layers_label">GPU Layers: %1$d</string>
     <string name="gpu_layers_hint">Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers</string>

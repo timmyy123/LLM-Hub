@@ -693,18 +693,6 @@
 "creator_result_heading" = "새 AI 캐릭터가 완성되었습니다!";
 "creator_system_prompt_label" = "시스템 프롬프트 (PCTF):";
 "creator_save_and_chat" = "저장 및 채팅";
-"kid_mode_title" = "어린이 모드";
-"kid_mode_enabled_status" = "활성화됨 - 안전 보호 기능 활성";
-"kid_mode_disabled_status" = "비활성화됨";
-"kid_mode_incorrect_pin" = "잘못된 PIN";
-"kid_mode_set_pin_title" = "어린이 모드 PIN 설정";
-"kid_mode_set_pin_body" = "어린이 모드를 활성화하려면 4자리 PIN을 입력하세요. 나중에 비활성화할 때 이 PIN이 필요합니다.";
-"kid_mode_pin_label" = "4자리 PIN";
-"kid_mode_pin_error" = "PIN은 4자리여야 합니다";
-"kid_mode_enable" = "활성화";
-"kid_mode_disable_title" = "어린이 모드 비활성화";
-"kid_mode_verify_body" = "어린이 모드를 비활성화하려면 4자리 PIN을 입력하세요.";
-"kid_mode_disable" = "비활성화";
 "gpu_layers_label" = "GPU Layers: %1$d";
 "gpu_layers_hint" = "Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers";
 "premium_title" = "LLM Hub 프리미엄 평생";

@@ -603,15 +603,8 @@ fun ChatSettingsSheet(
                                 shape = RoundedCornerShape(16.dp),
                                 enabled = selectedModel != null && !isLoadingModel
                             ) {
-                                if (isLoadingModel) {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.size(20.dp),
-                                        color = MaterialTheme.colorScheme.onPrimary,
-                                        strokeWidth = 2.dp
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                }
-                                Text(stringResource(R.string.load_model))
+                                // Static text, no spinner: animating while a model loads on the GPU can cause an ANR.
+                                Text(stringResource(if (isLoadingModel) R.string.model_loading else R.string.load_model))
                             }
                         }
                     }

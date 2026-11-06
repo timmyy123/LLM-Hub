@@ -24,7 +24,7 @@
     <string name="ready_to_chat">准备就绪！请选择上面的模型。</string>
     <string name="start_chatting">通过在下方输入消息开始聊天。</string>
     <string name="type_a_message">输入消息...</string>
-    <string name="loading_model_format">正在加载 %1$s</string>
+    <string name="loading_model_format">正在加载 %1$s…</string>
     <string name="please_wait_model_initialize">请等待模型初始化...</string>
     <string name="initializing_neural_network">正在初始化神经网络...</string>
     <string name="attached_image">附加图片</string>
@@ -541,19 +541,6 @@
     <string name="creator_system_prompt_label">系统提示词(PCTF):</string>
     <string name="creator_save_and_chat">保存并开始对话</string>
 
-    <!-- Kid Mode -->
-    <string name="kid_mode_title">儿童模式</string>
-    <string name="kid_mode_enabled_status">已激活 - 安全护栏已启动</string>
-    <string name="kid_mode_disabled_status">已禁用</string>
-    <string name="kid_mode_incorrect_pin">PIN 错误</string>
-    <string name="kid_mode_set_pin_title">设置儿童模式 PIN</string>
-    <string name="kid_mode_set_pin_body">输入一个 4 位数字的 PIN 来启用儿童模式。您需要这个 PIN 来禁用它。</string>
-    <string name="kid_mode_pin_label">4 位数字 PIN</string>
-    <string name="kid_mode_pin_error">PIN 必须是 4 位数字</string>
-    <string name="kid_mode_enable">启用</string>
-    <string name="kid_mode_disable_title">禁用儿童模式</string>
-    <string name="kid_mode_verify_body">输入您的 4 位数字 PIN 来禁用儿童模式。</string>
-    <string name="kid_mode_disable">禁用</string>
 
     <!-- Writing Aid Screen -->
     <string name="writing_aid_title">写作助手</string>

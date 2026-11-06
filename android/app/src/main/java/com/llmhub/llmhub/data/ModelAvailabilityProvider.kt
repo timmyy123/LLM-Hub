@@ -125,7 +125,8 @@ object ModelAvailabilityProvider {
         }
     }
 
-    private fun loadImportedModels(context: Context): List<LLMModel> {
+    /** Downloaded imported (custom) LLMs, read from preferences. Does file I/O: call off the main thread. */
+    fun loadImportedModels(context: Context): List<LLMModel> {
         return try {
             val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             val json = prefs.getString(IMPORTED_MODELS_KEY, null) ?: return emptyList()

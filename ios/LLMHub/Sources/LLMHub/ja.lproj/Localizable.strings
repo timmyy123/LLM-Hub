@@ -693,18 +693,6 @@
 "creator_result_heading" = "新しいAIキャラクターが完成しました！";
 "creator_system_prompt_label" = "システムプロンプト (PCTF):";
 "creator_save_and_chat" = "保存してチャット";
-"kid_mode_title" = "キッズモード";
-"kid_mode_enabled_status" = "有効 - セーフガードが有効";
-"kid_mode_disabled_status" = "無効";
-"kid_mode_incorrect_pin" = "PINが違います";
-"kid_mode_set_pin_title" = "キッズモードのPINを設定";
-"kid_mode_set_pin_body" = "キッズモードを有効にするために4桁のPINを入力してください。後で無効にするときにこのPINが必要です。";
-"kid_mode_pin_label" = "4桁のPIN";
-"kid_mode_pin_error" = "PINは4桁で入力してください";
-"kid_mode_enable" = "有効にする";
-"kid_mode_disable_title" = "キッズモードを無効にする";
-"kid_mode_verify_body" = "キッズモードを無効にするために4桁のPINを入力してください。";
-"kid_mode_disable" = "無効にする";
 "gpu_layers_label" = "GPU Layers: %1$d";
 "gpu_layers_hint" = "Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers";
 "premium_title" = "LLM Hub プレミアム ライフタイム";

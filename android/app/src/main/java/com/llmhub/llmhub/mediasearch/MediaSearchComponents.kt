@@ -143,8 +143,8 @@ internal fun MediaSearchStatusCard(
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             when {
                 isLoadingModel -> {
+                    // Static text, no progress animation: animating while the model loads on the GPU can cause an ANR.
                     Text(stringResource(R.string.media_search_loading_model), style = MaterialTheme.typography.bodyMedium)
-                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                 }
                 modelError -> Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(

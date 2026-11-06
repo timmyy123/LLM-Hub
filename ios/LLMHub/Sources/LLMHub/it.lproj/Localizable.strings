@@ -683,18 +683,6 @@
 "creator_result_heading" = "Ecco il tuo nuovo personaggio IA!";
 "creator_system_prompt_label" = "Prompt di Sistema (PCTF):";
 "creator_save_and_chat" = "Salva e Chatta";
-"kid_mode_title" = "Modalità Bambini";
-"kid_mode_enabled_status" = "Attivata - Protezioni di sicurezza attive";
-"kid_mode_disabled_status" = "Disattivata";
-"kid_mode_incorrect_pin" = "PIN errato";
-"kid_mode_set_pin_title" = "Imposta PIN Modalità Bambini";
-"kid_mode_set_pin_body" = "Inserisci un PIN di 4 cifre per attivare la Modalità Bambini. Avrai bisogno di questo PIN per disattivarla in seguito.";
-"kid_mode_pin_label" = "PIN a 4 Cifre";
-"kid_mode_pin_error" = "Il PIN deve essere di 4 cifre";
-"kid_mode_enable" = "Attiva";
-"kid_mode_disable_title" = "Disattiva Modalità Bambini";
-"kid_mode_verify_body" = "Inserisci il tuo PIN a 4 cifre per disattivare la Modalità Bambini.";
-"kid_mode_disable" = "Disattiva";
 "gpu_layers_label" = "GPU Layers: %1$d";
 "gpu_layers_hint" = "Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers";
 "premium_title" = "LLM Hub Premium Lifetime";

@@ -728,11 +728,11 @@ fun MusicGeneratorScreen(
                         enabled = promptText.isNotBlank() && !isGenerating && !isLoadingModel
                     ) {
                         if (isGenerating || isLoadingModel) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(22.dp),
-                                strokeWidth = 2.5.dp
-                            )
-                            Spacer(modifier = Modifier.width(10.dp))
+                            // No spinner while the model loads: animating then can cause an ANR on the GPU.
+                            if (!isLoadingModel) {
+                                CircularProgressIndicator(modifier = Modifier.size(22.dp), strokeWidth = 2.5.dp)
+                                Spacer(modifier = Modifier.width(10.dp))
+                            }
                             Text(
                                 if (isLoadingModel) stringResource(R.string.model_loading)
                                 else stringResource(R.string.generating_music)

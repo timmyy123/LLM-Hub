@@ -648,18 +648,6 @@
 "creator_result_heading" = "Aqui está sua nova persona IA!";
 "creator_system_prompt_label" = "Prompt do Sistema (PCTF):";
 "creator_save_and_chat" = "Salvar e Conversar";
-"kid_mode_title" = "Modo Infantil";
-"kid_mode_enabled_status" = "Ativado - Proteções de segurança ativas";
-"kid_mode_disabled_status" = "Desativado";
-"kid_mode_incorrect_pin" = "PIN incorreto";
-"kid_mode_set_pin_title" = "Definir PIN do Modo Infantil";
-"kid_mode_set_pin_body" = "Digite um PIN de 4 dígitos para ativar o Modo Infantil. Você precisará deste PIN para desativá-lo depois.";
-"kid_mode_pin_label" = "PIN de 4 Dígitos";
-"kid_mode_pin_error" = "O PIN deve ter 4 dígitos";
-"kid_mode_enable" = "Ativar";
-"kid_mode_disable_title" = "Desativar Modo Infantil";
-"kid_mode_verify_body" = "Digite seu PIN de 4 dígitos para desativar o Modo Infantil.";
-"kid_mode_disable" = "Desativar";
 "gpu_layers_label" = "GPU Layers: %1$d";
 "gpu_layers_hint" = "Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers";
 "premium_title" = "LLM Hub Premium Vitalício";

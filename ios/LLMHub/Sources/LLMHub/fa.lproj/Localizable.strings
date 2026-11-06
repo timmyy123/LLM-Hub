@@ -693,18 +693,6 @@
 "creator_result_heading" = "شخصیت جدید شما!";
 "creator_system_prompt_label" = "راهنمای سیستم (PCTF):";
 "creator_save_and_chat" = "ذخیره و گفتگو";
-"kid_mode_title" = "حالت کودک";
-"kid_mode_enabled_status" = "فعال - محافظت‌های ایمنی فعال است";
-"kid_mode_disabled_status" = "غیرفعال";
-"kid_mode_incorrect_pin" = "پین نادرست";
-"kid_mode_set_pin_title" = "تنظیم پین حالت کودک";
-"kid_mode_set_pin_body" = "یک پین ۴ رقمی وارد کنید تا حالت کودک فعال شود. برای غیرفعال کردن بعداً به این پین نیاز خواهید داشت.";
-"kid_mode_pin_label" = "پین ۴ رقمی";
-"kid_mode_pin_error" = "پین باید ۴ رقم باشد";
-"kid_mode_enable" = "فعال‌سازی";
-"kid_mode_disable_title" = "غیرفعال کردن حالت کودک";
-"kid_mode_verify_body" = "پین ۴ رقمی خود را وارد کنید تا حالت کودک غیرفعال شود.";
-"kid_mode_disable" = "غیرفعال‌سازی";
 "gpu_layers_label" = "GPU Layers: %1$d";
 "gpu_layers_hint" = "Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers";
 "premium_title" = "LLM Hub Premium مادام‌العمر";

@@ -21,7 +21,6 @@ import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import com.llmhub.llmhub.R
 import com.llmhub.llmhub.data.LLMModel
 import com.llmhub.llmhub.data.localFileName
-import com.llmhub.llmhub.utils.KidModeManager
 import com.llmhub.llmhub.utils.LocaleHelper
 import com.llmhub.llmhub.websearch.DuckDuckGoSearchService
 import com.llmhub.llmhub.websearch.SearchIntentDetector
@@ -432,17 +431,6 @@ class LiteRtLmInferenceService(private val applicationContext: Context) : Infere
                     }
                 } catch (e: Exception) {
                     emit(localCtx.getString(R.string.web_search_failed, e.message ?: "Unknown error") + "\n\n")
-                }
-            }
-
-            // Kid mode
-            val kidModeManager = KidModeManager(applicationContext)
-            if (kidModeManager.isKidModeEnabled.value) {
-                val kidInstruction = KidModeManager.SYSTEM_INSTRUCTION
-                enhancedPrompt = if (enhancedPrompt.startsWith("system:")) {
-                    enhancedPrompt.replaceFirst("system:", "system: $kidInstruction\n\n")
-                } else {
-                    "system: $kidInstruction\n\n$enhancedPrompt"
                 }
             }
 

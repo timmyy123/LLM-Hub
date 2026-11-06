@@ -1,13 +1,9 @@
-<?xml version="1.0" encoding="utf-8"?><!--
-   Sample backup rules file; uncomment and customize as necessary.
-   See https://developer.android.com/guide/topics/data/autobackup
-   for details.
-   Note: This file is ignored for devices older than API 31
-   See https://developer.android.com/about/versions/12/backup-restore
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+   Auto Backup rules for Android 11 and lower. See https://developer.android.com/guide/topics/data/autobackup
+   Encrypted preferences are excluded: their key lives in the Android Keystore, which is never backed up, so a
+   restored copy can't be decrypted on the new device (javax.crypto.AEADBadTagException).
 -->
 <full-backup-content>
-    <!--
-   <include domain="sharedpref" path="."/>
-   <exclude domain="sharedpref" path="device.xml"/>
--->
+    <exclude domain="sharedpref" path="agent_mcp_secure.xml"/>
 </full-backup-content>

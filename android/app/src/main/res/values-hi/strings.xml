@@ -24,7 +24,7 @@
     <string name="ready_to_chat">चैट करने के लिए तैयार! कृपया ऊपर एक मॉडल चुनें।</string>
     <string name="start_chatting">नीचे संदेश टाइप करके चैट करना शुरू करें!</string>
     <string name="type_a_message">संदेश टाइप करें...</string>
-    <string name="loading_model_format">%1$s लोड हो रहा है</string>
+    <string name="loading_model_format">%1$s लोड हो रहा है…</string>
     <string name="please_wait_model_initialize">कृपया प्रतीक्षा करें जब तक मॉडल प्रारंभ हो रहा है...</string>
     <string name="initializing_neural_network">तंत्रिका नेटवर्क (Neural Network) प्रारंभ हो रहा है...</string>
     <string name="attached_image">संलग्न छवि</string>
@@ -587,19 +587,6 @@
     <string name="creator_system_prompt_label">सिस्टम प्रॉम्प्ट (PCTF):</string>
     <string name="creator_save_and_chat">सहेजें और चैट करें</string>
 
-    <!-- Kid Mode -->
-    <string name="kid_mode_title">किड मोड (बाल सुरक्षा)</string>
-    <string name="kid_mode_enabled_status">सक्षम - सुरक्षा गार्डरेल सक्रिय हैं</string>
-    <string name="kid_mode_disabled_status">अक्षम</string>
-    <string name="kid_mode_incorrect_pin">गलत पिन (PIN)</string>
-    <string name="kid_mode_set_pin_title">किड मोड पिन सेट करें</string>
-    <string name="kid_mode_set_pin_body">किड मोड सक्षम करने के लिए 4-अंकों का पिन दर्ज करें। बाद में इसे अक्षम करने के लिए आपको इस पिन की आवश्यकता होगी।</string>
-    <string name="kid_mode_pin_label">4-अंकों का पिन</string>
-    <string name="kid_mode_pin_error">पिन 4 अंकों का होना चाहिए</string>
-    <string name="kid_mode_enable">सक्षम करें</string>
-    <string name="kid_mode_disable_title">किड मोड अक्षम करें</string>
-    <string name="kid_mode_verify_body">किड मोड अक्षम करने के लिए अपना 4-अंकों का पिन दर्ज करें।</string>
-    <string name="kid_mode_disable">अक्षम करें</string>
 
     <!-- Writing Aid Screen -->
     <string name="writing_aid_title">राइटिंग एड (लेखन सहायक)</string>
@@ -803,7 +790,7 @@
     <string name="gpu_not_supported">इस मॉडल द्वारा GPU समर्थित नहीं है</string>
     <string name="load_model">मॉडल लोड करें</string>
     <string name="model_loaded">मॉडल सफलतापूर्वक लोड हुआ</string>
-    <string name="model_loading">मॉडल लोड हो रहा है</string>
+    <string name="model_loading">मॉडल लोड हो रहा है…</string>
     <string name="model_load_failed">मॉडल लोड करने में विफल</string>
     <string name="multimodal_models_only">केवल मल्टीमॉडल (Translate Gemma) मॉडल समर्थित हैं</string>
     <string name="text_models_only">केवल टेक्स्ट मॉडल समर्थित हैं</string>

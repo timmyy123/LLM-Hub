@@ -24,7 +24,7 @@
     <string name="ready_to_chat">Siap untuk mengobrol! Silakan pilih model di atas.</string>
     <string name="start_chatting">Mulai mengobrol dengan mengetik pesan di bawah!</string>
     <string name="type_a_message">Ketik pesan...</string>
-    <string name="loading_model_format">Memuat %1$s</string>
+    <string name="loading_model_format">Memuat %1$s…</string>
     <string name="please_wait_model_initialize">Harap tunggu sementara model diinisialisasi...</string>
     <string name="initializing_neural_network">Menginisialisasi jaringan neural...</string>
     <string name="attached_image">Gambar terlampir</string>
@@ -802,19 +802,6 @@
     <string name="creator_system_prompt_label">Prompt Sistem (PCTF):</string>
     <string name="creator_save_and_chat">Simpan &amp; Chat</string>
 
-    <!-- Kid Mode -->
-    <string name="kid_mode_title">Mode Anak</string>
-    <string name="kid_mode_enabled_status">Aktif - Perlindungan keamanan aktif</string>
-    <string name="kid_mode_disabled_status">Nonaktif</string>
-    <string name="kid_mode_incorrect_pin">PIN salah</string>
-    <string name="kid_mode_set_pin_title">Atur PIN Mode Anak</string>
-    <string name="kid_mode_set_pin_body">Masukkan PIN 4 digit untuk mengaktifkan Mode Anak. Anda akan membutuhkan PIN ini untuk menonaktifkannya nanti.</string>
-    <string name="kid_mode_pin_label">PIN 4 Digit</string>
-    <string name="kid_mode_pin_error">PIN harus 4 digit</string>
-    <string name="kid_mode_enable">Aktifkan</string>
-    <string name="kid_mode_disable_title">Nonaktifkan Mode Anak</string>
-    <string name="kid_mode_verify_body">Masukkan PIN 4 digit Anda untuk menonaktifkan Mode Anak.</string>
-    <string name="kid_mode_disable">Nonaktifkan</string>
 
     <string name="gpu_layers_label">GPU Layers: %1$d</string>
     <string name="gpu_layers_hint">Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers</string>

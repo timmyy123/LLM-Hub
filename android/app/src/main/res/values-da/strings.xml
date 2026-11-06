@@ -20,7 +20,7 @@
     <string name="ready_to_chat">Klar til at chatte! Vælg venligst en model ovenfor.</string>
     <string name="start_chatting">Begynd at chatte ved at skrive en besked nedenfor!</string>
     <string name="type_a_message">Skriv en besked...</string>
-    <string name="loading_model_format">Indlæser%1$s</string>
+    <string name="loading_model_format">Indlæser %1$s…</string>
     <string name="please_wait_model_initialize">Vent venligst mens modellen initialiseres...</string>
     <string name="initializing_neural_network">Initialiserer neurale netværk...</string>
     <string name="attached_image">Vedhæftet billede</string>
@@ -521,18 +521,6 @@
     <string name="creator_result_heading">Her er din nye skaber!</string>
     <string name="creator_system_prompt_label">Systemprompt (PCTF):</string>
     <string name="creator_save_and_chat">Gem og chat</string>
-    <string name="kid_mode_title">Børnetilstand</string>
-    <string name="kid_mode_enabled_status">Aktiveret - Sikkerhedsrækværk aktive</string>
-    <string name="kid_mode_disabled_status">Deaktiveret</string>
-    <string name="kid_mode_incorrect_pin">Forkert pinkode</string>
-    <string name="kid_mode_set_pin_title">Indstil børnetilstand PIN</string>
-    <string name="kid_mode_set_pin_body">Indtast en 4-cifret pinkode for at aktivere børnetilstand. Du skal bruge denne pinkode for at deaktivere den senere.</string>
-    <string name="kid_mode_pin_label">4-cifret pinkode</string>
-    <string name="kid_mode_pin_error">PIN-koden skal være 4 cifre</string>
-    <string name="kid_mode_enable">Aktiver</string>
-    <string name="kid_mode_disable_title">Deaktiver børnetilstand</string>
-    <string name="kid_mode_verify_body">Indtast din 4-cifrede pinkode for at deaktivere børnetilstand.</string>
-    <string name="kid_mode_disable">Deaktiver</string>
     <string name="writing_aid_title">Skrivehjælp</string>
     <string name="writing_aid_input_label">Indtast din tekst</string>
     <string name="writing_aid_input_hint">Indtast eller indsæt den tekst, du vil forbedre...</string>
@@ -720,7 +708,7 @@
     <string name="gpu_not_supported">GPU understøttes ikke af denne model</string>
     <string name="load_model">Indlæs model</string>
     <string name="model_loaded">Model indlæst med succes</string>
-    <string name="model_loading">Indlæser model</string>
+    <string name="model_loading">Indlæser model…</string>
     <string name="model_load_failed">Kunne ikke indlæse model</string>
     <string name="multimodal_models_only">Kun multimodale (Gemma-3n) modeller understøttes</string>
     <string name="text_models_only">Tekstbaserede modeller understøttes</string>

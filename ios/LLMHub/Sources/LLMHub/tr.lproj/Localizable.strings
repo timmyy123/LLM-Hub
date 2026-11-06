@@ -693,18 +693,6 @@
 "creator_result_heading" = "Yeni AI karakteriniz hazır!";
 "creator_system_prompt_label" = "Sistem Yönergesi (PCTF):";
 "creator_save_and_chat" = "Kaydet ve Sohbet Et";
-"kid_mode_title" = "Çocuk Modu";
-"kid_mode_enabled_status" = "Etkin - Güvenlik korumaları aktif";
-"kid_mode_disabled_status" = "Devre dışı";
-"kid_mode_incorrect_pin" = "Yanlış PIN";
-"kid_mode_set_pin_title" = "Çocuk Modu PIN Belirle";
-"kid_mode_set_pin_body" = "Çocuk Modunu etkinleştirmek için 4 haneli bir PIN girin. Daha sonra devre dışı bırakmak için bu PIN gerekli olacak.";
-"kid_mode_pin_label" = "4 Haneli PIN";
-"kid_mode_pin_error" = "PIN 4 haneli olmalıdır";
-"kid_mode_enable" = "Etkinleştir";
-"kid_mode_disable_title" = "Çocuk Modunu Devre Dışı Bırak";
-"kid_mode_verify_body" = "Çocuk Modunu devre dışı bırakmak için 4 haneli PIN\'inizi girin.";
-"kid_mode_disable" = "Devre Dışı Bırak";
 "gpu_layers_label" = "GPU Layers: %1$d";
 "gpu_layers_hint" = "Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers";
 "premium_title" = "LLM Hub Ömür Boyu Premium";

@@ -15,6 +15,7 @@ import com.llmhub.llmhub.data.DeviceInfo
 import com.llmhub.llmhub.data.ModelAvailabilityProvider
 import com.llmhub.llmhub.inference.InferenceService
 import com.llmhub.llmhub.inference.UnifiedInferenceService
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -98,6 +99,10 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _loadingModelName = MutableStateFlow<String?>(null)
     val loadingModelName: StateFlow<String?> = _loadingModelName.asStateFlow()
+
+    /** Name of the model that last failed to load, until the screen has shown the error. */
+    private val _modelLoadError = MutableStateFlow<String?>(null)
+    val modelLoadError: StateFlow<String?> = _modelLoadError.asStateFlow()
 
     private val _isTermuxEnabled = MutableStateFlow(
         getApplication<Application>().getSharedPreferences("agent_prefs", Context.MODE_PRIVATE).getBoolean("is_termux_enabled", false)
@@ -214,7 +219,8 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
         agentPrefs.edit().putBoolean("is_termux_enabled", enabled).apply()
     }
 
-    suspend fun loadModelSuspend(model: LLMModel, preferredBackend: LlmInference.Backend? = null, deviceId: String? = null) {
+    /** Loads [model] for the Agent. Returns false, and sets [modelLoadError], when every backend fails. */
+    suspend fun loadModelSuspend(model: LLMModel, preferredBackend: LlmInference.Backend? = null, deviceId: String? = null): Boolean {
         _loadingModelName.value = model.name
         try {
             val maxTokens = agentPrefs.getInt("selected_max_tokens", 4096)
@@ -250,9 +256,22 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
                 deviceId = finalDeviceId
             )
             _activeModelName.value = inferenceService.getCurrentlyLoadedModel()?.name
+            return true
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // UnifiedInferenceService throws AllBackendsFailedException when no backend can load the model.
+            Log.e("AgentViewModel", "Failed to load ${model.name}", e)
+            _activeModelName.value = inferenceService.getCurrentlyLoadedModel()?.name
+            _modelLoadError.value = model.name
+            return false
         } finally {
             _loadingModelName.value = null
         }
+    }
+
+    fun clearModelLoadError() {
+        _modelLoadError.value = null
     }
 
     fun loadModel(model: LLMModel, preferredBackend: LlmInference.Backend? = null, deviceId: String? = null) {
@@ -331,9 +350,7 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
                     val availableModels = ModelAvailabilityProvider.loadAvailableModels(getApplication())
                         .filter { it.modelFormat == "litertlm" || it.modelFormat == "gguf" }
                     val modelToLoad = availableModels.find { it.name == savedName } ?: availableModels.firstOrNull()
-                    if (modelToLoad != null) {
-                        loadModelSuspend(modelToLoad)
-                    }
+                    if (modelToLoad != null && !loadModelSuspend(modelToLoad)) return@launch
                 }
 
                 processPromptWithTools(userText)
@@ -365,7 +382,7 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
                         .filter { it.modelFormat == "litertlm" || it.modelFormat == "gguf" }
                     val modelToLoad = availableModels.find { it.name == savedName } ?: availableModels.firstOrNull()
                     if (modelToLoad != null) {
-                        loadModelSuspend(modelToLoad)
+                        if (!loadModelSuspend(modelToLoad)) return@launch
                         loadedModel = inferenceService.getCurrentlyLoadedModel()
                     }
                 }

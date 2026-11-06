@@ -20,7 +20,7 @@
     <string name="ready_to_chat">Klaar om te chatten! Selecteer hierboven een model.</string>
     <string name="start_chatting">Begin met chatten door hieronder een bericht te typen!</string>
     <string name="type_a_message">Typ een bericht...</string>
-    <string name="loading_model_format">Laden%1$s</string>
+    <string name="loading_model_format">%1$s wordt geladen…</string>
     <string name="please_wait_model_initialize">Een ogenblik geduld terwijl het model wordt geïnitialiseerd...</string>
     <string name="initializing_neural_network">Bezig met initialiseren van neuraal netwerk...</string>
     <string name="attached_image">Bijgevoegde afbeelding</string>
@@ -176,7 +176,7 @@
     <string name="language_thai">ไทย</string>
     <string name="language_vietnamese">Tiếng Việt</string>
     <string name="failed_to_load_image">Kan afbeelding</string>
-    <string name="model_loading_error">niet laden Fout bij laden van model</string>
+    <string name="model_loading_error">Fout bij laden van model</string>
     <string name="message_send_error">Fout bij verzenden van bericht</string>
     <string name="file_save_error">Fout bij opslaan van bestand</string>
     <string name="file_save_success">Bestand succesvol opgeslagen</string>
@@ -509,18 +509,6 @@
     <string name="creator_result_heading">Hier is je nieuwe creAItor!</string>
     <string name="creator_system_prompt_label">Systeemprompt (PCTF):</string>
     <string name="creator_save_and_chat">Opslaan en chatten</string>
-    <string name="kid_mode_title">Kindmodus</string>
-    <string name="kid_mode_enabled_status">Ingeschakeld - Veiligheidsleuningen actief</string>
-    <string name="kid_mode_disabled_status">Uitgeschakeld</string>
-    <string name="kid_mode_incorrect_pin">Onjuiste pincode</string>
-    <string name="kid_mode_set_pin_title">Pincode voor kindermodus instellen</string>
-    <string name="kid_mode_set_pin_body">Voer een pincode van vier cijfers in om de kindermodus in te schakelen. U hebt deze pincode nodig om deze later uit te schakelen.</string>
-    <string name="kid_mode_pin_label">4-cijferige pincode</string>
-    <string name="kid_mode_pin_error">De pincode moet uit 4 cijfers bestaan ​​</string>
-    <string name="kid_mode_enable">Inschakelen</string>
-    <string name="kid_mode_disable_title">Kindmodus uitschakelen</string>
-    <string name="kid_mode_verify_body">Voer uw 4-cijferige pincode in om de Kid-modus uit te schakelen.</string>
-    <string name="kid_mode_disable">Uitschakelen</string>
     <string name="writing_aid_title">Schrijfhulp</string>
     <string name="writing_aid_input_label">Voer uw tekst in</string>
     <string name="writing_aid_input_hint">Typ of plak de tekst die u wilt verbeteren...</string>
@@ -708,7 +696,7 @@
     <string name="gpu_not_supported">GPU wordt niet ondersteund door dit model</string>
     <string name="load_model">Model laden</string>
     <string name="model_loaded">Model succesvol geladen</string>
-    <string name="model_loading">Laadmodel</string>
+    <string name="model_loading">Model wordt geladen…</string>
     <string name="model_load_failed">Kan model</string>
     <string name="multimodal_models_only">niet laden Alleen multimodale (Gemma-3n) modellen ondersteund</string>
     <string name="text_models_only">Alleen-tekstmodellen ondersteund</string>

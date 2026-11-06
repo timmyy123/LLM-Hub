@@ -23,7 +23,7 @@
     <string name="ready_to_chat">آمادهٔ گفتگو! لطفاً یک مدل در بالا انتخاب کنید.</string>
     <string name="start_chatting">با نوشتن یک پیام در پایین شروع به گفتگو کنید!</string>
     <string name="type_a_message">نوشتن پیام…</string>
-    <string name="loading_model_format">در حال بارگذاری %1$s</string>
+    <string name="loading_model_format">در حال بارگذاری %1$s…</string>
     <string name="please_wait_model_initialize">لطفاً صبر کنید تا مدل آماده شود…</string>
     <string name="initializing_neural_network">در حال راه‌اندازی شبکه عصبی…</string>
     <string name="attached_image">تصویر پیوست‌شده</string>
@@ -800,19 +800,6 @@
     <string name="creator_system_prompt_label">راهنمای سیستم (PCTF):</string>
     <string name="creator_save_and_chat">ذخیره و گفتگو</string>
 
-    <!-- Kid Mode -->
-    <string name="kid_mode_title">حالت کودک</string>
-    <string name="kid_mode_enabled_status">فعال - محافظت‌های ایمنی فعال است</string>
-    <string name="kid_mode_disabled_status">غیرفعال</string>
-    <string name="kid_mode_incorrect_pin">پین نادرست</string>
-    <string name="kid_mode_set_pin_title">تنظیم پین حالت کودک</string>
-    <string name="kid_mode_set_pin_body">یک پین ۴ رقمی وارد کنید تا حالت کودک فعال شود. برای غیرفعال کردن بعداً به این پین نیاز خواهید داشت.</string>
-    <string name="kid_mode_pin_label">پین ۴ رقمی</string>
-    <string name="kid_mode_pin_error">پین باید ۴ رقم باشد</string>
-    <string name="kid_mode_enable">فعال‌سازی</string>
-    <string name="kid_mode_disable_title">غیرفعال کردن حالت کودک</string>
-    <string name="kid_mode_verify_body">پین ۴ رقمی خود را وارد کنید تا حالت کودک غیرفعال شود.</string>
-    <string name="kid_mode_disable">غیرفعال‌سازی</string>
 
     <string name="gpu_layers_label">GPU Layers: %1$d</string>
     <string name="gpu_layers_hint">Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers</string>

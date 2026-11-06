@@ -20,7 +20,7 @@
     <string name="ready_to_chat">Sẵn sàng trò chuyện! Vui lòng chọn một mô hình ở trên.</string>
     <string name="start_chatting">Bắt đầu trò chuyện bằng cách nhập tin nhắn bên dưới!</string>
     <string name="type_a_message">Nhập tin nhắn...</string>
-    <string name="loading_model_format">Đang tải%1$s</string>
+    <string name="loading_model_format">Đang tải %1$s…</string>
     <string name="please_wait_model_initialize">Vui lòng đợi trong khi mô hình khởi chạy...</string>
     <string name="initializing_neural_network">Đang khởi tạo mạng lưới thần kinh...</string>
     <string name="attached_image">Hình ảnh đính kèm</string>
@@ -509,18 +509,6 @@
     <string name="creator_result_heading">Đây là người sáng tạo mới của bạn!</string>
     <string name="creator_system_prompt_label">Dấu nhắc hệ thống (PCTF):</string>
     <string name="creator_save_and_chat">Lưu và trò chuyện</string>
-    <string name="kid_mode_title">Chế độ trẻ em</string>
-    <string name="kid_mode_enabled_status">Đã bật - Lan can an toàn đang hoạt động</string>
-    <string name="kid_mode_disabled_status">Đã tắt</string>
-    <string name="kid_mode_incorrect_pin">Mã PIN không chính xác</string>
-    <string name="kid_mode_set_pin_title">Đặt mã PIN Chế độ Trẻ em</string>
-    <string name="kid_mode_set_pin_body">Nhập mã PIN gồm 4 chữ số để bật Chế độ dành cho trẻ em. Bạn sẽ cần mã PIN này để vô hiệu hóa nó sau này.</string>
-    <string name="kid_mode_pin_label">Mã PIN 4 chữ số</string>
-    <string name="kid_mode_pin_error">Mã PIN phải có 4 chữ số</string>
-    <string name="kid_mode_enable">Bật</string>
-    <string name="kid_mode_disable_title">Tắt Chế độ dành cho trẻ em</string>
-    <string name="kid_mode_verify_body">Nhập mã PIN gồm 4 chữ số của bạn để tắt Chế độ dành cho trẻ em.</string>
-    <string name="kid_mode_disable">Tắt</string>
     <string name="writing_aid_title">Hỗ trợ viết</string>
     <string name="writing_aid_input_label">Nhập văn bản của bạn</string>
     <string name="writing_aid_input_hint">Nhập hoặc dán văn bản bạn muốn cải thiện...</string>
@@ -708,7 +696,7 @@
     <string name="gpu_not_supported">GPU không được hỗ trợ bởi model này</string>
     <string name="load_model">Tải mô hình</string>
     <string name="model_loaded">Đã tải mô hình thành công</string>
-    <string name="model_loading">Đang tải mô hình</string>
+    <string name="model_loading">Đang tải mô hình…</string>
     <string name="model_load_failed">Không tải được mô hình</string>
     <string name="multimodal_models_only">Chỉ hỗ trợ các mẫu đa phương thức (Gemma-3n)</string>
     <string name="text_models_only">Hỗ trợ các mẫu chỉ có văn bản</string>

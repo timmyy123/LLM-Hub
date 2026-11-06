@@ -24,7 +24,7 @@
     <string name="ready_to_chat">チャットの準備ができました！上からモデルを選択してください。</string>
     <string name="start_chatting">下にメッセージを入力してチャットを開始しましょう！</string>
     <string name="type_a_message">メッセージを入力...</string>
-    <string name="loading_model_format">%1$sを読み込み中</string>
+    <string name="loading_model_format">%1$sを読み込み中…</string>
     <string name="please_wait_model_initialize">モデルの初期化をお待ちください...</string>
     <string name="initializing_neural_network">ニューラルネットワークを初期化中...</string>
     <string name="attached_image">添付画像</string>
@@ -797,19 +797,6 @@
     <string name="creator_system_prompt_label">システムプロンプト (PCTF):</string>
     <string name="creator_save_and_chat">保存してチャット</string>
 
-    <!-- Kid Mode -->
-    <string name="kid_mode_title">キッズモード</string>
-    <string name="kid_mode_enabled_status">有効 - セーフガードが有効</string>
-    <string name="kid_mode_disabled_status">無効</string>
-    <string name="kid_mode_incorrect_pin">PINが違います</string>
-    <string name="kid_mode_set_pin_title">キッズモードのPINを設定</string>
-    <string name="kid_mode_set_pin_body">キッズモードを有効にするために4桁のPINを入力してください。後で無効にするときにこのPINが必要です。</string>
-    <string name="kid_mode_pin_label">4桁のPIN</string>
-    <string name="kid_mode_pin_error">PINは4桁で入力してください</string>
-    <string name="kid_mode_enable">有効にする</string>
-    <string name="kid_mode_disable_title">キッズモードを無効にする</string>
-    <string name="kid_mode_verify_body">キッズモードを無効にするために4桁のPINを入力してください。</string>
-    <string name="kid_mode_disable">無効にする</string>
 
     <string name="gpu_layers_label">GPU Layers: %1$d</string>
     <string name="gpu_layers_hint">Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers</string>

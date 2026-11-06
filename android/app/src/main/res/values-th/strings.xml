@@ -20,7 +20,7 @@
     <string name="ready_to_chat">พร้อมแชท! กรุณาเลือกรุ่นด้านบน</string>
     <string name="start_chatting">เริ่มแชทโดยพิมพ์ข้อความด้านล่างนี้!</string>
     <string name="type_a_message">พิมพ์ข้อความ...</string>
-    <string name="loading_model_format">กำลังโหลด%1$s</string>
+    <string name="loading_model_format">กำลังโหลด %1$s…</string>
     <string name="please_wait_model_initialize">โปรดรอสักครู่ในขณะที่โมเดลเริ่มต้น...</string>
     <string name="initializing_neural_network">กำลังเริ่มต้นโครงข่ายประสาทเทียม...</string>
     <string name="attached_image">รูปภาพที่แนบมา</string>
@@ -509,18 +509,6 @@
     <string name="creator_result_heading">นี่คือครีเอเตอร์คนใหม่ของคุณ!</string>
     <string name="creator_system_prompt_label">พรอมต์ระบบ (PCTF):</string>
     <string name="creator_save_and_chat">บันทึกและแชท</string>
-    <string name="kid_mode_title">โหมดเด็ก</string>
-    <string name="kid_mode_enabled_status">เปิดใช้งาน - ราวกั้นความปลอดภัยทำงานอยู่</string>
-    <string name="kid_mode_disabled_status">ปิดการใช้งาน</string>
-    <string name="kid_mode_incorrect_pin">PIN ไม่ถูกต้อง</string>
-    <string name="kid_mode_set_pin_title">ตั้งค่า PIN ของโหมดเด็ก</string>
-    <string name="kid_mode_set_pin_body">ป้อน PIN 4 หลักเพื่อเปิดใช้งานโหมดเด็ก คุณจะต้องใช้ PIN นี้เพื่อปิดการใช้งานในภายหลัง</string>
-    <string name="kid_mode_pin_label">PIN 4 หลัก</string>
-    <string name="kid_mode_pin_error">PIN ต้องเป็นตัวเลข 4 หลัก</string>
-    <string name="kid_mode_enable">เปิดใช้งาน</string>
-    <string name="kid_mode_disable_title">ปิดการใช้งานโหมดเด็ก</string>
-    <string name="kid_mode_verify_body">ป้อน PIN 4 หลักของคุณเพื่อปิดใช้งานโหมดเด็ก</string>
-    <string name="kid_mode_disable">ปิดการใช้งาน</string>
     <string name="writing_aid_title">เครื่องช่วยเขียน</string>
     <string name="writing_aid_input_label">กรอกข้อความของคุณ</string>
     <string name="writing_aid_input_hint">พิมพ์หรือวางข้อความที่คุณต้องการปรับปรุง...</string>
@@ -708,7 +696,7 @@
     <string name="gpu_not_supported">รุ่นนี้ไม่รองรับ GPU</string>
     <string name="load_model">โหลดโมเดล</string>
     <string name="model_loaded">โหลดโมเดลสำเร็จแล้ว</string>
-    <string name="model_loading">กำลังโหลดโมเดล</string>
+    <string name="model_loading">กำลังโหลดโมเดล…</string>
     <string name="model_load_failed">ไม่สามารถโหลดโมเดล</string>
     <string name="multimodal_models_only">รองรับเฉพาะรุ่นต่อเนื่องหลายรูปแบบ (Gamma-3n)</string>
     <string name="text_models_only">รองรับโมเดลแบบข้อความเท่านั้น</string>

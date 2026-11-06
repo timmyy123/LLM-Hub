@@ -244,12 +244,8 @@ fun ChatScreen(
                                     verticalAlignment = Alignment.CenterVertically,
                                     modifier = Modifier.padding(top = 2.dp)
                                 ) {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.size(12.dp),
-                                        strokeWidth = 1.5.dp,
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
+                                    // Static text, no spinner: while a model loads on the GPU, each animation frame can
+                                    // stall the UI long enough to trigger an ANR (Play vitals).
                                     Text(
                                         text = stringResource(R.string.model_loading),
                                         style = MaterialTheme.typography.bodySmall,

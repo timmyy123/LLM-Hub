@@ -664,18 +664,6 @@
 "creator_result_heading" = "¡Aquí está tu nueva persona de IA!";
 "creator_system_prompt_label" = "Prompt del Sistema (PCTF):";
 "creator_save_and_chat" = "Guardar y Chatear";
-"kid_mode_title" = "Modo Infantil";
-"kid_mode_enabled_status" = "Activado - Protecciones de seguridad activas";
-"kid_mode_disabled_status" = "Desactivado";
-"kid_mode_incorrect_pin" = "PIN incorrecto";
-"kid_mode_set_pin_title" = "Establecer PIN del Modo Infantil";
-"kid_mode_set_pin_body" = "Ingresa un PIN de 4 dígitos para activar el Modo Infantil. Necesitarás este PIN para desactivarlo más tarde.";
-"kid_mode_pin_label" = "PIN de 4 Dígitos";
-"kid_mode_pin_error" = "El PIN debe tener 4 dígitos";
-"kid_mode_enable" = "Activar";
-"kid_mode_disable_title" = "Desactivar Modo Infantil";
-"kid_mode_verify_body" = "Ingresa tu PIN de 4 dígitos para desactivar el Modo Infantil.";
-"kid_mode_disable" = "Desactivar";
 "gpu_layers_label" = "GPU Layers: %1$d";
 "gpu_layers_hint" = "Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers";
 "premium_title" = "LLM Hub Premium Lifetime";
