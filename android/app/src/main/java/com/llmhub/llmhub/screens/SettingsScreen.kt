@@ -671,12 +671,35 @@ fun SettingsScreen(
                                         val processorRunning = remember { com.llmhub.llmhub.data.MemoryProcessor.processing }
                                         val processorRunningState by processorRunning.collectAsState(initial = false)
                                         val hasPendingDocs = memoryList.any { it.status == "PENDING" || it.status == "EMBEDDING_IN_PROGRESS" }
+                                        // A document left unprocessed by an earlier session (app closed, model failed) has nobody
+                                        // working on it: start the processor, so the spinner below always means real work.
+                                        val hasUnprocessedDocs = hasPendingDocs || memoryList.any { it.status == "FAILED" }
+                                        LaunchedEffect(hasUnprocessedDocs) {
+                                            if (hasUnprocessedDocs && !com.llmhub.llmhub.data.MemoryProcessor.processing.value) {
+                                                com.llmhub.llmhub.data.MemoryProcessor(
+                                                    context, com.llmhub.llmhub.data.LlmHubDatabase.getDatabase(context)
+                                                ).processPending()
+                                            }
+                                        }
                                         if (processorRunningState || hasPendingDocs) {
                                             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 8.dp)) {
                                                 CircularProgressIndicator(modifier = Modifier.size(20.dp))
                                                 Spacer(modifier = Modifier.width(8.dp))
                                                 Text(stringResource(R.string.memory_processing), style = MaterialTheme.typography.bodySmall)
                                             }
+                                        }
+                                        // A document the embedding model could not process: say why instead of spinning.
+                                        val memoryFailure by com.llmhub.llmhub.data.MemoryProcessor.failure.collectAsState()
+                                        if (!processorRunningState && memoryFailure != null && memoryList.any { it.status == "FAILED" }) {
+                                            Text(
+                                                stringResource(
+                                                    if (memoryFailure == com.llmhub.llmhub.data.MemoryProcessor.Failure.NPU_UNAVAILABLE) R.string.media_search_npu_unavailable
+                                                    else R.string.memory_upload_failed
+                                                ),
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.error,
+                                                modifier = Modifier.padding(vertical = 8.dp)
+                                            )
                                         }
 
                                         Spacer(modifier = Modifier.height(8.dp))

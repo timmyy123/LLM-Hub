@@ -29,6 +29,9 @@ class RagServiceManager(
     private var embeddingService: EmbeddingService? = null
     private var ragService: RagService? = null
     private var isInitialized = false
+    /** True when the selected chip-specific embedding model failed to load on this device's NPU. */
+    @Volatile var npuUnavailable = false
+        private set
     private var initializedModelName: String? = null
     private val initMutex = Mutex()
     private val TAG = "RagServiceManager"
@@ -94,7 +97,10 @@ class RagServiceManager(
                     } else {
                         MediaPipeEmbeddingService(context, selectedEmbeddingModel)
                     }
-                    if (embeddingService.initialize()) {
+                    npuUnavailable = false
+                    val ready = embeddingService.initialize()
+                    if (!ready) npuUnavailable = (embeddingService as? LiteRtLmEmbeddingService)?.npuUnavailable == true
+                    if (ready) {
                         this@RagServiceManager.embeddingService = embeddingService
                         this@RagServiceManager.ragService = InMemoryRagService(embeddingService)
                         isInitialized = true

@@ -376,11 +376,14 @@ dependencies {
 
     // LiteRT-LM: native Kotlin API for .litertlm models (Gemma-3n, Gemma-4, etc.)
     // Replaces tasks-genai for litertlm format models. GPU enabled once 0.10.1 hits Maven.
+    // Its NPU dispatch libraries are not on Maven: they are built from the LiteRT revision this release
+    // pins and live in assets/litertlm_npu. Rebuild them with tools/litertlm_npu/build_dispatch.sh and run
+    // EmbeddingNpuLoadDeviceTest whenever this version changes, or NPU embedding models stop loading.
     implementation("com.google.ai.edge.litertlm:litertlm-android:0.19.1")
 
-    // LiteRT NPU dispatch libraries for the SoC-specific EmbeddingGemma 2 .litertlm files.
-    // Qualcomm also needs QAIRT 2.50 (QNN system API 1.14). The libs in assets/qnnlibs are
-    // the older SD runtime (system API 1.5) and are extracted separately, not used here.
+    // LiteRT NPU dispatch libraries for the CompiledModel features (Parakeet NPU, LiteRT Stable Diffusion).
+    // Qualcomm also needs QAIRT 2.50 (QNN system API 1.14). The libs in assets/qnnlibs are the older SD
+    // runtime (system API 1.5) and are extracted separately, not used here.
     implementation("com.google.ai.edge.litert:litert-npu-runtime-qualcomm:2.3.0")
     implementation("com.google.ai.edge.litert:litert-npu-runtime-mediatek:2.3.0")
     implementation("com.google.ai.edge.litert:litert-npu-runtime-google-tensor:2.3.0")

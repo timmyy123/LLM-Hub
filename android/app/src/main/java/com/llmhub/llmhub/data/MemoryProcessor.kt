@@ -161,7 +161,12 @@ class MemoryProcessor(private val context: Context, private val db: LlmHubDataba
     companion object {
         // Public state that composables can observe to know when embedding work is active
         val processing = MutableStateFlow(false)
+
+        /** Why the last run could not embed anything, for the memory screen; null when it worked. */
+        val failure = MutableStateFlow<Failure?>(null)
     }
+
+    enum class Failure { NPU_UNAVAILABLE, EMBEDDING_UNAVAILABLE }
 
     /** Memory is text-only: drop image/audio entries, which can't be injected into chats. */
     private suspend fun removeMediaMemories(list: List<MemoryDocument>): List<MemoryDocument> {
@@ -180,15 +185,20 @@ class MemoryProcessor(private val context: Context, private val db: LlmHubDataba
 
     fun processPending() {
         CoroutineScope(Dispatchers.IO).launch {
+            // A document still marked in progress while no run is active was cut off (app closed): redo it.
+            val resumeInterrupted = !processing.value
             // mark processor as running
             processing.value = true
+            failure.value = null
             try {
                 // Ensure RAG initialization attempts
                 val job = ragManager.initializeAsync()
                 job.join()
 
                 val list = removeMediaMemories(db.memoryDao().getAllMemory().first())
-                for (doc in list.filter { it.status == "PENDING" || it.status == "FAILED" }) {
+                for (doc in list.filter {
+                    it.status == "PENDING" || it.status == "FAILED" || (resumeInterrupted && it.status == "EMBEDDING_IN_PROGRESS")
+                }) {
                     try {
                         // mark in-progress
                         db.memoryDao().update(doc.copy(status = "EMBEDDING_IN_PROGRESS"))
@@ -266,8 +276,11 @@ class MemoryProcessor(private val context: Context, private val db: LlmHubDataba
                             db.memoryDao().update(doc.copy(status = "EMBEDDED", chunkCount = totalChunksCreated))
                             Log.w(TAG, "MemoryProcessor: partially embedded doc ${doc.id}; created=$totalChunksCreated failed=$embeddingFailures")
                         } else {
-                            Log.i(TAG, "MemoryProcessor: embedding failed for doc ${doc.id} - leaving as PENDING for retry")
-                            db.memoryDao().update(doc.copy(status = "PENDING"))
+                            // FAILED, not PENDING: the screen shows its spinner for PENDING documents, which would
+                            // then never stop. Failed documents are picked up again by the next run.
+                            Log.i(TAG, "MemoryProcessor: embedding failed for doc ${doc.id} - marked FAILED for retry")
+                            db.memoryDao().update(doc.copy(status = "FAILED"))
+                            failure.value = if (ragManager.npuUnavailable) Failure.NPU_UNAVAILABLE else Failure.EMBEDDING_UNAVAILABLE
                         }
                     } catch (e: Exception) {
                         Log.e(TAG, "Failed processing doc ${doc.id}", e)

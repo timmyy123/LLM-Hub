@@ -28,9 +28,7 @@ class LiteRtLmEmbeddingService(
     private val model: LLMModel,
     private val enableMedia: Boolean = false,
     private val visionTokensPerImage: Int? = null,
-    private val maxInputLength: Int? = null,
-    /** Set by [EmbeddingNpuProbeService] to initialize with one NPU configuration without probing again. */
-    private val npuBackend: String? = null
+    private val maxInputLength: Int? = null
 ) : EmbeddingService {
 
     private var engine: EmbeddingEngine? = null
@@ -67,23 +65,7 @@ class LiteRtLmEmbeddingService(
                 return@withLock false
             }
 
-            val isNpuModel = ModelData.isEmbeddingGemma2NpuModel(model)
-            val backend = when {
-                !isNpuModel -> null
-                npuBackend != null -> npuBackend
-                else -> EmbeddingNpuProbe.verifiedBackend(
-                    context, model, modelFile,
-                    if (supportsImageEmbedding) listOf(NPU, NPU_GPU_VISION, NPU_CPU_VISION) else listOf(NPU),
-                    enableMedia, visionTokensPerImage, maxInputLength
-                )
-            }
-            if (isNpuModel && backend == null) {
-                npuUnavailable = true
-                Log.e(TAG, "This device's NPU can't run ${model.name}")
-                return@withLock false
-            }
-
-            for ((label, config) in candidateConfigs(modelFile.absolutePath).filter { backend == null || it.first == backend }) {
+            for ((label, config) in candidateConfigs(modelFile.absolutePath)) {
                 var candidate: EmbeddingEngine? = null
                 try {
                     candidate = EmbeddingEngine(config).also { it.initialize() }
@@ -99,6 +81,7 @@ class LiteRtLmEmbeddingService(
                 }
             }
             Log.e(TAG, "All backend configurations failed for ${model.name}")
+            npuUnavailable = ModelData.isEmbeddingGemma2NpuModel(model)
             false
         }
     }
@@ -132,67 +115,57 @@ class LiteRtLmEmbeddingService(
     }
 
     /**
-     * Qualcomm dispatch loads QNN from the directory that contains libLiteRtDispatch_Qualcomm.so.
-     * LiteRT 2.3 requires QNN system API 1.14, which is QAIRT 2.50 in assets/qnnlibs_litert.
-     * The Stable Diffusion pack (assets/qnnlibs, system API 1.5) is a different runtime and
-     * must not be copied into this directory.
+     * The folder LiteRT-LM loads its NPU dispatch library from.
+     *
+     * LiteRT-LM 0.19 asks the dispatch library for LiteRtDispatchQueryInterface. The litert-npu-runtime
+     * 2.3.x libraries in the APK's native library folder (used by the CompiledModel features) only export
+     * the older LiteRtDispatchGetApi, so LiteRT-LM gets its own libraries, built from the LiteRT revision it
+     * pins (tools/litertlm_npu) and shipped in assets/litertlm_npu. Each vendor has a folder with only its
+     * own dispatch library, because LiteRT loads the first one it finds.
      */
     private fun prepareNpuLibraryDir(): String {
         val nativeDir = context.applicationInfo.nativeLibraryDir
-        val tag = DeviceInfo.getEmbeddingGemma2NpuTag()
-        if (tag?.startsWith("MediaTek") == true) return mediaTekLibraryDir(nativeDir)
-        if (tag?.startsWith("Qualcomm") != true) return nativeDir
-
-        val dispatchLib = File(nativeDir, "libLiteRtDispatch_Qualcomm.so")
-        if (!dispatchLib.exists()) return nativeDir
+        val tag = DeviceInfo.getEmbeddingGemma2NpuTag() ?: return nativeDir
+        val vendor = when {
+            tag.startsWith("Qualcomm") -> "Qualcomm"
+            tag.startsWith("MediaTek") -> "MediaTek"
+            tag.startsWith("Google") -> "GoogleTensor"
+            else -> return nativeDir
+        }
         return try {
-            val dir = File(context.filesDir, "litert_npu_qnn_250").apply { mkdirs() }
-            copyIfChanged(dispatchLib, File(dir, dispatchLib.name))
-            val names = context.assets.list("qnnlibs_litert").orEmpty()
-            if (names.isEmpty()) {
-                Log.e(TAG, "QAIRT 2.50 libraries missing from assets/qnnlibs_litert")
-                nativeDir
-            } else {
-                for (name in names) {
-                    val target = File(dir, name)
-                    if (target.exists() && target.length() > 0L) continue
-                    context.assets.open("qnnlibs_litert/$name").use { input ->
-                        target.outputStream().use { input.copyTo(it) }
-                    }
-                    target.setReadable(true, false)
-                    target.setExecutable(true, false)
-                }
-                dir.absolutePath
-            }
+            val library = "libLiteRtDispatch_$vendor.so"
+            val dir = File(context.filesDir, "litertlm_npu/$vendor").apply { mkdirs() }
+            val bytes = context.assets.open("litertlm_npu/$library").use { it.readBytes() }
+            File(dir, library).let { if (it.length() != bytes.size.toLong()) it.writeBytes(bytes) }
+            if (vendor == "Qualcomm") linkQnnRuntime(dir)
+            dir.absolutePath
         } catch (e: Exception) {
-            Log.w(TAG, "Failed to stage QNN libraries: ${e.message}")
+            Log.w(TAG, "Failed to stage $vendor NPU libraries: ${e.message}")
             nativeDir
         }
     }
 
     /**
-     * LiteRT loads the first dispatch library in the directory, and Google Tensor's sorts first in the native
-     * library directory, so MediaTek gets a directory with only its own dispatch library and compiler plugin.
+     * The Qualcomm dispatch library loads QNN from its own folder and needs QAIRT 2.50 (QNN system API 1.14,
+     * assets/qnnlibs_litert). Those 100 MB are kept once in files/litert_npu_qnn_250, where the CompiledModel
+     * features stage them too, and linked into [dir]. The Stable Diffusion pack (assets/qnnlibs, system API
+     * 1.5) is a different runtime and must not end up here.
      */
-    private fun mediaTekLibraryDir(nativeDir: String): String = try {
-        val dir = File(context.filesDir, "litert_npu_mediatek").apply { mkdirs() }
-        val names = listOf("libLiteRtDispatch_MediaTek.so", "libLiteRtCompilerPlugin_MediaTek.so")
-        if (names.all { File(nativeDir, it).exists() }) {
-            names.forEach { copyIfChanged(File(nativeDir, it), File(dir, it)) }
-            dir.absolutePath
-        } else {
-            nativeDir
+    private fun linkQnnRuntime(dir: File) {
+        val names = context.assets.list("qnnlibs_litert").orEmpty()
+        check(names.isNotEmpty()) { "QAIRT 2.50 libraries missing from assets/qnnlibs_litert" }
+        val store = File(context.filesDir, "litert_npu_qnn_250").apply { mkdirs() }
+        for (name in names) {
+            val stored = File(store, name)
+            if (stored.length() == 0L) {
+                context.assets.open("qnnlibs_litert/$name").use { input -> stored.outputStream().use { input.copyTo(it) } }
+                stored.setReadable(true, false)
+                stored.setExecutable(true, false)
+            }
+            val link = File(dir, name)
+            if (link.exists()) continue
+            runCatching { android.system.Os.symlink(stored.path, link.path) }.onFailure { stored.copyTo(link, overwrite = true) }
         }
-    } catch (e: Exception) {
-        Log.w(TAG, "Failed to stage MediaTek NPU libraries: ${e.message}")
-        nativeDir
-    }
-
-    private fun copyIfChanged(source: File, target: File) {
-        if (target.exists() && target.length() == source.length()) return
-        source.inputStream().use { input -> target.outputStream().use { input.copyTo(it) } }
-        target.setReadable(true, true)
-        target.setExecutable(true, true)
     }
 
     private suspend fun embed(contents: List<InputData>): FloatArray? {

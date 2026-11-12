@@ -36,9 +36,8 @@ class LlmHubApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         DeviceInfo.init(this)
-        // The :npu_probe and :litert_sd processes only run one model (EmbeddingNpuProbe, LiteRtSdService).
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P &&
-            (getProcessName().endsWith(":npu_probe") || getProcessName().endsWith(":litert_sd"))) return
+        // The :litert_sd process only runs one model (LiteRtSdService).
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P && getProcessName().endsWith(":litert_sd")) return
         CrashNotice.installJavaCrashHandler(this)
         // Apply saved language preference or system locale
         applySavedLanguage()

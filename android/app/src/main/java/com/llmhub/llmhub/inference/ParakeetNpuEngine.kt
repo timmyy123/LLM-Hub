@@ -209,7 +209,6 @@ class ParakeetNpuEngine private constructor(
                     val started = System.currentTimeMillis()
                     model = CompiledModel.create(modelFile.absolutePath, options, environment)
                     Log.i(TAG, "Loaded ${modelFile.name} in ${System.currentTimeMillis() - started} ms")
-                    check(encoderHearsInput(model)) { "The NPU encoder gives no usable output on this device" }
                     ParakeetNpuEngine(environment, model, vocabulary, executor)
                 } catch (t: Throwable) {
                     Log.e(TAG, "Failed to load ${modelFile.name} on the NPU", t)
@@ -220,24 +219,6 @@ class ParakeetNpuEngine private constructor(
             }
             if (engine == null) executor.shutdown()
             return engine
-        }
-
-        /**
-         * Some chips load an ahead-of-time compiled encoder and then return NaN (Snapdragon 8 Elite)
-         * or the same output for any audio (Dimensity 9400/9500), which decodes to nothing. Two
-         * different inputs must give different, finite encodings, or the model is unusable here.
-         */
-        private fun encoderHearsInput(model: CompiledModel): Boolean {
-            val inputs = model.createInputBuffers(ENCODE)
-            val outputs = model.createOutputBuffers(ENCODE)
-            val size = ParakeetFeatures.MELS * ParakeetFeatures.FRAMES
-            inputs[0].writeFloat(FloatArray(size))
-            model.run(inputs, outputs, ENCODE)
-            val silence = outputs[0].readFloat()
-            inputs[0].writeFloat(FloatArray(size) { sin(it * 0.37f) })
-            model.run(inputs, outputs, ENCODE)
-            val pattern = outputs[0].readFloat()
-            return pattern.none { it.isNaN() } && !pattern.contentEquals(silence)
         }
 
         private fun npuEnvironment(context: Context): Environment {

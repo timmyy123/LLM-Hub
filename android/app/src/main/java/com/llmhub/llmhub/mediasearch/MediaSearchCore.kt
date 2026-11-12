@@ -20,7 +20,6 @@ import com.llmhub.llmhub.data.LLMModel
 import com.llmhub.llmhub.data.ModelData
 import com.llmhub.llmhub.data.hasCompleteDownloadedBundle
 import com.llmhub.llmhub.data.localFileName
-import com.llmhub.llmhub.embedding.EmbeddingNpuProbe
 import com.llmhub.llmhub.embedding.LiteRtLmEmbeddingService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
@@ -365,8 +364,8 @@ abstract class MediaSearchViewModel(application: Application, private val prefsN
         val current = _selectedModel.value
         _selectedModel.value = models.firstOrNull { it.name == current?.name }
             ?: models.firstOrNull { it.name == saved }
-            // Prefer the chip-specific NPU build when it is downloaded and this device's NPU can run it.
-            ?: models.firstOrNull { ModelData.isEmbeddingGemma2NpuModel(it) && !EmbeddingNpuProbe.knownUnsupported(context, modelFile(it)) }
+            // Prefer the chip-specific NPU build when it is downloaded.
+            ?: models.firstOrNull { ModelData.isEmbeddingGemma2NpuModel(it) }
             ?: models.firstOrNull()
     }
 
