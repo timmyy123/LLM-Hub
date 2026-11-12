@@ -33,7 +33,13 @@ object ModelAvailabilityProvider {
                 !model.name.contains("projector", ignoreCase = true)
             }
             .mapNotNull { model ->
-                resolveModelFromStorage(context, model)
+                // ML Kit recognizers have no file of ours: the system reports whether they are ready.
+                if (AsrModels.isMlKit(model)) {
+                    model.takeIf {
+                        com.llmhub.llmhub.inference.MlKitAsrEngine.status(it) ==
+                            com.google.mlkit.genai.common.FeatureStatus.AVAILABLE
+                    }?.copy(isDownloaded = true)
+                } else resolveModelFromStorage(context, model)
             }
 
         val importedModels = loadImportedModels(context)

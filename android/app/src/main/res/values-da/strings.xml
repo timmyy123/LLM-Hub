@@ -1151,4 +1151,9 @@ Du forsøger at sende et billede, men den nuværende model er **kun-tekst**:
     <string name="image_extras_ios_help">LoRA: SafeTensors eller Draw Things .ckpt. Encodere/VAE: kompatible Draw Things .ckpt-filer. Embeddings: SafeTensors. Vælg først den matchende model.</string>
     <string name="image_extras_android_help">Understøttede filer: SafeTensors, GGUF, CKPT, PT, PTH, BIN. LoRA, CLIP skip og encodere virker kun med et importeret checkpoint, ikke med de indbyggede NPU/CPU-modeller.</string>
     <string name="image_extras_import_location">Importér checkpoints, LoRA\'er, encodere og promptlister under %1$s → %2$s.</string>
+
+    <!-- LiteRT-LM speech models and system-managed ML Kit models -->
+    <string name="litert_tts_model_unavailable">Denne talemodel er ikke tilgængelig. Fuldfør download af den, eller vælg en anden TTS-motor i Indstillinger.</string>
+    <string name="litert_tts_speech_failed">Talen kunne ikke genereres. Vælg en anden stemme eller TTS-motor i Indstillinger.</string>
+    <string name="model_system_managed">Administreres af systemet</string>
 </resources>

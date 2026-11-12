@@ -1,5 +1,7 @@
 package com.llmhub.llmhub.viewmodels
 
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.flow.retryWhen
 
 import androidx.lifecycle.ViewModel
@@ -228,7 +230,8 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
         if (!modelsDir.exists()) modelsDir.mkdirs()
 
         // Prepare list with real downloaded/partial state
-        val baseModels: MutableList<LLMModel> = ModelData.models.map { model ->
+        // ML Kit recognizers have no file to scan; refreshMlKitAsrStatus adds them below where supported.
+        val baseModels: MutableList<LLMModel> = ModelData.models.filterNot { com.llmhub.llmhub.data.AsrModels.isMlKit(it) }.map { model ->
             // Handle Stable Diffusion NPU models (QNN format)
             if (model.modelFormat == "qnn_npu") {
                 val sdModelsDir = File(context.filesDir, "sd_models")
@@ -515,6 +518,7 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
         }.toMutableList()
 
         _models.value = baseModels
+        ModelData.models.filter { com.llmhub.llmhub.data.AsrModels.isMlKit(it) }.forEach(::refreshMlKitAsrStatus)
 
         // Re-validate partials that may actually be complete (e.g., size unknown in HEAD)
         baseModels.filter { !it.isDownloaded && it.downloadedBytes > 0 && (it.totalBytes == null || it.totalBytes == 0L) }
@@ -631,7 +635,79 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
         return search(baseDir, 0)
     }
 
+    /**
+     * ML Kit recognizers are owned by the system: list them only where the device can run them, as
+     * downloaded once the system reports the model present.
+     */
+    private fun refreshMlKitAsrStatus(model: LLMModel) {
+        viewModelScope.launch {
+            val status = com.llmhub.llmhub.inference.MlKitAsrEngine.status(model)
+            if (status == com.google.mlkit.genai.common.FeatureStatus.UNAVAILABLE) return@launch
+            val ready = status == com.google.mlkit.genai.common.FeatureStatus.AVAILABLE
+            if (_models.value.none { it.name == model.name }) {
+                _models.value = _models.value + model.copy(
+                    isDownloaded = ready, isDownloading = false, downloadProgress = if (ready) 1f else 0f,
+                    downloadedBytes = 0L, totalBytes = null
+                )
+            }
+        }
+    }
+
+    private fun downloadMlKitAsr(model: LLMModel) {
+        updateModel(model.name) { it.copy(isDownloading = true, isPaused = false, downloadProgress = -1f, downloadedBytes = 0L, totalBytes = null) }
+        downloadJobs[model.name] = viewModelScope.launch {
+            val engine = com.llmhub.llmhub.inference.MlKitAsrEngine(com.llmhub.llmhub.data.AsrModels.isMlKitAdvanced(model))
+            var downloaded = false
+            try {
+                val download = engine.download() ?: error("ML Kit speech recognition is not available on this device")
+                var total = 0L
+                var failure: Exception? = null
+                download.takeWhile { status ->
+                    when (status) {
+                        is com.google.mlkit.genai.common.DownloadStatus.DownloadStarted -> { total = status.bytesToDownload; true }
+                        is com.google.mlkit.genai.common.DownloadStatus.DownloadProgress -> {
+                            updateModel(model.name, rateLimit = true) {
+                                it.copy(
+                                    isDownloading = true,
+                                    downloadProgress = if (total > 0) (status.totalBytesDownloaded.toFloat() / total).coerceIn(0f, 0.999f) else -1f,
+                                    downloadedBytes = status.totalBytesDownloaded,
+                                    totalBytes = total.takeIf { bytes -> bytes > 0 }
+                                )
+                            }
+                            true
+                        }
+                        is com.google.mlkit.genai.common.DownloadStatus.DownloadFailed -> { failure = status.e; false }
+                        else -> false // DownloadCompleted
+                    }
+                }.collect()
+                // The system reports a failure while its own download is still queued ("will be
+                // retried automatically") and finishes it later, so keep watching for a while.
+                var checks = 0
+                while (failure != null && checks++ < 36 &&
+                    engine.status() != com.google.mlkit.genai.common.FeatureStatus.AVAILABLE) kotlinx.coroutines.delay(5_000)
+                downloaded = engine.status() == com.google.mlkit.genai.common.FeatureStatus.AVAILABLE
+                if (!downloaded) failure?.let { throw it }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                android.util.Log.e("ModelDownloadViewModel", "ML Kit ASR download failed for ${model.name}", e)
+                _downloadErrors.emit(model.name to (e.message ?: e.toString()))
+            } finally {
+                engine.close()
+                downloadJobs.remove(model.name)
+                updateModel(model.name) {
+                    it.copy(isDownloaded = downloaded, isDownloading = false, downloadProgress = if (downloaded) 1f else 0f,
+                        downloadedBytes = 0L, totalBytes = null, downloadSpeedBytesPerSec = null)
+                }
+            }
+        }
+    }
+
     fun downloadModel(model: LLMModel) {
+        if (com.llmhub.llmhub.data.AsrModels.isMlKit(model)) {
+            downloadMlKitAsr(model)
+            return
+        }
         val modelsDir = File(context.filesDir, "models")
         val existingFile = File(modelsDir, model.localFileName())
         val startingBytes = if (model.isVideoGenerationModel()) {
@@ -1116,6 +1192,8 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
     }
 
     fun deleteModel(model: LLMModel) {
+        // The system owns ML Kit models and shares them between apps; there is nothing of ours to delete.
+        if (com.llmhub.llmhub.data.AsrModels.isMlKit(model)) return
         // First cancel any ongoing download
         cancelDownload(model)
         

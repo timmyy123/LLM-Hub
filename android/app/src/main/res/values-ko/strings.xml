@@ -1182,4 +1182,9 @@
     <string name="image_extras_ios_help">LoRA: SafeTensors 또는 Draw Things .ckpt. 인코더/VAE: 호환되는 Draw Things .ckpt. 임베딩: SafeTensors. 먼저 호환되는 모델을 선택하세요.</string>
     <string name="image_extras_android_help">지원 파일: SafeTensors, GGUF, CKPT, PT, PTH, BIN. LoRA, CLIP 스킵, 인코더는 가져온 체크포인트에서만 작동하며 기본 제공 NPU/CPU 모델에서는 작동하지 않습니다.</string>
     <string name="image_extras_import_location">체크포인트, LoRA, 인코더, 프롬프트 목록은 %1$s → %2$s에서 가져옵니다.</string>
+
+    <!-- LiteRT-LM speech models and system-managed ML Kit models -->
+    <string name="litert_tts_model_unavailable">이 음성 모델을 사용할 수 없습니다. 다운로드를 완료하거나 설정에서 다른 TTS 엔진을 선택하세요.</string>
+    <string name="litert_tts_speech_failed">음성을 생성하지 못했습니다. 설정에서 다른 음성이나 TTS 엔진을 선택하세요.</string>
+    <string name="model_system_managed">시스템에서 관리</string>
 </resources>

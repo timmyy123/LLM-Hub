@@ -1090,4 +1090,9 @@
     <string name="image_extras_ios_help">LoRA: SafeTensors hoặc .ckpt của Draw Things. Bộ mã hóa/VAE: .ckpt tương thích của Draw Things. Embedding: SafeTensors. Hãy chọn mô hình phù hợp trước.</string>
     <string name="image_extras_android_help">Tệp được hỗ trợ: SafeTensors, GGUF, CKPT, PT, PTH, BIN. LoRA, CLIP skip và bộ mã hóa chỉ hoạt động với checkpoint đã nhập, không dùng được với các mô hình NPU/CPU tích hợp.</string>
     <string name="image_extras_import_location">Nhập checkpoint, LoRA, bộ mã hóa và danh sách prompt tại %1$s → %2$s.</string>
+
+    <!-- LiteRT-LM speech models and system-managed ML Kit models -->
+    <string name="litert_tts_model_unavailable">Mô hình giọng nói này không khả dụng. Hãy tải xong mô hình hoặc chọn công cụ TTS khác trong Cài đặt.</string>
+    <string name="litert_tts_speech_failed">Không thể tạo giọng nói. Hãy chọn giọng khác hoặc công cụ TTS khác trong Cài đặt.</string>
+    <string name="model_system_managed">Do hệ thống quản lý</string>
 </resources>

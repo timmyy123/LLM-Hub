@@ -1182,4 +1182,9 @@
     <string name="image_extras_ios_help">LoRA: فایل SafeTensors یا ‎.ckpt متعلق به Draw Things. رمزگذارها و VAE: فایل ‎.ckpt سازگار با Draw Things. امبدینگ‌ها: SafeTensors. ابتدا مدل سازگار را انتخاب کنید.</string>
     <string name="image_extras_android_help">فایل‌های پشتیبانی‌شده: SafeTensors, GGUF, CKPT, PT, PTH, BIN. LoRA، پرش CLIP و رمزگذارها فقط با چک‌پوینت واردشده کار می‌کنند، نه با مدل‌های داخلی NPU/CPU.</string>
     <string name="image_extras_import_location">چک‌پوینت‌ها، LoRAها، رمزگذارها و فهرست‌های پرامپت را از %1$s ← %2$s وارد کنید.</string>
+
+    <!-- LiteRT-LM speech models and system-managed ML Kit models -->
+    <string name="litert_tts_model_unavailable">این مدل گفتار در دسترس نیست. دانلود آن را کامل کنید یا در تنظیمات موتور TTS دیگری انتخاب کنید.</string>
+    <string name="litert_tts_speech_failed">تولید گفتار ممکن نشد. در تنظیمات صدای دیگر یا موتور TTS دیگری انتخاب کنید.</string>
+    <string name="model_system_managed">مدیریت‌شده توسط سیستم</string>
 </resources>

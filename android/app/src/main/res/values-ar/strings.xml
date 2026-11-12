@@ -1182,4 +1182,9 @@
     <string name="image_extras_ios_help">LoRA: ملفات SafeTensors أو ‎.ckpt من Draw Things. المُرمّزات وVAE: ملفات ‎.ckpt متوافقة من Draw Things. التضمينات: SafeTensors. اختر النموذج المتوافق أولًا.</string>
     <string name="image_extras_android_help">الملفات المدعومة: SafeTensors, GGUF, CKPT, PT, PTH, BIN. تعمل LoRA وتخطي CLIP والمشفّرات مع نقطة تحقق مستوردة فقط، وليس مع نماذج NPU/CPU المدمجة.</string>
     <string name="image_extras_import_location">استورد نقاط التحقق وملفات LoRA والمرمّزات وقوائم الأوامر من %1$s ← %2$s.</string>
+
+    <!-- LiteRT-LM speech models and system-managed ML Kit models -->
+    <string name="litert_tts_model_unavailable">نموذج النطق هذا غير متاح. أكمل تنزيله أو اختر محرك تحويل نص إلى كلام آخر من الإعدادات.</string>
+    <string name="litert_tts_speech_failed">تعذّر توليد الكلام. اختر صوتًا آخر أو محرك تحويل نص إلى كلام آخر من الإعدادات.</string>
+    <string name="model_system_managed">يديره النظام</string>
 </resources>

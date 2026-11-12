@@ -1208,4 +1208,9 @@
     <string name="image_extras_ios_help">LoRA: SafeTensors या Draw Things .ckpt। एनकोडर/VAE: संगत Draw Things .ckpt। एम्बेडिंग: SafeTensors। पहले उपयुक्त मॉडल चुनें।</string>
     <string name="image_extras_android_help">समर्थित फ़ाइलें: SafeTensors, GGUF, CKPT, PT, PTH, BIN. LoRA, CLIP skip और एन्कोडर केवल इम्पोर्ट किए गए चेकपॉइंट के साथ काम करते हैं, बिल्ट-इन NPU/CPU मॉडल के साथ नहीं।</string>
     <string name="image_extras_import_location">चेकपॉइंट, LoRA, एन्कोडर और प्रॉम्प्ट सूचियाँ %1$s → %2$s में इम्पोर्ट करें।</string>
+
+    <!-- LiteRT-LM speech models and system-managed ML Kit models -->
+    <string name="litert_tts_model_unavailable">यह स्पीच मॉडल उपलब्ध नहीं है। इसका डाउनलोड पूरा करें या सेटिंग्स में कोई दूसरा TTS इंजन चुनें।</string>
+    <string name="litert_tts_speech_failed">स्पीच जनरेट नहीं हो सकी। सेटिंग्स में कोई दूसरी आवाज़ या TTS इंजन चुनें।</string>
+    <string name="model_system_managed">सिस्टम द्वारा प्रबंधित</string>
 </resources>

@@ -11,6 +11,7 @@ import ai.onnxruntime.OnnxTensor
 import ai.onnxruntime.OrtEnvironment
 import ai.onnxruntime.OrtSession
 import com.llmhub.llmhub.data.ThemePreferences
+import com.llmhub.llmhub.data.LiteRtTtsModel
 import com.llmhub.llmhub.data.PocketTtsModel
 import com.llmhub.llmhub.data.SupertonicModel
 import com.llmhub.llmhub.R
@@ -60,6 +61,8 @@ class TtsService(private val context: Context, private val isTranslationFeature:
     private val ortSessionLock = Any()
     private var pocketEngine: PocketTtsEngine? = null
     private var supertonicEngine: SupertonicEngine? = null
+    @Volatile private var liteRtEngine: LiteRtTtsEngine? = null
+    private var liteRtModel: String? = null
     private var speechLocale = Locale.getDefault()
     private val configurationScope = CoroutineScope(Dispatchers.Main + kotlinx.coroutines.SupervisorJob())
     private val _error = MutableStateFlow<String?>(null)
@@ -165,6 +168,8 @@ class TtsService(private val context: Context, private val isTranslationFeature:
                 combine(themePreferences.selectedTtsModel, themePreferences.selectedTtsDevice,
                     themePreferences.selectedTtsVoice) { model, device, voice ->
                     if (SupertonicModel.isModel(model) || model == PocketTtsModel.NAME) listOf(model, "cpu", "")
+                    // Voices are packaged in the bundle and read per sentence: no reload on a voice change.
+                    else if (LiteRtTtsModel.isModel(model)) listOf(model, if (LiteRtTtsModel.supportsGpu(model)) device else "cpu", "")
                     else listOf(model, device, voice)
                 }.distinctUntilChanged().collectLatest { settings ->
                     isInitialized = false
@@ -180,6 +185,8 @@ class TtsService(private val context: Context, private val isTranslationFeature:
                         pocketEngine = null
                         supertonicEngine?.close()
                         supertonicEngine = null
+                        liteRtEngine?.close()
+                        liteRtEngine = null
                         synchronized(ortSessionLock) {
                             ortSession?.close()
                             ortSession = null
@@ -209,6 +216,32 @@ class TtsService(private val context: Context, private val isTranslationFeature:
             } catch (e: Exception) {
                 Log.e(TAG, "Pocket TTS initialization failed", e)
                 _error.value = context.getString(R.string.pocket_model_required)
+                isInitialized = true
+            }
+            return
+        }
+        if (selectedModel != null && LiteRtTtsModel.isModel(selectedModel)) {
+            try {
+                check(LiteRtTtsModel.isComplete(context, selectedModel))
+                val voice = LiteRtTtsModel.resolveVoice(selectedModel, liteRtVoice(selectedModel))
+                liteRtEngine = LiteRtTtsEngine.create(
+                    context, LiteRtTtsModel.file(context, selectedModel),
+                    preferGpu = LiteRtTtsModel.supportsGpu(selectedModel) && selectedDevice.lowercase() == "gpu",
+                    warmUpVoice = voice,
+                    warmUpLocale = LiteRtTtsModel.synthesisLocale(selectedModel, voice),
+                    speakingRate = currentSpeechRate
+                )
+                liteRtModel = selectedModel
+                currentModelDir = LiteRtTtsModel.file(context, selectedModel).parentFile
+                isCustomTts = true
+                isInitialized = true
+                startAudioTrackPlayback()
+                startSynthesisWorker()
+                flushPendingQueue()
+            } catch (e: kotlinx.coroutines.CancellationException) { throw e
+            } catch (e: Exception) {
+                Log.e(TAG, "LiteRT-LM TTS initialization failed", e)
+                _error.value = context.getString(R.string.litert_tts_model_unavailable)
                 isInitialized = true
             }
             return
@@ -459,6 +492,10 @@ class TtsService(private val context: Context, private val isTranslationFeature:
         }
     }
 
+    private suspend fun liteRtVoice(model: String?): String =
+        if (LiteRtTtsModel.isPocket(model)) themePreferences.pocketLiteRtVoice.first()
+        else themePreferences.selectedTtsVoice.first()
+
     private fun startAudioTrackPlayback() {
         val sampleRate = supertonicEngine?.sampleRate ?: 24000
         val minBuf = AudioTrack.getMinBufferSize(sampleRate, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT)
@@ -611,6 +648,40 @@ class TtsService(private val context: Context, private val isTranslationFeature:
                         _error.value = context.getString(R.string.pocket_speech_failed)
                         if (activeJobsCount.addAndGet(-unqueuedChunks).coerceAtLeast(0) == 0) _isSpeaking.value = false
                     }
+                }
+                return@launch
+            }
+            val liteRt = liteRtEngine
+            if (liteRt != null) {
+                val model = liteRtModel
+                // PocketTTS streams any length; Kokoro pays a full static-shape pass per clause.
+                val clauseLength = if (LiteRtTtsModel.isPocket(model)) 240 else LiteRtTtsEngine.KOKORO_CLAUSE_CHARS
+                for (sentence in sentenceChannel) {
+                    // Playback retires one job per queued chunk and waits for the audio to finish before
+                    // reporting silence, so the sentence's job is handed to its first chunk, not dropped here.
+                    var jobPending = true
+                    try {
+                        val voice = LiteRtTtsModel.resolveVoice(model, liteRtVoice(model))
+                        val locale = LiteRtTtsModel.synthesisLocale(model, voice)
+                        for (clause in SupertonicEngine.chunks(LiteRtTtsEngine.sanitize(sentence), clauseLength)) {
+                            var samples = 0
+                            var peak = 0f
+                            liteRt.synthesize(clause, voice, locale) { audio ->
+                                samples += audio.size
+                                for (value in audio) if (kotlin.math.abs(value) > peak) peak = kotlin.math.abs(value)
+                                if (jobPending) jobPending = false else activeJobsCount.incrementAndGet()
+                                pcmQueue.put(ShortArray(audio.size) { (audio[it].coerceIn(-1f, 1f) * 32767f).toInt().toShort() })
+                            }
+                            Log.d(TAG, "LiteRT-LM voice $voice: ${clause.length} chars -> $samples samples, peak $peak")
+                        }
+                    } catch (e: kotlinx.coroutines.CancellationException) { throw e
+                    } catch (e: Exception) {
+                        // An utterance aborted by stop() fails like any other; it is not an error to show.
+                        if (!isActive) throw kotlinx.coroutines.CancellationException()
+                        Log.e(TAG, "LiteRT-LM TTS synthesis failed", e)
+                        _error.value = context.getString(R.string.litert_tts_speech_failed)
+                    }
+                    if (jobPending && activeJobsCount.decrementAndGet().coerceAtLeast(0) == 0) _isSpeaking.value = false
                 }
                 return@launch
             }
@@ -919,6 +990,8 @@ class TtsService(private val context: Context, private val isTranslationFeature:
         try { tts?.stop() } catch (_: Exception) {}
         if (isCustomTts) {
             synthesisScope.coroutineContext[Job]?.cancelChildren()
+            // The native synthesis loop only stops when told to; cancelling the worker is not enough.
+            liteRtEngine?.cancel()
             stopAudioTrack()
             // Restart fresh AudioTrack + serial synthesis worker for next utterance
             startAudioTrackPlayback()
@@ -1791,6 +1864,7 @@ class TtsService(private val context: Context, private val isTranslationFeature:
         val configurationJob = configurationScope.coroutineContext[Job]
         configurationScope.cancel()
         synchronized(pendingSpeakQueue) { pendingSpeakQueue.clear() }
+        liteRtEngine?.cancel()
         synthesisScope.coroutineContext[Job]?.cancel()
         stopAudioTrack()
         tts?.shutdown()
@@ -1802,6 +1876,8 @@ class TtsService(private val context: Context, private val isTranslationFeature:
             pocketEngine = null
             supertonicEngine?.close()
             supertonicEngine = null
+            liteRtEngine?.close()
+            liteRtEngine = null
             synchronized(ortSessionLock) {
                 try { ortSession?.close() } catch (_: Exception) {}
                 ortSession = null

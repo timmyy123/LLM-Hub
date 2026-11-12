@@ -1154,4 +1154,9 @@
     <string name="image_extras_ios_help">LoRA: SafeTensors или .ckpt Draw Things. Кодировщики/VAE: совместимые .ckpt Draw Things. Эмбеддинги: SafeTensors. Сначала выберите подходящую модель.</string>
     <string name="image_extras_android_help">Поддерживаемые файлы: SafeTensors, GGUF, CKPT, PT, PTH, BIN. LoRA, пропуск CLIP и энкодеры работают только с импортированным чекпоинтом, а не со встроенными моделями NPU/CPU.</string>
     <string name="image_extras_import_location">Импортируйте чекпоинты, LoRA, энкодеры и списки промптов в разделе %1$s → %2$s.</string>
+
+    <!-- LiteRT-LM speech models and system-managed ML Kit models -->
+    <string name="litert_tts_model_unavailable">Эта модель речи недоступна. Завершите её загрузку или выберите другой движок TTS в настройках.</string>
+    <string name="litert_tts_speech_failed">Не удалось синтезировать речь. Выберите другой голос или движок TTS в настройках.</string>
+    <string name="model_system_managed">Управляется системой</string>
 </resources>

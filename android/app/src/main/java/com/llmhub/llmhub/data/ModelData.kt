@@ -1006,6 +1006,34 @@ object ModelData {
             additionalFiles = SupertonicModel.fp16CoreFiles.keys.drop(1).map { "${SupertonicModel.FP16_BASE_URL}/fp16/onnx/$it" }
         ),
         LLMModel(
+            name = LiteRtTtsModel.KOKORO_NAME,
+            description = "Kokoro-82M in Google's LiteRT-LM format, as used by AI Edge Gallery. One file with all 54 voices in 9 languages built in, GPU accelerated. ~295 MB download.",
+            url = LiteRtTtsModel.KOKORO_URL,
+            category = "tts",
+            sizeBytes = LiteRtTtsModel.KOKORO_SIZE,
+            source = "hexgrad (LiteRT Community)",
+            supportsVision = false,
+            supportsAudio = true,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 6),
+            contextWindowSize = 0,
+            modelFormat = "litertlm"
+        ),
+        LLMModel(
+            name = LiteRtTtsModel.POCKET_NAME,
+            description = "PocketTTS 100M in Google's LiteRT-LM format, as used by AI Edge Gallery. 14 built-in voices across English, French, German, Spanish, Italian, Portuguese and Dutch. ~760 MB download.",
+            url = LiteRtTtsModel.POCKET_URL,
+            category = "tts",
+            sizeBytes = LiteRtTtsModel.POCKET_SIZE,
+            source = "Kyutai · CC-BY-4.0 (LiteRT Community)",
+            supportsVision = false,
+            supportsAudio = true,
+            supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 6),
+            contextWindowSize = 0,
+            modelFormat = "litertlm"
+        ),
+        LLMModel(
             name = "Kokoro-82M (ONNX Quantized)",
             description = "8-bit integer quantized Kokoro-82M ONNX model. Good balance of speed and size. ~92 MB download.",
             url = "https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX/resolve/468588286ebb2dd77c25b9771e5d165896538cce/onnx/model_quantized.onnx",
@@ -5290,6 +5318,48 @@ object ModelData {
                 "https://huggingface.co/openai/whisper-base/resolve/main/tokenizer.json",
                 "https://huggingface.co/openai/whisper-base/resolve/main/config.json"
             )
+        ),
+        LLMModel(
+            name = AsrModels.PARAKEET_NAME,
+            description = "NVIDIA Parakeet TDT 0.6B v3 in Google's LiteRT-LM format, as used by AI Edge Gallery. Accurate speech recognition for 25 European languages with automatic language detection. ~615 MB download.",
+            url = AsrModels.PARAKEET_URL,
+            category = "asr",
+            sizeBytes = AsrModels.PARAKEET_SIZE,
+            source = "NVIDIA · CC-BY-4.0 (LiteRT Community)",
+            supportsVision = false,
+            supportsAudio = true,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 6),
+            contextWindowSize = 0,
+            modelFormat = "litertlm"
+        ),
+        LLMModel(
+            name = AsrModels.MLKIT_BASIC_NAME,
+            description = "Google ML Kit on-device speech recognition. The model is installed and kept up to date by the system, so it uses no app storage.",
+            url = AsrModels.MLKIT_BASIC_URL,
+            category = "asr",
+            sizeBytes = 0L,
+            source = "Google ML Kit",
+            supportsVision = false,
+            supportsAudio = true,
+            supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 6),
+            contextWindowSize = 0,
+            modelFormat = AsrModels.MLKIT_FORMAT
+        ),
+        LLMModel(
+            name = AsrModels.MLKIT_ADVANCED_NAME,
+            description = "Google ML Kit high-quality on-device speech recognition for recent flagship devices. The model is installed and kept up to date by the system, so it uses no app storage.",
+            url = AsrModels.MLKIT_ADVANCED_URL,
+            category = "asr",
+            sizeBytes = 0L,
+            source = "Google ML Kit",
+            supportsVision = false,
+            supportsAudio = true,
+            supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 8, recommendedRamGB = 12),
+            contextWindowSize = 0,
+            modelFormat = AsrModels.MLKIT_FORMAT
         )
     )
 
@@ -5543,6 +5613,29 @@ object ModelData {
         }
     }
 
+    /** The Parakeet NPU build for this device's chip, when one works on it. */
+    private fun parakeetNpuModels(): List<LLMModel> {
+        val build = AsrModels.parakeetNpuBuild(ltxvSocForMatching()) ?: return emptyList()
+        return listOf(
+            LLMModel(
+                name = build.name,
+                description = "NVIDIA Parakeet TDT 0.6B v3 compiled for the ${build.chip} NPU with LiteRT. " +
+                    "Speech recognition for 25 European languages with automatic language detection. " +
+                    "Full-precision weights, so the download is larger than the LiteRT-LM build. ~1.3 GB download.",
+                url = build.url,
+                category = "asr",
+                sizeBytes = build.sizeBytes,
+                source = "NVIDIA · CC-BY-4.0 (LiteRT Community)",
+                supportsVision = false,
+                supportsAudio = true,
+                supportsGpu = false,
+                requirements = ModelRequirements(minRamGB = 6, recommendedRamGB = 8),
+                contextWindowSize = 0,
+                modelFormat = AsrModels.PARAKEET_NPU_FORMAT
+            )
+        )
+    }
+
     private const val EMBEDDING_GEMMA_2_REPO =
         "https://huggingface.co/litert-community/embeddinggemma-2-740m-litert-lm/resolve/24d962e906c7d332c6428e71c9676855024569e2"
     private const val EMBEDDING_GEMMA_2_440_REPO =
@@ -5681,7 +5774,7 @@ object ModelData {
                 model.url.contains("embeddinggemma-2-text-270m_")
             )
 
-    val models: List<LLMModel> = baseModels + embeddingGemma2Models + upscalerModels + ttsModels + musicGenerationModels + videoGenerationModels + sdLiteRtNpuModels() + (if (DeviceInfo.getChipsetSuffix() in setOf("8gen3", "8gen4", "8gen5")) sdxlModels else emptyList())
+    val models: List<LLMModel> = baseModels + embeddingGemma2Models + upscalerModels + ttsModels + musicGenerationModels + videoGenerationModels + sdLiteRtNpuModels() + parakeetNpuModels() + (if (DeviceInfo.getChipsetSuffix() in setOf("8gen3", "8gen4", "8gen5")) sdxlModels else emptyList())
 
 
     /**

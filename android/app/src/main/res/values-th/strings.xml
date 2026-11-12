@@ -1090,4 +1090,9 @@
     <string name="image_extras_ios_help">LoRA: SafeTensors หรือ .ckpt ของ Draw Things ตัวเข้ารหัส/VAE: .ckpt ของ Draw Things ที่เข้ากันได้ เอ็มเบดดิง: SafeTensors เลือกโมเดลที่ตรงกันก่อน</string>
     <string name="image_extras_android_help">ไฟล์ที่รองรับ: SafeTensors, GGUF, CKPT, PT, PTH, BIN LoRA, CLIP skip และตัวเข้ารหัสใช้ได้กับเช็กพอยต์ที่นำเข้าเท่านั้น ใช้กับโมเดล NPU/CPU ในตัวไม่ได้</string>
     <string name="image_extras_import_location">นำเข้าเช็กพอยต์ LoRA ตัวเข้ารหัส และรายการพรอมต์ได้ที่ %1$s → %2$s</string>
+
+    <!-- LiteRT-LM speech models and system-managed ML Kit models -->
+    <string name="litert_tts_model_unavailable">โมเดลเสียงนี้ไม่พร้อมใช้งาน โปรดดาวน์โหลดให้เสร็จหรือเลือกเอนจิน TTS อื่นในการตั้งค่า</string>
+    <string name="litert_tts_speech_failed">สร้างเสียงพูดไม่ได้ โปรดเลือกเสียงหรือเอนจิน TTS อื่นในการตั้งค่า</string>
+    <string name="model_system_managed">จัดการโดยระบบ</string>
 </resources>

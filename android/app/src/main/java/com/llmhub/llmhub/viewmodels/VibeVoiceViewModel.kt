@@ -125,7 +125,7 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
     private var sessionChatId: String = "vibevoice-${UUID.randomUUID()}"
     private var isSessionPrimed: Boolean = false
 
-    private val whisperKitService = com.llmhub.llmhub.inference.WhisperKitService(application)
+    private val asrService = com.llmhub.llmhub.inference.SpeechRecognitionService(application)
     private val asrMutex = Mutex()
 
     init {
@@ -315,13 +315,9 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
                 )
                 
                 if (isUsingAsr && voiceModel != null) {
-                    val modelDirName = voiceModel.name.replace(" ", "_").replace(Regex("[^a-zA-Z0-9_.-]"), "")
-                    val modelDir = java.io.File(getApplication<Application>().filesDir, "models/$modelDirName")
-                    val isEnglishOnly = voiceModel.name.contains("english", ignoreCase = true)
-                    whisperKitService.transcribeLanguage = if (isEnglishOnly) "en" else ""
-                    val loaded = whisperKitService.loadModel(modelDir.absolutePath, _selectedAsrBackend.value)
+                    val loaded = asrMutex.withLock { asrService.loadModel(voiceModel, _selectedAsrBackend.value) }
                     if (!loaded) {
-                        throw Exception("Failed to load WhisperKit model from: ${modelDir.absolutePath}")
+                        throw Exception("Failed to load speech recognition model: ${voiceModel.name}")
                     }
                 }
                 
@@ -330,7 +326,7 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
                 _loadError.value = e.message ?: "Failed to load model"
                 _isModelLoaded.value = false
                 try {
-                    asrMutex.withLock { whisperKitService.release() }
+                    asrMutex.withLock { asrService.release() }
                 } catch (_: Exception) {}
             } finally {
                 _isLoadingModel.value = false
@@ -344,7 +340,7 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
                 respondJob?.cancel()
                 _transcription.value = ""
                 asrMutex.withLock {
-                    whisperKitService.release()
+                    asrService.release()
                 }
                 inferenceService.unloadModel()
                 _isModelLoaded.value = false
@@ -398,7 +394,7 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
                     assistantText = ""
                 )
 
-                if (transcriptOverride != null || whisperKitService.isLoaded) {
+                if (transcriptOverride != null || asrService.isLoaded) {
                     val transcription = transcriptOverride ?: run {
                         val pcm16Wav = AudioConversionUtils.float32WavToPcm16Wav(audioBytes)
                         val pcm16Raw = if (pcm16Wav.size > 44) pcm16Wav.copyOfRange(44, pcm16Wav.size) else pcm16Wav
@@ -406,7 +402,7 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
                         try {
                             val result = withContext(Dispatchers.IO) {
                                 asrMutex.withLock {
-                                    whisperKitService.transcribe(pcm16Raw)
+                                    asrService.transcribe(pcm16Raw)
                                 }
                             }
                             result ?: throw Exception("ASR Transcription failed")

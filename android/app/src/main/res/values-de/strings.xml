@@ -1148,4 +1148,9 @@
     <string name="image_extras_ios_help">LoRA: SafeTensors oder Draw Things .ckpt. Encoder/VAE: kompatible Draw Things .ckpt-Dateien. Embeddings: SafeTensors. Zuerst das passende Modell auswählen.</string>
     <string name="image_extras_android_help">Unterstützte Dateien: SafeTensors, GGUF, CKPT, PT, PTH, BIN. LoRA, CLIP Skip und Encoder funktionieren nur mit einem importierten Checkpoint, nicht mit den integrierten NPU/CPU-Modellen.</string>
     <string name="image_extras_import_location">Checkpoints, LoRAs, Encoder und Prompt-Listen unter %1$s → %2$s importieren.</string>
+
+    <!-- LiteRT-LM speech models and system-managed ML Kit models -->
+    <string name="litert_tts_model_unavailable">Dieses Sprachmodell ist nicht verfügbar. Schließe den Download ab oder wähle in den Einstellungen eine andere TTS-Engine.</string>
+    <string name="litert_tts_speech_failed">Sprache konnte nicht erzeugt werden. Wähle in den Einstellungen eine andere Stimme oder TTS-Engine.</string>
+    <string name="model_system_managed">Vom System verwaltet</string>
 </resources>

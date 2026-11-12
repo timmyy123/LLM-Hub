@@ -1179,4 +1179,9 @@
     <string name="image_extras_ios_help">LoRA：SafeTensorsまたはDraw Thingsの.ckpt。エンコーダー・VAE：対応するDraw Thingsの.ckpt。埋め込み：SafeTensors。先に対応するモデルを選択してください。</string>
     <string name="image_extras_android_help">対応ファイル: SafeTensors, GGUF, CKPT, PT, PTH, BIN。LoRA、CLIPスキップ、エンコーダーはインポートしたチェックポイントでのみ使え、内蔵のNPU/CPUモデルでは使えません。</string>
     <string name="image_extras_import_location">チェックポイント、LoRA、エンコーダー、プロンプトリストは %1$s → %2$s からインポートします。</string>
+
+    <!-- LiteRT-LM speech models and system-managed ML Kit models -->
+    <string name="litert_tts_model_unavailable">この音声モデルは利用できません。ダウンロードを完了するか、設定で別のTTSエンジンを選択してください。</string>
+    <string name="litert_tts_speech_failed">音声を生成できませんでした。設定で別の音声またはTTSエンジンを選択してください。</string>
+    <string name="model_system_managed">システムが管理</string>
 </resources>

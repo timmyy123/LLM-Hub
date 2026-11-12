@@ -52,6 +52,7 @@ import com.llmhub.llmhub.utils.FileUtils
 import com.llmhub.llmhub.R
 import java.io.File
 import com.llmhub.llmhub.BuildConfig
+import com.llmhub.llmhub.data.LiteRtTtsModel
 import com.llmhub.llmhub.data.PocketTtsModel
 import com.llmhub.llmhub.data.SupertonicModel
 import com.llmhub.llmhub.data.hasCompleteDownloadedBundle
@@ -1561,7 +1562,9 @@ private fun TtsModelSelector(themeViewModel: ThemeViewModel) {
                 val modelsDir = File(context.filesDir, "models")
                 val modelDirName = model.name.replace(" ", "_").replace(Regex("[^a-zA-Z0-9_.-]"), "")
                 val modelFile = File(File(modelsDir, modelDirName), model.localFileName())
-                modelFile.exists() && modelFile.length() > 0
+                // The LiteRT-LM bundles are single files stored beside the other .litertlm models.
+                if (LiteRtTtsModel.isModel(model.name)) LiteRtTtsModel.isComplete(context, model.name)
+                else modelFile.exists() && modelFile.length() > 0
             }
             .map { it.name }
     }
@@ -1647,6 +1650,7 @@ private fun TtsModelSelector(themeViewModel: ThemeViewModel) {
 private fun TtsDeviceSelector(themeViewModel: ThemeViewModel) {
     val selectedTtsModel by themeViewModel.selectedTtsModel.collectAsState()
     if (selectedTtsModel == null || SupertonicModel.isModel(selectedTtsModel) || selectedTtsModel == PocketTtsModel.NAME) return
+    if (LiteRtTtsModel.isModel(selectedTtsModel) && !LiteRtTtsModel.supportsGpu(selectedTtsModel)) return
 
     val selectedTtsDevice by themeViewModel.selectedTtsDevice.collectAsState()
     var showTtsDeviceDialog by remember { mutableStateOf(false) }
@@ -1736,6 +1740,10 @@ private fun TtsVoiceSelector(themeViewModel: ThemeViewModel) {
     }
     if (SupertonicModel.isModel(selectedTtsModel)) {
         SupertonicVoiceSettings()
+        return
+    }
+    selectedTtsModel?.takeIf { LiteRtTtsModel.isModel(it) }?.let {
+        LiteRtVoiceSettings(it, themeViewModel)
         return
     }
 

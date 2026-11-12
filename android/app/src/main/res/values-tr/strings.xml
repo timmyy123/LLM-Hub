@@ -1180,4 +1180,9 @@
     <string name="image_extras_ios_help">LoRA: SafeTensors veya Draw Things .ckpt. Kodlayıcılar/VAE: uyumlu Draw Things .ckpt. Gömüler: SafeTensors. Önce eşleşen modeli seçin.</string>
     <string name="image_extras_android_help">Desteklenen dosyalar: SafeTensors, GGUF, CKPT, PT, PTH, BIN. LoRA, CLIP atlama ve kodlayıcılar yalnızca içe aktarılan bir checkpoint ile çalışır, yerleşik NPU/CPU modelleriyle çalışmaz.</string>
     <string name="image_extras_import_location">Checkpoint, LoRA, kodlayıcı ve istem listelerini %1$s → %2$s bölümünden içe aktarın.</string>
+
+    <!-- LiteRT-LM speech models and system-managed ML Kit models -->
+    <string name="litert_tts_model_unavailable">Bu konuşma modeli kullanılamıyor. İndirmesini tamamlayın veya Ayarlar\'dan başka bir TTS motoru seçin.</string>
+    <string name="litert_tts_speech_failed">Konuşma oluşturulamadı. Ayarlar\'dan başka bir ses veya TTS motoru seçin.</string>
+    <string name="model_system_managed">Sistem tarafından yönetilir</string>
 </resources>

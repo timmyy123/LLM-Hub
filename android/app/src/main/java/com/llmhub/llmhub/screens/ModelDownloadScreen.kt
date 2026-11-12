@@ -100,6 +100,7 @@ private fun shouldShowNpuBadge(model: LLMModel): Boolean {
         "litertlm" -> ModelData.isEmbeddingGemma2NpuModel(model)
         // Per-SoC LiteRT Stable Diffusion builds (Google Tensor TPU)
         "litert_npu" -> true
+        com.llmhub.llmhub.data.AsrModels.PARAKEET_NPU_FORMAT -> com.llmhub.llmhub.data.AsrModels.isParakeetNpu(model)
         // LTX-Video QNN bundles always run on the Hexagon NPU
         "ltxv_qnn" -> true
         else -> false
@@ -768,7 +769,8 @@ private fun ModelVariantItem(
             ) {
                 IconWithLabel(
                     icon = Icons.Default.Storage,
-                    label = formatFileSize(model.sizeBytes),
+                    label = if (com.llmhub.llmhub.data.AsrModels.isMlKit(model)) stringResource(R.string.model_system_managed)
+                        else formatFileSize(model.sizeBytes),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 
@@ -897,6 +899,9 @@ private fun ModelVariantItem(
                         }
                     }
                     
+                    // System-managed (ML Kit): nothing of ours on disk to export or delete.
+                    model.isDownloaded && com.llmhub.llmhub.data.AsrModels.isMlKit(model) -> Unit
+
                     model.isDownloaded -> {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             OutlinedButton(onClick = { startExport() }) {

@@ -403,32 +403,35 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
                     // Native Gemma Audio ingestion
                     processPromptWithTools(prompt = "User spoken request", audioBytes = audioBytes)
                 } else {
-                    // Whisper ASR fallback
-                    val whisperService = com.llmhub.llmhub.inference.WhisperKitService(context)
-                    if (!whisperService.isLoaded) {
-                        val asrModels = ModelAvailabilityProvider.loadAvailableModels(context, includeAsr = true)
-                            .filter { it.modelFormat.lowercase() == "whisperkit" || it.name.lowercase().contains("whisper") }
-                        val asrModel = asrModels.firstOrNull()
-                        if (asrModel != null) {
-                            val modelDirName = asrModel.name.replace(" ", "_").replace(Regex("[^a-zA-Z0-9_.-]"), "")
-                            val modelDir = java.io.File(context.filesDir, "models/$modelDirName")
-                            if (modelDir.exists()) {
-                                whisperService.loadModel(modelDir.absolutePath)
+                    // Speech recognition fallback: the first downloaded ASR model that loads.
+                    val asrService = com.llmhub.llmhub.inference.SpeechRecognitionService(context)
+                    try {
+                        ModelAvailabilityProvider.loadAvailableModels(context, includeAsr = true)
+                            .filter { it.category == "asr" }
+                            // Loaded for this one request, so cheapest to start first: Whisper, ML Kit, Parakeet.
+                            .sortedBy {
+                                when {
+                                    it.modelFormat == "whisperkit" -> 0
+                                    com.llmhub.llmhub.data.AsrModels.isMlKit(it) -> 1
+                                    else -> 2
+                                }
                             }
-                        }
-                    }
+                            .firstOrNull { asrService.loadModel(it) }
 
-                    if (whisperService.isLoaded) {
-                        val pcm16Wav = AudioConversionUtils.float32WavToPcm16Wav(audioBytes)
-                        val pcm16Raw = if (pcm16Wav.size > 44) pcm16Wav.copyOfRange(44, pcm16Wav.size) else pcm16Wav
-                        val transcribed = whisperService.transcribe(pcm16Raw)
-                        if (!transcribed.isNullOrBlank()) {
-                            processPromptWithTools(transcribed)
+                        if (asrService.isLoaded) {
+                            val pcm16Wav = AudioConversionUtils.float32WavToPcm16Wav(audioBytes)
+                            val pcm16Raw = if (pcm16Wav.size > 44) pcm16Wav.copyOfRange(44, pcm16Wav.size) else pcm16Wav
+                            val transcribed = asrService.transcribe(pcm16Raw)
+                            if (!transcribed.isNullOrBlank()) {
+                                processPromptWithTools(transcribed)
+                            } else {
+                                addMessage(AgentMessage.Text(sender = AgentMessage.Sender.AGENT, text = "Could not transcribe recorded audio."))
+                            }
                         } else {
-                            addMessage(AgentMessage.Text(sender = AgentMessage.Sender.AGENT, text = "Could not transcribe recorded audio."))
+                            addMessage(AgentMessage.Text(sender = AgentMessage.Sender.AGENT, text = "Native audio input requires Gemma 4 Audio model or a downloaded speech recognition model."))
                         }
-                    } else {
-                        addMessage(AgentMessage.Text(sender = AgentMessage.Sender.AGENT, text = "Native audio input requires Gemma 4 Audio model or a downloaded Whisper ASR model."))
+                    } finally {
+                        asrService.release()
                     }
                 }
             } catch (e: Exception) {

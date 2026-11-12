@@ -1190,4 +1190,9 @@
     <string name="image_extras_ios_help">LoRA：SafeTensors 或 Draw Things .ckpt。编码器／VAE：兼容的 Draw Things .ckpt。嵌入：SafeTensors。请先选择对应的模型。</string>
     <string name="image_extras_android_help">支持的文件：SafeTensors, GGUF, CKPT, PT, PTH, BIN。LoRA、CLIP 跳过和编码器仅适用于导入的检查点，不适用于内置 NPU/CPU 模型。</string>
     <string name="image_extras_import_location">在 %1$s → %2$s 中导入检查点、LoRA、编码器和提示词列表。</string>
+
+    <!-- LiteRT-LM speech models and system-managed ML Kit models -->
+    <string name="litert_tts_model_unavailable">此语音模型不可用。请完成下载，或在设置中选择其他 TTS 引擎。</string>
+    <string name="litert_tts_speech_failed">无法生成语音。请在设置中选择其他语音或 TTS 引擎。</string>
+    <string name="model_system_managed">由系统管理</string>
 </resources>

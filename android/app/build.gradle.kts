@@ -367,6 +367,12 @@ dependencies {
     implementation("com.google.mediapipe:tasks-genai:0.10.35")
     implementation("com.google.mediapipe:tasks-vision:1.1.1")
     implementation("com.google.mediapipe:tasks-text:1.1.1")
+    // AudioTranscriber (Parakeet) and TextToSpeech (Kokoro, PocketTTS) tasks for .litertlm speech models.
+    implementation("com.google.mediapipe:tasks-audio:1.2.0")
+
+    // ML Kit GenAI speech recognition: system-managed on-device ASR (AICore).
+    implementation("com.google.mlkit:genai-common:1.0.0-beta5")
+    implementation("com.google.mlkit:genai-speech-recognition:1.0.0-alpha2")
 
     // LiteRT-LM: native Kotlin API for .litertlm models (Gemma-3n, Gemma-4, etc.)
     // Replaces tasks-genai for litertlm format models. GPU enabled once 0.10.1 hits Maven.
