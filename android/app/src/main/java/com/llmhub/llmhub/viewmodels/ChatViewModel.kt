@@ -330,6 +330,8 @@ class ChatViewModel(
             viewModelScope.launch {
                 // Wait a bit for available models to be loaded
                 delay(200)
+                // A loaded model always wins: a new chat keeps using it instead of the last saved selection.
+                if (inferenceService.getCurrentlyLoadedModel() != null) return@launch
                 val model = _availableModels.value.find { it.name == savedModelName }
                 if (model != null) {
                     _selectedModel.value = model
