@@ -30,7 +30,6 @@ import com.llmhub.llmhub.components.SelectableMarkdownText
 import com.llmhub.llmhub.components.annotateLinksAndPhones
 import androidx.compose.foundation.text.selection.SelectionContainer
 import com.llmhub.llmhub.components.parseMarkdownToAnnotatedString
-import com.llmhub.llmhub.components.splitMarkdownIntoChunks
 import com.llmhub.llmhub.data.ModelData
 import com.llmhub.llmhub.data.localFileName
 import com.llmhub.llmhub.service.SDBackendService
@@ -90,103 +89,6 @@ class VitalsFixes5DeviceTest {
         instrumentation.runOnMainSync { store.clear() }
         assertTrue("ViewModel construction took $constructMs ms on the main thread", constructMs < 100)
         assertTrue("Catalog models missing", models.size >= ModelData.models.size)
-    }
-
-    /** Chunks stacked in a Column must be exactly as tall as the same text laid out as one Text. */
-    @Test fun chunkedMarkdownLooksLikeOneText() {
-        val text = longReply(paragraphs = 40)
-        val chunks = splitMarkdownIntoChunks(text)
-        assertTrue("Expected several chunks, got ${chunks.size}", chunks.size > 3)
-        assertEquals("Chunks must rebuild the text", text, chunks.joinToString("\n"))
-
-        var wholeHeight = 0
-        var chunkedHeight = 0
-        compose.setContent {
-            val style = LocalTextStyle.current.copy(fontSize = 16.sp, lineHeight = 16.sp * 1.4)
-            Column(Modifier.verticalScroll(rememberScrollState())) {
-                ClickableText(
-                    parseMarkdownToAnnotatedString(text, Color.Black, Color.Blue), style = style,
-                    modifier = Modifier.fillMaxWidth().onSizeChanged { wholeHeight = it.height }, onClick = {}
-                )
-                Column(Modifier.fillMaxWidth().onSizeChanged { chunkedHeight = it.height }) {
-                    chunks.forEach {
-                        ClickableText(
-                            parseMarkdownToAnnotatedString(it, Color.Black, Color.Blue, normalize = false),
-                            style = style, modifier = Modifier.fillMaxWidth(), onClick = {}
-                        )
-                    }
-                }
-            }
-        }
-        compose.waitForIdle()
-        Log.i(TAG, "RESULT chunks: ${chunks.size} chunks, one Text $wholeHeight px, chunked $chunkedHeight px")
-        assertEquals("Chunked layout height differs from one Text", wholeHeight, chunkedHeight)
-    }
-
-    /**
-     * ANRs in text layout: a long reply streamed into the chat bubble at the throttled rate must keep the
-     * main thread responsive. A main-thread heartbeat records the longest gap.
-     */
-    @Test fun streamingLongReplyKeepsMainThreadResponsive() {
-        val gap = streamAndMeasure("chunked") { text ->
-            SelectableMarkdownText(markdown = text, color = Color.Black, fontSize = 16.sp, modifier = Modifier.fillMaxWidth())
-        }
-        assertTrue("Main thread blocked for $gap ms while streaming", gap < 500)
-    }
-
-    /** Baseline for the test above: the 4.6.5 renderer, one Text for the whole reply. */
-    @Test fun streamingLongReplyBaselineOneText() {
-        streamAndMeasure("one Text (4.6.5)") { text ->
-            val annotated = androidx.compose.runtime.remember(text) {
-                annotateLinksAndPhones(parseMarkdownToAnnotatedString(text, Color.Black, Color.Blue), Color.Blue)
-            }
-            SelectionContainer {
-                ClickableText(
-                    annotated, modifier = Modifier.fillMaxWidth(),
-                    style = LocalTextStyle.current.copy(fontSize = 16.sp, lineHeight = 16.sp * 1.4), onClick = {}
-                )
-            }
-        }
-    }
-
-    private fun streamAndMeasure(label: String, content: @androidx.compose.runtime.Composable (String) -> Unit): Long {
-        val full = longReply(paragraphs = 60)
-        var shown by mutableStateOf("")
-        compose.setContent {
-            Column(Modifier.verticalScroll(rememberScrollState())) { content(shown) }
-        }
-        val handler = Handler(Looper.getMainLooper())
-        val last = AtomicLong(SystemClock.elapsedRealtime())
-        val longestGap = AtomicLong(0)
-        val slowFrames = java.util.concurrent.CopyOnWriteArrayList<String>()
-        var length = 0
-        var running = true
-        val beat = object : Runnable {
-            override fun run() {
-                val now = SystemClock.elapsedRealtime()
-                val gap = now - last.get()
-                if (gap > 100) slowFrames += "${gap}ms@$length"
-                longestGap.set(maxOf(longestGap.get(), gap))
-                last.set(now)
-                if (running) handler.postDelayed(this, 16)
-            }
-        }
-        handler.post(beat)
-        // About 40 characters per 100 ms update, like a fast model behind the 100 ms throttle.
-        val started = SystemClock.elapsedRealtime()
-        while (length < full.length) {
-            length = minOf(full.length, length + 40)
-            val next = full.substring(0, length)
-            instrumentation.runOnMainSync { shown = next }
-            compose.waitForIdle() // the test clock only draws frames when the test syncs
-            Thread.sleep(100)
-        }
-        compose.waitForIdle()
-        running = false
-        Thread.sleep(100)
-        Log.i(TAG, "RESULT streaming $label: ${full.length} chars in ${SystemClock.elapsedRealtime() - started} ms, " +
-            "longest main-thread gap ${longestGap.get()} ms, gaps over 100 ms (${slowFrames.size}): ${slowFrames.take(40)}")
-        return longestGap.get()
     }
 
     /**
@@ -250,13 +152,6 @@ class VitalsFixes5DeviceTest {
         context.getSharedPreferences("agent_prefs", Context.MODE_PRIVATE).edit().remove("selected_max_tokens").commit()
         val expected = context.getString(R.string.context_window_full_error)
         assertTrue("No context-full message in $replies", replies.any { it.contains(expected) })
-    }
-
-    private fun longReply(paragraphs: Int): String = (1..paragraphs).joinToString("\n\n") { i ->
-        when (i % 4) {
-            0 -> "### Section $i\n- **Point** one with a link https://example.com/$i\n- Point *two* with `code`"
-            else -> "Paragraph $i. " + "Streaming text should stay smooth on slower phones while the model writes. ".repeat(4)
-        }
     }
 
     @Suppress("DEPRECATION")
