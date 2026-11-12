@@ -120,73 +120,12 @@ fun SelectableMarkdownText(
     textAlign: TextAlign = TextAlign.Start,
     linkColorOverride: Color? = null
 ) {
-    val linkColor = linkColorOverride ?: MaterialTheme.colorScheme.primary
-    // A long reply laid out as one Text re-measured the whole message on every streamed token and
-    // froze the main thread (ANRs in text layout, 4.6.4 and 4.6.5). Long text is split into
-    // paragraph chunks; earlier chunks keep their layout and only the last one changes while streaming.
-    val chunks = remember(markdown) {
-        if (markdown.length < MARKDOWN_CHUNK_MIN_LENGTH) null
-        else splitMarkdownIntoChunks(normalizeMarkdownEscapes(markdown)).takeIf { it.size > 1 }
-    }
-
-    SelectionContainer {
-        if (chunks == null) {
-            MarkdownChunkText(markdown, color, linkColor, fontSize, textAlign, normalize = true, modifier = modifier)
-        } else {
-            Column(
-                modifier = modifier,
-                horizontalAlignment = if (textAlign == TextAlign.End) Alignment.End else Alignment.Start
-            ) {
-                chunks.forEachIndexed { index, chunk ->
-                    key(index) {
-                        MarkdownChunkText(chunk, color, linkColor, fontSize, textAlign, normalize = false)
-                    }
-                }
-            }
-        }
-    }
-}
-
-private const val MARKDOWN_CHUNK_MIN_LENGTH = 1500
-private const val MARKDOWN_CHUNK_TARGET_LENGTH = 800
-
-/**
- * Splits text at blank lines into chunks of about [MARKDOWN_CHUNK_TARGET_LENGTH] characters. Each chunk
- * but the last keeps one newline of the blank line, so the chunks stacked in a Column look the same as
- * the original text. Boundaries depend only on the text before them, so they stay put while text streams in.
- */
-internal fun splitMarkdownIntoChunks(text: String): List<String> {
-    val chunks = mutableListOf<String>()
-    var start = 0
-    var search = 0
-    while (true) {
-        val blank = text.indexOf("\n\n", search)
-        if (blank < 0) break
-        if (blank - start >= MARKDOWN_CHUNK_TARGET_LENGTH) {
-            chunks += text.substring(start, blank + 1)
-            start = blank + 2
-        }
-        search = blank + 2
-    }
-    chunks += text.substring(start)
-    return chunks
-}
-
-@Composable
-private fun MarkdownChunkText(
-    markdown: String,
-    color: Color,
-    linkColor: Color,
-    fontSize: androidx.compose.ui.unit.TextUnit,
-    textAlign: TextAlign,
-    normalize: Boolean,
-    modifier: Modifier = Modifier
-) {
     val context = LocalContext.current
-
+    val linkColor = linkColorOverride ?: MaterialTheme.colorScheme.primary
+    
     // First parse the markdown (bold/italic/lists etc.)
-    val baseAnnotated = remember(markdown, color, linkColor, normalize) {
-        parseMarkdownToAnnotatedString(markdown, color, linkColor, normalize)
+    val baseAnnotated = remember(markdown, color, linkColor) {
+        parseMarkdownToAnnotatedString(markdown, color, linkColor)
     }
 
     // Then detect links & phone numbers and add annotations/styles
@@ -194,31 +133,33 @@ private fun MarkdownChunkText(
         annotateLinksAndPhones(baseAnnotated, linkColor)
     }
 
-    ClickableText(
-        text = finalAnnotated,
-        modifier = modifier,
-        style = LocalTextStyle.current.copy(
-            fontSize = fontSize,
-            lineHeight = fontSize * 1.4,
-            textAlign = textAlign
-        ),
-        onClick = { offset ->
-            // Handle URL clicks
-            finalAnnotated.getStringAnnotations("URL", offset, offset)
-                .firstOrNull()?.let { ann ->
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(ann.item))
-                    context.startActivity(intent)
-                    return@ClickableText
-                }
+    SelectionContainer {
+        ClickableText(
+            text = finalAnnotated,
+            modifier = modifier,
+            style = LocalTextStyle.current.copy(
+                fontSize = fontSize, 
+                lineHeight = fontSize * 1.4,
+                textAlign = textAlign
+            ),
+            onClick = { offset ->
+                // Handle URL clicks
+                finalAnnotated.getStringAnnotations("URL", offset, offset)
+                    .firstOrNull()?.let { ann ->
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(ann.item))
+                        context.startActivity(intent)
+                        return@ClickableText
+                    }
 
-            // Handle phone number clicks
-            finalAnnotated.getStringAnnotations("PHONE", offset, offset)
-                .firstOrNull()?.let { ann ->
-                    val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${ann.item}"))
-                    context.startActivity(intent)
-                }
-        }
-    )
+                // Handle phone number clicks
+                finalAnnotated.getStringAnnotations("PHONE", offset, offset)
+                    .firstOrNull()?.let { ann ->
+                        val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${ann.item}"))
+                        context.startActivity(intent)
+                    }
+            }
+        )
+    }
 }
 
 /**
@@ -280,18 +221,8 @@ fun annotateLinksAndPhones(source: AnnotatedString, linkColor: Color): Annotated
  * Enhanced markdown parser that converts markdown syntax to AnnotatedString
  * Supports: **bold**, *italic*, `code`, ### headers, - lists, [links](url), and preserves line breaks
  */
-fun parseMarkdownToAnnotatedString(
-    markdown: String,
-    baseColor: Color,
-    linkColor: Color,
-    normalize: Boolean = true
-): AnnotatedString {
-    val normalized = if (normalize) normalizeMarkdownEscapes(markdown) else markdown
-    return buildMarkdownAnnotatedString(normalized, baseColor, linkColor)
-}
-
-/** Normalizes common escaped newline/tab sequences if the text came in JSON-escaped form. */
-fun normalizeMarkdownEscapes(markdown: String): String {
+fun parseMarkdownToAnnotatedString(markdown: String, baseColor: Color, linkColor: Color): AnnotatedString {
+    // Normalize common escaped newline/tab sequences if the text came in JSON-escaped form
     var normalized = markdown
     if ('\r' in normalized) {
         normalized = normalized.replace("\r\n", "\n").replace('\r', '\n')
@@ -305,10 +236,6 @@ fun normalizeMarkdownEscapes(markdown: String): String {
     if ("\\t" in normalized) {
         normalized = normalized.replace("\\t", "    ")
     }
-    return normalized
-}
-
-private fun buildMarkdownAnnotatedString(normalized: String, baseColor: Color, linkColor: Color): AnnotatedString {
     return buildAnnotatedString {
         val lines = normalized.split('\n')
         

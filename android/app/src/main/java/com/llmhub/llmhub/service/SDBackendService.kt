@@ -47,14 +47,7 @@ class SDBackendService : Service() {
     
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.i(TAG, "SDBackendService started: action=${intent?.action}")
-
-        // Stop arrives through startService, often after the app went to the background, where
-        // startForeground throws ForegroundServiceStartNotAllowedException (4.6.5, Android 17).
-        if (intent?.action == ACTION_STOP) {
-            stopBackend()
-            return START_NOT_STICKY
-        }
-
+        
         startForeground(NOTIFICATION_ID, createNotification("Initializing..."))
         
         when (intent?.action) {
@@ -68,6 +61,7 @@ class SDBackendService : Service() {
                     stopSelf()
                 }
             }
+            ACTION_STOP -> stopBackend()
             ACTION_START_UPSCALER -> {
                 if (startUpscalerBackend()) {
                     updateNotification("Upscaler Ready")
@@ -535,12 +529,7 @@ class SDBackendService : Service() {
             val intent = Intent(context, SDBackendService::class.java).apply {
                 action = ACTION_STOP
             }
-            // In the background Android refuses to start a service that isn't running; then there is nothing to stop.
-            try {
-                context.startService(intent)
-            } catch (e: IllegalStateException) {
-                Log.w("SDBackendService", "Backend service not running, nothing to stop: ${e.message}")
-            }
+            context.startService(intent)
         }
 
         fun startUpscaler(context: Context) {

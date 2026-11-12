@@ -58,10 +58,6 @@ class ChatViewModel(
         private const val KEY_CURRENT_CHAT_ID = "current_chat_id"
         private const val KEY_CURRENT_MODEL_NAME = "current_model_name"
         private const val KEY_IS_GENERATING = "is_generating"
-        // Streamed text reaches the UI at most this often; every token re-laid out the whole reply (ANRs).
-        private const val STREAMING_UI_INTERVAL_MS = 100L
-        // The placeholder message in the database only needs to survive a crash, not follow every token.
-        private const val STREAMING_DB_INTERVAL_MS = 500L
     }
 
     private val _messages = MutableStateFlow<List<MessageEntity>>(emptyList())
@@ -79,15 +75,6 @@ class ChatViewModel(
     // Streaming response state (per message)
     private val _streamingContents = MutableStateFlow<Map<String, String>>(emptyMap())
     val streamingContents: StateFlow<Map<String, String>> = _streamingContents.asStateFlow()
-    private var lastStreamingPublishAt = 0L
-
-    /** Publishes streamed text at most every [STREAMING_UI_INTERVAL_MS]; [force] sends the rest at the end. */
-    private fun publishStreamingContent(messageId: String, content: String, force: Boolean = false) {
-        val now = android.os.SystemClock.uptimeMillis()
-        if (!force && now - lastStreamingPublishAt < STREAMING_UI_INTERVAL_MS) return
-        lastStreamingPublishAt = now
-        _streamingContents.value = _streamingContents.value + (messageId to content)
-    }
 
     private val _isLoadingModel = MutableStateFlow(false)
     val isLoadingModel: StateFlow<Boolean> = _isLoadingModel.asStateFlow()
@@ -1656,7 +1643,7 @@ class ChatViewModel(
                     )
                     // Track precise generation window based on first and last streamed chunks
                                     var lastUpdateTime = 0L
-                                    val updateIntervalMs = STREAMING_DB_INTERVAL_MS
+                                    val updateIntervalMs = 50L // Update UI every 50ms instead of every token
                                     var segmentEnded = false
                                     var segmentHasContent = false
                                     
@@ -1707,7 +1694,9 @@ class ChatViewModel(
                                         // The model will stop when it reaches its context window or generates EOS token
                                         
                                         // Update UI with the complete content so far
-                                        publishStreamingContent(placeholderId, totalContent)
+                                        val updated = _streamingContents.value.toMutableMap()
+                                        updated[placeholderId] = totalContent
+                                        _streamingContents.value = updated
                                         // Debounced database updates to reduce blinking
                                         val currentTime = System.currentTimeMillis()
                                         if (currentTime - lastUpdateTime > updateIntervalMs) {
@@ -1716,7 +1705,6 @@ class ChatViewModel(
                                             lastUpdateTime = currentTime
                                         }
                                     }
-                                    publishStreamingContent(placeholderId, totalContent, force = true)
                                     
                                     // Check if this segment looks like it was truncated
                                     val segmentTime = System.currentTimeMillis() - segmentStartTime
@@ -2013,7 +2001,7 @@ class ChatViewModel(
         var firstChunkAt = 0L
         var lastChunkAt = 0L
         var lastUpdateTime = 0L
-        val updateIntervalMs = STREAMING_DB_INTERVAL_MS
+        val updateIntervalMs = 50L
 
         // Create a new generation job that can be cancelled
         generationJob = viewModelScope.launch {
@@ -2039,7 +2027,9 @@ class ChatViewModel(
                     }
 
                     // Update UI
-                    publishStreamingContent(placeholderId, totalContent)
+                    val updated = _streamingContents.value.toMutableMap()
+                    updated[placeholderId] = totalContent
+                    _streamingContents.value = updated
 
                     // Debounced database updates
                     val currentTime = System.currentTimeMillis()
@@ -3571,7 +3561,7 @@ class ChatViewModel(
                         )
                         
                         var lastUpdateTime = 0L
-                        val updateIntervalMs = STREAMING_DB_INTERVAL_MS
+                        val updateIntervalMs = 50L
                         
                         // Check if auto-readout is enabled before starting generation
                         val autoReadoutEnabled = try {
@@ -3611,7 +3601,9 @@ class ChatViewModel(
                             // Note: No artificial length limit - let the model's natural token limit handle it
                             
                             // Update UI
-                            publishStreamingContent(placeholderId, totalContent)
+                            val updated = _streamingContents.value.toMutableMap()
+                            updated[placeholderId] = totalContent
+                            _streamingContents.value = updated
                             
                             // Debounced database updates
                             val currentTime = System.currentTimeMillis()
@@ -3806,7 +3798,7 @@ class ChatViewModel(
                         if (chunk.isNotEmpty() && firstChunkAt == 0L) firstChunkAt = nowTs
                         lastChunkAt = nowTs
                         totalContent += chunk
-                        publishStreamingContent(placeholderId, totalContent)
+                        _streamingContents.value = _streamingContents.value + (placeholderId to totalContent)
                     }
 
                     // Finalize message with the exact fetched URLs.

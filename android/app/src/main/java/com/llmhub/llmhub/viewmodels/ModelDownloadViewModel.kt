@@ -116,13 +116,9 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
         // Initialize ModelDownloader with token
         modelDownloader = ModelDownloader(ktorClient, context, effectiveToken)
         
+        loadModels()
+        loadImportedModels()
         viewModelScope.launch {
-            // Scanning model folders and opening .task files as ZIPs blocked the main thread
-            // while the screen composed (ANR in ModelDownloadScreen, 4.6.4 and 4.6.5).
-            withContext(Dispatchers.IO) {
-                loadModels()
-                loadImportedModels()
-            }
             var previous = emptyMap<String, LLMModel>()
             com.llmhub.llmhub.service.ModelDownloadService.downloadStates.collect { snapshots ->
                 snapshots.forEach { (name, snapshot) ->
@@ -310,11 +306,27 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
                     val fileCount = files.filter { it.length() > 0 }.size
                     val totalDownloaded = files.sumOf { it.length() }
 
+                    // Try to get expected file count from manifest
+                    val expectedFileCount = try {
+                        val url = java.net.URL(model.url)
+                        val conn = url.openConnection() as java.net.HttpURLConnection
+                        conn.connectTimeout = 3000
+                        conn.readTimeout = 3000
+                        val json = conn.inputStream.bufferedReader().use { it.readText() }
+                        conn.disconnect()
+                        val manifestObj = org.json.JSONObject(json)
+                        manifestObj.getJSONArray("files").length()
+                    } catch (e: Exception) {
+                        -1 // Unknown, fall back to size check
+                    }
+
                     if (fileCount > 0) {
-                        android.util.Log.d("ModelDownloadViewModel", "[loadModels:image_gen] dir=${imageGenDir.absolutePath} fileCount=$fileCount totalDownloaded=$totalDownloaded model.sizeBytes=${model.sizeBytes}")
-                        // The manifest fetch that used to sit here always failed on the main thread, so
-                        // the size check was the only one in use; it stays that way off the main thread.
-                        val completeEnough = model.sizeBytes > 0 && totalDownloaded >= (model.sizeBytes * 0.95).toLong()
+                        android.util.Log.d("ModelDownloadViewModel", "[loadModels:image_gen] dir=${imageGenDir.absolutePath} fileCount=$fileCount totalDownloaded=$totalDownloaded model.sizeBytes=${model.sizeBytes} expectedFileCount=$expectedFileCount")
+                        val completeEnough = if (expectedFileCount > 0) {
+                            fileCount >= expectedFileCount && (model.sizeBytes <= 0 || totalDownloaded >= (model.sizeBytes * 0.95).toLong())
+                        } else {
+                            model.sizeBytes > 0 && totalDownloaded >= (model.sizeBytes * 0.95).toLong()
+                        }
 
                         if (completeEnough) {
                             model.copy(
