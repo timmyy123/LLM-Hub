@@ -350,7 +350,10 @@ fun ChatScreen(
                                 WelcomeMessage(
                                     currentModel = selectedModel?.name ?: currentChat?.modelName,
                                     onNavigateToModels = onNavigateToModels,
-                                    hasDownloadedModels = viewModel.hasDownloadedModels()
+                                    // Read the collected state, not the view model's current value: the model list
+                                    // is loaded off the main thread, so a new chat first composes with an empty list
+                                    // and has to recompose when it arrives. A chat that already names a model has one.
+                                    hasDownloadedModels = availableModels.isNotEmpty() || targetModelName != null
                                 )
                             }
                         }
