@@ -72,6 +72,10 @@ class ChatViewModel(
     private val _availableModels = MutableStateFlow<List<LLMModel>>(emptyList())
     val availableModels: StateFlow<List<LLMModel>> = _availableModels.asStateFlow()
 
+    // False until the first model scan finishes, so an empty list isn't mistaken for "no models downloaded".
+    private val _availableModelsLoaded = MutableStateFlow(false)
+    val availableModelsLoaded: StateFlow<Boolean> = _availableModelsLoaded.asStateFlow()
+
     // Streaming response state (per message)
     private val _streamingContents = MutableStateFlow<Map<String, String>>(emptyMap())
     val streamingContents: StateFlow<Map<String, String>> = _streamingContents.asStateFlow()
@@ -477,10 +481,6 @@ class ChatViewModel(
     // Guard to avoid infinite retry loops when a response comes back empty
     private val oneShotRetriedMessageIds = mutableSetOf<String>()
 
-    fun hasDownloadedModels(): Boolean {
-        return _availableModels.value.isNotEmpty()
-    }
-
     /**
      * Check if we need to restore generation state after configuration change
      */
@@ -869,6 +869,7 @@ class ChatViewModel(
         val allAvailableModels = downloadedModels + importedModels
         
         _availableModels.value = allAvailableModels
+        _availableModelsLoaded.value = true
         
         // If we have a current model but it's not in the available models, clear it
         if (currentModel != null && !allAvailableModels.any { it.name == currentModel?.name }) {
