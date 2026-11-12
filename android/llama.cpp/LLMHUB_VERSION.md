@@ -1,70 +1,50 @@
 # Vendored llama.cpp
 
 - Upstream: https://github.com/ggml-org/llama.cpp
-- Version: `b12020`
-- Commit: `0ec4027a2a0183de87c007069adddc06e665f7de`
-- Source archive SHA-256: `5496c675a36bcba53660a922f26cff75a8d24222d0554d337b450b552a30b502`
+- Version: `b12317`
+- Commit: `e0949d09b130707b3fa93d2cff616024231cf939`
+- Source archive SHA-256: `d3607be1788451ae71a138479ea78e4b4b408b82bfae99c01f42b2a3d9357a46`
+- Snapdragon release: `llama-b12317-bin-android-arm64-snapdragon.tar.gz`, SHA-256
+  `8a9568a8b2d9f8afc7fcc3bb330f48df4283b6234c48af98ef9f1193f75f166e`
 - License: MIT (see `LICENSE`)
 
-This source builds the baseline ARMv8 CPU runtime (`libllmhub_llama_cpu.so`) and
-the Vulkan GPU runtime (`libllmhub_llama_vulkan.so`) for arm64 devices.
-Android Studio builds Vulkan with NDK shader tools and vendored Vulkan-Headers.
-Local patches in `ggml/src/ggml-opencl/ggml-opencl.cpp` (below) and `ggml/src/ggml-vulkan/ggml-vulkan.cpp`: the Android API 27 compatibility
-fix uses the Vulkan dispatcher for `vkGetPhysicalDeviceFeatures2`; a failed pipeline compile
-releases its claim so waiting threads fail instead of hanging; pipeline creation
-failures are logged with `GGML_LOG_ERROR`, which reaches logcat; and `ggml_vk_device_is_supported`
-rejects devices whose driver is below Vulkan 1.2 (Mali-G57 reports 1.1 under a 1.2 instance, and
-its 1.2 entry points such as `vkGetBufferDeviceAddress` are null), including in the
-first-non-CPU-device fallback. Upstream's `ggml-vulkan.cpp` is unchanged from b11946 to b12020, so
-these patches apply as they were.
-Since b11946 upstream's buffer allocator (`ggml/src/ggml-vulkan/ggml-vulkan-buffers.cpp`) uses
-`posix_memalign` on every non-Windows platform, so the old API 27 `aligned_alloc` patch is gone.
+## What is built from where
 
-The Android app also vendors the official **b12020 Snapdragon** Android release
-(`llama-b12020-bin-android-arm64-snapdragon.tar.gz`, SHA-256
-`fae6ee720a8df3f7a84ebe82e049da243f73c7c2b21c70fca8457e5494bbbb4a`).
-Its headers and stripped arm64 runtime libraries are under `app/src/main/cpp/llama-prebuilt`
-and `app/src/main/jniLibs/arm64-v8a`; Hexagon v73/v75/v79/v81/v85 skels are under
-`app/src/main/assets/llama_htp` (copied unstripped, as released). Android Studio links these into the separate
-`libllmhub_llama_snapdragon.so` JNI bridge. The Snapdragon bridge is loaded for
-OpenCL or Hexagon selection; Vulkan uses the source-built runtime instead.
+- This source: `libllmhub_llama_cpu.so` (ARMv8 CPU), `libllmhub_llama_vulkan.so` (Vulkan, built with the
+  NDK's glslc and the vendored Vulkan-Headers), `libggml-opencl.so`, and ggml inside `libllmhub_sdcpp.so`.
+- The official Snapdragon release: headers in `app/src/main/cpp/llama-prebuilt`, stripped runtime libraries in
+  `app/src/main/jniLibs/arm64-v8a`, Hexagon skels (unstripped) in `app/src/main/assets/llama_htp`. They are
+  linked into `libllmhub_llama_snapdragon.so`, which is loaded for OpenCL or Hexagon.
 
-`libggml-opencl.so` is the one Snapdragon library built from this source instead of taken from
-the release, with `LLMHub:` patches in `ggml/src/ggml-opencl/ggml-opencl.cpp`:
-- The tiled Q6_K/Q4_K GEMV layout for large lm_head/embedding weights is only chosen by default
-  when its kernel accepts the 64x4 = 256 work-item groups it is dispatched with. Adreno 830
-  (Snapdragon 8 Elite, Galaxy S25) allows 192 for `kernel_gemv_noshuffle_q6_K_f32_tiled`, so the
-  launch failed with `CL_INVALID_WORK_GROUP_SIZE` (-54) and ggml aborted on the first decoded token.
-- Flash-attention "split" kernels are registered only when their dispatch work-group size fits,
-  as upstream already does for its other flash-attention kernels.
+## Local patches (marked `LLMHub:`)
+
+`ggml/src/ggml-vulkan/ggml-vulkan.cpp`:
+- `vkGetPhysicalDeviceFeatures2` goes through the Vulkan dispatcher (Android API 27).
+- A failed pipeline compile releases its claim, so waiting threads fail instead of hanging, and is logged
+  with `GGML_LOG_ERROR` (reaches logcat).
+- `ggml_vk_device_is_supported` rejects drivers below Vulkan 1.2, also in the first-non-CPU-device fallback
+  (Mali-G57 reports 1.1 and its 1.2 entry points such as `vkGetBufferDeviceAddress` are null).
+
+`ggml/src/ggml-opencl/ggml-opencl.cpp`:
+- The tiled Q6_K/Q4_K GEMV layout is chosen only when its kernel accepts the 256 work-item groups it is
+  dispatched with (Adreno 830 allows 192 and aborted with `CL_INVALID_WORK_GROUP_SIZE`).
+- Flash-attention "split" kernels are registered only when their dispatch work-group size fits.
 - A failed kernel launch logs the kernel name and global/local sizes before aborting.
-- The generic matrix-vector products (`kernel_mul_mat_f16_f16`, `_f32_f32`, `_f16_f32`) are split
-  into dispatches of at most 2^28 multiply-adds over src1 rows, and `kernel_cpy_f32_f32_pack`
-  copies into a contiguous dst in dispatches of at most 2^20 elements. A GPU cannot switch to the
-  UI in the middle of a kernel: the LTX-Video VAE and long-clip attention (video generation, which
-  compiles this source into `libllmhub_sdcpp.so`) ran single dispatches of 1-5 s on Adreno, and
-  Android reported the app as not responding (issue #133). The chunks compute the same values.
+- `kernel_mul_mat_f16_f16`, `_f32_f32` and `_f16_f32` are split into dispatches of at most 2^28
+  multiply-adds, and `kernel_cpy_f32_f32_pack` into dispatches of at most 2^20 elements, so long video
+  generation kernels do not make Android report the app as not responding (issue #133).
+  `kernel_mul_mv_f32_f32_r2` is not split.
 
-b12020 still has none of these guards (its new tiled multi-column `kernel_gemv_noshuffle_q6_K_f32_tiled_mc3`
-is opt-in via `GGML_OPENCL_Q6K_MC3` and only runs when the tiled layout was chosen, so the tiled check covers it).
+## Upgrading
 
-Build it with the release preset's flags (`docs/backend/snapdragon/CMakeUserPresets.json`,
-`arm64-android-snapdragon`) but `-DGGML_HEXAGON=OFF -DBUILD_SHARED_LIBS=ON`, against the Khronos
-OpenCL headers and an NDK build of the OpenCL ICD loader, then strip it with
-`llvm-strip --strip-unneeded`. Its exports match the release library's.
-
-To upgrade the accelerator runtime, obtain the matching official Android Snapdragon
-release archive (verify its digest with the GitHub releases API), replace its headers and
-libraries together, strip the arm64 libraries with `llvm-strip --strip-unneeded` (`libggml`,
-`libggml-base`, `libggml-cpu`, `libggml-hexagon`, `libggml-rpc`, `libllama`, `libmtmd`), copy every
-`libggml-htp-v*.so` skel the release ships, and update the `llama_htp_<version>` asset-cache name
-(and the skel list) in `LlamaCppInferenceService.kt`. Keep source and Snapdragon package versions aligned.
-
-`libggml-opencl.so` is rebuilt with `bash android/tools/llama_opencl/build.sh` after the source is updated.
-
-When replacing this source tree, update the `- Version:` line above: both CMake builds (app and
-`sdcpp`) pass it to every compile command, so a new version recompiles all of llama.cpp/ggml.
-Upstream archives keep their original file dates, which can be older than existing objects; in
-4.5.2/4.5.3 Ninja kept a stale `llama-model.cpp.o` from before the b11738 bump, and every CPU model
-load crashed in `llama_vocab::n_tokens()`. Local patches: `diff -ru` this tree against the release
-archive and re-apply them to the new one.
+1. Unpack the new source archive over this tree, keeping this file. `diff -ru` the old tree against its own
+   release archive to find the local patches and re-apply them; check whether upstream made any unnecessary.
+2. Update the version lines above. Both CMake builds (app and `sdcpp`) pass the version to every compile
+   command, so a new version recompiles all of llama.cpp/ggml. This is required: upstream archives keep old
+   file dates, and Ninja otherwise keeps stale objects.
+3. From the matching Snapdragon release (verify its digest with the GitHub releases API): copy the headers,
+   `llvm-strip --strip-unneeded` `libggml`, `libggml-base`, `libggml-cpu`, `libggml-hexagon`, `libggml-rpc`,
+   `libllama` and `libmtmd` into `jniLibs`, copy every `libggml-htp-v*.so`, and update the `llama_htp_<version>`
+   cache name and skel list in `LlamaCppInferenceService.kt`.
+4. Rebuild `libggml-opencl.so` with `bash android/tools/llama_opencl/build.sh` (release preset flags with
+   `-DGGML_HEXAGON=OFF -DBUILD_SHARED_LIBS=ON`); its exports must match the release library's.

@@ -28,7 +28,7 @@ import org.junit.Test
 import java.io.File
 
 /**
- * Opt-in physical-device check of llama.cpp b12020 with LiquidAI LFM3 (lfm3 architecture, lfm3vl projector):
+ * Opt-in physical-device check of llama.cpp b12317 with LiquidAI LFM3 (lfm3 architecture, lfm3vl projector):
  * LFM3 1.7B Q4_0 (QAD) and LFM3 VL 2B Q4_0 (QAD) with its projector are fetched on the device from the
  * pinned catalog URLs and checked against their SHA-256 (the Hugging Face LFS oid). Every scenario loads
  * through [LlamaCppInferenceService] as the app does and asserts the backend it really ran on (a failed
@@ -67,10 +67,16 @@ class LlamaCppLfm3DeviceTest {
 
     @Test fun visionNpu() = runBlocking { describeImage(Accelerator.NPU) }
 
+    /** Source-built Vulkan runtime, which GPU selects on non-Snapdragon SoCs with a Vulkan 1.2 driver. */
+    @Test fun textGpuVulkan() = runBlocking { askCapital(Accelerator.VULKAN, thinking = true) }
+
+    @Test fun visionGpuVulkan() = runBlocking { describeImage(Accelerator.VULKAN) }
+
     private enum class Accelerator(val backend: LlmInference.Backend, val deviceId: String?) {
         CPU(LlmInference.Backend.CPU, null),
         OPENCL(LlmInference.Backend.GPU, null),
         NPU(LlmInference.Backend.GPU, "HTP0"),
+        VULKAN(LlmInference.Backend.GPU, null),
     }
 
     private suspend fun askCapital(accelerator: Accelerator, thinking: Boolean) {
@@ -128,6 +134,7 @@ class LlamaCppLfm3DeviceTest {
             Accelerator.CPU -> Unit
             Accelerator.OPENCL -> assumeTrue("Snapdragon OpenCL runtime needs a Snapdragon SoC", DeviceInfo.isSnapdragon())
             Accelerator.NPU -> assumeTrue("llama.cpp Hexagon needs a supported Snapdragon", DeviceInfo.isLlamaCppHexagonSupported())
+            Accelerator.VULKAN -> assumeTrue("GGUF Vulkan is for non-Snapdragon SoCs with Vulkan 1.2", !DeviceInfo.isLlamaCppVulkanBlocked())
         }
     }
 
@@ -138,6 +145,9 @@ class LlamaCppLfm3DeviceTest {
         if (accelerator == Accelerator.OPENCL) {
             // Snapdragon never uses the Vulkan runtime for GGUF, so GPU means OpenCL here.
             assertFalse("GPU must select OpenCL on Snapdragon", ThemePreferences(context).ggufUseVulkan.first())
+        }
+        if (accelerator == Accelerator.VULKAN) {
+            assertTrue("GPU must select Vulkan here (GGUF Vulkan setting is off)", ThemePreferences(context).ggufUseVulkan.first())
         }
         val service = LlamaCppInferenceService(context)
         // A chat-sized context (LFM3 1.7B advertises 256K) and the model card's sampling.
