@@ -172,6 +172,7 @@
     <string name="failed_to_load_image">Error al cargar imagen</string>
     <string name="model_loading_error">Error cargando modelo</string>
     <string name="message_send_error">Error enviando mensaje</string>
+    <string name="context_window_full_error">La ventana de contexto está llena. Acorta tu mensaje o aumenta el tamaño de la ventana de contexto en los ajustes.</string>
     <string name="file_save_error">Error guardando archivo</string>
     <string name="file_save_success">Archivo guardado exitosamente</string>
     

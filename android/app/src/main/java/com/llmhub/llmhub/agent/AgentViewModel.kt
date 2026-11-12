@@ -14,6 +14,7 @@ import com.llmhub.llmhub.data.featureThinking
 import com.llmhub.llmhub.data.DeviceInfo
 import com.llmhub.llmhub.data.ModelAvailabilityProvider
 import com.llmhub.llmhub.inference.InferenceService
+import com.llmhub.llmhub.inference.LiteRtLmInferenceService
 import com.llmhub.llmhub.inference.UnifiedInferenceService
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -68,6 +69,9 @@ enum class VoiceMode {
     WHISPER_KIT,
     GEMMA_AUDIO
 }
+
+/** Agent context window when the user never set one; services cap it at the model's own limit. */
+internal const val AGENT_DEFAULT_CONTEXT_WINDOW = 4096
 
 class AgentViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -223,7 +227,7 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
     suspend fun loadModelSuspend(model: LLMModel, preferredBackend: LlmInference.Backend? = null, deviceId: String? = null): Boolean {
         _loadingModelName.value = model.name
         try {
-            val maxTokens = agentPrefs.getInt("selected_max_tokens", 4096)
+            val maxTokens = agentPrefs.getInt("selected_max_tokens", AGENT_DEFAULT_CONTEXT_WINDOW)
             val enableThinking = agentPrefs.featureThinking(model, "agent_enable_thinking", true)
             inferenceService.setGenerationParameters(
                 maxTokens = maxTokens,
@@ -360,10 +364,7 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
                 // An inference error (LiteRtLmJniException from the web search stream, 4.6.4 and 4.6.5)
                 // escaped this launch and crashed the app.
                 Log.e("AgentViewModel", "Generation failed: ${e.message}", e)
-                addMessage(AgentMessage.Text(
-                    sender = AgentMessage.Sender.AGENT,
-                    text = getApplication<Application>().getString(R.string.message_send_error)
-                ))
+                addMessage(AgentMessage.Text(sender = AgentMessage.Sender.AGENT, text = generationErrorText(e)))
             } finally {
                 _isGenerating.value = false
             }
@@ -432,7 +433,9 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
                 }
             } catch (e: Exception) {
                 Log.e("AgentViewModel", "Failed to process audio input: ${e.message}", e)
-                addMessage(AgentMessage.Text(sender = AgentMessage.Sender.AGENT, text = "Audio processing error: ${e.message}"))
+                val text = if (LiteRtLmInferenceService.isContextWindowOverflow(e)) generationErrorText(e)
+                    else "Audio processing error: ${e.message}"
+                addMessage(AgentMessage.Text(sender = AgentMessage.Sender.AGENT, text = text))
             } finally {
                 _isGenerating.value = false
             }
@@ -458,7 +461,7 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
         val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
         val agentPrefs = getApplication<Application>().getSharedPreferences("agent_prefs", Context.MODE_PRIVATE)
         val enableThinking = agentPrefs.featureThinking(inferenceService.getCurrentlyLoadedModel(), "agent_enable_thinking", true)
-        val maxTokens = agentPrefs.getInt("selected_max_tokens", 4096)
+        val maxTokens = agentPrefs.getInt("selected_max_tokens", AGENT_DEFAULT_CONTEXT_WINDOW)
         setGenerationParameters(maxTokens = maxTokens, enableThinking = enableThinking, contextWindow = maxTokens)
 
         if (_isWebSearchEnabled.value) {
@@ -572,6 +575,8 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
                 }
             } catch (e: Exception) {
                 Log.e("AgentViewModel", "Stream error: ${e.message}")
+                // Without this the empty reply was removed below and the request failed silently.
+                if (LiteRtLmInferenceService.isContextWindowOverflow(e)) updateAgentTextMessage(aiMsgId, generationErrorText(e))
             }
 
             if (_messages.value.any { it.id == aiMsgId && (it as? AgentMessage.Text)?.text?.isBlank() == true }) {
@@ -584,6 +589,10 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private data class ParsedTool(val name: String, val args: String)
+
+    private fun generationErrorText(e: Throwable): String = getApplication<Application>().getString(
+        if (LiteRtLmInferenceService.isContextWindowOverflow(e)) R.string.context_window_full_error else R.string.message_send_error
+    )
 
     private fun parseAlarmTime(text: String): Pair<Int, Int> {
         val lower = text.lowercase()

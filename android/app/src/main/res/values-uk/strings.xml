@@ -188,6 +188,7 @@
     <string name="failed_to_load_image">Не вдалося завантажити зображення</string>
     <string name="model_loading_error">Помилка завантаження моделі</string>
     <string name="message_send_error">Помилка надсилання повідомлення</string>
+    <string name="context_window_full_error">Вікно контексту заповнене. Скоротіть повідомлення або збільште розмір вікна контексту в налаштуваннях.</string>
     <string name="file_save_error">Помилка збереження файлу</string>
     <string name="file_save_success">Файл успішно збережено</string>
 

@@ -186,6 +186,7 @@
     <string name="failed_to_load_image">이미지 로드 실패</string>
     <string name="model_loading_error">모델 로딩 오류</string>
     <string name="message_send_error">메시지 전송 오류</string>
+    <string name="context_window_full_error">컨텍스트 창이 가득 찼습니다. 메시지를 줄이거나 설정에서 컨텍스트 창 크기를 늘려 주세요.</string>
     <string name="file_save_error">파일 저장 오류</string>
     <string name="file_save_success">파일 저장 성공</string>
     

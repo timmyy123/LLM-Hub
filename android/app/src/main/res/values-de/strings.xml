@@ -169,6 +169,7 @@
     <string name="failed_to_load_image">Bild konnte nicht geladen werden</string>
     <string name="model_loading_error">Fehler beim Laden des Modells</string>
     <string name="message_send_error">Fehler beim Senden der Nachricht</string>
+    <string name="context_window_full_error">Das Kontextfenster ist voll. Kürze deine Nachricht oder erhöhe die Kontextfenster-Größe in den Einstellungen.</string>
     <string name="file_save_error">Fehler beim Speichern der Datei</string>
     <string name="file_save_success">Datei erfolgreich gespeichert</string>
     

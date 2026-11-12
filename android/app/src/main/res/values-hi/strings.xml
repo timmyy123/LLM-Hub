@@ -206,6 +206,7 @@
     <string name="failed_to_load_image">छवि लोड करने में विफल</string>
     <string name="model_loading_error">मॉडल लोड करने में त्रुटि</string>
     <string name="message_send_error">संदेश भेजने में त्रुटि</string>
+    <string name="context_window_full_error">कॉन्टेक्स्ट विंडो भर गई है। अपना संदेश छोटा करें या सेटिंग्स में कॉन्टेक्स्ट विंडो का आकार बढ़ाएँ।</string>
     <string name="file_save_error">फ़ाइल सहेजने में त्रुटि</string>
     <string name="file_save_success">फ़ाइल सफलतापूर्वक सहेजी गई</string>
     

@@ -107,6 +107,18 @@ class LiteRtLmInferenceService(private val applicationContext: Context) : Infere
 
         @JvmStatic
         fun getMaxTokensForModelStatic(model: LLMModel): Int = model.contextWindowSize
+
+        /**
+         * LiteRT-LM rejects a prompt longer than the engine's maxNumTokens with a LiteRtLmJniException
+         * ("Input token ids are too long. Exceeding the maximum number of tokens allowed").
+         */
+        @JvmStatic
+        fun isContextWindowOverflow(error: Throwable): Boolean =
+            generateSequence(error) { it.cause }.any { e ->
+                val message = e.message ?: return@any false
+                message.contains("Input token ids are too long", ignoreCase = true) ||
+                    message.contains("maximum number of tokens", ignoreCase = true)
+            }
     }
 
     /**

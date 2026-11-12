@@ -188,6 +188,7 @@
     <string name="failed_to_load_image">بارگذاری تصویر ناموفق بود</string>
     <string name="model_loading_error">خطا در بارگذاری مدل</string>
     <string name="message_send_error">خطا در ارسال پیام</string>
+    <string name="context_window_full_error">پنجره زمینه پر شده است. پیامتان را کوتاه‌تر کنید یا اندازه پنجره زمینه را در تنظیمات افزایش دهید.</string>
     <string name="file_save_error">خطا در ذخیره فایل</string>
     <string name="file_save_success">فایل با موفقیت ذخیره شد</string>
 

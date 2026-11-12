@@ -186,6 +186,7 @@
     <string name="failed_to_load_image">فشل تحميل الصورة</string>
     <string name="model_loading_error">خطأ في تحميل النموذج</string>
     <string name="message_send_error">خطأ في إرسال الرسالة</string>
+    <string name="context_window_full_error">نافذة السياق ممتلئة. اختصر رسالتك أو زِد حجم نافذة السياق من الإعدادات.</string>
     <string name="file_save_error">خطأ في حفظ الملف</string>
     <string name="file_save_success">تم حفظ الملف بنجاح</string>
 

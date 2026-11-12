@@ -183,6 +183,7 @@
     <string name="failed_to_load_image">画像の読み込みに失敗しました</string>
     <string name="model_loading_error">モデルの読み込みエラー</string>
     <string name="message_send_error">メッセージ送信エラー</string>
+    <string name="context_window_full_error">コンテキストウィンドウがいっぱいです。メッセージを短くするか、設定でコンテキストウィンドウサイズを大きくしてください。</string>
     <string name="file_save_error">ファイル保存エラー</string>
     <string name="file_save_success">ファイルが正常に保存されました</string>
     

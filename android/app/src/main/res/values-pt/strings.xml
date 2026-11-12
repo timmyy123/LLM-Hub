@@ -146,6 +146,7 @@
     <string name="failed_to_load_image">Falha ao carregar imagem</string>
     <string name="model_loading_error">Erro ao carregar modelo</string>
     <string name="message_send_error">Erro ao enviar mensagem</string>
+    <string name="context_window_full_error">A janela de contexto está cheia. Encurte sua mensagem ou aumente o tamanho da janela de contexto nas configurações.</string>
     <string name="file_save_error">Erro ao salvar arquivo</string>
     <string name="file_save_success">Arquivo salvo com sucesso</string>
     

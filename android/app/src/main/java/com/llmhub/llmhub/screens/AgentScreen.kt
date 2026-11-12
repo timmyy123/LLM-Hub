@@ -315,7 +315,7 @@ fun AgentScreen(
             var selectedModelName by remember { mutableStateOf(agentPrefs.getString("selected_model_name", "") ?: "") }
             var selectedBackendName by remember { mutableStateOf(agentPrefs.getString("selected_backend", null)) }
             var selectedNpuDeviceId by remember { mutableStateOf(agentPrefs.getString("selected_npu_device_id", null)) }
-            var selectedMaxTokens by remember { mutableStateOf(agentPrefs.getInt("selected_max_tokens", 2048)) }
+            var selectedMaxTokens by remember { mutableStateOf(agentPrefs.getInt("selected_max_tokens", com.llmhub.llmhub.agent.AGENT_DEFAULT_CONTEXT_WINDOW)) }
 
             val selectedModel = remember(availableModels, selectedModelName) {
                 availableModels.find { it.name == selectedModelName } ?: availableModels.firstOrNull()

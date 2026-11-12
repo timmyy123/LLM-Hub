@@ -178,6 +178,7 @@
     <string name="failed_to_load_image">Không tải được hình ảnh</string>
     <string name="model_loading_error">Lỗi tải mô hình</string>
     <string name="message_send_error">Lỗi gửi tin nhắn</string>
+    <string name="context_window_full_error">Cửa sổ ngữ cảnh đã đầy. Hãy rút gọn tin nhắn hoặc tăng kích thước cửa sổ ngữ cảnh trong phần cài đặt.</string>
     <string name="file_save_error">Lỗi lưu tập tin</string>
     <string name="file_save_success">Tệp được lưu thành công</string>
     <string name="content_description_ai_bot">Robot AI</string>

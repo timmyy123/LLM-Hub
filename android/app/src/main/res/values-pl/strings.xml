@@ -186,6 +186,7 @@
     <string name="failed_to_load_image">Nie udało się załadować obrazu</string>
     <string name="model_loading_error">Błąd ładowania modelu</string>
     <string name="message_send_error">Błąd wysyłania wiadomości</string>
+    <string name="context_window_full_error">Okno kontekstowe jest pełne. Skróć wiadomość lub zwiększ rozmiar okna kontekstowego w ustawieniach.</string>
     <string name="file_save_error">Błąd zapisywania pliku</string>
     <string name="file_save_success">Plik został pomyślnie zapisany</string>
     

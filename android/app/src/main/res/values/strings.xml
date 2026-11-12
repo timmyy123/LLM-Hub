@@ -194,6 +194,7 @@
     <string name="failed_to_load_image">Failed to load image</string>
     <string name="model_loading_error">Error loading model</string>
     <string name="message_send_error">Error sending message</string>
+    <string name="context_window_full_error">The context window is full. Shorten your message or raise the context window size in settings.</string>
     <string name="file_save_error">Error saving file</string>
     <string name="file_save_success">File saved successfully</string>
     

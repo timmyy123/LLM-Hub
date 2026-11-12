@@ -188,6 +188,7 @@
     <string name="failed_to_load_image">טעינת התמונה נכשלה</string>
     <string name="model_loading_error">שגיאה בטעינת המודל</string>
     <string name="message_send_error">שגיאה בשליחת ההודעה</string>
+    <string name="context_window_full_error">חלון ההקשר מלא. קצרו את ההודעה או הגדילו את גודל חלון ההקשר בהגדרות.</string>
     <string name="file_save_error">שגיאה בשמירת הקובץ</string>
     <string name="file_save_success">הקובץ נשמר בהצלחה</string>
 

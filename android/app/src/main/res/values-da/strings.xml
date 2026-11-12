@@ -190,6 +190,7 @@
     <string name="failed_to_load_image">Kunne ikke indlæse billede</string>
     <string name="model_loading_error">Fejl ved indlæsning af model</string>
     <string name="message_send_error">Fejl ved afsendelse af besked</string>
+    <string name="context_window_full_error">Kontekstvinduet er fuldt. Gør din besked kortere, eller øg kontekstvinduets størrelse i indstillingerne.</string>
     <string name="file_save_error">Fejl ved lagring af filen</string>
     <string name="file_save_success">Filen blev gemt</string>
     <string name="content_description_ai_bot">AI Bot</string>

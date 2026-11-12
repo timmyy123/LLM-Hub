@@ -190,6 +190,7 @@
     <string name="failed_to_load_image">无法加载图片</string>
     <string name="model_loading_error">加载模型时出错</string>
     <string name="message_send_error">发送消息时出错</string>
+    <string name="context_window_full_error">上下文窗口已满。请缩短消息，或在设置中调大上下文窗口大小。</string>
     <string name="file_save_error">保存文件时出错</string>
     <string name="file_save_success">文件保存成功</string>
     

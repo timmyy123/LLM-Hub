@@ -186,6 +186,7 @@
     <string name="failed_to_load_image">Gagal memuat gambar</string>
     <string name="model_loading_error">Kesalahan memuat model</string>
     <string name="message_send_error">Kesalahan mengirim pesan</string>
+    <string name="context_window_full_error">Jendela konteks sudah penuh. Persingkat pesan Anda atau perbesar ukuran jendela konteks di pengaturan.</string>
     <string name="file_save_error">Kesalahan menyimpan file</string>
     <string name="file_save_success">File berhasil disimpan</string>
     

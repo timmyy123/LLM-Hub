@@ -178,6 +178,7 @@
     <string name="failed_to_load_image">Kan afbeelding</string>
     <string name="model_loading_error">Fout bij laden van model</string>
     <string name="message_send_error">Fout bij verzenden van bericht</string>
+    <string name="context_window_full_error">Het contextvenster is vol. Maak je bericht korter of vergroot het contextvenster in de instellingen.</string>
     <string name="file_save_error">Fout bij opslaan van bestand</string>
     <string name="file_save_success">Bestand succesvol opgeslagen</string>
     <string name="content_description_ai_bot">AI-bot</string>

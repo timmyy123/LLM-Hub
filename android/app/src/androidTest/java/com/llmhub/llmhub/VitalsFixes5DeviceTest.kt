@@ -213,9 +213,14 @@ class VitalsFixes5DeviceTest {
 
     /**
      * Uncaught LiteRtLmJniException in the agent: a prompt longer than the context window makes LiteRT-LM
-     * report an error through the web search stream. The agent must show an error message, not crash.
+     * report an error through the web search stream. The agent must show the context-full message, not crash.
      */
-    @Test fun agentInferenceErrorDoesNotCrash() {
+    @Test fun agentInferenceErrorDoesNotCrash() = agentContextOverflowShowsError(webSearch = true)
+
+    /** Without web search the same error used to remove the empty reply, so nothing was shown. */
+    @Test fun agentContextOverflowWithoutWebSearchShowsError() = agentContextOverflowShowsError(webSearch = false)
+
+    private fun agentContextOverflowShowsError(webSearch: Boolean) {
         val model = ModelData.models.first { it.name == "Gemma-4 E2B" }
         download(model.url, File(File(context.filesDir, "models").apply { mkdirs() }, model.localFileName()))
         context.getSharedPreferences("agent_prefs", Context.MODE_PRIVATE).edit()
@@ -229,7 +234,7 @@ class VitalsFixes5DeviceTest {
             viewModel = ViewModelProvider(
                 store, ViewModelProvider.AndroidViewModelFactory.getInstance(context.applicationContext as Application)
             )[AgentViewModel::class.java]
-            viewModel!!.toggleWebSearch()
+            if (webSearch != viewModel!!.isWebSearchEnabled.value) viewModel!!.toggleWebSearch()
             viewModel!!.sendMessage("Summarize this. " + "The quick brown fox jumps over the lazy dog. ".repeat(1500))
         }
         val deadline = SystemClock.elapsedRealtime() + 300_000
@@ -239,9 +244,12 @@ class VitalsFixes5DeviceTest {
             Thread.sleep(500)
         }
         val replies = viewModel!!.messages.value.filterIsInstance<AgentMessage.Text>()
-            .filter { it.sender == AgentMessage.Sender.AGENT }.map { it.text.take(120) }
-        Log.i(TAG, "RESULT agent: process alive, agent replies = $replies")
+            .filter { it.sender == AgentMessage.Sender.AGENT }.map { it.text }
+        Log.i(TAG, "RESULT agent (web search $webSearch): process alive, agent replies = ${replies.map { it.take(160) }}")
         instrumentation.runOnMainSync { store.clear() }
+        context.getSharedPreferences("agent_prefs", Context.MODE_PRIVATE).edit().remove("selected_max_tokens").commit()
+        val expected = context.getString(R.string.context_window_full_error)
+        assertTrue("No context-full message in $replies", replies.any { it.contains(expected) })
     }
 
     private fun longReply(paragraphs: Int): String = (1..paragraphs).joinToString("\n\n") { i ->

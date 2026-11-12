@@ -178,6 +178,7 @@
     <string name="failed_to_load_image">ไม่สามารถโหลดรูปภาพ</string>
     <string name="model_loading_error">เกิดข้อผิดพลาดในการโหลดโมเดล</string>
     <string name="message_send_error">เกิดข้อผิดพลาดในการส่งข้อความ</string>
+    <string name="context_window_full_error">หน้าต่างบริบทเต็มแล้ว โปรดย่อข้อความให้สั้นลง หรือเพิ่มขนาดหน้าต่างบริบทในการตั้งค่า</string>
     <string name="file_save_error">เกิดข้อผิดพลาดในการบันทึกไฟล์</string>
     <string name="file_save_success">บันทึกไฟล์เรียบร้อยแล้ว</string>
     <string name="content_description_ai_bot">บอท AI</string>

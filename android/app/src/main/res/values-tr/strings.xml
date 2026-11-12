@@ -186,6 +186,7 @@
     <string name="failed_to_load_image">Görsel yüklenemedi</string>
     <string name="model_loading_error">Model yükleme hatası</string>
     <string name="message_send_error">Mesaj gönderme hatası</string>
+    <string name="context_window_full_error">Bağlam penceresi doldu. Mesajınızı kısaltın veya ayarlardan bağlam penceresi boyutunu artırın.</string>
     <string name="file_save_error">Dosya kaydetme hatası</string>
     <string name="file_save_success">Dosya başarıyla kaydedildi</string>
     

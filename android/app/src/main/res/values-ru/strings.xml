@@ -225,6 +225,7 @@
     <string name="failed_to_load_image">Не удалось загрузить изображение</string>
     <string name="model_loading_error">Ошибка загрузки модели</string>
     <string name="message_send_error">Ошибка отправки сообщения</string>
+    <string name="context_window_full_error">Контекстное окно заполнено. Сократите сообщение или увеличьте размер контекстного окна в настройках.</string>
     <string name="file_save_error">Ошибка сохранения файла</string>
     <string name="file_save_success">Файл успешно сохранён</string>
     
