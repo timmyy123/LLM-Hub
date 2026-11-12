@@ -354,6 +354,16 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
                 }
 
                 processPromptWithTools(userText)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // An inference error (LiteRtLmJniException from the web search stream, 4.6.4 and 4.6.5)
+                // escaped this launch and crashed the app.
+                Log.e("AgentViewModel", "Generation failed: ${e.message}", e)
+                addMessage(AgentMessage.Text(
+                    sender = AgentMessage.Sender.AGENT,
+                    text = getApplication<Application>().getString(R.string.message_send_error)
+                ))
             } finally {
                 _isGenerating.value = false
             }
