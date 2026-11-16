@@ -65,8 +65,6 @@ struct LLMHubApp: App {
         Task {
             await PurchaseManager.shared.loadProduct()
         }
-        // Switch to the fallback Hugging Face token if the primary has expired.
-        Task.detached { await HFDefaultToken.verify() }
 
         #if DEBUG
         // App Store screenshot automation (LLMHubScreenshotUITests); inert unless driven.

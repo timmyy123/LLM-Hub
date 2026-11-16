@@ -172,10 +172,6 @@ class VitalsFixes2DeviceTest {
                 val conn = (java.net.URL(url).openConnection() as java.net.HttpURLConnection).apply {
                     instanceFollowRedirects = true; connectTimeout = 30_000; readTimeout = 120_000
                     if (have > 0) setRequestProperty("Range", "bytes=$have-")
-                    // Gated repos (google/gemma-3n-*): the same token the app's downloader sends.
-                    if (url.contains("huggingface.co") && BuildConfig.HF_TOKEN.isNotBlank()) {
-                        setRequestProperty("Authorization", "Bearer ${BuildConfig.HF_TOKEN}")
-                    }
                 }
                 when (conn.responseCode) { 416 -> return; 200 -> have = 0L }
                 conn.inputStream.use { input -> java.io.FileOutputStream(target, have > 0).use { input.copyTo(it, 1 shl 20) } }

@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.res.Configuration
 import com.llmhub.llmhub.billing.BillingManager
 import com.llmhub.llmhub.data.DeviceInfo
-import com.llmhub.llmhub.data.HfDefaultToken
 import com.llmhub.llmhub.data.LlmHubDatabase
 import com.llmhub.llmhub.data.ThemePreferences
 import com.llmhub.llmhub.inference.InferenceService
@@ -43,8 +42,6 @@ class LlmHubApplication : Application() {
         applySavedLanguage()
         // Eagerly construct billing manager so it starts connecting immediately
         billingManager
-        // Switch to the fallback Hugging Face token if the primary has expired.
-        Thread({ HfDefaultToken.verify() }, "hf-token-check").start()
     }
     
     override fun attachBaseContext(base: Context) {

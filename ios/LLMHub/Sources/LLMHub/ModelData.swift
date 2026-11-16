@@ -4387,7 +4387,7 @@ public static let models: [AIModel] = [
         id: "embeddinggemma-300m-litert-256",
         name: "EmbeddingGemma 300M LiteRT (256 tokens)",
         description: "Google EmbeddingGemma mixed-precision LiteRT model for RAG and memory. (179 MB)",
-        url: "https://huggingface.co/litert-community/embeddinggemma-300m/resolve/29888fcee3216acadc7e844906e5fe0d79a61875/embeddinggemma-300M_seq256_mixed-precision.tflite?download=true",
+        url: "https://huggingface.co/timmyboy26/embeddinggemma-300m/resolve/81de9eb261c1a6ec401ef817c752187ed1bcb25e/embeddinggemma-300M_seq256_mixed-precision.tflite?download=true",
         category: .embedding,
         sizeBytes: 179131736,
         source: "Google / LiteRT Community",
@@ -4399,14 +4399,14 @@ public static let models: [AIModel] = [
         contextWindowSize: 256,
         modelFormat: .tflite,
         additionalFiles: [
-            "https://huggingface.co/litert-community/embeddinggemma-300m/resolve/29888fcee3216acadc7e844906e5fe0d79a61875/sentencepiece.model?download=true"
+            "https://huggingface.co/timmyboy26/embeddinggemma-300m/resolve/81de9eb261c1a6ec401ef817c752187ed1bcb25e/sentencepiece.model?download=true"
         ]
     ),
     AIModel(
         id: "embeddinggemma-300m-litert-512",
         name: "EmbeddingGemma 300M LiteRT (512 tokens)",
         description: "Google EmbeddingGemma mixed-precision LiteRT model for RAG and memory. (179 MB)",
-        url: "https://huggingface.co/litert-community/embeddinggemma-300m/resolve/29888fcee3216acadc7e844906e5fe0d79a61875/embeddinggemma-300M_seq512_mixed-precision.tflite?download=true",
+        url: "https://huggingface.co/timmyboy26/embeddinggemma-300m/resolve/81de9eb261c1a6ec401ef817c752187ed1bcb25e/embeddinggemma-300M_seq512_mixed-precision.tflite?download=true",
         category: .embedding,
         sizeBytes: 179132472,
         source: "Google / LiteRT Community",
@@ -4418,14 +4418,14 @@ public static let models: [AIModel] = [
         contextWindowSize: 512,
         modelFormat: .tflite,
         additionalFiles: [
-            "https://huggingface.co/litert-community/embeddinggemma-300m/resolve/29888fcee3216acadc7e844906e5fe0d79a61875/sentencepiece.model?download=true"
+            "https://huggingface.co/timmyboy26/embeddinggemma-300m/resolve/81de9eb261c1a6ec401ef817c752187ed1bcb25e/sentencepiece.model?download=true"
         ]
     ),
     AIModel(
         id: "embeddinggemma-300m-litert-1024",
         name: "EmbeddingGemma 300M LiteRT (1024 tokens)",
         description: "Google EmbeddingGemma mixed-precision LiteRT model for RAG and memory. (183 MB)",
-        url: "https://huggingface.co/litert-community/embeddinggemma-300m/resolve/29888fcee3216acadc7e844906e5fe0d79a61875/embeddinggemma-300M_seq1024_mixed-precision.tflite?download=true",
+        url: "https://huggingface.co/timmyboy26/embeddinggemma-300m/resolve/81de9eb261c1a6ec401ef817c752187ed1bcb25e/embeddinggemma-300M_seq1024_mixed-precision.tflite?download=true",
         category: .embedding,
         sizeBytes: 183329528,
         source: "Google / LiteRT Community",
@@ -4437,14 +4437,14 @@ public static let models: [AIModel] = [
         contextWindowSize: 1024,
         modelFormat: .tflite,
         additionalFiles: [
-            "https://huggingface.co/litert-community/embeddinggemma-300m/resolve/29888fcee3216acadc7e844906e5fe0d79a61875/sentencepiece.model?download=true"
+            "https://huggingface.co/timmyboy26/embeddinggemma-300m/resolve/81de9eb261c1a6ec401ef817c752187ed1bcb25e/sentencepiece.model?download=true"
         ]
     ),
     AIModel(
         id: "embeddinggemma-300m-litert-2048",
         name: "EmbeddingGemma 300M LiteRT (2048 tokens)",
         description: "Google EmbeddingGemma mixed-precision LiteRT model for RAG and memory. (196 MB)",
-        url: "https://huggingface.co/litert-community/embeddinggemma-300m/resolve/29888fcee3216acadc7e844906e5fe0d79a61875/embeddinggemma-300M_seq2048_mixed-precision.tflite?download=true",
+        url: "https://huggingface.co/timmyboy26/embeddinggemma-300m/resolve/81de9eb261c1a6ec401ef817c752187ed1bcb25e/embeddinggemma-300M_seq2048_mixed-precision.tflite?download=true",
         category: .embedding,
         sizeBytes: 195912440,
         source: "Google / LiteRT Community",
@@ -4456,7 +4456,7 @@ public static let models: [AIModel] = [
         contextWindowSize: 2048,
         modelFormat: .tflite,
         additionalFiles: [
-            "https://huggingface.co/litert-community/embeddinggemma-300m/resolve/29888fcee3216acadc7e844906e5fe0d79a61875/sentencepiece.model?download=true"
+            "https://huggingface.co/timmyboy26/embeddinggemma-300m/resolve/81de9eb261c1a6ec401ef817c752187ed1bcb25e/sentencepiece.model?download=true"
         ]
     ),
 

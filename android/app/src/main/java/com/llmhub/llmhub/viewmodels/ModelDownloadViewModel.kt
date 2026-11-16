@@ -6,7 +6,6 @@ import kotlinx.coroutines.flow.retryWhen
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.llmhub.llmhub.data.HfDefaultToken
 import com.llmhub.llmhub.data.LLMModel
 import com.llmhub.llmhub.data.ModelData
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -72,33 +71,26 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
         private const val KEY_CUSTOM_HF_TOKEN = "custom_hf_token"
 
         /**
-         * Returns ONLY the user-provided custom token (never the default secret token).
-         * If the user has not configured their own token, returns empty string.
+         * Returns the Hugging Face token the user entered in Settings, or an empty string.
+         * The app ships no token of its own.
          */
         fun getCustomToken(context: Context): String {
             val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             val custom = prefs.getString(KEY_CUSTOM_HF_TOKEN, null)?.trim()
-            if (!custom.isNullOrEmpty() && !HfDefaultToken.isBundled(custom)) {
-                return custom
-            }
-            return ""
+            return custom.orEmpty()
         }
 
         /**
-         * Returns the effective token: custom user token if configured, else the bundled token (HfDefaultToken).
+         * Returns the user's token, or null when they have not set one.
          */
-        fun getEffectiveToken(context: Context): String? {
-            val custom = getCustomToken(context)
-            if (custom.isNotEmpty()) return custom
-            return HfDefaultToken.current
-        }
+        fun getEffectiveToken(context: Context): String? = getCustomToken(context).ifEmpty { null }
 
         /**
          * Saves or clears the user-provided custom token.
          */
         fun setCustomToken(context: Context, token: String?) {
             val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            val clean = token?.trim()?.takeIf { it.isNotEmpty() && !HfDefaultToken.isBundled(it) }
+            val clean = token?.trim()?.takeIf { it.isNotEmpty() }
             if (clean == null) {
                 prefs.edit().remove(KEY_CUSTOM_HF_TOKEN).remove("hf_token").apply()
             } else {
@@ -108,11 +100,8 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
     }
 
     init {
-        // Load custom HF token if user provided one, otherwise use the bundled token (HfDefaultToken).
-        // Default token is NEVER stored into custom token preferences or exposed to the user.
+        // The user's own Hugging Face token, if they set one in Settings.
         val effectiveToken = getEffectiveToken(context)
-        val hasCustom = getCustomToken(context).isNotEmpty()
-        android.util.Log.d("ModelDownloadViewModel", "[init] Loaded effective HF token: ${effectiveToken?.take(8)}... (hasCustom=$hasCustom)")
         _hfToken.value = effectiveToken
         
         // Initialize ModelDownloader with token

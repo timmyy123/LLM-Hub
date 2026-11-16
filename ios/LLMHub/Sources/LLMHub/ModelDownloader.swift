@@ -759,11 +759,6 @@ public actor ModelDownloader {
                             }
                             continue
                         }
-                        // Bundled token expired or revoked: switch to the fallback token.
-                        if result.statusCode == 401, await HFDefaultToken.replaceRejected(currentHfToken) {
-                            currentHfToken = HFDefaultToken.current
-                            continue
-                        }
 
                         if result.statusCode == 416 {
                             let rangeHeaderTotal = totalSizeFromContentRange(result.contentRange)
@@ -931,10 +926,6 @@ public actor ModelDownloader {
                     if (result.statusCode == 401 || result.statusCode == 403) && currentHfToken == nil,
                        let hfToken, !hfToken.isEmpty {
                         currentHfToken = hfToken
-                        continue
-                    }
-                    if result.statusCode == 401, await HFDefaultToken.replaceRejected(currentHfToken) {
-                        currentHfToken = HFDefaultToken.current
                         continue
                     }
                     if result.statusCode != 416 { throw URLError(.badServerResponse) }

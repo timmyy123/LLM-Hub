@@ -14,7 +14,6 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import androidx.test.platform.app.InstrumentationRegistry
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
-import com.llmhub.llmhub.data.HfDefaultToken
 import com.llmhub.llmhub.data.ModelData
 import com.llmhub.llmhub.data.ThemePreferences
 import com.llmhub.llmhub.data.localFileName
@@ -47,33 +46,6 @@ import java.util.concurrent.atomic.AtomicLong
 class VitalsFixes3DeviceTest {
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private val context = instrumentation.targetContext
-
-    /** An expired primary token (HTTP 401) is replaced by HF_TOKEN_FALLBACK, which can read gated Gemma files. */
-    @Test fun hfTokenFallbackTakesOver() {
-        val field = HfDefaultToken::class.java.getDeclaredField("tokens").apply { isAccessible = true }
-        @Suppress("UNCHECKED_CAST") val tokens = field.get(null) as MutableList<String>
-        val bundled = tokens.toList()
-        assertEquals("Both bundled tokens must be configured", 2, bundled.size)
-        val rejected = "hf_" + "x".repeat(34)
-        try {
-            tokens[0] = rejected
-            HfDefaultToken.verify()
-            assertEquals("Fallback token must take over", BuildConfig.HF_TOKEN_FALLBACK, HfDefaultToken.current)
-            assertTrue("A 401 on the rejected token reports the switch", HfDefaultToken.replaceRejected(rejected))
-            val gated = ModelData.models.first { it.name == "Gemma-3n E2B" }.url
-            val code = (URL(gated).openConnection() as HttpURLConnection).run {
-                requestMethod = "HEAD"; instanceFollowRedirects = false
-                setRequestProperty("Authorization", "Bearer ${HfDefaultToken.current}")
-                responseCode.also { disconnect() }
-            }
-            Log.i(TAG, "RESULT fallback token selected, gated Gemma HEAD: HTTP $code")
-            assertTrue("Fallback token cannot read the gated file: HTTP $code", code in 200..399)
-        } finally {
-            tokens.clear(); tokens.addAll(bundled)
-            HfDefaultToken.verify()
-        }
-        assertEquals("Primary token is used again when it is valid", BuildConfig.HF_TOKEN, HfDefaultToken.current)
-    }
 
     /** RecordingCanvas "trying to draw too large bitmap": a 50 MP photo must be decoded within the limit. */
     @Test fun largePhotoDrawsAfterBoundedDecode() {

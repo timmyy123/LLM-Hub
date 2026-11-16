@@ -172,13 +172,8 @@ cd LLM-Hub/android
 
 ### Android-only local configuration
 
-#### Setting up Hugging Face Token for Development
-To use private or gated models, add your HuggingFace tokens to `android/local.properties` (do NOT commit this file):
-```properties
-HF_TOKEN=hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-HF_TOKEN_FALLBACK=hf_yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
-```
-Save and sync Gradle in Android Studio; the app reads `BuildConfig.HF_TOKEN` and `BuildConfig.HF_TOKEN_FALLBACK` at build time. `HF_TOKEN` is used first; the fallback takes over once Hugging Face rejects it (expired or revoked). On iOS, set the same two keys in `ios/LLMHub/Secrets.*.xcconfig` (copy the `.template` files).
+#### Hugging Face tokens
+The app ships no Hugging Face token. The models in the catalog download without one. To search and download private or gated repositories, enter your own token in the app under Settings > Hugging Face Token.
 
 #### Dev Premium Flag
 To skip ads and unlock all premium features locally without a real IAP purchase, add this to `android/local.properties`:

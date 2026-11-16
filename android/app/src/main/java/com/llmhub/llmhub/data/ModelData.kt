@@ -1078,7 +1078,7 @@ object ModelData {
         LLMModel(
             name = "Gemma-3 1B (INT4, 2k)",
             description = "Google Gemma-3 1B with INT4 quantization and a 2k context window. Optimized for mobile devices. Ready to download from HuggingFace (529MB)",
-            url = "https://huggingface.co/litert-community/Gemma3-1B-IT/resolve/main/Gemma3-1B-IT_multi-prefill-seq_q4_ekv2048.task?download=true",
+            url = "https://huggingface.co/timmyboy26/Gemma3-1B-IT/resolve/cd5aed3aa79603a6e3fabd7fc1e5ce19de10be98/Gemma3-1B-IT_multi-prefill-seq_q4_ekv2048.task?download=true",
             category = "text",
             sizeBytes = 554661246L, // 529MB (actual size from HuggingFace)
             source = "Google via LiteRT Community",
@@ -1091,7 +1091,7 @@ object ModelData {
         LLMModel(
             name = "Gemma-3 1B (INT8, 1.2k)",
             description = "Higher quality INT8 version of Gemma-3 1B with a 1.2k context window. Ready to download from HuggingFace (1005MB)",
-            url = "https://huggingface.co/litert-community/Gemma3-1B-IT/resolve/main/Gemma3-1B-IT_multi-prefill-seq_q8_ekv1280.task?download=true",
+            url = "https://huggingface.co/timmyboy26/Gemma3-1B-IT/resolve/cd5aed3aa79603a6e3fabd7fc1e5ce19de10be98/Gemma3-1B-IT_multi-prefill-seq_q8_ekv1280.task?download=true",
             category = "text",
             sizeBytes = 1054012582L, // 1005MB (actual size from HuggingFace)
             source = "Google via LiteRT Community",
@@ -1104,7 +1104,7 @@ object ModelData {
         LLMModel(
             name = "Gemma-3 1B (INT8, 2k)",
             description = "Higher quality INT8 version of Gemma-3 1B with a 2k context window. Ready to download from HuggingFace (1024MB)",
-            url = "https://huggingface.co/litert-community/Gemma3-1B-IT/resolve/main/Gemma3-1B-IT_multi-prefill-seq_q8_ekv2048.task?download=true",
+            url = "https://huggingface.co/timmyboy26/Gemma3-1B-IT/resolve/cd5aed3aa79603a6e3fabd7fc1e5ce19de10be98/Gemma3-1B-IT_multi-prefill-seq_q8_ekv2048.task?download=true",
             category = "text",
             sizeBytes = 1073765694L, // 1024MB (actual size from HuggingFace)
             source = "Google via LiteRT Community",
@@ -1117,7 +1117,7 @@ object ModelData {
         LLMModel(
             name = "Gemma-3 1B (INT8, 4k)",
             description = "Higher quality INT8 version of Gemma-3 1B with a large 4k context window. Ready to download from HuggingFace (1005MB)",
-            url = "https://huggingface.co/litert-community/Gemma3-1B-IT/resolve/main/Gemma3-1B-IT_multi-prefill-seq_q8_ekv4096.task?download=true",
+            url = "https://huggingface.co/timmyboy26/Gemma3-1B-IT/resolve/cd5aed3aa79603a6e3fabd7fc1e5ce19de10be98/Gemma3-1B-IT_multi-prefill-seq_q8_ekv4096.task?download=true",
             category = "text",
             sizeBytes = 1054023846L, // 1005MB (actual size from HuggingFace)
             source = "Google via LiteRT Community",
@@ -3704,7 +3704,7 @@ object ModelData {
         LLMModel(
             name = "Gemma-3n E2B",
             description = "Google Gemma-3n E2B with multimodal capabilities (text, vision, and audio). Effective 2B parameters with selective parameter activation. Supports 4k context window and multimodal input including text, images, and audio. Ready to download from HuggingFace (3.1.15GB)",
-            url = "https://huggingface.co/google/gemma-3n-E2B-it-litert-lm/resolve/73b019b63436d346f68dd9c1dbfd117eb264d888/gemma-3n-E2B-it-int4.litertlm?download=true",
+            url = "https://huggingface.co/timmyboy26/gemma-3n-E2B-it-litert-lm/resolve/b98eff7c9634fed03195efc4746da23a3f7852a0/gemma-3n-E2B-it-int4.litertlm?download=true",
             category = "multimodal",
             sizeBytes = 3388604416L, // 3.1.15GB (actual downloaded size)
             source = "Google (LiteRT LM)",
@@ -3718,7 +3718,7 @@ object ModelData {
         LLMModel(
             name = "Gemma-3n E4B",
             description = "Google Gemma-3n E4B with multimodal capabilities (text, vision, and audio). Effective 4B parameters with selective parameter activation. Supports 4k context window and multimodal input including text, images, and audio. Ready to download from HuggingFace (4.33GB)",
-            url = "https://huggingface.co/google/gemma-3n-E4B-it-litert-lm/resolve/3d0179a0648381585ab337e170b7517aae8e0ce4/gemma-3n-E4B-it-int4.litertlm?download=true",
+            url = "https://huggingface.co/timmyboy26/gemma-3n-E4B-it-litert-lm/resolve/88409d54c2b46028ad66f35deef678709c1e61d9/gemma-3n-E4B-it-int4.litertlm?download=true",
             category = "multimodal",
             sizeBytes = 4652318720L, // 4.33GB (actual downloaded size)
             source = "Google (LiteRT LM)",
@@ -4288,7 +4288,7 @@ object ModelData {
         LLMModel(
             name = "Gemma-3 4B (Q4_0, GGUF)",
             description = "Google Gemma-3 4B quantized GGUF (Q4_0). Supports text + vision — download the Vision Projector (mmproj) to enable image input.",
-            url = "https://huggingface.co/google/gemma-3-4b-it-qat-q4_0-gguf/resolve/main/gemma-3-4b-it-q4_0.gguf?download=true",
+            url = "https://huggingface.co/timmyboy26/gemma-3-4b-it-qat-q4_0-gguf/resolve/d52bfa6adac820347bb7de4d847b78d8fa3ae990/gemma-3-4b-it-q4_0.gguf?download=true",
             category = "multimodal",
             sizeBytes = 3155051328L, // 3,155,051,328 bytes (~3008.89 MB)
             source = "Google",
@@ -4302,7 +4302,7 @@ object ModelData {
         LLMModel(
             name = "Gemma-3 4B (Vision Projector, BF16)",
             description = "Vision Projector (mmproj) required to enable image input for Gemma-3 4B. BF16 variant for accurate visual encodings.",
-            url = "https://huggingface.co/google/gemma-3-4b-it-qat-q4_0-gguf/resolve/main/mmproj-model-f16-4B.gguf?download=true",
+            url = "https://huggingface.co/timmyboy26/gemma-3-4b-it-qat-q4_0-gguf/resolve/d52bfa6adac820347bb7de4d847b78d8fa3ae990/mmproj-model-f16-4B.gguf?download=true",
             category = "multimodal",
             sizeBytes = 851251104L, // 851,251,104 bytes (~811.82 MB)
             source = "Google",
@@ -4315,7 +4315,7 @@ object ModelData {
         LLMModel(
             name = "Gemma-3 12B (Q4_0, GGUF)",
             description = "Google Gemma-3 12B quantized GGUF (Q4_0). Supports text + vision — download the Vision Projector (mmproj) to enable image input.",
-            url = "https://huggingface.co/google/gemma-3-12b-it-qat-q4_0-gguf/resolve/main/gemma-3-12b-it-q4_0.gguf?download=true",
+            url = "https://huggingface.co/timmyboy26/gemma-3-12b-it-qat-q4_0-gguf/resolve/6fd90c804a3294ad31dcbac66e9f74ada83545e1/gemma-3-12b-it-q4_0.gguf?download=true",
             category = "multimodal",
             sizeBytes = 8074473920L, // 8,074,473,920 bytes (~7700.42 MB)
             source = "Google",
@@ -4329,7 +4329,7 @@ object ModelData {
         LLMModel(
             name = "Gemma-3 12B (Vision Projector, BF16)",
             description = "Vision Projector (mmproj) required to enable image input for Gemma-3 12B. BF16 variant for accurate visual encodings.",
-            url = "https://huggingface.co/google/gemma-3-12b-it-qat-q4_0-gguf/resolve/main/mmproj-model-f16-12B.gguf?download=true",
+            url = "https://huggingface.co/timmyboy26/gemma-3-12b-it-qat-q4_0-gguf/resolve/6fd90c804a3294ad31dcbac66e9f74ada83545e1/mmproj-model-f16-12B.gguf?download=true",
             category = "multimodal",
             sizeBytes = 854200224L, // 854,200,224 bytes (~814.63 MB)
             source = "Google",
@@ -4450,7 +4450,7 @@ object ModelData {
         LLMModel(
             name = "EmbeddingGemma 300M (256 seq)",
             description = "Google EmbeddingGemma 300M model with 256 sequence length. High-quality text embeddings for semantic search and similarity tasks. Mixed-precision for optimal performance. Ready to download from HuggingFace (170.84MB)",
-            url = "https://huggingface.co/litert-community/embeddinggemma-300m/resolve/main/embeddinggemma-300M_seq256_mixed-precision.tflite?download=true",
+            url = "https://huggingface.co/timmyboy26/embeddinggemma-300m/resolve/81de9eb261c1a6ec401ef817c752187ed1bcb25e/embeddinggemma-300M_seq256_mixed-precision.tflite?download=true",
             category = "embedding",
             sizeBytes = 179131736L, // 170.84 MB
             source = "Google via LiteRT Community",
@@ -4463,7 +4463,7 @@ object ModelData {
         LLMModel(
             name = "EmbeddingGemma 300M (512 seq)",
             description = "Google EmbeddingGemma 300M model with 512 sequence length. High-quality text embeddings for semantic search and similarity tasks. Mixed-precision for optimal performance. Ready to download from HuggingFace (170.84MB)",
-            url = "https://huggingface.co/litert-community/embeddinggemma-300m/resolve/main/embeddinggemma-300M_seq512_mixed-precision.tflite?download=true",
+            url = "https://huggingface.co/timmyboy26/embeddinggemma-300m/resolve/81de9eb261c1a6ec401ef817c752187ed1bcb25e/embeddinggemma-300M_seq512_mixed-precision.tflite?download=true",
             category = "embedding",
             sizeBytes = 179132472L, // 170.84 MB
             source = "Google via LiteRT Community",
@@ -4476,7 +4476,7 @@ object ModelData {
         LLMModel(
             name = "EmbeddingGemma 300M (1024 seq)",
             description = "Google EmbeddingGemma 300M model with 1024 sequence length. High-quality text embeddings for semantic search and similarity tasks. Mixed-precision for optimal performance. Ready to download from HuggingFace (174.84MB)",
-            url = "https://huggingface.co/litert-community/embeddinggemma-300m/resolve/main/embeddinggemma-300M_seq1024_mixed-precision.tflite?download=true",
+            url = "https://huggingface.co/timmyboy26/embeddinggemma-300m/resolve/81de9eb261c1a6ec401ef817c752187ed1bcb25e/embeddinggemma-300M_seq1024_mixed-precision.tflite?download=true",
             category = "embedding",
             sizeBytes = 183329528L, // 174.84 MB
             source = "Google via LiteRT Community",
@@ -4489,7 +4489,7 @@ object ModelData {
         LLMModel(
             name = "EmbeddingGemma 300M (2048 seq)",
             description = "Google EmbeddingGemma 300M model with 2048 sequence length. High-quality text embeddings for semantic search and similarity tasks. Mixed-precision for optimal performance. Ready to download from HuggingFace (186.84MB)",
-            url = "https://huggingface.co/litert-community/embeddinggemma-300m/resolve/main/embeddinggemma-300M_seq2048_mixed-precision.tflite?download=true",
+            url = "https://huggingface.co/timmyboy26/embeddinggemma-300m/resolve/81de9eb261c1a6ec401ef817c752187ed1bcb25e/embeddinggemma-300M_seq2048_mixed-precision.tflite?download=true",
             category = "embedding",
             sizeBytes = 195912440L, // 186.84 MB
             source = "Google via LiteRT Community",
