@@ -246,9 +246,3 @@ Star History
 Support
 - Email: timmy@llm-hub.app
 - Issues & Discussions: GitHub
-
-Notes
-- This README is intentionally concise — consult `ModelData.kt` for exact model variants, sizes, and format details.
-
-
-
