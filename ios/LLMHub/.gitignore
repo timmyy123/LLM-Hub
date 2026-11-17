@@ -9,6 +9,6 @@ DerivedData/
 
 /xtool
 
-# AdMob / secrets — NEVER commit these
+# Local build settings, copied from the .template files
 Secrets.debug.xcconfig
 Secrets.release.xcconfig

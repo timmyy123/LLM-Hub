@@ -158,7 +158,7 @@ Acknowledgments
 - [Lightricks LTX-Video](https://huggingface.co/Lightricks/LTX-Video) — Android video generation model (LTX-Video Open Weights License)
 - [stable-diffusion.cpp](https://github.com/leejet/stable-diffusion.cpp) — Android video generation runtime, extended with LTX-Video 0.9 and a QNN backend
 - [calcuis/ltxv-gguf](https://huggingface.co/calcuis/ltxv-gguf) — GGUF builds of LTX-Video, T5-XXL and the VAE
-- **Google, OpenAI, Meta, Microsoft, IBM, LiquidAI, Mistral, Primsm ML, HuggingFace** — model and tooling contributions
+- **Google, OpenAI, Meta, Microsoft, IBM, LiquidAI, Mistral, HuggingFace** — model and tooling contributions
 
 Development Setup
 
@@ -172,27 +172,17 @@ cd LLM-Hub/android
 
 ### Android-only local configuration
 
-#### Hugging Face tokens
-The app ships no Hugging Face token. The models in the catalog download without one. To search and download private or gated repositories, enter your own token in the app under Settings > Hugging Face Token.
+`android/local.properties` is not in the repository. It holds only your SDK path, which Android Studio writes for you, and one optional flag:
 
-#### Dev Premium Flag
-To skip ads and unlock all premium features locally without a real IAP purchase, add this to `android/local.properties`:
 ```properties
+sdk.dir=/path/to/Android/sdk
 DEBUG_PREMIUM=true
 ```
-Set it back to `false` before making a production build.
 
-#### Model License Acceptance
-Some models on HuggingFace (especially from Google and Meta) require explicit license acceptance before downloading. When building the app locally:
+`DEBUG_PREMIUM=true` unlocks all premium features locally without a real purchase. Leave it out or set it to `false` for a production build. There are no API keys or tokens to add.
 
-1. Ensure you have a valid HuggingFace read token in `local.properties` (see above)
-2. **For each model you want to download:**
-   - Visit the model's HuggingFace page (e.g., https://huggingface.co/google/gemma-3n-E2B-it-litert-lm)
-   - Click the "Access repository" or license acceptance button
-   - Grant consent to the model's license terms
-   - Try downloading the model in the app again
-
-**Note:** This is only required for local development builds. The Play Store version uses different authentication and does not require manual license acceptance for each model.
+#### Hugging Face tokens
+The app ships no Hugging Face token. The models in the catalog download without one. To search and download private or gated repositories, enter your own token in the app under Settings > Hugging Face Token.
 
 ### iOS local development (macOS + Xcode)
 
@@ -206,8 +196,11 @@ Some models on HuggingFace (especially from Google and Meta) require explicit li
 ```bash
 git clone https://github.com/timmyy123/LLM-Hub.git
 cd LLM-Hub
+cp ios/LLMHub/Secrets.debug.xcconfig.template ios/LLMHub/Secrets.debug.xcconfig
+cp ios/LLMHub/Secrets.release.xcconfig.template ios/LLMHub/Secrets.release.xcconfig
 open ios/LLMHub/LLMHub.xcodeproj
 ```
+   The two `Secrets.*.xcconfig` files are not in the repository and the project will not build without them. They hold one setting, `BYPASS_PREMIUM_UNLOCK`: set it to `YES` in the debug file to unlock all premium features locally, and keep it `NO` in the release file. There are no API keys or tokens to add.
 2. In Xcode, select target **LLMHub** → **Signing & Capabilities**:
    - Set your **Team**
    - Set a unique **Bundle Identifier** (for example: `com.yourname.llmhub`)
@@ -250,6 +243,10 @@ License
 - You are free to use, study, and build on this project for non-commercial purposes.
 - **Commercial use — including distributing the app, charging for it, or monetizing it with ads or IAP — is not permitted without explicit written permission from the author.**
 - Contact timmy@llm-hub.app for commercial licensing enquiries.
+
+Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=timmyy123/llm-hub&type=date&legend=top-left)](https://www.star-history.com/?repos=timmyy123%2Fllm-hub&type=date&legend=top-left)
 
 Support
 - Email: timmy@llm-hub.app
