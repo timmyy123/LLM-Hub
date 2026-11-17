@@ -236,8 +236,8 @@ Contributing
 License
 - Source code is licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE).
 - You are free to use, study, and build on this project for non-commercial purposes.
-- **Commercial use — including distributing the app, charging for it, or monetizing it with ads or IAP — is not permitted without explicit written permission from the author.**
-- Contact timmy@llm-hub.app for commercial licensing enquiries.
+- **Commercial use, including distributing the app, charging for it, or monetizing it with ads or IAP, requires a paid commercial license from the author.**
+- Contact timmy@llm-hub.app to buy a commercial license.
 
 Star History
 
