@@ -61,7 +61,7 @@ Free code signing provided by [SignPath.io](https://about.signpath.io), certific
 | **💬 Chat** | Multi-turn conversations with RAG memory, web search, TTS auto-readout, and multimodal input |
 | **🤖 AI Agent** | **[NEW]** Autonomous device agent with function calling, interactive maps, device tools, MCP tools, and Termux terminal command generation on Android |
 | **🤖 creAItor** | **[NEW]** Design custom AI personas with specialized system prompts (PCTF) in seconds |
-| **💻 Vibe Coder** | **[NEW]** Build apps with live HTML/JS preview; Android also integrates Codex through Termux using your selected local model |
+| **💻 Vibe Coder** | **[NEW]** Build apps with live HTML/JS preview; Android also runs Codex and Claude Code through Termux using your selected local model |
 | **✍️ Writing Aid** | Summarize, expand, rewrite, improve grammar, or generate code from descriptions |
 | **🎨 Image Generator** | Create images from text prompts using Stable Diffusion 1.5 with swipeable gallery |
 | **🎵 Music Generator** | **[NEW]** Generate music and sound effects locally with SoundGen on Android and Magenta Realtime 2 on iOS, including live playback as music is generated |
@@ -96,8 +96,10 @@ The offline **Transcriber** feature on Android supports on-device Whisper models
 ### 🔎 Media Search & Video Moment Finder
 On Android and iOS, **Instant Media Search** uses EmbeddingGemma 2 to index photos and videos locally, then find matches from a text description or reference image. **Video Moment Finder** combines video frames and audio from two-second windows so you can search for a scene or event and play the matching moment. Download a compatible EmbeddingGemma 2 model and choose the media to index; search runs on-device.
 
-### 💻 Android Vibe Coder & Codex
+### 💻 Android Vibe Coder, Codex & Claude Code
 Enable **Codex mode** in Vibe Coder's model settings to use the selected on-device model with the Codex app server running in Termux. Codex can inspect project files, edit code and run project commands, with streamed activity and terminal output in the app. This mode requires an ARM64 device running Android 10 or newer and does not require an OpenAI login. Install Termux, allow external app commands, grant LLM Hub permission to run Termux commands, and use the in-app **Install Codex** action before starting.
+
+Enable **Claude Code mode** in the same settings to run Claude Code in Termux on the selected on-device model instead. It reads and edits project files and runs commands the same way, and does not require an Anthropic account. The requirements and Termux setup are the same; use the in-app **Install Claude Code in Termux** action before starting. Only one of the two modes can be on at a time.
 
 ### 🎥 Android Video Generation
 The Android Video Generator runs [Lightricks LTX-Video 2B 0.9.8 distilled](https://huggingface.co/Lightricks/LTX-Video) fully on-device, from a text prompt or a starting image, in 8 denoising steps.
@@ -123,13 +125,6 @@ The iOS Music Generator supports **Live generation** with Magenta Realtime 2: he
 - Direct downloads from HuggingFace
 - 17 language interfaces
 
-## 🚧 Upcoming Features & Roadmap
-
-### Desktop Expansion (Windows & macOS)
-- **Advanced Vibe Coder** — Enhanced code generation with desktop IDE integration, cursor control, and Claude Code–like experiences
-- **OpenClaw-like Agent** — Autonomous tool-using agent framework for complex multi-step tasks
-- **Advanced Media Generation** — Professional-grade image/video synthesis with ComfyUI/Draw Things feature parity and extended controls
-
 Quick Start
 1. Download from **Google Play** or the **App Store**, get [LLM Hub Desktop](https://github.com/timmyy123/LLM-Hub/releases/tag/desktop-v0.1.3) for your computer, or build from source
 2. Open Settings → Download Models → Download or Import a model
@@ -144,7 +139,7 @@ Technology
 - **Music Gen**: Magenta Realtime 2 with MLX/LiteRT (iOS), SoundGen with LiteRT (Android)
 - **Media Search**: EmbeddingGemma 2 for local media indexing and video moment retrieval (Android and iOS)
 - **Android TTS**: Kokoro, Supertonic 3 with ONNX Runtime, and PocketTTS.cpp with an NDK/JNI integration for local voice cloning
-- **Android Coding Agent**: Codex app server in Termux, connected to the app's local model through a loopback inference server
+- **Android Coding Agent**: Codex app server or Claude Code in Termux, connected to the app's local model through a loopback inference server
 
 
 Acknowledgments
