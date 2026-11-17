@@ -72,10 +72,6 @@ class ChatViewModel(
     private val _availableModels = MutableStateFlow<List<LLMModel>>(emptyList())
     val availableModels: StateFlow<List<LLMModel>> = _availableModels.asStateFlow()
 
-    // False until the first model scan finishes, so an empty list isn't mistaken for "no models downloaded".
-    private val _availableModelsLoaded = MutableStateFlow(false)
-    val availableModelsLoaded: StateFlow<Boolean> = _availableModelsLoaded.asStateFlow()
-
     // Streaming response state (per message)
     private val _streamingContents = MutableStateFlow<Map<String, String>>(emptyMap())
     val streamingContents: StateFlow<Map<String, String>> = _streamingContents.asStateFlow()
@@ -330,8 +326,6 @@ class ChatViewModel(
             viewModelScope.launch {
                 // Wait a bit for available models to be loaded
                 delay(200)
-                // A loaded model always wins: a new chat keeps using it instead of the last saved selection.
-                if (inferenceService.getCurrentlyLoadedModel() != null) return@launch
                 val model = _availableModels.value.find { it.name == savedModelName }
                 if (model != null) {
                     _selectedModel.value = model
@@ -483,6 +477,10 @@ class ChatViewModel(
     // Guard to avoid infinite retry loops when a response comes back empty
     private val oneShotRetriedMessageIds = mutableSetOf<String>()
 
+    fun hasDownloadedModels(): Boolean {
+        return _availableModels.value.isNotEmpty()
+    }
+
     /**
      * Check if we need to restore generation state after configuration change
      */
@@ -557,16 +555,26 @@ class ChatViewModel(
         messageCollectionJob?.cancel()
 
         // Close previous chat session if switching chats
-        val previousChatId = currentChatId?.takeIf { it != chatId }
-        if (previousChatId != null) {
-            Log.d("ChatViewModel", "Switching from chat $previousChatId to chat $chatId")
-
+        if (currentChatId != null && currentChatId != chatId) {
+            Log.d("ChatViewModel", "Switching from chat ${currentChatId} to chat $chatId")
+            val previousChatId = currentChatId!!
+            
             // Cancel any ongoing generation before switching
             generationJob?.cancel()
             generationJob = null
             
             // Clear any streaming state
             _streamingContents.value = emptyMap()
+            
+            // Reset chat session synchronously to prevent session conflicts
+            try {
+                runBlocking {
+                    inferenceService.resetChatSession(previousChatId)
+                }
+                Log.d("ChatViewModel", "Completed session cleanup for chat switch")
+            } catch (e: Exception) {
+                Log.w("ChatViewModel", "Error during session cleanup: ${e.message}")
+            }
         }
 
         // Remember the previously loaded model to preserve it across chat switches
@@ -575,19 +583,6 @@ class ChatViewModel(
         Log.d("ChatViewModel", "Current model before switch: ${previousModel?.name ?: "None"}")
 
         viewModelScope.launch {
-            // Reset the previous chat session before attaching the new chat. It waits for the native
-            // runtime to finish the cancelled reply, so it suspends here instead of blocking the main thread.
-            if (previousChatId != null) {
-                try {
-                    inferenceService.resetChatSession(previousChatId)
-                    Log.d("ChatViewModel", "Completed session cleanup for chat switch")
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (e: Exception) {
-                    Log.w("ChatViewModel", "Error during session cleanup: ${e.message}")
-                }
-            }
-
             // Load the models synchronously so we know what's available before creating/attaching a chat
             loadAvailableModelsSync(context)
 
@@ -781,8 +776,7 @@ class ChatViewModel(
      * Load downloaded models synchronously so callers can rely on the result immediately.
      */
     private suspend fun loadAvailableModelsSync(context: Context) {
-        // Checks hundreds of model files: keep it off the main thread (Play vitals ANR in 4.6.3).
-        val downloadedModels: List<LLMModel> = withContext(Dispatchers.IO) { ModelData.models
+        val downloadedModels: List<LLMModel> = ModelData.models
             .filter { it.category != "embedding" && it.category != "asr" && it.category != "tts" && it.category != "music_generation" && it.category != "video_generation" && !it.name.contains("Projector", ignoreCase = true) }
             .mapNotNull { model: LLMModel ->
             var isAvailable = false
@@ -859,19 +853,28 @@ class ChatViewModel(
             } else {
                 null
             }
-        } }
+        }
 
-        // Imported models, read from preferences without creating ModelDownloadViewModel, whose constructor scans
-        // every model folder on the main thread. Image generation imports (qnn_npu, mnn_cpu) are already excluded.
-        val importedModels = withContext(Dispatchers.IO) {
-            com.llmhub.llmhub.data.ModelAvailabilityProvider.loadImportedModels(context)
+        // Get imported models from ModelDownloadViewModel
+        val importedModels = try {
+            // Get ModelDownloadViewModel instance to access imported models
+            val modelDownloadViewModel = androidx.lifecycle.ViewModelProvider(
+                context as androidx.activity.ComponentActivity,
+                androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.getInstance(context.application)
+            )[ModelDownloadViewModel::class.java]
+            // Filter out image generation models (qnn_npu, mnn_cpu) - those are for Image Generator, not AI Chat
+            modelDownloadViewModel.getImportedModels().filter { 
+                it.category != "qnn_npu" && it.category != "mnn_cpu" 
+            }
+        } catch (e: Exception) {
+            Log.w("ChatViewModel", "Could not get imported models: ${e.message}")
+            emptyList<LLMModel>()
         }
         
         // Combine downloaded and imported models
         val allAvailableModels = downloadedModels + importedModels
         
         _availableModels.value = allAvailableModels
-        _availableModelsLoaded.value = true
         
         // If we have a current model but it's not in the available models, clear it
         if (currentModel != null && !allAvailableModels.any { it.name == currentModel?.name }) {

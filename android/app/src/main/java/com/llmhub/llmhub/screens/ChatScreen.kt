@@ -94,7 +94,6 @@ fun ChatScreen(
     val currentChat by viewModel.currentChat.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val availableModels by viewModel.availableModels.collectAsState()
-    val availableModelsLoaded by viewModel.availableModelsLoaded.collectAsState()
     val streamingContents by viewModel.streamingContents.collectAsState()
     val isLoadingModel by viewModel.isLoadingModel.collectAsState()
     val currentlyLoadedModel by viewModel.currentlyLoadedModel.collectAsState()
@@ -351,10 +350,7 @@ fun ChatScreen(
                                 WelcomeMessage(
                                     currentModel = selectedModel?.name ?: currentChat?.modelName,
                                     onNavigateToModels = onNavigateToModels,
-                                    // Observed state: the model scan runs on Dispatchers.IO and finishes after the first
-                                    // frame, so a new chat first composes with an empty list. Do not offer the download
-                                    // prompt before the first scan is done, or for a chat that already names a model.
-                                    hasDownloadedModels = availableModels.isNotEmpty() || !availableModelsLoaded || targetModelName != null
+                                    hasDownloadedModels = viewModel.hasDownloadedModels()
                                 )
                             }
                         }
