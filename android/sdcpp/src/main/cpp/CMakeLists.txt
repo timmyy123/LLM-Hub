@@ -32,7 +32,6 @@ list(GET NDK_GLSLC_CANDIDATES 0 NDK_GLSLC)
 set(Vulkan_GLSLC_EXECUTABLE "${NDK_GLSLC}" CACHE FILEPATH "" FORCE)
 set(Vulkan_INCLUDE_DIR "${APP_CPP_DIR}/vulkan-headers" CACHE PATH "" FORCE)
 set(SPIRV-Headers_DIR "${APP_CPP_DIR}/cmake" CACHE PATH "" FORCE)
-set(NDK_SPIRV_HEADERS "${CMAKE_ANDROID_NDK}/sources/third_party/shaderc/third_party/spirv-tools/external/spirv-headers/include")
 
 set(LLAMA_CPP_DIR "${ANDROID_ROOT}/llama.cpp")
 # Every compile command carries the vendored llama.cpp version, so a version bump rebuilds all of
@@ -64,7 +63,6 @@ set(GGML_OPENCL_USE_ADRENO_KERNELS ON CACHE BOOL "" FORCE)
 set(GGML_OPENCL_EMBED_KERNELS ON CACHE BOOL "" FORCE)
 
 add_subdirectory("${GGML_SOURCE_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/ggml")
-target_include_directories(ggml-vulkan PRIVATE "${NDK_SPIRV_HEADERS}")
 
 # stable-diffusion.cpp (vendored, with LTX-Video 0.9 + Hexagon NPU support) on top of that ggml.
 set(SD_USE_UPSTREAM_GGML ON CACHE BOOL "" FORCE)

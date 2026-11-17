@@ -42,7 +42,6 @@ list(GET NDK_GLSLC_CANDIDATES 0 NDK_GLSLC)
 set(Vulkan_GLSLC_EXECUTABLE "${NDK_GLSLC}" CACHE FILEPATH "" FORCE)
 set(Vulkan_INCLUDE_DIR "${CMAKE_CURRENT_LIST_DIR}/vulkan-headers" CACHE PATH "" FORCE)
 set(SPIRV-Headers_DIR "${CMAKE_CURRENT_LIST_DIR}/cmake" CACHE PATH "" FORCE)
-set(NDK_SPIRV_HEADERS "${CMAKE_ANDROID_NDK}/sources/third_party/shaderc/third_party/spirv-tools/external/spirv-headers/include")
 
 set(LLAMA_CPP_DIR "${CMAKE_CURRENT_LIST_DIR}/../../../../llama.cpp")
 # Every compile command carries the vendored llama.cpp version, so a version bump rebuilds all of
@@ -57,7 +56,6 @@ if(NOT LLMHUB_LLAMA_VERSION)
 endif()
 add_compile_definitions(LLMHUB_LLAMA_SOURCE_VERSION="${LLMHUB_LLAMA_VERSION}")
 add_subdirectory("${LLAMA_CPP_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/llama.cpp")
-target_include_directories(ggml-vulkan PRIVATE "${NDK_SPIRV_HEADERS}")
 
 add_library(llmhub_llama_cpu SHARED llama_cpp_jni.cpp)
 target_compile_options(llmhub_llama_cpu PRIVATE
@@ -88,7 +86,7 @@ target_include_directories(llmhub_llama_vulkan PRIVATE
     "${LLAMA_CPP_DIR}/tools/mtmd")
 target_link_libraries(llmhub_llama_vulkan PRIVATE llama mtmd android log)
 
-# The official b12317 Snapdragon release is packaged alongside the app, not fetched
+# The official b12477 Snapdragon release is packaged alongside the app, not fetched
 # by Gradle. It is loaded only when the user selects Adreno GPU or Hexagon NPU.
 set(LLAMA_PREBUILT_LIB_DIR "${CMAKE_CURRENT_LIST_DIR}/../jniLibs/arm64-v8a")
 foreach(prebuilt IN ITEMS ggml llama mtmd)

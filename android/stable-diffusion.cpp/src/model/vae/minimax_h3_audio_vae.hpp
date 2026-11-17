@@ -171,9 +171,10 @@ namespace MiniMaxH3 {
             auto v = ggml_add(ctx->ggml_ctx, qkv[2], bias_shape(params["v_bias"]));
 
             int64_t sequence = x->ne[1];
-            auto mask        = ggml_diag_mask_inf(ctx->ggml_ctx,
-                                                  ggml_ext_zeros(ctx->ggml_ctx, sequence, sequence, 1, 1),
-                                                  0);
+            // ggml 1.0 removed ggml_diag_mask_inf; same causal mask as upstream sd.cpp 5dcfa7980.
+            auto mask        = ggml_tri(ctx->ggml_ctx,
+                                        ggml_ext_full(ctx->ggml_ctx, -INFINITY, sequence, sequence, 1, 1),
+                                        GGML_TRI_TYPE_UPPER);
             auto attn_out    = ggml_ext_attention_ext(ctx,
                                                       q,
                                                       k,

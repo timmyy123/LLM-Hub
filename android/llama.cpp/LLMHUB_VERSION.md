@@ -1,11 +1,11 @@
 # Vendored llama.cpp
 
 - Upstream: https://github.com/ggml-org/llama.cpp
-- Version: `b12317`
-- Commit: `e0949d09b130707b3fa93d2cff616024231cf939`
-- Source archive SHA-256: `d3607be1788451ae71a138479ea78e4b4b408b82bfae99c01f42b2a3d9357a46`
-- Snapdragon release: `llama-b12317-bin-android-arm64-snapdragon.tar.gz`, SHA-256
-  `8a9568a8b2d9f8afc7fcc3bb330f48df4283b6234c48af98ef9f1193f75f166e`
+- Version: `b12477`
+- Commit: `054a1babf3f57074b0f63f415fc34bdf13435a64`
+- Source archive SHA-256: `fbe1256588fd66db2bd65714515cf2cf278a5e92464362872a78f63c9a39cd56`
+- Snapdragon release: `llama-b12477-bin-android-arm64-snapdragon.tar.gz`, SHA-256
+  `d5e93c9feb0f4a31f48a04925ff46d75dc8e3d371bb3579de2b175729705d7f7`
 - License: MIT (see `LICENSE`)
 
 ## What is built from where
