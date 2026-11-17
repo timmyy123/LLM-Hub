@@ -123,6 +123,9 @@
 -dontwarn kotlinx.coroutines.**
 -dontwarn com.vladsch.flexmark.**
 -dontwarn com.itextpdf.**
+# iText 7 rejects event classes whose names don't start with "com.itextpdf" (AbstractITextEvent:
+# "only for internal usage"), so R8 must not rename iText classes or PDF text extraction fails.
+-keepnames class com.itextpdf.** { *; }
 -dontwarn org.apache.commons.**
 -dontwarn org.osmdroid.**
 
