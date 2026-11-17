@@ -1,6 +1,8 @@
 #include <jni.h>
 #include <android/log.h>
 #include <asm/hwcap.h>
+#include <dirent.h>
+#include <dlfcn.h>
 #include <sys/auxv.h>
 
 #include <algorithm>
@@ -214,6 +216,55 @@ int decode_tokens(const std::vector<llama_token> & tokens) {
     return 0;
 }
 
+#ifndef LLMHUB_SNAPDRAGON
+// The source build has no CPU backend linked in: CMake builds one libllmhub_ggml-cpu-<variant>.so
+// per ARM feature level (GGML_CPU_ALL_VARIANTS). Load the variant with the highest
+// ggml_backend_score() on this CPU (0 means it needs a feature the CPU lacks), the same choice
+// ggml_backend_load_best() makes for upstream libggml-cpu-*.so names.
+bool load_cpu_backend(const std::string & library_dir) {
+    if (ggml_backend_reg_by_name("CPU") != nullptr) return true;
+    constexpr const char * prefix = "libllmhub_ggml-cpu-";
+    constexpr const char * suffix = ".so";
+    DIR * dir = opendir(library_dir.c_str());
+    if (dir == nullptr) {
+        __android_log_print(ANDROID_LOG_ERROR, TAG, "Cannot list native libraries in %s", library_dir.c_str());
+        return false;
+    }
+    std::string best_path;
+    int best_score = 0;
+    while (const dirent * entry = readdir(dir)) {
+        const std::string name = entry->d_name;
+        if (name.rfind(prefix, 0) != 0 || name.size() <= std::strlen(suffix) ||
+            name.compare(name.size() - std::strlen(suffix), std::string::npos, suffix) != 0) {
+            continue;
+        }
+        const std::string path = library_dir + "/" + name;
+        void * handle = dlopen(path.c_str(), RTLD_NOW | RTLD_LOCAL);
+        if (handle == nullptr) {
+            __android_log_print(ANDROID_LOG_WARN, TAG, "Cannot open %s: %s", name.c_str(), dlerror());
+            continue;
+        }
+        auto score_fn = reinterpret_cast<int (*)()>(dlsym(handle, "ggml_backend_score"));
+        const int score = score_fn != nullptr ? score_fn() : 0;
+        dlclose(handle);
+        __android_log_print(ANDROID_LOG_DEBUG, TAG, "CPU variant %s score %d", name.c_str(), score);
+        if (score > best_score) {
+            best_score = score;
+            best_path = path;
+        }
+    }
+    closedir(dir);
+    if (best_path.empty() || ggml_backend_load(best_path.c_str()) == nullptr) {
+        __android_log_print(ANDROID_LOG_ERROR, TAG, "No CPU backend variant loaded from %s", library_dir.c_str());
+        return false;
+    }
+    __android_log_print(
+        ANDROID_LOG_INFO, TAG, "CPU backend: %s (score %d)",
+        best_path.substr(best_path.rfind('/') + 1).c_str(), best_score);
+    return true;
+}
+#endif
+
 } // namespace
 
 #ifndef LLMHUB_SNAPDRAGON
@@ -238,24 +289,21 @@ LLAMA_JNI(nativeInit)(JNIEnv * env, jobject, jstring library_dir, jstring htp_di
         const std::string native_path = from_jstring(env, library_dir);
         ggml_backend_load_all_from_path(native_path.c_str());
 #else
-        (void) env;
-        (void) library_dir;
         (void) htp_dir;
-#endif
-#if !defined(LLMHUB_SNAPDRAGON) && !defined(LLMHUB_VULKAN)
-        // The source build contains Vulkan, but CPU loads must not probe a GPU driver.
-        const char * old_vulkan_setting = std::getenv("GGML_DISABLE_VULKAN");
-        const std::string previous_vulkan_setting = old_vulkan_setting != nullptr ? old_vulkan_setting : "";
-        setenv("GGML_DISABLE_VULKAN", "1", 1);
-#endif
-        llama_backend_init();
-#if !defined(LLMHUB_SNAPDRAGON) && !defined(LLMHUB_VULKAN)
-        if (old_vulkan_setting != nullptr) {
-            setenv("GGML_DISABLE_VULKAN", previous_vulkan_setting.c_str(), 1);
-        } else {
-            unsetenv("GGML_DISABLE_VULKAN");
+        // libllmhub_llama_cpu and libllmhub_llama_vulkan share one ggml, so whichever loads
+        // first registers the CPU variant. Only the Vulkan runtime loads the Vulkan module: a CPU
+        // load must not probe a GPU driver.
+        const std::string native_path = from_jstring(env, library_dir);
+        if (!load_cpu_backend(native_path)) return 1;
+#ifdef LLMHUB_VULKAN
+        if (ggml_backend_reg_by_name("Vulkan") == nullptr &&
+            ggml_backend_load((native_path + "/libllmhub_ggml-vulkan.so").c_str()) == nullptr) {
+            __android_log_write(ANDROID_LOG_ERROR, TAG, "Vulkan backend did not load");
+            return 1;
         }
 #endif
+#endif
+        llama_backend_init();
         g_backend_initialized = true;
     }
     return 0;
@@ -283,6 +331,10 @@ LLAMA_JNI(nativeLoadModel)(
 #else
     (void) device_name;
     (void) gpu_layers;
+    // An empty device list keeps the model off a Vulkan device that the Vulkan runtime may have
+    // registered in the shared ggml earlier in this process.
+    ggml_backend_dev_t no_devices[] = {nullptr};
+    model_params.devices = no_devices;
     model_params.n_gpu_layers = 0;
 #endif
     g_model = llama_model_load_from_file(path.c_str(), model_params);

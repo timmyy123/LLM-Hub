@@ -47,7 +47,7 @@ internal interface LlamaCppRuntime {
     fun nativeModelEpoch(): Int
 }
 
-/** Statically linked ARMv8 CPU runtime for every arm64 device. */
+/** CPU runtime for every arm64 device; loads the best libllmhub_ggml-cpu-* variant for the chip. */
 internal object LlamaCppNative : LlamaCppRuntime {
     init {
         System.loadLibrary("llmhub_llama_cpu")

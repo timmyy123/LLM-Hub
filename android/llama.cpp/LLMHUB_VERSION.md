@@ -10,8 +10,14 @@
 
 ## What is built from where
 
-- This source: `libllmhub_llama_cpu.so` (ARMv8 CPU), `libllmhub_llama_vulkan.so` (Vulkan, built with the
-  NDK's glslc and the vendored Vulkan-Headers), `libggml-opencl.so`, and ggml inside `libllmhub_sdcpp.so`.
+- This source: `libllmhub_llama_cpu.so` (CPU) and `libllmhub_llama_vulkan.so` (Vulkan) JNI libraries over shared
+  `libllmhub_llama.so`, `libllmhub_mtmd.so`, `libllmhub_ggml.so` and `libllmhub_ggml-base.so`, built with
+  `GGML_BACKEND_DL` and `GGML_CPU_ALL_VARIANTS`: one `libllmhub_ggml-cpu-android_<arch>.so` per ARM feature level
+  (ARMv8.0 up to ARMv9.2 with SVE2/SME), of which the JNI library loads the highest `ggml_backend_score()`, and
+  the `libllmhub_ggml-vulkan.so` module (built with the NDK's glslc and the vendored Vulkan-Headers), loaded only
+  by the Vulkan runtime. Everything is renamed `libllmhub_*` so the Snapdragon runtime's
+  `ggml_backend_load_all_from_path()` scan of the native library directory never loads it. Also built from this
+  source: `libggml-opencl.so`, and ggml inside `libllmhub_sdcpp.so`.
 - The official Snapdragon release: headers in `app/src/main/cpp/llama-prebuilt`, stripped runtime libraries in
   `app/src/main/jniLibs/arm64-v8a`, Hexagon skels (unstripped) in `app/src/main/assets/llama_htp`. They are
   linked into `libllmhub_llama_snapdragon.so`, which is loaded for OpenCL or Hexagon.
