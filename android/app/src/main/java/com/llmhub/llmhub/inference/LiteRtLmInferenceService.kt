@@ -30,6 +30,7 @@ import com.google.ai.edge.litertlm.Message
 import com.google.ai.edge.litertlm.MessageCallback
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
@@ -250,13 +251,18 @@ class LiteRtLmInferenceService(private val applicationContext: Context) : Infere
     }
 
     override suspend fun unloadModel() {
-        engineMutex.withLock {
-            engine?.let {
-                try { it.close() } catch (e: Exception) { Log.w(TAG, "Error unloading engine: ${e.message}") }
+        // Counts as unloaded at once, so the next screen (e.g. AI Chat after Writing Aid) never sees it as loaded.
+        currentModel = null
+        // On the caller's thread, not deferred: with nothing generating the engine closes right away. A reply
+        // still generating is cancelled and awaited first (closeEngineLocked), since freeing the engine under
+        // LiteRT-LM's worker thread crashed in nativeDeleteEngine (4.5.7). NonCancellable: leaving the feature
+        // cancels the screen's scope, which must not stop the close halfway and leave the engine in memory.
+        withContext(NonCancellable) {
+            engineMutex.withLock {
+                closeEngineLocked()
+                currentModel = null
+                Log.d(TAG, "Engine unloaded")
             }
-            engine = null
-            currentModel = null
-            Log.d(TAG, "Engine unloaded")
         }
     }
 
