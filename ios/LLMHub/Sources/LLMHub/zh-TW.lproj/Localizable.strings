@@ -1005,3 +1005,11 @@
 "image_extras_ios_help" = "LoRA：SafeTensors 或 Draw Things .ckpt。編碼器／VAE：相容的 Draw Things .ckpt。嵌入：SafeTensors。請先選取對應的模型。";
 "image_extras_android_help" = "LoRA、CLIP 跳過層數及自訂編碼器需要匯入 GGUF／SafeTensors 基礎模型。QNN／MNN 權重固定。LoRA／嵌入：SafeTensors。";
 "image_extras_import_location" = "在 %1$@ → %2$@ 中匯入檢查點、LoRA、編碼器和提示詞清單。";
+
+/* RAG matching thresholds */
+"rag_threshold_title" = "比對門檻";
+"rag_threshold_subtitle" = "記憶和文件需要與你的訊息相符到什麼程度才會被使用。越低找到越多，越高越嚴格。";
+"rag_threshold_reset" = "恢復預設值";
+"rag_threshold_similarity_alone" = "單獨即可比對的相似度";
+"rag_threshold_similarity_with_overlap" = "詞語也重疊時的相似度";
+"rag_threshold_overlap" = "所需詞語重疊度";

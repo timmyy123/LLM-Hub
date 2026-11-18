@@ -1004,3 +1004,11 @@
 "image_extras_ios_help" = "LoRA: SafeTensors hoặc .ckpt của Draw Things. Bộ mã hóa/VAE: .ckpt tương thích của Draw Things. Embedding: SafeTensors. Hãy chọn mô hình phù hợp trước.";
 "image_extras_android_help" = "LoRA, bỏ qua lớp CLIP và bộ mã hóa tùy chỉnh cần checkpoint GGUF/SafeTensors đã nhập. Trọng số QNN/MNN là cố định. LoRA/embedding: SafeTensors.";
 "image_extras_import_location" = "Nhập checkpoint, LoRA, bộ mã hóa và danh sách prompt tại %1$@ → %2$@.";
+
+/* RAG matching thresholds */
+"rag_threshold_title" = "Ngưỡng khớp";
+"rag_threshold_subtitle" = "Bộ nhớ và tài liệu cần khớp với tin nhắn của bạn đến mức nào để được sử dụng. Thấp hơn tìm được nhiều hơn, cao hơn thì chặt chẽ hơn.";
+"rag_threshold_reset" = "Đặt lại mặc định";
+"rag_threshold_similarity_alone" = "Độ tương đồng đủ để tự khớp";
+"rag_threshold_similarity_with_overlap" = "Độ tương đồng khi từ ngữ cũng trùng";
+"rag_threshold_overlap" = "Mức trùng từ cần thiết";

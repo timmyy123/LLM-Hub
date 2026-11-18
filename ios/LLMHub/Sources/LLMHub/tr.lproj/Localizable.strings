@@ -997,3 +997,11 @@
 "image_extras_ios_help" = "LoRA: SafeTensors veya Draw Things .ckpt. Kodlayıcılar/VAE: uyumlu Draw Things .ckpt. Gömüler: SafeTensors. Önce eşleşen modeli seçin.";
 "image_extras_android_help" = "LoRA, CLIP atlama ve özel kodlayıcılar için içe aktarılan bir GGUF/SafeTensors kontrol noktası gerekir. QNN/MNN ağırlıkları sabittir. LoRA/gömüler: SafeTensors.";
 "image_extras_import_location" = "Checkpoint, LoRA, kodlayıcı ve istem listelerini %1$@ → %2$@ bölümünden içe aktarın.";
+
+/* RAG matching thresholds */
+"rag_threshold_title" = "Eşleşme eşiği";
+"rag_threshold_subtitle" = "Bellek ve belgelerin kullanılması için mesajınızla ne kadar eşleşmesi gerektiği. Düşük değer daha fazla bulur, yüksek değer daha katıdır.";
+"rag_threshold_reset" = "Varsayılanlara sıfırla";
+"rag_threshold_similarity_alone" = "Tek başına yeten benzerlik";
+"rag_threshold_similarity_with_overlap" = "Kelimeler de örtüştüğünde benzerlik";
+"rag_threshold_overlap" = "Gereken kelime örtüşmesi";

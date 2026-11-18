@@ -997,3 +997,11 @@
 "image_extras_ios_help" = "LoRA: ملفات SafeTensors أو ‎.ckpt من Draw Things. المُرمّزات وVAE: ملفات ‎.ckpt متوافقة من Draw Things. التضمينات: SafeTensors. اختر النموذج المتوافق أولًا.";
 "image_extras_android_help" = "تتطلب LoRA وتخطي CLIP واستبدال المُرمّزات استيراد ملف نموذج GGUF أو SafeTensors. أوزان QNN/MNN ثابتة. LoRA والتضمينات: SafeTensors.";
 "image_extras_import_location" = "استورد نقاط التحقق وملفات LoRA والمرمّزات وقوائم الأوامر من %1$@ ← %2$@.";
+
+/* RAG matching thresholds */
+"rag_threshold_title" = "حد المطابقة";
+"rag_threshold_subtitle" = "مدى تطابق الذاكرة والمستندات مع رسالتك حتى تُستخدم. القيمة الأقل تجد نتائج أكثر، والأعلى أكثر صرامة.";
+"rag_threshold_reset" = "إعادة إلى القيم الافتراضية";
+"rag_threshold_similarity_alone" = "التشابه الكافي وحده للمطابقة";
+"rag_threshold_similarity_with_overlap" = "التشابه عند تطابق الكلمات أيضًا";
+"rag_threshold_overlap" = "نسبة تطابق الكلمات المطلوبة";

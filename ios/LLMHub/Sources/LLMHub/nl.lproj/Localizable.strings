@@ -1004,3 +1004,11 @@
 "image_extras_ios_help" = "LoRA: SafeTensors of Draw Things .ckpt. Encoders/VAE: compatibele Draw Things .ckpt-bestanden. Embeddings: SafeTensors. Selecteer eerst het bijpassende model.";
 "image_extras_android_help" = "LoRA, CLIP overslaan en eigen encoders vereisen een geïmporteerd GGUF/SafeTensors-checkpoint. QNN/MNN-gewichten staan vast. LoRA/embeddings: SafeTensors.";
 "image_extras_import_location" = "Importeer checkpoints, LoRA's, encoders en promptlijsten via %1$@ → %2$@.";
+
+/* RAG matching thresholds */
+"rag_threshold_title" = "Overeenkomstdrempel";
+"rag_threshold_subtitle" = "Hoe nauw geheugen en documenten moeten overeenkomen met je bericht om gebruikt te worden. Lager vindt meer, hoger is strenger.";
+"rag_threshold_reset" = "Standaardwaarden herstellen";
+"rag_threshold_similarity_alone" = "Overeenkomst die op zichzelf genoeg is";
+"rag_threshold_similarity_with_overlap" = "Overeenkomst als woorden ook overlappen";
+"rag_threshold_overlap" = "Benodigde woordoverlap";

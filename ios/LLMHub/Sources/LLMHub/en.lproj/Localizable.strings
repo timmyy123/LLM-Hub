@@ -1018,3 +1018,11 @@
 "image_extras_ios_help" = "LoRA: SafeTensors or Draw Things .ckpt. Encoders/VAE: compatible Draw Things .ckpt. Embeddings: SafeTensors. Select the matching model first.";
 "image_extras_android_help" = "LoRA, CLIP skip and encoder overrides require an imported GGUF/SafeTensors checkpoint. QNN/MNN weights are fixed. LoRA/embeddings: SafeTensors.";
 "image_extras_import_location" = "Import checkpoints, LoRAs, encoders and prompt lists in %1$@ → %2$@.";
+
+/* RAG matching thresholds */
+"rag_threshold_title" = "Matching threshold";
+"rag_threshold_subtitle" = "How closely memory and documents must match your message to be used. Lower finds more, higher is stricter.";
+"rag_threshold_reset" = "Reset to defaults";
+"rag_threshold_similarity_alone" = "Similarity to match on its own";
+"rag_threshold_similarity_with_overlap" = "Similarity when words also overlap";
+"rag_threshold_overlap" = "Word overlap needed";

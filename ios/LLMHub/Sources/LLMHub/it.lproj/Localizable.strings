@@ -987,3 +987,11 @@
 "image_extras_ios_help" = "LoRA: SafeTensors o .ckpt di Draw Things. Encoder/VAE: .ckpt di Draw Things compatibili. Embedding: SafeTensors. Seleziona prima il modello corrispondente.";
 "image_extras_android_help" = "LoRA, salto CLIP ed encoder personalizzati richiedono un checkpoint GGUF/SafeTensors importato. I pesi QNN/MNN sono fissi. LoRA/embedding: SafeTensors.";
 "image_extras_import_location" = "Importa checkpoint, LoRA, encoder ed elenchi di prompt in %1$@ → %2$@.";
+
+/* RAG matching thresholds */
+"rag_threshold_title" = "Soglia di corrispondenza";
+"rag_threshold_subtitle" = "Quanto memoria e documenti devono corrispondere al tuo messaggio per essere usati. Più bassa trova di più, più alta è più rigorosa.";
+"rag_threshold_reset" = "Ripristina valori predefiniti";
+"rag_threshold_similarity_alone" = "Somiglianza sufficiente da sola";
+"rag_threshold_similarity_with_overlap" = "Somiglianza quando anche le parole coincidono";
+"rag_threshold_overlap" = "Parole in comune richieste";

@@ -1009,3 +1009,11 @@
 "image_extras_ios_help" = "LoRA: SafeTensors या Draw Things .ckpt। एनकोडर/VAE: संगत Draw Things .ckpt। एम्बेडिंग: SafeTensors। पहले उपयुक्त मॉडल चुनें।";
 "image_extras_android_help" = "LoRA, CLIP स्किप और कस्टम एनकोडर के लिए आयात किया गया GGUF/SafeTensors चेकपॉइंट आवश्यक है। QNN/MNN के वज़न स्थिर हैं। LoRA/एम्बेडिंग: SafeTensors।";
 "image_extras_import_location" = "चेकपॉइंट, LoRA, एन्कोडर और प्रॉम्प्ट सूचियाँ %1$@ → %2$@ में इम्पोर्ट करें।";
+
+/* RAG matching thresholds */
+"rag_threshold_title" = "मिलान सीमा";
+"rag_threshold_subtitle" = "मेमोरी और दस्तावेज़ों को इस्तेमाल होने के लिए आपके संदेश से कितना मेल खाना चाहिए। कम मान ज़्यादा ढूँढता है, ज़्यादा मान सख़्त है।";
+"rag_threshold_reset" = "डिफ़ॉल्ट पर रीसेट करें";
+"rag_threshold_similarity_alone" = "अकेले मिलान के लिए समानता";
+"rag_threshold_similarity_with_overlap" = "जब शब्द भी मेल खाएँ तब समानता";
+"rag_threshold_overlap" = "ज़रूरी शब्द मेल";

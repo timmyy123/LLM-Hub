@@ -29,6 +29,7 @@
 		5A9D0089FE08164E4232AD63 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 368DEEF34DE54ABD87FE0EF3 /* Assets.xcassets */; };
 		5B3D51C9690D4FC0AD7649BF /* AgentScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 639A98878F3E415495148409 /* AgentScreen.swift */; };
 		7410CEC1D27C4FE7BC6C6486 /* RagService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C74D4095CAC843D4AD4F61B3 /* RagService.swift */; };
+		A1B2C3D4E5F60718293A4B5C /* RagMatchThreshold.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F60718293A4B5C6D /* RagMatchThreshold.swift */; };
 		8372657E94B22EF042E769D9 /* ModelManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D54909FE8CC139164BABB54 /* ModelManager.swift */; };
 		98A2325EC92DABBC3DFE2229 /* ChatStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C56D7A951BFDFE19E54CB73B /* ChatStore.swift */; };
 		9D4F93BDDE99FDE1ECFA704A /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 60A19FA5E2C65DD1CDCAB9BB /* Accelerate.framework */; };
@@ -151,6 +152,7 @@
 		C54A0BA40DE3F5B7A1ED9A63 /* ChatScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatScreen.swift; sourceTree = "<group>"; };
 		C56D7A951BFDFE19E54CB73B /* ChatStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatStore.swift; sourceTree = "<group>"; };
 		C74D4095CAC843D4AD4F61B3 /* RagService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RagService.swift; sourceTree = "<group>"; };
+		B2C3D4E5F60718293A4B5C6D /* RagMatchThreshold.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RagMatchThreshold.swift; sourceTree = "<group>"; };
 		CCEA92FE6C3B5E6290A5E602 /* id */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = id; path = id.lproj/Localizable.strings; sourceTree = "<group>"; };
 		D0C36C1D16AF4675BEDB54C5 /* AgentTools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentTools.swift; sourceTree = "<group>"; };
 		D399F03307D44289BC766AD9 /* DocumentTextExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentTextExtractor.swift; sourceTree = "<group>"; };
@@ -235,6 +237,7 @@
 				0805DB9589154E465145E2DB /* ChatModels.swift */,
 				59683F4EC0364144B429B48B /* EmbeddingService.swift */,
 				C74D4095CAC843D4AD4F61B3 /* RagService.swift */,
+				B2C3D4E5F60718293A4B5C6D /* RagMatchThreshold.swift */,
 				27AC91B048B74436A4029665 /* MemoryStore.swift */,
 				B9DF631F25054004865F2A2B /* RagServiceManager.swift */,
 				2A9D5B7C8E1F4A3B6C0D2E11 /* SimplifiedFileManager.swift */,
@@ -466,6 +469,7 @@
 				467EEBBF61BCADC562B0C42C /* ChatModels.swift in Sources */,
 				1D92A835955F48E1AA4AEEEF /* EmbeddingService.swift in Sources */,
 				7410CEC1D27C4FE7BC6C6486 /* RagService.swift in Sources */,
+				A1B2C3D4E5F60718293A4B5C /* RagMatchThreshold.swift in Sources */,
 				CB4333B9DD904E3DBB3184F9 /* MemoryStore.swift in Sources */,
 				2CD0F1D1F3E04E66AA24812C /* RagServiceManager.swift in Sources */,
 				2A9D5B7C8E1F4A3B6C0D2E10 /* SimplifiedFileManager.swift in Sources */,

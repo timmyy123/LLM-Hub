@@ -26,10 +26,11 @@ private struct DocumentChunk: Sendable {
 
 actor RagService {
 
-    // MARK: - Similarity thresholds for EmbeddingGemma GGUF
-    private static let semanticThreshold: Float = 0.60
-    private static let semanticRelaxedThreshold: Float = 0.45
-    private static let jaccardThreshold: Float = 0.030
+    // MARK: - Similarity thresholds for EmbeddingGemma
+    // From the matching sliders in Settings; unset values are the defaults 0.60 / 0.45 / 0.030.
+    private static var semanticThreshold: Float { RagMatchThreshold.value(.similarity) }
+    private static var semanticRelaxedThreshold: Float { RagMatchThreshold.value(.similarityWithOverlap) }
+    private static var jaccardThreshold: Float { RagMatchThreshold.value(.overlap) }
 
     // MARK: - Storage
     // chatId -> [DocumentChunk]
@@ -82,6 +83,7 @@ actor RagService {
 
         let queryTokens = tokenize(query)
         var candidates: [(chunk: DocumentChunk, similarity: Float)] = []
+        print("[RAG] Matching thresholds: \(RagMatchThreshold.describe())")
 
         for chunk in chunks {
             var semantic: Float = 0

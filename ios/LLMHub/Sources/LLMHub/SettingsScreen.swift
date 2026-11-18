@@ -102,6 +102,13 @@ struct SettingsScreen: View {
                         .listRowInsets(EdgeInsets(top: 6, leading: 14, bottom: 6, trailing: 14))
                         .listRowBackground(Color.clear)
                     }
+
+                    // RAG matching thresholds (memory and documents in chats)
+                    if settings.selectedEmbeddingModelId != nil {
+                        RagThresholdRow()
+                            .listRowInsets(EdgeInsets(top: 6, leading: 14, bottom: 6, trailing: 14))
+                            .listRowBackground(Color.clear)
+                    }
                 } header: {
                     SectionHeader(titleKey: "embedding_models", icon: "link.circle")
                 }
@@ -265,6 +272,73 @@ struct SettingsScreen: View {
         // The only reliable deep-link is UIApplication.openSettingsURLString (app's own settings).
         // We guide the user with an alert instead.
         showTTSAlert = true
+    }
+}
+
+// MARK: - RAG Matching Threshold Row
+
+private struct RagThresholdRow: View {
+    @EnvironmentObject var settings: AppSettings
+    @State private var values: [RagMatchThreshold.Param: Float] = Dictionary(
+        uniqueKeysWithValues: RagMatchThreshold.Param.allCases.map { ($0, RagMatchThreshold.value($0)) }
+    )
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 14) {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(LinearGradient(colors: [ApolloPalette.accentSoft, ApolloPalette.accentMuted], startPoint: .topLeading, endPoint: .bottomTrailing))
+                    .frame(width: 32, height: 32)
+                    .overlay {
+                        Image(systemName: "slider.horizontal.3")
+                            .font(.system(size: 16))
+                            .foregroundColor(.white)
+                    }
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(settings.localized("rag_threshold_title"))
+                        .font(.subheadline).foregroundColor(.white)
+                    Text(settings.localized("rag_threshold_subtitle"))
+                        .font(.caption).foregroundColor(.white.opacity(0.65))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            ForEach(RagMatchThreshold.Param.allCases) { param in
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack {
+                        Text(settings.localized(param.titleKey))
+                            .font(.caption).foregroundColor(.white)
+                        Spacer()
+                        Text(param.format(values[param] ?? param.defaultValue))
+                            .font(.caption.monospacedDigit().bold()).foregroundColor(.white)
+                    }
+                    Slider(
+                        value: Binding(
+                            get: { values[param] ?? param.defaultValue },
+                            set: { values[param] = ($0 / param.step).rounded() * param.step }
+                        ),
+                        in: param.range,
+                        onEditingChanged: { editing in
+                            if !editing { RagMatchThreshold.set(param, values[param] ?? param.defaultValue) }
+                        }
+                    )
+                    .tint(ApolloPalette.accentStrong)
+                }
+                .padding(.leading, 46)
+            }
+            // Always shown so the defaults can be restored at any time
+            Button(settings.localized("rag_threshold_reset")) {
+                RagMatchThreshold.reset()
+                for param in RagMatchThreshold.Param.allCases { values[param] = param.defaultValue }
+            }
+            .font(.caption.bold())
+            .foregroundColor(ApolloPalette.accentStrong)
+            .buttonStyle(.plain)
+            .padding(.leading, 46)
+        }
+        .padding(.horizontal, 12).padding(.vertical, 12)
+        .background(.ultraThinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.white.opacity(0.16), lineWidth: 1))
     }
 }
 

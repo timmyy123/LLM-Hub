@@ -997,3 +997,11 @@
 "image_extras_ios_help" = "LoRA: קובצי SafeTensors או ‎.ckpt של Draw Things. מקודדים ו-VAE: קובצי ‎.ckpt תואמים של Draw Things. הטמעות: SafeTensors. בחרו תחילה את המודל המתאים.";
 "image_extras_android_help" = "LoRA, דילוג CLIP ומקודדים מותאמים דורשים מודל GGUF/SafeTensors מיובא. משקלי QNN/MNN קבועים. LoRA והטמעות: SafeTensors.";
 "image_extras_import_location" = "ייבאו נקודות ביקורת, קובצי LoRA, מקודדים ורשימות הנחיות דרך %1$@ ← %2$@.";
+
+/* RAG matching thresholds */
+"rag_threshold_title" = "סף התאמה";
+"rag_threshold_subtitle" = "עד כמה הזיכרון והמסמכים צריכים להתאים להודעה שלך כדי שישמשו. נמוך יותר מוצא יותר, גבוה יותר מחמיר יותר.";
+"rag_threshold_reset" = "איפוס לברירות המחדל";
+"rag_threshold_similarity_alone" = "דמיון שמספיק לבדו להתאמה";
+"rag_threshold_similarity_with_overlap" = "דמיון כשגם מילים חופפות";
+"rag_threshold_overlap" = "חפיפת מילים נדרשת";

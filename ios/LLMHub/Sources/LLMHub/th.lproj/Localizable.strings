@@ -1004,3 +1004,11 @@
 "image_extras_ios_help" = "LoRA: SafeTensors หรือ .ckpt ของ Draw Things ตัวเข้ารหัส/VAE: .ckpt ของ Draw Things ที่เข้ากันได้ เอ็มเบดดิง: SafeTensors เลือกโมเดลที่ตรงกันก่อน";
 "image_extras_android_help" = "LoRA การข้ามชั้น CLIP และตัวเข้ารหัสกำหนดเองต้องใช้เช็กพอยต์ GGUF/SafeTensors ที่นำเข้า น้ำหนัก QNN/MNN เปลี่ยนไม่ได้ LoRA/เอ็มเบดดิง: SafeTensors";
 "image_extras_import_location" = "นำเข้าเช็กพอยต์ LoRA ตัวเข้ารหัส และรายการพรอมต์ได้ที่ %1$@ → %2$@";
+
+/* RAG matching thresholds */
+"rag_threshold_title" = "เกณฑ์การจับคู่";
+"rag_threshold_subtitle" = "หน่วยความจำและเอกสารต้องตรงกับข้อความของคุณมากแค่ไหนจึงจะถูกนำมาใช้ ค่าต่ำจะพบมากขึ้น ค่าสูงจะเข้มงวดขึ้น";
+"rag_threshold_reset" = "รีเซ็ตเป็นค่าเริ่มต้น";
+"rag_threshold_similarity_alone" = "ความคล้ายที่เพียงพอด้วยตัวเอง";
+"rag_threshold_similarity_with_overlap" = "ความคล้ายเมื่อคำตรงกันด้วย";
+"rag_threshold_overlap" = "สัดส่วนคำที่ตรงกันที่ต้องการ";

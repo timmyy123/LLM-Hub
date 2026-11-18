@@ -997,3 +997,11 @@
 "image_extras_ios_help" = "LoRA: فایل SafeTensors یا ‎.ckpt متعلق به Draw Things. رمزگذارها و VAE: فایل ‎.ckpt سازگار با Draw Things. امبدینگ‌ها: SafeTensors. ابتدا مدل سازگار را انتخاب کنید.";
 "image_extras_android_help" = "LoRA، رد کردن لایه‌های CLIP و رمزگذارهای سفارشی به چک‌پوینت GGUF یا SafeTensors واردشده نیاز دارند. وزن‌های QNN/MNN ثابت‌اند. LoRA و امبدینگ‌ها: SafeTensors.";
 "image_extras_import_location" = "چک‌پوینت‌ها، LoRAها، رمزگذارها و فهرست‌های پرامپت را از %1$@ ← %2$@ وارد کنید.";
+
+/* RAG matching thresholds */
+"rag_threshold_title" = "آستانه تطابق";
+"rag_threshold_subtitle" = "میزان تطابق لازم حافظه و اسناد با پیام شما برای استفاده. مقدار کمتر موارد بیشتری پیدا می‌کند و مقدار بیشتر سخت‌گیرانه‌تر است.";
+"rag_threshold_reset" = "بازنشانی به پیش‌فرض‌ها";
+"rag_threshold_similarity_alone" = "شباهتی که به‌تنهایی کافی است";
+"rag_threshold_similarity_with_overlap" = "شباهت وقتی واژه‌ها هم مشترک باشند";
+"rag_threshold_overlap" = "میزان واژه‌های مشترک لازم";

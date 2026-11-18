@@ -997,3 +997,11 @@
 "image_extras_ios_help" = "LoRA：SafeTensorsまたはDraw Thingsの.ckpt。エンコーダー・VAE：対応するDraw Thingsの.ckpt。埋め込み：SafeTensors。先に対応するモデルを選択してください。";
 "image_extras_android_help" = "LoRA、CLIPスキップ、エンコーダーの変更には、GGUF/SafeTensorsチェックポイントのインポートが必要です。QNN/MNNの重みは固定です。LoRA・埋め込み：SafeTensors。";
 "image_extras_import_location" = "チェックポイント、LoRA、エンコーダー、プロンプトリストは %1$@ → %2$@ からインポートします。";
+
+/* RAG matching thresholds */
+"rag_threshold_title" = "一致のしきい値";
+"rag_threshold_subtitle" = "メモリーとドキュメントが使われるために、メッセージとどれだけ一致する必要があるかを決めます。低いほど多く見つかり、高いほど厳しくなります。";
+"rag_threshold_reset" = "デフォルトに戻す";
+"rag_threshold_similarity_alone" = "単独で一致とみなす類似度";
+"rag_threshold_similarity_with_overlap" = "単語も重なる場合の類似度";
+"rag_threshold_overlap" = "必要な単語の重なり";

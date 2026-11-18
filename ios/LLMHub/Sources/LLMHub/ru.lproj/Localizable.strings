@@ -969,3 +969,11 @@
 "image_extras_ios_help" = "LoRA: SafeTensors или .ckpt Draw Things. Кодировщики/VAE: совместимые .ckpt Draw Things. Эмбеддинги: SafeTensors. Сначала выберите подходящую модель.";
 "image_extras_android_help" = "Для LoRA, пропуска слоёв CLIP и своих кодировщиков нужен импортированный чекпойнт GGUF/SafeTensors. Веса QNN/MNN фиксированы. LoRA/эмбеддинги: SafeTensors.";
 "image_extras_import_location" = "Импортируйте чекпоинты, LoRA, энкодеры и списки промптов в разделе %1$@ → %2$@.";
+
+/* RAG matching thresholds */
+"rag_threshold_title" = "Порог совпадения";
+"rag_threshold_subtitle" = "Насколько память и документы должны совпадать с вашим сообщением, чтобы использоваться. Ниже находит больше, выше строже.";
+"rag_threshold_reset" = "Сбросить по умолчанию";
+"rag_threshold_similarity_alone" = "Сходство, достаточное само по себе";
+"rag_threshold_similarity_with_overlap" = "Сходство при совпадении слов";
+"rag_threshold_overlap" = "Нужное совпадение слов";
