@@ -402,9 +402,6 @@ fun SettingsScreen(
                                 com.llmhub.llmhub.embedding.RagMatchThreshold.get(thresholdContext, it).toFloat()
                             })
                         }
-                        var thresholdsCustom by remember(isGemmaEmbedding) {
-                            mutableStateOf(com.llmhub.llmhub.embedding.RagMatchThreshold.isCustom(thresholdContext, isGemmaEmbedding))
-                        }
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -471,23 +468,20 @@ fun SettingsScreen(
                                     },
                                     onValueChangeFinished = {
                                         com.llmhub.llmhub.embedding.RagMatchThreshold.set(thresholdContext, param, thresholdValues[param] ?: value)
-                                        thresholdsCustom = true
                                     },
                                     valueRange = param.min..param.max,
                                     modifier = Modifier.padding(start = 40.dp)
                                 )
                             }
-                            if (thresholdsCustom) {
-                                TextButton(
-                                    onClick = {
-                                        com.llmhub.llmhub.embedding.RagMatchThreshold.reset(thresholdContext, isGemmaEmbedding)
-                                        thresholdValues = thresholdParams.associateWith { it.default.toFloat() }
-                                        thresholdsCustom = false
-                                    },
-                                    modifier = Modifier.padding(start = 28.dp)
-                                ) {
-                                    Text(stringResource(R.string.rag_threshold_reset))
-                                }
+                            // Always shown so the defaults can be restored at any time
+                            TextButton(
+                                onClick = {
+                                    com.llmhub.llmhub.embedding.RagMatchThreshold.reset(thresholdContext, isGemmaEmbedding)
+                                    thresholdValues = thresholdParams.associateWith { it.default.toFloat() }
+                                },
+                                modifier = Modifier.padding(start = 28.dp)
+                            ) {
+                                Text(stringResource(R.string.rag_threshold_reset))
                             }
                         }
                     }

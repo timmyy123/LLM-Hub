@@ -59,11 +59,6 @@ object RagMatchThreshold {
         }
     }
 
-    fun isCustom(context: Context, isEmbeddingGemma: Boolean): Boolean {
-        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        return paramsFor(isEmbeddingGemma).any { prefs.contains(it.key) }
-    }
-
     /** Short text of the values in use, for logs. */
     fun describe(context: Context?, isEmbeddingGemma: Boolean): String =
         paramsFor(isEmbeddingGemma).joinToString(", ") { "${it.key}=${get(context, it)}" }
