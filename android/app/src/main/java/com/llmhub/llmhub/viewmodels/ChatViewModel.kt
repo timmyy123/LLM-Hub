@@ -334,6 +334,13 @@ class ChatViewModel(
         }
     }
     
+    // The last model the user picked, read straight from prefs so a new chat doesn't depend on
+    // the 200 ms restore above having run yet.
+    private fun savedSelectedModel(): LLMModel? {
+        val name = prefs.getString("selected_model_name", null) ?: return null
+        return _availableModels.value.find { it.name == name && it.isDownloaded }
+    }
+
     // Save settings to SharedPreferences
     private fun saveChatSettings() {
         prefs.edit().apply {
@@ -624,7 +631,7 @@ class ChatViewModel(
                 }
                 
                 // Preserve the current model for new chats but don't auto-load it
-                val modelToUse = previousModel ?: _selectedModel.value ?: _availableModels.value.find { it.isDownloaded }
+                val modelToUse = previousModel ?: _selectedModel.value ?: savedSelectedModel() ?: _availableModels.value.find { it.isDownloaded }
                 currentModel = modelToUse
                 
                 // If we have a model, update the chat to use it but don't load it
@@ -721,7 +728,7 @@ class ChatViewModel(
                     Log.d("ChatViewModel", "Previous model reference set but not loaded")
                 } else {
                     // Try to fall back to the user's last selected model
-                    val selected = _selectedModel.value
+                    val selected = _selectedModel.value ?: savedSelectedModel()
                     if (selected != null && selected.isDownloaded) {
                         Log.d("ChatViewModel", "Using last selected model: ${selected.name}")
                         currentModel = selected
@@ -923,7 +930,7 @@ class ChatViewModel(
 
             // Verify we have a working model
             if (currentModel == null || !currentModel!!.isDownloaded) {
-                val fallbackModel = _selectedModel.value ?: _availableModels.value.find { it.isDownloaded }
+                val fallbackModel = _selectedModel.value ?: savedSelectedModel() ?: _availableModels.value.find { it.isDownloaded }
                 if (fallbackModel != null && fallbackModel.isDownloaded) {
                     Log.d("ChatViewModel", "sendMessage: falling back to model ${fallbackModel.name}")
                     currentModel = fallbackModel
