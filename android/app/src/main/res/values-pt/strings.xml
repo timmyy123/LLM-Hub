@@ -1140,4 +1140,7 @@
     <string name="litert_tts_model_unavailable">Este modelo de voz não está disponível. Conclua o download ou escolha outro mecanismo de TTS nas Configurações.</string>
     <string name="litert_tts_speech_failed">Não foi possível gerar a fala. Escolha outra voz ou outro mecanismo de TTS nas Configurações.</string>
     <string name="model_system_managed">Gerenciado pelo sistema</string>
+    <string name="rag_threshold_title">Limite de correspondência</string>
+    <string name="rag_threshold_subtitle">O quanto a memória e os documentos precisam corresponder à sua mensagem para serem usados. Mais baixo encontra mais, mais alto é mais rigoroso.</string>
+    <string name="rag_threshold_reset">Redefinir para o padrão (%1$s)</string>
 </resources>

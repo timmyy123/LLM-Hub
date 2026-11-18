@@ -1095,4 +1095,7 @@
     <string name="litert_tts_model_unavailable">Mô hình giọng nói này không khả dụng. Hãy tải xong mô hình hoặc chọn công cụ TTS khác trong Cài đặt.</string>
     <string name="litert_tts_speech_failed">Không thể tạo giọng nói. Hãy chọn giọng khác hoặc công cụ TTS khác trong Cài đặt.</string>
     <string name="model_system_managed">Do hệ thống quản lý</string>
+    <string name="rag_threshold_title">Ngưỡng khớp</string>
+    <string name="rag_threshold_subtitle">Bộ nhớ và tài liệu cần khớp với tin nhắn của bạn đến mức nào để được sử dụng. Thấp hơn tìm được nhiều hơn, cao hơn thì chặt chẽ hơn.</string>
+    <string name="rag_threshold_reset">Đặt lại mặc định (%1$s)</string>
 </resources>

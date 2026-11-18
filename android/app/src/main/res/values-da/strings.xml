@@ -1156,4 +1156,7 @@ Du forsøger at sende et billede, men den nuværende model er **kun-tekst**:
     <string name="litert_tts_model_unavailable">Denne talemodel er ikke tilgængelig. Fuldfør download af den, eller vælg en anden TTS-motor i Indstillinger.</string>
     <string name="litert_tts_speech_failed">Talen kunne ikke genereres. Vælg en anden stemme eller TTS-motor i Indstillinger.</string>
     <string name="model_system_managed">Administreres af systemet</string>
+    <string name="rag_threshold_title">Matchgrænse</string>
+    <string name="rag_threshold_subtitle">Hvor tæt hukommelse og dokumenter skal matche din besked for at blive brugt. Lavere finder mere, højere er strengere.</string>
+    <string name="rag_threshold_reset">Nulstil til standard (%1$s)</string>
 </resources>

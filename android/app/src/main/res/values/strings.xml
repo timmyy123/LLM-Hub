@@ -1207,4 +1207,7 @@
     <string name="litert_tts_model_unavailable">This speech model is unavailable. Finish its download or choose another TTS engine in Settings.</string>
     <string name="litert_tts_speech_failed">Could not generate speech. Choose another voice or TTS engine in Settings.</string>
     <string name="model_system_managed">Managed by the system</string>
+    <string name="rag_threshold_title">Matching threshold</string>
+    <string name="rag_threshold_subtitle">How closely memory and documents must match your message to be used. Lower finds more, higher is stricter.</string>
+    <string name="rag_threshold_reset">Reset to default (%1$s)</string>
 </resources>

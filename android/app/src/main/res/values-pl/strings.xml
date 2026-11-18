@@ -1191,4 +1191,7 @@
     <string name="litert_tts_model_unavailable">Ten model mowy jest niedostępny. Dokończ pobieranie lub wybierz inny silnik TTS w Ustawieniach.</string>
     <string name="litert_tts_speech_failed">Nie udało się wygenerować mowy. Wybierz inny głos lub silnik TTS w Ustawieniach.</string>
     <string name="model_system_managed">Zarządzane przez system</string>
+    <string name="rag_threshold_title">Próg dopasowania</string>
+    <string name="rag_threshold_subtitle">Jak bardzo pamięć i dokumenty muszą pasować do Twojej wiadomości, aby zostały użyte. Niższy znajduje więcej, wyższy jest bardziej rygorystyczny.</string>
+    <string name="rag_threshold_reset">Przywróć domyślne (%1$s)</string>
 </resources>

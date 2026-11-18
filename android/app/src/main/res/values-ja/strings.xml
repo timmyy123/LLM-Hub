@@ -1184,4 +1184,7 @@
     <string name="litert_tts_model_unavailable">この音声モデルは利用できません。ダウンロードを完了するか、設定で別のTTSエンジンを選択してください。</string>
     <string name="litert_tts_speech_failed">音声を生成できませんでした。設定で別の音声またはTTSエンジンを選択してください。</string>
     <string name="model_system_managed">システムが管理</string>
+    <string name="rag_threshold_title">一致のしきい値</string>
+    <string name="rag_threshold_subtitle">メモリーとドキュメントが使われるために、メッセージとどれだけ一致する必要があるかを決めます。低いほど多く見つかり、高いほど厳しくなります。</string>
+    <string name="rag_threshold_reset">デフォルトに戻す（%1$s）</string>
 </resources>

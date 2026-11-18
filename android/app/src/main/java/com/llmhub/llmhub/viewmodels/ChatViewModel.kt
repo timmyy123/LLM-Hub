@@ -1417,17 +1417,11 @@ class ChatViewModel(
                                                     val modelName = ragServiceManager.getCurrentEmbeddingModelName() ?: "Gecko"
                                                     val isEmbeddingGemma = modelName.contains("EmbeddingGemma", ignoreCase = true)
                                                     
-                                                    val shouldInject = if (isEmbeddingGemma) {
-                                                        // EmbeddingGemma: trust semantic similarity more, need less lexical overlap
-                                                        // Match RagService primary=0.65, fallback=0.30, lexical=0.02
-                                                        (topSimilarity > 0.65f ) ||  // High semantic alone
-                                                        (topSimilarity > 0.50f && topOverlap > 0.035)  // Moderate semantic + minimal lexical
-                                                    } else {
-                                                        // Gecko: need higher thresholds and more lexical validation
-                                                        // Keep conservative thresholds: primary=0.80, lexical=0.05
-                                                        (topSimilarity > 0.80f && topOverlap > 0.05) ||  // High semantic + some lexical overlap
-                                                        (topSimilarity > 0.95f && topOverlap > 0.005)  // Very high semantic + minimal lexical overlap
-                                                    }
+                                                    // Same rule as RagService, using the matching threshold from Settings
+                                                    val matchThreshold = com.llmhub.llmhub.embedding.RagMatchThreshold.get(context, isEmbeddingGemma)
+                                                    val shouldInject = com.llmhub.llmhub.embedding.RagMatchThreshold.shouldAccept(
+                                                        isEmbeddingGemma, matchThreshold, topSimilarity, topOverlap
+                                                    )
 
                                                     if (shouldInject) {
                                                         Log.d("ChatViewModel", "✅ Found ${relevantChunks.size} relevant document chunks for query (similarity=${"%.3f".format(topSimilarity)}, overlap=${"%.3f".format(topOverlap)}, model=$modelName) - injecting into prompt")
@@ -1435,7 +1429,7 @@ class ChatViewModel(
                                                             "📄 **${chunk.fileName}**:\n${chunk.content}"
                                                         })
                                                     } else {
-                                                        Log.d("ChatViewModel", "ℹ️ Skipping document injection: similarity=${"%.3f".format(topSimilarity)}, overlap=${"%.3f".format(topOverlap)}, model=$modelName (below thresholds)")
+                                                        Log.d("ChatViewModel", "ℹ️ Skipping document injection: similarity=${"%.3f".format(topSimilarity)}, overlap=${"%.3f".format(topOverlap)}, model=$modelName, threshold=$matchThreshold (below thresholds)")
                                                     }
                                                 }
                                             } else {

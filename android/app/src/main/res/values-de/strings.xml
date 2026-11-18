@@ -1153,4 +1153,7 @@
     <string name="litert_tts_model_unavailable">Dieses Sprachmodell ist nicht verfügbar. Schließe den Download ab oder wähle in den Einstellungen eine andere TTS-Engine.</string>
     <string name="litert_tts_speech_failed">Sprache konnte nicht erzeugt werden. Wähle in den Einstellungen eine andere Stimme oder TTS-Engine.</string>
     <string name="model_system_managed">Vom System verwaltet</string>
+    <string name="rag_threshold_title">Übereinstimmungsschwelle</string>
+    <string name="rag_threshold_subtitle">Wie genau Speicher und Dokumente zu Ihrer Nachricht passen müssen, um verwendet zu werden. Niedriger findet mehr, höher ist strenger.</string>
+    <string name="rag_threshold_reset">Auf Standard zurücksetzen (%1$s)</string>
 </resources>

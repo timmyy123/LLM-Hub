@@ -1187,4 +1187,7 @@
     <string name="litert_tts_model_unavailable">Ця модель мовлення недоступна. Завершіть її завантаження або виберіть інший рушій TTS у налаштуваннях.</string>
     <string name="litert_tts_speech_failed">Не вдалося синтезувати мовлення. Виберіть інший голос або рушій TTS у налаштуваннях.</string>
     <string name="model_system_managed">Керується системою</string>
+    <string name="rag_threshold_title">Поріг збігу</string>
+    <string name="rag_threshold_subtitle">Наскільки пам\'ять і документи мають збігатися з вашим повідомленням, щоб їх використали. Нижчий знаходить більше, вищий суворіший.</string>
+    <string name="rag_threshold_reset">Скинути до типового (%1$s)</string>
 </resources>

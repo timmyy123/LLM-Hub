@@ -392,6 +392,69 @@ fun SettingsScreen(
                         }
                     }
 
+                    // RAG matching threshold (memory and documents in chats), per embedding model
+                    if (embeddingEnabled && !selectedEmbeddingModel.isNullOrBlank()) {
+                        val thresholdContext = LocalContext.current
+                        val isGemmaEmbedding = com.llmhub.llmhub.embedding.RagMatchThreshold.isEmbeddingGemma(selectedEmbeddingModel)
+                        val defaultThreshold = com.llmhub.llmhub.embedding.RagMatchThreshold.defaultFor(isGemmaEmbedding)
+                        var matchThreshold by remember(isGemmaEmbedding) {
+                            mutableStateOf(com.llmhub.llmhub.embedding.RagMatchThreshold.get(thresholdContext, isGemmaEmbedding))
+                        }
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 12.dp)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    Icons.Default.Tune,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Spacer(modifier = Modifier.width(16.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = stringResource(R.string.rag_threshold_title),
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = stringResource(R.string.rag_threshold_subtitle),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    text = String.format(java.util.Locale.US, "%.2f", matchThreshold),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                            Slider(
+                                value = matchThreshold,
+                                onValueChange = { matchThreshold = kotlin.math.round(it * 100f) / 100f },
+                                onValueChangeFinished = {
+                                    com.llmhub.llmhub.embedding.RagMatchThreshold.set(thresholdContext, isGemmaEmbedding, matchThreshold)
+                                },
+                                valueRange = com.llmhub.llmhub.embedding.RagMatchThreshold.MIN..com.llmhub.llmhub.embedding.RagMatchThreshold.MAX,
+                                modifier = Modifier.padding(start = 40.dp)
+                            )
+                            if (kotlin.math.abs(matchThreshold - defaultThreshold) > 0.001f) {
+                                TextButton(
+                                    onClick = {
+                                        matchThreshold = defaultThreshold
+                                        com.llmhub.llmhub.embedding.RagMatchThreshold.set(thresholdContext, isGemmaEmbedding, null)
+                                    },
+                                    modifier = Modifier.padding(start = 28.dp)
+                                ) {
+                                    Text(stringResource(R.string.rag_threshold_reset, String.format(java.util.Locale.US, "%.2f", defaultThreshold)))
+                                }
+                            }
+                        }
+                    }
+
                     // Memory manager: allow paste/upload when memory is enabled
                     var showMemoryDialog by remember { mutableStateOf(false) }
                     if (memoryEnabled) {

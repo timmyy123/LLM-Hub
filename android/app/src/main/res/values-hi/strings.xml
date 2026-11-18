@@ -1213,4 +1213,7 @@
     <string name="litert_tts_model_unavailable">यह स्पीच मॉडल उपलब्ध नहीं है। इसका डाउनलोड पूरा करें या सेटिंग्स में कोई दूसरा TTS इंजन चुनें।</string>
     <string name="litert_tts_speech_failed">स्पीच जनरेट नहीं हो सकी। सेटिंग्स में कोई दूसरी आवाज़ या TTS इंजन चुनें।</string>
     <string name="model_system_managed">सिस्टम द्वारा प्रबंधित</string>
+    <string name="rag_threshold_title">मिलान सीमा</string>
+    <string name="rag_threshold_subtitle">मेमोरी और दस्तावेज़ों को इस्तेमाल होने के लिए आपके संदेश से कितना मेल खाना चाहिए। कम मान ज़्यादा ढूँढता है, ज़्यादा मान सख़्त है।</string>
+    <string name="rag_threshold_reset">डिफ़ॉल्ट पर रीसेट करें (%1$s)</string>
 </resources>

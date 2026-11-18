@@ -1095,4 +1095,7 @@
     <string name="litert_tts_model_unavailable">Dit spraakmodel is niet beschikbaar. Voltooi de download of kies een andere TTS-engine in Instellingen.</string>
     <string name="litert_tts_speech_failed">Spraak kon niet worden gegenereerd. Kies een andere stem of TTS-engine in Instellingen.</string>
     <string name="model_system_managed">Beheerd door het systeem</string>
+    <string name="rag_threshold_title">Overeenkomstdrempel</string>
+    <string name="rag_threshold_subtitle">Hoe nauw geheugen en documenten moeten overeenkomen met je bericht om gebruikt te worden. Lager vindt meer, hoger is strenger.</string>
+    <string name="rag_threshold_reset">Standaard herstellen (%1$s)</string>
 </resources>

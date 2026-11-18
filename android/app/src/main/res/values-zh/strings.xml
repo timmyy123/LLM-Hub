@@ -1195,4 +1195,7 @@
     <string name="litert_tts_model_unavailable">此语音模型不可用。请完成下载，或在设置中选择其他 TTS 引擎。</string>
     <string name="litert_tts_speech_failed">无法生成语音。请在设置中选择其他语音或 TTS 引擎。</string>
     <string name="model_system_managed">由系统管理</string>
+    <string name="rag_threshold_title">匹配阈值</string>
+    <string name="rag_threshold_subtitle">记忆和文档需要与您的消息匹配到什么程度才会被使用。越低找到的越多，越高越严格。</string>
+    <string name="rag_threshold_reset">恢复默认值（%1$s）</string>
 </resources>

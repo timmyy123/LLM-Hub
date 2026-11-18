@@ -227,19 +227,12 @@ class InMemoryRagService(private val embeddingService: EmbeddingService) : RagSe
         }
         
         // Acceptance logic - MUST MATCH ChatViewModel criteria exactly
-        fun shouldAccept(similarity: Float, overlap: Double): Boolean {
-            return if (isEmbeddingGemma) {
-                // EmbeddingGemma: trust semantic similarity more, need less lexical overlap
-                (similarity > 0.65f) ||  // High semantic alone
-                (similarity > 0.50f && overlap > 0.035)  // Moderate semantic + minimal lexical
-            } else {
-                // Gecko: need higher thresholds and more lexical validation
-                (similarity > 0.80f && overlap > 0.05) ||  // High semantic + some lexical overlap
-                (similarity > 0.95f && overlap > 0.005)  // Very high semantic + minimal lexical overlap
-            }
-        }
+        // Cut-offs come from the matching threshold in Settings (defaults keep the original rules)
+        val threshold = RagMatchThreshold.get(null, isEmbeddingGemma)
+        fun shouldAccept(similarity: Float, overlap: Double): Boolean =
+            RagMatchThreshold.shouldAccept(isEmbeddingGemma, threshold, similarity, overlap)
         
-        Log.d(TAG, "Using ${if (isEmbeddingGemma) "EmbeddingGemma" else "Gecko"} filtering criteria (same as ChatViewModel)")
+        Log.d(TAG, "Using ${if (isEmbeddingGemma) "EmbeddingGemma" else "Gecko"} filtering criteria, threshold=$threshold (same as ChatViewModel)")
         
         // Get candidates sorted by similarity
         val candidates = similarities.sortedByDescending { it.similarity }

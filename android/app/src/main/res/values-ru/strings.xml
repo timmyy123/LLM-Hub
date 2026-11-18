@@ -1159,4 +1159,7 @@
     <string name="litert_tts_model_unavailable">Эта модель речи недоступна. Завершите её загрузку или выберите другой движок TTS в настройках.</string>
     <string name="litert_tts_speech_failed">Не удалось синтезировать речь. Выберите другой голос или движок TTS в настройках.</string>
     <string name="model_system_managed">Управляется системой</string>
+    <string name="rag_threshold_title">Порог совпадения</string>
+    <string name="rag_threshold_subtitle">Насколько память и документы должны совпадать с вашим сообщением, чтобы использоваться. Ниже находит больше, выше строже.</string>
+    <string name="rag_threshold_reset">Сбросить по умолчанию (%1$s)</string>
 </resources>

@@ -21,7 +21,10 @@ class RagServiceManager(
 
         fun getInstance(context: Context): RagServiceManager {
             return INSTANCE ?: synchronized(this) {
-                INSTANCE ?: RagServiceManager(context.applicationContext).also { INSTANCE = it }
+                INSTANCE ?: RagServiceManager(context.applicationContext).also {
+                    INSTANCE = it
+                    RagMatchThreshold.init(context)
+                }
             }
         }
     }

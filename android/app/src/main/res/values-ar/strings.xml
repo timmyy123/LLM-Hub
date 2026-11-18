@@ -1187,4 +1187,7 @@
     <string name="litert_tts_model_unavailable">نموذج النطق هذا غير متاح. أكمل تنزيله أو اختر محرك تحويل نص إلى كلام آخر من الإعدادات.</string>
     <string name="litert_tts_speech_failed">تعذّر توليد الكلام. اختر صوتًا آخر أو محرك تحويل نص إلى كلام آخر من الإعدادات.</string>
     <string name="model_system_managed">يديره النظام</string>
+    <string name="rag_threshold_title">حد المطابقة</string>
+    <string name="rag_threshold_subtitle">مدى تطابق الذاكرة والمستندات مع رسالتك حتى تُستخدم. القيمة الأقل تجد نتائج أكثر، والأعلى أكثر صرامة.</string>
+    <string name="rag_threshold_reset">إعادة إلى الافتراضي (%1$s)</string>
 </resources>

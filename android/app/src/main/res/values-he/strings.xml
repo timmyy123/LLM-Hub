@@ -1186,4 +1186,7 @@
     <string name="litert_tts_model_unavailable">מודל הדיבור הזה אינו זמין. השלימו את ההורדה שלו או בחרו מנוע TTS אחר בהגדרות.</string>
     <string name="litert_tts_speech_failed">לא ניתן היה ליצור דיבור. בחרו קול אחר או מנוע TTS אחר בהגדרות.</string>
     <string name="model_system_managed">מנוהל על ידי המערכת</string>
+    <string name="rag_threshold_title">סף התאמה</string>
+    <string name="rag_threshold_subtitle">עד כמה הזיכרון והמסמכים צריכים להתאים להודעה שלך כדי שישמשו. נמוך יותר מוצא יותר, גבוה יותר מחמיר יותר.</string>
+    <string name="rag_threshold_reset">איפוס לברירת המחדל (%1$s)</string>
 </resources>
