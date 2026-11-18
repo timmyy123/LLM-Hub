@@ -1189,5 +1189,10 @@
     <string name="model_system_managed">Керується системою</string>
     <string name="rag_threshold_title">Поріг збігу</string>
     <string name="rag_threshold_subtitle">Наскільки пам\'ять і документи мають збігатися з вашим повідомленням, щоб їх використали. Нижчий знаходить більше, вищий суворіший.</string>
-    <string name="rag_threshold_reset">Скинути до типового (%1$s)</string>
+    <string name="rag_threshold_reset">Скинути до типових</string>
+    <string name="rag_threshold_similarity_alone">Схожість, достатня сама по собі</string>
+    <string name="rag_threshold_similarity_with_overlap">Схожість, коли збігаються й слова</string>
+    <string name="rag_threshold_overlap">Потрібний збіг слів</string>
+    <string name="rag_threshold_high_similarity">Висока схожість</string>
+    <string name="rag_threshold_high_overlap">Потрібний збіг слів за високої схожості</string>
 </resources>

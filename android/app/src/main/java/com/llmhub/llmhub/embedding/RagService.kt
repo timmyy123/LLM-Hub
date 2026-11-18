@@ -227,12 +227,11 @@ class InMemoryRagService(private val embeddingService: EmbeddingService) : RagSe
         }
         
         // Acceptance logic - MUST MATCH ChatViewModel criteria exactly
-        // Cut-offs come from the matching threshold in Settings (defaults keep the original rules)
-        val threshold = RagMatchThreshold.get(null, isEmbeddingGemma)
+        // Cut-offs come from the matching thresholds in Settings (defaults keep the original rules)
         fun shouldAccept(similarity: Float, overlap: Double): Boolean =
-            RagMatchThreshold.shouldAccept(isEmbeddingGemma, threshold, similarity, overlap)
+            RagMatchThreshold.shouldAccept(null, isEmbeddingGemma, similarity, overlap)
         
-        Log.d(TAG, "Using ${if (isEmbeddingGemma) "EmbeddingGemma" else "Gecko"} filtering criteria, threshold=$threshold (same as ChatViewModel)")
+        Log.d(TAG, "Using ${if (isEmbeddingGemma) "EmbeddingGemma" else "Gecko"} filtering criteria: ${RagMatchThreshold.describe(null, isEmbeddingGemma)} (same as ChatViewModel)")
         
         // Get candidates sorted by similarity
         val candidates = similarities.sortedByDescending { it.similarity }

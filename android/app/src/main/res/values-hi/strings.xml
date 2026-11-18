@@ -1215,5 +1215,10 @@
     <string name="model_system_managed">सिस्टम द्वारा प्रबंधित</string>
     <string name="rag_threshold_title">मिलान सीमा</string>
     <string name="rag_threshold_subtitle">मेमोरी और दस्तावेज़ों को इस्तेमाल होने के लिए आपके संदेश से कितना मेल खाना चाहिए। कम मान ज़्यादा ढूँढता है, ज़्यादा मान सख़्त है।</string>
-    <string name="rag_threshold_reset">डिफ़ॉल्ट पर रीसेट करें (%1$s)</string>
+    <string name="rag_threshold_reset">डिफ़ॉल्ट पर रीसेट करें</string>
+    <string name="rag_threshold_similarity_alone">अकेले मिलान के लिए समानता</string>
+    <string name="rag_threshold_similarity_with_overlap">जब शब्द भी मेल खाएँ तब समानता</string>
+    <string name="rag_threshold_overlap">ज़रूरी शब्द मेल</string>
+    <string name="rag_threshold_high_similarity">उच्च समानता</string>
+    <string name="rag_threshold_high_overlap">उच्च समानता पर ज़रूरी शब्द मेल</string>
 </resources>

@@ -1189,5 +1189,10 @@
     <string name="model_system_managed">시스템에서 관리</string>
     <string name="rag_threshold_title">일치 임계값</string>
     <string name="rag_threshold_subtitle">메모리와 문서가 사용되려면 메시지와 얼마나 일치해야 하는지 정합니다. 낮을수록 더 많이 찾고, 높을수록 더 엄격합니다.</string>
-    <string name="rag_threshold_reset">기본값으로 재설정 (%1$s)</string>
+    <string name="rag_threshold_reset">기본값으로 재설정</string>
+    <string name="rag_threshold_similarity_alone">단독으로 일치하는 유사도</string>
+    <string name="rag_threshold_similarity_with_overlap">단어도 겹칠 때의 유사도</string>
+    <string name="rag_threshold_overlap">필요한 단어 겹침</string>
+    <string name="rag_threshold_high_similarity">높은 유사도</string>
+    <string name="rag_threshold_high_overlap">높은 유사도에서 필요한 단어 겹침</string>
 </resources>

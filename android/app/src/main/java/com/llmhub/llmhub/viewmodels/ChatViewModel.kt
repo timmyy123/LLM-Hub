@@ -1417,19 +1417,19 @@ class ChatViewModel(
                                                     val modelName = ragServiceManager.getCurrentEmbeddingModelName() ?: "Gecko"
                                                     val isEmbeddingGemma = modelName.contains("EmbeddingGemma", ignoreCase = true)
                                                     
-                                                    // Same rule as RagService, using the matching threshold from Settings
-                                                    val matchThreshold = com.llmhub.llmhub.embedding.RagMatchThreshold.get(context, isEmbeddingGemma)
+                                                    // Same rule as RagService, using the matching thresholds from Settings
+                                                    val matchThreshold = com.llmhub.llmhub.embedding.RagMatchThreshold.describe(context, isEmbeddingGemma)
                                                     val shouldInject = com.llmhub.llmhub.embedding.RagMatchThreshold.shouldAccept(
-                                                        isEmbeddingGemma, matchThreshold, topSimilarity, topOverlap
+                                                        context, isEmbeddingGemma, topSimilarity, topOverlap
                                                     )
 
                                                     if (shouldInject) {
-                                                        Log.d("ChatViewModel", "✅ Found ${relevantChunks.size} relevant document chunks for query (similarity=${"%.3f".format(topSimilarity)}, overlap=${"%.3f".format(topOverlap)}, model=$modelName) - injecting into prompt")
+                                                        Log.d("ChatViewModel", "✅ Found ${relevantChunks.size} relevant document chunks for query (similarity=${"%.3f".format(topSimilarity)}, overlap=${"%.3f".format(topOverlap)}, model=$modelName, thresholds: $matchThreshold) - injecting into prompt")
                                                         contextParts.addAll(relevantChunks.map { chunk ->
                                                             "📄 **${chunk.fileName}**:\n${chunk.content}"
                                                         })
                                                     } else {
-                                                        Log.d("ChatViewModel", "ℹ️ Skipping document injection: similarity=${"%.3f".format(topSimilarity)}, overlap=${"%.3f".format(topOverlap)}, model=$modelName, threshold=$matchThreshold (below thresholds)")
+                                                        Log.d("ChatViewModel", "ℹ️ Skipping document injection: similarity=${"%.3f".format(topSimilarity)}, overlap=${"%.3f".format(topOverlap)}, model=$modelName, thresholds: $matchThreshold (below thresholds)")
                                                     }
                                                 }
                                             } else {

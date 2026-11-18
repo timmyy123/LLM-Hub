@@ -1189,5 +1189,10 @@
     <string name="model_system_managed">يديره النظام</string>
     <string name="rag_threshold_title">حد المطابقة</string>
     <string name="rag_threshold_subtitle">مدى تطابق الذاكرة والمستندات مع رسالتك حتى تُستخدم. القيمة الأقل تجد نتائج أكثر، والأعلى أكثر صرامة.</string>
-    <string name="rag_threshold_reset">إعادة إلى الافتراضي (%1$s)</string>
+    <string name="rag_threshold_reset">إعادة إلى القيم الافتراضية</string>
+    <string name="rag_threshold_similarity_alone">التشابه الكافي وحده للمطابقة</string>
+    <string name="rag_threshold_similarity_with_overlap">التشابه عند تطابق الكلمات أيضًا</string>
+    <string name="rag_threshold_overlap">نسبة تطابق الكلمات المطلوبة</string>
+    <string name="rag_threshold_high_similarity">تشابه عالٍ</string>
+    <string name="rag_threshold_high_overlap">نسبة تطابق الكلمات المطلوبة عند التشابه العالي</string>
 </resources>

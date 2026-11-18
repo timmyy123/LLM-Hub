@@ -1188,5 +1188,10 @@
     <string name="model_system_managed">מנוהל על ידי המערכת</string>
     <string name="rag_threshold_title">סף התאמה</string>
     <string name="rag_threshold_subtitle">עד כמה הזיכרון והמסמכים צריכים להתאים להודעה שלך כדי שישמשו. נמוך יותר מוצא יותר, גבוה יותר מחמיר יותר.</string>
-    <string name="rag_threshold_reset">איפוס לברירת המחדל (%1$s)</string>
+    <string name="rag_threshold_reset">איפוס לברירות המחדל</string>
+    <string name="rag_threshold_similarity_alone">דמיון שמספיק לבדו להתאמה</string>
+    <string name="rag_threshold_similarity_with_overlap">דמיון כשגם מילים חופפות</string>
+    <string name="rag_threshold_overlap">חפיפת מילים נדרשת</string>
+    <string name="rag_threshold_high_similarity">דמיון גבוה</string>
+    <string name="rag_threshold_high_overlap">חפיפת מילים נדרשת בדמיון גבוה</string>
 </resources>

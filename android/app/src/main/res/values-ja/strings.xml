@@ -1186,5 +1186,10 @@
     <string name="model_system_managed">システムが管理</string>
     <string name="rag_threshold_title">一致のしきい値</string>
     <string name="rag_threshold_subtitle">メモリーとドキュメントが使われるために、メッセージとどれだけ一致する必要があるかを決めます。低いほど多く見つかり、高いほど厳しくなります。</string>
-    <string name="rag_threshold_reset">デフォルトに戻す（%1$s）</string>
+    <string name="rag_threshold_reset">デフォルトに戻す</string>
+    <string name="rag_threshold_similarity_alone">単独で一致とみなす類似度</string>
+    <string name="rag_threshold_similarity_with_overlap">単語も重なる場合の類似度</string>
+    <string name="rag_threshold_overlap">必要な単語の重なり</string>
+    <string name="rag_threshold_high_similarity">高い類似度</string>
+    <string name="rag_threshold_high_overlap">高い類似度で必要な単語の重なり</string>
 </resources>

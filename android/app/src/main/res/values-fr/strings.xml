@@ -1175,5 +1175,10 @@
     <string name="model_system_managed">Géré par le système</string>
     <string name="rag_threshold_title">Seuil de correspondance</string>
     <string name="rag_threshold_subtitle">À quel point la mémoire et les documents doivent correspondre à votre message pour être utilisés. Plus bas trouve davantage, plus haut est plus strict.</string>
-    <string name="rag_threshold_reset">Rétablir la valeur par défaut (%1$s)</string>
+    <string name="rag_threshold_reset">Rétablir les valeurs par défaut</string>
+    <string name="rag_threshold_similarity_alone">Similarité suffisante à elle seule</string>
+    <string name="rag_threshold_similarity_with_overlap">Similarité quand des mots correspondent aussi</string>
+    <string name="rag_threshold_overlap">Mots en commun requis</string>
+    <string name="rag_threshold_high_similarity">Similarité élevée</string>
+    <string name="rag_threshold_high_overlap">Mots en commun requis avec une similarité élevée</string>
 </resources>

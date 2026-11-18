@@ -392,13 +392,18 @@ fun SettingsScreen(
                         }
                     }
 
-                    // RAG matching threshold (memory and documents in chats), per embedding model
+                    // RAG matching thresholds (memory and documents in chats): one slider per value, per embedding model
                     if (embeddingEnabled && !selectedEmbeddingModel.isNullOrBlank()) {
                         val thresholdContext = LocalContext.current
                         val isGemmaEmbedding = com.llmhub.llmhub.embedding.RagMatchThreshold.isEmbeddingGemma(selectedEmbeddingModel)
-                        val defaultThreshold = com.llmhub.llmhub.embedding.RagMatchThreshold.defaultFor(isGemmaEmbedding)
-                        var matchThreshold by remember(isGemmaEmbedding) {
-                            mutableStateOf(com.llmhub.llmhub.embedding.RagMatchThreshold.get(thresholdContext, isGemmaEmbedding))
+                        val thresholdParams = com.llmhub.llmhub.embedding.RagMatchThreshold.paramsFor(isGemmaEmbedding)
+                        var thresholdValues by remember(isGemmaEmbedding) {
+                            mutableStateOf(thresholdParams.associateWith {
+                                com.llmhub.llmhub.embedding.RagMatchThreshold.get(thresholdContext, it).toFloat()
+                            })
+                        }
+                        var thresholdsCustom by remember(isGemmaEmbedding) {
+                            mutableStateOf(com.llmhub.llmhub.embedding.RagMatchThreshold.isCustom(thresholdContext, isGemmaEmbedding))
                         }
                         Column(
                             modifier = Modifier
@@ -425,31 +430,63 @@ fun SettingsScreen(
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Text(
-                                    text = String.format(java.util.Locale.US, "%.2f", matchThreshold),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.onSurface
+                            }
+                            thresholdParams.forEach { param ->
+                                val isOverlap = param.kind == com.llmhub.llmhub.embedding.RagMatchThreshold.Kind.OVERLAP
+                                val label = stringResource(
+                                    when (param) {
+                                        com.llmhub.llmhub.embedding.RagMatchThreshold.Param.GEMMA_SIMILARITY -> R.string.rag_threshold_similarity_alone
+                                        com.llmhub.llmhub.embedding.RagMatchThreshold.Param.GEMMA_SIMILARITY_WITH_OVERLAP,
+                                        com.llmhub.llmhub.embedding.RagMatchThreshold.Param.GECKO_SIMILARITY_WITH_OVERLAP -> R.string.rag_threshold_similarity_with_overlap
+                                        com.llmhub.llmhub.embedding.RagMatchThreshold.Param.GEMMA_OVERLAP,
+                                        com.llmhub.llmhub.embedding.RagMatchThreshold.Param.GECKO_OVERLAP -> R.string.rag_threshold_overlap
+                                        com.llmhub.llmhub.embedding.RagMatchThreshold.Param.GECKO_HIGH_SIMILARITY -> R.string.rag_threshold_high_similarity
+                                        com.llmhub.llmhub.embedding.RagMatchThreshold.Param.GECKO_HIGH_OVERLAP -> R.string.rag_threshold_high_overlap
+                                    }
+                                )
+                                val value = thresholdValues[param] ?: param.default.toFloat()
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(start = 40.dp, top = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = label,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    Text(
+                                        text = String.format(java.util.Locale.US, if (isOverlap) "%.3f" else "%.2f", value),
+                                        style = MaterialTheme.typography.titleSmall,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+                                Slider(
+                                    value = value,
+                                    onValueChange = {
+                                        val step = if (isOverlap) 1000f else 100f
+                                        thresholdValues = thresholdValues + (param to kotlin.math.round(it * step) / step)
+                                    },
+                                    onValueChangeFinished = {
+                                        com.llmhub.llmhub.embedding.RagMatchThreshold.set(thresholdContext, param, thresholdValues[param] ?: value)
+                                        thresholdsCustom = true
+                                    },
+                                    valueRange = param.min..param.max,
+                                    modifier = Modifier.padding(start = 40.dp)
                                 )
                             }
-                            Slider(
-                                value = matchThreshold,
-                                onValueChange = { matchThreshold = kotlin.math.round(it * 100f) / 100f },
-                                onValueChangeFinished = {
-                                    com.llmhub.llmhub.embedding.RagMatchThreshold.set(thresholdContext, isGemmaEmbedding, matchThreshold)
-                                },
-                                valueRange = com.llmhub.llmhub.embedding.RagMatchThreshold.MIN..com.llmhub.llmhub.embedding.RagMatchThreshold.MAX,
-                                modifier = Modifier.padding(start = 40.dp)
-                            )
-                            if (kotlin.math.abs(matchThreshold - defaultThreshold) > 0.001f) {
+                            if (thresholdsCustom) {
                                 TextButton(
                                     onClick = {
-                                        matchThreshold = defaultThreshold
-                                        com.llmhub.llmhub.embedding.RagMatchThreshold.set(thresholdContext, isGemmaEmbedding, null)
+                                        com.llmhub.llmhub.embedding.RagMatchThreshold.reset(thresholdContext, isGemmaEmbedding)
+                                        thresholdValues = thresholdParams.associateWith { it.default.toFloat() }
+                                        thresholdsCustom = false
                                     },
                                     modifier = Modifier.padding(start = 28.dp)
                                 ) {
-                                    Text(stringResource(R.string.rag_threshold_reset, String.format(java.util.Locale.US, "%.2f", defaultThreshold)))
+                                    Text(stringResource(R.string.rag_threshold_reset))
                                 }
                             }
                         }

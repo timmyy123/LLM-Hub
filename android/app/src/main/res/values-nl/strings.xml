@@ -1097,5 +1097,10 @@
     <string name="model_system_managed">Beheerd door het systeem</string>
     <string name="rag_threshold_title">Overeenkomstdrempel</string>
     <string name="rag_threshold_subtitle">Hoe nauw geheugen en documenten moeten overeenkomen met je bericht om gebruikt te worden. Lager vindt meer, hoger is strenger.</string>
-    <string name="rag_threshold_reset">Standaard herstellen (%1$s)</string>
+    <string name="rag_threshold_reset">Standaardwaarden herstellen</string>
+    <string name="rag_threshold_similarity_alone">Overeenkomst die op zichzelf genoeg is</string>
+    <string name="rag_threshold_similarity_with_overlap">Overeenkomst als woorden ook overlappen</string>
+    <string name="rag_threshold_overlap">Benodigde woordoverlap</string>
+    <string name="rag_threshold_high_similarity">Hoge overeenkomst</string>
+    <string name="rag_threshold_high_overlap">Benodigde woordoverlap bij hoge overeenkomst</string>
 </resources>

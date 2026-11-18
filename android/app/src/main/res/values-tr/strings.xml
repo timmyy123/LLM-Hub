@@ -1187,5 +1187,10 @@
     <string name="model_system_managed">Sistem tarafından yönetilir</string>
     <string name="rag_threshold_title">Eşleşme eşiği</string>
     <string name="rag_threshold_subtitle">Bellek ve belgelerin kullanılması için mesajınızla ne kadar eşleşmesi gerektiği. Düşük değer daha fazla bulur, yüksek değer daha katıdır.</string>
-    <string name="rag_threshold_reset">Varsayılana sıfırla (%1$s)</string>
+    <string name="rag_threshold_reset">Varsayılanlara sıfırla</string>
+    <string name="rag_threshold_similarity_alone">Tek başına yeten benzerlik</string>
+    <string name="rag_threshold_similarity_with_overlap">Kelimeler de örtüştüğünde benzerlik</string>
+    <string name="rag_threshold_overlap">Gereken kelime örtüşmesi</string>
+    <string name="rag_threshold_high_similarity">Yüksek benzerlik</string>
+    <string name="rag_threshold_high_overlap">Yüksek benzerlikte gereken kelime örtüşmesi</string>
 </resources>

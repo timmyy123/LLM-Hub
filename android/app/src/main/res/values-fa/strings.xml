@@ -1189,5 +1189,10 @@
     <string name="model_system_managed">مدیریت‌شده توسط سیستم</string>
     <string name="rag_threshold_title">آستانه تطابق</string>
     <string name="rag_threshold_subtitle">میزان تطابق لازم حافظه و اسناد با پیام شما برای استفاده. مقدار کمتر موارد بیشتری پیدا می‌کند و مقدار بیشتر سخت‌گیرانه‌تر است.</string>
-    <string name="rag_threshold_reset">بازنشانی به پیش‌فرض (%1$s)</string>
+    <string name="rag_threshold_reset">بازنشانی به پیش‌فرض‌ها</string>
+    <string name="rag_threshold_similarity_alone">شباهتی که به‌تنهایی کافی است</string>
+    <string name="rag_threshold_similarity_with_overlap">شباهت وقتی واژه‌ها هم مشترک باشند</string>
+    <string name="rag_threshold_overlap">میزان واژه‌های مشترک لازم</string>
+    <string name="rag_threshold_high_similarity">شباهت بالا</string>
+    <string name="rag_threshold_high_overlap">میزان واژه‌های مشترک لازم در شباهت بالا</string>
 </resources>

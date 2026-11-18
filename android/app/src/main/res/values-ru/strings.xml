@@ -1161,5 +1161,10 @@
     <string name="model_system_managed">Управляется системой</string>
     <string name="rag_threshold_title">Порог совпадения</string>
     <string name="rag_threshold_subtitle">Насколько память и документы должны совпадать с вашим сообщением, чтобы использоваться. Ниже находит больше, выше строже.</string>
-    <string name="rag_threshold_reset">Сбросить по умолчанию (%1$s)</string>
+    <string name="rag_threshold_reset">Сбросить по умолчанию</string>
+    <string name="rag_threshold_similarity_alone">Сходство, достаточное само по себе</string>
+    <string name="rag_threshold_similarity_with_overlap">Сходство при совпадении слов</string>
+    <string name="rag_threshold_overlap">Нужное совпадение слов</string>
+    <string name="rag_threshold_high_similarity">Высокое сходство</string>
+    <string name="rag_threshold_high_overlap">Нужное совпадение слов при высоком сходстве</string>
 </resources>

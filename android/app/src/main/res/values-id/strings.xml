@@ -1191,5 +1191,10 @@
     <string name="model_system_managed">Dikelola oleh sistem</string>
     <string name="rag_threshold_title">Ambang kecocokan</string>
     <string name="rag_threshold_subtitle">Seberapa dekat memori dan dokumen harus cocok dengan pesan Anda agar digunakan. Lebih rendah menemukan lebih banyak, lebih tinggi lebih ketat.</string>
-    <string name="rag_threshold_reset">Kembalikan ke default (%1$s)</string>
+    <string name="rag_threshold_reset">Kembalikan ke default</string>
+    <string name="rag_threshold_similarity_alone">Kemiripan yang cukup dengan sendirinya</string>
+    <string name="rag_threshold_similarity_with_overlap">Kemiripan saat kata juga cocok</string>
+    <string name="rag_threshold_overlap">Kecocokan kata yang diperlukan</string>
+    <string name="rag_threshold_high_similarity">Kemiripan tinggi</string>
+    <string name="rag_threshold_high_overlap">Kecocokan kata yang diperlukan pada kemiripan tinggi</string>
 </resources>

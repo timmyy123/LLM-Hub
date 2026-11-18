@@ -1192,5 +1192,10 @@
     <string name="model_system_managed">Gestionado por el sistema</string>
     <string name="rag_threshold_title">Umbral de coincidencia</string>
     <string name="rag_threshold_subtitle">Cuánto deben coincidir la memoria y los documentos con tu mensaje para usarse. Más bajo encuentra más, más alto es más estricto.</string>
-    <string name="rag_threshold_reset">Restablecer valor predeterminado (%1$s)</string>
+    <string name="rag_threshold_reset">Restablecer valores predeterminados</string>
+    <string name="rag_threshold_similarity_alone">Similitud que basta por sí sola</string>
+    <string name="rag_threshold_similarity_with_overlap">Similitud cuando también coinciden palabras</string>
+    <string name="rag_threshold_overlap">Coincidencia de palabras necesaria</string>
+    <string name="rag_threshold_high_similarity">Similitud alta</string>
+    <string name="rag_threshold_high_overlap">Coincidencia de palabras necesaria con similitud alta</string>
 </resources>

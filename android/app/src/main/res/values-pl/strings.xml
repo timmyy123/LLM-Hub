@@ -1193,5 +1193,10 @@
     <string name="model_system_managed">Zarządzane przez system</string>
     <string name="rag_threshold_title">Próg dopasowania</string>
     <string name="rag_threshold_subtitle">Jak bardzo pamięć i dokumenty muszą pasować do Twojej wiadomości, aby zostały użyte. Niższy znajduje więcej, wyższy jest bardziej rygorystyczny.</string>
-    <string name="rag_threshold_reset">Przywróć domyślne (%1$s)</string>
+    <string name="rag_threshold_reset">Przywróć domyślne</string>
+    <string name="rag_threshold_similarity_alone">Podobieństwo wystarczające samo w sobie</string>
+    <string name="rag_threshold_similarity_with_overlap">Podobieństwo, gdy pokrywają się też słowa</string>
+    <string name="rag_threshold_overlap">Wymagane pokrycie słów</string>
+    <string name="rag_threshold_high_similarity">Wysokie podobieństwo</string>
+    <string name="rag_threshold_high_overlap">Wymagane pokrycie słów przy wysokim podobieństwie</string>
 </resources>

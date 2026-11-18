@@ -1158,5 +1158,10 @@ Du forsøger at sende et billede, men den nuværende model er **kun-tekst**:
     <string name="model_system_managed">Administreres af systemet</string>
     <string name="rag_threshold_title">Matchgrænse</string>
     <string name="rag_threshold_subtitle">Hvor tæt hukommelse og dokumenter skal matche din besked for at blive brugt. Lavere finder mere, højere er strengere.</string>
-    <string name="rag_threshold_reset">Nulstil til standard (%1$s)</string>
+    <string name="rag_threshold_reset">Nulstil til standard</string>
+    <string name="rag_threshold_similarity_alone">Lighed, der matcher alene</string>
+    <string name="rag_threshold_similarity_with_overlap">Lighed, når ordene også overlapper</string>
+    <string name="rag_threshold_overlap">Krævet ordoverlap</string>
+    <string name="rag_threshold_high_similarity">Høj lighed</string>
+    <string name="rag_threshold_high_overlap">Krævet ordoverlap ved høj lighed</string>
 </resources>

@@ -1097,5 +1097,10 @@
     <string name="model_system_managed">Do hệ thống quản lý</string>
     <string name="rag_threshold_title">Ngưỡng khớp</string>
     <string name="rag_threshold_subtitle">Bộ nhớ và tài liệu cần khớp với tin nhắn của bạn đến mức nào để được sử dụng. Thấp hơn tìm được nhiều hơn, cao hơn thì chặt chẽ hơn.</string>
-    <string name="rag_threshold_reset">Đặt lại mặc định (%1$s)</string>
+    <string name="rag_threshold_reset">Đặt lại mặc định</string>
+    <string name="rag_threshold_similarity_alone">Độ tương đồng đủ để tự khớp</string>
+    <string name="rag_threshold_similarity_with_overlap">Độ tương đồng khi từ ngữ cũng trùng</string>
+    <string name="rag_threshold_overlap">Mức trùng từ cần thiết</string>
+    <string name="rag_threshold_high_similarity">Độ tương đồng cao</string>
+    <string name="rag_threshold_high_overlap">Mức trùng từ cần thiết khi độ tương đồng cao</string>
 </resources>

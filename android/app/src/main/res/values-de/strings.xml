@@ -1155,5 +1155,10 @@
     <string name="model_system_managed">Vom System verwaltet</string>
     <string name="rag_threshold_title">Übereinstimmungsschwelle</string>
     <string name="rag_threshold_subtitle">Wie genau Speicher und Dokumente zu Ihrer Nachricht passen müssen, um verwendet zu werden. Niedriger findet mehr, höher ist strenger.</string>
-    <string name="rag_threshold_reset">Auf Standard zurücksetzen (%1$s)</string>
+    <string name="rag_threshold_reset">Auf Standardwerte zurücksetzen</string>
+    <string name="rag_threshold_similarity_alone">Ähnlichkeit, die allein ausreicht</string>
+    <string name="rag_threshold_similarity_with_overlap">Ähnlichkeit bei zusätzlicher Wortübereinstimmung</string>
+    <string name="rag_threshold_overlap">Benötigte Wortübereinstimmung</string>
+    <string name="rag_threshold_high_similarity">Hohe Ähnlichkeit</string>
+    <string name="rag_threshold_high_overlap">Benötigte Wortübereinstimmung bei hoher Ähnlichkeit</string>
 </resources>
