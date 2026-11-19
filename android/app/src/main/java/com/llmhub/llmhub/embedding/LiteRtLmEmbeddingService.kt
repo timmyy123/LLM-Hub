@@ -37,6 +37,8 @@ class LiteRtLmEmbeddingService(
     companion object {
         private const val TAG = "LiteRtLmEmbedding"
         private const val MAX_TEXT_CHARS = 6000
+        // 6000 characters are at most a few thousand tokens: four halvings bring any of them under 1024.
+        private const val MAX_SPLIT_DEPTH = 4
         private const val QUERY_PREFIX = "task: search result | query: "
         private const val DOCUMENT_PREFIX = "title: none | text: "
         private const val NPU = "NPU"
@@ -168,28 +170,63 @@ class LiteRtLmEmbeddingService(
         }
     }
 
-    private suspend fun embed(contents: List<InputData>): FloatArray? {
-        if (engine == null && !initialize()) return null
+    private suspend fun embed(contents: List<InputData>): FloatArray? = embedOrTooLong(contents).first
+
+    /** The embedding, or null with `true` when the engine refused the input for having too many tokens. */
+    private suspend fun embedOrTooLong(contents: List<InputData>): Pair<FloatArray?, Boolean> {
+        if (engine == null && !initialize()) return null to false
         return withContext(Dispatchers.Default) {
             mutex.withLock {
-                val current = engine ?: return@withLock null
+                val current = engine ?: return@withLock null to false
                 try {
                     current.computeEmbedding(contents, EmbeddingOptions(normalize = true, visionTokensPerImage = visionTokensPerImage))
                         .embedding
-                        .takeIf { it.isNotEmpty() }
+                        .takeIf { it.isNotEmpty() } to false
                 } catch (e: Throwable) {
-                    Log.e(TAG, "computeEmbedding failed: ${e.message}", e)
-                    null
+                    if (e.message?.contains("exceeds maximum supported signature length") == true) {
+                        Log.i(TAG, "Input has more tokens than ${model.name} accepts in one pass: ${e.message?.substringAfterLast('\n')?.trim()}")
+                        null to true
+                    } else {
+                        Log.e(TAG, "computeEmbedding failed: ${e.message}", e)
+                        null to false
+                    }
                 }
             }
         }
+    }
+
+    /**
+     * Embeds [text]. The NPU builds only have graphs up to 1024 tokens and refuse anything longer, where the
+     * standard build takes the whole text; a document chunk without sentence breaks (a table, a list, text in a
+     * script that does not end sentences with ". ") can be several times that. Such a text is embedded in halves,
+     * cut at a word boundary, and the halves are averaged by length, so no part of it is dropped.
+     */
+    private suspend fun embedText(prefix: String, text: String, depth: Int = 0): FloatArray? {
+        val (vector, tooLong) = embedOrTooLong(listOf(InputData.Text(prefix + text)))
+        if (vector != null || !tooLong || depth >= MAX_SPLIT_DEPTH || text.length < 2) return vector
+        val middle = text.length / 2
+        val cut = text.indexOfFirst(middle) { it.isWhitespace() }.takeIf { it in 1 until text.length - 1 } ?: middle
+        val head = text.substring(0, cut).trim()
+        val tail = text.substring(cut).trim()
+        if (head.isEmpty() || tail.isEmpty()) return null
+        val first = embedText(prefix, head, depth + 1) ?: return null
+        val second = embedText(prefix, tail, depth + 1) ?: return null
+        val total = (head.length + tail.length).toFloat()
+        val mean = FloatArray(first.size) { (first[it] * head.length + second[it] * tail.length) / total }
+        val norm = kotlin.math.sqrt(mean.sumOf { (it * it).toDouble() }).toFloat()
+        return if (norm > 0f) FloatArray(mean.size) { mean[it] / norm } else null
+    }
+
+    private inline fun String.indexOfFirst(from: Int, predicate: (Char) -> Boolean): Int {
+        for (i in from until length) if (predicate(this[i])) return i
+        return -1
     }
 
     override suspend fun generateEmbedding(text: String, isQuery: Boolean): FloatArray? {
         val clean = text.trim().take(MAX_TEXT_CHARS)
         if (clean.isEmpty()) return null
         val prefix = if (isQuery) QUERY_PREFIX else DOCUMENT_PREFIX
-        return embed(listOf(InputData.Text(prefix + clean)))
+        return embedText(prefix, clean)
     }
 
     /** [jpegOrPng] must be JPEG or PNG bytes. */
