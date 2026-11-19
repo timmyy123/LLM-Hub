@@ -24,8 +24,8 @@ android {
         applicationId = "com.llmhub.llmhub"
         minSdk = 27
         targetSdk = 37
-        versionCode = 184
-        versionName = "4.6.7"
+        versionCode = 185
+        versionName = "4.6.8"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         val debugPremium: Boolean = localProperties.getProperty("DEBUG_PREMIUM", "false").toBoolean()
