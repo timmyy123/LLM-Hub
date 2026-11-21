@@ -126,7 +126,7 @@
 <CollapsibleContentBlock
 	class="my-2"
 	icon={Lightbulb}
-	iconClass="h-3.5 w-3.5"
+	iconClass="size-icon-sm"
 	{onToggle}
 	{open}
 	{shimmerTitle}
@@ -142,7 +142,7 @@
 			<MarkdownContent {attachments} class="text-muted-foreground" content={section.content} />
 		{:else}
 			<div
-				class="text-[13px] leading-relaxed wrap-break-word whitespace-pre-wrap text-muted-foreground"
+				class="text-body-sm leading-relaxed wrap-break-word whitespace-pre-wrap text-muted-foreground"
 			>
 				{section.content}
 			</div>
@@ -152,7 +152,8 @@
 
 <style>
 	.reasoning-content.is-streaming {
-		max-height: 28rem;
+		/* page zoom shrinks the viewport, keep the box inside it */
+		max-height: min(28rem, 50dvh);
 		overflow-y: auto;
 		scrollbar-gutter: stable;
 		padding-right: 0.25rem;

@@ -33,6 +33,8 @@ export {
 // Code
 export {
 	highlightCode,
+	isHighlightLanguageLoaded,
+	loadHighlightLanguages,
 	detectIncompleteCodeBlock,
 	splitGluedClosingCodeFences,
 	trimCodePadding,
@@ -108,6 +110,7 @@ export {
 
 // IME utilities
 export { isIMEComposing } from './is-ime-composing';
+export { shouldTypeToFocus } from './type-to-focus';
 
 // LaTeX utilities
 export { maskInlineLaTeX, preprocessLaTeX } from './latex-protection';
@@ -376,7 +379,7 @@ export { type GgufMetadata, type GgufValue, readGgufMetadata } from './gguf-meta
 export { uuid } from './uuid';
 
 // CSS utilities
-export { remToPx } from './css';
+export { applySurfaceTheme, remToPx } from './css';
 
 // Audio format helper (used by agentic store and chat service)
 export { getAudioInputFormat } from './audio-format';
@@ -384,3 +387,15 @@ export { groupModelFamilies, modelFamilyKey, type ModelFamilyGroup } from './mod
 
 // Svelte actions
 export { nearViewport } from './near-viewport';
+
+// Voice: what a recording becomes for the conversation's model
+export {
+	type DictationModelInput,
+	dictationModelFor,
+	isTranscriptionOnlyModel,
+	resolveVoiceMode,
+	voiceModeLabel,
+	type VoiceModeInput,
+	voiceModelRole,
+	type VoiceModeResolution
+} from './voice-mode';

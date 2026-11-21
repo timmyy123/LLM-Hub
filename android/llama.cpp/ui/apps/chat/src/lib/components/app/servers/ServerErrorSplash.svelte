@@ -1,8 +1,8 @@
 <script lang="ts">
+	import { Button } from '@ggml-org/llama-ui/ui/button';
+	import { Input } from '@ggml-org/llama-ui/ui/input';
+	import { Label } from '@ggml-org/llama-ui/ui/label';
 	import { AlertTriangle, CheckCircle, Key, RefreshCw, XCircle } from '@lucide/svelte';
-	import { Button } from '#lib/components/ui/button/index.ts';
-	import { Input } from '#lib/components/ui/input/index.ts';
-	import Label from '#lib/components/ui/label/label.svelte';
 	import { HEADERS, ICON_CLASS_DEFAULT, ROUTES, SETTINGS_KEYS } from '#lib/constants/index.ts';
 	import { KeyboardKey } from '#lib/enums/index.ts';
 	import { serverStore, settingsStore } from '#lib/stores/index.ts';
@@ -129,14 +129,14 @@
 	<div class="w-full max-w-md px-4 text-center">
 		<div in:fade={{ duration: 300 }} class="mb-6">
 			<div
-				class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10"
+				class="mx-auto mb-4 flex size-16 items-center justify-center rounded-full bg-destructive/10"
 			>
-				<AlertTriangle class="h-8 w-8 text-destructive" />
+				<AlertTriangle class="size-8 text-destructive" />
 			</div>
 
-			<h2 class="mb-2 text-xl font-semibold">Server Connection Error</h2>
+			<h2 class="mb-2 text-title">Server Connection Error</h2>
 
-			<p class="mb-4 text-sm text-muted-foreground">
+			<p class="mb-4 text-body-sm text-muted-foreground">
 				{error}
 			</p>
 		</div>
@@ -153,7 +153,7 @@
 		{#if showApiKeyInput}
 			<div in:fly={{ delay: 200, duration: 300, y: 10 }} class="mb-4 space-y-3 text-left">
 				<div class="space-y-2">
-					<Label class="text-sm font-medium" for="api-key-input">API Key</Label>
+					<Label class="text-label" for="api-key-input">API Key</Label>
 
 					<div class="relative">
 						<Input
@@ -193,13 +193,13 @@
 					</div>
 
 					{#if apiKeyError}
-						<p in:fly={{ duration: 200, y: -10 }} class="text-sm text-destructive">
+						<p in:fly={{ duration: 200, y: -10 }} class="text-body-sm text-destructive">
 							{apiKeyError}
 						</p>
 					{/if}
 
 					{#if apiKeyState === 'success'}
-						<p in:fly={{ duration: 200, y: -10 }} class="text-sm text-green-600">
+						<p in:fly={{ duration: 200, y: -10 }} class="text-body-sm text-green-600">
 							✓ API key validated successfully! Connecting...
 						</p>
 					{/if}
@@ -257,22 +257,22 @@
 
 		{#if showTroubleshooting}
 			<div in:fly={{ delay: 400, duration: 300, y: 10 }} class="mt-4 text-left">
-				<details class="text-sm">
+				<details class="text-body-sm">
 					<summary class="cursor-pointer text-muted-foreground hover:text-foreground">
 						Troubleshooting
 					</summary>
 
-					<div class="mt-2 space-y-3 text-xs text-muted-foreground">
+					<div class="mt-2 space-y-3 text-caption text-muted-foreground">
 						<div class="space-y-2">
 							<p class="mb-4 font-medium">Start the llama-server:</p>
 
-							<div class="rounded bg-muted/50 px-2 py-1 font-mono text-xs">
+							<div class="rounded bg-muted/50 px-2 py-1 font-mono text-caption">
 								<p>llama-server -hf ggml-org/gemma-3-4b-it-GGUF</p>
 							</div>
 
 							<p>or</p>
 
-							<div class="rounded bg-muted/50 px-2 py-1 font-mono text-xs">
+							<div class="rounded bg-muted/50 px-2 py-1 font-mono text-caption">
 								<p class="mt-1">llama-server -m locally-stored-model.gguf</p>
 							</div>
 						</div>

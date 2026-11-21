@@ -19,7 +19,13 @@ set(LLAMA_UI_GZIP     "" CACHE STRING "Apply gzip compress to assets to save ban
 
 set(DIST_DIR     "${UI_BINARY_DIR}/dist")
 set(SRC_DIST_DIR "${UI_SOURCE_DIR}/dist")
-set(WORK_DIR     "${UI_BINARY_DIR}/ui-src")
+# The stage keeps the layout of ui/: the app in apps/chat, with the sources of
+# Llama UI that it compiles next to it in lib/ui (see ui/apps/chat/scripts/llama-ui.js),
+# and those of Llama Voice in lib/voice (see ui/apps/chat/vite.config.ts).
+set(STAGE_DIR    "${UI_BINARY_DIR}/ui-src")
+set(WORK_DIR     "${STAGE_DIR}/apps/chat")
+set(UI_LIB_DIR   "${UI_SOURCE_DIR}/../../lib/ui")
+set(UI_VOICE_DIR "${UI_SOURCE_DIR}/../../lib/voice")
 set(STAMP_FILE   "${UI_BINARY_DIR}/.ui-stamp")
 set(EMBED_STAMP  "${UI_BINARY_DIR}/.ui-embed.sha256")
 set(UI_CPP       "${UI_BINARY_DIR}/ui.cpp")
@@ -37,7 +43,7 @@ function(mime_from_ext name out_var)
         set(m "text/html; charset=utf-8")
     elseif(ext_str STREQUAL "css")
         set(m "text/css")
-    elseif(ext_str STREQUAL "js")
+    elseif(ext_str STREQUAL "js" OR ext_str STREQUAL "mjs")
         set(m "application/javascript")
     elseif(ext_str STREQUAL "json")
         set(m "application/json")
@@ -94,9 +100,12 @@ function(ui_validate_assets files in_dir)
             set(found_build_json TRUE)
         elseif(base STREQUAL "version.json")
             set(found_version_json TRUE)
-        elseif(base MATCHES "^bundle.*\\.js$")
+        # the app's entry: bundle[hash].js/.css from a single-bundle build (builds before the
+        # split one, prebuilt archives included), or entry/start[hash].js and the CSS in
+        # _app/immutable/assets from a split build
+        elseif(base MATCHES "^bundle.*\\.js$" OR f MATCHES "(^|/)_app/immutable/entry/start\\.[^/]*\\.js$")
             set(found_bundle_js TRUE)
-        elseif(base MATCHES "^bundle.*\\.css$")
+        elseif(base MATCHES "^bundle.*\\.css$" OR f MATCHES "(^|/)_app/immutable/assets/[^/]*\\.css$")
             set(found_bundle_css TRUE)
         endif()
     endforeach()
@@ -121,10 +130,10 @@ function(ui_validate_assets files in_dir)
         list(APPEND missing "version.json")
     endif()
     if(NOT found_bundle_js)
-        list(APPEND missing "bundle[hash].js")
+        list(APPEND missing "_app/immutable/entry/start[hash].js (or bundle[hash].js)")
     endif()
     if(NOT found_bundle_css)
-        list(APPEND missing "bundle[hash].css")
+        list(APPEND missing "_app/immutable/assets/[name][hash].css (or bundle[hash].css)")
     endif()
 
     if(missing)
@@ -316,6 +325,16 @@ function(npm_build_should_skip out_var)
 endfunction()
 
 function(stage_sources)
+    # everything but the app goes: the library, restaged below, and what a stage
+    # from before this layout left at the top, its node_modules included
+    if(EXISTS "${STAGE_DIR}")
+        file(GLOB staged RELATIVE "${STAGE_DIR}" "${STAGE_DIR}/*")
+        list(REMOVE_ITEM staged "apps")
+        foreach(entry ${staged})
+            file(REMOVE_RECURSE "${STAGE_DIR}/${entry}")
+        endforeach()
+    endif()
+
     if(EXISTS "${WORK_DIR}")
         file(GLOB staged RELATIVE "${WORK_DIR}" "${WORK_DIR}/*")
         list(REMOVE_ITEM staged "node_modules")
@@ -328,6 +347,22 @@ function(stage_sources)
         DESTINATION "${WORK_DIR}"
         NO_SOURCE_PERMISSIONS
         PATTERN "node_modules" EXCLUDE
+    )
+
+    # what the app reads of the library: its sources and the dependency list
+    file(COPY "${UI_LIB_DIR}/package.json"
+        DESTINATION "${STAGE_DIR}/lib/ui"
+        NO_SOURCE_PERMISSIONS
+    )
+    file(COPY "${UI_LIB_DIR}/src/lib"
+        DESTINATION "${STAGE_DIR}/lib/ui/src"
+        NO_SOURCE_PERMISSIONS
+    )
+
+    # and of Llama Voice, its sources only: they import nothing from outside them
+    file(COPY "${UI_VOICE_DIR}/src"
+        DESTINATION "${STAGE_DIR}/lib/voice"
+        NO_SOURCE_PERMISSIONS
     )
 endfunction()
 

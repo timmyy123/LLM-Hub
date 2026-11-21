@@ -8,9 +8,9 @@
 		gaugePopup,
 		gaugePopupClose
 	} from './gauge-popup.svelte';
+	import { Button } from '@ggml-org/llama-ui/ui/button';
+	import * as Drawer from '@ggml-org/llama-ui/ui/drawer';
 	import { FoldVertical, Loader2 } from '@lucide/svelte';
-	import { Button } from '#lib/components/ui/button/index.ts';
-	import * as Drawer from '#lib/components/ui/drawer/index.ts';
 	import { useContextGauge } from '#lib/hooks/use-context-gauge.svelte.ts';
 	import { agenticStore, chatStore, conversationsStore, deviceStore } from '#lib/stores/index.ts';
 	import { formatParameters } from '#lib/utils/formatters.ts';
@@ -90,13 +90,13 @@
 			disabled={isCompactDisabled}
 			onclick={handleCompact}
 			size="sm"
-			variant="tertiary"
+			variant="secondary"
 		>
 			{#if isCompacting}
-				<Loader2 class="h-3.5 w-3.5 animate-spin" />
+				<Loader2 class="size-icon-md animate-spin" />
 				Compacting...
 			{:else}
-				<FoldVertical class="h-3.5 w-3.5" />
+				<FoldVertical class="size-icon-md" />
 				Compact conversation
 			{/if}
 		</Button>
@@ -120,7 +120,7 @@
 			></div>
 		</div>
 
-		<div class="flex justify-between text-xs text-muted-foreground max-md:text-[13px]">
+		<div class="flex justify-between text-caption text-muted-foreground max-md:text-body-sm">
 			<span>
 				<span class={colorLevelTextClass(gauge.colorLevel)}>{gauge.contextPercent}%</span> used
 			</span>
@@ -130,7 +130,7 @@
 			</span>
 		</div>
 	{:else}
-		<div class="text-xs text-muted-foreground">No context info available</div>
+		<div class="text-caption text-muted-foreground">No context info available</div>
 	{/if}
 
 	{#if gauge.hasAnyUsage}
@@ -172,7 +172,7 @@
 {:else if gaugePopup.open}
 	<div
 		bind:this={cardEl}
-		class="absolute z-50 w-64 -translate-x-1/2 rounded-xl border border-border bg-popover p-1.5 text-sm text-popover-foreground shadow-md dark:border-border/20"
+		class="absolute z-50 w-64 -translate-x-1/2 rounded-xl border matte-float p-1.5 text-body-sm"
 		onpointerenter={gaugeCardEnter}
 		onpointerleave={gaugeCardLeave}
 		role="status"

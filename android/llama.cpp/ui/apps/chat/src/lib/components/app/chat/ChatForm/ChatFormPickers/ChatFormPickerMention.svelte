@@ -1,9 +1,9 @@
 <script lang="ts">
+	import * as Popover from '@ggml-org/llama-ui/ui/popover';
+	import * as Tooltip from '@ggml-org/llama-ui/ui/tooltip';
 	import { File, Folder } from '@lucide/svelte';
 	import { ChatFormPickerList, ChatFormPickerListItem } from '#lib/components/app/chat/index.ts';
 	import HighlightedMatch from '#lib/components/app/forms/HighlightedMatch.svelte';
-	import * as Popover from '#lib/components/ui/popover/index.ts';
-	import * as Tooltip from '#lib/components/ui/tooltip/index.ts';
 	import { FILE_GLOB_SEARCH_PICKERS, HOME_TILDE, SEARCH } from '#lib/constants/index.ts';
 	import {
 		BuiltInTool,
@@ -216,10 +216,7 @@
 
 	<Popover.Content
 		align="start"
-		class={[
-			'w-[var(--bits-popover-anchor-width)] max-w-none rounded-xl border-border/50 p-0 shadow-xl',
-			className
-		]}
+		class={['w-[var(--bits-popover-anchor-width)] max-w-none rounded-xl p-0', className]}
 		{customAnchor}
 		onCloseAutoFocus={(event) => event.preventDefault()}
 		onOpenAutoFocus={(event) => event.preventDefault()}
@@ -248,7 +245,7 @@
 					{@const Icon = entry.type === FileMentionEntryType.DIRECTORY ? Folder : File}
 					<Icon
 						class={[
-							'mt-0.5 h-4 w-4 shrink-0',
+							'mt-0.5 size-icon-md shrink-0',
 							entry.type === FileMentionEntryType.DIRECTORY
 								? 'text-amber-500'
 								: 'text-muted-foreground'
@@ -261,7 +258,7 @@
 								<Tooltip.Root>
 									<Tooltip.Trigger>
 										{#snippet child({ props })}
-											<span {...props} class="truncate text-sm font-medium">{entry.name}</span>
+											<span {...props} class="truncate text-label">{entry.name}</span>
 										{/snippet}
 									</Tooltip.Trigger>
 
@@ -270,17 +267,17 @@
 									</Tooltip.Content>
 								</Tooltip.Root>
 							{:else}
-								<span class="truncate text-sm font-medium">{entry.name}</span>
+								<span class="truncate text-label">{entry.name}</span>
 							{/if}
 
 							<span
-								class="shrink-0 rounded-full bg-muted px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wide text-muted-foreground"
+								class="shrink-0 rounded-full bg-muted px-1.5 py-0.5 font-mono text-caption-sm uppercase tracking-wide text-muted-foreground"
 							>
 								{entry.type}
 							</span>
 						</div>
 
-						<span class="min-w-0 flex-1 truncate font-mono text-left text-xs">
+						<span class="min-w-0 flex-1 truncate font-mono text-left text-caption">
 							<HighlightedMatch query={trimmedQuery} text={abbreviateHome(entry.path, home)} />
 						</span>
 					</div>

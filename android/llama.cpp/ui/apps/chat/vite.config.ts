@@ -1,4 +1,5 @@
 import { buildInfoPlugin } from './scripts/vite-plugin-build-info';
+import { llamaUiPlugin } from './scripts/vite-plugin-llama-ui';
 import { nerdamerPlugin } from './scripts/vite-plugin-nerdamer';
 import { pwaManifestPlugin } from './scripts/vite-plugin-pwa-manifest';
 import { relativizeBasePlugin } from './scripts/vite-plugin-relativize-base';
@@ -15,6 +16,7 @@ import { fileURLToPath } from 'url';
 import { defineConfig, loadEnv, searchForWorkspaceRoot } from 'vite';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+const LLAMA_VOICE_SOURCE = resolve(__dirname, '../../lib/voice/src');
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const browserBaseConfig: any = {
 	enabled: true,
@@ -43,6 +45,7 @@ export default defineConfig(({ mode }) => {
 		},
 
 		plugins: [
+			llamaUiPlugin(),
 			tailwindcss(),
 			sveltekit({
 				adapter: adapter({
@@ -53,7 +56,7 @@ export default defineConfig(({ mode }) => {
 					strict: true
 				}),
 				extensions: ['.svelte', '.svx'],
-				output: { bundleStrategy: 'single' },
+				output: { bundleStrategy: 'split' },
 				paths: { relative: true },
 				// Consult https://svelte.dev/docs/kit/integrations
 				// for more information about preprocessors
@@ -74,14 +77,25 @@ export default defineConfig(({ mode }) => {
 		],
 
 		resolve: {
-			alias: {
-				'katex-fonts': resolve('node_modules/katex/dist/fonts')
-			}
+			alias: [
+				// Llama Voice has no build step in the repo: the app compiles it from source. Exact
+				// matches, so the package's root does not swallow its ./svelte entry
+				{
+					find: /^@ggml-org\/llama-voice\/svelte$/,
+					replacement: resolve(LLAMA_VOICE_SOURCE, 'svelte/index.ts')
+				},
+				{ find: /^@ggml-org\/llama-voice$/, replacement: resolve(LLAMA_VOICE_SOURCE, 'index.ts') },
+				{ find: 'katex-fonts', replacement: resolve('node_modules/katex/dist/fonts') }
+			]
 		},
 
 		server: {
 			fs: {
-				allow: [searchForWorkspaceRoot(process.cwd()), resolve(__dirname, 'tests')]
+				allow: [
+					searchForWorkspaceRoot(process.cwd()),
+					resolve(__dirname, 'tests'),
+					LLAMA_VOICE_SOURCE
+				]
 			},
 			headers: {
 				'Cross-Origin-Embedder-Policy': 'require-corp',
@@ -93,7 +107,8 @@ export default defineConfig(({ mode }) => {
 				'/props': SERVER_ORIGIN,
 				'/slots': SERVER_ORIGIN,
 				'/tools': SERVER_ORIGIN,
-				'/v1': SERVER_ORIGIN
+				// ws: realtime transcription (/v1/realtime) is a WebSocket
+				'/v1': { target: SERVER_ORIGIN, ws: true }
 			}
 		},
 
@@ -127,6 +142,8 @@ export default defineConfig(({ mode }) => {
 					],
 					test: {
 						browser: { ...browserBaseConfig, instances: [{ browser: 'chromium', headless: true }] },
+						// Llama UI's stories, shown in this Storybook too, are tested by the library itself (ui/lib/ui)
+						exclude: ['../../lib/ui/tests/**'],
 						name: 'ui'
 					}
 				}

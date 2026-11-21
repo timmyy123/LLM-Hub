@@ -1,5 +1,6 @@
 <script lang="ts">
 	import ModelsDiscoverListItem from './ModelsDiscoverList/ModelsDiscoverListItem.svelte';
+	import { Button } from '@ggml-org/llama-ui/ui/button';
 	import { Download } from '@lucide/svelte';
 	import { DialogConfirmDownload } from '#lib/components/app/dialogs/index.ts';
 	import { ModelsSection } from '#lib/components/app/index.ts';
@@ -8,7 +9,6 @@
 		ModelsDiscoverList,
 		ModelsDiscoverListSearch
 	} from '#lib/components/app/models/discover/index.ts';
-	import { Button } from '#lib/components/ui/button/index.ts';
 	import { ModelDownloadConfirmAction } from '#lib/enums/index.ts';
 	import { HuggingFaceService } from '#lib/services/index.ts';
 	import { modelsDiscoverStore, modelsStore, uiStore } from '#lib/stores/index.ts';
@@ -147,7 +147,7 @@
 			stickyClass="sticky z-10 bg-background"
 		>
 			{#snippet icon()}
-				<Download class="h-3.5 w-3.5 shrink-0" />
+				<Download class="size-icon-sm shrink-0" />
 			{/snippet}
 
 			{#each downloadEntries as entry (entry.repoWithTag)}
@@ -177,14 +177,14 @@
 	<div>
 		{#if modelsDiscoverStore.error}
 			<div class="flex flex-col items-start gap-2 p-4">
-				<p class="text-sm text-destructive">{modelsDiscoverStore.error}</p>
+				<p class="text-body-sm text-destructive">{modelsDiscoverStore.error}</p>
 
 				<Button onclick={() => void modelsDiscoverStore.fetch()} size="sm" variant="outline">
 					Retry
 				</Button>
 			</div>
 		{:else if !modelsDiscoverStore.loading && !modelsDiscoverStore.searching && modelsDiscoverStore.models.length === 0}
-			<p class="p-4 text-sm text-muted-foreground">No models found</p>
+			<p class="p-4 text-body-sm text-muted-foreground">No models found</p>
 		{:else}
 			{#if isSearching}
 				{@render catalog()}

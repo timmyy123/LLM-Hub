@@ -1,6 +1,6 @@
 <script lang="ts">
+	import { Button } from '@ggml-org/llama-ui/ui/button';
 	import { InputWithSuggestions } from '#lib/components/app/index.ts';
-	import { Button } from '#lib/components/ui/button/index.ts';
 	import { MIN_AUTOCOMPLETE_INPUT_LENGTH } from '#lib/constants/index.ts';
 	import { KeyboardKey } from '#lib/enums/index.ts';
 	import { mcpStore } from '#lib/stores/index.ts';
@@ -157,14 +157,14 @@
 
 	{#if isComplete}
 		<div class="rounded-md bg-muted/50 px-3 py-2">
-			<p class="text-xs text-muted-foreground">Resolved URI:</p>
+			<p class="text-caption text-muted-foreground">Resolved URI:</p>
 
-			<p class="mt-0.5 font-mono text-xs break-all">{expandedUri}</p>
+			<p class="mt-0.5 font-mono text-caption break-all">{expandedUri}</p>
 		</div>
 	{/if}
 
 	<div class="flex justify-end gap-2 pt-1">
-		<Button onclick={onCancel} size="sm" type="button" variant="secondary">Cancel</Button>
+		<Button onclick={onCancel} size="sm" type="button" variant="outline">Cancel</Button>
 
 		<Button disabled={!isComplete} size="sm" type="submit">Read Resource</Button>
 	</div>
