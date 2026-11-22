@@ -507,8 +507,8 @@ enum DeviceSelfTests {
         return failures
     }
 
-    /// Flash streaming with the prompt read on the CPU, then on the GPU (Metal), on the same long prompt: the time to
-    /// the first word is mostly prompt reading. Decode is on the CPU in both. Same download rules as flash-moe.
+    /// Flash streaming on the CPU, then with the GPU backend (layers on Metal from the GPU layers setting), on the same
+    /// long prompt: the time to the first word is mostly prompt reading. Same download rules as flash-moe.
     static func checkFlashStreamingGpuPrefill() async throws -> [String] {
         let backend = LLMBackend.shared
         guard let model = ModelData.allModels().first(where: {
@@ -531,7 +531,7 @@ enum DeviceSelfTests {
             backend.selectedBackend = gpu ? "GPU" : "CPU"
             var started = Date()
             try await backend.loadModel(model)
-            let label = gpu ? "GPU prefill" : "CPU prefill"
+            let label = gpu ? "GPU \(UserDefaults.standard.object(forKey: "gpu_layers_\(model.id)") as? Int ?? backend.modelMaxGpuLayers(for: model)) layers" : "CPU"
             log("FLASH_GPU: \(model.name) \(label) loaded in \(String(format: "%.1f", Date().timeIntervalSince(started))) s")
             var reply = ""
             var speed = 0.0

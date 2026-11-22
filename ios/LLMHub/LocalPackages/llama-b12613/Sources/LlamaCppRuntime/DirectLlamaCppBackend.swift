@@ -46,13 +46,13 @@ public actor DirectLlamaCppBackend {
     public func load(path: String, projector: String?, contextSize: Int, gpuLayers: Int, flashStreaming: Bool = false) throws {
         if modelPath == path, projectorPath == projector,
            configuredContext == contextSize, configuredFlash == flashStreaming,
-           flashStreaming ? (configuredGpuLayers > 0) == (gpuLayers > 0) : configuredGpuLayers == gpuLayers,
+           configuredGpuLayers == gpuLayers,
            model != nil, context != nil || flash != nil {
             return
         }
         unload()
         if flashStreaming {
-            try loadFlash(path: path, projector: projector, contextSize: contextSize, gpuPrefill: gpuLayers > 0)
+            try loadFlash(path: path, projector: projector, contextSize: contextSize, gpuLayers: gpuLayers)
             return
         }
 
@@ -97,8 +97,8 @@ public actor DirectLlamaCppBackend {
         configuredFlash = false
     }
 
-    /// With `gpuPrefill` (the GPU backend selected) the prompt is read on Metal; decode is on the CPU either way.
-    private func loadFlash(path: String, projector: String?, contextSize: Int, gpuPrefill: Bool) throws {
+    /// `gpuLayers` go to Metal as for any GGUF load (the GPU layers slider); the routed experts stream from storage.
+    private func loadFlash(path: String, projector: String?, contextSize: Int, gpuLayers: Int) throws {
         var vocabParams = llama_model_default_params()
         vocabParams.vocab_only = true
         vocabParams.n_gpu_layers = 0
@@ -110,7 +110,7 @@ public actor DirectLlamaCppBackend {
         let session = path.withCString { modelPointer in
             (projector ?? "").withCString { projectorPointer in
                 llmhub_bmoe_open(modelPointer, projector == nil ? nil : projectorPointer,
-                                 Int32(max(512, contextSize)), Int32(threads), gpuPrefill ? 1 : 0, &error, error.count)
+                                 Int32(max(512, contextSize)), Int32(threads), Int32(max(0, gpuLayers)), &error, error.count)
             }
         }
         guard let session else {
@@ -122,7 +122,7 @@ public actor DirectLlamaCppBackend {
         modelPath = path
         projectorPath = projector
         configuredContext = contextSize
-        configuredGpuLayers = gpuPrefill ? 1 : 0
+        configuredGpuLayers = gpuLayers
         configuredFlash = true
     }
 
