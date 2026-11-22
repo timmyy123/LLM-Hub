@@ -5,9 +5,9 @@ import android.util.Log
 import androidx.test.platform.app.InstrumentationRegistry
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import com.llmhub.llmhub.data.DeviceInfo
-import com.llmhub.llmhub.data.LLMModel
-import com.llmhub.llmhub.data.ModelRequirements
+import com.llmhub.llmhub.data.ModelData
 import com.llmhub.llmhub.data.localFileName
+import com.llmhub.llmhub.imagegen.OnDeviceFixtures
 import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
@@ -19,34 +19,21 @@ import java.io.File
 
 /**
  * Opt-in physical-device check of the Aion architecture patch (microsoft/Aion-1.0-Instruct-2.3B, `aion` in the
- * vendored llama.cpp and the rebuilt Snapdragon libllama.so) with a locally converted Q4_0 GGUF. The model is not in
- * the catalog yet, so the GGUF must already be in the app's models folder:
- *
- *   adb shell "cat /data/local/tmp/Aion-1.0-Instruct-2.3B-Q4_0.gguf | run-as <package> sh -c 'cat > files/models/Aion-1.0-Instruct-2.3B-Q4_0.gguf'"
+ * vendored llama.cpp and the rebuilt Snapdragon libllama.so) with the catalog's Q4_0 GGUF, downloaded on the device
+ * from its pinned URL and checked against its SHA-256 (about 1.4 GB).
  *
  * Each scenario loads through [LlamaCppInferenceService] as the app does, asserts the backend it really ran on and
  * logs a `RESULT` line with the decode speed. Run them one at a time with `-e class ...LlamaCppAionDeviceTest#<name>`.
  */
 class LlamaCppAionDeviceTest {
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
-    private val model = LLMModel(
-        name = "Aion 1.0 Instruct 2.3B (Q4_0)",
-        description = "Microsoft Aion 1.0 Instruct 2.3B, Q4_0 (local test build).",
-        url = "https://example.invalid/Aion-1.0-Instruct-2.3B-Q4_0.gguf",
-        category = "text",
-        sizeBytes = 1401770144L,
-        source = "Microsoft",
-        supportsVision = false,
-        supportsGpu = true,
-        requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 4),
-        contextWindowSize = 32768,
-        modelFormat = "gguf",
-    )
+    private val model = ModelData.models.first { it.name == "Aion 1.0 Instruct 2.3B (Q4_0)" }
 
     @Before fun setUp() {
         DeviceInfo.init(context)
-        val file = File(File(context.filesDir, "models"), model.localFileName())
-        assumeTrue("Copy the Aion GGUF to ${file.absolutePath} first", file.isFile)
+        val file = File(File(context.filesDir, "models").apply { mkdirs() }, model.localFileName())
+        // The catalog download; skipped when a copy with the same SHA-256 is already there.
+        OnDeviceFixtures.download(file, model.url, SHA256)
     }
 
     @Test fun textCpu() = runBlocking { askCapital(LlmInference.Backend.CPU, null) }
@@ -88,5 +75,8 @@ class LlamaCppAionDeviceTest {
         }
     }
 
-    private companion object { const val TAG = "LlamaCppAion" }
+    private companion object {
+        const val TAG = "LlamaCppAion"
+        const val SHA256 = "82a71c2311e3803a166aa11da844d4b547839ed2d941c1384e812e29070519be"
+    }
 }

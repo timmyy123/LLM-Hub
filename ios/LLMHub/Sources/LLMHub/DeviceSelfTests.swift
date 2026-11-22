@@ -345,21 +345,28 @@ enum DeviceSelfTests {
         defer { Task { await backend.unload() } }
         log("AION_TEST: loaded in \(Int(Date().timeIntervalSince(started) * 1000)) ms")
 
-        func aionPrompt(_ user: String) -> String {
-            "<|system|>You are Aion Instruct, a large language model trained by Microsoft.\nKnowledge cutoff: 2025-12<|end|>"
-                + "<|user|>\(user)<|end|><|assistant|>"
+        // LLMBackend formats GGUF prompts with the model's template (applyChatTemplate), which must resolve to the
+        // `aion` built-in template from llmhub-aion.patch rather than Phi-3's.
+        var failures = [String]()
+        func aionPrompt(_ user: String) async -> String {
+            await backend.applyChatTemplate(systemPrompt: nil, userPrompt: user) ?? ""
+        }
+        let templated = await aionPrompt("Hi")
+        log("AION_TEST: template=\(templated.debugDescription)")
+        if !templated.hasPrefix("<|system|>You are Aion Instruct, a large language model trained by Microsoft.\nKnowledge cutoff: 2025-12")
+            || !templated.hasSuffix("<|end|><|user|>Hi<|end|><|assistant|>") {
+            failures.append("Aion chat template: \(templated.debugDescription)")
         }
         func reply(_ user: String, maxTokens: Int) async throws -> (String, Double) {
             var text = ""
             var rate = 0.0
             let stream = await backend.stream(
-                prompt: aionPrompt(user), imageData: nil, maxTokens: maxTokens,
+                prompt: await aionPrompt(user), imageData: nil, maxTokens: maxTokens,
                 temperature: 0, topK: 1, topP: 1, stopSequences: ["<|end|>"])
             for try await update in stream { text = update.text; rate = update.tokensPerSecond }
             return (text, rate)
         }
 
-        var failures = [String]()
         let (answer, _) = try await reply("What is the capital of France? Answer in one word.", maxTokens: 32)
         log("AION_TEST: direct reply=\(answer.prefix(200))")
         if !answer.localizedCaseInsensitiveContains("Paris") { failures.append("Aion answer: \(answer)") }

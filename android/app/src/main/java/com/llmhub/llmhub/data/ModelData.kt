@@ -3411,6 +3411,22 @@ object ModelData {
             modelFormat = "gguf"
         ),
 
+        // Aion 1.0 Instruct 2.3B (Microsoft, MIT; `aion` architecture from the local llama.cpp patch, see
+        // android/llama.cpp/LLMHUB_VERSION.md). Converted to Q4_0 from the Hugging Face weights; hosted in a public mirror.
+        LLMModel(
+            name = "Aion 1.0 Instruct 2.3B (Q4_0)",
+            description = "Microsoft's Aion 1.0 Instruct 2.3B, the small model built for on-device use in Windows. Q4_0 quantization, matching the block-32 int4 it was trained for. 32k context. MIT license. (1.40GB)",
+            url = "https://huggingface.co/timmyboy26/aion-1.0-instruct-2.3b-q4_0-gguf/resolve/b783c0eec446e1c4f02b60d2ca7a6e60e0533d7f/Aion-1.0-Instruct-2.3B-Q4_0.gguf?download=true",
+            category = "text",
+            sizeBytes = 1401770144L,
+            source = "Microsoft",
+            supportsVision = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 4),
+            contextWindowSize = 32768,
+            modelFormat = "gguf"
+        ),
+
         // LFM3 VL 2B Models (Vision-Language GGUF, lfm3 architecture + lfm3vl projector; images only, no video in llama.cpp yet)
         LLMModel(
             name = "LFM3 VL 2B (Q4_0)",
