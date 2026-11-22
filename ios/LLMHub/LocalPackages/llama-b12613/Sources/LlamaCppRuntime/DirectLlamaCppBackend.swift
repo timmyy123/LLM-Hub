@@ -38,21 +38,25 @@ public actor DirectLlamaCppBackend {
     /// larger than the device's memory runs on the CPU. `model` then holds only the vocabulary, for the chat template.
     private var flash: OpaquePointer?
     private var configuredFlash = false
+    private var configuredGpuPrefill = false
 
     private init() {
         llama_backend_init()
     }
 
-    public func load(path: String, projector: String?, contextSize: Int, gpuLayers: Int, flashStreaming: Bool = false) throws {
+    /// With `flashStreaming`, `gpuPrefill` (the GPU backend selected) reads the prompt on the GPU when `gpuLayers` is 0.
+    public func load(path: String, projector: String?, contextSize: Int, gpuLayers: Int, flashStreaming: Bool = false,
+                     gpuPrefill: Bool = false) throws {
         if modelPath == path, projectorPath == projector,
            configuredContext == contextSize, configuredFlash == flashStreaming,
-           configuredGpuLayers == gpuLayers,
+           configuredGpuLayers == gpuLayers, !flashStreaming || configuredGpuPrefill == gpuPrefill,
            model != nil, context != nil || flash != nil {
             return
         }
         unload()
         if flashStreaming {
-            try loadFlash(path: path, projector: projector, contextSize: contextSize, gpuLayers: gpuLayers)
+            try loadFlash(path: path, projector: projector, contextSize: contextSize, gpuLayers: gpuLayers,
+                          gpuPrefill: gpuPrefill)
             return
         }
 
@@ -97,8 +101,9 @@ public actor DirectLlamaCppBackend {
         configuredFlash = false
     }
 
-    /// `gpuLayers` go to Metal as for any GGUF load (the GPU layers slider); the routed experts stream from storage.
-    private func loadFlash(path: String, projector: String?, contextSize: Int, gpuLayers: Int) throws {
+    /// The routed experts stream from storage; `gpuLayers` dense layers go to Metal, or with none `gpuPrefill` reads
+    /// the prompt there.
+    private func loadFlash(path: String, projector: String?, contextSize: Int, gpuLayers: Int, gpuPrefill: Bool) throws {
         var vocabParams = llama_model_default_params()
         vocabParams.vocab_only = true
         vocabParams.n_gpu_layers = 0
@@ -110,7 +115,7 @@ public actor DirectLlamaCppBackend {
         let session = path.withCString { modelPointer in
             (projector ?? "").withCString { projectorPointer in
                 llmhub_bmoe_open(modelPointer, projector == nil ? nil : projectorPointer,
-                                 Int32(max(512, contextSize)), Int32(threads), Int32(max(0, gpuLayers)), &error, error.count)
+                                 Int32(max(512, contextSize)), Int32(threads), gpuPrefill ? 1 : 0, Int32(max(0, gpuLayers)), &error, error.count)
             }
         }
         guard let session else {
@@ -123,6 +128,7 @@ public actor DirectLlamaCppBackend {
         projectorPath = projector
         configuredContext = contextSize
         configuredGpuLayers = gpuLayers
+        configuredGpuPrefill = gpuPrefill
         configuredFlash = true
     }
 

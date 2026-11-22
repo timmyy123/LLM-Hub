@@ -22,7 +22,7 @@ void set_error(char * error, size_t size, const std::string & message) {
 } // namespace
 
 extern "C" llmhub_bmoe * llmhub_bmoe_open(const char * model_path, const char * mmproj_path, int context_size,
-                                          int threads, int gpu_layers, char * error, size_t error_size) {
+                                          int threads, int gpu_prefill, int gpu_layers, char * error, size_t error_size) {
     bmoe::SessionConfig cfg;
     cfg.model_path = model_path != nullptr ? model_path : "";
     cfg.mmproj = mmproj_path != nullptr ? mmproj_path : "";
@@ -44,13 +44,24 @@ extern "C" llmhub_bmoe * llmhub_bmoe_open(const char * model_path, const char * 
     cfg.moe.io_threads = 4;
     cfg.moe.o_direct = true;
     if (gpu_layers > 0) {
-        // Layers on the GPU as for any GGUF load (the app's GPU layers setting); the engine keeps streaming the
-        // routed experts from storage.
+        // Layers on the GPU by the app's GPU layers setting. Only their dense weights go there: the expert weights stay
+        // in host memory, where the streamer serves them (llama.cpp's -ot exps=CPU). The GPU copy shares the RAM, so
+        // the expert cache leaves room for it; sized without it, the app passed iOS's limit and was killed.
         cfg.n_gpu_layers = gpu_layers;
         cfg.device_use = bmoe::DeviceUse::Auto;
-        // The expert weights stay in host memory, where the streamer serves them (llama.cpp's -ot exps=CPU); without
-        // this the GPU layers take their experts too and there is nothing left to stream.
         cfg.buft_overrides = {"\\.ffn_(up|down|gate_up|gate)_(ch|)exps"};
+        cfg.moe.cache_floor_mb += 1536;
+    } else if (gpu_prefill != 0) {
+        // Prompt reading on Metal, decode on the CPU: a one-token decode is faster on the cores, while a wide prefill
+        // graph runs several times faster on the GPU (iPhone 15 Pro Max, LFM2.5-24B-A2B Q2_K_L, ~900 tokens: first
+        // word 7.2 s against 57.8 s). The GPU's expert slots are held only while a prefill runs. No load-time check
+        // (verified on devices in testing); a GPU that cannot open fails the load instead of silently using the CPU.
+        cfg.n_batch = 2048;
+        cfg.n_ubatch = 2048;
+        cfg.prefill.device = "MTL0";
+        cfg.prefill.slots_on_demand = true;
+        cfg.prefill.verify = false;
+        cfg.prefill.best_effort = false;
     }
     std::string message;
     auto session = bmoe::Session::open(cfg, message);

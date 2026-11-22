@@ -557,7 +557,7 @@ struct FeatureModelSettingsSheet: View {
                                         onCommit: { saveGpuLayers(gpuLayersTemp) }
                                     )
                                     .padding(.top, 8)
-                                    FlashStreamingToggle(model: model)
+                                    FlashStreamingToggle(model: model, onChange: loadInitialGpuLayers)
                                         .padding(.top, 8)
                                 }
                             }
@@ -729,6 +729,12 @@ struct FeatureModelSettingsSheet: View {
     private func loadInitialGpuLayers() {
         guard let selectedModel = selectedModel else { return }
         let limit = LLMBackend.shared.modelMaxGpuLayers(for: selectedModel)
+        if LLMBackend.shared.isFlashStreaming(selectedModel) {
+            // Flash streaming keeps its own count, 0 by default (prompt reading on the GPU).
+            gpuLayerLimit = Double(limit)
+            gpuLayersTemp = min(Double(LLMBackend.shared.storedGpuLayers(for: selectedModel, flashStreaming: true)), gpuLayerLimit)
+            return
+        }
         let key = "gpu_layers_\(selectedModel.id)"
         let hasStored = UserDefaults.standard.object(forKey: key) != nil
         let stored = hasStored ? UserDefaults.standard.integer(forKey: key) : -1
@@ -749,7 +755,7 @@ struct FeatureModelSettingsSheet: View {
 
     private func saveGpuLayers(_ value: Double) {
         guard let selectedModel = selectedModel else { return }
-        let key = "gpu_layers_\(selectedModel.id)"
+        let key = LLMBackend.gpuLayersKey(for: selectedModel, flashStreaming: LLMBackend.shared.isFlashStreaming(selectedModel))
         let intValue = Int32(min(max(0, value), gpuLayerLimit))
         UserDefaults.standard.set(intValue, forKey: key)
 

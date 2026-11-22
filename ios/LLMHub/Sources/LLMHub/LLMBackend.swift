@@ -952,14 +952,12 @@ class LLMBackend: ObservableObject {
             let contextSize = clampedContextWindow(contextWindow, for: model)
             let isCPU = selectedBackend.caseInsensitiveCompare("CPU") == .orderedSame
             let maxLayers = modelMaxGpuLayers(for: model)
-            let storedLayers = UserDefaults.standard.object(forKey: "gpu_layers_\(model.id)") != nil
-                ? UserDefaults.standard.integer(forKey: "gpu_layers_\(model.id)") : maxLayers
-            let effectiveLayers = (storedLayers == 999 && maxLayers != GGUFLayerLimits.unknown) ? maxLayers : storedLayers
-            let gpuLayers = isCPU ? 0 : max(0, effectiveLayers)
+            let flash = Self.flashStreamingEnabled(for: model, path: modelPath)
+            let gpuLayers = isCPU ? 0 : storedGpuLayers(for: model, flashStreaming: flash)
             try await DirectLlamaCppBackend.shared.load(
                 path: modelPath, projector: projector,
                 contextSize: contextSize, gpuLayers: gpuLayers,
-                flashStreaming: Self.flashStreamingEnabled(for: model, path: modelPath)
+                flashStreaming: flash, gpuPrefill: !isCPU
             )
             isLoaded = true
             currentlyLoadedModel = model.name
@@ -979,6 +977,28 @@ class LLMBackend: ObservableObject {
     }
 
     static func flashStreamingKey(for model: AIModel) -> String { "flash_streaming_\(model.id)" }
+
+    /// The GPU layers setting's key. Flash-streamed models keep their own, defaulting to 0 (prompt reading on the GPU,
+    /// decode on the CPU); raising it puts that many dense layers on the GPU.
+    static func gpuLayersKey(for model: AIModel, flashStreaming: Bool) -> String {
+        flashStreaming ? "flash_gpu_layers_\(model.id)" : "gpu_layers_\(model.id)"
+    }
+
+    /// Whether `model` loads with flash streaming, from its downloaded file; false when it is not downloaded.
+    func isFlashStreaming(_ model: AIModel) -> Bool {
+        guard model.modelFormat == .gguf, let path = try? resolveModelGGUFPath(for: model) else { return false }
+        return Self.flashStreamingEnabled(for: model, path: path)
+    }
+
+    /// The saved GPU layer count for a GPU load: all layers by default, 0 by default under flash streaming.
+    func storedGpuLayers(for model: AIModel, flashStreaming: Bool) -> Int {
+        let maxLayers = modelMaxGpuLayers(for: model)
+        let key = Self.gpuLayersKey(for: model, flashStreaming: flashStreaming)
+        guard UserDefaults.standard.object(forKey: key) != nil else { return flashStreaming ? 0 : maxLayers }
+        let stored = UserDefaults.standard.integer(forKey: key)
+        if !flashStreaming, stored == 999, maxLayers != GGUFLayerLimits.unknown { return maxLayers }
+        return max(0, stored)
+    }
 
     // MARK: - LiteRT-LM load path
 
@@ -1195,13 +1215,12 @@ class LLMBackend: ObservableObject {
                 }
                 let path = try resolveModelGGUFPath(for: model)
                 let isCPU = selectedBackend.caseInsensitiveCompare("CPU") == .orderedSame
-                let layers = UserDefaults.standard.object(forKey: "gpu_layers_\(model.id)") != nil
-                    ? UserDefaults.standard.integer(forKey: "gpu_layers_\(model.id)") : 999
+                let flash = Self.flashStreamingEnabled(for: model, path: path)
                 try await DirectLlamaCppBackend.shared.load(
                     path: path, projector: projector,
                     contextSize: clampedContextWindow(contextWindow, for: model),
-                    gpuLayers: isCPU ? 0 : max(0, layers),
-                    flashStreaming: Self.flashStreamingEnabled(for: model, path: path)
+                    gpuLayers: isCPU ? 0 : storedGpuLayers(for: model, flashStreaming: flash),
+                    flashStreaming: flash, gpuPrefill: !isCPU
                 )
                 #if canImport(UIKit)
                 // Keep vision input at 448 pixels. Sending the full-resolution photo makes

@@ -12,11 +12,12 @@ extern "C" {
 
 typedef struct llmhub_bmoe llmhub_bmoe;
 
-/// Opens `model_path` (and the vision projector `mmproj_path`, or NULL) with `gpu_layers` layers on the GPU (Metal),
-/// like any GGUF load; the routed experts stream from storage either way. Returns NULL on failure with the reason in
+/// Opens `model_path` (and the vision projector `mmproj_path`, or NULL). The routed experts always stream from storage.
+/// `gpu_layers` > 0 puts that many layers' dense weights on the GPU (Metal); otherwise `gpu_prefill` reads the prompt
+/// on the GPU with decode on the CPU (the engine cannot combine the two). Returns NULL on failure with the reason in
 /// `error` (NUL-terminated, truncated to `error_size`).
 llmhub_bmoe * llmhub_bmoe_open(const char * model_path, const char * mmproj_path, int context_size, int threads,
-                               int gpu_layers, char * error, size_t error_size);
+                               int gpu_prefill, int gpu_layers, char * error, size_t error_size);
 void llmhub_bmoe_free(llmhub_bmoe * session);
 
 /// 1 when a vision projector is loaded.

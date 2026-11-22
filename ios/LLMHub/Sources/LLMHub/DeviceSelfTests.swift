@@ -531,7 +531,7 @@ enum DeviceSelfTests {
             backend.selectedBackend = gpu ? "GPU" : "CPU"
             var started = Date()
             try await backend.loadModel(model)
-            let label = gpu ? "GPU \(UserDefaults.standard.object(forKey: "gpu_layers_\(model.id)") as? Int ?? backend.modelMaxGpuLayers(for: model)) layers" : "CPU"
+            let label = gpu ? "GPU \(backend.storedGpuLayers(for: model, flashStreaming: true)) layers" : "CPU"
             log("FLASH_GPU: \(model.name) \(label) loaded in \(String(format: "%.1f", Date().timeIntervalSince(started))) s")
             var reply = ""
             var speed = 0.0
