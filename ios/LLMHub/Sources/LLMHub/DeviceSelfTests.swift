@@ -30,6 +30,7 @@ enum DeviceSelfTests {
                     case "lfm3": failures += try await checkLfm3Text()
                     case "lfm3-vl": failures += try await checkLfm3Vision()
                     case "gemma4": failures += try await checkGemma4LiteRT()
+                    case "aion-gguf": failures += try await checkAionGguf()
                     default: failures.append("Unknown self-test \(check)")
                     }
                 } catch {
@@ -321,6 +322,52 @@ enum DeviceSelfTests {
             if !reply.localizedCaseInsensitiveContains("Paris") { failures.append("Gemma 4 thinking=\(thinking): \(reply.suffix(200))") }
         }
         await backend.unload()
+        return failures
+    }
+
+    // MARK: - Aion (llama.cpp b12613 with llmhub-aion.patch)
+
+    private static let aionURL = "https://huggingface.co/timmyboy26/aion-1.0-instruct-2.3b-q4_0-gguf/resolve/b783c0eec446e1c4f02b60d2ca7a6e60e0533d7f/Aion-1.0-Instruct-2.3B-Q4_0.gguf"
+    private static let aionSHA256 = "82a71c2311e3803a166aa11da844d4b547839ed2d941c1384e812e29070519be"
+
+    /// Downloads Aion 1.0 Instruct 2.3B Q4_0 (pinned, SHA-256 checked, about 1.4 GB), which needs the `aion`
+    /// architecture from llmhub-aion.patch, loads every layer on the GPU and asks a one-word question and for a
+    /// paragraph, in Aion's chat format. Logs the decode speed. Returns failures.
+    static func checkAionGguf() async throws -> [String] {
+        // A copy already placed in Documents (devicectl) is used when its SHA-256 matches.
+        let local = documents.appendingPathComponent("llmhub-test-Aion-1.0-Instruct-2.3B-Q4_0.gguf")
+        let model = FileManager.default.fileExists(atPath: local.path) && (try? sha256(local)) == aionSHA256
+            ? local : try await downloadPinned(aionURL, sha256: aionSHA256)
+        defer { try? FileManager.default.removeItem(at: model) }
+        let backend = DirectLlamaCppBackend.shared
+        let started = Date()
+        try await backend.load(path: model.path, projector: nil, contextSize: 4096, gpuLayers: 99)
+        defer { Task { await backend.unload() } }
+        log("AION_TEST: loaded in \(Int(Date().timeIntervalSince(started) * 1000)) ms")
+
+        func aionPrompt(_ user: String) -> String {
+            "<|system|>You are Aion Instruct, a large language model trained by Microsoft.\nKnowledge cutoff: 2025-12<|end|>"
+                + "<|user|>\(user)<|end|><|assistant|>"
+        }
+        func reply(_ user: String, maxTokens: Int) async throws -> (String, Double) {
+            var text = ""
+            var rate = 0.0
+            let stream = await backend.stream(
+                prompt: aionPrompt(user), imageData: nil, maxTokens: maxTokens,
+                temperature: 0, topK: 1, topP: 1, stopSequences: ["<|end|>"])
+            for try await update in stream { text = update.text; rate = update.tokensPerSecond }
+            return (text, rate)
+        }
+
+        var failures = [String]()
+        let (answer, _) = try await reply("What is the capital of France? Answer in one word.", maxTokens: 32)
+        log("AION_TEST: direct reply=\(answer.prefix(200))")
+        if !answer.localizedCaseInsensitiveContains("Paris") { failures.append("Aion answer: \(answer)") }
+
+        let (paragraph, rate) = try await reply(
+            "Write one paragraph of about 150 words about the history of the Eiffel Tower.", maxTokens: 400)
+        log("AION_TEST: paragraph tokPerSec=\(String(format: "%.1f", rate)) text=\(paragraph.prefix(800))")
+        if !paragraph.localizedCaseInsensitiveContains("Eiffel") { failures.append("Aion paragraph: \(paragraph.prefix(300))") }
         return failures
     }
 
