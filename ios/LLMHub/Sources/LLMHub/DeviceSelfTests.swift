@@ -31,6 +31,17 @@ enum DeviceSelfTests {
                     case "lfm3-vl": failures += try await checkLfm3Vision()
                     case "gemma4": failures += try await checkGemma4LiteRT()
                     case "aion-gguf": failures += try await checkAionGguf()
+                    case "aion": failures += try await checkAionLiteRT(gpu: true)
+                    case "aion-cpu": failures += try await checkAionLiteRT(gpu: false)
+                    case "aion-clean":
+                        // Staged and catalog test copies, plus downloads an interrupted run left in tmp.
+                        let fm = FileManager.default
+                        try? fm.removeItem(at: documents.appendingPathComponent("aion.litertlm"))
+                        try? fm.removeItem(at: documents.appendingPathComponent("llmhub-test-Aion-1.0-Instruct-2.3B_q8_ekv4096.litertlm"))
+                        for name in (try? fm.contentsOfDirectory(atPath: NSTemporaryDirectory())) ?? [] where name.hasPrefix("CFNetworkDownload") {
+                            try? fm.removeItem(atPath: (NSTemporaryDirectory() as NSString).appendingPathComponent(name))
+                        }
+                    case "aion-catalog": failures += try await checkAionCatalogLiteRT()
                     default: failures.append("Unknown self-test \(check)")
                     }
                 } catch {
@@ -375,6 +386,85 @@ enum DeviceSelfTests {
             "Write one paragraph of about 150 words about the history of the Eiffel Tower.", maxTokens: 400)
         log("AION_TEST: paragraph tokPerSec=\(String(format: "%.1f", rate)) text=\(paragraph.prefix(800))")
         if !paragraph.localizedCaseInsensitiveContains("Eiffel") { failures.append("Aion paragraph: \(paragraph.prefix(300))") }
+        return failures
+    }
+
+    /// Aion 1.0 Instruct 2.3B as LiteRT-LM int8 (timmyboy26/aion-1.0-instruct-2.3b-litert-lm) staged as Documents/aion.litertlm.
+    /// The recall prompt puts a code before ~2,800 tokens of filler, past Aion's 2,048-token sliding window, so only its
+    /// full-attention layers can still see it.
+    static func checkAionLiteRT(gpu: Bool) async throws -> [String] {
+        let model = documents.appendingPathComponent("aion.litertlm")
+        // The app's container is sandboxed, so `-AionModelURL http://127.0.0.1:PORT/aion.litertlm` fetches it once.
+        let arguments = ProcessInfo.processInfo.arguments
+        if gpu, let i = arguments.firstIndex(of: "-AionModelURL"), i + 1 < arguments.count, let url = URL(string: arguments[i + 1]) {
+            let (temp, _) = try await URLSession.shared.download(from: url)
+            try? FileManager.default.removeItem(at: model)
+            try FileManager.default.moveItem(at: temp, to: model)
+            log("AION_TEST: fetched \(url) to Documents")
+        }
+        guard FileManager.default.fileExists(atPath: model.path) else { return ["Stage \(model.path) first"] }
+        let tag = "AION_TEST[\(gpu ? "gpu" : "cpu")]"
+        let backend = LiteRTLMBackend.shared
+        let started = Date()
+        try await backend.loadModel(
+            at: model.path, modelName: "Aion 1.0 Instruct 2.3B (LiteRT-LM test)", supportsVision: false, supportsAudio: false,
+            supportsGpu: gpu, supportsMtp: false, maxTokens: 4096)
+        log("\(tag): loaded in \(String(format: "%.1f", Date().timeIntervalSince(started))) s")
+        let filler = (1...200).map { "Log entry \($0): the routine inspection of section \($0) found nothing unusual." }.joined(separator: " ")
+        let cases: [(String, String, String?)] = [
+            ("capital", "What is the capital of France? Answer in one word.", "Paris"),
+            ("explain", "Explain in three sentences why the sky is blue.", nil),
+            ("recall", "Remember this: the access code for the archive is BLUE-HERON-4417.\n\n\(filler)\n\n" +
+                "What is the access code for the archive? Reply with the code only.", "4417"),
+            ("german", "Wie heißt die Hauptstadt von Deutschland? Antworte mit einem Wort.", "Berlin"),
+        ]
+        var failures = [String]()
+        for (label, prompt, expected) in cases {
+            var reply = ""
+            var speed = 0.0
+            let t0 = Date()
+            try await backend.generateStream(
+                prompt: prompt, imageURL: nil, audioURL: nil, systemPrompt: nil,
+                temperature: 0, topK: 1, topP: 1, maxTokens: 1024, useThinking: false, enableAgentTools: false
+            ) { text, _, tokensPerSecond in reply = text; speed = tokensPerSecond }
+            log("\(tag) \(label): \(String(format: "%.1f", Date().timeIntervalSince(t0))) s decode tok/s=\(String(format: "%.1f", speed)) reply=\(reply.prefix(800))")
+            if let expected, !reply.localizedCaseInsensitiveContains(expected) { failures.append("\(tag) \(label): \(reply.prefix(300))") }
+        }
+        await backend.unload()
+        return failures
+    }
+
+    /// The catalog's "Aion 1.0 Instruct 2.3B (LiteRT-LM)" entry: downloads its pinned Hugging Face file (SHA-256 checked,
+    /// 2.33 GB), loads it as the app does (GPU, the entry's MTP and context settings) and chats in the plain
+    /// "User: ... / Assistant:" form ChatScreen builds for Aion, including a follow-up that needs the history.
+    static func checkAionCatalogLiteRT() async throws -> [String] {
+        guard let entry = ModelData.allModels().first(where: { $0.name == "Aion 1.0 Instruct 2.3B (LiteRT-LM)" }) else {
+            return ["No Aion LiteRT-LM catalog entry"]
+        }
+        let model = try await downloadPinned(entry.url.replacingOccurrences(of: "?download=true", with: ""),
+                                             sha256: "ac4a1d75a948123c7365a50cb75fb27d28da5aad670d22e8ff3f91714749bc1f")
+        defer { try? FileManager.default.removeItem(at: model) }
+        let backend = LiteRTLMBackend.shared
+        try await backend.loadModel(
+            at: model.path, modelName: entry.name, supportsVision: entry.supportsVision, supportsAudio: entry.supportsAudio,
+            supportsGpu: entry.supportsGpu, supportsMtp: entry.supportsMtp, maxTokens: entry.contextWindowSize)
+        func chat(_ prompt: String) async throws -> String {
+            var reply = ""
+            var speed = 0.0
+            try await backend.generateStream(
+                prompt: prompt, imageURL: nil, audioURL: nil, systemPrompt: nil,
+                temperature: 0, topK: 1, topP: 1, maxTokens: 256, useThinking: false, enableAgentTools: false
+            ) { text, _, tokensPerSecond in reply = text; speed = tokensPerSecond }
+            log("AION_CATALOG: decode tok/s=\(String(format: "%.1f", speed)) reply=\(reply.prefix(300))")
+            return reply
+        }
+        var failures = [String]()
+        let first = try await chat("User: What is the capital of France? Answer in one word.\nAssistant:")
+        if !first.localizedCaseInsensitiveContains("Paris") { failures.append("Aion catalog answer: \(first.prefix(200))") }
+        let second = try await chat("User: What is the capital of France? Answer in one word.\nAssistant: \(first)\n" +
+            "User: And what river runs through it? Answer in one word.\nAssistant:")
+        if !second.localizedCaseInsensitiveContains("Seine") { failures.append("Aion catalog follow-up: \(second.prefix(200))") }
+        await backend.unload()
         return failures
     }
 

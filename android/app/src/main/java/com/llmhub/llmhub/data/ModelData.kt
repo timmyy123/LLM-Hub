@@ -3426,6 +3426,23 @@ object ModelData {
             contextWindowSize = 32768,
             modelFormat = "gguf"
         ),
+        // The same model as LiteRT-LM int8 (litert-torch export, stock LiteRT-LM, no runtime patch). Its embedded chat
+        // template also accepts list-of-parts content. The KV cache is fixed at 4,096 tokens and there is no MTP drafter.
+        // GPU was killed for memory on 4-6 GB phones in Device Farm, hence 8 GB.
+        LLMModel(
+            name = "Aion 1.0 Instruct 2.3B (LiteRT-LM)",
+            description = "Microsoft's Aion 1.0 Instruct 2.3B, the small model built for on-device use in Windows, in LiteRT-LM format. INT8 quantization, runs on CPU and GPU. 4k context. MIT license. (2.33GB)",
+            url = "https://huggingface.co/timmyboy26/aion-1.0-instruct-2.3b-litert-lm/resolve/98f0ae6116bcdbff88044551d8bca77d9765c97a/Aion-1.0-Instruct-2.3B_q8_ekv4096.litertlm?download=true",
+            category = "text",
+            sizeBytes = 2333097680L,
+            source = "Microsoft",
+            supportsVision = false,
+            supportsGpu = true,
+            supportsMtp = false,
+            requirements = ModelRequirements(minRamGB = 8, recommendedRamGB = 12),
+            contextWindowSize = 4096,
+            modelFormat = "litertlm"
+        ),
 
         // LFM3 VL 2B Models (Vision-Language GGUF, lfm3 architecture + lfm3vl projector; images only, no video in llama.cpp yet)
         LLMModel(
