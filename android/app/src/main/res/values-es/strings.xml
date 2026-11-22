@@ -806,6 +806,8 @@
 
     <string name="gpu_layers_label">GPU Layers: %1$d</string>
     <string name="gpu_layers_hint">Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers</string>
+    <string name="flash_streaming_title">Streaming desde almacenamiento</string>
+    <string name="flash_streaming_hint">Lee los expertos del almacenamiento cuando hacen falta, para que funcionen modelos MoE más grandes que la memoria. Usa la CPU. Desactívalo para cargar el modelo completo en memoria.</string>
     <string name="thinking_toggle_label">Activar pensamiento</string>
 
     <!-- Premium / IAP -->

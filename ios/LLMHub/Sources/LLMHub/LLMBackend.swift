@@ -958,7 +958,8 @@ class LLMBackend: ObservableObject {
             let gpuLayers = isCPU ? 0 : max(0, effectiveLayers)
             try await DirectLlamaCppBackend.shared.load(
                 path: modelPath, projector: projector,
-                contextSize: contextSize, gpuLayers: gpuLayers
+                contextSize: contextSize, gpuLayers: gpuLayers,
+                flashStreaming: Self.flashStreamingEnabled(for: model, path: modelPath)
             )
             isLoaded = true
             currentlyLoadedModel = model.name
@@ -970,6 +971,14 @@ class LLMBackend: ObservableObject {
             NSLocalizedDescriptionKey: "Unsupported language model format"
         ])
     }
+
+    /// MoE GGUFs stream their experts from storage (CPU) unless the user turned flash streaming off for the model.
+    static func flashStreamingEnabled(for model: AIModel, path: String) -> Bool {
+        guard GGUFLayerLimits.isMoe(URL(fileURLWithPath: path)) else { return false }
+        return UserDefaults.standard.object(forKey: flashStreamingKey(for: model)) as? Bool ?? true
+    }
+
+    static func flashStreamingKey(for model: AIModel) -> String { "flash_streaming_\(model.id)" }
 
     // MARK: - LiteRT-LM load path
 
@@ -1191,7 +1200,8 @@ class LLMBackend: ObservableObject {
                 try await DirectLlamaCppBackend.shared.load(
                     path: path, projector: projector,
                     contextSize: clampedContextWindow(contextWindow, for: model),
-                    gpuLayers: isCPU ? 0 : max(0, layers)
+                    gpuLayers: isCPU ? 0 : max(0, layers),
+                    flashStreaming: Self.flashStreamingEnabled(for: model, path: path)
                 )
                 #if canImport(UIKit)
                 // Keep vision input at 448 pixels. Sending the full-resolution photo makes

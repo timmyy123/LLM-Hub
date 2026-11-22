@@ -146,6 +146,8 @@ fun ChatSettingsSheet(
     var disableAudio by remember { mutableStateOf(isGemma3nModel) }
     var enableThinking by remember { mutableStateOf(true) }
     var agentToolsEnabled by remember { mutableStateOf(true) }
+    var isMoeModel by remember(selectedModel?.name) { mutableStateOf(false) }
+    var flashStreaming by remember(selectedModel?.name) { mutableStateOf(true) }
     var systemPromptText by remember { mutableStateOf("") }
 
     val selectedModelSupportsVisionInput by remember(selectedModel, context) {
@@ -177,6 +179,7 @@ fun ChatSettingsSheet(
             val (layers, fileContext) = withContext(Dispatchers.IO) {
                 GgufLayerLimits.forModel(context, model) to GgufLayerLimits.contextForModel(context, model)
             }
+            isMoeModel = withContext(Dispatchers.IO) { GgufLayerLimits.isMoe(context, model) }
             gpuLayerLimit = layers ?: GgufLayerLimits.UNKNOWN
             ggufContextLimit = fileContext
             val newBaseCap = (fileContext ?: MediaPipeInferenceService.getMaxTokensForModelStatic(model)).coerceAtLeast(1)
@@ -210,6 +213,7 @@ fun ChatSettingsSheet(
                     gpuLayers = saved.nGpuLayers.coerceIn(0, gpuLayerLimit)
                     enableThinking = saved.enableThinking
                     agentToolsEnabled = saved.agentToolsEnabled
+                    flashStreaming = saved.flashStreaming
                     systemPromptText = saved.systemPrompt
                 } else {
                     // Reset to defaults for new model
@@ -589,6 +593,7 @@ fun ChatSettingsSheet(
                                                     nGpuLayers = gpuLayers,
                                                     enableThinking = enableThinking,
                                                     agentToolsEnabled = agentToolsEnabled,
+                                                    flashStreaming = flashStreaming,
                                                     systemPrompt = systemPromptText.trim(),
                                                     contextWindow = finalCtxWindow
                                                 )
@@ -856,6 +861,22 @@ fun ChatSettingsSheet(
                                         checked = !disableAudio,
                                         onCheckedChange = { disableAudio = !it }
                                     )
+                                }
+                            }
+                        }
+
+                        // Flash streaming (MoE GGUF only), saved at once so the next load reads it
+                        if (isMoeModel) {
+                            FlashStreamingSwitch(checked = flashStreaming) { enabled ->
+                                flashStreaming = enabled
+                                selectedModel?.let { m ->
+                                    scope.launch(Dispatchers.IO) {
+                                        try {
+                                            val cfg = (modelPrefs.getModelConfig(m.name)
+                                                ?: com.llmhub.llmhub.data.defaultConfigForModel(m)).copy(flashStreaming = enabled)
+                                            modelPrefs.setModelConfig(m.name, cfg)
+                                        } catch (_: Exception) {}
+                                    }
                                 }
                             }
                         }

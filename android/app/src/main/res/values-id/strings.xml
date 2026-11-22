@@ -806,6 +806,8 @@
 
     <string name="gpu_layers_label">GPU Layers: %1$d</string>
     <string name="gpu_layers_hint">Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers</string>
+    <string name="flash_streaming_title">Streaming dari penyimpanan</string>
+    <string name="flash_streaming_hint">Membaca expert dari penyimpanan saat dibutuhkan, sehingga model MoE yang lebih besar dari memori tetap bisa berjalan. Berjalan di CPU. Matikan untuk memuat seluruh model ke memori.</string>
 
     <!-- Premium / IAP -->
     <string name="premium_title">LLM Hub Premium Seumur Hidup</string>

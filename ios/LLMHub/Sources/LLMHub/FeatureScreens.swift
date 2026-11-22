@@ -557,6 +557,8 @@ struct FeatureModelSettingsSheet: View {
                                         onCommit: { saveGpuLayers(gpuLayersTemp) }
                                     )
                                     .padding(.top, 8)
+                                    FlashStreamingToggle(model: model)
+                                        .padding(.top, 8)
                                 }
                             }
 

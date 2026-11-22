@@ -1,5 +1,6 @@
 import Foundation
 import llama
+import LLMHubBmoe
 
 /// The app's GGUF runtime. RunAnywhere is not involved in model execution here.
 public actor DirectLlamaCppBackend {
@@ -33,18 +34,27 @@ public actor DirectLlamaCppBackend {
     private var projectorPath: String?
     private var configuredContext = 0
     private var configuredGpuLayers = 0
+    /// Flash streaming session (MoE GGUF): the routed experts are read from storage as tokens need them, so a model
+    /// larger than the device's memory runs on the CPU. `model` then holds only the vocabulary, for the chat template.
+    private var flash: OpaquePointer?
+    private var configuredFlash = false
 
     private init() {
         llama_backend_init()
     }
 
-    public func load(path: String, projector: String?, contextSize: Int, gpuLayers: Int) throws {
+    public func load(path: String, projector: String?, contextSize: Int, gpuLayers: Int, flashStreaming: Bool = false) throws {
         if modelPath == path, projectorPath == projector,
-           configuredContext == contextSize, configuredGpuLayers == gpuLayers,
-           model != nil, context != nil {
+           configuredContext == contextSize, configuredFlash == flashStreaming,
+           flashStreaming || configuredGpuLayers == gpuLayers,
+           model != nil, context != nil || flash != nil {
             return
         }
         unload()
+        if flashStreaming {
+            try loadFlash(path: path, projector: projector, contextSize: contextSize)
+            return
+        }
 
         var modelParams = llama_model_default_params()
         modelParams.n_gpu_layers = Int32(max(0, gpuLayers))
@@ -84,9 +94,41 @@ public actor DirectLlamaCppBackend {
         projectorPath = projector
         configuredContext = contextSize
         configuredGpuLayers = gpuLayers
+        configuredFlash = false
+    }
+
+    private func loadFlash(path: String, projector: String?, contextSize: Int) throws {
+        var vocabParams = llama_model_default_params()
+        vocabParams.vocab_only = true
+        vocabParams.n_gpu_layers = 0
+        guard let vocabModel = path.withCString({ llama_model_load_from_file($0, vocabParams) }) else {
+            throw RuntimeError.load("llama.cpp could not read GGUF: \(path)")
+        }
+        let threads = max(1, min(8, ProcessInfo.processInfo.processorCount - 2))
+        var error = [CChar](repeating: 0, count: 512)
+        let session = path.withCString { modelPointer in
+            (projector ?? "").withCString { projectorPointer in
+                llmhub_bmoe_open(modelPointer, projector == nil ? nil : projectorPointer,
+                                 Int32(max(512, contextSize)), Int32(threads), &error, error.count)
+            }
+        }
+        guard let session else {
+            llama_model_free(vocabModel)
+            throw RuntimeError.load("Flash streaming could not load \(path): \(String(cString: error))")
+        }
+        model = vocabModel
+        flash = session
+        modelPath = path
+        projectorPath = projector
+        configuredContext = contextSize
+        configuredGpuLayers = 0
+        configuredFlash = true
     }
 
     public func unload() {
+        if let flash { llmhub_bmoe_free(flash) }
+        flash = nil
+        configuredFlash = false
         if let vision { mtmd_free(vision) }
         if let context { llama_free(context) }
         if let model { llama_model_free(model) }
@@ -160,6 +202,14 @@ public actor DirectLlamaCppBackend {
         stopSequences: [String],
         continuation: AsyncThrowingStream<Update, Error>.Continuation
     ) throws {
+        if let flash {
+            try generateFlash(
+                session: flash, prompt: prompt, imageData: imageData, maxTokens: maxTokens,
+                temperature: temperature, topK: topK, topP: topP,
+                stopSequences: stopSequences, continuation: continuation
+            )
+            return
+        }
         guard let model, let context, let vocab = llama_model_get_vocab(model) else {
             throw RuntimeError.inference("No GGUF model is loaded")
         }
@@ -306,5 +356,99 @@ public actor DirectLlamaCppBackend {
             throw RuntimeError.inference("llama.cpp failed to prefill the image")
         }
         return nextPosition
+    }
+
+    private func generateFlash(
+        session: OpaquePointer,
+        prompt: String,
+        imageData: Data?,
+        maxTokens: Int,
+        temperature: Float,
+        topK: Int,
+        topP: Float,
+        stopSequences: [String],
+        continuation: AsyncThrowingStream<Update, Error>.Continuation
+    ) throws {
+        var input = prompt
+        if imageData != nil {
+            guard llmhub_bmoe_vision(session) != 0 else {
+                throw RuntimeError.inference("This GGUF has no loaded vision projector")
+            }
+            let marker = String(cString: llmhub_bmoe_image_marker())
+            if !input.contains(marker) { input = marker + "\n" + input }
+        }
+        let sink = FlashSink(stopSequences: stopSequences, continuation: continuation)
+        let user = Unmanaged.passUnretained(sink).toOpaque()
+        var generated: Int32 = 0
+        var seconds = 0.0
+        var error = [CChar](repeating: 0, count: 512)
+        let onPiece: llmhub_bmoe_piece_fn = { piece, length, user in
+            guard let piece, let user else { return 0 }
+            let sink = Unmanaged<FlashSink>.fromOpaque(user).takeUnretainedValue()
+            return sink.receive(UnsafeRawBufferPointer(start: piece, count: length)) ? 0 : 1
+        }
+        let mime = imageData.map { $0.starts(with: [0x89, 0x50, 0x4E, 0x47]) ? "image/png" : "image/jpeg" } ?? "image/jpeg"
+        let status = input.withCString { promptPointer in
+            mime.withCString { mimePointer in
+                if let imageData {
+                    return imageData.withUnsafeBytes { raw in
+                        llmhub_bmoe_generate(
+                            session, promptPointer, raw.bindMemory(to: UInt8.self).baseAddress, imageData.count, mimePointer,
+                            Int32(max(1, maxTokens)), temperature, Int32(max(1, topK)), topP,
+                            onPiece, user, &generated, &seconds, &error, error.count)
+                    }
+                }
+                return llmhub_bmoe_generate(
+                    session, promptPointer, nil, 0, mimePointer,
+                    Int32(max(1, maxTokens)), temperature, Int32(max(1, topK)), topP,
+                    onPiece, user, &generated, &seconds, &error, error.count)
+            }
+        }
+        try Task.checkCancellation()
+        guard status == 0 else {
+            throw RuntimeError.inference("Flash streaming failed: \(String(cString: error))")
+        }
+        let rate = seconds > 0 ? Double(generated) / seconds : sink.rate
+        continuation.yield(Update(text: sink.finish(), completionTokens: Int(max(generated, Int32(sink.generated))), tokensPerSecond: rate))
+    }
+}
+
+/// Collects flash streaming pieces into the cumulative text the UI expects, applying the stop sequences.
+private final class FlashSink {
+    let stopSequences: [String]
+    let continuation: AsyncThrowingStream<DirectLlamaCppBackend.Update, Error>.Continuation
+    var output = ""
+    var pending = Data()
+    var generated = 0
+    let started = Date()
+
+    init(stopSequences: [String], continuation: AsyncThrowingStream<DirectLlamaCppBackend.Update, Error>.Continuation) {
+        self.stopSequences = stopSequences
+        self.continuation = continuation
+    }
+
+    var rate: Double { Double(generated) / max(0.001, Date().timeIntervalSince(started)) }
+
+    /// Returns false to stop the generation.
+    func receive(_ bytes: UnsafeRawBufferPointer) -> Bool {
+        if Task.isCancelled { return false }
+        generated += 1
+        pending.append(contentsOf: bytes)
+        if let decoded = String(data: pending, encoding: .utf8) {
+            output += decoded
+            pending.removeAll(keepingCapacity: true)
+        }
+        if let stop = stopSequences.first(where: { !$0.isEmpty && output.hasSuffix($0) }) {
+            output.removeLast(stop.count)
+            return false
+        }
+        continuation.yield(DirectLlamaCppBackend.Update(text: output, completionTokens: generated, tokensPerSecond: rate))
+        return true
+    }
+
+    func finish() -> String {
+        if !pending.isEmpty { output += String(decoding: pending, as: UTF8.self) }
+        pending.removeAll()
+        return output
     }
 }

@@ -14,7 +14,8 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 # Snapdragon release ships libggml*.so/libllama.so/libmtmd.so under the upstream names and its
 # ggml_backend_load_all_from_path() scan of the native library directory must not find ours.
 set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)
-set(LLAMA_BUILD_COMMON OFF CACHE BOOL "" FORCE)
+# llama-common is needed by the flash streaming runtime (third_party/bigmoeonedge) for chat parsing.
+set(LLAMA_BUILD_COMMON ON CACHE BOOL "" FORCE)
 set(LLAMA_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(LLAMA_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(LLAMA_BUILD_TOOLS OFF CACHE BOOL "" FORCE)
@@ -61,7 +62,7 @@ endif()
 add_compile_definitions(LLMHUB_LLAMA_SOURCE_VERSION="${LLMHUB_LLAMA_VERSION}")
 add_subdirectory("${LLAMA_CPP_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/llama.cpp")
 # GGML_AVAILABLE_BACKENDS lists the backend modules: ggml-cpu-android_armv8.0_1 ... and ggml-vulkan.
-foreach(llmhub_lib IN LISTS GGML_AVAILABLE_BACKENDS ITEMS ggml-base ggml llama mtmd)
+foreach(llmhub_lib IN LISTS GGML_AVAILABLE_BACKENDS ITEMS ggml-base ggml llama llama-common mtmd)
     if(TARGET ${llmhub_lib})
         set_target_properties(${llmhub_lib} PROPERTIES OUTPUT_NAME "llmhub_${llmhub_lib}")
     endif()
@@ -113,5 +114,24 @@ target_include_directories(llmhub_llama_snapdragon PRIVATE
 target_link_libraries(llmhub_llama_snapdragon PRIVATE
     llmhub_prebuilt_llama llmhub_prebuilt_mtmd llmhub_prebuilt_ggml android log)
 target_link_options(llmhub_llama_snapdragon PRIVATE "-Wl,--allow-shlib-undefined")
+
+# Flash streaming runtime for MoE models: BigMoeOnEdge's engine, built on the llama.cpp libraries above (no fork).
+# The routed experts are read from the model file on demand into a RAM cache, so a model larger than the
+# phone's memory runs. CPU decode; the CPU variant comes from libllmhub_llama_cpu's nativeInit.
+set(BMOE_DIR "${CMAKE_CURRENT_LIST_DIR}/../../../../../third_party/bigmoeonedge")
+file(STRINGS "${BMOE_DIR}/LLMHUB_VERSION.md" BMOE_VERSION_LINE REGEX "^- Version: ")
+string(REGEX MATCH "[0-9]+\\.[0-9]+\\.[0-9]+" BMOE_UPSTREAM_VERSION "${BMOE_VERSION_LINE}")
+if(NOT BMOE_UPSTREAM_VERSION)
+    message(FATAL_ERROR "No BigMoeOnEdge version in ${BMOE_DIR}/LLMHUB_VERSION.md")
+endif()
+set(PROJECT_VERSION "${BMOE_UPSTREAM_VERSION}")
+set(BMOE_HAVE_LLAMA ON)
+add_subdirectory("${BMOE_DIR}/core" "${CMAKE_CURRENT_BINARY_DIR}/bigmoeonedge")
+target_compile_options(bmoe_core PRIVATE -march=armv8-a)
+
+add_library(llmhub_llama_stream SHARED llama_stream_jni.cpp)
+target_compile_options(llmhub_llama_stream PRIVATE -march=armv8-a -fvisibility=hidden)
+target_link_options(llmhub_llama_stream PRIVATE "-Wl,--exclude-libs,ALL" "-Wl,-Bsymbolic")
+target_link_libraries(llmhub_llama_stream PRIVATE bmoe_core llama llama-common mtmd ggml android log dl)
 
 add_subdirectory(pocket_tts)

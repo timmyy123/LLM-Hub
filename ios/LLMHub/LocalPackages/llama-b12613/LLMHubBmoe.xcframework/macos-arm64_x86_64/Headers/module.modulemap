@@ -1,0 +1,4 @@
+module LLMHubBmoe {
+    header "llmhub_bmoe.h"
+    export *
+}

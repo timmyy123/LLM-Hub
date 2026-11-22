@@ -2230,6 +2230,8 @@ fun ScamDetectorScreen(
                                 )
                             }
                         }
+
+                        com.llmhub.llmhub.components.FlashStreamingModelSwitch(selectedModel)
                     }
                 }
 

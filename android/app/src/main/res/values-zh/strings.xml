@@ -741,6 +741,8 @@
     <string name="backend_npu">NPU (骁龙 Hexagon)</string>
     <string name="gpu_layers_label">GPU 层数: %1$d</string>
     <string name="gpu_layers_hint">卸载至 GPU/NPU 的层。0 表示仅 CPU 处理，999 表示所有层</string>
+    <string name="flash_streaming_title">从存储流式加载</string>
+    <string name="flash_streaming_hint">按需从存储读取专家权重，让比内存更大的 MoE 模型也能运行。使用 CPU。关闭后会把整个模型加载到内存。</string>
     <string name="thinking_toggle_label">启用深度思考</string>
     <string name="gpu_not_supported">GPU 不支持该模型</string>
     <string name="load_model">载入模型</string>

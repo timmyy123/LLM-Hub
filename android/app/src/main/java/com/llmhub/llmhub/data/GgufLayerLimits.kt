@@ -18,6 +18,12 @@ object GgufLayerLimits {
         return runCatching { readLimit(file, "context_length", 0) }.getOrNull()
     }
 
+    /** True for a mixture-of-experts GGUF: its header lists more than one expert per layer. */
+    fun isMoe(context: Context, model: LLMModel): Boolean {
+        val file = modelFile(context, model) ?: return false
+        return (runCatching { readLimit(file, "expert_count", 0) }.getOrNull() ?: 0) > 1
+    }
+
     private fun modelFile(context: Context, model: LLMModel): File? {
         if (model.modelFormat != "gguf") return null
         val root = File(context.filesDir, "models")

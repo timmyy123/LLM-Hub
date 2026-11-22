@@ -801,6 +801,8 @@
 
     <string name="gpu_layers_label">GPU Layers: %1$d</string>
     <string name="gpu_layers_hint">Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers</string>
+    <string name="flash_streaming_title">ストレージからのストリーミング</string>
+    <string name="flash_streaming_hint">必要なエキスパートだけをストレージから読み込むので、メモリより大きいMoEモデルも動かせます。CPUで動作します。オフにするとモデル全体をメモリに読み込みます。</string>
 
     <!-- Premium / IAP -->
     <string name="premium_title">LLM Hub プレミアム ライフタイム</string>

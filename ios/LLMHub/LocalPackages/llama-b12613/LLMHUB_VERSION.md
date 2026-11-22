@@ -13,6 +13,16 @@ xcframework is no longer used: it cannot load Aion. Run `bash rebuild-xcframewor
 CMake to reproduce it; build files and dSYMs stay in the temporary directory it prints and are not bundled in
 the app. The public llama, ggml and mtmd symbols are the same as the official framework's.
 
+## Flash streaming (LLMHubBmoe.xcframework)
+
+`LLMHubBmoe.xcframework` is a static library for flash streaming of MoE GGUF models: BigMoeOnEdge's engine
+(`third_party/bigmoeonedge`, see its `LLMHUB_VERSION.md`), llama.cpp's common helpers it needs, and the C bridge in
+`bmoe/` (`include/llmhub_bmoe.h`). It is compiled against the same verified, patched llama.cpp source as
+`llama.xcframework` and links to that framework's llama, ggml and mtmd, so it carries no second copy of them.
+`DirectLlamaCppBackend.load(..., flashStreaming: true)` uses it: the routed experts stay in the file and are read as
+tokens need them, so a MoE model larger than the device's memory runs (CPU decode). Rebuild it with
+`bash bmoe/rebuild-xcframework.sh` whenever `llama.xcframework` or the vendored engine changes.
+
 ## Local patch
 
 `llmhub-aion.patch` is the same change as in `android/llama.cpp` (see its `LLMHUB_VERSION.md`): the `aion`

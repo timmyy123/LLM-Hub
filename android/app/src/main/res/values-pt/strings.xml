@@ -757,6 +757,8 @@
 
     <string name="gpu_layers_label">GPU Layers: %1$d</string>
     <string name="gpu_layers_hint">Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers</string>
+    <string name="flash_streaming_title">Streaming do armazenamento</string>
+    <string name="flash_streaming_hint">Lê os especialistas do armazenamento quando necessário, para rodar modelos MoE maiores que a memória. Usa a CPU. Desative para carregar o modelo inteiro na memória.</string>
 
     <!-- Premium / IAP -->
     <string name="premium_title">LLM Hub Premium Vitalício</string>

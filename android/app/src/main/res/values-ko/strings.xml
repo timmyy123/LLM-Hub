@@ -804,6 +804,8 @@
 
     <string name="gpu_layers_label">GPU Layers: %1$d</string>
     <string name="gpu_layers_hint">Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers</string>
+    <string name="flash_streaming_title">저장소 스트리밍</string>
+    <string name="flash_streaming_hint">필요한 전문가만 저장소에서 읽어 메모리보다 큰 MoE 모델도 실행할 수 있습니다. CPU에서 실행됩니다. 끄면 모델 전체를 메모리에 불러옵니다.</string>
 
     <!-- Premium / IAP -->
     <string name="premium_title">LLM Hub 프리미엄 평생</string>

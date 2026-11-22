@@ -7,10 +7,12 @@ import android.util.Log
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import com.llmhub.llmhub.R
 import com.llmhub.llmhub.data.DeviceInfo
+import com.llmhub.llmhub.data.GgufLayerLimits
 import com.llmhub.llmhub.data.LLMModel
 import com.llmhub.llmhub.data.effectiveContextWindow
 import com.llmhub.llmhub.data.isOtherCatalogModelsProjector
 import com.llmhub.llmhub.data.localFileName
+import com.llmhub.llmhub.data.ModelPreferences
 import com.llmhub.llmhub.data.ThemePreferences
 import com.llmhub.llmhub.websearch.DuckDuckGoSearchService
 import com.llmhub.llmhub.websearch.SearchIntentDetector
@@ -120,6 +122,34 @@ internal object LlamaCppVulkanNative : LlamaCppRuntime {
     external override fun nativeModelEpoch(): Int
 }
 
+/**
+ * Flash streaming for MoE GGUF models (BigMoeOnEdge's engine on the same llama.cpp, llama_stream_jni.cpp). The routed
+ * experts stay in the file and are read from storage as tokens need them, into a cache sized from the free RAM (at most
+ * 30% of the device's RAM), so a model larger than the phone's memory runs. CPU only.
+ */
+internal object LlamaCppStreamNative : LlamaCppRuntime {
+    init { System.loadLibrary("llmhub_llama_stream") }
+
+    private external fun nativeInitStream()
+    override fun nativeInit(libraryDir: String, htpDir: String?): Int {
+        // Registers the CPU backend variant in the ggml both runtimes share.
+        val result = LlamaCppNative.nativeInit(libraryDir, null)
+        if (result == 0) nativeInitStream()
+        return result
+    }
+    external override fun nativeLoadModel(modelPath: String, mmprojPath: String?, contextSize: Int, threadCount: Int, deviceName: String?, gpuLayers: Int, flashAttention: Int): Int
+    external override fun nativeSupportsVision(): Boolean
+    external override fun nativeMediaMarker(): String
+    external override fun nativeFormatChat(roles: Array<String>, contents: Array<String>): String?
+    external override fun nativeStartCompletion(formattedPrompt: String, imagePaths: Array<String>, maxTokens: Int, temperature: Float, topK: Int, topP: Float, grammar: String?): Int
+    external override fun nativeNextToken(): String?
+    external override fun nativeStop()
+    external override fun nativeReset()
+    external override fun nativeUnload()
+    external override fun nativeDecodeSpeed(): Double
+    external override fun nativeModelEpoch(): Int
+}
+
 /** GGUF text/vision inference with shared chat, search, and RAG behavior across devices. */
 private enum class LlamaHarmonyState { BEFORE_HEADER, IN_ANALYSIS, IN_TRANSITION, IN_FINAL }
 private enum class LlamaMuseState { BEFORE_HEADER, IN_REASONING, IN_TRANSITION, IN_FINAL }
@@ -129,6 +159,7 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
         private const val TAG = "LlamaCppFallback"
         private const val DEFAULT_MAX_TOKENS = 1024
         private const val MAX_IMAGE_DIMENSION = 300
+        private const val FLASH_STREAMING = "FlashStreaming"
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -249,15 +280,28 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
             if (model.supportsVision && !disableVision && mmprojFile == null) {
                 Log.w(TAG, "Vision projector not found for '${model.name}'; loading text-only")
             }
+            // MoE models stream their experts from storage unless the user turned it off for this model.
+            val flashStreaming = GgufLayerLimits.isMoe(context, model) &&
+                (ModelPreferences(context).getModelConfig(model.name)?.flashStreaming ?: true)
             // Retry only accelerator load failures, using the same model and settings on CPU.
-            val attempts: List<String?> = if (accelerator == null) listOf(null) else listOf(accelerator, null)
+            val attempts: List<String?> = when {
+                flashStreaming -> listOf(FLASH_STREAMING)
+                accelerator == null -> listOf(null)
+                else -> listOf(accelerator, null)
+            }
             for (attemptAccelerator in attempts) {
                 currentCoroutineContext().ensureActive()
-                val attemptName = attemptAccelerator ?: "CPU"
+                val attemptName = when (attemptAccelerator) {
+                    null -> "CPU"
+                    FLASH_STREAMING -> "CPU flash streaming"
+                    else -> attemptAccelerator
+                }
+                val onCpu = attemptAccelerator == null || attemptAccelerator == FLASH_STREAMING
                 var attemptInitialized = false
                 try {
                     runtime = when (attemptAccelerator) {
                         null -> LlamaCppNative
+                        FLASH_STREAMING -> LlamaCppStreamNative
                         "Vulkan0" -> LlamaCppVulkanNative
                         else -> LlamaCppSnapdragonNative
                     }
@@ -271,7 +315,7 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
                     Log.i(
                         TAG,
                         "Loading '${model.name}' with llama.cpp $attemptName: context=$contextSize " +
-                            "threads=$threads layers=${if (attemptAccelerator == null) 0 else overrideGpuLayers ?: 999} " +
+                            "threads=$threads layers=${if (onCpu) 0 else overrideGpuLayers ?: 999} " +
                             "mmproj=${mmprojFile?.name ?: "none"}",
                     )
                     val result = runtime.nativeLoadModel(
@@ -279,16 +323,16 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
                         mmprojFile?.absolutePath,
                         contextSize,
                         threads,
-                        attemptAccelerator,
-                        if (attemptAccelerator == null) 0 else overrideGpuLayers ?: 999,
+                        if (onCpu) null else attemptAccelerator,
+                        if (onCpu) 0 else overrideGpuLayers ?: 999,
                         flashAttention,
                     )
                     check(result == 0) { "llama.cpp model load failed on $attemptName with code $result" }
 
                     currentModel = model
                     loadedEpoch = runtime.nativeModelEpoch()
-                    loadedBackend = if (attemptAccelerator == null) LlmInference.Backend.CPU else LlmInference.Backend.GPU
-                    loadedDeviceId = if (attemptAccelerator == null) null else deviceId
+                    loadedBackend = if (onCpu) LlmInference.Backend.CPU else LlmInference.Backend.GPU
+                    loadedDeviceId = if (onCpu) null else deviceId
                     loadedRuntimeName = attemptName
                     chatSessions.clear()
                     visionDisabled = disableVision || !model.supportsVision || !runtime.nativeSupportsVision()
@@ -310,7 +354,7 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
                         }
                     }
                     nativeInitialized = false
-                    if (attemptAccelerator != null) Log.w(TAG, "Retrying '${model.name}' on CPU")
+                    if (!onCpu) Log.w(TAG, "Retrying '${model.name}' on CPU")
                 }
             }
             false
@@ -534,6 +578,7 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
     override fun getCurrentlyLoadedModel(): LLMModel? = currentModel?.takeIf { ownsNativeModel() }
     override fun getCurrentlyLoadedBackend(): LlmInference.Backend? = loadedBackend
     fun getCurrentlyLoadedDeviceId(): String? = loadedDeviceId
+    internal fun isFlashStreamingLoaded(): Boolean = currentModel != null && runtime === LlamaCppStreamNative
     override fun getMemoryWarningForImages(images: List<Bitmap>): String? = null
     override fun wasSessionRecentlyReset(chatId: String): Boolean = false
     override fun setGenerationParameters(

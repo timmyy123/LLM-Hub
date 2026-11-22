@@ -15,6 +15,11 @@ enum GGUFLayerLimits {
         readInteger(from: url, suffix: "context_length", offset: 0)
     }
 
+    /// True for a mixture-of-experts GGUF: its header lists more than one expert per layer.
+    static func isMoe(_ url: URL) -> Bool {
+        (readInteger(from: url, suffix: "expert_count", offset: 0) ?? 0) > 1
+    }
+
     private static func readInteger(from url: URL, suffix: String, offset: Int) -> Int? {
         guard let handle = try? FileHandle(forReadingFrom: url),
               let size = (try? FileManager.default.attributesOfItem(atPath: url.path)[.size] as? NSNumber)?.uint64Value else {
@@ -217,6 +222,7 @@ struct ChatSettingsSheet: View {
                                     label: settings.localized("gpu_layers_label"),
                                     onCommit: { saveGpuLayers(gpuLayersTemp) }
                                 )
+                                FlashStreamingToggle(model: model)
                             }
 
                             HStack {
@@ -624,6 +630,37 @@ struct GPULayersSlider: View {
                 }
             )
             .tint(ApolloPalette.accentStrong)
+        }
+    }
+}
+
+/// The flash streaming switch, shown only for a MoE GGUF. On (the default) the experts are read from storage as tokens
+/// need them, so a MoE model larger than the device's memory runs on the CPU; it applies from the next model load.
+struct FlashStreamingToggle: View {
+    let model: AIModel
+    @EnvironmentObject var settings: AppSettings
+    @State private var isMoe = false
+    @State private var isOn = true
+
+    var body: some View {
+        Group {
+            if isMoe {
+                ToggleTile(
+                    title: settings.localized("flash_streaming_title"),
+                    subtitle: settings.localized("flash_streaming_hint"),
+                    isOn: $isOn,
+                    icon: "internaldrive"
+                )
+                .onChange(of: isOn) { _, value in
+                    UserDefaults.standard.set(value, forKey: LLMBackend.flashStreamingKey(for: model))
+                }
+            }
+        }
+        .task(id: model.id) {
+            let key = LLMBackend.flashStreamingKey(for: model)
+            isOn = UserDefaults.standard.object(forKey: key) as? Bool ?? true
+            guard let path = try? LLMBackend.shared.resolveModelGGUFPath(for: model) else { isMoe = false; return }
+            isMoe = await Task.detached(priority: .utility) { GGUFLayerLimits.isMoe(URL(fileURLWithPath: path)) }.value
         }
     }
 }

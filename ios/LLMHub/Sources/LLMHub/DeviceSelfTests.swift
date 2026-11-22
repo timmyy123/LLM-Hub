@@ -42,6 +42,7 @@ enum DeviceSelfTests {
                             try? fm.removeItem(atPath: (NSTemporaryDirectory() as NSString).appendingPathComponent(name))
                         }
                     case "aion-catalog": failures += try await checkAionCatalogLiteRT()
+                    case "flash-moe": failures += try await checkFlashStreamingMoe()
                     default: failures.append("Unknown self-test \(check)")
                     }
                 } catch {
@@ -465,6 +466,43 @@ enum DeviceSelfTests {
             "User: And what river runs through it? Answer in one word.\nAssistant:")
         if !second.localizedCaseInsensitiveContains("Seine") { failures.append("Aion catalog follow-up: \(second.prefix(200))") }
         await backend.unload()
+        return failures
+    }
+
+    /// MoE flash streaming with LFM2.5-24B-A2B (Q2_K_L 9.5 GB or Q4_0 13.6 GB, whichever the app downloaded), through
+    /// LLMBackend as the app loads it. Uses the app's download in place; never downloads or copies the model.
+    static func checkFlashStreamingMoe() async throws -> [String] {
+        let backend = LLMBackend.shared
+        guard let model = ModelData.allModels().first(where: {
+            $0.name.hasPrefix("LFM2.5-24B-A2B") && backend.isModelAvailableLocally($0)
+        }), let path = try? backend.resolveModelGGUFPath(for: model) else {
+            return ["Download an LFM2.5-24B-A2B build in the app first"]
+        }
+        log("FLASH_MOE: \(model.name)")
+        guard LLMBackend.flashStreamingEnabled(for: model, path: path) else {
+            return ["Flash streaming is off or the GGUF is not MoE: \(path)"]
+        }
+        backend.selectedBackend = "CPU"
+        var started = Date()
+        try await backend.loadModel(model)
+        log("FLASH_MOE: loaded in \(String(format: "%.1f", Date().timeIntervalSince(started))) s")
+        func ask(_ prompt: String) async throws -> String {
+            var reply = ""
+            var speed = 0.0
+            started = Date()
+            try await backend.generate(prompt: prompt, maxTokensOverride: 256) { text, _, tokensPerSecond in
+                reply = text
+                speed = tokensPerSecond
+            }
+            log("FLASH_MOE: \(String(format: "%.1f", Date().timeIntervalSince(started))) s, decode tok/s=\(String(format: "%.2f", speed)) reply=\(reply.prefix(400))")
+            return reply
+        }
+        var failures = [String]()
+        let first = try await ask("What is the capital of France? Answer in one word.")
+        if !first.localizedCaseInsensitiveContains("Paris") { failures.append("Flash MoE answer: \(first.prefix(200))") }
+        let second = try await ask("Write three sentences about the history of the Eiffel Tower.")
+        if !second.localizedCaseInsensitiveContains("Eiffel") { failures.append("Flash MoE paragraph: \(second.prefix(200))") }
+        backend.unloadModel()
         return failures
     }
 

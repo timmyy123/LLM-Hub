@@ -269,6 +269,8 @@ fun WritingAidScreen(
                                 )
                             }
                         }
+
+                        com.llmhub.llmhub.components.FlashStreamingModelSwitch(selectedModel)
                     }
                 }
 

@@ -649,6 +649,8 @@
 "backend_npu" = "NPU (驍龍 Hexagon)";
 "gpu_layers_label" = "GPU 層數: %1$d";
 "gpu_layers_hint" = "解除安裝至 GPU/NPU 的層。0 表示僅 CPU 處理，999 表示所有層";
+"flash_streaming_title" = "從儲存空間串流載入";
+"flash_streaming_hint" = "需要時才從儲存空間讀取專家權重，讓比記憶體更大的 MoE 模型也能執行。使用 CPU。關閉後會將整個模型載入記憶體。";
 "thinking_toggle_label" = "啟用深度思考";
 "gpu_not_supported" = "GPU 不支援該模型";
 "load_model" = "載入模型";

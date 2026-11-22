@@ -808,6 +808,8 @@
 
     <string name="gpu_layers_label">GPU Layers: %1$d</string>
     <string name="gpu_layers_hint">Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers</string>
+    <string name="flash_streaming_title">Strumieniowanie z pamięci masowej</string>
+    <string name="flash_streaming_hint">Wczytuje ekspertów z pamięci masowej, gdy są potrzebni, więc działają modele MoE większe niż pamięć RAM. Działa na CPU. Wyłącz, aby wczytać cały model do pamięci.</string>
 
     <!-- Premium / IAP -->
     <string name="premium_title">LLM Hub Premium na całe życie</string>

@@ -693,6 +693,8 @@
     <string name="backend_npu">NPU (หกเหลี่ยม)</string>
     <string name="gpu_layers_label">เลเยอร์ GPU:%1$d</string>
     <string name="gpu_layers_hint">เลเยอร์ออฟโหลดไปที่ GPU/NPU 0 = CPU เท่านั้น 999 = ทุกเลเยอร์</string>
+    <string name="flash_streaming_title">สตรีมจากที่เก็บข้อมูล</string>
+    <string name="flash_streaming_hint">อ่านเอ็กซ์เพิร์ตจากที่เก็บข้อมูลเมื่อจำเป็น จึงรันโมเดล MoE ที่ใหญ่กว่าหน่วยความจำได้ ทำงานบน CPU ปิดเพื่อโหลดทั้งโมเดลลงหน่วยความจำ</string>
     <string name="thinking_toggle_label">เปิดใช้งานการคิด</string>
     <string name="gpu_not_supported">รุ่นนี้ไม่รองรับ GPU</string>
     <string name="load_model">โหลดโมเดล</string>

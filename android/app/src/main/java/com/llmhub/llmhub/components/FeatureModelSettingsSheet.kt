@@ -138,6 +138,8 @@ fun FeatureModelSettingsSheet(
     var gpuLayers by remember { mutableStateOf(999) }
     var gpuLayerLimit by remember { mutableIntStateOf(GgufLayerLimits.UNKNOWN) }
     var enableThinking by remember { mutableStateOf(true) }
+    var isMoeModel by remember(selectedModel?.name) { mutableStateOf(false) }
+    var flashStreaming by remember(selectedModel?.name) { mutableStateOf(true) }
 
     LaunchedEffect(selectedModel?.name) {
         selectedModel?.let { model ->
@@ -145,6 +147,7 @@ fun FeatureModelSettingsSheet(
             val (layers, fileContext) = withContext(Dispatchers.IO) {
                 GgufLayerLimits.forModel(context, model) to GgufLayerLimits.contextForModel(context, model)
             }
+            isMoeModel = withContext(Dispatchers.IO) { GgufLayerLimits.isMoe(context, model) }
             gpuLayerLimit = layers ?: GgufLayerLimits.UNKNOWN
             ggufContextLimit = fileContext
             if (fileContext != null) {
@@ -155,6 +158,7 @@ fun FeatureModelSettingsSheet(
             if (saved != null) {
                 gpuLayers = saved.nGpuLayers.coerceIn(0, gpuLayerLimit)
                 enableThinking = saved.enableThinking
+                flashStreaming = saved.flashStreaming
                 if (currentlyLoadedModel?.name != model.name) {
                     useGpu = saved.backend == "GPU"
                     useNpu = saved.backend == "GPU" && saved.deviceId == "dev0"
@@ -478,6 +482,7 @@ fun FeatureModelSettingsSheet(
                                                     backend = backend?.name,
                                                     deviceId = deviceId,
                                                     nGpuLayers = gpuLayers,
+                                                    flashStreaming = flashStreaming,
                                                     // LFM3's feature choice is kept by the feature, not in AI Chat's config
                                                     enableThinking = if (model.isLfm3()) base.enableThinking else enableThinking
                                                 )
@@ -616,6 +621,23 @@ fun FeatureModelSettingsSheet(
                             }
                         }
 
+                        // Flash streaming (MoE GGUF only), saved at once so the next load reads it
+                        if (isMoeModel) {
+                            FlashStreamingSwitch(checked = flashStreaming) { enabled ->
+                                flashStreaming = enabled
+                                selectedModel?.let { m ->
+                                    scope.launch(Dispatchers.IO) {
+                                        try {
+                                            val cfg = (modelPrefs.getModelConfig(m.name)
+                                                ?: com.llmhub.llmhub.data.defaultConfigForModel(m)).copy(flashStreaming = enabled)
+                                            modelPrefs.setModelConfig(m.name, cfg)
+                                        } catch (_: Exception) {}
+                                    }
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(16.dp))
+                        }
+
                         // Thinking toggle (show only for thinking/reasoning models)
                         if (isThinkingOrHarmonyModel) {
                             Row(
@@ -639,6 +661,58 @@ fun FeatureModelSettingsSheet(
                     }
                 }
             }
+        }
+    }
+}
+
+/** The MoE flash streaming switch with its explanation, shared by the model settings sheets. */
+@Composable
+internal fun FlashStreamingSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+            Text(
+                text = stringResource(R.string.flash_streaming_title),
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Text(
+                text = stringResource(R.string.flash_streaming_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Switch(checked = checked, onCheckedChange = onCheckedChange)
+    }
+}
+
+/**
+ * The flash streaming switch for screens without their own model config state: shown only for a MoE GGUF,
+ * reading and saving the model's saved config itself.
+ */
+@Composable
+internal fun FlashStreamingModelSwitch(model: LLMModel?) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var isMoe by remember(model?.name) { mutableStateOf(false) }
+    var enabled by remember(model?.name) { mutableStateOf(true) }
+    LaunchedEffect(model?.name) {
+        if (model == null) return@LaunchedEffect
+        isMoe = withContext(Dispatchers.IO) { GgufLayerLimits.isMoe(context, model) }
+        enabled = ModelPreferences(context).getModelConfig(model.name)?.flashStreaming ?: true
+    }
+    if (model == null || !isMoe) return
+    FlashStreamingSwitch(checked = enabled) { value ->
+        enabled = value
+        scope.launch(Dispatchers.IO) {
+            try {
+                val prefs = ModelPreferences(context)
+                val cfg = (prefs.getModelConfig(model.name)
+                    ?: com.llmhub.llmhub.data.defaultConfigForModel(model)).copy(flashStreaming = value)
+                prefs.setModelConfig(model.name, cfg)
+            } catch (_: Exception) {}
         }
     }
 }

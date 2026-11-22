@@ -695,6 +695,8 @@
 "creator_save_and_chat" = "Zapisz i Czatuj";
 "gpu_layers_label" = "GPU Layers: %1$d";
 "gpu_layers_hint" = "Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers";
+"flash_streaming_title" = "Strumieniowanie z pamięci masowej";
+"flash_streaming_hint" = "Wczytuje ekspertów z pamięci masowej, gdy są potrzebni, więc działają modele MoE większe niż pamięć RAM. Działa na CPU. Wyłącz, aby wczytać cały model do pamięci.";
 "premium_title" = "LLM Hub Premium na całe życie";
 "premium_subtitle" = "Odblokuj pełne doświadczenie";
 "premium_feature_vibe_coder" = "VibeCoder – Generator kodu AI";
