@@ -338,7 +338,7 @@ enum DeviceSelfTests {
         return failures
     }
 
-    // MARK: - Aion (llama.cpp b12613 with llmhub-aion.patch)
+    // MARK: - Aion (llama.cpp b12631 with llmhub-aion.patch)
 
     private static let aionURL = "https://huggingface.co/timmyboy26/aion-1.0-instruct-2.3b-q4_0-gguf/resolve/b783c0eec446e1c4f02b60d2ca7a6e60e0533d7f/Aion-1.0-Instruct-2.3B-Q4_0.gguf"
     private static let aionSHA256 = "82a71c2311e3803a166aa11da844d4b547839ed2d941c1384e812e29070519be"

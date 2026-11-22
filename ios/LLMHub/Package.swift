@@ -20,14 +20,14 @@ let package = Package(
         .package(url: "https://github.com/weichsel/ZIPFoundation.git", from: "0.9.20"),
         .package(path: "LocalPackages/media-generation-kit"),
         .package(path: "LocalPackages/LiteRT-LM"),
-        .package(path: "LocalPackages/llama-b12613"),
+        .package(path: "LocalPackages/llama-b12631"),
         .package(path: "LocalPackages/whisper-wrapper"),
     ],
     targets: [
         .target(
             name: "LLMHub",
             dependencies: [
-                .product(name: "LlamaCppBinary", package: "llama-b12613"),
+                .product(name: "LlamaCppBinary", package: "llama-b12631"),
                 .product(name: "MagentaRuntime", package: "magenta-runtime"),
                 .product(name: "ZIPFoundation", package: "ZIPFoundation"),
                 .product(name: "LiteRTLM", package: "LiteRT-LM"),
