@@ -41,6 +41,13 @@
   generation kernels do not make Android report the app as not responding (issue #133).
   `kernel_mul_mv_f32_f32_r2` is not split.
 
+`ggml/src/ggml-opencl/kernels/cpy.cl`:
+- The copy kernels locate the start of each source row in dst once, with 32-bit division when the index fits,
+  instead of four 64-bit divisions and modulos per element (b12477 moved the unflattening into the element loop).
+  Only a source row that spans dst rows is located per element. On Adreno the per-element version made the
+  per-token V transpose (flash attention auto, resolved off on OpenCL) slow enough to drop LFM3 1.7B decode on
+  the Galaxy Tab S9+ from 18-19 to 7.7 tok/s.
+
 ## Upgrading
 
 1. Unpack the new source archive over this tree, keeping this file. `diff -ru` the old tree against its own

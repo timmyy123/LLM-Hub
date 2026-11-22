@@ -1,5 +1,25 @@
 #pragma OPENCL EXTENSION cl_khr_fp16 : enable
 
+// LLMHub: byte offset in dst of flat element n. Three divisions instead of seven, and 32-bit ones
+// whenever n fits (64-bit division is emulated on Adreno and much slower).
+inline ulong llmhub_cpy_dst_offset(ulong n, int ne0, int ne1, int ne2, ulong nb0, ulong nb1, ulong nb2, ulong nb3) {
+    if (n <= 0xFFFFFFFFul) {
+        const uint m  = (uint) n;
+        const uint q0 = m  / (uint) ne0;
+        const uint q1 = q0 / (uint) ne1;
+        const uint q2 = q1 / (uint) ne2;
+        return (m - q0*(uint) ne0)*nb0 + (q0 - q1*(uint) ne1)*nb1 + (q1 - q2*(uint) ne2)*nb2 + q2*nb3;
+    }
+    const ulong q0 = n  / ne0;
+    const ulong q1 = q0 / ne1;
+    const ulong q2 = q1 / ne2;
+    return (n - q0*ne0)*nb0 + (q0 - q1*ne1)*nb1 + (q1 - q2*ne2)*nb2 + q2*nb3;
+}
+
+inline ulong llmhub_cpy_i0(ulong n, int ne0) {
+    return n <= 0xFFFFFFFFul ? (ulong) ((uint) n % (uint) ne0) : n % ne0;
+}
+
 //------------------------------------------------------------------------------
 // cpy
 //------------------------------------------------------------------------------
@@ -33,15 +53,18 @@ kernel void kernel_cpy_f16_f16(
     int i02 = get_group_id(1);
     int i01 = get_group_id(0);
 
+    // LLMHub: locate the start of this src row in dst once; per-element index math made these copies
+    // several times slower on Adreno. Only a src row that spans dst rows is located per element.
+    const ulong n_row    = (((ulong)i03 * ne02 + i02) * ne01 + i01) * ne00;
+    const ulong row_off  = llmhub_cpy_dst_offset(n_row, ne0, ne1, ne2, nb0, nb1, nb2, nb3);
+    const bool  row_fits = llmhub_cpy_i0(n_row, ne0) + ne00 <= (ulong) ne0;
+
     for (int i00 = get_local_id(0); i00 < ne00; i00 += get_local_size(0)) {
-        const ulong n  = (((ulong)i03 * ne02 + i02) * ne01 + i01) * ne00 + i00;
-        const ulong i0 = n % ne0;
-        const ulong i1 = n / ne0 % ne1;
-        const ulong i2 = n / ne0 / ne1 % ne2;
-        const ulong i3 = n / ne0 / ne1 / ne2;
+        const ulong dst_off = row_fits ? row_off + i00*nb0
+                                       : llmhub_cpy_dst_offset(n_row + i00, ne0, ne1, ne2, nb0, nb1, nb2, nb3);
 
         global const half * src = (global half *)((global char *) src0 + i03*nb03 + i02*nb02 + i01*nb01 + i00*nb00);
-        global half * out = (global half *)((global char *) dst + i0*nb0 + i1*nb1 + i2*nb2 + i3*nb3);
+        global half * out = (global half *)((global char *) dst + dst_off);
         out[0] = src[0];
     }
 }
@@ -76,15 +99,18 @@ kernel void kernel_cpy_f16_f32(
     int i02 = get_group_id(1);
     int i01 = get_group_id(0);
 
+    // LLMHub: locate the start of this src row in dst once; per-element index math made these copies
+    // several times slower on Adreno. Only a src row that spans dst rows is located per element.
+    const ulong n_row    = (((ulong)i03 * ne02 + i02) * ne01 + i01) * ne00;
+    const ulong row_off  = llmhub_cpy_dst_offset(n_row, ne0, ne1, ne2, nb0, nb1, nb2, nb3);
+    const bool  row_fits = llmhub_cpy_i0(n_row, ne0) + ne00 <= (ulong) ne0;
+
     for (int i00 = get_local_id(0); i00 < ne00; i00 += get_local_size(0)) {
-        const ulong n  = (((ulong)i03 * ne02 + i02) * ne01 + i01) * ne00 + i00;
-        const ulong i0 = n % ne0;
-        const ulong i1 = n / ne0 % ne1;
-        const ulong i2 = n / ne0 / ne1 % ne2;
-        const ulong i3 = n / ne0 / ne1 / ne2;
+        const ulong dst_off = row_fits ? row_off + i00*nb0
+                                       : llmhub_cpy_dst_offset(n_row + i00, ne0, ne1, ne2, nb0, nb1, nb2, nb3);
 
         global const half * src = (global half *)((global char *) src0 + i03*nb03 + i02*nb02 + i01*nb01 + i00*nb00);
-        global float * out = (global float *)((global char *) dst + i0*nb0 + i1*nb1 + i2*nb2 + i3*nb3);
+        global float * out = (global float *)((global char *) dst + dst_off);
         out[0] = src[0];
     }
 }
@@ -118,15 +144,18 @@ kernel void kernel_cpy_f32_f16(
     int i02 = get_group_id(1);
     int i01 = get_group_id(0);
 
+    // LLMHub: locate the start of this src row in dst once; per-element index math made these copies
+    // several times slower on Adreno. Only a src row that spans dst rows is located per element.
+    const ulong n_row    = (((ulong)i03 * ne02 + i02) * ne01 + i01) * ne00;
+    const ulong row_off  = llmhub_cpy_dst_offset(n_row, ne0, ne1, ne2, nb0, nb1, nb2, nb3);
+    const bool  row_fits = llmhub_cpy_i0(n_row, ne0) + ne00 <= (ulong) ne0;
+
     for (int i00 = get_local_id(0); i00 < ne00; i00 += get_local_size(0)) {
-        const ulong n  = (((ulong)i03 * ne02 + i02) * ne01 + i01) * ne00 + i00;
-        const ulong i0 = n % ne0;
-        const ulong i1 = n / ne0 % ne1;
-        const ulong i2 = n / ne0 / ne1 % ne2;
-        const ulong i3 = n / ne0 / ne1 / ne2;
+        const ulong dst_off = row_fits ? row_off + i00*nb0
+                                       : llmhub_cpy_dst_offset(n_row + i00, ne0, ne1, ne2, nb0, nb1, nb2, nb3);
 
         global const float * src = (global float *)((global char *) src0 + i03*nb03 + i02*nb02 + i01*nb01 + i00*nb00);
-        global half * out = (global half *)((global char *) dst + i0*nb0 + i1*nb1 + i2*nb2 + i3*nb3);
+        global half * out = (global half *)((global char *) dst + dst_off);
         out[0] = src[0];
     }
 }
@@ -160,15 +189,18 @@ kernel void kernel_cpy_f32_f32(
     int i02 = get_group_id(1);
     int i01 = get_group_id(0);
 
+    // LLMHub: locate the start of this src row in dst once; per-element index math made these copies
+    // several times slower on Adreno. Only a src row that spans dst rows is located per element.
+    const ulong n_row    = (((ulong)i03 * ne02 + i02) * ne01 + i01) * ne00;
+    const ulong row_off  = llmhub_cpy_dst_offset(n_row, ne0, ne1, ne2, nb0, nb1, nb2, nb3);
+    const bool  row_fits = llmhub_cpy_i0(n_row, ne0) + ne00 <= (ulong) ne0;
+
     for (int i00 = get_local_id(0); i00 < ne00; i00 += get_local_size(0)) {
-        const ulong n  = (((ulong)i03 * ne02 + i02) * ne01 + i01) * ne00 + i00;
-        const ulong i0 = n % ne0;
-        const ulong i1 = n / ne0 % ne1;
-        const ulong i2 = n / ne0 / ne1 % ne2;
-        const ulong i3 = n / ne0 / ne1 / ne2;
+        const ulong dst_off = row_fits ? row_off + i00*nb0
+                                       : llmhub_cpy_dst_offset(n_row + i00, ne0, ne1, ne2, nb0, nb1, nb2, nb3);
 
         global const float * src = (global float *)((global char *) src0 + i03*nb03 + i02*nb02 + i01*nb01 + i00*nb00);
-        global float * out = (global float *)((global char *) dst + i0*nb0 + i1*nb1 + i2*nb2 + i3*nb3);
+        global float * out = (global float *)((global char *) dst + dst_off);
         out[0] = src[0];
     }
 }
@@ -216,15 +248,18 @@ kernel void kernel_cpy_f32_f32_pack(
     int i02 = t % ne02;
     int i03 = t / ne02;
 
+    // LLMHub: locate the start of this src row in dst once; per-element index math made these copies
+    // several times slower on Adreno. Only a src row that spans dst rows is located per element.
+    const ulong n_row    = (ulong)row * ne00;
+    const ulong row_off  = llmhub_cpy_dst_offset(n_row, ne0, ne1, ne2, nb0, nb1, nb2, nb3);
+    const bool  row_fits = llmhub_cpy_i0(n_row, ne0) + ne00 <= (ulong) ne0;
+
     for (int i00 = lane; i00 < ne00; i00 += tpr) {
-        const ulong n  = (ulong)row * ne00 + i00;
-        const ulong i0 = n % ne0;
-        const ulong i1 = n / ne0 % ne1;
-        const ulong i2 = n / ne0 / ne1 % ne2;
-        const ulong i3 = n / ne0 / ne1 / ne2;
+        const ulong dst_off = row_fits ? row_off + i00*nb0
+                                       : llmhub_cpy_dst_offset(n_row + i00, ne0, ne1, ne2, nb0, nb1, nb2, nb3);
 
         global const float * src = (global float *)((global char *) src0 + i03*nb03 + i02*nb02 + i01*nb01 + i00*nb00);
-        global float * out = (global float *)((global char *) dst + i0*nb0 + i1*nb1 + i2*nb2 + i3*nb3);
+        global float * out = (global float *)((global char *) dst + dst_off);
         out[0] = src[0];
     }
 }
@@ -259,15 +294,18 @@ kernel void kernel_cpy_i32_i32(
     int i02 = get_group_id(1);
     int i01 = get_group_id(0);
 
+    // LLMHub: locate the start of this src row in dst once; per-element index math made these copies
+    // several times slower on Adreno. Only a src row that spans dst rows is located per element.
+    const ulong n_row    = (((ulong)i03 * ne02 + i02) * ne01 + i01) * ne00;
+    const ulong row_off  = llmhub_cpy_dst_offset(n_row, ne0, ne1, ne2, nb0, nb1, nb2, nb3);
+    const bool  row_fits = llmhub_cpy_i0(n_row, ne0) + ne00 <= (ulong) ne0;
+
     for (int i00 = get_local_id(0); i00 < ne00; i00 += get_local_size(0)) {
-        const ulong n  = (((ulong)i03 * ne02 + i02) * ne01 + i01) * ne00 + i00;
-        const ulong i0 = n % ne0;
-        const ulong i1 = n / ne0 % ne1;
-        const ulong i2 = n / ne0 / ne1 % ne2;
-        const ulong i3 = n / ne0 / ne1 / ne2;
+        const ulong dst_off = row_fits ? row_off + i00*nb0
+                                       : llmhub_cpy_dst_offset(n_row + i00, ne0, ne1, ne2, nb0, nb1, nb2, nb3);
 
         global const int * src = (global int *)((global char *) src0 + i03*nb03 + i02*nb02 + i01*nb01 + i00*nb00);
-        global int * out = (global int *)((global char *) dst + i0*nb0 + i1*nb1 + i2*nb2 + i3*nb3);
+        global int * out = (global int *)((global char *) dst + dst_off);
         out[0] = src[0];
     }
 }
@@ -326,15 +364,18 @@ kernel void kernel_cpy_i32_f32(
     const ulong i02 = get_group_id(1);
     const ulong i03 = get_group_id(2);
 
+    // LLMHub: locate the start of this src row in dst once; per-element index math made these copies
+    // several times slower on Adreno. Only a src row that spans dst rows is located per element.
+    const ulong n_row    = ((i03 * ne02 + i02) * ne01 + i01) * ne00;
+    const ulong row_off  = llmhub_cpy_dst_offset(n_row, ne0, ne1, ne2, nb0, nb1, nb2, nb3);
+    const bool  row_fits = llmhub_cpy_i0(n_row, ne0) + ne00 <= (ulong) ne0;
+
     for (ulong i00 = get_local_id(0); i00 < ne00; i00 += get_local_size(0)) {
-        const ulong n  = ((i03 * ne02 + i02) * ne01 + i01) * ne00 + i00;
-        const ulong i0 = n % ne0;
-        const ulong i1 = n / ne0 % ne1;
-        const ulong i2 = n / ne0 / ne1 % ne2;
-        const ulong i3 = n / ne0 / ne1 / ne2;
+        const ulong dst_off = row_fits ? row_off + i00*nb0
+                                       : llmhub_cpy_dst_offset(n_row + i00, ne0, ne1, ne2, nb0, nb1, nb2, nb3);
 
         global const int * src = (global const int *) ((global char *) src0 + i00*nb00 + i01*nb01 + i02*nb02 + i03*nb03);
-        global float * out = (global float *) ((global char *) dst + i0*nb0 + i1*nb1 + i2*nb2 + i3*nb3);
+        global float * out = (global float *) ((global char *) dst + dst_off);
         out[0] = convert_float(src[0]);
     }
 }
@@ -369,15 +410,18 @@ kernel void kernel_cpy_f32_i32(
     const ulong i02 = get_group_id(1);
     const ulong i03 = get_group_id(2);
 
+    // LLMHub: locate the start of this src row in dst once; per-element index math made these copies
+    // several times slower on Adreno. Only a src row that spans dst rows is located per element.
+    const ulong n_row    = ((i03 * ne02 + i02) * ne01 + i01) * ne00;
+    const ulong row_off  = llmhub_cpy_dst_offset(n_row, ne0, ne1, ne2, nb0, nb1, nb2, nb3);
+    const bool  row_fits = llmhub_cpy_i0(n_row, ne0) + ne00 <= (ulong) ne0;
+
     for (ulong i00 = get_local_id(0); i00 < ne00; i00 += get_local_size(0)) {
-        const ulong n  = ((i03 * ne02 + i02) * ne01 + i01) * ne00 + i00;
-        const ulong i0 = n % ne0;
-        const ulong i1 = n / ne0 % ne1;
-        const ulong i2 = n / ne0 / ne1 % ne2;
-        const ulong i3 = n / ne0 / ne1 / ne2;
+        const ulong dst_off = row_fits ? row_off + i00*nb0
+                                       : llmhub_cpy_dst_offset(n_row + i00, ne0, ne1, ne2, nb0, nb1, nb2, nb3);
 
         global const float * src = (global const float *) ((global char *) src0 + i00*nb00 + i01*nb01 + i02*nb02 + i03*nb03);
-        global int * out = (global int *) ((global char *) dst + i0*nb0 + i1*nb1 + i2*nb2 + i3*nb3);
+        global int * out = (global int *) ((global char *) dst + dst_off);
         out[0] = convert_int_rtz(src[0]);
     }
 }
