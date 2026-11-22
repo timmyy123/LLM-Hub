@@ -791,7 +791,8 @@ fun ChatSettingsSheet(
                         }
                         
                         // GPU Layers (GGUF + GPU/NPU only)
-                        if (selectedModel?.modelFormat == "gguf" && (useGpu || useNpu)) {
+                        // A flash-streamed MoE model reads the prompt on the GPU/NPU and decodes on the CPU: no layers setting.
+                        if (selectedModel?.modelFormat == "gguf" && (useGpu || useNpu) && !(isMoeModel && flashStreaming)) {
                             Text(
                                 text = stringResource(R.string.gpu_layers_label, gpuLayers),
                                 style = MaterialTheme.typography.bodyMedium

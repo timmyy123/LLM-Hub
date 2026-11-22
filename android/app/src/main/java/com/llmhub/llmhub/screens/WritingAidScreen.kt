@@ -81,6 +81,7 @@ fun WritingAidScreen(
     }
     var maxTokensText by remember(maxTokensValue) { mutableStateOf(maxTokensValue.toString()) }
     var gpuLayerLimit by remember { mutableIntStateOf(GgufLayerLimits.UNKNOWN) }
+    val flashStreaming = com.llmhub.llmhub.components.rememberFlashStreamingState(selectedModel)
     var gpuLayers by remember(selectedNGpuLayers, gpuLayerLimit) {
         mutableStateOf((selectedNGpuLayers ?: gpuLayerLimit).coerceIn(0, gpuLayerLimit))
     }
@@ -236,7 +237,8 @@ fun WritingAidScreen(
                         }
 
                         // GPU layers only affect GGUF GPU/NPU loads.
-                        if (isGguf && selectedBackend == LlmInference.Backend.GPU) {
+                        // A flash-streamed MoE model reads the prompt on the GPU/NPU and decodes on the CPU: no layers setting.
+                        if (isGguf && selectedBackend == LlmInference.Backend.GPU && !flashStreaming.active) {
                             Text(
                                 text = stringResource(R.string.gpu_layers_label, gpuLayers),
                                 style = MaterialTheme.typography.bodyMedium
@@ -272,7 +274,7 @@ fun WritingAidScreen(
                             }
                         }
 
-                        com.llmhub.llmhub.components.FlashStreamingModelSwitch(selectedModel)
+                        com.llmhub.llmhub.components.FlashStreamingModelSwitch(selectedModel, flashStreaming)
                     }
                 }
 

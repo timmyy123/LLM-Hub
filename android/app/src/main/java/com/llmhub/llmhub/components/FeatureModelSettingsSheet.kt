@@ -594,7 +594,8 @@ fun FeatureModelSettingsSheet(
                         }
 
                         // GPU Layers (GGUF + GPU/NPU only)
-                        if (selectedModel?.modelFormat == "gguf" && (useGpu || useNpu)) {
+                        // A flash-streamed MoE model reads the prompt on the GPU/NPU and decodes on the CPU: no layers setting.
+                        if (selectedModel?.modelFormat == "gguf" && (useGpu || useNpu) && !(isMoeModel && flashStreaming)) {
                             Text(
                                 text = stringResource(R.string.gpu_layers_label, gpuLayers),
                                 style = MaterialTheme.typography.bodyMedium
@@ -694,19 +695,12 @@ internal fun FlashStreamingSwitch(checked: Boolean, onCheckedChange: (Boolean) -
  * reading and saving the model's saved config itself.
  */
 @Composable
-internal fun FlashStreamingModelSwitch(model: LLMModel?) {
+internal fun FlashStreamingModelSwitch(model: LLMModel?, state: FlashStreamingState = rememberFlashStreamingState(model)) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    var isMoe by remember(model?.name) { mutableStateOf(false) }
-    var enabled by remember(model?.name) { mutableStateOf(true) }
-    LaunchedEffect(model?.name) {
-        if (model == null) return@LaunchedEffect
-        isMoe = withContext(Dispatchers.IO) { GgufLayerLimits.isMoe(context, model) }
-        enabled = ModelPreferences(context).getModelConfig(model.name)?.flashStreaming ?: true
-    }
-    if (model == null || !isMoe) return
-    FlashStreamingSwitch(checked = enabled) { value ->
-        enabled = value
+    if (model == null || !state.isMoe) return
+    FlashStreamingSwitch(checked = state.enabled) { value ->
+        state.enabled = value
         scope.launch(Dispatchers.IO) {
             try {
                 val prefs = ModelPreferences(context)
@@ -716,4 +710,24 @@ internal fun FlashStreamingModelSwitch(model: LLMModel?) {
             } catch (_: Exception) {}
         }
     }
+}
+
+/** Whether a model is a MoE GGUF and has flash streaming on (its saved config), for screens that show the switch. */
+internal class FlashStreamingState {
+    var isMoe by mutableStateOf(false)
+    var enabled by mutableStateOf(true)
+    /** Flash streaming will be used: the prompt runs on the GPU/NPU, decode on the CPU, and no layers setting applies. */
+    val active: Boolean get() = isMoe && enabled
+}
+
+@Composable
+internal fun rememberFlashStreamingState(model: LLMModel?): FlashStreamingState {
+    val context = LocalContext.current
+    val state = remember(model?.name) { FlashStreamingState() }
+    LaunchedEffect(model?.name) {
+        if (model == null) return@LaunchedEffect
+        state.isMoe = withContext(Dispatchers.IO) { GgufLayerLimits.isMoe(context, model) }
+        state.enabled = ModelPreferences(context).getModelConfig(model.name)?.flashStreaming ?: true
+    }
+    return state
 }

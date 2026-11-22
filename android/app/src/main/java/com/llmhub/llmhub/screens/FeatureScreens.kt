@@ -2048,6 +2048,7 @@ fun ScamDetectorScreen(
     }
     var maxTokensTextScam by remember(maxTokensValueScam) { mutableStateOf(maxTokensValueScam.toString()) }
     var gpuLayerLimitScam by remember { mutableIntStateOf(GgufLayerLimits.UNKNOWN) }
+    val flashStreamingScam = com.llmhub.llmhub.components.rememberFlashStreamingState(selectedModel)
     var gpuLayersScam by remember(selectedNGpuLayersScam, gpuLayerLimitScam) {
         mutableStateOf((selectedNGpuLayersScam ?: gpuLayerLimitScam).coerceIn(0, gpuLayerLimitScam))
     }
@@ -2197,7 +2198,8 @@ fun ScamDetectorScreen(
                         }
 
                         // GPU layers only affect GGUF GPU/NPU loads.
-                        if (isGgufScam && selectedBackend == LlmInference.Backend.GPU) {
+                        // A flash-streamed MoE model reads the prompt on the GPU/NPU and decodes on the CPU: no layers setting.
+                        if (isGgufScam && selectedBackend == LlmInference.Backend.GPU && !flashStreamingScam.active) {
                             Text(
                                 text = stringResource(R.string.gpu_layers_label, gpuLayersScam),
                                 style = MaterialTheme.typography.bodyMedium
@@ -2233,7 +2235,7 @@ fun ScamDetectorScreen(
                             }
                         }
 
-                        com.llmhub.llmhub.components.FlashStreamingModelSwitch(selectedModel)
+                        com.llmhub.llmhub.components.FlashStreamingModelSwitch(selectedModel, flashStreamingScam)
                     }
                 }
 

@@ -198,23 +198,21 @@ STREAM_JNI(nativeLoadModel)(
     cfg.moe.dense_weights = bmoe::DenseWeightsMode::Pinned;
     cfg.moe.io_threads = 4;
     cfg.moe.o_direct = true;
-#ifdef LLMHUB_SNAPDRAGON
-    if (device == "HTP0") {
-        // The prompt on the Hexagon NPU, decode on the CPU. The NPU can map only about 3 GB, and the earlier
-        // attempts (3.5 GB cache, pinned weights, slots held for the session) ran out of that space
-        // ("possibly out of IOVA space"). So the slots it reads experts through are held only while a prompt is
-        // read, the resident weights are ordinary memory, and a device that cannot open fails the load.
+    // An accelerator (Hexagon NPU "HTP0" or Vulkan "Vulkan0") reads the prompt; decode stays on the CPU, where a
+    // one-token step is faster (dense layers on the device read the prompt at a tenth of the speed, the experts then
+    // running on the CPU). The slots it reads experts through are held only while a prompt is read: the NPU can map
+    // only about 3 GB, and holding them for the session ran out of that space. A device that cannot open, or cannot
+    // multiply by the model's expert type (the NPU and Gemma 4's IQ2_XS experts), fails the load, and the app then
+    // streams on the CPU.
+    if (!device.empty()) {
+        cfg.moe.dense_weights = bmoe::DenseWeightsMode::Anonymous;
         cfg.n_batch = 2048;
         cfg.n_ubatch = 2048;
-        cfg.prefill.device = "HTP0";
+        cfg.prefill.device = device;
         cfg.prefill.slots_on_demand = true;
         cfg.prefill.verify = false;
         cfg.prefill.best_effort = false;
-        cfg.moe.dense_weights = bmoe::DenseWeightsMode::Anonymous;
     }
-#else
-    (void) device;
-#endif
 
     std::string error;
     g_session = bmoe::Session::open(cfg, error);
@@ -346,6 +344,12 @@ STREAM_JNI(nativeStartCompletion)(
         if (result.summary.gen_seconds > 0.0 && result.summary.n_generated > 0) {
             g_decode_tps = result.summary.n_generated / result.summary.gen_seconds;
         }
+        const auto & sum = result.summary;
+        __android_log_print(ANDROID_LOG_INFO, TAG,
+                            "Turn: prompt %d tokens in %.2f s (%.1f tok/s), %d tokens generated at %.2f tok/s",
+                            sum.n_prompt, sum.prefill_seconds,
+                            sum.prefill_seconds > 0.0 ? sum.n_prompt / sum.prefill_seconds : 0.0,
+                            sum.n_generated, g_decode_tps);
         std::lock_guard<std::mutex> lock(g_queue_mutex);
         g_done = true;
         g_queue_cv.notify_all();

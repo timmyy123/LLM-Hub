@@ -126,7 +126,8 @@ internal object LlamaCppVulkanNative : LlamaCppRuntime {
 /**
  * Flash streaming for MoE GGUF models (BigMoeOnEdge's engine on the same llama.cpp, llama_stream_jni.cpp). The routed
  * experts stay in the file and are read from storage as tokens need them, into a cache sized from the free RAM (at most
- * 30% of the device's RAM), so a model larger than the phone's memory runs. CPU only.
+ * 30% of the device's RAM), so a model larger than the phone's memory runs. Decode on the CPU; with the GPU selected
+ * (Vulkan), the prompt is read on it.
  */
 internal object LlamaCppStreamNative : LlamaCppRuntime {
     init { System.loadLibrary("llmhub_llama_stream") }
@@ -151,8 +152,8 @@ internal object LlamaCppStreamNative : LlamaCppRuntime {
 }
 
 /**
- * Flash streaming on the official Snapdragon release libraries: the prompt is read on the Hexagon NPU ("HTP0"),
- * decode stays on the CPU. Same JNI as [LlamaCppStreamNative] (llama_stream_jni.cpp built with LLMHUB_SNAPDRAGON).
+ * Flash streaming on the official Snapdragon release libraries: the prompt is read on the Hexagon NPU ("HTP0"), decode
+ * stays on the CPU. Same JNI as [LlamaCppStreamNative] (llama_stream_jni.cpp built with LLMHUB_SNAPDRAGON).
  */
 internal object LlamaCppStreamSnapdragonNative : LlamaCppRuntime {
     init { System.loadLibrary("llmhub_llama_stream_snapdragon") }
@@ -184,6 +185,14 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
         private const val MAX_IMAGE_DIMENSION = 300
         private const val FLASH_STREAMING = "FlashStreaming"
         private const val FLASH_STREAMING_NPU = "FlashStreamingNpu"
+        private const val FLASH_STREAMING_VULKAN = "FlashStreamingVulkan"
+
+        /** The accelerator a flash-streaming attempt uses, by the device name llama.cpp registers. */
+        private fun flashStreamingDevice(attempt: String?): String? = when (attempt) {
+            FLASH_STREAMING_NPU -> "HTP0"
+            FLASH_STREAMING_VULKAN -> "Vulkan0"
+            else -> null
+        }
         private const val GEMMA4_CHANNEL_OPEN = "<|channel>"
         private const val GEMMA4_CHANNEL_CLOSE = "<channel|>"
         private const val GEMMA4_THOUGHT_LABEL = "thought\n"
@@ -316,8 +325,11 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
                 (ModelPreferences(context).getModelConfig(model.name)?.flashStreaming ?: true)
             // Retry only accelerator load failures, using the same model and settings on CPU.
             val attempts: List<String?> = when {
-                // NPU selected: the prompt on the Hexagon NPU, retried with CPU streaming if the NPU cannot open.
+                // GPU or NPU selected: the prompt on it, decode on the CPU (no layers setting), retried with CPU
+                // streaming if the device cannot open, like any accelerator load. Adreno OpenCL cannot take the
+                // prompt: its split Q4_0 layout cannot hold one streamed expert at a time, so it streams on the CPU.
                 flashStreaming && accelerator == "HTP0" -> listOf(FLASH_STREAMING_NPU, FLASH_STREAMING)
+                flashStreaming && accelerator == "Vulkan0" -> listOf(FLASH_STREAMING_VULKAN, FLASH_STREAMING)
                 flashStreaming -> listOf(FLASH_STREAMING)
                 accelerator == null -> listOf(null)
                 else -> listOf(accelerator, null)
@@ -328,6 +340,7 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
                     null -> "CPU"
                     FLASH_STREAMING -> "CPU flash streaming"
                     FLASH_STREAMING_NPU -> "NPU flash streaming"
+                    FLASH_STREAMING_VULKAN -> "Vulkan flash streaming"
                     else -> attemptAccelerator
                 }
                 val onCpu = attemptAccelerator == null || attemptAccelerator == FLASH_STREAMING
@@ -337,12 +350,20 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
                         null -> LlamaCppNative
                         FLASH_STREAMING -> LlamaCppStreamNative
                         FLASH_STREAMING_NPU -> LlamaCppStreamSnapdragonNative
+                        FLASH_STREAMING_VULKAN -> LlamaCppStreamNative
                         "Vulkan0" -> LlamaCppVulkanNative
                         else -> LlamaCppSnapdragonNative
                     }
                     nativeInitialized = false
                     val htpDir = if (attemptAccelerator == "HTP0" || attemptAccelerator == "GPUOpenCL" ||
                         attemptAccelerator == FLASH_STREAMING_NPU) prepareHtpLibraries() else null
+                    // The streaming runtime shares the source build's ggml: the Vulkan runtime's init registers the CPU
+                    // variant and the Vulkan backend in it.
+                    if (attemptAccelerator == FLASH_STREAMING_VULKAN) {
+                        check(LlamaCppVulkanNative.nativeInit(context.applicationInfo.nativeLibraryDir, null) == 0) {
+                            "Vulkan initialization failed on $attemptName"
+                        }
+                    }
                     check(runtime.nativeInit(context.applicationInfo.nativeLibraryDir, htpDir) == 0) {
                         "llama.cpp initialization failed on $attemptName"
                     }
@@ -361,10 +382,10 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
                         threads,
                         when {
                             onCpu -> null
-                            attemptAccelerator == FLASH_STREAMING_NPU -> "HTP0"
-                            else -> attemptAccelerator
+                            else -> flashStreamingDevice(attemptAccelerator) ?: attemptAccelerator
                         },
-                        if (onCpu) 0 else overrideGpuLayers ?: 999,
+                        // Flash streaming: 0 layers, the prompt on the accelerator and decode on the CPU.
+                        if (onCpu || flashStreamingDevice(attemptAccelerator) != null) 0 else overrideGpuLayers ?: 999,
                         flashAttention,
                     )
                     check(result == 0) { "llama.cpp model load failed on $attemptName with code $result" }
@@ -620,7 +641,9 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
     fun getCurrentlyLoadedDeviceId(): String? = loadedDeviceId
     internal fun isFlashStreamingLoaded(): Boolean =
         currentModel != null && (runtime === LlamaCppStreamNative || runtime === LlamaCppStreamSnapdragonNative)
-    internal fun isFlashStreamingNpuLoaded(): Boolean = currentModel != null && runtime === LlamaCppStreamSnapdragonNative
+    internal fun isFlashStreamingNpuLoaded(): Boolean = currentModel != null && loadedRuntimeName == "NPU flash streaming"
+    /** The loaded runtime's name, e.g. "OpenCL flash streaming"; null when nothing is loaded. */
+    internal fun activeRuntimeName(): String? = if (currentModel != null) loadedRuntimeName else null
     override fun getMemoryWarningForImages(images: List<Bitmap>): String? = null
     override fun wasSessionRecentlyReset(chatId: String): Boolean = false
     override fun setGenerationParameters(
