@@ -43,11 +43,25 @@ class LtxVideoDeviceTest {
             save()
 
             val dir = VideoGenEngine.modelDir(context, model).apply { mkdirs() }
+            // -e import_dir NAME: files pushed to the app's external files folder (a build tested before it is on
+            // Hugging Face, on a device where run-as cannot write the app's own folder) are moved into the model
+            // dir, so one copy remains.
+            args.getString("import_dir")?.let { name ->
+                File(context.getExternalFilesDir(null), name).listFiles()?.forEach { source ->
+                    source.copyTo(File(dir, source.name), overwrite = true)
+                    source.delete()
+                    Log.i(TAG, "imported ${source.name}: ${File(dir, source.name).length()} bytes")
+                }
+            }
             val t0 = System.currentTimeMillis()
             // -e skip_download true: use files already pushed to the model dir.
+            // -e skip_present true: download only the files not in the model dir yet (a build being tested
+            // before it is on Hugging Face is copied in; the rest downloads as usual).
             if (args.getString("skip_download") != "true") {
                 for (url in listOf(model.url) + model.additionalFiles) {
-                    download(url, File(dir, url.substringAfterLast('/').substringBefore('?')))
+                    val target = File(dir, url.substringAfterLast('/').substringBefore('?'))
+                    if (args.getString("skip_present") == "true" && target.length() > 0) continue
+                    download(url, target)
                 }
             }
             result.put("download_s", (System.currentTimeMillis() - t0) / 1000.0)

@@ -5532,11 +5532,14 @@ object ModelData {
             "ltxv_chunk0.bin" to 608211808L, "ltxv_chunk1.bin" to 542859168L, "ltxv_chunk2.bin" to 542863264L,
             "ltxv_chunk3.bin" to 545222984L, "ltxv_vae_768x512x25.bin" to 683989048L
         )),
-        // Not the 8 Elite Gen 6 (SM8975, v85) yet: these v81 binaries load there through QAIRT 2.52, but on a 12 GB
-        // test phone generation ran it out of memory and Android's low-memory killer ended the app.
         LtxvNpuBuild("Snapdragon 8 Elite Gen 5", "v81", setOf("SM8850", "SM8850P"), "768x512x25", listOf(
             "ltxv_chunk0.bin" to 589058912L, "ltxv_chunk1.bin" to 545005472L, "ltxv_chunk2.bin" to 545009568L,
             "ltxv_chunk3.bin" to 547479880L, "ltxv_vae_768x512x25.bin" to 712386616L
+        )),
+        // Compiled with QAIRT 2.52 (soc_model 103) from the same quantized graphs as v81.
+        LtxvNpuBuild("Snapdragon 8 Elite Gen 6", "v85", setOf("SM8975"), "768x512x25", listOf(
+            "ltxv_chunk0.bin" to 619474944L, "ltxv_chunk1.bin" to 554983424L, "ltxv_chunk2.bin" to 554983424L,
+            "ltxv_chunk3.bin" to 557658112L, "ltxv_vae_768x512x25.bin" to 709554176L
         ))
     )
 
