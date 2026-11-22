@@ -222,7 +222,7 @@ struct ChatSettingsSheet: View {
                                     label: settings.localized("gpu_layers_label"),
                                     onCommit: { saveGpuLayers(gpuLayersTemp) }
                                 )
-                                FlashStreamingToggle(model: model, onChange: loadInitialGpuLayers)
+                                FlashStreamingToggle(model: model)
                             }
 
                             HStack {
@@ -460,11 +460,6 @@ struct ChatSettingsSheet: View {
         guard let currentModel = currentModel else { return }
         let limit = LLMBackend.shared.modelMaxGpuLayers(for: currentModel)
         gpuLayerLimit = Double(limit)
-        if LLMBackend.shared.isFlashStreaming(currentModel) {
-            // Flash streaming keeps its own count, 0 by default (prompt reading on the GPU).
-            gpuLayersTemp = min(Double(LLMBackend.shared.storedGpuLayers(for: currentModel, flashStreaming: true)), gpuLayerLimit)
-            return
-        }
         let key = "gpu_layers_\(currentModel.id)"
         if UserDefaults.standard.object(forKey: key) != nil {
             let stored = UserDefaults.standard.integer(forKey: key)
@@ -482,7 +477,7 @@ struct ChatSettingsSheet: View {
 
     private func saveGpuLayers(_ value: Double) {
         guard let currentModel = currentModel else { return }
-        let key = LLMBackend.gpuLayersKey(for: currentModel, flashStreaming: LLMBackend.shared.isFlashStreaming(currentModel))
+        let key = "gpu_layers_\(currentModel.id)"
         let intValue = Int32(min(max(0, value), gpuLayerLimit))
         UserDefaults.standard.set(intValue, forKey: key)
 
@@ -643,8 +638,6 @@ struct GPULayersSlider: View {
 /// need them, so a MoE model larger than the device's memory runs on the CPU; it applies from the next model load.
 struct FlashStreamingToggle: View {
     let model: AIModel
-    /// Called after the switch changes, so the GPU layers slider can show the count for the new mode.
-    var onChange: (() -> Void)? = nil
     @EnvironmentObject var settings: AppSettings
     @State private var isMoe = false
     @State private var isOn = true
@@ -660,7 +653,6 @@ struct FlashStreamingToggle: View {
                 )
                 .onChange(of: isOn) { _, value in
                     UserDefaults.standard.set(value, forKey: LLMBackend.flashStreamingKey(for: model))
-                    onChange?()
                 }
             } else {
                 // A real (zero-height) view: SwiftUI never starts the task below on an empty view, which left

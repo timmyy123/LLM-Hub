@@ -45,12 +45,10 @@ extern "C" llmhub_bmoe * llmhub_bmoe_open(const char * model_path, const char * 
     cfg.moe.o_direct = true;
     if (gpu_layers > 0) {
         // Layers on the GPU by the app's GPU layers setting. Only their dense weights go there: the expert weights stay
-        // in host memory, where the streamer serves them (llama.cpp's -ot exps=CPU). The GPU copy shares the RAM, so
-        // the expert cache leaves room for it; sized without it, the app passed iOS's limit and was killed.
+        // in host memory, where the streamer serves them (llama.cpp's -ot exps=CPU).
         cfg.n_gpu_layers = gpu_layers;
         cfg.device_use = bmoe::DeviceUse::Auto;
         cfg.buft_overrides = {"\\.ffn_(up|down|gate_up|gate)_(ch|)exps"};
-        cfg.moe.cache_floor_mb += 1536;
     } else if (gpu_prefill != 0) {
         // Prompt reading on Metal, decode on the CPU: a one-token decode is faster on the cores, while a wide prefill
         // graph runs several times faster on the GPU (iPhone 15 Pro Max, LFM2.5-24B-A2B Q2_K_L, ~900 tokens: first
