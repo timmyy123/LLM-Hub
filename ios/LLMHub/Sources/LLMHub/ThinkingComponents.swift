@@ -152,6 +152,12 @@ func supportsUnmarkedStreamingThinkingHeuristic(forModelNamed modelName: String?
         return false
     }
 
+    // Gemma 4 26B-A4B / 31B GGUF output always marks its thinking, so an answer given without
+    // thinking must not be shown as reasoning while it streams.
+    if LLMBackend.isGemma4ThinkingGgufName(normalizedName) {
+        return false
+    }
+
     return true
 }
 

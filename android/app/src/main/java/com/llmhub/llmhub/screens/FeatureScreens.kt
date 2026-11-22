@@ -45,6 +45,7 @@ import com.llmhub.llmhub.components.SelectableMarkdownText
 import com.llmhub.llmhub.components.ThinkingAwareResultContent
 import com.llmhub.llmhub.components.getDisplayContentWithoutThinking
 import com.llmhub.llmhub.data.hasDownloadedVisionProjector
+import com.llmhub.llmhub.data.isGemma4GgufThinking
 import com.llmhub.llmhub.data.isLfm3
 import com.llmhub.llmhub.data.requiresExternalVisionProjector
 import com.llmhub.llmhub.data.hasNativeVoiceSupport
@@ -254,7 +255,8 @@ fun TranslatorScreen(
             val name = selectedModel?.name?.lowercase() ?: ""
             name.contains("thinking") || name.contains("reasoning") ||
                 name.contains("gpt-oss") || name.contains("gpt_oss") ||
-                selectedModel?.isLfm3() == true
+                selectedModel?.isLfm3() == true ||
+                selectedModel?.isGemma4GgufThinking() == true
         }
     }
     
@@ -2272,7 +2274,7 @@ fun ScamDetectorScreen(
                     val name = model.name.lowercase()
                     name.contains("thinking") || name.contains("reasoning") ||
                         name.contains("gpt-oss") || name.contains("gpt_oss") ||
-                        model.isLfm3()
+                        model.isLfm3() || model.isGemma4GgufThinking()
                 } == true
                 if (isThinkingOrHarmonyModelScam) {
                     Row(

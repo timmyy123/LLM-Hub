@@ -30,6 +30,7 @@ import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import com.llmhub.llmhub.LlmHubApplication
 import com.llmhub.llmhub.R
 import com.llmhub.llmhub.data.GgufLayerLimits
+import com.llmhub.llmhub.data.isGemma4GgufThinking
 import com.llmhub.llmhub.data.isLfm3
 import com.llmhub.llmhub.components.ModelSelectorCard
 import com.llmhub.llmhub.components.ThinkingAwareResultContent
@@ -100,7 +101,8 @@ fun WritingAidScreen(
             val name = selectedModel?.name?.lowercase() ?: ""
             name.contains("thinking") || name.contains("reasoning") ||
                 name.contains("gpt-oss") || name.contains("gpt_oss") ||
-                selectedModel?.isLfm3() == true
+                selectedModel?.isLfm3() == true ||
+                selectedModel?.isGemma4GgufThinking() == true
         }
     }
     

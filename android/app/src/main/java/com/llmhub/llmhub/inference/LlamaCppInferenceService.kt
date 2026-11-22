@@ -9,6 +9,7 @@ import com.llmhub.llmhub.R
 import com.llmhub.llmhub.data.DeviceInfo
 import com.llmhub.llmhub.data.GgufLayerLimits
 import com.llmhub.llmhub.data.LLMModel
+import com.llmhub.llmhub.data.isGemma4GgufThinking
 import com.llmhub.llmhub.data.effectiveContextWindow
 import com.llmhub.llmhub.data.isOtherCatalogModelsProjector
 import com.llmhub.llmhub.data.localFileName
@@ -153,6 +154,7 @@ internal object LlamaCppStreamNative : LlamaCppRuntime {
 /** GGUF text/vision inference with shared chat, search, and RAG behavior across devices. */
 private enum class LlamaHarmonyState { BEFORE_HEADER, IN_ANALYSIS, IN_TRANSITION, IN_FINAL }
 private enum class LlamaMuseState { BEFORE_HEADER, IN_REASONING, IN_TRANSITION, IN_FINAL }
+private enum class LlamaGemma4State { BEFORE_CHANNEL, IN_THOUGHT, IN_ANSWER }
 
 class LlamaCppInferenceService(private val context: Context) : InferenceService {
     companion object {
@@ -160,6 +162,9 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
         private const val DEFAULT_MAX_TOKENS = 1024
         private const val MAX_IMAGE_DIMENSION = 300
         private const val FLASH_STREAMING = "FlashStreaming"
+        private const val GEMMA4_CHANNEL_OPEN = "<|channel>"
+        private const val GEMMA4_CHANNEL_CLOSE = "<channel|>"
+        private const val GEMMA4_THOUGHT_LABEL = "thought\n"
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -193,6 +198,10 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
     private var harmonyState = LlamaHarmonyState.BEFORE_HEADER
     private val museBuffer = StringBuilder()
     private var museState = LlamaMuseState.BEFORE_HEADER
+    private val gemma4Buffer = StringBuilder()
+    private var gemma4State = LlamaGemma4State.BEFORE_CHANNEL
+    private var gemma4ThinkingEnabled = true
+    private var gemma4ThinkingOpened = false
     private var sentInitialThinkingSentinel = false
 
     private var overrideMaxTokens: Int? = null
@@ -690,6 +699,10 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
         harmonyState = if (!thinkingEnabled && harmony) LlamaHarmonyState.IN_FINAL else LlamaHarmonyState.BEFORE_HEADER
         museBuffer.clear()
         museState = if (!thinkingEnabled && muse) LlamaMuseState.IN_FINAL else LlamaMuseState.BEFORE_HEADER
+        gemma4Buffer.clear()
+        gemma4State = LlamaGemma4State.BEFORE_CHANNEL
+        gemma4ThinkingEnabled = thinkingEnabled
+        gemma4ThinkingOpened = false
     }
 
     private fun filterTextOutputToken(
@@ -706,6 +719,7 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
             model.name.contains("LFM-2.5 2.6B", true)) && !model.name.contains("muse", true)) ||
             ((isGranite42 || isLfm3Model(model)) && thinkingEnabled))
         when {
+            model.isGemma4GgufThinking() -> emitGemma4(text, output::add)
             isMuseModel(model) -> emitMuse(text, thinkingEnabled, output::add)
             isHarmonyModel(model) -> emitHarmony(text, output::add)
             thinking -> {
@@ -736,6 +750,23 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
     private fun finishTextOutput(model: LLMModel): List<String> {
         val output = mutableListOf<String>()
         sentInitialThinkingSentinel = false
+        if (model.isGemma4GgufThinking()) {
+            val remaining = gemma4Buffer.toString()
+            when (gemma4State) {
+                LlamaGemma4State.IN_THOUGHT -> {
+                    if (gemma4ThinkingEnabled) sendGemma4Thought(remaining, output::add)
+                    if (gemma4ThinkingOpened) output += sentinelEndThink
+                }
+                // A reply that stopped inside "<|channel>thought" never reached its answer.
+                LlamaGemma4State.BEFORE_CHANNEL -> if (!remaining.trimStart().startsWith(GEMMA4_CHANNEL_OPEN)) {
+                    if (remaining.isNotEmpty()) output += remaining
+                }
+                LlamaGemma4State.IN_ANSWER -> if (remaining.isNotEmpty()) output += remaining
+            }
+            gemma4Buffer.clear()
+            gemma4State = LlamaGemma4State.BEFORE_CHANNEL
+            gemma4ThinkingOpened = false
+        }
         if (isMuseModel(model)) {
             if (museState == LlamaMuseState.IN_REASONING) {
                 var remaining = museBuffer.toString().replace("<|eot|>", "").replace("<|end_of_text|>", "")
@@ -755,6 +786,71 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
             museState = LlamaMuseState.BEFORE_HEADER
         }
         return output
+    }
+
+    /**
+     * Gemma 4 writes its reasoning as "<|channel>thought\n...<channel|>" before the answer. Shown as the app's
+     * thinking block when thinking is on; dropped when it is off (the prompt asks for no thinking then, but a
+     * stray thought channel must still never reach the answer).
+     */
+    private fun emitGemma4(tokenText: String, send: (String) -> Unit) {
+        gemma4Buffer.append(tokenText)
+        when (gemma4State) {
+            LlamaGemma4State.BEFORE_CHANNEL -> {
+                val value = gemma4Buffer.toString()
+                val leading = value.trimStart()
+                val open = value.indexOf(GEMMA4_CHANNEL_OPEN)
+                if (open >= 0) {
+                    val afterOpen = value.substring(open + GEMMA4_CHANNEL_OPEN.length)
+                    // Wait for the channel name ("thought\n"), which may arrive in later tokens.
+                    if (afterOpen.length < GEMMA4_THOUGHT_LABEL.length && GEMMA4_THOUGHT_LABEL.startsWith(afterOpen)) return
+                    val before = value.substring(0, open)
+                    if (before.isNotBlank()) send(before)
+                    gemma4Buffer.clear().append(afterOpen.removePrefix("thought").removePrefix("\n"))
+                    gemma4State = LlamaGemma4State.IN_THOUGHT
+                    emitGemma4("", send)
+                } else if (leading.isEmpty() || GEMMA4_CHANNEL_OPEN.startsWith(leading)) {
+                    return
+                } else {
+                    gemma4State = LlamaGemma4State.IN_ANSWER
+                    emitGemma4("", send)
+                }
+            }
+            LlamaGemma4State.IN_THOUGHT -> {
+                val value = gemma4Buffer.toString()
+                val close = value.indexOf(GEMMA4_CHANNEL_CLOSE)
+                if (close >= 0) {
+                    if (gemma4ThinkingEnabled) sendGemma4Thought(value.substring(0, close), send)
+                    if (gemma4ThinkingOpened) send(sentinelEndThink)
+                    gemma4Buffer.clear().append(value.substring(close + GEMMA4_CHANNEL_CLOSE.length).trimStart('\n', '\r', ' '))
+                    gemma4State = LlamaGemma4State.IN_ANSWER
+                    if (gemma4Buffer.isNotEmpty()) emitGemma4("", send)
+                } else {
+                    val safeLength = (value.length - GEMMA4_CHANNEL_CLOSE.length).coerceAtLeast(0)
+                    if (safeLength > 0) {
+                        if (gemma4ThinkingEnabled) sendGemma4Thought(value.substring(0, safeLength), send)
+                        gemma4Buffer.delete(0, safeLength)
+                    }
+                }
+            }
+            LlamaGemma4State.IN_ANSWER -> if (gemma4Buffer.isNotEmpty()) {
+                send(gemma4Buffer.toString().replace("<turn|>", ""))
+                gemma4Buffer.clear()
+            }
+        }
+    }
+
+    /** Opens the thinking block on the first visible reasoning, so an empty thought channel shows nothing. */
+    private fun sendGemma4Thought(text: String, send: (String) -> Unit) {
+        if (!gemma4ThinkingOpened) {
+            val visible = text.trimStart()
+            if (visible.isEmpty()) return
+            gemma4ThinkingOpened = true
+            send(sentinelThink)
+            send(visible)
+        } else if (text.isNotEmpty()) {
+            send(text)
+        }
     }
 
     private fun emitHarmony(tokenText: String, send: (String) -> Unit) {
@@ -1043,6 +1139,11 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
             return buildGranite42Prompt(messages, cleanPrompt, thinkingEnabled)
         }
 
+        // llama.cpp's built-in template list has no Gemma 4 format, so it is written here like the file's template.
+        if (model.isGemma4GgufThinking()) {
+            return buildGemma4Prompt(messages, thinkingEnabled)
+        }
+
         if (isLfm3Model(model)) {
             return buildLfm3Prompt(messages, thinkingEnabled)
         }
@@ -1296,6 +1397,33 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
             }
         }
         sb.append("<|im_start|>assistant\n").append(if (thinkingEnabled) "<think>" else "<think></think>")
+        return sb.toString()
+    }
+
+    /**
+     * The GGUF's own Gemma 4 chat template, text path: <|think|> opens the system turn when thinking is on, and an
+     * empty thought channel after "<|turn>model" asks for a direct answer when it is off. llama.cpp adds <bos>.
+     */
+    private fun buildGemma4Prompt(messages: List<VlmPromptTurn>, thinkingEnabled: Boolean): String {
+        val sb = StringBuilder()
+        var turns: List<VlmPromptTurn> = messages
+        val system = turns.firstOrNull()?.takeIf { it.role == "system" }?.text?.trim().orEmpty()
+        if (turns.firstOrNull()?.role == "system") turns = turns.drop(1)
+        if (thinkingEnabled || system.isNotEmpty()) {
+            sb.append("<|turn>system\n")
+            if (thinkingEnabled) sb.append("<|think|>\n")
+            sb.append(system).append("<turn|>\n")
+        }
+        turns.forEach { turn ->
+            if (turn.role == "assistant") {
+                val answer = stripThinkingForHistory(turn.text)
+                if (answer.isNotEmpty()) sb.append("<|turn>model\n").append(answer).append("<turn|>\n")
+            } else {
+                sb.append("<|turn>").append(turn.role).append('\n').append(turn.text.trim()).append("<turn|>\n")
+            }
+        }
+        sb.append("<|turn>model\n")
+        if (!thinkingEnabled) sb.append(GEMMA4_CHANNEL_OPEN).append(GEMMA4_THOUGHT_LABEL).append(GEMMA4_CHANNEL_CLOSE)
         return sb.toString()
     }
 

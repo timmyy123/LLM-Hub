@@ -51,6 +51,77 @@ class LLMBackend: ObservableObject {
         return normalized.contains("muse glimmer") || normalized.contains("muse-glimmer")
     }
 
+    /// Gemma 4 26B-A4B and 31B GGUF builds: the Gemma 4 GGUFs whose catalog entries have the thinking switch.
+    nonisolated static func isGemma4ThinkingGgufName(_ modelName: String?) -> Bool {
+        guard let lower = modelName?.lowercased() else { return false }
+        return (lower.contains("gemma 4") || lower.contains("gemma-4"))
+            && (lower.contains("26b-a4b") || lower.contains("31b"))
+            && lower.contains("gguf") && !lower.contains("vision projector")
+    }
+
+    private static let gemma4ChannelOpen = "<|channel>"
+    private static let gemma4ChannelClose = "<channel|>"
+    private static let gemma4ThoughtLabel = "thought\n"
+
+    /// Wraps a plain prompt the way the Gemma 4 GGUF's chat template does (llama.cpp's built-in template list has
+    /// no Gemma 4 format, so its template cannot be applied for us). llama.cpp adds <bos>.
+    private static func buildGemma4Prompt(prompt: String, systemPrompt: String?, thinkingEnabled: Bool) -> String {
+        let system = systemPrompt?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        var text = system.isEmpty ? "" : "<|turn>system\n\(system)<turn|>\n"
+        text += "<|turn>user\n\(prompt.trimmingCharacters(in: .whitespacesAndNewlines))<turn|>\n<|turn>model\n"
+        return applyGemma4ThinkingSwitch(text, thinkingEnabled: thinkingEnabled)
+    }
+
+    /// Switches thinking in a Gemma 4 prompt the way its template does: <|think|> at the top of the first system
+    /// turn (adding an empty system turn if there is none) to think, or an empty thought channel after the final
+    /// "<|turn>model" to answer directly.
+    private static func applyGemma4ThinkingSwitch(_ prompt: String, thinkingEnabled: Bool) -> String {
+        let systemHeader = "<|turn>system\n"
+        var text = String(prompt.drop(while: { $0.isWhitespace }))
+        let emptyThought = gemma4ChannelOpen + gemma4ThoughtLabel + gemma4ChannelClose
+        if thinkingEnabled {
+            guard !text.contains("<|think|>") else { return text }
+            if text.hasPrefix(systemHeader) {
+                text.insert(contentsOf: "<|think|>\n", at: text.index(text.startIndex, offsetBy: systemHeader.count))
+            } else {
+                text = systemHeader + "<|think|>\n<turn|>\n" + text
+            }
+        } else if text.hasSuffix("<|turn>model\n") {
+            text += emptyThought
+        } else if text.hasSuffix("<|turn>model") {
+            text += "\n" + emptyThought
+        }
+        return text
+    }
+
+    /// Gemma 4's cumulative output with thinking on: "<|channel>thought\n...<channel|>answer" becomes the app's
+    /// thinking sentinels around the reasoning. An empty thought channel shows no thinking block.
+    private static func normalizeGemma4ThinkingOutput(_ raw: String) -> String {
+        let text = raw.replacingOccurrences(of: "<turn|>", with: "")
+        guard let openRange = text.range(of: gemma4ChannelOpen) else {
+            let leading = String(text.drop(while: { $0.isWhitespace }))
+            if !leading.isEmpty && gemma4ChannelOpen.hasPrefix(leading) { return "" }
+            return text
+        }
+        var body = String(text[openRange.upperBound...])
+        if body.count < gemma4ThoughtLabel.count && gemma4ThoughtLabel.hasPrefix(body) { return "" }
+        if body.hasPrefix("thought") { body.removeFirst("thought".count) }
+        if body.hasPrefix("\n") { body.removeFirst() }
+        if let closeRange = body.range(of: gemma4ChannelClose) {
+            let thought = body[..<closeRange.lowerBound].trimmingCharacters(in: .whitespacesAndNewlines)
+            let answer = String(body[closeRange.upperBound...].drop(while: { $0.isWhitespace }))
+            return thought.isEmpty ? answer : thinkingSentinelOpen + thought + thinkingSentinelClose + answer
+        }
+        // Still reasoning: hold back a partial "<channel|>" at the end.
+        for length in stride(from: min(gemma4ChannelClose.count - 1, body.count), to: 0, by: -1)
+            where body.hasSuffix(String(gemma4ChannelClose.prefix(length))) {
+            body.removeLast(length)
+            break
+        }
+        let thought = body.trimmingCharacters(in: .whitespacesAndNewlines)
+        return thought.isEmpty ? "" : thinkingSentinelOpen + thought
+    }
+
     private static func buildMuseGlimmerPrompt(prompt: String, systemPrompt: String?, thinkingEnabled: Bool, includeRawPrefix: Bool = true) -> String {
         let cleanPrompt = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
         let systemContent = systemPrompt?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
@@ -1087,6 +1158,8 @@ class LLMBackend: ObservableObject {
         let isHarmonyModel = Self.isHarmonyModelName(loadedModelName)
         let isMuseGlimmerModel = Self.isMuseGlimmerModelName(loadedModelName)
         let isGranite42Model = Self.isGranite42ModelName(loadedModelName)
+        let isGemma4ThinkingModel = loadedModel?.modelFormat == .gguf && modelSupportsThinking
+            && Self.isGemma4ThinkingGgufName(loadedModelName)
         let useMuseGlimmerThinking = modelSupportsThinking && enableThinking
         let rawPrompt: String
         if isHarmonyModel && !prompt.hasPrefix("__RAW_PROMPT__") {
@@ -1177,6 +1250,12 @@ class LLMBackend: ObservableObject {
                 } else {
                     usePrompt = strippedPrompt
                 }
+            } else if isGemma4ThinkingModel && strippedPrompt.contains("<|turn>") {
+                usePrompt = Self.applyGemma4ThinkingSwitch(strippedPrompt, thinkingEnabled: enableThinking)
+            } else if isGemma4ThinkingModel && !prompt.hasPrefix("__RAW_PROMPT__") {
+                usePrompt = Self.buildGemma4Prompt(
+                    prompt: strippedPrompt, systemPrompt: effectiveSystemPrompt, thinkingEnabled: enableThinking
+                )
             } else {
                 usePrompt = strippedPrompt
             }
@@ -1185,7 +1264,7 @@ class LLMBackend: ObservableObject {
         // DirectLlamaCppBackend feeds text verbatim, so non-raw prompts that no
         // family-specific branch above formatted still need the GGUF's chat template.
         // Without it the model treats the prompt as a document and just continues it.
-        let handledByFamilyTemplate = isLfmModel || isLfm3Model || isPhi4MiniModel || isHarmonyModel || isMuseGlimmerModel || isGranite42Model
+        let handledByFamilyTemplate = isLfmModel || isLfm3Model || isPhi4MiniModel || isHarmonyModel || isMuseGlimmerModel || isGranite42Model || isGemma4ThinkingModel
         if let model = loadedModel, model.modelFormat == .gguf,
            !prompt.hasPrefix("__RAW_PROMPT__"), !handledByFamilyTemplate,
            let templated = await DirectLlamaCppBackend.shared.applyChatTemplate(
@@ -1243,12 +1322,15 @@ class LLMBackend: ObservableObject {
             // never contains it. Re-add it so the UI can tell reasoning from the answer even if
             // generation stops before </think>.
             let promptOpensThink = usePrompt.trimmingCharacters(in: .whitespacesAndNewlines).hasSuffix("<think>")
+            let showsGemma4Thinking = isGemma4ThinkingModel && enableThinking
             for try await update in stream {
                 try Task.checkCancellation()
                 let rawText = promptOpensThink && !update.text.contains("<think>")
                     ? "<think>\n" + update.text : update.text
-                let gemmaText = (loadedModelName.range(of: "gemma 4", options: .caseInsensitive) != nil ||
-                                 loadedModelName.range(of: "gemma-4", options: .caseInsensitive) != nil)
+                let gemmaText = showsGemma4Thinking
+                    ? Self.normalizeGemma4ThinkingOutput(rawText)
+                    : (loadedModelName.range(of: "gemma 4", options: .caseInsensitive) != nil ||
+                       loadedModelName.range(of: "gemma-4", options: .caseInsensitive) != nil)
                     ? Self.cleanGemma4Output(rawText) : rawText
                 let museText = isMuseGlimmerModel
                     ? Self.normalizeMuseGlimmerOutput(gemmaText, thinkingEnabled: enableThinking)

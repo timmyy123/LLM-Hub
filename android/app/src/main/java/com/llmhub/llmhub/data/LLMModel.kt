@@ -44,6 +44,16 @@ fun LLMModel.hasNativeVoiceSupport(): Boolean {
 fun LLMModel.isLfm3(): Boolean = name.contains("lfm3", ignoreCase = true)
 
 /**
+ * Gemma 4 26B-A4B and 31B GGUF builds. Their chat template turns thinking on with <|think|> in the system turn
+ * and off with an empty thought channel, so they get the same thinking switch as other thinking models.
+ */
+fun LLMModel.isGemma4GgufThinking(): Boolean =
+    modelFormat == "gguf" &&
+        (name.contains("Gemma-4 26B-A4B", ignoreCase = true) || name.contains("Gemma 4 26B-A4B", ignoreCase = true) ||
+            name.contains("Gemma-4 31B", ignoreCase = true) || name.contains("Gemma 4 31B", ignoreCase = true)) &&
+        !name.contains("Vision Projector", ignoreCase = true)
+
+/**
  * A feature's thinking switch outside AI Chat. LFM3 starts with thinking off and remembers its own choice per
  * model; every other model keeps the feature's existing [key] and [default].
  */

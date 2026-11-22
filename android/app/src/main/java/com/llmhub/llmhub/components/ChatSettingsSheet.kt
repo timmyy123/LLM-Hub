@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import com.llmhub.llmhub.R
 import com.llmhub.llmhub.data.LLMModel
+import com.llmhub.llmhub.data.isGemma4GgufThinking
 import com.llmhub.llmhub.data.GgufLayerLimits
 import com.llmhub.llmhub.data.ModelConfig
 import com.llmhub.llmhub.data.ModelPreferences
@@ -167,7 +168,8 @@ fun ChatSettingsSheet(
                 model.name.contains("Reasoning", ignoreCase = true) ||
                 model.name.contains("gpt-oss", ignoreCase = true) ||
                 model.name.contains("gpt_oss", ignoreCase = true) ||
-                (model.name.contains("Gemma-4", ignoreCase = true) && model.modelFormat == "litertlm")
+                (model.name.contains("Gemma-4", ignoreCase = true) && model.modelFormat == "litertlm") ||
+                model.isGemma4GgufThinking()
             } == true
         }
     }

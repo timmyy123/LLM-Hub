@@ -17,6 +17,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.llmhub.llmhub.data.LLMModel
 import com.llmhub.llmhub.data.featureThinking
+import com.llmhub.llmhub.data.isGemma4GgufThinking
 import com.llmhub.llmhub.data.isLfm3
 import com.llmhub.llmhub.data.putFeatureThinking
 import com.llmhub.llmhub.data.effectiveContextWindow
@@ -1091,7 +1092,7 @@ class VibeCoderViewModel(application: Application) : AndroidViewModel(applicatio
 
         val isMuseGlimmer = model?.name?.contains("Muse Glimmer", ignoreCase = true) == true || model?.name?.contains("muse-glimmer", ignoreCase = true) == true
         val isGranite42 = model?.name?.contains("granite-4.2", ignoreCase = true) == true || model?.name?.contains("granite 4.2", ignoreCase = true) == true
-        val useThinking = if (model?.name?.contains("Gemma-4", ignoreCase = true) == true || isMuseGlimmer || isGranite42) false else _enableThinking.value
+        val useThinking = if ((model?.name?.contains("Gemma-4", ignoreCase = true) == true && model.isGemma4GgufThinking() != true) || isMuseGlimmer || isGranite42) false else _enableThinking.value
         inferenceService.setGenerationParameters(
             maxTokens = responseMaxTokens?.coerceIn(1, effectiveMaxTokens) ?: effectiveMaxTokens,
             topK = topK,

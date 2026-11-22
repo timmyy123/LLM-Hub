@@ -6,6 +6,7 @@ import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.llmhub.llmhub.data.LLMModel
+import com.llmhub.llmhub.data.isGemma4GgufThinking
 import com.llmhub.llmhub.data.featureThinking
 import com.llmhub.llmhub.data.putFeatureThinking
 import com.llmhub.llmhub.data.effectiveContextWindow
@@ -222,7 +223,7 @@ class WritingAidViewModel(application: Application) : AndroidViewModel(applicati
             topP = null,
             temperature = null,
             nGpuLayers = _selectedNGpuLayers.value,
-            enableThinking = if (model.name.contains("Gemma-4", ignoreCase = true) || model.name.contains("Muse Glimmer", ignoreCase = true) || model.name.contains("muse-glimmer", ignoreCase = true) || model.name.contains("granite-4.2", ignoreCase = true) || model.name.contains("granite 4.2", ignoreCase = true)) false else _enableThinking.value,
+            enableThinking = if ((model.name.contains("Gemma-4", ignoreCase = true) && !model.isGemma4GgufThinking()) || model.name.contains("Muse Glimmer", ignoreCase = true) || model.name.contains("muse-glimmer", ignoreCase = true) || model.name.contains("granite-4.2", ignoreCase = true) || model.name.contains("granite 4.2", ignoreCase = true)) false else _enableThinking.value,
             contextWindow = effectiveCtx
         )
     }

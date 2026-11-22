@@ -48,6 +48,7 @@ import com.llmhub.llmhub.R
 import com.llmhub.llmhub.data.DeviceInfo
 import com.llmhub.llmhub.data.LLMModel
 import com.llmhub.llmhub.data.GgufLayerLimits
+import com.llmhub.llmhub.data.isGemma4GgufThinking
 import com.llmhub.llmhub.data.isLfm3
 import com.llmhub.llmhub.data.ModelConfig
 import com.llmhub.llmhub.data.ModelPreferences
@@ -186,7 +187,7 @@ fun FeatureModelSettingsSheet(
                 return@derivedStateOf false
             }
             if (name.contains("gemma-4") || name.contains("gemma 4") || name.contains("gemma_4")) {
-                return@derivedStateOf model.modelFormat == "litertlm"
+                return@derivedStateOf model.modelFormat == "litertlm" || model.isGemma4GgufThinking()
             }
             if (name.contains("muse glimmer") || name.contains("muse-glimmer")) {
                 return@derivedStateOf false
