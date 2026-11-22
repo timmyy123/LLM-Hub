@@ -12,10 +12,11 @@ extern "C" {
 
 typedef struct llmhub_bmoe llmhub_bmoe;
 
-/// Opens `model_path` (and the vision projector `mmproj_path`, or NULL). Returns NULL on failure with the reason in
-/// `error` (NUL-terminated, truncated to `error_size`).
+/// Opens `model_path` (and the vision projector `mmproj_path`, or NULL). With `gpu_prefill` the prompt is read on the
+/// GPU (Metal) and decode stays on the CPU. Returns NULL on failure with the reason in `error` (NUL-terminated,
+/// truncated to `error_size`).
 llmhub_bmoe * llmhub_bmoe_open(const char * model_path, const char * mmproj_path, int context_size, int threads,
-                               char * error, size_t error_size);
+                               int gpu_prefill, char * error, size_t error_size);
 void llmhub_bmoe_free(llmhub_bmoe * session);
 
 /// 1 when a vision projector is loaded.

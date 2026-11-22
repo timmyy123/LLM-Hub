@@ -43,6 +43,7 @@ enum DeviceSelfTests {
                         }
                     case "aion-catalog": failures += try await checkAionCatalogLiteRT()
                     case "flash-moe": failures += try await checkFlashStreamingMoe()
+                    case "flash-moe-gpu": failures += try await checkFlashStreamingGpuPrefill()
                     default: failures.append("Unknown self-test \(check)")
                     }
                 } catch {
@@ -503,6 +504,49 @@ enum DeviceSelfTests {
         let second = try await ask("Write three sentences about the history of the Eiffel Tower.")
         if !second.localizedCaseInsensitiveContains("Eiffel") { failures.append("Flash MoE paragraph: \(second.prefix(200))") }
         backend.unloadModel()
+        return failures
+    }
+
+    /// Flash streaming with the prompt read on the CPU, then on the GPU (Metal), on the same long prompt: the time to
+    /// the first word is mostly prompt reading. Decode is on the CPU in both. Same download rules as flash-moe.
+    static func checkFlashStreamingGpuPrefill() async throws -> [String] {
+        let backend = LLMBackend.shared
+        guard let model = ModelData.allModels().first(where: {
+            $0.name.hasPrefix("LFM2.5-24B-A2B") && backend.isModelAvailableLocally($0)
+        }) else { return ["Download an LFM2.5-24B-A2B build in the app first"] }
+        let facts = [
+            "The Eiffel Tower was built for the 1889 World's Fair in Paris, which marked the centenary of the French Revolution.",
+            "Gustave Eiffel's company designed and built it, with the engineers Maurice Koechlin and Emile Nouguier drawing the first plans.",
+            "Construction began in January 1887 and the tower opened on 31 March 1889 after about two years, two months and five days of work.",
+            "It is made of about 18,000 wrought iron parts joined by roughly 2.5 million rivets.",
+            "At 300 metres it was the tallest man-made structure in the world until the Chrysler Building was finished in 1930.",
+            "Many artists signed a protest against it in 1887, calling it useless and monstrous.",
+            "The city's permit was for twenty years, and the tower was saved partly because it proved useful for radio transmission.",
+            "It is repainted about every seven years, and each repainting uses around sixty tonnes of paint.",
+        ]
+        let document = (0..<5).map { round in facts.map { "Part \(round + 1). \($0)" }.joined(separator: " ") }.joined(separator: "\n\n")
+        let prompt = document + "\n\nUsing only the text above, in which year did the Eiffel Tower open? Answer in one short sentence."
+        var failures = [String]()
+        for gpu in [false, true] {
+            backend.selectedBackend = gpu ? "GPU" : "CPU"
+            var started = Date()
+            try await backend.loadModel(model)
+            let label = gpu ? "GPU prefill" : "CPU prefill"
+            log("FLASH_GPU: \(model.name) \(label) loaded in \(String(format: "%.1f", Date().timeIntervalSince(started))) s")
+            var reply = ""
+            var speed = 0.0
+            var firstWord: TimeInterval?
+            started = Date()
+            try await backend.generate(prompt: prompt, maxTokensOverride: 160) { text, _, tokensPerSecond in
+                if firstWord == nil, !text.isEmpty { firstWord = Date().timeIntervalSince(started) }
+                reply = text
+                speed = tokensPerSecond
+            }
+            log("FLASH_GPU: \(label) first word \(String(format: "%.1f", firstWord ?? -1)) s, total \(String(format: "%.1f", Date().timeIntervalSince(started))) s, decode tok/s=\(String(format: "%.2f", speed)) reply=\(reply.suffix(200))")
+            if !reply.contains("1889") { failures.append("\(label) answer: \(reply.suffix(200))") }
+            backend.unloadModel()
+            try await Task.sleep(nanoseconds: 2_000_000_000)
+        }
         return failures
     }
 
