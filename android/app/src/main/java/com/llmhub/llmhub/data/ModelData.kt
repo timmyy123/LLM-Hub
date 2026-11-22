@@ -3005,7 +3005,7 @@ object ModelData {
         ),
         LLMModel(
             name = "LFM2.5-24B-A2B (Q4_0)",
-            description = "Liquid's 24B parameter MoE reasoning model (2B active). Q4_0 quantization-aware distilled (QAD) build, recommended. Always thinks before answering. 131k context. (13.58GB)",
+            description = "Liquid's 24B parameter MoE reasoning model (2B active). Q4_0 quantization-aware distilled (QAD) build. Always thinks before answering. 131k context. (13.58GB)",
             url = "https://huggingface.co/LiquidAI/LFM2.5-24B-A2B-GGUF/resolve/d790f111166905bfb36a81e12a403701ac23a1ca/LFM2.5-24B-A2B-QAD-Q4_0.gguf?download=true",
             category = "text",
             sizeBytes = 13578190880L,
