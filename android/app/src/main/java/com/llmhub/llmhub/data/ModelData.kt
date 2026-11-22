@@ -77,11 +77,11 @@ object DeviceInfo {
         return getChipsetSuffix() in setOf("888", "8gen1", "8gen2", "8gen3", "8gen4", "8gen5", "7gen4")
     }
 
-    /** llama.cpp b11179 ships Hexagon HTP kernels for v73/v75/v79/v81, not v69. */
+    /** llama.cpp b12631 ships Hexagon HTP kernels for v73/v75/v79/v81/v85 (SM8975, 8 Elite Gen 6, is v85), not v69. */
     fun isLlamaCppHexagonSupported(): Boolean = getDeviceSoc() in setOf(
         "SM8550", "SM8550P", "QCS8550", "QCM8550",
         "SM8650", "SM8650P", "SM8750", "SM8750P",
-        "SM8845", "SM8850", "SM8850P",
+        "SM8845", "SM8850", "SM8850P", "SM8975",
     )
 
     /**

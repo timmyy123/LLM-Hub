@@ -87,7 +87,7 @@ internal object LlamaCppNative : LlamaCppRuntime {
     external override fun nativeModelEpoch(): Int
 }
 
-/** Official b12613 Snapdragon OpenCL/Hexagon runtime, loaded only for GPU/NPU selection. */
+/** Official b12631 Snapdragon OpenCL/Hexagon runtime, loaded only for GPU/NPU selection. */
 internal object LlamaCppSnapdragonNative : LlamaCppRuntime {
     init { System.loadLibrary("llmhub_llama_snapdragon") }
 
@@ -213,7 +213,7 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
     private var overrideEnableThinking: Boolean? = null
 
     private fun prepareHtpLibraries(): String {
-        val directory = File(context.filesDir, "llama_htp_b12613")
+        val directory = File(context.filesDir, "llama_htp_b12631")
         // Skels staged for an older llama.cpp release are unused after an upgrade.
         context.filesDir.listFiles { file -> file.isDirectory && file.name.startsWith("llama_htp_") && file != directory }
             ?.forEach { it.deleteRecursively() }

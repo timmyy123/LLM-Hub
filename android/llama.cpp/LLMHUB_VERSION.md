@@ -1,11 +1,11 @@
 # Vendored llama.cpp
 
 - Upstream: https://github.com/ggml-org/llama.cpp
-- Version: `b12613`
-- Commit: `362ac929749d56e433878585a8506f24968698b4`
-- Source archive SHA-256: `539f5b7a306c9392e0308094f9c39d1c793041bf18a2c5da5e93f79050be2eb7`
-- Snapdragon release: `llama-b12613-bin-android-arm64-snapdragon.tar.gz`, SHA-256
-  `734c4fc7845d9df9847bec5f18f9df55ce9e8aa118669ae9af974a974ca58816`
+- Version: `b12631`
+- Commit: `e300919cc704ddde3a8a8346a8714f57eeeee71b`
+- Source archive SHA-256: `bea5a657605d90dc2104ec7f3134cbec90e5fdbe1a2fdd50e66782cbedaff56b`
+- Snapdragon release: `llama-b12631-bin-android-arm64-snapdragon.tar.gz`, SHA-256
+  `fb4ad7a08bbc99b5f64570d955c0bbd02eba77a877e37a6594c8adbc98e78310`
 - License: MIT (see `LICENSE`)
 
 ## What is built from where
@@ -54,7 +54,7 @@
 `gguf-py/gguf/constants.py`, `conversion/__init__.py`, `tests/test-llama-archs.cpp`):
 - The `aion` architecture for microsoft/Aion-1.0-Instruct-2.3B (Qwen3-style block, per-layer sliding-window and
   full attention, YaRN on the full-attention layers only), from Xylolabs' `aion-llama.cpp.patch`
-  (huggingface.co/Xylolabs/Aion-1.0-Instruct-2.3B-GGUF). Upstream has no Aion support as of b12613. Drop this
+  (huggingface.co/Xylolabs/Aion-1.0-Instruct-2.3B-GGUF). Upstream has no Aion support as of b12631. Drop this
   patch once upstream adds the architecture, and check that its GGUF keys match before reusing our GGUF.
 
 `src/llama-chat.cpp`, `src/llama-chat.h`:
