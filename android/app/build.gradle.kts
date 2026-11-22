@@ -535,16 +535,16 @@ tasks.register("ensureAssetsForApk") {
     }
 }
 
-// QAIRT 2.50 for EmbeddingGemma 2 Qualcomm NPU models. LiteRT 2.3's dispatch requires QNN
-// system API 1.14.0, which this runtime reports. The older libs in assets/qnnlibs stay
-// for Stable Diffusion and are not used here.
+// QAIRT 2.52 (data/QairtRuntime.kt) for LiteRT's Qualcomm dispatch (EmbeddingGemma 2, Parakeet),
+// LTX-Video on the NPU, and Stable Diffusion/the upscaler on Hexagon v85 (Snapdragon 8 Elite Gen 6),
+// which the older libs in assets/qnnlibs (QNN 2.28) do not support. 2.52 is the first with V85.
 val litertQnnRuntime: Configuration by configurations.creating {
     isCanBeConsumed = false
     isCanBeResolved = true
     isTransitive = false
 }
 dependencies {
-    add("litertQnnRuntime", "com.qualcomm.qti:qnn-runtime:2.50.0")
+    add("litertQnnRuntime", "com.qualcomm.qti:qnn-runtime:2.52.0")
 }
 val extractLitertQnnLibs = tasks.register<Copy>("extractLitertQnnLibs") {
     from({ zipTree(litertQnnRuntime.singleFile) }) {
@@ -560,7 +560,9 @@ val extractLitertQnnLibs = tasks.register<Copy>("extractLitertQnnLibs") {
             "jni/arm64-v8a/libQnnHtpV79Skel.so",
             "jni/arm64-v8a/libQnnHtpV79Stub.so",
             "jni/arm64-v8a/libQnnHtpV81Skel.so",
-            "jni/arm64-v8a/libQnnHtpV81Stub.so"
+            "jni/arm64-v8a/libQnnHtpV81Stub.so",
+            "jni/arm64-v8a/libQnnHtpV85Skel.so",
+            "jni/arm64-v8a/libQnnHtpV85Stub.so"
         )
         eachFile {
             path = name

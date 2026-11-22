@@ -102,6 +102,13 @@ class SDBackendService : Service() {
      * This must be done because assets are read-only and libraries need execute permission
      */
     private fun prepareRuntimeDir() {
+        if (com.llmhub.llmhub.data.DeviceInfo.needsQairtForQnn()) {
+            // Hexagon v85: the QNN 2.28 pack cannot drive this HTP. The QAIRT 2.52 runtime runs the same
+            // context binaries (tested on an 8 Elite Gen 6: SD1.5 8gen2, SDXL and Anima 8gen3, the upscaler 8gen2).
+            runtimeDir = com.llmhub.llmhub.data.QairtRuntime.stage(this)
+            Log.i(TAG, "Runtime directory (QAIRT ${com.llmhub.llmhub.data.QairtRuntime.VERSION}): ${runtimeDir.absolutePath}")
+            return
+        }
         try {
             runtimeDir = File(filesDir, RUNTIME_DIR).apply {
                 if (!exists()) {

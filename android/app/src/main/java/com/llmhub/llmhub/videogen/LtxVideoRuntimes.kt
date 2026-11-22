@@ -198,23 +198,9 @@ internal open class SdCppLtxVideoRuntime(
 
     /**
      * QNN needs libQnnHtp/libQnnSystem and the Hexagon skel libraries in one readable directory.
-     * Reuses the QAIRT 2.50 runtime staged for LiteRT (assets/qnnlibs_litert -> litert_npu_qnn_250).
+     * Reuses the QAIRT runtime staged for LiteRT ([com.llmhub.llmhub.data.QairtRuntime]).
      */
-    private fun stageQnnLibraries(): String {
-        val dir = File(context.filesDir, "litert_npu_qnn_250").apply { mkdirs() }
-        val names = context.assets.list("qnnlibs_litert").orEmpty()
-        check(names.isNotEmpty()) { "QAIRT runtime libraries are missing from the app" }
-        for (name in names) {
-            val target = File(dir, name)
-            if (target.exists() && target.length() > 0L) continue
-            context.assets.open("qnnlibs_litert/$name").use { input ->
-                target.outputStream().use { input.copyTo(it) }
-            }
-            target.setReadable(true, false)
-            target.setExecutable(true, false)
-        }
-        return dir.absolutePath
-    }
+    private fun stageQnnLibraries(): String = com.llmhub.llmhub.data.QairtRuntime.stage(context).absolutePath
 
     // Center-crop the conditioning image to the output aspect ratio, then scale it to the output size.
     private fun fitToSize(source: Bitmap, width: Int, height: Int): Bitmap {

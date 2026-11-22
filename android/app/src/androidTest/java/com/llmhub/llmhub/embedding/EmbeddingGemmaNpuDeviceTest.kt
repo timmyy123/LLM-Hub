@@ -30,10 +30,20 @@ class EmbeddingGemmaNpuDeviceTest {
 
         for (size in listOf("270M", "740M")) {
             val model = npuModels.firstOrNull { it.name.startsWith("EmbeddingGemma 2 $size (NPU") } ?: continue
-            val source = File(fixtures, model.url.substringAfterLast('/').substringBefore('?'))
-            assertTrue("Missing fixture ${source.name}", source.isFile)
+            // The app's own download is used in place; a fixture is copied in only when there is none.
             val target = File(File(context.filesDir, "models").apply { mkdirs() }, model.localFileName())
-            if (target.length() != source.length()) source.copyTo(target, overwrite = true)
+            // -e sha_270M HEX (or sha_740M): the phone downloads a missing model into the app's models folder
+            // itself, from the catalog URL, and it stays there like an in-app download.
+            val sha = InstrumentationRegistry.getArguments().getString("sha_$size")
+            if (target.length() == 0L && sha != null) {
+                com.llmhub.llmhub.imagegen.OnDeviceFixtures.download(target, model.url, sha)
+            }
+            val copiedFixture = target.length() == 0L
+            if (copiedFixture) {
+                val source = File(fixtures, model.url.substringAfterLast('/').substringBefore('?'))
+                assertTrue("Download ${model.name} in the app, pass -e sha_$size, or push fixture ${source.name}", source.isFile)
+                source.copyTo(target, overwrite = true)
+            }
 
             val service = LiteRtLmEmbeddingService(context, model)
             val entry = JSONObject().put("name", model.name)
@@ -61,7 +71,8 @@ class EmbeddingGemmaNpuDeviceTest {
                 assertTrue("${model.name} must rank the related document higher", relatedScore > unrelatedScore)
             } finally {
                 service.close()
-                target.delete()
+                // Only a fixture this test copied in is removed, never the app's own download.
+                if (copiedFixture) target.delete()
             }
         }
     }

@@ -229,22 +229,15 @@ class ParakeetNpuEngine private constructor(
 
         /**
          * The Qualcomm dispatch library loads QNN from its own directory, and LiteRT 2.3 needs the
-         * QAIRT 2.50 runtime shipped in assets/qnnlibs_litert (see LiteRtLmEmbeddingService).
+         * QAIRT runtime shipped in assets/qnnlibs_litert ([com.llmhub.llmhub.data.QairtRuntime]).
          */
         private fun qualcommLibraryDir(context: Context): File? {
             val dispatch = File(context.applicationInfo.nativeLibraryDir, "libLiteRtDispatch_Qualcomm.so")
-            val names = context.assets.list("qnnlibs_litert").orEmpty()
+            val names = context.assets.list(com.llmhub.llmhub.data.QairtRuntime.ASSET_DIR).orEmpty()
             if (!dispatch.isFile || names.isEmpty()) return null
-            val dir = File(context.filesDir, "litert_npu_qnn_250").apply { mkdirs() }
+            val dir = com.llmhub.llmhub.data.QairtRuntime.stage(context)
             val copy = File(dir, dispatch.name)
             if (copy.length() != dispatch.length()) dispatch.copyTo(copy, overwrite = true)
-            for (name in names) {
-                val target = File(dir, name)
-                if (target.length() > 0L) continue
-                context.assets.open("qnnlibs_litert/$name").use { input -> target.outputStream().use { input.copyTo(it) } }
-                target.setReadable(true, false)
-                target.setExecutable(true, false)
-            }
             return dir
         }
     }

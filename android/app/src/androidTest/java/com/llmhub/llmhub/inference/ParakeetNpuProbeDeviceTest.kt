@@ -208,17 +208,10 @@ class ParakeetNpuProbeDeviceTest {
 
     private fun qualcommDir(): File? {
         val dispatch = File(context.applicationInfo.nativeLibraryDir, "libLiteRtDispatch_Qualcomm.so")
-        val names = context.assets.list("qnnlibs_litert").orEmpty()
-        if (!dispatch.isFile || names.isEmpty()) return null
-        val dir = File(context.filesDir, "litert_npu_qnn_250").apply { mkdirs() }
+        if (!dispatch.isFile || context.assets.list(com.llmhub.llmhub.data.QairtRuntime.ASSET_DIR).isNullOrEmpty()) return null
+        // The app's own QAIRT folder (ParakeetNpuEngine stages the same one).
+        val dir = com.llmhub.llmhub.data.QairtRuntime.stage(context)
         if (File(dir, dispatch.name).length() != dispatch.length()) dispatch.copyTo(File(dir, dispatch.name), overwrite = true)
-        for (name in names) {
-            val target = File(dir, name)
-            if (target.length() > 0L) continue
-            context.assets.open("qnnlibs_litert/$name").use { input -> target.outputStream().use { input.copyTo(it) } }
-            target.setReadable(true, false)
-            target.setExecutable(true, false)
-        }
         return dir
     }
 

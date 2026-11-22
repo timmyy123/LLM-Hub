@@ -64,6 +64,7 @@ object DeviceInfo {
         "SM8845" to "8gen5",  // Snapdragon 8 Gen 5
         "SM8850" to "8gen5",  // Snapdragon 8 Elite Gen 5
         "SM8850P" to "8gen5",
+        "SM8975" to "8gen6",  // Snapdragon 8 Elite Gen 6 (Hexagon v85)
         "SM7675" to "7gen4",  // Snapdragon 7 Gen 4
         "SM7675P" to "7gen4"
     )
@@ -73,6 +74,7 @@ object DeviceInfo {
         return chipsetModelSuffixes[soc] ?: if (soc.startsWith("SM")) "min" else null
     }
 
+    // Not 8gen6: WhisperKit's QNN 2.34 runtime has no Hexagon v85.
     fun isQualcommNpuSupported(): Boolean {
         return getChipsetSuffix() in setOf("888", "8gen1", "8gen2", "8gen3", "8gen4", "8gen5", "7gen4")
     }
@@ -121,10 +123,14 @@ object DeviceInfo {
     fun getSdQnnPackageSuffix(): String {
         return when (getChipsetSuffix()) {
             "8gen1" -> "8gen1"
-            "8gen2", "8gen3", "8gen4", "8gen5" -> "8gen2"
+            // 8gen6 (v85) runs the 8gen2 context binaries through QAIRT 2.52 (SDBackendService).
+            "8gen2", "8gen3", "8gen4", "8gen5", "8gen6" -> "8gen2"
             else -> "min"
         }
     }
+
+    /** Hexagon v85 and newer: QNN 2.28 (assets/qnnlibs) cannot drive the HTP; QAIRT 2.52 can. */
+    fun needsQairtForQnn(): Boolean = getChipsetSuffix() == "8gen6"
 
     /**
      * Normalize chipset suffix specifically for Hugging Face upscaler models path.
@@ -137,7 +143,7 @@ object DeviceInfo {
             "8gen2" -> "8gen2"
             "8gen3" -> "8gen3"
             "8gen4" -> "8gen4"
-            "8gen5" -> "8gen2"
+            "8gen5", "8gen6" -> "8gen2"
             else -> "min"
         }
     }
@@ -5526,6 +5532,8 @@ object ModelData {
             "ltxv_chunk0.bin" to 608211808L, "ltxv_chunk1.bin" to 542859168L, "ltxv_chunk2.bin" to 542863264L,
             "ltxv_chunk3.bin" to 545222984L, "ltxv_vae_768x512x25.bin" to 683989048L
         )),
+        // Not the 8 Elite Gen 6 (SM8975, v85) yet: these v81 binaries load there through QAIRT 2.52, but on a 12 GB
+        // test phone generation ran it out of memory and Android's low-memory killer ended the app.
         LtxvNpuBuild("Snapdragon 8 Elite Gen 5", "v81", setOf("SM8850", "SM8850P"), "768x512x25", listOf(
             "ltxv_chunk0.bin" to 589058912L, "ltxv_chunk1.bin" to 545005472L, "ltxv_chunk2.bin" to 545009568L,
             "ltxv_chunk3.bin" to 547479880L, "ltxv_vae_768x512x25.bin" to 712386616L
@@ -5777,7 +5785,7 @@ object ModelData {
                 model.url.contains("embeddinggemma-2-text-270m_")
             )
 
-    val models: List<LLMModel> = baseModels + embeddingGemma2Models + upscalerModels + ttsModels + musicGenerationModels + videoGenerationModels + sdLiteRtNpuModels() + parakeetNpuModels() + (if (DeviceInfo.getChipsetSuffix() in setOf("8gen3", "8gen4", "8gen5")) sdxlModels else emptyList())
+    val models: List<LLMModel> = baseModels + embeddingGemma2Models + upscalerModels + ttsModels + musicGenerationModels + videoGenerationModels + sdLiteRtNpuModels() + parakeetNpuModels() + (if (DeviceInfo.getChipsetSuffix() in setOf("8gen3", "8gen4", "8gen5", "8gen6")) sdxlModels else emptyList())
 
 
     /**

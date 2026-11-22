@@ -148,24 +148,20 @@ class LiteRtLmEmbeddingService(
     }
 
     /**
-     * The Qualcomm dispatch library loads QNN from its own folder and needs QAIRT 2.50 (QNN system API 1.14,
-     * assets/qnnlibs_litert). Those 100 MB are kept once in files/litert_npu_qnn_250, where the CompiledModel
+     * The Qualcomm dispatch library loads QNN from its own folder and needs the QAIRT runtime ([QairtRuntime],
+     * assets/qnnlibs_litert). Those 100 MB are kept once in [QairtRuntime.dir], where the CompiledModel
      * features stage them too, and linked into [dir]. The Stable Diffusion pack (assets/qnnlibs, system API
      * 1.5) is a different runtime and must not end up here.
      */
     private fun linkQnnRuntime(dir: File) {
-        val names = context.assets.list("qnnlibs_litert").orEmpty()
-        check(names.isNotEmpty()) { "QAIRT 2.50 libraries missing from assets/qnnlibs_litert" }
-        val store = File(context.filesDir, "litert_npu_qnn_250").apply { mkdirs() }
-        for (name in names) {
+        val store = com.llmhub.llmhub.data.QairtRuntime.stage(context)
+        for (name in context.assets.list(com.llmhub.llmhub.data.QairtRuntime.ASSET_DIR).orEmpty()) {
             val stored = File(store, name)
-            if (stored.length() == 0L) {
-                context.assets.open("qnnlibs_litert/$name").use { input -> stored.outputStream().use { input.copyTo(it) } }
-                stored.setReadable(true, false)
-                stored.setExecutable(true, false)
-            }
             val link = File(dir, name)
-            if (link.exists()) continue
+            // A link into an older runtime's folder dangles once QairtRuntime removes that folder (exists() is then
+            // false but the link still blocks symlink()); replace anything that is not this runtime's file.
+            if (link.exists() && link.canonicalPath == stored.canonicalPath) continue
+            link.delete()
             runCatching { android.system.Os.symlink(stored.path, link.path) }.onFailure { stored.copyTo(link, overwrite = true) }
         }
     }
