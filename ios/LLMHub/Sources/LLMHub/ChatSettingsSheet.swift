@@ -654,6 +654,10 @@ struct FlashStreamingToggle: View {
                 .onChange(of: isOn) { _, value in
                     UserDefaults.standard.set(value, forKey: LLMBackend.flashStreamingKey(for: model))
                 }
+            } else {
+                // A real (zero-height) view: SwiftUI never starts the task below on an empty view, which left
+                // the MoE check unrun and the switch hidden.
+                Color.clear.frame(height: 0)
             }
         }
         .task(id: model.id) {
