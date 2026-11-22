@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Builds libggml-opencl.so for the Snapdragon llama.cpp runtime from the vendored, patched
-# android/llama.cpp tree (see android/llama.cpp/LLMHUB_VERSION.md), and copies the stripped
-# library to app/src/main/jniLibs/arm64-v8a. All other Snapdragon libraries come unchanged from
-# the official llama.cpp release; this one carries LLMHub patches.
+# Builds libggml-opencl.so and libllama.so for the Snapdragon llama.cpp runtime from the vendored,
+# patched android/llama.cpp tree (see android/llama.cpp/LLMHUB_VERSION.md), and copies the stripped
+# libraries to app/src/main/jniLibs/arm64-v8a. All other Snapdragon libraries come unchanged from
+# the official llama.cpp release; these two carry LLMHub patches (libllama.so: the Aion architecture).
 #
 # Flags follow the release preset (docs/backend/snapdragon/CMakeUserPresets.json,
 # arm64-android-snapdragon) with -DGGML_HEXAGON=OFF -DBUILD_SHARED_LIBS=ON. The Khronos OpenCL
@@ -43,8 +43,10 @@ cmake -S "$LLAMA_DIR" -B "$WORK_DIR/llama-build" -G Ninja -DCMAKE_BUILD_TYPE=Rel
     -DGGML_OPENMP=OFF -DGGML_LLAMAFILE=OFF -DGGML_OPENCL=ON -DGGML_HEXAGON=OFF -DBUILD_SHARED_LIBS=ON \
     -DLLAMA_OPENSSL=OFF -DLLAMA_CURL=OFF -DLLAMA_BUILD_TESTS=OFF -DLLAMA_BUILD_EXAMPLES=OFF \
     -DLLAMA_BUILD_TOOLS=OFF -DLLAMA_BUILD_SERVER=OFF
-cmake --build "$WORK_DIR/llama-build" --target ggml-opencl
+cmake --build "$WORK_DIR/llama-build" --target ggml-opencl llama
 
-LIB="$(find "$WORK_DIR/llama-build" -name libggml-opencl.so | head -1)"
-"$STRIP" --strip-unneeded -o "$OUT_DIR/libggml-opencl.so" "$LIB"
-echo "Updated $OUT_DIR/libggml-opencl.so"
+for name in libggml-opencl.so libllama.so; do
+    LIB="$(find "$WORK_DIR/llama-build" -name "$name" | head -1)"
+    "$STRIP" --strip-unneeded -o "$OUT_DIR/$name" "$LIB"
+    echo "Updated $OUT_DIR/$name"
+done

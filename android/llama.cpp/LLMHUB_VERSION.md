@@ -20,7 +20,9 @@
   source: `libggml-opencl.so`, and ggml inside `libllmhub_sdcpp.so`.
 - The official Snapdragon release: headers in `app/src/main/cpp/llama-prebuilt`, stripped runtime libraries in
   `app/src/main/jniLibs/arm64-v8a`, Hexagon skels (unstripped) in `app/src/main/assets/llama_htp`. They are
-  linked into `libllmhub_llama_snapdragon.so`, which is loaded for OpenCL or Hexagon.
+  linked into `libllmhub_llama_snapdragon.so`, which is loaded for OpenCL or Hexagon. Two of those libraries are
+  built from this source instead, with the release preset flags (`android/tools/llama_opencl/build.sh`):
+  `libggml-opencl.so` (OpenCL patches) and `libllama.so` (the Aion architecture and chat template).
 
 ## Local patches (marked `LLMHub:`)
 
@@ -48,6 +50,18 @@
   per-token V transpose (flash attention auto, resolved off on OpenCL) slow enough to drop LFM3 1.7B decode on
   the Galaxy Tab S9+ from 18-19 to 7.7 tok/s.
 
+`src/models/aion.cpp`, `conversion/aion.py` and their registrations (`llama-arch`, `llama-model`, `models.h`,
+`gguf-py/gguf/constants.py`, `conversion/__init__.py`, `tests/test-llama-archs.cpp`):
+- The `aion` architecture for microsoft/Aion-1.0-Instruct-2.3B (Qwen3-style block, per-layer sliding-window and
+  full attention, YaRN on the full-attention layers only), from Xylolabs' `aion-llama.cpp.patch`
+  (huggingface.co/Xylolabs/Aion-1.0-Instruct-2.3B-GGUF). Upstream has no Aion support as of b12613. Drop this
+  patch once upstream adds the architecture, and check that its GGUF keys match before reusing our GGUF.
+
+`src/llama-chat.cpp`, `src/llama-chat.h`:
+- An `aion` built-in chat template, detected from the GGUF's template ("You are Aion Instruct"). Without it the
+  template is taken for Phi-3, which puts a newline after every role marker and drops Aion's default system turn
+  (identity, knowledge cutoff, current date). Tools are not formatted.
+
 ## Upgrading
 
 1. Unpack the new source archive over this tree, keeping this file. `diff -ru` the old tree against its own
@@ -56,8 +70,8 @@
    command, so a new version recompiles all of llama.cpp/ggml. This is required: upstream archives keep old
    file dates, and Ninja otherwise keeps stale objects.
 3. From the matching Snapdragon release (verify its digest with the GitHub releases API): copy the headers,
-   `llvm-strip --strip-unneeded` `libggml`, `libggml-base`, `libggml-cpu`, `libggml-hexagon`, `libggml-rpc`,
-   `libllama` and `libmtmd` into `jniLibs`, copy every `libggml-htp-v*.so`, and update the `llama_htp_<version>`
+   `llvm-strip --strip-unneeded` `libggml`, `libggml-base`, `libggml-cpu`, `libggml-hexagon`, `libggml-rpc`
+   and `libmtmd` into `jniLibs` (`libllama` comes from step 4), copy every `libggml-htp-v*.so`, and update the `llama_htp_<version>`
    cache name and skel list in `LlamaCppInferenceService.kt`.
-4. Rebuild `libggml-opencl.so` with `bash android/tools/llama_opencl/build.sh` (release preset flags with
-   `-DGGML_HEXAGON=OFF -DBUILD_SHARED_LIBS=ON`); its exports must match the release library's.
+4. Rebuild `libggml-opencl.so` and `libllama.so` with `bash android/tools/llama_opencl/build.sh` (release preset flags with
+   `-DGGML_HEXAGON=OFF -DBUILD_SHARED_LIBS=ON`); their exports must match the release libraries' (plus the `llama_model_aion` symbols).

@@ -92,6 +92,8 @@ static llama_model * llama_model_mapping(llm_arch arch, const llama_model_params
             return new llama_model_stablelm(params);
         case LLM_ARCH_MELLUM:
             return new llama_model_mellum(params);
+        case LLM_ARCH_AION:
+            return new llama_model_aion(params);
         case LLM_ARCH_NANBEIGE:
             return new llama_model_nanbeige(params);
         case LLM_ARCH_QWEN:
@@ -3881,6 +3883,7 @@ llama_rope_type llama_model_rope_type(const llama_model * model) {
         case LLM_ARCH_TALKIE:
         case LLM_ARCH_K2_HORIZON:
         case LLM_ARCH_MELLUM:
+        case LLM_ARCH_AION:
         case LLM_ARCH_MAPLE:
         case LLM_ARCH_HRM_TEXT:
         case LLM_ARCH_BEAM:

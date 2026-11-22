@@ -2,6 +2,7 @@
 
 #include "llama.h"
 
+#include <ctime>
 #include <map>
 #include <sstream>
 #include <algorithm>
@@ -37,6 +38,7 @@ static const std::map<std::string, llm_chat_template> LLM_CHAT_TEMPLATES = {
     { "mistral-v7",        LLM_CHAT_TEMPLATE_MISTRAL_V7        },
     { "mistral-v7-tekken", LLM_CHAT_TEMPLATE_MISTRAL_V7_TEKKEN },
     { "phi3",              LLM_CHAT_TEMPLATE_PHI_3             },
+    { "aion",              LLM_CHAT_TEMPLATE_AION              }, // LLMHub
     { "phi4",              LLM_CHAT_TEMPLATE_PHI_4             },
     { "falcon3",           LLM_CHAT_TEMPLATE_FALCON_3          },
     { "zephyr",            LLM_CHAT_TEMPLATE_ZEPHYR            },
@@ -137,6 +139,9 @@ llm_chat_template llm_chat_detect_template(const std::string & tmpl) {
                 return LLM_CHAT_TEMPLATE_LLAMA_2;
             }
         }
+    } else if (tmpl_contains("You are Aion Instruct") && tmpl_contains("<|assistant|>") && tmpl_contains("<|end|>")) {
+        // LLMHub: Aion's template uses Phi-3's markers without the newlines after them
+        return LLM_CHAT_TEMPLATE_AION;
     } else if (tmpl_contains("<|assistant|>") && tmpl_contains("<|end|>")) {
         return LLM_CHAT_TEMPLATE_PHI_3;
     } else if (tmpl_contains("[gMASK]<sop>")) {
@@ -341,6 +346,41 @@ int32_t llm_chat_apply_template(
         }
         if (add_ass) {
             ss << "<|assistant|>\n";
+        }
+    } else if (tmpl == LLM_CHAT_TEMPLATE_AION) {
+        // LLMHub: Aion Instruct (chat_template.jinja of microsoft/Aion-1.0-Instruct-2.3B, without tools): a system
+        // turn with the model identity, knowledge cutoff and date (plus a leading system message after a blank
+        // line), then <|user|>/<|assistant|> turns closed by <|end|>, with no newline after the markers.
+        char date[16] = "";
+        const std::time_t now = std::time(nullptr);
+        std::tm local_now = {};
+#ifdef _WIN32
+        if (localtime_s(&local_now, &now) == 0) {
+#else
+        if (localtime_r(&now, &local_now) != nullptr) {
+#endif
+            std::strftime(date, sizeof(date), "%Y-%m-%d", &local_now);
+        }
+        ss << "<|system|>You are Aion Instruct, a large language model trained by Microsoft.\nKnowledge cutoff: 2025-12";
+        if (date[0] != '\0') {
+            ss << "\nCurrent date: " << date;
+        }
+        size_t first = 0;
+        if (!chat.empty() && std::string(chat[0]->role) == "system") {
+            ss << "\n\n" << chat[0]->content;
+            first = 1;
+        }
+        ss << "<|end|>";
+        for (size_t i = first; i < chat.size(); ++i) {
+            const std::string role(chat[i]->role);
+            if (role == "system") {
+                ss << "<|system|>" << chat[i]->content << "<|end|>";
+            } else {
+                ss << "<|" << (role == "assistant" ? "assistant" : "user") << "|>" << chat[i]->content << "<|end|>";
+            }
+        }
+        if (add_ass) {
+            ss << "<|assistant|>";
         }
     } else if (tmpl == LLM_CHAT_TEMPLATE_PHI_4) {
         // chatml template
