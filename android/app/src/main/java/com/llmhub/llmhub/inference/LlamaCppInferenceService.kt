@@ -131,13 +131,34 @@ internal object LlamaCppVulkanNative : LlamaCppRuntime {
 internal object LlamaCppStreamNative : LlamaCppRuntime {
     init { System.loadLibrary("llmhub_llama_stream") }
 
-    private external fun nativeInitStream()
+    private external fun nativeInitStream(libraryDir: String, htpDir: String?): Int
     override fun nativeInit(libraryDir: String, htpDir: String?): Int {
         // Registers the CPU backend variant in the ggml both runtimes share.
         val result = LlamaCppNative.nativeInit(libraryDir, null)
-        if (result == 0) nativeInitStream()
-        return result
+        return if (result == 0) nativeInitStream(libraryDir, null) else result
     }
+    external override fun nativeLoadModel(modelPath: String, mmprojPath: String?, contextSize: Int, threadCount: Int, deviceName: String?, gpuLayers: Int, flashAttention: Int): Int
+    external override fun nativeSupportsVision(): Boolean
+    external override fun nativeMediaMarker(): String
+    external override fun nativeFormatChat(roles: Array<String>, contents: Array<String>): String?
+    external override fun nativeStartCompletion(formattedPrompt: String, imagePaths: Array<String>, maxTokens: Int, temperature: Float, topK: Int, topP: Float, grammar: String?): Int
+    external override fun nativeNextToken(): String?
+    external override fun nativeStop()
+    external override fun nativeReset()
+    external override fun nativeUnload()
+    external override fun nativeDecodeSpeed(): Double
+    external override fun nativeModelEpoch(): Int
+}
+
+/**
+ * Flash streaming on the official Snapdragon release libraries: the prompt is read on the Hexagon NPU ("HTP0"),
+ * decode stays on the CPU. Same JNI as [LlamaCppStreamNative] (llama_stream_jni.cpp built with LLMHUB_SNAPDRAGON).
+ */
+internal object LlamaCppStreamSnapdragonNative : LlamaCppRuntime {
+    init { System.loadLibrary("llmhub_llama_stream_snapdragon") }
+
+    private external fun nativeInitStream(libraryDir: String, htpDir: String?): Int
+    override fun nativeInit(libraryDir: String, htpDir: String?): Int = nativeInitStream(libraryDir, htpDir)
     external override fun nativeLoadModel(modelPath: String, mmprojPath: String?, contextSize: Int, threadCount: Int, deviceName: String?, gpuLayers: Int, flashAttention: Int): Int
     external override fun nativeSupportsVision(): Boolean
     external override fun nativeMediaMarker(): String
@@ -162,6 +183,7 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
         private const val DEFAULT_MAX_TOKENS = 1024
         private const val MAX_IMAGE_DIMENSION = 300
         private const val FLASH_STREAMING = "FlashStreaming"
+        private const val FLASH_STREAMING_NPU = "FlashStreamingNpu"
         private const val GEMMA4_CHANNEL_OPEN = "<|channel>"
         private const val GEMMA4_CHANNEL_CLOSE = "<channel|>"
         private const val GEMMA4_THOUGHT_LABEL = "thought\n"
@@ -294,6 +316,8 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
                 (ModelPreferences(context).getModelConfig(model.name)?.flashStreaming ?: true)
             // Retry only accelerator load failures, using the same model and settings on CPU.
             val attempts: List<String?> = when {
+                // NPU selected: the prompt on the Hexagon NPU, retried with CPU streaming if the NPU cannot open.
+                flashStreaming && accelerator == "HTP0" -> listOf(FLASH_STREAMING_NPU, FLASH_STREAMING)
                 flashStreaming -> listOf(FLASH_STREAMING)
                 accelerator == null -> listOf(null)
                 else -> listOf(accelerator, null)
@@ -303,6 +327,7 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
                 val attemptName = when (attemptAccelerator) {
                     null -> "CPU"
                     FLASH_STREAMING -> "CPU flash streaming"
+                    FLASH_STREAMING_NPU -> "NPU flash streaming"
                     else -> attemptAccelerator
                 }
                 val onCpu = attemptAccelerator == null || attemptAccelerator == FLASH_STREAMING
@@ -311,11 +336,13 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
                     runtime = when (attemptAccelerator) {
                         null -> LlamaCppNative
                         FLASH_STREAMING -> LlamaCppStreamNative
+                        FLASH_STREAMING_NPU -> LlamaCppStreamSnapdragonNative
                         "Vulkan0" -> LlamaCppVulkanNative
                         else -> LlamaCppSnapdragonNative
                     }
                     nativeInitialized = false
-                    val htpDir = if (attemptAccelerator == "HTP0" || attemptAccelerator == "GPUOpenCL") prepareHtpLibraries() else null
+                    val htpDir = if (attemptAccelerator == "HTP0" || attemptAccelerator == "GPUOpenCL" ||
+                        attemptAccelerator == FLASH_STREAMING_NPU) prepareHtpLibraries() else null
                     check(runtime.nativeInit(context.applicationInfo.nativeLibraryDir, htpDir) == 0) {
                         "llama.cpp initialization failed on $attemptName"
                     }
@@ -332,7 +359,11 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
                         mmprojFile?.absolutePath,
                         contextSize,
                         threads,
-                        if (onCpu) null else attemptAccelerator,
+                        when {
+                            onCpu -> null
+                            attemptAccelerator == FLASH_STREAMING_NPU -> "HTP0"
+                            else -> attemptAccelerator
+                        },
                         if (onCpu) 0 else overrideGpuLayers ?: 999,
                         flashAttention,
                     )
@@ -587,7 +618,9 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
     override fun getCurrentlyLoadedModel(): LLMModel? = currentModel?.takeIf { ownsNativeModel() }
     override fun getCurrentlyLoadedBackend(): LlmInference.Backend? = loadedBackend
     fun getCurrentlyLoadedDeviceId(): String? = loadedDeviceId
-    internal fun isFlashStreamingLoaded(): Boolean = currentModel != null && runtime === LlamaCppStreamNative
+    internal fun isFlashStreamingLoaded(): Boolean =
+        currentModel != null && (runtime === LlamaCppStreamNative || runtime === LlamaCppStreamSnapdragonNative)
+    internal fun isFlashStreamingNpuLoaded(): Boolean = currentModel != null && runtime === LlamaCppStreamSnapdragonNative
     override fun getMemoryWarningForImages(images: List<Bitmap>): String? = null
     override fun wasSessionRecentlyReset(chatId: String): Boolean = false
     override fun setGenerationParameters(

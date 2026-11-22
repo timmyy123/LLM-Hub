@@ -1,6 +1,7 @@
 #include "device_arena.h"
 
 #include "../io/platform_io.h"
+#include "bmoe/log.h"
 
 #include "ggml-alloc.h"
 #include "ggml-backend.h"
@@ -753,6 +754,17 @@ void DeviceExpertArena::end_graph() {
 }
 
 void DeviceExpertArena::worker(int lane) {
+    // LLM Hub: a device backend can throw from a weight write (ggml-hexagon when an NPU buffer mapping fails). On a
+    // loader thread nothing catches it and the process ends; it marks the arena failed instead, like a failed read.
+    auto set = [this](ggml_tensor * t, const void * data, size_t size) {
+        try {
+            ggml_backend_tensor_set(t, data, 0, size);
+        } catch (const std::exception & e) {
+            if (!failed_.exchange(true)) log_printf(LogLevel::Error, "device arena: weight write failed: %s", e.what());
+        } catch (...) {
+            failed_ = true;
+        }
+    };
     for (;;) {
         Task task;
         {
@@ -769,8 +781,7 @@ void DeviceExpertArena::worker(int lane) {
                 std::this_thread::sleep_for(std::chrono::microseconds(test_delay_us_));
             // Host-resident bytes: a copy (and the backend's repack), no flash read.
             const DenseLayer & D = dense_[(size_t) task.k];
-            ggml_backend_tensor_set(D.twin[(size_t) task.p], D.src[(size_t) task.p], 0,
-                                    ggml_nbytes(D.t[(size_t) task.p]));
+            set(D.twin[(size_t) task.p], D.src[(size_t) task.p], ggml_nbytes(D.t[(size_t) task.p]));
             {
                 std::lock_guard<std::mutex> lk(mu_);
                 --dense_remaining_[(size_t) task.k];
@@ -790,7 +801,7 @@ void DeviceExpertArena::worker(int lane) {
             uint64_t cb = 0;
             const void * src = cache_->resident_slice(L.il, task.e, task.p, cb);
             if (src && cb == pr.nb2) {
-                ggml_backend_tensor_set(cw.views[(size_t) task.e], src, 0, (size_t) pr.nb2);
+                set(cw.views[(size_t) task.e], src, (size_t) pr.nb2);
                 cache_bytes_ += pr.nb2;
                 {
                     std::lock_guard<std::mutex> lk(mu_);
@@ -808,7 +819,7 @@ void DeviceExpertArena::worker(int lane) {
             failed_ = true;
         } else {
             const Twin & w = twins_[task.k % n_slots_][task.p][(size_t) L.variant[task.p]];
-            ggml_backend_tensor_set(w.views[(size_t) task.e], stage, 0, (size_t) pr.nb2);
+            set(w.views[(size_t) task.e], stage, (size_t) pr.nb2);
             read_bytes_ += pr.nb2;
         }
         {

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Builds libggml-opencl.so and libllama.so for the Snapdragon llama.cpp runtime from the vendored,
+# Builds libggml-opencl.so, libllama.so and libllama-common.so for the Snapdragon llama.cpp runtime from the vendored,
 # patched android/llama.cpp tree (see android/llama.cpp/LLMHUB_VERSION.md), and copies the stripped
 # libraries to app/src/main/jniLibs/arm64-v8a. All other Snapdragon libraries come unchanged from
 # the official llama.cpp release; these two carry LLMHub patches (libllama.so: the Aion architecture).
@@ -43,9 +43,11 @@ cmake -S "$LLAMA_DIR" -B "$WORK_DIR/llama-build" -G Ninja -DCMAKE_BUILD_TYPE=Rel
     -DGGML_OPENMP=OFF -DGGML_LLAMAFILE=OFF -DGGML_OPENCL=ON -DGGML_HEXAGON=OFF -DBUILD_SHARED_LIBS=ON \
     -DLLAMA_OPENSSL=OFF -DLLAMA_CURL=OFF -DLLAMA_BUILD_TESTS=OFF -DLLAMA_BUILD_EXAMPLES=OFF \
     -DLLAMA_BUILD_TOOLS=OFF -DLLAMA_BUILD_SERVER=OFF
-cmake --build "$WORK_DIR/llama-build" --target ggml-opencl llama
+cmake --build "$WORK_DIR/llama-build" --target ggml-opencl llama llama-common
 
-for name in libggml-opencl.so libllama.so; do
+# libllama-common.so: llama.cpp's common helpers for the Snapdragon flash streaming runtime
+# (libllmhub_llama_stream_snapdragon.so), which the release does not package.
+for name in libggml-opencl.so libllama.so libllama-common.so; do
     LIB="$(find "$WORK_DIR/llama-build" -name "$name" | head -1)"
     "$STRIP" --strip-unneeded -o "$OUT_DIR/$name" "$LIB"
     echo "Updated $OUT_DIR/$name"

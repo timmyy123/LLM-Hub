@@ -24,16 +24,30 @@
 
 #include <unistd.h>
 
+#include <cstdlib>
+
 #include "bmoe/chat.h"
 #include "bmoe/log.h"
 #include "bmoe/session.h"
+#include "ggml-backend.h"
 #include "llama.h"
 
+// Two builds of this file: libllmhub_llama_stream (the app's own llama.cpp, CPU) and, with LLMHUB_SNAPDRAGON,
+// libllmhub_llama_stream_snapdragon (the official Snapdragon release libraries, so the prompt can be read on the
+// Hexagon NPU).
+#ifdef LLMHUB_SNAPDRAGON
+#define STREAM_JNI(name) Java_com_llmhub_llmhub_inference_LlamaCppStreamSnapdragonNative_##name
+#else
 #define STREAM_JNI(name) Java_com_llmhub_llmhub_inference_LlamaCppStreamNative_##name
+#endif
 
 namespace {
 
+#ifdef LLMHUB_SNAPDRAGON
+constexpr const char * TAG = "LlamaCppStreamNpu";
+#else
 constexpr const char * TAG = "LlamaCppStream";
+#endif
 constexpr int kDecodeThreads = 2;
 
 std::recursive_mutex g_mutex;                // load, unload and start/stop
@@ -114,19 +128,51 @@ std::string mime_for(const std::string & path) {
 
 } // namespace
 
-// LlamaCppStreamNative.nativeInit calls LlamaCppNative.nativeInit first: that registers the CPU backend variant in
-// the shared libllmhub_ggml and sets llama.cpp's log callback. This only routes the engine's own logs.
-extern "C" JNIEXPORT void JNICALL
-STREAM_JNI(nativeInitStream)(JNIEnv *, jobject) {
+#ifdef LLMHUB_SNAPDRAGON
+void llama_log_sink(ggml_log_level level, const char * text, void *) {
+    if (level == GGML_LOG_LEVEL_DEBUG) return;
+    const int priority = level == GGML_LOG_LEVEL_ERROR ? ANDROID_LOG_ERROR
+                        : level == GGML_LOG_LEVEL_WARN ? ANDROID_LOG_WARN : ANDROID_LOG_INFO;
+    __android_log_write(priority, TAG, text);
+}
+bool g_backend_ready = false;
+#endif
+
+// CPU build: LlamaCppStreamNative.nativeInit calls LlamaCppNative.nativeInit first, which registers the CPU backend
+// variant in the shared libllmhub_ggml; this only routes the engine's own logs. Snapdragon build: loads the release's
+// backends (CPU, OpenCL, Hexagon) from the native library folder, with the Hexagon skels in [htp_dir].
+extern "C" JNIEXPORT jint JNICALL
+STREAM_JNI(nativeInitStream)(JNIEnv * env, jobject, jstring library_dir, jstring htp_dir) {
     bmoe::set_log_sink(bmoe_log_sink);
+#ifdef LLMHUB_SNAPDRAGON
+    std::lock_guard<std::recursive_mutex> lock(g_mutex);
+    if (!g_backend_ready) {
+        llama_log_set(llama_log_sink, nullptr);
+        const std::string htp_path = from_jstring(env, htp_dir);
+        if (!htp_path.empty()) {
+            const char * old_path = std::getenv("ADSP_LIBRARY_PATH");
+            const std::string path = htp_path + (old_path != nullptr ? ";" + std::string(old_path) : "");
+            setenv("ADSP_LIBRARY_PATH", path.c_str(), 1);
+        }
+        ggml_backend_load_all_from_path(from_jstring(env, library_dir).c_str());
+        llama_backend_init();
+        g_backend_ready = true;
+    }
+#else
+    (void) env;
+    (void) library_dir;
+    (void) htp_dir;
+#endif
+    return 0;
 }
 
 extern "C" JNIEXPORT jint JNICALL
 STREAM_JNI(nativeLoadModel)(
     JNIEnv * env, jobject, jstring model_path, jstring mmproj_path,
-    jint context_size, jint thread_count, jstring, jint, jint) {
+    jint context_size, jint thread_count, jstring device_name, jint, jint) {
     std::lock_guard<std::recursive_mutex> lock(g_mutex);
     unload_all();
+    const std::string device = from_jstring(env, device_name);
 
     bmoe::SessionConfig cfg;
     cfg.model_path = from_jstring(env, model_path);
@@ -152,6 +198,23 @@ STREAM_JNI(nativeLoadModel)(
     cfg.moe.dense_weights = bmoe::DenseWeightsMode::Pinned;
     cfg.moe.io_threads = 4;
     cfg.moe.o_direct = true;
+#ifdef LLMHUB_SNAPDRAGON
+    if (device == "HTP0") {
+        // The prompt on the Hexagon NPU, decode on the CPU. The NPU can map only about 3 GB, and the earlier
+        // attempts (3.5 GB cache, pinned weights, slots held for the session) ran out of that space
+        // ("possibly out of IOVA space"). So the slots it reads experts through are held only while a prompt is
+        // read, the resident weights are ordinary memory, and a device that cannot open fails the load.
+        cfg.n_batch = 2048;
+        cfg.n_ubatch = 2048;
+        cfg.prefill.device = "HTP0";
+        cfg.prefill.slots_on_demand = true;
+        cfg.prefill.verify = false;
+        cfg.prefill.best_effort = false;
+        cfg.moe.dense_weights = bmoe::DenseWeightsMode::Anonymous;
+    }
+#else
+    (void) device;
+#endif
 
     std::string error;
     g_session = bmoe::Session::open(cfg, error);
@@ -260,12 +323,23 @@ STREAM_JNI(nativeStartCompletion)(
     g_decode_tps = 0.0;
     bmoe::Session * session = g_session.get();
     g_worker = std::thread([session, req]() {
-        const bmoe::RunResult result = session->generate(*req, [](const bmoe::TokenMetrics & metrics) {
-            if (metrics.piece.empty()) return;
-            std::lock_guard<std::mutex> lock(g_queue_mutex);
-            g_pieces.push_back(metrics.piece);
-            g_queue_cv.notify_one();
-        });
+        bmoe::RunResult result;
+        // A backend can throw from inside a graph (ggml-hexagon on a failed NPU buffer mapping); uncaught, that ends
+        // the whole app. It ends this reply instead.
+        try {
+            result = session->generate(*req, [](const bmoe::TokenMetrics & metrics) {
+                if (metrics.piece.empty()) return;
+                std::lock_guard<std::mutex> lock(g_queue_mutex);
+                g_pieces.push_back(metrics.piece);
+                g_queue_cv.notify_one();
+            });
+        } catch (const std::exception & e) {
+            result.ok = false;
+            result.error = e.what();
+        } catch (...) {
+            result.ok = false;
+            result.error = "unknown exception";
+        }
         if (!result.ok) {
             __android_log_print(ANDROID_LOG_ERROR, TAG, "Flash streaming generation failed: %s", result.error.c_str());
         }

@@ -20,9 +20,12 @@
   source: `libggml-opencl.so`, and ggml inside `libllmhub_sdcpp.so`.
 - The official Snapdragon release: headers in `app/src/main/cpp/llama-prebuilt`, stripped runtime libraries in
   `app/src/main/jniLibs/arm64-v8a`, Hexagon skels (unstripped) in `app/src/main/assets/llama_htp`. They are
-  linked into `libllmhub_llama_snapdragon.so`, which is loaded for OpenCL or Hexagon. Two of those libraries are
-  built from this source instead, with the release preset flags (`android/tools/llama_opencl/build.sh`):
-  `libggml-opencl.so` (OpenCL patches) and `libllama.so` (the Aion architecture and chat template).
+  linked into `libllmhub_llama_snapdragon.so`, which is loaded for OpenCL or Hexagon, and into
+  `libllmhub_llama_stream_snapdragon.so` (flash streaming with the prompt on the NPU). Four libraries are built from
+  this source instead, with the release preset flags: `libggml-opencl.so` (OpenCL patches), `libllama.so` (the Aion
+  architecture and chat template) and `libllama-common.so` (not in the release; flash streaming needs it) by
+  `android/tools/llama_opencl/build.sh`, and `libggml-hexagon.so` (the weight-write patch below) by
+  `android/tools/llama_hexagon/build.sh`, which needs the Hexagon SDK.
 
 ## Local patches (marked `LLMHub:`)
 
@@ -50,6 +53,14 @@
   per-token V transpose (flash attention auto, resolved off on OpenCL) slow enough to drop LFM3 1.7B decode on
   the Galaxy Tab S9+ from 18-19 to 7.7 tok/s.
 
+`ggml/src/ggml-hexagon/ggml-hexagon.cpp`, `htp-repack.cpp`, `htp-repack.h` (host side only; the skels are the release's):
+- From BigMoeOnEdge's llama.cpp fork (github.com/Helldez/llama.cpp, commit 09e3dc4, "tile a weight as it is written,
+  and leave the session alone on a weight write"). A weight write no longer flushes the session's op queue, and a
+  weight written in whole 2-D slices is tiled by the writer's thread. Flash streaming's prompt-reading loaders write
+  expert weights into NPU buffers from their own threads while a graph runs; with the flush they raced the graph's
+  thread and an NPU buffer mapping failed (0x200 in the app, 0x1a from a shell), on every Snapdragon tried (8 Gen 2
+  to 8 Elite Gen 5).
+
 `src/models/aion.cpp`, `conversion/aion.py` and their registrations (`llama-arch`, `llama-model`, `models.h`,
 `gguf-py/gguf/constants.py`, `conversion/__init__.py`, `tests/test-llama-archs.cpp`):
 - The `aion` architecture for microsoft/Aion-1.0-Instruct-2.3B (Qwen3-style block, per-layer sliding-window and
@@ -70,8 +81,10 @@
    command, so a new version recompiles all of llama.cpp/ggml. This is required: upstream archives keep old
    file dates, and Ninja otherwise keeps stale objects.
 3. From the matching Snapdragon release (verify its digest with the GitHub releases API): copy the headers,
-   `llvm-strip --strip-unneeded` `libggml`, `libggml-base`, `libggml-cpu`, `libggml-hexagon`, `libggml-rpc`
-   and `libmtmd` into `jniLibs` (`libllama` comes from step 4), copy every `libggml-htp-v*.so`, and update the `llama_htp_<version>`
+   `llvm-strip --strip-unneeded` `libggml`, `libggml-base`, `libggml-cpu`, `libggml-rpc` and `libmtmd` into
+   `jniLibs` (`libllama`, `libllama-common` and `libggml-hexagon` come from step 4), copy every `libggml-htp-v*.so`, and update the `llama_htp_<version>`
    cache name and skel list in `LlamaCppInferenceService.kt`.
-4. Rebuild `libggml-opencl.so` and `libllama.so` with `bash android/tools/llama_opencl/build.sh` (release preset flags with
-   `-DGGML_HEXAGON=OFF -DBUILD_SHARED_LIBS=ON`); their exports must match the release libraries' (plus the `llama_model_aion` symbols).
+4. Rebuild `libggml-opencl.so`, `libllama.so` and `libllama-common.so` with `bash android/tools/llama_opencl/build.sh`
+   (release preset flags with `-DGGML_HEXAGON=OFF -DBUILD_SHARED_LIBS=ON`), and `libggml-hexagon.so` with
+   `android/tools/llama_hexagon/build.sh`; exports must match the release libraries' (plus the `llama_model_aion`
+   symbols and the patch's `htp_repack_tensor_tiled_range`).

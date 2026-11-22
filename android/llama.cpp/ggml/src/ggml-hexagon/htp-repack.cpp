@@ -821,9 +821,7 @@ static void repack_tiled_q8_0(void * data, const ggml_tensor * t, size_t offset,
 // --- Float Types (F16, F32, BF16 -> f16_tiled HMX layout) ---
 
 static void repack_q2_0_tiled(ggml_tensor * t, const void * data, size_t offset, size_t size) {
-    GGML_ASSERT(offset == 0);
     GGML_ASSERT(t->ne[0] % 64 == 0);
-    GGML_ASSERT(size == ggml_nbytes(t));
 
     const block_q2_0 * src = (const block_q2_0 *) data;
     const int64_t blocks_per_row = t->ne[0] / 64;
@@ -831,8 +829,14 @@ static void repack_q2_0_tiled(ggml_tensor * t, const void * data, size_t offset,
     const int64_t n_weight_tiles = blocks_per_row;
     const size_t matrix_size = (size_t) n_col_tiles * n_weight_tiles * HTP_TENSOR_TILE_SIZE_Q2_0;
 
-    for (int64_t slice = 0; slice < t->ne[2] * t->ne[3]; ++slice) {
-        const block_q2_0 * src_slice = src + slice * t->ne[1] * blocks_per_row;
+    // A write covers whole 2-D slices (a weight written one expert at a time).
+    const size_t slice_size = (size_t) t->ne[1] * ggml_row_size(t->type, t->ne[0]);
+    GGML_ASSERT(offset % slice_size == 0 && size % slice_size == 0);
+    const int64_t start_slice = (int64_t) (offset / slice_size);
+    const int64_t end_slice = (std::min)(start_slice + (int64_t) (size / slice_size), t->ne[2] * t->ne[3]);
+
+    for (int64_t slice = start_slice; slice < end_slice; ++slice) {
+        const block_q2_0 * src_slice = src + (slice - start_slice) * t->ne[1] * blocks_per_row;
         uint8_t * dst_slice = (uint8_t *) t->data + slice * matrix_size;
         const size_t ct_bytes = (size_t) n_weight_tiles * HTP_TENSOR_TILE_SIZE_Q2_0;
 
@@ -952,9 +956,6 @@ static void unpack_f16_tiled_to_float(void * data, const ggml_tensor * t, size_t
 template <typename BlockT, typename PackKtFn>
 static void repack_kquant_to_tiled_grid(ggml_tensor * t, const void * data, size_t offset, size_t size,
                                         size_t tile_size, PackKtFn && pack_kt) {
-    GGML_ASSERT(offset == 0);
-    GGML_UNUSED(size);
-
     const BlockT * src_matrix = (const BlockT *) data;
     const int64_t ne0 = t->ne[0];
     const int64_t ne1 = t->ne[1];
@@ -967,8 +968,15 @@ static void repack_kquant_to_tiled_grid(ggml_tensor * t, const void * data, size
     const size_t matrix_size = (size_t) n_col_tiles * n_k_tiles * tile_size;
     const int64_t sb_per_row = ne0 / QK_K;
 
-    for (int64_t slice_idx = 0; slice_idx < ne2 * ne3; slice_idx++) {
-        const BlockT * src_slice = src_matrix + slice_idx * (ne1 * sb_per_row);
+    // A write covers whole 2-D slices (a weight written one expert at a time): `data` starts at
+    // slice offset / slice_size.
+    const size_t slice_size = (size_t) ne1 * ggml_row_size(t->type, ne0);
+    GGML_ASSERT(offset % slice_size == 0 && size % slice_size == 0);
+    const int64_t start_slice = (int64_t) (offset / slice_size);
+    const int64_t end_slice   = (std::min)(start_slice + (int64_t) (size / slice_size), ne2 * ne3);
+
+    for (int64_t slice_idx = start_slice; slice_idx < end_slice; slice_idx++) {
+        const BlockT * src_slice = src_matrix + (slice_idx - start_slice) * (ne1 * sb_per_row);
         uint8_t * matrix_dst     = (uint8_t *) t->data + slice_idx * matrix_size;
         const size_t ct_bytes    = (size_t) n_k_tiles * tile_size;
 
@@ -1820,16 +1828,20 @@ static void repack_tiled_nvfp4(void * data, const ggml_tensor * t, size_t offset
 // --- Top-level Repack / Unpack Dispatchers ---
 
 void htp_repack_tensor_tiled(ggml_tensor * tensor, const void * data, size_t size) {
+    htp_repack_tensor_tiled_range(tensor, data, 0, size);
+}
+
+void htp_repack_tensor_tiled_range(ggml_tensor * tensor, const void * data, size_t offset, size_t size) {
     switch (tensor->type) {
         case GGML_TYPE_Q1_0:
-            repack_q1_0_tiled(tensor, data, 0, size);
+            repack_q1_0_tiled(tensor, data, offset, size);
             break;
         case GGML_TYPE_Q4_0:
         case GGML_TYPE_IQ4_NL:
-            repack_q4_0_tiled(tensor, data, 0, size);
+            repack_q4_0_tiled(tensor, data, offset, size);
             break;
         case GGML_TYPE_Q4_1:
-            repack_q4_1_tiled(tensor, data, 0, size);
+            repack_q4_1_tiled(tensor, data, offset, size);
             break;
         case GGML_TYPE_Q5_0:
             repack_q5_0_tiled(tensor, data, 0, size);
@@ -1838,10 +1850,10 @@ void htp_repack_tensor_tiled(ggml_tensor * tensor, const void * data, size_t siz
             repack_q5_1_tiled(tensor, data, 0, size);
             break;
         case GGML_TYPE_Q8_0:
-            repack_q8_0_tiled(tensor, data, 0, size);
+            repack_q8_0_tiled(tensor, data, offset, size);
             break;
         case GGML_TYPE_MXFP4:
-            repack_mxfp4_tiled(tensor, data, 0, size);
+            repack_mxfp4_tiled(tensor, data, offset, size);
             break;
         case GGML_TYPE_NVFP4:
             repack_nvfp4_tiled(tensor, data, 0, size);
@@ -1850,33 +1862,33 @@ void htp_repack_tensor_tiled(ggml_tensor * tensor, const void * data, size_t siz
             repack_iq2_xxs_tiled(tensor, data, 0, size);
             break;
         case GGML_TYPE_Q2_0:
-            repack_q2_0_tiled(tensor, data, 0, size);
+            repack_q2_0_tiled(tensor, data, offset, size);
             break;
         case GGML_TYPE_Q2_K:
-            repack_q2_K_tiled(tensor, data, 0, size);
+            repack_q2_K_tiled(tensor, data, offset, size);
             break;
         case GGML_TYPE_Q3_K:
-            repack_q3_K_tiled(tensor, data, 0, size);
+            repack_q3_K_tiled(tensor, data, offset, size);
             break;
         case GGML_TYPE_Q4_K:
-            repack_q4_K_tiled(tensor, data, 0, size);
+            repack_q4_K_tiled(tensor, data, offset, size);
             break;
         case GGML_TYPE_Q5_K:
-            repack_q5_K_tiled(tensor, data, 0, size);
+            repack_q5_K_tiled(tensor, data, offset, size);
             break;
         case GGML_TYPE_Q6_K:
-            repack_q6_K_tiled(tensor, data, 0, size);
+            repack_q6_K_tiled(tensor, data, offset, size);
             break;
         case GGML_TYPE_F16:
-            repack_float_to_f16_tiled<uint16_t>(tensor, data, 0, size,
+            repack_float_to_f16_tiled<uint16_t>(tensor, data, offset, size,
                 [](uint16_t v) { return v; });
             break;
         case GGML_TYPE_F32:
-            repack_float_to_f16_tiled<float>(tensor, data, 0, size,
+            repack_float_to_f16_tiled<float>(tensor, data, offset, size,
                 [](float v) { return (uint16_t) GGML_FP32_TO_FP16(v); });
             break;
         case GGML_TYPE_BF16:
-            repack_float_to_f16_tiled<ggml_bf16_t>(tensor, data, 0, size,
+            repack_float_to_f16_tiled<ggml_bf16_t>(tensor, data, offset, size,
                 [](ggml_bf16_t v) { return (uint16_t) GGML_FP32_TO_FP16(GGML_BF16_TO_FP32(v)); });
             break;
         default:

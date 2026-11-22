@@ -35,3 +35,6 @@ Keep these few; record any change here.
   already does on iOS). Inside an app the executable is the system's `app_process`, not a bmoe binary, and
   `posix_spawn` needs API 28 while the app supports 27. Only the CLI's isolated device probes use it; the Session
   path the app runs never does.
+- `core/src/moe/device_arena.cpp`: the prompt-reading loader threads catch an exception from a device weight write
+  (ggml-hexagon throws when an NPU buffer mapping fails) and mark the arena failed, as a failed flash read does.
+  Uncaught on those threads it ended the app.

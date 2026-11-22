@@ -688,14 +688,34 @@ static void ggml_backend_hexagon_buffer_set_tensor(ggml_backend_buffer_t buffer,
     auto sbuf = (ggml_hexagon_shared_buffer *) buffer->context;
     auto sess = sbuf->sess;
 
-    sess->flush_sync();
+    const bool weights = ggml_backend_buffer_get_usage(buffer) == GGML_BACKEND_BUFFER_USAGE_WEIGHTS;
 
-    if (ggml_backend_buffer_get_usage(buffer) == GGML_BACKEND_BUFFER_USAGE_WEIGHTS) {
+    // No op writes a weight, so a weight write has nothing to wait for and leaves the session alone:
+    // a weight streamer fills one buffer from its own threads while a graph runs on another, and
+    // flushing from those threads would race the graph's thread on the op queue. Ordering the write
+    // against the ops that read the weight is the writer's job.
+    if (!weights) {
+        sess->flush_sync();
+    }
+
+    if (weights) {
         ggml_hexagon_tensor_set_flags(tensor, HTP_TENSOR_WEIGHT);
     }
 
     HEX_VERBOSE("ggml-hex: %s set-tensor %s : data %p offset %zu size %zu usage %d flags 0x%x\n",
         sess->c_name(), tensor->name, data, offset, size, (int) buffer->usage, ggml_hexagon_tensor_get_flags(tensor));
+
+    // A weight written in whole 2-D slices (all of it, or one expert at a time) is tiled as it is
+    // written, by the writer's thread, so a weight rewritten between graphs does not have to be
+    // tiled again whole by the graph, and many writers tile in parallel.
+    if (weights && ggml_hexagon_tensor_can_tile(tensor)) {
+        const size_t slice = (size_t) tensor->ne[1] * ggml_row_size(tensor->type, tensor->ne[0]);
+        if (offset % slice == 0 && size % slice == 0) {
+            htp_repack_tensor_tiled_range(tensor, data, offset, size);
+            ggml_hexagon_tensor_set_flags(tensor, HTP_TENSOR_TILED);
+            return;
+        }
+    }
 
     memcpy((char *) tensor->data + offset, data, size);
 }

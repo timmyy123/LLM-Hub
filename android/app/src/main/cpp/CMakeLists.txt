@@ -134,4 +134,35 @@ target_compile_options(llmhub_llama_stream PRIVATE -march=armv8-a -fvisibility=h
 target_link_options(llmhub_llama_stream PRIVATE "-Wl,--exclude-libs,ALL" "-Wl,-Bsymbolic")
 target_link_libraries(llmhub_llama_stream PRIVATE bmoe_core llama llama-common mtmd ggml android log dl)
 
+# The same engine and JNI against the official Snapdragon release libraries (above), so the prompt of a streamed MoE
+# model can be read on the Hexagon NPU (LlamaCppStreamSnapdragonNative). libllama-common.so is built from this tree
+# with the release flags by tools/llama_opencl/build.sh, like libllama.so.
+foreach(prebuilt IN ITEMS ggml-base llama-common)
+    add_library(llmhub_prebuilt_${prebuilt} SHARED IMPORTED)
+    set_target_properties(llmhub_prebuilt_${prebuilt} PROPERTIES
+        IMPORTED_LOCATION "${LLAMA_PREBUILT_LIB_DIR}/lib${prebuilt}.so")
+endforeach()
+get_target_property(BMOE_CORE_SOURCES bmoe_core SOURCES)
+list(TRANSFORM BMOE_CORE_SOURCES PREPEND "${BMOE_DIR}/core/")
+add_library(bmoe_core_snapdragon STATIC ${BMOE_CORE_SOURCES})
+target_include_directories(bmoe_core_snapdragon PUBLIC "${BMOE_DIR}/core/include")
+target_include_directories(bmoe_core_snapdragon PRIVATE
+    "${CMAKE_CURRENT_LIST_DIR}/llama-prebuilt/include"
+    "${LLAMA_CPP_DIR}/common"
+    "${LLAMA_CPP_DIR}/vendor"
+    "${LLAMA_CPP_DIR}/tools/mtmd")
+target_compile_definitions(bmoe_core_snapdragon PUBLIC BMOE_HAVE_LLAMA=1 BMOE_VERSION="${PROJECT_VERSION}")
+target_compile_definitions(bmoe_core_snapdragon PRIVATE __ANDROID_UNAVAILABLE_SYMBOLS_ARE_WEAK__)
+target_compile_options(bmoe_core_snapdragon PRIVATE -march=armv8-a)
+target_link_libraries(bmoe_core_snapdragon PUBLIC
+    llmhub_prebuilt_llama llmhub_prebuilt_llama-common llmhub_prebuilt_mtmd llmhub_prebuilt_ggml
+    llmhub_prebuilt_ggml-base android log dl)
+
+add_library(llmhub_llama_stream_snapdragon SHARED llama_stream_jni.cpp)
+target_compile_definitions(llmhub_llama_stream_snapdragon PRIVATE LLMHUB_SNAPDRAGON=1)
+target_compile_options(llmhub_llama_stream_snapdragon PRIVATE -march=armv8-a -fvisibility=hidden)
+target_include_directories(llmhub_llama_stream_snapdragon PRIVATE "${CMAKE_CURRENT_LIST_DIR}/llama-prebuilt/include")
+target_link_libraries(llmhub_llama_stream_snapdragon PRIVATE bmoe_core_snapdragon)
+target_link_options(llmhub_llama_stream_snapdragon PRIVATE "-Wl,--allow-shlib-undefined")
+
 add_subdirectory(pocket_tts)
