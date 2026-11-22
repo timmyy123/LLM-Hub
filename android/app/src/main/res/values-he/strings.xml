@@ -804,7 +804,7 @@
     <string name="gpu_layers_label">GPU Layers: %1$d</string>
     <string name="gpu_layers_hint">Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers</string>
     <string name="flash_streaming_title">הזרמה מהאחסון</string>
-    <string name="flash_streaming_hint">קורא את המומחים מהאחסון לפי הצורך, כך שמודלי MoE גדולים מהזיכרון יכולים לרוץ. פועל על המעבד. כבו כדי לטעון את כל המודל לזיכרון.</string>
+    <string name="flash_streaming_hint">עוזר לטעון מודלי MoE גדולים מהזיכרון.</string>
 
     <!-- Premium / IAP -->
     <string name="premium_title">LLM Hub Premium לכל החיים</string>

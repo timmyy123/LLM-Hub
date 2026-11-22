@@ -788,7 +788,7 @@
     <string name="gpu_layers_label">GPU लेयर्स: %1$d</string>
     <string name="gpu_layers_hint">GPU/NPU पर ऑफलोड की गई लेयर्स। 0 = केवल CPU, 999 = सभी लेयर्स</string>
     <string name="flash_streaming_title">स्टोरेज से स्ट्रीमिंग</string>
-    <string name="flash_streaming_hint">ज़रूरत पड़ने पर एक्सपर्ट्स को स्टोरेज से पढ़ता है, ताकि मेमोरी से बड़े MoE मॉडल भी चल सकें। CPU पर चलता है। पूरा मॉडल मेमोरी में लोड करने के लिए इसे बंद करें।</string>
+    <string name="flash_streaming_hint">RAM से बड़े MoE मॉडल लोड करने में मदद करता है।</string>
     <string name="thinking_toggle_label">सोचना सक्षम करें</string>
     <string name="gpu_not_supported">इस मॉडल द्वारा GPU समर्थित नहीं है</string>
     <string name="load_model">मॉडल लोड करें</string>

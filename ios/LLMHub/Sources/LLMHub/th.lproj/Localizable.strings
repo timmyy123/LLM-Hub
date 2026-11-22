@@ -652,7 +652,7 @@
 "gpu_layers_label" = "เลเยอร์ GPU:%1$d";
 "gpu_layers_hint" = "เลเยอร์ออฟโหลดไปที่ GPU/NPU 0 = CPU เท่านั้น 999 = ทุกเลเยอร์";
 "flash_streaming_title" = "สตรีมจากที่เก็บข้อมูล";
-"flash_streaming_hint" = "อ่านเอ็กซ์เพิร์ตจากที่เก็บข้อมูลเมื่อจำเป็น จึงรันโมเดล MoE ที่ใหญ่กว่าหน่วยความจำได้ ทำงานบน CPU ปิดเพื่อโหลดทั้งโมเดลลงหน่วยความจำ";
+"flash_streaming_hint" = "ช่วยโหลดโมเดล MoE ที่ใหญ่กว่า RAM";
 "thinking_toggle_label" = "เปิดใช้งานการคิด";
 "gpu_not_supported" = "รุ่นนี้ไม่รองรับ GPU";
 "load_model" = "โหลดโมเดล";

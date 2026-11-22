@@ -652,7 +652,7 @@
 "gpu_layers_label" = "GPU Layers: %1$d";
 "gpu_layers_hint" = "Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers";
 "flash_streaming_title" = "Flash streaming";
-"flash_streaming_hint" = "Reads the experts from storage as needed, so MoE models larger than memory can run. Runs on CPU. Turn off to load the whole model into memory.";
+"flash_streaming_hint" = "Helps load MoE models larger than RAM.";
 "thinking_toggle_label" = "Enable Thinking";
 "gpu_not_supported" = "GPU not supported by this model";
 "load_model" = "Load Model";

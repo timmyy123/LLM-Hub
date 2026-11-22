@@ -696,7 +696,7 @@
 "gpu_layers_label" = "GPU Layers: %1$d";
 "gpu_layers_hint" = "Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers";
 "flash_streaming_title" = "저장소 스트리밍";
-"flash_streaming_hint" = "필요한 전문가만 저장소에서 읽어 메모리보다 큰 MoE 모델도 실행할 수 있습니다. CPU에서 실행됩니다. 끄면 모델 전체를 메모리에 불러옵니다.";
+"flash_streaming_hint" = "RAM보다 큰 MoE 모델을 불러올 수 있게 합니다.";
 "premium_title" = "LLM Hub 프리미엄 평생";
 "premium_subtitle" = "전체 기능을 잠금 해제하세요";
 "premium_feature_vibe_coder" = "VibeCoder – AI 코드 생성기";

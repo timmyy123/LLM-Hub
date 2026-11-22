@@ -771,7 +771,7 @@
     <string name="gpu_layers_label">GPU Layers: %1$d</string>
     <string name="gpu_layers_hint">Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers</string>
     <string name="flash_streaming_title">Flash-Streaming</string>
-    <string name="flash_streaming_hint">Liest die Experten bei Bedarf aus dem Speicher, damit MoE-Modelle laufen, die größer als der Arbeitsspeicher sind. Läuft auf der CPU. Ausschalten, um das ganze Modell in den Arbeitsspeicher zu laden.</string>
+    <string name="flash_streaming_hint">Hilft, MoE-Modelle zu laden, die größer als der Arbeitsspeicher sind.</string>
 
     <!-- Premium / IAP -->
     <string name="premium_title">LLM Hub Premium Lifetime</string>

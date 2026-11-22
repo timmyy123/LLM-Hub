@@ -706,7 +706,7 @@
     <string name="gpu_layers_label">GPU-lag:%1$d</string>
     <string name="gpu_layers_hint">Lag overført til GPU/NPU. 0 = kun CPU, 999 = alle lag</string>
     <string name="flash_streaming_title">Flash-streaming</string>
-    <string name="flash_streaming_hint">Læser eksperterne fra lageret efter behov, så MoE-modeller, der er større end hukommelsen, kan køre. Kører på CPU. Slå fra for at indlæse hele modellen i hukommelsen.</string>
+    <string name="flash_streaming_hint">Hjælper med at indlæse MoE-modeller, der er større end RAM.</string>
     <string name="thinking_toggle_label">Aktiver Thinking</string>
     <string name="gpu_not_supported">GPU understøttes ikke af denne model</string>
     <string name="load_model">Indlæs model</string>

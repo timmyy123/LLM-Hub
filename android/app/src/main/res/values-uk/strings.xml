@@ -805,7 +805,7 @@
     <string name="gpu_layers_label">GPU Layers: %1$d</string>
     <string name="gpu_layers_hint">Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers</string>
     <string name="flash_streaming_title">Потокове читання з накопичувача</string>
-    <string name="flash_streaming_hint">Читає експертів з накопичувача за потреби, тож запускаються MoE-моделі, більші за обсяг пам\'яті. Працює на CPU. Вимкніть, щоб завантажити всю модель у пам\'ять.</string>
+    <string name="flash_streaming_hint">Допомагає завантажувати MoE-моделі, більші за обсяг ОЗП.</string>
 
     <!-- Premium / IAP -->
     <string name="premium_title">LLM Hub Premium (Назавжди)</string>

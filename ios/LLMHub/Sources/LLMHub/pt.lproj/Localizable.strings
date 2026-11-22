@@ -651,7 +651,7 @@
 "gpu_layers_label" = "GPU Layers: %1$d";
 "gpu_layers_hint" = "Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers";
 "flash_streaming_title" = "Streaming do armazenamento";
-"flash_streaming_hint" = "Lê os especialistas do armazenamento quando necessário, para rodar modelos MoE maiores que a memória. Usa a CPU. Desative para carregar o modelo inteiro na memória.";
+"flash_streaming_hint" = "Ajuda a carregar modelos MoE maiores que a RAM.";
 "premium_title" = "LLM Hub Premium Vitalício";
 "premium_subtitle" = "Desbloqueie a experiência completa";
 "premium_feature_vibe_coder" = "VibeCoder – Gerador de código IA";

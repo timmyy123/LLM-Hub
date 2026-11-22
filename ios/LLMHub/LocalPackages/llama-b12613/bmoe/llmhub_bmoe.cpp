@@ -48,6 +48,9 @@ extern "C" llmhub_bmoe * llmhub_bmoe_open(const char * model_path, const char * 
         // routed experts from storage.
         cfg.n_gpu_layers = gpu_layers;
         cfg.device_use = bmoe::DeviceUse::Auto;
+        // The expert weights stay in host memory, where the streamer serves them (llama.cpp's -ot exps=CPU); without
+        // this the GPU layers take their experts too and there is nothing left to stream.
+        cfg.buft_overrides = {"\\.ffn_(up|down|gate_up|gate)_(ch|)exps"};
     }
     std::string message;
     auto session = bmoe::Session::open(cfg, message);

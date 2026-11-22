@@ -694,7 +694,7 @@
     <string name="gpu_layers_label">GPU-lagen:%1$d</string>
     <string name="gpu_layers_hint">Lagen overgebracht naar GPU/NPU. 0 = alleen CPU, 999 = alle lagen</string>
     <string name="flash_streaming_title">Streamen vanaf opslag</string>
-    <string name="flash_streaming_hint">Leest de experts uit de opslag wanneer ze nodig zijn, zodat MoE-modellen die groter zijn dan het geheugen kunnen draaien. Draait op de CPU. Zet uit om het hele model in het geheugen te laden.</string>
+    <string name="flash_streaming_hint">Helpt MoE-modellen te laden die groter zijn dan het RAM.</string>
     <string name="thinking_toggle_label">Denk na</string>
     <string name="gpu_not_supported">GPU wordt niet ondersteund door dit model</string>
     <string name="load_model">Model laden</string>

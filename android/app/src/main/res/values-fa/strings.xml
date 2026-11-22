@@ -805,7 +805,7 @@
     <string name="gpu_layers_label">GPU Layers: %1$d</string>
     <string name="gpu_layers_hint">Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers</string>
     <string name="flash_streaming_title">استریم از حافظه داخلی</string>
-    <string name="flash_streaming_hint">متخصص‌ها را هنگام نیاز از حافظه داخلی می‌خواند تا مدل‌های MoE بزرگ‌تر از رم اجرا شوند. روی CPU اجرا می‌شود. برای بارگذاری کامل مدل در رم خاموشش کنید.</string>
+    <string name="flash_streaming_hint">به بارگذاری مدل‌های MoE بزرگ‌تر از رم کمک می‌کند.</string>
 
     <!-- Premium / IAP -->
     <string name="premium_title">LLM Hub Premium مادام‌العمر</string>

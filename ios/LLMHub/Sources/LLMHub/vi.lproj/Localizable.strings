@@ -652,7 +652,7 @@
 "gpu_layers_label" = "Lớp GPU:%1$d";
 "gpu_layers_hint" = "Các lớp được tải xuống GPU/NPU. 0 = chỉ CPU, 999 = tất cả các lớp";
 "flash_streaming_title" = "Truyền từ bộ nhớ trong";
-"flash_streaming_hint" = "Đọc các chuyên gia từ bộ nhớ trong khi cần, nhờ vậy chạy được mô hình MoE lớn hơn RAM. Chạy trên CPU. Tắt để tải toàn bộ mô hình vào RAM.";
+"flash_streaming_hint" = "Giúp tải các mô hình MoE lớn hơn RAM.";
 "thinking_toggle_label" = "Kích hoạt tư duy";
 "gpu_not_supported" = "GPU không được hỗ trợ bởi model này";
 "load_model" = "Tải mô hình";

@@ -696,7 +696,7 @@
 "gpu_layers_label" = "GPU Layers: %1$d";
 "gpu_layers_hint" = "Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers";
 "flash_streaming_title" = "Depolamadan akış";
-"flash_streaming_hint" = "Uzmanları gerektikçe depolamadan okur, böylece bellekten büyük MoE modelleri çalışabilir. CPU'da çalışır. Modelin tamamını belleğe yüklemek için kapatın.";
+"flash_streaming_hint" = "RAM'den büyük MoE modellerini yüklemeye yardımcı olur.";
 "premium_title" = "LLM Hub Ömür Boyu Premium";
 "premium_subtitle" = "Tam deneyimin kilidini aç";
 "premium_feature_vibe_coder" = "VibeCoder – Yapay Zeka Kod Üreteci";

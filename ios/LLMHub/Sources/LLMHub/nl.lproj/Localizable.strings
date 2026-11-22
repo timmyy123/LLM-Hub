@@ -652,7 +652,7 @@
 "gpu_layers_label" = "GPU-lagen:%1$d";
 "gpu_layers_hint" = "Lagen overgebracht naar GPU/NPU. 0 = alleen CPU, 999 = alle lagen";
 "flash_streaming_title" = "Streamen vanaf opslag";
-"flash_streaming_hint" = "Leest de experts uit de opslag wanneer ze nodig zijn, zodat MoE-modellen die groter zijn dan het geheugen kunnen draaien. Draait op de CPU. Zet uit om het hele model in het geheugen te laden.";
+"flash_streaming_hint" = "Helpt MoE-modellen te laden die groter zijn dan het RAM.";
 "thinking_toggle_label" = "Denk na";
 "gpu_not_supported" = "GPU wordt niet ondersteund door dit model";
 "load_model" = "Model laden";

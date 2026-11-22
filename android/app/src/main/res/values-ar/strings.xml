@@ -805,7 +805,7 @@
     <string name="gpu_layers_label">GPU Layers: %1$d</string>
     <string name="gpu_layers_hint">Layers offloaded to GPU/NPU. 0 = CPU only, 999 = all layers</string>
     <string name="flash_streaming_title">البث من وحدة التخزين</string>
-    <string name="flash_streaming_hint">يقرأ الخبراء من وحدة التخزين عند الحاجة، فتعمل نماذج MoE الأكبر من الذاكرة. يعمل على المعالج. أوقفه لتحميل النموذج كاملًا في الذاكرة.</string>
+    <string name="flash_streaming_hint">يساعد على تشغيل نماذج MoE الأكبر من الذاكرة.</string>
 
     <!-- Premium / IAP -->
     <string name="premium_title">LLM Hub Premium مدى الحياة</string>
