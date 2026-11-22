@@ -38,6 +38,34 @@ bool device_matmul_takes(ggml_backend_dev_t dev, ggml_type type, const ggml_tens
     return ok;
 }
 
+// Whether the device runs the expert matmul (MUL_MAT_ID) for weights of `w`'s type from its own buffer,
+// shaped as the prompt graph uses it. A type it cannot run would leave that op to the CPU, reading the
+// device's slot while the loaders write it: the Hexagon NPU's queue then stopped answering and the
+// prompt never finished (Gemma 4 26B-A4B UD-Q2_K_XL, whose gate/up experts are IQ2_XS and IQ3_XXS).
+// The probe weight is allocated in the device's buffer, as in device_matmul_takes().
+bool device_expert_matmul_takes(ggml_backend_dev_t dev, const ggml_tensor * w) {
+    if (ggml_is_quantized(w->type) && w->ne[0] % ggml_blck_size(w->type) != 0) return false;
+    ggml_init_params ip{};
+    ip.mem_size = ggml_tensor_overhead() * 6;
+    ip.no_alloc = true;
+    ggml_context * c = ggml_init(ip);
+    if (!c) return false;
+    const int64_t n_used = std::min<int64_t>(w->ne[2], 8);
+    const int64_t n_tokens = 32;
+    ggml_tensor * as = ggml_new_tensor_3d(c, w->type, w->ne[0], std::min<int64_t>(w->ne[1], 256), w->ne[2]);
+    ggml_backend_buffer_t b = ggml_backend_alloc_ctx_tensors_from_buft(c, ggml_backend_dev_buffer_type(dev));
+    bool ok = false;
+    if (b) {
+        ggml_backend_buffer_set_usage(b, GGML_BACKEND_BUFFER_USAGE_WEIGHTS);
+        ggml_tensor * x = ggml_new_tensor_3d(c, GGML_TYPE_F32, w->ne[0], n_used, n_tokens);
+        ggml_tensor * ids = ggml_new_tensor_2d(c, GGML_TYPE_I32, n_used, n_tokens);
+        ok = ggml_backend_dev_supports_op(dev, ggml_mul_mat_id(c, as, x, ids));
+        ggml_backend_buffer_free(b);
+    }
+    ggml_free(c);
+    return ok;
+}
+
 // The type a 2-D weight should have on the device: its own if the device takes it, else the closest
 // one it takes — Q8_0 for a quantised weight (every 4-6 bit grid re-quantises onto it with an error
 // well under one of its own steps), F16 then F32 for a float one. Its own type when nothing fits, so
@@ -171,6 +199,11 @@ bool DeviceExpertArena::init(ggml_backend_dev_t dev,
     for (int p = 0; p < n_proj_; ++p) {
         size_t biggest = 0;
         for (const ggml_tensor * v : variants[p]) {
+            if (!device_expert_matmul_takes(dev, v)) {
+                err = std::string("the device cannot multiply by the experts of ") + v->name + " (" +
+                      ggml_type_name(v->type) + "), so it cannot read the prompt with them";
+                return false;
+            }
             const size_t dev = ggml_backend_buft_get_alloc_size(buft, v);
             if (dev % (size_t) n_expert_ != 0 || dev / (size_t) n_expert_ < (size_t) v->nb[2]) {
                 err = std::string("the device lays out ") + v->name +

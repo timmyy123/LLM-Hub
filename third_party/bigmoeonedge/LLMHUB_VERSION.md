@@ -38,3 +38,7 @@ Keep these few; record any change here.
 - `core/src/moe/device_arena.cpp`: the prompt-reading loader threads catch an exception from a device weight write
   (ggml-hexagon throws when an NPU buffer mapping fails) and mark the arena failed, as a failed flash read does.
   Uncaught on those threads it ended the app.
+- `core/src/moe/device_arena.cpp`: the expert arena refuses an expert type the prefill device cannot multiply by
+  (asked of the device with a MUL_MAT_ID probe), so the load fails instead of the prompt hanging. With Gemma 4
+  26B-A4B UD-Q2_K_XL (IQ2_XS and IQ3_XXS gate/up experts) on the Hexagon NPU, that op was left to the CPU reading
+  the NPU's slot while the loaders wrote it, and the NPU's queue stopped answering (Snapdragon 8 Elite Gen 6).
