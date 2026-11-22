@@ -3016,58 +3016,6 @@ object ModelData {
             contextWindowSize = 131072,
             modelFormat = "gguf"
         ),
-        LLMModel(
-            name = "LFM2.5-24B-A2B (Q4_K_M)",
-            description = "Liquid's 24B parameter MoE reasoning model (2B active). Q4_K_M quantization. Always thinks before answering. 131k context. (14.53GB)",
-            url = "https://huggingface.co/LiquidAI/LFM2.5-24B-A2B-GGUF/resolve/d790f111166905bfb36a81e12a403701ac23a1ca/LFM2.5-24B-A2B-Q4_K_M.gguf?download=true",
-            category = "text",
-            sizeBytes = 14526258464L,
-            source = "LiquidAI",
-            supportsVision = false,
-            supportsGpu = true,
-            requirements = ModelRequirements(minRamGB = 16, recommendedRamGB = 18),
-            contextWindowSize = 131072,
-            modelFormat = "gguf"
-        ),
-        LLMModel(
-            name = "LFM2.5-24B-A2B (Q5_K_M)",
-            description = "Liquid's 24B parameter MoE reasoning model (2B active). Q5_K_M quantization. Always thinks before answering. 131k context. (17.03GB)",
-            url = "https://huggingface.co/LiquidAI/LFM2.5-24B-A2B-GGUF/resolve/d790f111166905bfb36a81e12a403701ac23a1ca/LFM2.5-24B-A2B-Q5_K_M.gguf?download=true",
-            category = "text",
-            sizeBytes = 17029602592L,
-            source = "LiquidAI",
-            supportsVision = false,
-            supportsGpu = true,
-            requirements = ModelRequirements(minRamGB = 18, recommendedRamGB = 24),
-            contextWindowSize = 131072,
-            modelFormat = "gguf"
-        ),
-        LLMModel(
-            name = "LFM2.5-24B-A2B (Q6_K)",
-            description = "Liquid's 24B parameter MoE reasoning model (2B active). Q6_K quantization. Always thinks before answering. 131k context. (19.69GB)",
-            url = "https://huggingface.co/LiquidAI/LFM2.5-24B-A2B-GGUF/resolve/d790f111166905bfb36a81e12a403701ac23a1ca/LFM2.5-24B-A2B-Q6_K.gguf?download=true",
-            category = "text",
-            sizeBytes = 19689405728L,
-            source = "LiquidAI",
-            supportsVision = false,
-            supportsGpu = true,
-            requirements = ModelRequirements(minRamGB = 20, recommendedRamGB = 24),
-            contextWindowSize = 131072,
-            modelFormat = "gguf"
-        ),
-        LLMModel(
-            name = "LFM2.5-24B-A2B (Q8_0)",
-            description = "Liquid's 24B parameter MoE reasoning model (2B active). Q8_0 quantization. Always thinks before answering. 131k context. (25.49GB)",
-            url = "https://huggingface.co/LiquidAI/LFM2.5-24B-A2B-GGUF/resolve/d790f111166905bfb36a81e12a403701ac23a1ca/LFM2.5-24B-A2B-Q8_0.gguf?download=true",
-            category = "text",
-            sizeBytes = 25493732640L,
-            source = "LiquidAI",
-            supportsVision = false,
-            supportsGpu = true,
-            requirements = ModelRequirements(minRamGB = 28, recommendedRamGB = 32),
-            contextWindowSize = 131072,
-            modelFormat = "gguf"
-        ),
 
         // LFM2-24B-A2B Models (LiquidAI GGUF - MoE, 2B active params)
         LLMModel(
