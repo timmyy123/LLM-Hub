@@ -128,8 +128,9 @@ The iOS Music Generator supports **Live generation** with Magenta Realtime 2: he
 - 17 language interfaces
 
 ### 🦙 LLM Hub's patched llama.cpp (Aion, flash streaming, NPU/GPU fixes)
-The apps run [llama.cpp](https://github.com/ggml-org/llama.cpp) `b12631` with these fixes, published with prebuilt
-binaries in the [llama.cpp-b12631-llmhub1 release](https://github.com/timmyy123/LLM-Hub/releases/tag/llama.cpp-b12631-llmhub1)
+The apps run their own build of [llama.cpp](https://github.com/ggml-org/llama.cpp) with these fixes, published with
+prebuilt binaries in the [llama.cpp releases](https://github.com/timmyy123/LLM-Hub/releases?q=llama.cpp&expanded=true)
+(each release names the upstream version it is built on)
 for every backend the apps use: Android CPU, Vulkan GPU, Snapdragon OpenCL GPU and Hexagon NPU; iOS and macOS Metal GPU and CPU.
 - **Aion**: the `aion` architecture and chat template for microsoft/Aion-1.0-Instruct-2.3B
 - **Flash streaming**: MoE GGUF models bigger than the device's RAM (Gemma 4 26B-A4B, LFM2.5-24B-A2B, Inkling 2 Mini).
@@ -145,11 +146,11 @@ for every backend the apps use: Android CPU, Vulkan GPU, Snapdragon OpenCL GPU a
 
 | Release file | Contents |
 |---|---|
-| `llmhub-llama.cpp-b12631-android-arm64-cpu-vulkan.zip` | Android arm64 CPU (ARMv8.0 to ARMv9.2 variants) and Vulkan GPU libraries, flash streaming JNI library, headers |
-| `llmhub-llama.cpp-b12631-android-arm64-snapdragon-opencl-hexagon.zip` | Snapdragon OpenCL GPU and Hexagon NPU libraries, HTP skels v73/v75/v79/v81/v85, flash streaming (NPU prompt) JNI library, headers |
-| `llmhub-llama.cpp-b12631-apple-xcframework-ios-macos-metal.zip` | `llama.xcframework`: iOS device, iOS Simulator and macOS, Metal GPU and CPU |
+| `llmhub-llama.cpp-<version>-android-arm64-cpu-vulkan.zip` | Android arm64 CPU (ARMv8.0 to ARMv9.2 variants) and Vulkan GPU libraries, flash streaming JNI library, headers |
+| `llmhub-llama.cpp-<version>-android-arm64-snapdragon-opencl-hexagon.zip` | Snapdragon OpenCL GPU and Hexagon NPU libraries, HTP skels v73/v75/v79/v81/v85, flash streaming (NPU prompt) JNI library, headers |
+| `llmhub-llama.cpp-<version>-apple-xcframework-ios-macos-metal.zip` | `llama.xcframework`: iOS device, iOS Simulator and macOS, Metal GPU and CPU |
 | `llmhub-flash-streaming-apple-xcframework-ios-macos.zip` | `LLMHubBmoe.xcframework`: flash streaming engine and C bridge for iOS and macOS |
-| `llmhub-llama.cpp-b12631.patch` | Every source change against upstream `b12631` |
+| `llmhub-llama.cpp-<version>.patch` | Every source change against that upstream version |
 | `llmhub-flash-streaming-src.zip` | Flash streaming source: BigMoeOnEdge core (Apache-2.0), Android JNI and iOS bridge |
 
 #### Flash streaming benchmarks
