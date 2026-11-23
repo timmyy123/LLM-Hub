@@ -51,6 +51,7 @@ stay on the CPU (GGUF files from `calcuis/ltxv-gguf`).
 | Snapdragon 8 Gen 3 | v75 | 57 | 768x512, 25 frames |
 | Snapdragon 8 Elite | v79 | 69 | 768x512, 25 frames |
 | Snapdragon 8 Elite Gen 5 | v81 | 87 | 768x512, 25 frames |
+| Snapdragon 8 Elite Extreme Gen 6 / 8 Elite Gen 6 | v85 | 103 (SM8975) | 768x512, 25 frames, compiled with QAIRT 2.52 (2.50 has no v85) from the v81 graphs |
 
 ## Hugging Face layout expected by the app
 
@@ -61,6 +62,7 @@ stay on the CPU (GGUF files from `calcuis/ltxv-gguf`).
   v75/ltxv_chunk0.bin … ltxv_chunk3.bin, ltxv_vae_768x512x25.bin
   v79/…
   v81/…
+  v85/…
 ```
 
 Published at [timmyboy26/LTX-Video-2B-0.9.8-distilled-QNN](https://huggingface.co/timmyboy26/LTX-Video-2B-0.9.8-distilled-QNN).

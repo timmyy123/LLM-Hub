@@ -5648,7 +5648,7 @@ object ModelData {
 
     // QNN context binaries for the Hexagon NPU, built by android/tools/ltxv_qnn (QAIRT 2.50).
     private const val LTXV_QNN_REPO =
-        "https://huggingface.co/timmyboy26/LTX-Video-2B-0.9.8-distilled-QNN/resolve/fc8e5ed0f1f2877ab58ab1ee1db262e77a5506f6"
+        "https://huggingface.co/timmyboy26/LTX-Video-2B-0.9.8-distilled-QNN/resolve/41d27dca075e2b2e0d916b064a8f2293e0d7de97"
 
     private const val LTXV_T5_SIZE = 2896123072L
     private const val LTXV_VAE_GGUF_SIZE = 2493868876L
