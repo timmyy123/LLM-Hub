@@ -53,6 +53,10 @@ fun LLMModel.isGemma4GgufThinking(): Boolean =
             name.contains("Gemma-4 31B", ignoreCase = true) || name.contains("Gemma 4 31B", ignoreCase = true)) &&
         !name.contains("Vision Projector", ignoreCase = true)
 
+/** Thinking Machines' Inkling 2 GGUF builds: their own block format and a thinking-effort switch (InklingFormat). */
+fun LLMModel.isInkling2(): Boolean =
+    modelFormat == "gguf" && name.contains("Inkling", ignoreCase = true) && !name.contains("Vision Projector", ignoreCase = true)
+
 /**
  * A feature's thinking switch outside AI Chat. LFM3 starts with thinking off and remembers its own choice per
  * model; every other model keeps the feature's existing [key] and [default].

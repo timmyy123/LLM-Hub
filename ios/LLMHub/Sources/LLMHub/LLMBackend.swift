@@ -691,7 +691,8 @@ class LLMBackend: ObservableObject {
     }
 
     private func filename(from url: URL) -> String {
-        URLComponents(url: url, resolvingAgainstBaseURL: false)?.path.split(separator: "/").last.map(String.init) ?? url.lastPathComponent
+        AIModel.localFileName(forRemoteName:
+            URLComponents(url: url, resolvingAgainstBaseURL: false)?.path.split(separator: "/").last.map(String.init) ?? url.lastPathComponent)
     }
 
     private func loadedAIModel() -> AIModel? {
@@ -1161,6 +1162,7 @@ class LLMBackend: ObservableObject {
         let isGranite42Model = Self.isGranite42ModelName(loadedModelName)
         let isGemma4ThinkingModel = loadedModel?.modelFormat == .gguf && modelSupportsThinking
             && Self.isGemma4ThinkingGgufName(loadedModelName)
+        let isInklingModel = loadedModel?.modelFormat == .gguf && InklingFormat.isInklingName(loadedModelName)
         let useMuseGlimmerThinking = modelSupportsThinking && enableThinking
         let rawPrompt: String
         if isHarmonyModel && !prompt.hasPrefix("__RAW_PROMPT__") {
@@ -1257,6 +1259,13 @@ class LLMBackend: ObservableObject {
                 usePrompt = Self.buildGemma4Prompt(
                     prompt: strippedPrompt, systemPrompt: effectiveSystemPrompt, thinkingEnabled: enableThinking
                 )
+            } else if isInklingModel {
+                usePrompt = strippedPrompt.contains(InklingFormat.user)
+                    ? InklingFormat.applyingEffort(strippedPrompt, thinkingEnabled: modelSupportsThinking && enableThinking)
+                    : InklingFormat.buildPrompt(
+                        prompt: strippedPrompt, systemPrompt: effectiveSystemPrompt,
+                        thinkingEnabled: modelSupportsThinking && enableThinking
+                    )
             } else {
                 usePrompt = strippedPrompt
             }
@@ -1265,7 +1274,7 @@ class LLMBackend: ObservableObject {
         // DirectLlamaCppBackend feeds text verbatim, so non-raw prompts that no
         // family-specific branch above formatted still need the GGUF's chat template.
         // Without it the model treats the prompt as a document and just continues it.
-        let handledByFamilyTemplate = isLfmModel || isLfm3Model || isPhi4MiniModel || isHarmonyModel || isMuseGlimmerModel || isGranite42Model || isGemma4ThinkingModel
+        let handledByFamilyTemplate = isLfmModel || isLfm3Model || isPhi4MiniModel || isHarmonyModel || isMuseGlimmerModel || isGranite42Model || isGemma4ThinkingModel || isInklingModel
         if let model = loadedModel, model.modelFormat == .gguf,
            !prompt.hasPrefix("__RAW_PROMPT__"), !handledByFamilyTemplate,
            let templated = await DirectLlamaCppBackend.shared.applyChatTemplate(
@@ -1307,6 +1316,9 @@ class LLMBackend: ObservableObject {
             if imageData != nil, isLfm3Model {
                 usePrompt = Self.insertingLfm3ImageMarker(DirectLlamaCppBackend.mediaMarker, into: usePrompt)
             }
+            if imageData != nil, isInklingModel, !usePrompt.contains(DirectLlamaCppBackend.mediaMarker) {
+                usePrompt = InklingFormat.insertingImageMarker(DirectLlamaCppBackend.mediaMarker, into: usePrompt)
+            }
 
             let effectiveStops = stopSequences.isEmpty && isPhi4MiniModel
                 ? ["<|end|>", "<|user|>", "<|system|>"]
@@ -1336,7 +1348,11 @@ class LLMBackend: ObservableObject {
                 let museText = isMuseGlimmerModel
                     ? Self.normalizeMuseGlimmerOutput(gemmaText, thinkingEnabled: enableThinking)
                     : gemmaText
-                let display = isHarmonyModel ? Self.normalizeHarmonyOutput(museText).0 : museText
+                let display = isInklingModel
+                    ? InklingFormat.normalizeOutput(
+                        update.text, thinkingEnabled: modelSupportsThinking && enableThinking,
+                        open: Self.thinkingSentinelOpen, close: Self.thinkingSentinelClose)
+                    : isHarmonyModel ? Self.normalizeHarmonyOutput(museText).0 : museText
                 onUpdate(display, update.completionTokens, update.tokensPerSecond)
             }
             return
@@ -1345,5 +1361,117 @@ class LLMBackend: ObservableObject {
         throw NSError(domain: "LLMBackend", code: -122, userInfo: [
             NSLocalizedDescriptionKey: "Unsupported language model format"
         ])
+    }
+}
+
+/// Inkling 2 (Thinking Machines) chat format, written like the GGUF's chat template (llama.cpp's built-in template
+/// list has no Inkling format). Every message is a block closed by <|end_message|>; thinking is set by a system block,
+/// "Thinking effort level: <0..0.99>", before the first non-system message; there is no generation prompt (the model
+/// opens its own <|message_model|> block). The model writes <|content_thinking|> and <|content_text|> blocks.
+enum InklingFormat {
+    static let model = "<|message_model|>"
+    static let user = "<|message_user|>"
+    static let system = "<|message_system|>"
+    static let think = "<|content_thinking|>"
+    static let text = "<|content_text|>"
+    static let end = "<|end_message|>"
+    static let endSampling = "<|content_model_end_sampling|>"
+
+    nonisolated static func isInklingName(_ name: String?) -> Bool {
+        guard let lower = name?.lowercased() else { return false }
+        return lower.contains("inkling") && !lower.contains("vision projector")
+    }
+
+    /// The template's default effort ("high") with thinking on, 0 ("none") with it off.
+    static func effortBlock(thinkingEnabled: Bool) -> String {
+        system + text + "Thinking effort level: " + (thinkingEnabled ? "0.9" : "0") + end
+    }
+
+    static func systemBlock(_ content: String) -> String { system + text + content + end }
+    static func userBlock(_ content: String) -> String { user + text + content + end }
+    /// An earlier reply's answer (its thinking is not fed back).
+    static func modelBlock(_ answer: String) -> String { model + text + answer + end + endSampling }
+
+    /// A prompt for one user turn with an optional system prompt.
+    static func buildPrompt(prompt: String, systemPrompt: String?, thinkingEnabled: Bool) -> String {
+        let systemText = systemPrompt?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return (systemText.isEmpty ? "" : systemBlock(systemText))
+            + effortBlock(thinkingEnabled: thinkingEnabled)
+            + userBlock(prompt.trimmingCharacters(in: .whitespacesAndNewlines))
+    }
+
+    /// A conversation without the thinking block, which `applyingEffort` adds from the current setting.
+    static func conversation(system: String?, history: [(isUser: Bool, text: String)], current: String) -> String {
+        let systemText = system?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        var result = systemText.isEmpty ? "" : systemBlock(systemText)
+        for turn in history {
+            let content = turn.text.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !content.isEmpty else { continue }
+            result += turn.isUser ? userBlock(content) : modelBlock(content)
+        }
+        return result + userBlock(current.trimmingCharacters(in: .whitespacesAndNewlines))
+    }
+
+    /// Adds the thinking block before the first non-system block when a prompt has none.
+    static func applyingEffort(_ prompt: String, thinkingEnabled: Bool) -> String {
+        guard !prompt.contains("Thinking effort level:") else { return prompt }
+        let firstTurn = [user, model].compactMap { prompt.range(of: $0) }.min(by: { $0.lowerBound < $1.lowerBound })
+        guard let firstTurn else { return prompt + effortBlock(thinkingEnabled: thinkingEnabled) }
+        var result = prompt
+        result.insert(contentsOf: effortBlock(thinkingEnabled: thinkingEnabled), at: firstTurn.lowerBound)
+        return result
+    }
+
+    /// An image is its own user block (mtmd opens the image block), placed before the newest user text.
+    static func insertingImageMarker(_ marker: String, into prompt: String) -> String {
+        let block = user + marker + end
+        guard let range = prompt.range(of: user + text, options: .backwards) else { return prompt + block }
+        var result = prompt
+        result.insert(contentsOf: block, at: range.lowerBound)
+        return result
+    }
+
+    /// Cumulative output as the app's text: thinking blocks between the sentinels when thinking is on, dropped when
+    /// it is off (effort 0 does not fully stop the model reasoning), and the text blocks as the answer.
+    static func normalizeOutput(_ raw: String, thinkingEnabled: Bool, open: String, close: String) -> String {
+        var answer = ""
+        var thought = ""
+        var thinkingOpen = false
+        var rest = Substring(raw.replacingOccurrences(of: endSampling, with: ""))
+        while !rest.isEmpty {
+            let body = rest.drop(while: { $0.isWhitespace })
+            var blockBody = body
+            if blockBody.hasPrefix(model) { blockBody = blockBody.dropFirst(model.count) }
+            let isThought: Bool
+            if blockBody.hasPrefix(think) {
+                isThought = true
+                blockBody = blockBody.dropFirst(think.count)
+            } else if blockBody.hasPrefix(text) {
+                isThought = false
+                blockBody = blockBody.dropFirst(text.count)
+            } else if blockBody.isEmpty || (blockBody.hasPrefix("<|") && !blockBody.contains("|>")) {
+                break // A block token may still be arriving.
+            } else {
+                isThought = false // Text written without a block, or a tool call: passed on as it is.
+            }
+            let closeRange = [end, model].compactMap { blockBody.range(of: $0) }.min(by: { $0.lowerBound < $1.lowerBound })
+            var content = closeRange.map { String(blockBody[..<$0.lowerBound]) } ?? String(blockBody)
+            if closeRange == nil, let partial = content.range(of: "<|", options: .backwards),
+               !content[partial.lowerBound...].contains("|>") {
+                content = String(content[..<partial.lowerBound])
+            }
+            if isThought {
+                thought += content
+                thinkingOpen = closeRange == nil
+            } else {
+                answer += content
+            }
+            guard let closeRange else { break }
+            rest = blockBody[closeRange.lowerBound...]
+            if rest.hasPrefix(end) { rest = rest.dropFirst(end.count) }
+        }
+        let visibleThought = thought.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard thinkingEnabled, !visibleThought.isEmpty else { return answer }
+        return open + visibleThought + (thinkingOpen ? "" : close + answer)
     }
 }

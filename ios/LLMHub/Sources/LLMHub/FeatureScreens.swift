@@ -2712,6 +2712,7 @@ private struct IOS17VibeVoiceScreen: View {
         let isLlama      = modelName.contains("llama") || modelName.contains("mistral")
         let isLlama3     = isLlama && (modelName.contains("llama-3") || modelName.contains("llama 3") || modelName.contains("llama-3."))
         let isHarmonyModel = modelName.contains("gpt-oss") || modelName.contains("gpt_oss")
+        let isInkling = InklingFormat.isInklingName(modelName)
         let isMuseGlimmer = selectedFeatureModel(named: selectedModelName)?.chatTemplateFamily == .museGlimmer
         let isGranite42  = modelName.contains("granite-4.2") || modelName.contains("granite 4.2")
         let isGranite    = modelName.contains("granite") && !isGranite42
@@ -2961,7 +2962,13 @@ private struct IOS17VibeVoiceScreen: View {
             parts.append("Assistant:")
         }
 
-        let multiTurnPrompt = parts.joined(separator: "\n")
+        // Inkling 2: one block per message; LLMBackend adds the thinking block from the current setting.
+        let multiTurnPrompt = isInkling
+            ? "__RAW_PROMPT__" + InklingFormat.conversation(
+                system: systemPrompt,
+                history: truncatedHistory.map { (isUser: $0.role == "user", text: $0.content) },
+                current: text)
+            : parts.joined(separator: "\n")
 
         generationTask = Task {
             do {
@@ -6286,6 +6293,7 @@ struct VibeCoderScreen: View {
         let isLlama      = modelName.contains("llama") || modelName.contains("mistral")
         let isLlama3     = isLlama && (modelName.contains("llama-3") || modelName.contains("llama 3") || modelName.contains("llama-3."))
         let isHarmonyModel = modelName.contains("gpt-oss") || modelName.contains("gpt_oss")
+        let isInkling = InklingFormat.isInklingName(modelName)
         let isMuseGlimmer = selectedFeatureModel(named: selectedModelName)?.chatTemplateFamily == .museGlimmer
         let isGranite42  = modelName.contains("granite-4.2") || modelName.contains("granite 4.2")
         let isGranite    = modelName.contains("granite") && !isGranite42
@@ -6327,6 +6335,17 @@ struct VibeCoderScreen: View {
 
         // 4. System Prompt (Coding Assistant)
         let systemPrompt = "You are VibeCoder, a world-class on-device coding assistant. Provide clean, efficient, and correct code. Use markdown code blocks with language tags."
+
+        // Inkling 2: one block per message; LLMBackend adds the thinking block from the current setting.
+        if isInkling {
+            return "__RAW_PROMPT__" + InklingFormat.conversation(
+                system: systemPrompt,
+                history: truncatedHistory.map { msg in
+                    let answer = msg.role == "user" ? msg.text : getDisplayContentWithoutThinking(msg.text)
+                    return (isUser: msg.role == "user", text: answer.isEmpty ? msg.text : answer)
+                },
+                current: currentFilePrompt)
+        }
 
         if isHarmonyModel {
             var harmonyParts: [String] = []

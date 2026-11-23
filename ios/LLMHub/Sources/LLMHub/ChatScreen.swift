@@ -1989,6 +1989,7 @@ class ChatViewModel: ObservableObject {
         let isLlama      = modelName.contains("llama") || modelName.contains("mistral")
         let isLlama3     = isLlama && (modelName.contains("llama-3") || modelName.contains("llama 3") || modelName.contains("llama-3."))
         let isHarmonyModel = modelName.contains("gpt-oss") || modelName.contains("gpt_oss")
+        let isInkling = InklingFormat.isInklingName(modelName)
         let isMuseGlimmer = currentModel?.chatTemplateFamily == .museGlimmer
         let isGranite42  = modelName.contains("granite-4.2") || modelName.contains("granite 4.2")
         let isGranite    = modelName.contains("granite") && !isGranite42
@@ -2101,6 +2102,29 @@ class ChatViewModel: ObservableObject {
                 harmonyParts.append("<|start|>assistant<|channel|>analysis<|message|><|end|><|start|>assistant<|channel|>final<|message|>")
             }
             parts.append(contentsOf: harmonyParts)
+            return parts.joined()
+        }
+
+        // Inkling 2: one block per message, the thinking switch as a system block, and no generation prompt.
+        if isInkling {
+            var inklingParts: [String] = []
+            if let rag = ragPrefix?.trimmingCharacters(in: .whitespacesAndNewlines), !rag.isEmpty {
+                inklingParts.append(InklingFormat.systemBlock(rag))
+            }
+            inklingParts.append(InklingFormat.effortBlock(thinkingEnabled: modelSupportsThinking && enableThinking))
+            for msg in history {
+                let rawContent = msg.content.trimmingCharacters(in: .whitespacesAndNewlines)
+                if msg.isFromUser {
+                    guard !rawContent.isEmpty else { continue }
+                    inklingParts.append(InklingFormat.userBlock(rawContent))
+                } else {
+                    let answer = getDisplayContentWithoutThinking(rawContent)
+                    guard !answer.isEmpty else { continue }
+                    inklingParts.append(InklingFormat.modelBlock(answer))
+                }
+            }
+            inklingParts.append(InklingFormat.userBlock(currentUserPrompt))
+            parts.append(contentsOf: inklingParts)
             return parts.joined()
         }
 

@@ -112,6 +112,9 @@ class LlamaCppFlashStreamingDeviceTest {
             }
             add(Mode("cpu", LlmInference.Backend.CPU, null, false, null, "CPU flash streaming"))
         }
+        // -e thinking true: the model thinks first (its thinking switch); -e max_tokens N: room for it (default 320).
+        val thinking = args.getString("thinking") == "true"
+        val maxTokens = args.getString("max_tokens")?.toIntOrNull() ?: 320
         val picked = args.getString("modes")?.split(',')?.map { it.trim() }
         val modes = if (picked == null) all else all.filter { it.label in picked }
         val prefs = com.llmhub.llmhub.data.ThemePreferences(context)
@@ -124,8 +127,8 @@ class LlamaCppFlashStreamingDeviceTest {
                 val service = LlamaCppInferenceService(context)
                 service.setGenerationParameters(
                     // LFM2.5 thinks before it answers; 320 tokens leave room for both.
-                    maxTokens = 320, topK = 40, topP = 0.95f, temperature = 0.1f,
-                    nGpuLayers = mode.gpuLayers, enableThinking = false, contextWindow = 4096,
+                    maxTokens = maxTokens, topK = 40, topP = 0.95f, temperature = 0.1f,
+                    nGpuLayers = mode.gpuLayers, enableThinking = thinking, contextWindow = 4096,
                 )
                 val entry = JSONObject()
                 result.put(mode.label, entry)
@@ -146,6 +149,7 @@ class LlamaCppFlashStreamingDeviceTest {
                     }
                     entry.put("firstTokenMs", firstMs).put("totalMs", SystemClock.elapsedRealtime() - started)
                         .put("decodeTokPerSec", service.getLastDecodeSpeedTokPerSec()).put("reply", reply.toString().takeLast(160))
+                        .put("replyStart", reply.toString().take(200))
                     if (!reply.contains("1889")) failures += "${mode.label}: wrong answer"
                 } catch (t: Throwable) {
                     entry.put("error", "${t.javaClass.simpleName}: ${t.message}")

@@ -64,7 +64,8 @@ object DeviceInfo {
         "SM8845" to "8gen5",  // Snapdragon 8 Gen 5
         "SM8850" to "8gen5",  // Snapdragon 8 Elite Gen 5
         "SM8850P" to "8gen5",
-        "SM8975" to "8gen6",  // Snapdragon 8 Elite Gen 6 (Hexagon v85)
+        "SM8950" to "8gen6",  // Snapdragon 8 Elite Gen 6 (Hexagon v85, QAIRT soc_model 113)
+        "SM8975" to "8gen6",  // Snapdragon 8 Elite Extreme Gen 6 (Hexagon v85, soc_model 103)
         "SM7675" to "7gen4",  // Snapdragon 7 Gen 4
         "SM7675P" to "7gen4"
     )
@@ -79,11 +80,11 @@ object DeviceInfo {
         return getChipsetSuffix() in setOf("888", "8gen1", "8gen2", "8gen3", "8gen4", "8gen5", "7gen4")
     }
 
-    /** llama.cpp b12631 ships Hexagon HTP kernels for v73/v75/v79/v81/v85 (SM8975, 8 Elite Gen 6, is v85), not v69. */
+    /** llama.cpp b12631 ships Hexagon HTP kernels for v73/v75/v79/v81/v85 (SM8950 and SM8975, the 8 Elite Gen 6 chips, are v85), not v69. */
     fun isLlamaCppHexagonSupported(): Boolean = getDeviceSoc() in setOf(
         "SM8550", "SM8550P", "QCS8550", "QCM8550",
         "SM8650", "SM8650P", "SM8750", "SM8750P",
-        "SM8845", "SM8850", "SM8850P", "SM8975",
+        "SM8845", "SM8850", "SM8850P", "SM8950", "SM8975",
     )
 
     /**
@@ -4070,7 +4071,7 @@ object ModelData {
             modelFormat = "gguf"
         ),
 
-        // Gemma-4 26B-A4B GGUF Models (unsloth) — under 12GB variants only
+        // Gemma-4 26B-A4B GGUF Models (unsloth under 12GB, plus Google's QAT Q4_0)
         LLMModel(
             name = "Gemma-4 26B-A4B (UD-IQ2_XXS, GGUF)",
             description = "Google Gemma-4 26B-A4B UD-IQ2_XXS GGUF. Supports text + vision — download the Vision Projector (mmproj) to enable image input. ~9.24 GB download.",
@@ -4146,6 +4147,23 @@ object ModelData {
             contextWindowSize = 32768,
             modelFormat = "gguf"
         ),
+        // Google's quantization-aware-trained Q4_0: every expert is Q4_0, which the Snapdragon NPU can multiply,
+        // so flash streaming can read the prompt on the NPU (the unsloth IQ2/IQ3 experts above cannot).
+        LLMModel(
+            name = "Gemma-4 26B-A4B (QAT Q4_0, GGUF)",
+            description = "Google's official quantization-aware trained Gemma-4 26B-A4B Q4_0 GGUF, close to full-precision quality. Supports text + vision — download the Vision Projector (mmproj) to enable image input. ~14.44 GB download.",
+            url = "https://huggingface.co/google/gemma-4-26B-A4B-it-qat-q4_0-gguf/resolve/d1c082be9cf3c8a514acf63b8761f4b41935842e/gemma-4-26B_q4_0-it.gguf",
+            category = "multimodal",
+            sizeBytes = 14439363584L,
+            source = "Google",
+            supportsVision = true,
+            supportsAudio = false,
+            supportsThinking = true,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 12, recommendedRamGB = 16),
+            contextWindowSize = 32768,
+            modelFormat = "gguf"
+        ),
         LLMModel(
             name = "Gemma-4 26B-A4B (Vision Projector, BF16)",
             description = "Vision Projector (mmproj) required to enable image input for Gemma-4 26B-A4B GGUF models. BF16 variant. ~1.11 GB download.",
@@ -4187,6 +4205,154 @@ object ModelData {
             requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 4),
             contextWindowSize = 0,
             modelFormat = "gguf"
+        ),
+
+        // Inkling 2 Mini (Thinking Machines; 26.2B MoE, 3.4B active, middle layers looped 3x), unsloth's mainline-layout
+        // GGUFs (Mainline_Support, llama.cpp inkling2_loop). The F16 vision projector downloads with each quant into its
+        // own folder: its file name (mmproj-F16.gguf) is the same as Gemma 4's in the shared models folder.
+        LLMModel(
+            name = "Inkling-2-Mini (UD-IQ1_S, GGUF)",
+            description = "Thinking Machines' Inkling 2 Mini UD-IQ1_S GGUF: a 26B mixture-of-experts model (3.4B active) that thinks before answering, with text + vision. Includes the vision projector. ~8.40 GB download.",
+            url = "https://huggingface.co/unsloth/Inkling-2-Mini-GGUF/resolve/45fd08764f2b0bf16b03a5483a80e5c7aaec8772/Mainline_Support/Inkling-2-Mini-UD-IQ1_S.gguf_file",
+            category = "multimodal",
+            sizeBytes = 8403641216L,
+            source = "Thinking Machines via unsloth",
+            supportsVision = true,
+            supportsAudio = false,
+            supportsThinking = true,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 12, recommendedRamGB = 16),
+            contextWindowSize = 32768,
+            modelFormat = "gguf",
+            additionalFiles = listOf("https://huggingface.co/unsloth/Inkling-2-Mini-GGUF/resolve/45fd08764f2b0bf16b03a5483a80e5c7aaec8772/mmproj-F16.gguf")
+        ),
+        LLMModel(
+            name = "Inkling-2-Mini (UD-IQ1_M, GGUF)",
+            description = "Thinking Machines' Inkling 2 Mini UD-IQ1_M GGUF: a 26B mixture-of-experts model (3.4B active) that thinks before answering, with text + vision. Includes the vision projector. ~8.66 GB download.",
+            url = "https://huggingface.co/unsloth/Inkling-2-Mini-GGUF/resolve/45fd08764f2b0bf16b03a5483a80e5c7aaec8772/Mainline_Support/Inkling-2-Mini-UD-IQ1_M.gguf_file",
+            category = "multimodal",
+            sizeBytes = 8663790464L,
+            source = "Thinking Machines via unsloth",
+            supportsVision = true,
+            supportsAudio = false,
+            supportsThinking = true,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 12, recommendedRamGB = 16),
+            contextWindowSize = 32768,
+            modelFormat = "gguf",
+            additionalFiles = listOf("https://huggingface.co/unsloth/Inkling-2-Mini-GGUF/resolve/45fd08764f2b0bf16b03a5483a80e5c7aaec8772/mmproj-F16.gguf")
+        ),
+        LLMModel(
+            name = "Inkling-2-Mini (UD-IQ2_XXS, GGUF)",
+            description = "Thinking Machines' Inkling 2 Mini UD-IQ2_XXS GGUF: a 26B mixture-of-experts model (3.4B active) that thinks before answering, with text + vision. Includes the vision projector. ~9.13 GB download.",
+            url = "https://huggingface.co/unsloth/Inkling-2-Mini-GGUF/resolve/45fd08764f2b0bf16b03a5483a80e5c7aaec8772/Mainline_Support/Inkling-2-Mini-UD-IQ2_XXS.gguf_file",
+            category = "multimodal",
+            sizeBytes = 9125585792L,
+            source = "Thinking Machines via unsloth",
+            supportsVision = true,
+            supportsAudio = false,
+            supportsThinking = true,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 12, recommendedRamGB = 16),
+            contextWindowSize = 32768,
+            modelFormat = "gguf",
+            additionalFiles = listOf("https://huggingface.co/unsloth/Inkling-2-Mini-GGUF/resolve/45fd08764f2b0bf16b03a5483a80e5c7aaec8772/mmproj-F16.gguf")
+        ),
+        LLMModel(
+            name = "Inkling-2-Mini (UD-Q2_K_XL, GGUF)",
+            description = "Thinking Machines' Inkling 2 Mini UD-Q2_K_XL GGUF: a 26B mixture-of-experts model (3.4B active) that thinks before answering, with text + vision. Includes the vision projector. ~9.78 GB download.",
+            url = "https://huggingface.co/unsloth/Inkling-2-Mini-GGUF/resolve/45fd08764f2b0bf16b03a5483a80e5c7aaec8772/Mainline_Support/Inkling-2-Mini-UD-Q2_K_XL.gguf_file",
+            category = "multimodal",
+            sizeBytes = 9778064768L,
+            source = "Thinking Machines via unsloth",
+            supportsVision = true,
+            supportsAudio = false,
+            supportsThinking = true,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 12, recommendedRamGB = 16),
+            contextWindowSize = 32768,
+            modelFormat = "gguf",
+            additionalFiles = listOf("https://huggingface.co/unsloth/Inkling-2-Mini-GGUF/resolve/45fd08764f2b0bf16b03a5483a80e5c7aaec8772/mmproj-F16.gguf")
+        ),
+        LLMModel(
+            name = "Inkling-2-Mini (UD-IQ3_XXS, GGUF)",
+            description = "Thinking Machines' Inkling 2 Mini UD-IQ3_XXS GGUF: a 26B mixture-of-experts model (3.4B active) that thinks before answering, with text + vision. Includes the vision projector. ~12.30 GB download.",
+            url = "https://huggingface.co/unsloth/Inkling-2-Mini-GGUF/resolve/45fd08764f2b0bf16b03a5483a80e5c7aaec8772/Mainline_Support/Inkling-2-Mini-UD-IQ3_XXS.gguf_file",
+            category = "multimodal",
+            sizeBytes = 12302658944L,
+            source = "Thinking Machines via unsloth",
+            supportsVision = true,
+            supportsAudio = false,
+            supportsThinking = true,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 12, recommendedRamGB = 16),
+            contextWindowSize = 32768,
+            modelFormat = "gguf",
+            additionalFiles = listOf("https://huggingface.co/unsloth/Inkling-2-Mini-GGUF/resolve/45fd08764f2b0bf16b03a5483a80e5c7aaec8772/mmproj-F16.gguf")
+        ),
+        LLMModel(
+            name = "Inkling-2-Mini (UD-Q3_K_XL, GGUF)",
+            description = "Thinking Machines' Inkling 2 Mini UD-Q3_K_XL GGUF: a 26B mixture-of-experts model (3.4B active) that thinks before answering, with text + vision. Includes the vision projector. ~14.27 GB download.",
+            url = "https://huggingface.co/unsloth/Inkling-2-Mini-GGUF/resolve/45fd08764f2b0bf16b03a5483a80e5c7aaec8772/Mainline_Support/Inkling-2-Mini-UD-Q3_K_XL.gguf_file",
+            category = "multimodal",
+            sizeBytes = 14271127456L,
+            source = "Thinking Machines via unsloth",
+            supportsVision = true,
+            supportsAudio = false,
+            supportsThinking = true,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 12, recommendedRamGB = 16),
+            contextWindowSize = 32768,
+            modelFormat = "gguf",
+            additionalFiles = listOf("https://huggingface.co/unsloth/Inkling-2-Mini-GGUF/resolve/45fd08764f2b0bf16b03a5483a80e5c7aaec8772/mmproj-F16.gguf")
+        ),
+        LLMModel(
+            name = "Inkling-2-Mini (UD-IQ4_XS, GGUF)",
+            description = "Thinking Machines' Inkling 2 Mini UD-IQ4_XS GGUF: a 26B mixture-of-experts model (3.4B active) that thinks before answering, with text + vision. Includes the vision projector. ~16.37 GB download.",
+            url = "https://huggingface.co/unsloth/Inkling-2-Mini-GGUF/resolve/45fd08764f2b0bf16b03a5483a80e5c7aaec8772/Mainline_Support/Inkling-2-Mini-UD-IQ4_XS.gguf_file",
+            category = "multimodal",
+            sizeBytes = 16373104672L,
+            source = "Thinking Machines via unsloth",
+            supportsVision = true,
+            supportsAudio = false,
+            supportsThinking = true,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 12, recommendedRamGB = 16),
+            contextWindowSize = 32768,
+            modelFormat = "gguf",
+            additionalFiles = listOf("https://huggingface.co/unsloth/Inkling-2-Mini-GGUF/resolve/45fd08764f2b0bf16b03a5483a80e5c7aaec8772/mmproj-F16.gguf")
+        ),
+        LLMModel(
+            name = "Inkling-2-Mini (UD-Q4_K_M, GGUF)",
+            description = "Thinking Machines' Inkling 2 Mini UD-Q4_K_M GGUF: a 26B mixture-of-experts model (3.4B active) that thinks before answering, with text + vision. Includes the vision projector. ~17.25 GB download.",
+            url = "https://huggingface.co/unsloth/Inkling-2-Mini-GGUF/resolve/45fd08764f2b0bf16b03a5483a80e5c7aaec8772/Mainline_Support/Inkling-2-Mini-UD-Q4_K_M.gguf_file",
+            category = "multimodal",
+            sizeBytes = 17249892768L,
+            source = "Thinking Machines via unsloth",
+            supportsVision = true,
+            supportsAudio = false,
+            supportsThinking = true,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 12, recommendedRamGB = 16),
+            contextWindowSize = 32768,
+            modelFormat = "gguf",
+            additionalFiles = listOf("https://huggingface.co/unsloth/Inkling-2-Mini-GGUF/resolve/45fd08764f2b0bf16b03a5483a80e5c7aaec8772/mmproj-F16.gguf")
+        ),
+        LLMModel(
+            name = "Inkling-2-Mini (UD-Q4_K_XL, GGUF)",
+            description = "Thinking Machines' Inkling 2 Mini UD-Q4_K_XL GGUF: a 26B mixture-of-experts model (3.4B active) that thinks before answering, with text + vision. Includes the vision projector. ~18.27 GB download.",
+            url = "https://huggingface.co/unsloth/Inkling-2-Mini-GGUF/resolve/45fd08764f2b0bf16b03a5483a80e5c7aaec8772/Mainline_Support/Inkling-2-Mini-UD-Q4_K_XL.gguf_file",
+            category = "multimodal",
+            sizeBytes = 18269108896L,
+            source = "Thinking Machines via unsloth",
+            supportsVision = true,
+            supportsAudio = false,
+            supportsThinking = true,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 12, recommendedRamGB = 16),
+            contextWindowSize = 32768,
+            modelFormat = "gguf",
+            additionalFiles = listOf("https://huggingface.co/unsloth/Inkling-2-Mini-GGUF/resolve/45fd08764f2b0bf16b03a5483a80e5c7aaec8772/mmproj-F16.gguf")
         ),
 
         // Gemma-4 31B GGUF Models (unsloth) — under 12GB variants only
@@ -5537,7 +5703,8 @@ object ModelData {
             "ltxv_chunk3.bin" to 547479880L, "ltxv_vae_768x512x25.bin" to 712386616L
         )),
         // Compiled with QAIRT 2.52 (soc_model 103) from the same quantized graphs as v81.
-        LtxvNpuBuild("Snapdragon 8 Elite Gen 6", "v85", setOf("SM8975"), "768x512x25", listOf(
+        // SM8950 (8 Elite Gen 6) shares Hexagon v85 with SM8975 (8 Elite Extreme Gen 6), so it runs the same binaries.
+        LtxvNpuBuild("Snapdragon 8 Elite Gen 6, 8 Elite Extreme Gen 6", "v85", setOf("SM8950", "SM8975"), "768x512x25", listOf(
             "ltxv_chunk0.bin" to 619474944L, "ltxv_chunk1.bin" to 554983424L, "ltxv_chunk2.bin" to 554983424L,
             "ltxv_chunk3.bin" to 557658112L, "ltxv_vae_768x512x25.bin" to 709554176L
         ))

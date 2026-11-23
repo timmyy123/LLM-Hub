@@ -44,6 +44,12 @@ enum DeviceSelfTests {
                     case "aion-catalog": failures += try await checkAionCatalogLiteRT()
                     case "flash-moe": failures += try await checkFlashStreamingMoe()
                     case "flash-moe-gpu": failures += try await checkFlashStreamingGpuPrefill()
+                    case "inkling": failures += try await checkInkling()
+                    case "inkling-clean":
+                        if let model = inklingTestModel(),
+                           let folder = try? SimplifiedFileManager.shared.getModelFolderURL(modelId: model.id, framework: .llamaCpp) {
+                            try? FileManager.default.removeItem(at: folder)
+                        }
                     default: failures.append("Unknown self-test \(check)")
                     }
                 } catch {
@@ -549,6 +555,59 @@ enum DeviceSelfTests {
             backend.unloadModel()
             try await Task.sleep(nanoseconds: 2_000_000_000)
         }
+        return failures
+    }
+
+    /// The Inkling 2 Mini quant under test: `-InklingQuant UD-IQ2_XXS` (default UD-Q2_K_XL).
+    private static func inklingTestModel() -> AIModel? {
+        let arguments = ProcessInfo.processInfo.arguments
+        let quant = arguments.firstIndex(of: "-InklingQuant").flatMap { $0 + 1 < arguments.count ? arguments[$0 + 1] : nil } ?? "UD-Q2_K_XL"
+        return ModelData.allModels().first { $0.name == "Inkling 2 Mini (\(quant), GGUF)" }
+    }
+
+    /// Inkling 2 Mini with flash streaming on the GPU backend (the prompt on Metal, decode on the CPU): thinking on
+    /// shows a thinking block and then the answer; thinking off shows the answer alone. Downloads the quant into the
+    /// app's model folder when it is missing (inkling-clean deletes it). Logs prompt and decode tok/s.
+    static func checkInkling() async throws -> [String] {
+        let backend = LLMBackend.shared
+        guard let model = inklingTestModel() else { return ["No Inkling 2 Mini catalog entry for that quant"] }
+        if !backend.isModelAvailableLocally(model) {
+            let folder = try SimplifiedFileManager.shared.getModelFolderURL(modelId: model.id, framework: .llamaCpp)
+            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            log("INKLING: downloading \(model.name)")
+            let (temporary, _) = try await URLSession.shared.download(from: URL(string: model.url)!)
+            let target = folder.appendingPathComponent(model.requiredFileNames[0])
+            try? FileManager.default.removeItem(at: target)
+            try FileManager.default.moveItem(at: temporary, to: target)
+        }
+        guard let path = try? backend.resolveModelGGUFPath(for: model) else { return ["\(model.name) is not on disk"] }
+        log("INKLING: \(model.name) at \((path as NSString).lastPathComponent), flash streaming \(LLMBackend.flashStreamingEnabled(for: model, path: path))")
+        backend.selectedBackend = "GPU"
+        let thinkingBefore = backend.enableThinking
+        defer { backend.enableThinking = thinkingBefore }
+        var started = Date()
+        try await backend.loadModel(model)
+        log("INKLING: loaded in \(String(format: "%.1f", Date().timeIntervalSince(started))) s")
+        var failures = [String]()
+        for thinking in [true, false] {
+            backend.enableThinking = thinking
+            var reply = ""
+            var speed = 0.0
+            started = Date()
+            try await backend.generate(prompt: "What is the capital of France? Answer in one word.", maxTokensOverride: 1024) { text, _, tokensPerSecond in
+                reply = text
+                speed = tokensPerSecond
+            }
+            let promptRead = await DirectLlamaCppBackend.shared.lastFlashPrompt
+            let promptSpeed = promptRead.map { $0.seconds > 0 ? Double($0.tokens) / $0.seconds : 0 } ?? 0
+            let shown = reply.replacingOccurrences(of: "\u{200B}", with: "")
+            log("INKLING: thinking \(thinking ? "on" : "off"): prompt tok/s=\(String(format: "%.1f", promptSpeed)), decode tok/s=\(String(format: "%.2f", speed)) reply=\(shown.prefix(500))")
+            let answer = shown.components(separatedBy: "ENDTHINK").last ?? shown
+            if !answer.localizedCaseInsensitiveContains("Paris") { failures.append("Inkling thinking \(thinking): \(shown.suffix(200))") }
+            if shown.contains("<|") { failures.append("Inkling thinking \(thinking) shows block tokens: \(shown.prefix(200))") }
+            if thinking != shown.contains("THINK") { failures.append("Inkling thinking \(thinking) thinking block shown: \(shown.contains("THINK"))") }
+        }
+        backend.unloadModel()
         return failures
     }
 

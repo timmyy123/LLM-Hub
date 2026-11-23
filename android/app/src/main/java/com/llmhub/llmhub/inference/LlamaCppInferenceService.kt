@@ -10,6 +10,7 @@ import com.llmhub.llmhub.data.DeviceInfo
 import com.llmhub.llmhub.data.GgufLayerLimits
 import com.llmhub.llmhub.data.LLMModel
 import com.llmhub.llmhub.data.isGemma4GgufThinking
+import com.llmhub.llmhub.data.isInkling2
 import com.llmhub.llmhub.data.effectiveContextWindow
 import com.llmhub.llmhub.data.isOtherCatalogModelsProjector
 import com.llmhub.llmhub.data.localFileName
@@ -233,6 +234,7 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
     private var gemma4State = LlamaGemma4State.BEFORE_CHANNEL
     private var gemma4ThinkingEnabled = true
     private var gemma4ThinkingOpened = false
+    private val inklingParser = InklingOutputParser(sentinelThink, sentinelEndThink)
     private var sentInitialThinkingSentinel = false
 
     private var overrideMaxTokens: Int? = null
@@ -759,6 +761,7 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
         gemma4State = LlamaGemma4State.BEFORE_CHANNEL
         gemma4ThinkingEnabled = thinkingEnabled
         gemma4ThinkingOpened = false
+        inklingParser.reset(thinkingEnabled)
     }
 
     private fun filterTextOutputToken(
@@ -776,6 +779,7 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
             ((isGranite42 || isLfm3Model(model)) && thinkingEnabled))
         when {
             model.isGemma4GgufThinking() -> emitGemma4(text, output::add)
+            model.isInkling2() -> inklingParser.accept(text, output::add)
             isMuseModel(model) -> emitMuse(text, thinkingEnabled, output::add)
             isHarmonyModel(model) -> emitHarmony(text, output::add)
             thinking -> {
@@ -806,6 +810,7 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
     private fun finishTextOutput(model: LLMModel): List<String> {
         val output = mutableListOf<String>()
         sentInitialThinkingSentinel = false
+        if (model.isInkling2()) inklingParser.finish(output::add)
         if (model.isGemma4GgufThinking()) {
             val remaining = gemma4Buffer.toString()
             when (gemma4State) {
@@ -1202,6 +1207,11 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
 
         if (isLfm3Model(model)) {
             return buildLfm3Prompt(messages, thinkingEnabled)
+        }
+
+        // llama.cpp's built-in template list has no Inkling format either.
+        if (model.isInkling2()) {
+            return InklingFormat.buildPrompt(messages, thinkingEnabled, runtime.nativeMediaMarker(), ::stripThinkingForHistory)
         }
 
         val formatted = runtime.nativeFormatChat(
