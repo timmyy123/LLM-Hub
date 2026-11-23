@@ -123,9 +123,9 @@ The iOS Music Generator supports **Live generation** with Magenta Realtime 2: he
 - GPU/NPU acceleration for fast performance
 - Text-to-Speech with auto-readout
 - RAG with global memory for enhanced responses
-- Import custom models (.task, .litertlm, qnn,.mnn, .gguf)
+- Import custom models
 - Direct downloads from HuggingFace
-- 17 language interfaces
+- 22 language interfaces
 
 ### LLM Hub's patched llama.cpp (Aion, flash streaming, NPU/GPU fixes)
 The apps run their own build of [llama.cpp](https://github.com/ggml-org/llama.cpp) with these fixes, published with
