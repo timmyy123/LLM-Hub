@@ -8,7 +8,18 @@ enum GGUFLayerLimits {
     static let unknown = 999
 
     static func read(from url: URL) -> Int? {
-        readInteger(from: url, suffix: "block_count", offset: 1)
+        guard let blocks = readInteger(from: url, suffix: "block_count", offset: 1) else { return nil }
+        return blocks + loopedLayers(url)
+    }
+
+    /// A looped architecture (Inkling 2: <arch>.loop.count passes over layers [loop.start, loop.end)) has llama.cpp
+    /// layers for every extra pass: Inkling 2 Mini's 24 blocks are 48 layers, and offloading "all" 25 put half the
+    /// model on the CPU, where its image input came out as noise.
+    private static func loopedLayers(_ url: URL) -> Int {
+        guard let passes = readInteger(from: url, suffix: "loop.count", offset: 0), passes > 1,
+              let start = readInteger(from: url, suffix: "loop.start", offset: 0),
+              let end = readInteger(from: url, suffix: "loop.end", offset: 0), end > start else { return 0 }
+        return (passes - 1) * (end - start)
     }
 
     static func readContextLength(from url: URL) -> Int? {

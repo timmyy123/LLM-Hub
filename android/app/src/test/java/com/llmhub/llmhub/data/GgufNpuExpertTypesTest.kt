@@ -1,5 +1,6 @@
 package com.llmhub.llmhub.data
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -50,6 +51,18 @@ class GgufNpuExpertTypesTest {
         // Dense matrices the NPU cannot take are converted at load; only the experts decide.
         val file = gguf("blk.0.ffn_gate_exps.weight" to 2, "blk.0.attn_q.weight" to 23)
         assertFalse(GgufLayerLimits.npuCannotStreamExperts(file))
+    }
+
+    @Test
+    fun loopedLayersCountEveryExtraPass() {
+        fun header(vararg kv: Pair<String, Long>) = Gguf().apply {
+            raw("GGUF"); u32(3); u64(0); u64(kv.size + 1L)
+            str("general.architecture"); u32(8); str("inkling2_loop")
+            kv.forEach { (k, v) -> str("inkling2_loop.$k"); u32(4); u32(v) }
+        }.bytes().let { b -> File.createTempFile("loop", ".gguf").apply { writeBytes(b); deleteOnExit() } }
+        // Inkling 2 Mini: 24 blocks, layers 6..18 run 3 times -> 24 more llama.cpp layers (48 in all).
+        assertEquals(24, GgufLayerLimits.loopedLayers(header("block_count" to 24, "loop.count" to 3, "loop.start" to 6, "loop.end" to 18)))
+        assertEquals(0, GgufLayerLimits.loopedLayers(header("block_count" to 24)))
     }
 
     @Test

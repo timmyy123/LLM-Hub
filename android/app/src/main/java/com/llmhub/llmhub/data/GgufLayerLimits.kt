@@ -10,7 +10,19 @@ object GgufLayerLimits {
 
     fun forModel(context: Context, model: LLMModel): Int? {
         val file = modelFile(context, model) ?: return null
-        return runCatching { readLimit(file, "block_count", 1) }.getOrNull()
+        return runCatching { readLimit(file, "block_count", 1)?.plus(loopedLayers(file)) }.getOrNull()
+    }
+
+    /**
+     * A looped architecture (Inkling 2: <arch>.loop.count passes over layers [loop.start, loop.end)) has llama.cpp
+     * layers for every extra pass: Inkling 2 Mini's 24 blocks are 48 layers, and "all" layers as 25 left half the model
+     * on the CPU.
+     */
+    internal fun loopedLayers(file: File): Int {
+        val passes = readLimit(file, "loop.count", 0) ?: return 0
+        val start = readLimit(file, "loop.start", 0) ?: return 0
+        val end = readLimit(file, "loop.end", 0) ?: return 0
+        return if (passes > 1 && end > start) (passes - 1) * (end - start) else 0
     }
 
     fun contextForModel(context: Context, model: LLMModel): Int? {
