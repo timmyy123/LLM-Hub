@@ -405,6 +405,7 @@
     <string name="enable_thinking">思考機能を有効化</string>
     <string name="thinking_level">思考レベル</string>
     <string name="thinking_level_off">オフ</string>
+    <string name="thinking_level_none">なし</string>
     <string name="thinking_level_minimal">最小</string>
     <string name="thinking_level_low">低</string>
     <string name="thinking_level_medium">中</string>

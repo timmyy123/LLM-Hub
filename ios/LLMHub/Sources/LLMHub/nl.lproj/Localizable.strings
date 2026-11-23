@@ -1016,6 +1016,7 @@
 "rag_threshold_overlap" = "Benodigde woordoverlap";
 "thinking_level" = "Denkniveau";
 "thinking_level_off" = "Uit";
+"thinking_level_none" = "Geen";
 "thinking_level_minimal" = "Minimaal";
 "thinking_level_low" = "Laag";
 "thinking_level_medium" = "Gemiddeld";

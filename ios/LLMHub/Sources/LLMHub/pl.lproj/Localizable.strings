@@ -1009,6 +1009,7 @@
 "rag_threshold_overlap" = "Wymagane pokrycie słów";
 "thinking_level" = "Poziom myślenia";
 "thinking_level_off" = "Wyłączone";
+"thinking_level_none" = "Brak";
 "thinking_level_minimal" = "Minimalny";
 "thinking_level_low" = "Niski";
 "thinking_level_medium" = "Średni";

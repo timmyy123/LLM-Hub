@@ -388,6 +388,7 @@
     <string name="enable_thinking">Включить Размышления</string>
     <string name="thinking_level">Уровень размышлений</string>
     <string name="thinking_level_off">Выкл.</string>
+    <string name="thinking_level_none">Нет</string>
     <string name="thinking_level_minimal">Минимальный</string>
     <string name="thinking_level_low">Низкий</string>
     <string name="thinking_level_medium">Средний</string>

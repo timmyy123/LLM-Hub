@@ -1030,6 +1030,7 @@
 "rag_threshold_overlap" = "Word overlap needed";
 "thinking_level" = "Thinking level";
 "thinking_level_off" = "Off";
+"thinking_level_none" = "None";
 "thinking_level_minimal" = "Minimal";
 "thinking_level_low" = "Low";
 "thinking_level_medium" = "Medium";

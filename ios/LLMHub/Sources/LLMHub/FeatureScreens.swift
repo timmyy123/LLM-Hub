@@ -566,8 +566,8 @@ struct FeatureModelSettingsSheet: View {
                                 }
                             }
 
-                            if showsThinkingToggle && selectedModelSupportsThinking && InklingFormat.isInklingName(selectedModelName) {
-                                InklingThinkingLevelTile(enableThinking: $enableThinking)
+                            if showsThinkingToggle && selectedModelSupportsThinking, let family = ThinkingLevels.family(selectedModelName) {
+                                ThinkingLevelTile(family: family, enableThinking: $enableThinking)
                             } else if showsThinkingToggle && selectedModelSupportsThinking {
                                 Toggle(settings.localized("enable_thinking"), isOn: $enableThinking)
                                     .tint(ApolloPalette.accentStrong)
@@ -2819,7 +2819,7 @@ private struct IOS17VibeVoiceScreen: View {
 
             var museParts: [String] = []
             museParts.append("<|begin_of_text|>")
-            museParts.append("<|start|>system<|message|>\(systemPrompt)\nKnowledge cutoff: 2026-01-04.\nCurrent date: \(dateFormatter.string(from: Date())).\n\nReasoning strength: high.\n\n# Valid recipients: \"user\".<|eot|>")
+            museParts.append("<|start|>system<|message|>\(systemPrompt)\nKnowledge cutoff: 2026-01-04.\nCurrent date: \(dateFormatter.string(from: Date())).\n\nReasoning strength: \(ThinkingLevels.museStrength).\n\n# Valid recipients: \"user\".<|eot|>")
 
             for msg in truncatedHistory {
                 let content = msg.content.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -6386,7 +6386,7 @@ struct VibeCoderScreen: View {
 
             parts.append("<|begin_of_text|>")
             let validRecipients = llm.enableThinking ? "\"self\", \"user\"" : "\"user\""
-            parts.append("<|start|>system<|message|>\(systemPrompt)\nKnowledge cutoff: 2026-01-04.\nCurrent date: \(dateFormatter.string(from: Date())).\n\nReasoning strength: high.\n\n# Valid recipients: \(validRecipients).<|eot|>")
+            parts.append("<|start|>system<|message|>\(systemPrompt)\nKnowledge cutoff: 2026-01-04.\nCurrent date: \(dateFormatter.string(from: Date())).\n\nReasoning strength: \(ThinkingLevels.museStrength).\n\n# Valid recipients: \(validRecipients).<|eot|>")
 
             for msg in truncatedHistory {
                 let rawText = msg.text.trimmingCharacters(in: .whitespacesAndNewlines)

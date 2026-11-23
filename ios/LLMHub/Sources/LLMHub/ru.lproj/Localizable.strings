@@ -981,6 +981,7 @@
 "rag_threshold_overlap" = "Нужное совпадение слов";
 "thinking_level" = "Уровень размышлений";
 "thinking_level_off" = "Выкл.";
+"thinking_level_none" = "Нет";
 "thinking_level_minimal" = "Минимальный";
 "thinking_level_low" = "Низкий";
 "thinking_level_medium" = "Средний";

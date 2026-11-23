@@ -681,6 +681,60 @@ enum DeviceSelfTests {
         return failures
     }
 
+    /// The model under LLMHUB_TEST_MODEL (catalog name) at every thinking level of its picker (ThinkingLevels): Off
+    /// (None for Inkling) with thinking off, the rest with it on. Asks the bat-and-ball question once per level and
+    /// logs the thought's length, the answer and decode tok/s. Downloads the model when missing.
+    static func checkThinkingLevels() async throws -> [String] {
+        let backend = LLMBackend.shared
+        guard let name = ProcessInfo.processInfo.environment["LLMHUB_TEST_MODEL"],
+              let model = ModelData.allModels().first(where: { $0.name == name }) else { return ["LLMHUB_TEST_MODEL names no catalog model"] }
+        guard let family = ThinkingLevels.family(model.name) else { return ["\(model.name) has no thinking levels"] }
+        if !backend.isModelAvailableLocally(model) { try await downloadIntoModelFolder(model) }
+        let thinkingBefore = backend.enableThinking
+        let effortBefore = UserDefaults.standard.object(forKey: family == .inkling ? InklingFormat.effortKey : "thinking_effort_\(family.rawValue)")
+        defer {
+            backend.enableThinking = thinkingBefore
+            UserDefaults.standard.set(effortBefore, forKey: family == .inkling ? InklingFormat.effortKey : "thinking_effort_\(family.rawValue)")
+        }
+        backend.selectedBackend = "GPU"
+        var started = Date()
+        try await backend.loadModel(model)
+        log("LEVELS: \(model.name) loaded in \(String(format: "%.1f", Date().timeIntervalSince(started))) s")
+        let question = "A bat and a ball cost $1.10 in total. The bat costs $1.00 more than the ball. How much does the ball cost? Give the final answer in cents."
+        var failures = [String]()
+        for (index, level) in ThinkingLevels.levels(family).enumerated() {
+            backend.enableThinking = index > 0
+            if index > 0 { ThinkingLevels.setSavedEffort(family, level.effort) }
+            var reply = ""
+            var speed = 0.0
+            started = Date()
+            try await backend.generate(prompt: question, maxTokensOverride: 2048) { text, _, tokensPerSecond in
+                reply = text
+                speed = tokensPerSecond
+            }
+            // The thought is between the app's sentinels, or between <think> tags (the UI reads both).
+            let shown = reply.replacingOccurrences(of: "\u{200B}", with: "")
+                .replacingOccurrences(of: "<think>", with: "THINK").replacingOccurrences(of: "</think>", with: "ENDTHINK")
+            let closed = shown.contains("ENDTHINK")
+            let thought = shown.components(separatedBy: "THINK").dropFirst().first.map { $0.replacingOccurrences(of: "END", with: "") } ?? ""
+            let answer = closed || !shown.contains("THINK") ? (shown.components(separatedBy: "ENDTHINK").last ?? shown) : ""
+            let flat = { (text: String) in text.replacingOccurrences(of: "\n", with: " ").trimmingCharacters(in: .whitespaces) }
+            log("LEVELS: \(level.labelKey) thinking=\(index > 0) thoughtChars=\(thought.count) thoughtClosed=\(closed) decode \(String(format: "%.2f", speed)) tok/s in \(String(format: "%.0f", Date().timeIntervalSince(started))) s answer=\(flat(String(answer.suffix(300)))) | thought end=\(flat(String(thought.suffix(300))))")
+            if !answer.contains("5") { failures.append("\(level.labelKey): \(answer.suffix(200))") }
+            if shown.contains("<|") || shown.contains("{reasoning effort") { failures.append("\(level.labelKey) shows prompt tokens") }
+        }
+        backend.unloadModel()
+        return failures
+    }
+
+    /// Deletes the model checkThinkingLevels downloaded.
+    static func removeThinkingLevelsTestModel() {
+        guard let name = ProcessInfo.processInfo.environment["LLMHUB_TEST_MODEL"],
+              let model = ModelData.allModels().first(where: { $0.name == name }),
+              let folder = try? SimplifiedFileManager.shared.getModelFolderURL(modelId: model.id, framework: .llamaCpp) else { return }
+        try? FileManager.default.removeItem(at: folder)
+    }
+
     private static func lfm3Reply(_ prompt: String, imageData: Data? = nil, maxTokens: Int) async throws -> String {
         var reply = ""
         let stream = await DirectLlamaCppBackend.shared.stream(

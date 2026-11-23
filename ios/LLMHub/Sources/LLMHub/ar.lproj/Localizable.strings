@@ -1009,6 +1009,7 @@
 "rag_threshold_overlap" = "نسبة تطابق الكلمات المطلوبة";
 "thinking_level" = "مستوى التفكير";
 "thinking_level_off" = "إيقاف";
+"thinking_level_none" = "بلا";
 "thinking_level_minimal" = "أدنى";
 "thinking_level_low" = "منخفض";
 "thinking_level_medium" = "متوسط";

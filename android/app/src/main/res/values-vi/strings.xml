@@ -379,6 +379,7 @@
     <string name="enable_thinking">Kích hoạt tư duy</string>
     <string name="thinking_level">Mức suy nghĩ</string>
     <string name="thinking_level_off">Tắt</string>
+    <string name="thinking_level_none">Không</string>
     <string name="thinking_level_minimal">Tối thiểu</string>
     <string name="thinking_level_low">Thấp</string>
     <string name="thinking_level_medium">Trung bình</string>

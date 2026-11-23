@@ -981,6 +981,7 @@
 "rag_threshold_overlap" = "Benötigte Wortübereinstimmung";
 "thinking_level" = "Denkstufe";
 "thinking_level_off" = "Aus";
+"thinking_level_none" = "Keine";
 "thinking_level_minimal" = "Minimal";
 "thinking_level_low" = "Niedrig";
 "thinking_level_medium" = "Mittel";

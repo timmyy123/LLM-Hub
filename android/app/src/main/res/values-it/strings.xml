@@ -408,6 +408,7 @@
     <string name="enable_thinking">Abilita Pensiero</string>
     <string name="thinking_level">Livello di ragionamento</string>
     <string name="thinking_level_off">Disattivato</string>
+    <string name="thinking_level_none">Nessuno</string>
     <string name="thinking_level_minimal">Minimo</string>
     <string name="thinking_level_low">Basso</string>
     <string name="thinking_level_medium">Medio</string>

@@ -409,6 +409,7 @@
     <string name="enable_thinking">فعال‌سازی تفکر</string>
     <string name="thinking_level">سطح تفکر</string>
     <string name="thinking_level_off">خاموش</string>
+    <string name="thinking_level_none">هیچ</string>
     <string name="thinking_level_minimal">حداقل</string>
     <string name="thinking_level_low">کم</string>
     <string name="thinking_level_medium">متوسط</string>

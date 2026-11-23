@@ -660,9 +660,10 @@ fun FeatureModelSettingsSheet(
                         }
 
                         // Thinking toggle (show only for thinking/reasoning models)
-                        if (isThinkingOrHarmonyModel && selectedModel?.isInkling2() == true) {
-                            // Inkling 2: a thinking level; the level is the model's, saved at once
-                            InklingThinkingLevelRow(enableThinking, thinkingEffort) { enabled, effort ->
+                        val thinkingLevels = com.llmhub.llmhub.data.ThinkingLevels.forModel(selectedModel)
+                        if (isThinkingOrHarmonyModel && thinkingLevels != null) {
+                            // A model with thinking levels (ThinkingLevels): the level is saved at once
+                            ThinkingLevelRow(thinkingLevels, enableThinking, thinkingEffort) { enabled, effort ->
                                 enableThinking = enabled
                                 thinkingEffort = effort
                                 selectedModel?.let { m ->

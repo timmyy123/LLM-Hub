@@ -1009,6 +1009,7 @@
 "rag_threshold_overlap" = "Gereken kelime örtüşmesi";
 "thinking_level" = "Düşünme düzeyi";
 "thinking_level_off" = "Kapalı";
+"thinking_level_none" = "Yok";
 "thinking_level_minimal" = "Minimum";
 "thinking_level_low" = "Düşük";
 "thinking_level_medium" = "Orta";

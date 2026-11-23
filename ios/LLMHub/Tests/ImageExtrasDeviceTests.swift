@@ -246,6 +246,19 @@ final class ImageExtrasDeviceTests: XCTestCase {
         try await DeviceSelfTests.checkInkling().forEach { XCTFail($0) }
     }
 
+    /// Every thinking level of the catalog model LLMHUB_TEST_MODEL (Inkling 2, Muse Glimmer, GPT-OSS, Granite 4.2) on
+    /// the GPU: the answer at each level and how long the thought is. Opt-in: LLMHUB_LEVEL_TESTS=1 (xcodebuild:
+    /// TEST_RUNNER_LLMHUB_LEVEL_TESTS=1, TEST_RUNNER_LLMHUB_TEST_MODEL=...). Deletes the download unless
+    /// LLMHUB_LEVEL_KEEP=1.
+    func testThinkingLevelsAfterDownload() async throws {
+        #if targetEnvironment(simulator)
+        throw XCTSkip("Run thinking levels on a physical device or a Mac")
+        #endif
+        try XCTSkipUnless(ProcessInfo.processInfo.environment["LLMHUB_LEVEL_TESTS"] == "1", "Opt-in: set LLMHUB_LEVEL_TESTS=1")
+        defer { if ProcessInfo.processInfo.environment["LLMHUB_LEVEL_KEEP"] != "1" { DeviceSelfTests.removeThinkingLevelsTestModel() } }
+        try await DeviceSelfTests.checkThinkingLevels().forEach { XCTFail($0) }
+    }
+
     func testZZRemoveOwnedTestFixtures() throws {
         let fm = FileManager.default
         let names = ["llmhub-test-lora", "llmhub-test-portable-lora", "llmhub-test-embedding", "LLMHUB-TEST-EMBEDDING"]

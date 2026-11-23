@@ -407,6 +407,7 @@
     <string name="enable_thinking">تفعيل التفكير</string>
     <string name="thinking_level">مستوى التفكير</string>
     <string name="thinking_level_off">إيقاف</string>
+    <string name="thinking_level_none">بلا</string>
     <string name="thinking_level_minimal">أدنى</string>
     <string name="thinking_level_low">منخفض</string>
     <string name="thinking_level_medium">متوسط</string>

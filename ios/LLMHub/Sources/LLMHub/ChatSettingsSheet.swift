@@ -314,8 +314,8 @@ struct ChatSettingsSheet: View {
                                 if model.supportsAudio {
                                     ToggleTile(title: settings.localized("enable_audio"), isOn: $vm.enableAudio, icon: "mic.fill")
                                 }
-                                if model.supportsThinking && InklingFormat.isInklingName(model.name) {
-                                    InklingThinkingLevelTile(enableThinking: $vm.enableThinking)
+                                if model.supportsThinking, let family = ThinkingLevels.family(model.name) {
+                                    ThinkingLevelTile(family: family, enableThinking: $vm.enableThinking)
                                 } else if model.supportsThinking {
                                     ToggleTile(title: settings.localized("enable_thinking"), isOn: $vm.enableThinking, icon: "brain")
                                 }
@@ -722,22 +722,26 @@ struct ToggleTile: View {
     }
 }
 
-/// Inkling 2's thinking level in place of the thinking switch: Off turns thinking off, the other levels turn it on
-/// with that effort (InklingFormat.effortLevels, saved for the next reply).
-struct InklingThinkingLevelTile: View {
+/// A thinking level in place of the thinking switch, for models whose template takes one (ThinkingLevels). The first
+/// choice (Off, or None for Inkling 2, which asks for effort 0 and may still think) sends the model's thinking-off
+/// prompt; the other levels turn thinking on at that level, saved for the next reply.
+struct ThinkingLevelTile: View {
     @EnvironmentObject var settings: AppSettings
+    let family: ThinkingLevels.Family
     @Binding var enableThinking: Bool
-    @State private var effort = InklingFormat.savedEffort
+    @State private var effort: Double
 
-    private static let labelKeys = [
-        "thinking_level_off", "thinking_level_minimal", "thinking_level_low",
-        "thinking_level_medium", "thinking_level_high", "thinking_level_max",
-    ]
+    init(family: ThinkingLevels.Family, enableThinking: Binding<Bool>) {
+        self.family = family
+        _enableThinking = enableThinking
+        _effort = State(initialValue: ThinkingLevels.savedEffort(family))
+    }
+
+    private var levels: [ThinkingLevels.Level] { ThinkingLevels.levels(family) }
 
     private var selected: Int {
         guard enableThinking else { return 0 }
-        let levels = InklingFormat.effortLevels
-        return (1..<levels.count).min(by: { abs(levels[$0] - effort) < abs(levels[$1] - effort) }) ?? 4
+        return (1..<levels.count).min(by: { abs(levels[$0].effort - effort) < abs(levels[$1].effort - effort) }) ?? 1
     }
 
     var body: some View {
@@ -750,25 +754,24 @@ struct InklingThinkingLevelTile: View {
                 .foregroundColor(.white)
             Spacer()
             Menu {
-                ForEach(Array(Self.labelKeys.enumerated()), id: \.offset) { index, key in
+                ForEach(Array(levels.enumerated()), id: \.offset) { index, level in
                     Button {
-                        let level = InklingFormat.effortLevels[index]
-                        enableThinking = level > 0
-                        if level > 0 {
-                            effort = level
-                            InklingFormat.savedEffort = level
+                        enableThinking = index > 0
+                        if index > 0 {
+                            effort = level.effort
+                            ThinkingLevels.setSavedEffort(family, level.effort)
                         }
                     } label: {
                         if index == selected {
-                            Label(settings.localized(key), systemImage: "checkmark")
+                            Label(settings.localized(level.labelKey), systemImage: "checkmark")
                         } else {
-                            Text(settings.localized(key))
+                            Text(settings.localized(level.labelKey))
                         }
                     }
                 }
             } label: {
                 HStack(spacing: 4) {
-                    Text(settings.localized(Self.labelKeys[selected]))
+                    Text(settings.localized(levels[selected].labelKey))
                     Image(systemName: "chevron.up.chevron.down").font(.caption)
                 }
                 .foregroundColor(ApolloPalette.accentStrong)

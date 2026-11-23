@@ -904,9 +904,10 @@ fun ChatSettingsSheet(
                         }
 
                         // Thinking toggle (visible for reasoning/thinking models and GPT-OSS Harmony)
-                        if (isThinkingOrHarmonyModel && selectedModel?.isInkling2() == true) {
-                            // Inkling 2: a thinking level, saved at once so the next reply reads it
-                            InklingThinkingLevelRow(enableThinking, thinkingEffort) { enabled, effort ->
+                        val thinkingLevels = com.llmhub.llmhub.data.ThinkingLevels.forModel(selectedModel)
+                        if (isThinkingOrHarmonyModel && thinkingLevels != null) {
+                            // A model with thinking levels (ThinkingLevels), saved at once so the next reply reads it
+                            ThinkingLevelRow(thinkingLevels, enableThinking, thinkingEffort) { enabled, effort ->
                                 enableThinking = enabled
                                 thinkingEffort = effort
                                 selectedModel?.let { m ->

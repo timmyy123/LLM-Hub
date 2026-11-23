@@ -22,30 +22,24 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.llmhub.llmhub.R
-import com.llmhub.llmhub.inference.InklingFormat
+import com.llmhub.llmhub.data.ThinkingLevels
 import kotlin.math.abs
 
-private val LEVEL_LABELS = listOf(
-    R.string.thinking_level_off,
-    R.string.thinking_level_minimal,
-    R.string.thinking_level_low,
-    R.string.thinking_level_medium,
-    R.string.thinking_level_high,
-    R.string.thinking_level_max,
-)
-
 /**
- * Inkling 2's thinking level in place of the thinking switch: Off turns thinking off, the other levels turn it on
- * with that effort (InklingFormat.EFFORT_LEVELS).
+ * A thinking level in place of the thinking switch, for models whose template takes one (ThinkingLevels). The first
+ * choice (Off, or None for Inkling 2, which asks for effort 0 and may still think) sends the model's thinking-off
+ * prompt; the other levels turn thinking on at that level.
  */
 @Composable
-internal fun InklingThinkingLevelRow(
+internal fun ThinkingLevelRow(
+    spec: ThinkingLevels,
     thinkingEnabled: Boolean,
     effort: Float,
     onSelect: (thinkingEnabled: Boolean, effort: Float) -> Unit,
 ) {
-    val levels = InklingFormat.EFFORT_LEVELS
-    val current = if (!thinkingEnabled) 0 else levels.indices.drop(1).minBy { abs(levels[it] - effort) }
+    val levels = spec.levels
+    val resolved = spec.resolve(effort)
+    val current = if (!thinkingEnabled) 0 else levels.indices.drop(1).minBy { abs(levels[it].effort - resolved) }
     var expanded by remember { mutableStateOf(false) }
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -55,16 +49,16 @@ internal fun InklingThinkingLevelRow(
         Text(text = stringResource(R.string.thinking_level), style = MaterialTheme.typography.bodyMedium)
         Box {
             TextButton(onClick = { expanded = true }) {
-                Text(stringResource(LEVEL_LABELS[current]))
+                Text(stringResource(levels[current].labelRes))
                 Icon(Icons.Default.ArrowDropDown, contentDescription = null)
             }
             DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                 levels.forEachIndexed { index, level ->
                     DropdownMenuItem(
-                        text = { Text(stringResource(LEVEL_LABELS[index])) },
+                        text = { Text(stringResource(level.labelRes)) },
                         onClick = {
                             expanded = false
-                            onSelect(level > 0f, if (level > 0f) level else effort)
+                            onSelect(index > 0, if (index > 0) level.effort else resolved)
                         },
                         trailingIcon = {
                             if (index == current) {

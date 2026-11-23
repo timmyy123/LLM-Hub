@@ -1016,6 +1016,7 @@
 "rag_threshold_overlap" = "Krævet ordoverlap";
 "thinking_level" = "Tænkeniveau";
 "thinking_level_off" = "Fra";
+"thinking_level_none" = "Ingen";
 "thinking_level_minimal" = "Minimal";
 "thinking_level_low" = "Lav";
 "thinking_level_medium" = "Middel";

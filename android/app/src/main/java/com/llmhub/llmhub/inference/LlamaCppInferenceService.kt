@@ -235,7 +235,8 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
     private var gemma4ThinkingEnabled = true
     private var gemma4ThinkingOpened = false
     private val inklingParser = InklingOutputParser(sentinelThink, sentinelEndThink)
-    private var inklingEffort = com.llmhub.llmhub.data.INKLING_DEFAULT_EFFORT
+    /** The model's thinking level (ThinkingLevels), read before each prompt is built. */
+    private var thinkingEffort = com.llmhub.llmhub.data.INKLING_DEFAULT_EFFORT
     private var sentInitialThinkingSentinel = false
 
     private var overrideMaxTokens: Int? = null
@@ -578,9 +579,8 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
             sessionPrompt
         }
         val thinkingEnabled = overrideEnableThinking ?: true
-        if (model.isInkling2()) {
-            inklingEffort = ModelPreferences(context).getModelConfig(model.name)?.thinkingEffort
-                ?: com.llmhub.llmhub.data.INKLING_DEFAULT_EFFORT
+        com.llmhub.llmhub.data.ThinkingLevels.forModel(model)?.let { levels ->
+            thinkingEffort = levels.resolve(ModelPreferences(context).getModelConfig(model.name)?.thinkingEffort)
         }
         val formattedPrompt = formatPromptLikeGeniex(promptWithMedia, model, thinkingEnabled)
         resetTextOutputBehavior(model, thinkingEnabled)
@@ -1168,6 +1168,25 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
         "to=user",
     ).map { text.indexOf(it) }.firstOrNull { it >= 0 } ?: -1
 
+    /**
+     * GPT-OSS's reasoning level. llama.cpp's built-in gpt-oss format writes each message as it is, with no system
+     * header, so the header the model's own template writes is added: "Reasoning: low / medium / high" (the template's
+     * default is medium). A system prompt becomes the developer message's instructions, as in that template.
+     */
+    private fun withHarmonyReasoning(formatted: String, effort: Float): String {
+        val date = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
+        val header = "<|start|>system<|message|>You are ChatGPT, a large language model trained by OpenAI.\n" +
+            "Knowledge cutoff: 2024-06\nCurrent date: $date\n\n" +
+            "Reasoning: ${com.llmhub.llmhub.data.ThinkingLevels.word(effort.coerceAtMost(com.llmhub.llmhub.data.ThinkingLevels.HIGH))}\n\n" +
+            "# Valid channels: analysis, commentary, final. Channel must be included for every message.<|end|>"
+        val body = if (formatted.startsWith("<|start|>system<|message|>")) {
+            "<|start|>developer<|message|># Instructions\n\n" + formatted.removePrefix("<|start|>system<|message|>")
+        } else {
+            formatted
+        }
+        return header + body
+    }
+
     private fun isHarmonyModel(model: LLMModel): Boolean =
         model.name.contains("gpt-oss", true) || model.name.contains("gpt_oss", true)
 
@@ -1218,7 +1237,7 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
 
         // llama.cpp's built-in template list has no Inkling format either.
         if (model.isInkling2()) {
-            return InklingFormat.buildPrompt(messages, thinkingEnabled, runtime.nativeMediaMarker(), inklingEffort, ::stripThinkingForHistory)
+            return InklingFormat.buildPrompt(messages, thinkingEnabled, runtime.nativeMediaMarker(), thinkingEffort, ::stripThinkingForHistory)
         }
 
         val formatted = runtime.nativeFormatChat(
@@ -1236,6 +1255,7 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
             } else {
                 formatted
             }
+            if (isHarmonyModel) result = withHarmonyReasoning(result, if (thinkingEnabled) thinkingEffort else com.llmhub.llmhub.data.ThinkingLevels.LOW)
             if (!thinkingEnabled && isHarmonyModel) {
                 result = result.trimEnd() +
                     "<|channel|>analysis<|message|><|end|><|start|>assistant<|channel|>final<|message|>"
@@ -1412,17 +1432,21 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
         if (systemContent.isNotEmpty()) {
             sb.append("<|im_start|>system\n$systemContent<|im_end|>\n")
         }
+        // Low thinking level: the template appends this to the last user message.
+        val lowEffort = thinkingEnabled && thinkingEffort <= com.llmhub.llmhub.data.ThinkingLevels.LOW
+        val lastUser = history.indexOfLast { it.role == "user" && it.text.isNotBlank() }
+        fun userText(content: String, last: Boolean) = if (last && lowEffort) "$content\n\n{reasoning effort: low}" else content
         if (history.isEmpty()) {
             val userContent = cleanPrompt.trim()
             if (userContent.isNotEmpty()) {
-                sb.append("<|im_start|>user\n$userContent<|im_end|>\n")
+                sb.append("<|im_start|>user\n${userText(userContent, true)}<|im_end|>\n")
             }
         } else {
-            history.forEach { message ->
+            history.forEachIndexed { index, message ->
                 val content = message.text.trim()
                 if (content.isNotEmpty()) {
                     if (message.role == "user") {
-                        sb.append("<|im_start|>user\n$content<|im_end|>\n")
+                        sb.append("<|im_start|>user\n${userText(content, index == lastUser)}<|im_end|>\n")
                     } else {
                         val formattedAssistant = if (content.contains("<think>") && content.contains("</think>")) {
                             "<think></think>" + content.substringAfterLast("</think>").trim()
@@ -1523,7 +1547,7 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
         val currentDate = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
         val validRecipients = if (thinkingEnabled) "\"self\", \"user\"" else "\"user\""
         val sb = StringBuilder()
-        sb.append("<|start|>system<|message|>$effectiveSystem\nKnowledge cutoff: 2026-01-04.\nCurrent date: $currentDate.\n\nReasoning strength: high.\n\n# Valid recipients: $validRecipients.<|eot|>")
+        sb.append("<|start|>system<|message|>$effectiveSystem\nKnowledge cutoff: 2026-01-04.\nCurrent date: $currentDate.\n\nReasoning strength: ${com.llmhub.llmhub.data.ThinkingLevels.word(thinkingEffort)}.\n\n# Valid recipients: $validRecipients.<|eot|>")
         if (history.isEmpty()) {
             sb.append("<|start|>user<|message|>${cleanPrompt.trim()}<|eot|>")
         } else {

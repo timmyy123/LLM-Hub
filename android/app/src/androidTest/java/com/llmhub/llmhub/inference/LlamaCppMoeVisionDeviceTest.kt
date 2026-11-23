@@ -124,13 +124,22 @@ class LlamaCppMoeVisionDeviceTest {
     }
 
     /**
-     * Inkling's thinking levels (none, minimal, low, medium, high, max), each saved as the model's level and loaded
-     * on CPU flash streaming as the app does, with thinking on. Logs the thought and answer per level; the generated
-     * token counts are the runtime's "Turn:" lines, one per level in order. Run with `-e method effortLevels`.
+     * Every thinking level of a model with a level picker (ThinkingLevels: Inkling 2, Muse Glimmer, GPT-OSS, Granite
+     * 4.2), each saved as the model's level and loaded on the CPU as the app does: Off (None for Inkling) with
+     * thinking off, the rest with it on. Logs the thought and answer per level; generated token counts are the
+     * runtime's "Turn:" lines, one per level in order. `-e method effortLevels -e efforts all`, plus `-e model_name`
+     * and `-e model_sha256` for a model other than Inkling.
      */
     @Test fun effortLevels() = runBlocking {
-        org.junit.Assume.assumeTrue("Inkling only", model.isInkling2() && args.getString("efforts") != null)
+        val spec = com.llmhub.llmhub.data.ThinkingLevels.forModel(model)
+        org.junit.Assume.assumeTrue("A model with thinking levels", spec != null && args.getString("efforts") != null)
+        spec!!
         DeviceInfo.init(context)
+        val models = File(context.filesDir, "models").apply { mkdirs() }
+        args.getString("model_sha256")?.let { sha ->
+            val target = File(models, model.localFileName())
+            if (!target.isFile) OnDeviceFixtures.download(target, model.url, sha)
+        }
         val prefs = com.llmhub.llmhub.data.ModelPreferences(context)
         val saved = prefs.getModelConfig(model.name)
         val base = saved ?: com.llmhub.llmhub.data.ModelConfig(
@@ -139,30 +148,37 @@ class LlamaCppMoeVisionDeviceTest {
         val question = "A bat and a ball cost \$1.10 in total. The bat costs \$1.00 more than the ball. " +
             "How much does the ball cost? Give the final answer in cents."
         val failures = mutableListOf<String>()
+        // As in the app, the model is loaded once and each prompt reads the level saved for it.
+        val from = args.getString("from_level")?.toInt() ?: 0
+        val service = LlamaCppInferenceService(context)
         try {
-            for (level in InklingFormat.EFFORT_LEVELS) {
-                prefs.setModelConfig(model.name, base.copy(thinkingEffort = level, flashStreaming = true, enableThinking = true))
-                val service = LlamaCppInferenceService(context)
+            service.setGenerationParameters(
+                maxTokens = 2048, topK = 40, topP = 0.95f, temperature = 0.1f,
+                nGpuLayers = null, enableThinking = true, contextWindow = 4096,
+            )
+            service.loadModel(model, LlmInference.Backend.CPU, null)
+            spec.levels.forEachIndexed { index, level ->
+                if (index < from) return@forEachIndexed
+                val thinking = index > 0
+                val effort = if (thinking) level.effort else spec.default
+                prefs.setModelConfig(model.name, base.copy(thinkingEffort = effort, flashStreaming = true, enableThinking = thinking))
                 service.setGenerationParameters(
                     maxTokens = 2048, topK = 40, topP = 0.95f, temperature = 0.1f,
-                    nGpuLayers = null, enableThinking = true, contextWindow = 4096,
+                    nGpuLayers = null, enableThinking = thinking, contextWindow = 4096,
                 )
-                try {
-                    service.loadModel(model, LlmInference.Backend.CPU, null)
-                    val reply = StringBuilder()
-                    service.generateResponseStream(question, model).collect { reply.append(it) }
-                    val text = reply.toString()
-                    val thought = text.substringAfter(THINK, "").substringBefore(END_THINK)
-                    val answer = text.substringAfterLast(END_THINK)
-                    Log.i(TAG, "EFFORT level=$level thoughtChars=${thought.length} answer=${answer.trim().take(300)} | thought=${thought.take(1200)}")
-                    if (!answer.contains("5")) failures += "level $level: ${answer.take(200)}"
-                    if (text.contains("<|")) failures += "level $level shows block tokens"
-                } finally {
-                    service.unloadModel()
-                }
+                val reply = StringBuilder()
+                service.generateResponseStream(question, model).collect { reply.append(it) }
+                val text = reply.toString()
+                val thought = text.substringAfter(THINK, "").substringBefore(END_THINK)
+                val answer = text.substringAfterLast(END_THINK)
+                val label = context.getString(level.labelRes)
+                Log.i(TAG, "EFFORT $label thinking=$thinking thoughtChars=${thought.length} answer=${answer.trim().take(300)} | thought=${thought.take(1200)}")
+                if (!answer.contains("5")) failures += "$label: ${answer.take(200)}"
+                if (text.contains("<|") || text.contains("{reasoning effort")) failures += "$label shows prompt tokens"
             }
         } finally {
-            if (saved != null) prefs.setModelConfig(model.name, saved)
+            service.unloadModel()
+            if (saved != null) prefs.setModelConfig(model.name, saved) else prefs.setModelConfig(model.name, base)
         }
         assertTrue("Failed: $failures", failures.isEmpty())
     }

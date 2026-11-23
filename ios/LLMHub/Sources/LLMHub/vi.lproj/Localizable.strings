@@ -1016,6 +1016,7 @@
 "rag_threshold_overlap" = "Mức trùng từ cần thiết";
 "thinking_level" = "Mức suy nghĩ";
 "thinking_level_off" = "Tắt";
+"thinking_level_none" = "Không";
 "thinking_level_minimal" = "Tối thiểu";
 "thinking_level_low" = "Thấp";
 "thinking_level_medium" = "Trung bình";

@@ -1009,6 +1009,7 @@
 "rag_threshold_overlap" = "חפיפת מילים נדרשת";
 "thinking_level" = "רמת חשיבה";
 "thinking_level_off" = "כבוי";
+"thinking_level_none" = "ללא";
 "thinking_level_minimal" = "מינימלית";
 "thinking_level_low" = "נמוכה";
 "thinking_level_medium" = "בינונית";

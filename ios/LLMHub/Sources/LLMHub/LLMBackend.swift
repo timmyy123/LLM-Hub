@@ -136,7 +136,7 @@ class LLMBackend: ObservableObject {
         let validRecipients = thinkingEnabled ? "\"self\", \"user\"" : "\"user\""
         parts.append(contentsOf: [
             "<|begin_of_text|>",
-            "<|start|>system<|message|>\(effectiveSystem)\nKnowledge cutoff: 2026-01-04.\nCurrent date: \(dateFormatter.string(from: Date())).\n\nReasoning strength: high.\n\n# Valid recipients: \(validRecipients).<|eot|>",
+            "<|start|>system<|message|>\(effectiveSystem)\nKnowledge cutoff: 2026-01-04.\nCurrent date: \(dateFormatter.string(from: Date())).\n\nReasoning strength: \(ThinkingLevels.museStrength).\n\n# Valid recipients: \(validRecipients).<|eot|>",
             "<|start|>user<|message|>\(cleanPrompt)<|eot|>"
         ])
         parts.append(thinkingEnabled
@@ -157,7 +157,7 @@ class LLMBackend: ObservableObject {
         if !systemContent.isEmpty {
             parts.append("<|im_start|>system\n\(systemContent)<|im_end|>\n")
         }
-        parts.append("<|im_start|>user\n\(cleanPrompt)<|im_end|>\n")
+        parts.append("<|im_start|>user\n\(ThinkingLevels.graniteUser(cleanPrompt, thinkingEnabled: thinkingEnabled))<|im_end|>\n")
         if thinkingEnabled {
             parts.append("<|im_start|>assistant\n<think>\n")
         } else {
@@ -401,11 +401,14 @@ class LLMBackend: ObservableObject {
             messages.insert(HarmonyPromptMessage(role: "system", content: "You are a helpful assistant."), at: 0)
         }
 
-        var parts = ["__RAW_PROMPT__"]
+        // The model's own system header carries the reasoning level; the app's system prompt is the developer message.
+        var parts = ["__RAW_PROMPT__", ThinkingLevels.harmonySystemHeader(thinkingEnabled: thinkingEnabled)]
         for message in messages {
             let content = message.content.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !content.isEmpty else { continue }
-            parts.append("<|start|>\(message.role)<|message|>\(content)<|end|>")
+            parts.append(message.role == "system"
+                ? ThinkingLevels.harmonyDeveloper(content)
+                : "<|start|>\(message.role)<|message|>\(content)<|end|>")
         }
         if thinkingEnabled {
             parts.append(Self.harmonyAssistantHeader)
@@ -1369,6 +1372,103 @@ class LLMBackend: ObservableObject {
 /// list has no Inkling format). Every message is a block closed by <|end_message|>; thinking is set by a system block,
 /// "Thinking effort level: <0..0.99>", before the first non-system message; there is no generation prompt (the model
 /// opens its own <|message_model|> block). The model writes <|content_thinking|> and <|content_text|> blocks.
+/// Models whose chat template takes a thinking level (mirrors Android's ThinkingLevels). The first level is the lowest
+/// choice: Off (thinking off, as the on/off switch did) for models that can stop thinking, and None for Inkling 2,
+/// which has no off: its lowest level ("none", effort 0) still thinks, and that thought is shown.
+///  - Inkling 2: "Thinking effort level: <0..0.99>" (InklingFormat.effortLevels, InklingFormat.savedEffort).
+///  - Muse Glimmer: "Reasoning strength: low / medium / high / xhigh" (template default high).
+///  - GPT-OSS: "Reasoning: low / medium / high" in the Harmony system header (template default medium).
+///  - Granite 4.2: low effort appends "{reasoning effort: low}" to the last user message; otherwise normal (high).
+/// Effort values other than Inkling's are codes 1...4 (low, medium, high, xhigh).
+enum ThinkingLevels {
+    struct Level { let labelKey: String; let effort: Double }
+    enum Family: String { case inkling, muse, gptOss = "gpt_oss", granite }
+
+    static let low = 1.0, medium = 2.0, high = 3.0, xhigh = 4.0
+
+    static func family(_ name: String?) -> Family? {
+        guard let lower = name?.lowercased(), !lower.contains("vision projector") else { return nil }
+        if InklingFormat.isInklingName(lower) { return .inkling }
+        if lower.contains("muse glimmer") || lower.contains("muse-glimmer") { return .muse }
+        if lower.contains("gpt-oss") || lower.contains("gpt_oss") { return .gptOss }
+        if lower.contains("granite 4.2") || lower.contains("granite-4.2") { return .granite }
+        return nil
+    }
+
+    static func levels(_ family: Family) -> [Level] {
+        let off = Level(labelKey: "thinking_level_off", effort: 0)
+        switch family {
+        case .inkling:
+            let keys = ["thinking_level_none", "thinking_level_minimal", "thinking_level_low",
+                        "thinking_level_medium", "thinking_level_high", "thinking_level_max"]
+            return zip(keys, InklingFormat.effortLevels).map { Level(labelKey: $0, effort: $1) }
+        case .muse:
+            return [off, Level(labelKey: "thinking_level_low", effort: low), Level(labelKey: "thinking_level_medium", effort: medium),
+                    Level(labelKey: "thinking_level_high", effort: high), Level(labelKey: "thinking_level_max", effort: xhigh)]
+        case .gptOss:
+            return [off, Level(labelKey: "thinking_level_low", effort: low), Level(labelKey: "thinking_level_medium", effort: medium),
+                    Level(labelKey: "thinking_level_high", effort: high)]
+        case .granite:
+            return [off, Level(labelKey: "thinking_level_low", effort: low), Level(labelKey: "thinking_level_high", effort: high)]
+        }
+    }
+
+    static func defaultEffort(_ family: Family) -> Double {
+        switch family {
+        case .inkling: return 0.7
+        case .muse, .granite: return high
+        case .gptOss: return medium
+        }
+    }
+
+    /// The level chosen in the settings while thinking is on, or the model's default.
+    static func savedEffort(_ family: Family) -> Double {
+        if family == .inkling { return InklingFormat.savedEffort }
+        let saved = UserDefaults.standard.object(forKey: "thinking_effort_\(family.rawValue)") as? Double
+        guard let saved, levels(family).dropFirst().contains(where: { abs($0.effort - saved) < 0.001 }) else {
+            return defaultEffort(family)
+        }
+        return saved
+    }
+
+    static func setSavedEffort(_ family: Family, _ effort: Double) {
+        if family == .inkling { InklingFormat.savedEffort = effort; return }
+        UserDefaults.standard.set(effort, forKey: "thinking_effort_\(family.rawValue)")
+    }
+
+    /// The words the Muse Glimmer and GPT-OSS templates use for an effort code.
+    static func word(_ effort: Double) -> String {
+        effort <= low ? "low" : effort <= medium ? "medium" : effort <= high ? "high" : "xhigh"
+    }
+
+    /// Muse Glimmer's "Reasoning strength" value.
+    static var museStrength: String { word(savedEffort(.muse)) }
+
+    /// Granite 4.2's last user message: "{reasoning effort: low}" appended at the low level, as its template does.
+    static func graniteUser(_ text: String, thinkingEnabled: Bool) -> String {
+        thinkingEnabled && savedEffort(.granite) <= low ? text + "\n\n{reasoning effort: low}" : text
+    }
+
+    /// GPT-OSS's Harmony system header with its reasoning level (low when thinking is off), as the model's template
+    /// writes it; the app's own system prompt then goes in a developer message.
+    static func harmonySystemHeader(thinkingEnabled: Bool) -> String {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd"
+        let level = thinkingEnabled ? min(savedEffort(.gptOss), high) : low
+        return "<|start|>system<|message|>You are ChatGPT, a large language model trained by OpenAI.\n" +
+            "Knowledge cutoff: 2024-06\nCurrent date: \(formatter.string(from: Date()))\n\n" +
+            "Reasoning: \(word(level))\n\n" +
+            "# Valid channels: analysis, commentary, final. Channel must be included for every message.<|end|>"
+    }
+
+    /// An app system prompt as the Harmony developer message.
+    static func harmonyDeveloper(_ instructions: String) -> String {
+        "<|start|>developer<|message|># Instructions\n\n\(instructions)<|end|>"
+    }
+}
+
 enum InklingFormat {
     static let model = "<|message_model|>"
     static let user = "<|message_user|>"

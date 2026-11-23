@@ -385,6 +385,7 @@
     <string name="enable_thinking">Denken aktivieren</string>
     <string name="thinking_level">Denkstufe</string>
     <string name="thinking_level_off">Aus</string>
+    <string name="thinking_level_none">Keine</string>
     <string name="thinking_level_minimal">Minimal</string>
     <string name="thinking_level_low">Niedrig</string>
     <string name="thinking_level_medium">Mittel</string>

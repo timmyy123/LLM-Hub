@@ -391,6 +391,7 @@
     <string name="enable_thinking">Aktiver Thinking</string>
     <string name="thinking_level">Tænkeniveau</string>
     <string name="thinking_level_off">Fra</string>
+    <string name="thinking_level_none">Ingen</string>
     <string name="thinking_level_minimal">Minimal</string>
     <string name="thinking_level_low">Lav</string>
     <string name="thinking_level_medium">Middel</string>

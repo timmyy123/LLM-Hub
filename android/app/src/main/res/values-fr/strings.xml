@@ -409,6 +409,7 @@
     <string name="enable_thinking">Activer la Réflexion</string>
     <string name="thinking_level">Niveau de réflexion</string>
     <string name="thinking_level_off">Désactivé</string>
+    <string name="thinking_level_none">Aucun</string>
     <string name="thinking_level_minimal">Minimal</string>
     <string name="thinking_level_low">Faible</string>
     <string name="thinking_level_medium">Moyen</string>

@@ -409,6 +409,7 @@
     <string name="enable_thinking">אפשר חשיבה</string>
     <string name="thinking_level">רמת חשיבה</string>
     <string name="thinking_level_off">כבוי</string>
+    <string name="thinking_level_none">ללא</string>
     <string name="thinking_level_minimal">מינימלית</string>
     <string name="thinking_level_low">נמוכה</string>
     <string name="thinking_level_medium">בינונית</string>

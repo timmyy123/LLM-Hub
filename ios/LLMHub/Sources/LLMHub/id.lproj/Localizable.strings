@@ -1009,6 +1009,7 @@
 "rag_threshold_overlap" = "Kecocokan kata yang diperlukan";
 "thinking_level" = "Tingkat berpikir";
 "thinking_level_off" = "Mati";
+"thinking_level_none" = "Tidak ada";
 "thinking_level_minimal" = "Minimal";
 "thinking_level_low" = "Rendah";
 "thinking_level_medium" = "Sedang";

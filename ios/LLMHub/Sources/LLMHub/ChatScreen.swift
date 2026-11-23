@@ -2078,7 +2078,8 @@ class ChatViewModel: ObservableObject {
             var harmonyParts: [String] = []
             let systemContent = ragPrefix?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
             let effectiveSystem = systemContent.isEmpty ? "You are a helpful assistant." : systemContent
-            harmonyParts.append("<|start|>system<|message|>\(effectiveSystem)<|end|>")
+            harmonyParts.append(ThinkingLevels.harmonySystemHeader(thinkingEnabled: modelSupportsThinking && enableThinking))
+            harmonyParts.append(ThinkingLevels.harmonyDeveloper(effectiveSystem))
 
             for msg in history {
                 let rawContent = msg.content.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -2143,7 +2144,7 @@ class ChatViewModel: ObservableObject {
             let validRecipients = enableThinking ? "\"self\", \"user\"" : "\"user\""
             var museParts = [
                 "<|begin_of_text|>",
-                "<|start|>system<|message|>\(effectiveSystem)\nKnowledge cutoff: 2026-01-04.\nCurrent date: \(currentDate).\n\nReasoning strength: high.\n\n# Valid recipients: \(validRecipients).<|eot|>"
+                "<|start|>system<|message|>\(effectiveSystem)\nKnowledge cutoff: 2026-01-04.\nCurrent date: \(currentDate).\n\nReasoning strength: \(ThinkingLevels.museStrength).\n\n# Valid recipients: \(validRecipients).<|eot|>"
             ]
 
             for msg in history {
@@ -2264,7 +2265,7 @@ class ChatViewModel: ObservableObject {
         } else if isLlama {
             parts.append("[INST] \(currentUserPrompt) [/INST]")
         } else if isGranite42 {
-            parts.append("<|im_start|>user\n\(currentUserPrompt)<|im_end|>")
+            parts.append("<|im_start|>user\n\(ThinkingLevels.graniteUser(currentUserPrompt, thinkingEnabled: modelSupportsThinking && enableThinking))<|im_end|>")
             if modelSupportsThinking && enableThinking {
                 parts.append("<|im_start|>assistant\n<think>\n")
             } else {

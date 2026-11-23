@@ -1009,6 +1009,7 @@
 "rag_threshold_overlap" = "میزان واژه‌های مشترک لازم";
 "thinking_level" = "سطح تفکر";
 "thinking_level_off" = "خاموش";
+"thinking_level_none" = "هیچ";
 "thinking_level_minimal" = "حداقل";
 "thinking_level_low" = "کم";
 "thinking_level_medium" = "متوسط";

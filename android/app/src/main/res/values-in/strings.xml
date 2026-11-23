@@ -408,6 +408,7 @@
     <string name="enable_thinking">Aktifkan Pemikiran</string>
     <string name="thinking_level">Tingkat berpikir</string>
     <string name="thinking_level_off">Mati</string>
+    <string name="thinking_level_none">Tidak ada</string>
     <string name="thinking_level_minimal">Minimal</string>
     <string name="thinking_level_low">Rendah</string>
     <string name="thinking_level_medium">Sedang</string>

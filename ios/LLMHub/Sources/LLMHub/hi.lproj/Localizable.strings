@@ -1021,6 +1021,7 @@
 "rag_threshold_overlap" = "ज़रूरी शब्द मेल";
 "thinking_level" = "सोचने का स्तर";
 "thinking_level_off" = "बंद";
+"thinking_level_none" = "कोई नहीं";
 "thinking_level_minimal" = "न्यूनतम";
 "thinking_level_low" = "कम";
 "thinking_level_medium" = "मध्यम";

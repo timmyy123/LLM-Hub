@@ -1016,6 +1016,7 @@
 "rag_threshold_overlap" = "สัดส่วนคำที่ตรงกันที่ต้องการ";
 "thinking_level" = "ระดับการคิด";
 "thinking_level_off" = "ปิด";
+"thinking_level_none" = "ไม่มี";
 "thinking_level_minimal" = "น้อยที่สุด";
 "thinking_level_low" = "ต่ำ";
 "thinking_level_medium" = "ปานกลาง";

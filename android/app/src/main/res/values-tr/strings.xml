@@ -407,6 +407,7 @@
     <string name="enable_thinking">Düşünceyi Etkinleştir</string>
     <string name="thinking_level">Düşünme düzeyi</string>
     <string name="thinking_level_off">Kapalı</string>
+    <string name="thinking_level_none">Yok</string>
     <string name="thinking_level_minimal">Minimum</string>
     <string name="thinking_level_low">Düşük</string>
     <string name="thinking_level_medium">Orta</string>

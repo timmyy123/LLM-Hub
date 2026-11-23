@@ -1009,6 +1009,7 @@
 "rag_threshold_overlap" = "Потрібний збіг слів";
 "thinking_level" = "Рівень міркувань";
 "thinking_level_off" = "Вимк.";
+"thinking_level_none" = "Немає";
 "thinking_level_minimal" = "Мінімальний";
 "thinking_level_low" = "Низький";
 "thinking_level_medium" = "Середній";

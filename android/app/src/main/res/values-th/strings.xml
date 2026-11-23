@@ -379,6 +379,7 @@
     <string name="enable_thinking">เปิดใช้งานการคิด</string>
     <string name="thinking_level">ระดับการคิด</string>
     <string name="thinking_level_off">ปิด</string>
+    <string name="thinking_level_none">ไม่มี</string>
     <string name="thinking_level_minimal">น้อยที่สุด</string>
     <string name="thinking_level_low">ต่ำ</string>
     <string name="thinking_level_medium">ปานกลาง</string>

@@ -409,6 +409,7 @@
     <string name="enable_thinking">Увімкнути мислення</string>
     <string name="thinking_level">Рівень міркувань</string>
     <string name="thinking_level_off">Вимк.</string>
+    <string name="thinking_level_none">Немає</string>
     <string name="thinking_level_minimal">Мінімальний</string>
     <string name="thinking_level_low">Низький</string>
     <string name="thinking_level_medium">Середній</string>

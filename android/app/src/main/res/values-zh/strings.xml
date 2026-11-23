@@ -421,6 +421,7 @@
     <string name="enable_thinking">启用深度思考</string>
     <string name="thinking_level">思考程度</string>
     <string name="thinking_level_off">关闭</string>
+    <string name="thinking_level_none">无</string>
     <string name="thinking_level_minimal">最低</string>
     <string name="thinking_level_low">低</string>
     <string name="thinking_level_medium">中</string>

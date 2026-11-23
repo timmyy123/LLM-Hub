@@ -441,6 +441,7 @@
     <string name="enable_thinking">सोचना सक्षम करें</string>
     <string name="thinking_level">सोचने का स्तर</string>
     <string name="thinking_level_off">बंद</string>
+    <string name="thinking_level_none">कोई नहीं</string>
     <string name="thinking_level_minimal">न्यूनतम</string>
     <string name="thinking_level_low">कम</string>
     <string name="thinking_level_medium">मध्यम</string>

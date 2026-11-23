@@ -1009,6 +1009,7 @@
 "rag_threshold_overlap" = "必要な単語の重なり";
 "thinking_level" = "思考レベル";
 "thinking_level_off" = "オフ";
+"thinking_level_none" = "なし";
 "thinking_level_minimal" = "最小";
 "thinking_level_low" = "低";
 "thinking_level_medium" = "中";

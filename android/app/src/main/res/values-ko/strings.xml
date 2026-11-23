@@ -408,6 +408,7 @@
     <string name="enable_thinking">사고 활성화</string>
     <string name="thinking_level">사고 수준</string>
     <string name="thinking_level_off">끔</string>
+    <string name="thinking_level_none">없음</string>
     <string name="thinking_level_minimal">최소</string>
     <string name="thinking_level_low">낮음</string>
     <string name="thinking_level_medium">보통</string>

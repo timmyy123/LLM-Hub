@@ -379,6 +379,7 @@
     <string name="enable_thinking">Denk na</string>
     <string name="thinking_level">Denkniveau</string>
     <string name="thinking_level_off">Uit</string>
+    <string name="thinking_level_none">Geen</string>
     <string name="thinking_level_minimal">Minimaal</string>
     <string name="thinking_level_low">Laag</string>
     <string name="thinking_level_medium">Gemiddeld</string>

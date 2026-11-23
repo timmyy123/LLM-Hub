@@ -429,6 +429,7 @@
     <string name="enable_thinking">Enable Thinking</string>
     <string name="thinking_level">Thinking level</string>
     <string name="thinking_level_off">Off</string>
+    <string name="thinking_level_none">None</string>
     <string name="thinking_level_minimal">Minimal</string>
     <string name="thinking_level_low">Low</string>
     <string name="thinking_level_medium">Medium</string>

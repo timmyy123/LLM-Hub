@@ -966,6 +966,7 @@
 "rag_threshold_overlap" = "Sobreposição de palavras necessária";
 "thinking_level" = "Nível de raciocínio";
 "thinking_level_off" = "Desativado";
+"thinking_level_none" = "Nenhum";
 "thinking_level_minimal" = "Mínimo";
 "thinking_level_low" = "Baixo";
 "thinking_level_medium" = "Médio";
