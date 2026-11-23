@@ -1,5 +1,7 @@
 # LLM Hub 🤖
 
+<a href="https://trendshift.io/repositories/21767?utm_source=repository-badge&amp;utm_medium=badge&amp;utm_campaign=badge-repository-21767" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/repositories/21767" alt="timmyy123%2FLLM-Hub | Trendshift" width="250" height="55"/></a>
+
 **LLM Hub** is an open-source mobile app for on-device LLM chat, image generation, video generation, and music generation, available for both **Android** and **iOS**, and now on **Windows**, **macOS** and **Linux** as LLM Hub Desktop. It's optimized for mobile usage (CPU/GPU/NPU acceleration) and supports multiple model formats so you can run powerful models locally and privately.
 
 🌟 **Featured:** Featured by **RunAnywhere** on their website — read the [LLM Hub iOS Case Study](https://www.runanywhere.ai/blog/llm-hub-ios-case-study)!
