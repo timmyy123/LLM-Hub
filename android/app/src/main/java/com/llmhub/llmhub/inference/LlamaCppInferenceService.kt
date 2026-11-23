@@ -280,7 +280,9 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
     ): Boolean = withContext(dispatcher) {
         try {
             val useVulkan = ThemePreferences(context).ggufUseVulkan.first()
-            val wantsNpu = !deviceId.isNullOrBlank() &&
+            // Inkling 2 has no NPU path: its prompt graph on the Hexagon NPU outgrows a 12 GB phone, and with that cut
+            // down the NPU computes it wrong. A choice saved before the option was hidden loads like the GPU one.
+            val wantsNpu = !deviceId.isNullOrBlank() && !model.isInkling2() &&
                 (deviceId.startsWith("dev", true) || deviceId.startsWith("htp", true))
             val accelerator = when {
                 preferredBackend != LlmInference.Backend.GPU -> null

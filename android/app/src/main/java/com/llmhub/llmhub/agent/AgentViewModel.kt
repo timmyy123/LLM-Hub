@@ -11,6 +11,7 @@ import com.llmhub.llmhub.R
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import com.llmhub.llmhub.data.LLMModel
 import com.llmhub.llmhub.data.featureThinking
+import com.llmhub.llmhub.data.isInkling2
 import com.llmhub.llmhub.data.DeviceInfo
 import com.llmhub.llmhub.data.ModelAvailabilityProvider
 import com.llmhub.llmhub.inference.InferenceService
@@ -244,7 +245,7 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
                 else -> null
             }
             // No NPU default when flash streaming could not read the prompt with this model's experts on it.
-            val defaultNpu = model.modelFormat == "gguf" && DeviceInfo.isLlamaCppHexagonSupported() &&
+            val defaultNpu = model.modelFormat == "gguf" && DeviceInfo.isLlamaCppHexagonSupported() && !model.isInkling2() &&
                 !kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                     com.llmhub.llmhub.data.GgufLayerLimits.npuHiddenForFlashStreaming(getApplication(), model)
                 }

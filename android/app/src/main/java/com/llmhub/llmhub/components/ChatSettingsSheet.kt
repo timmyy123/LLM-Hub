@@ -113,6 +113,7 @@ fun ChatSettingsSheet(
             selectedModel?.supportsGpu == true &&
                 !isPhi4Mini &&
                 selectedModel?.modelFormat == "gguf" &&
+                selectedModel?.isInkling2() != true && // no NPU path for Inkling 2 (see LlamaCppInferenceService)
                 com.llmhub.llmhub.data.DeviceInfo.isLlamaCppHexagonSupported()
         }
     }

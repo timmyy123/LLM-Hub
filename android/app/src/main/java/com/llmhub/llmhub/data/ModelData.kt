@@ -4208,14 +4208,14 @@ object ModelData {
         ),
 
         // Inkling 2 Mini (Thinking Machines; 26.2B MoE, 3.4B active, middle layers looped 3x), unsloth's mainline-layout
-        // GGUFs (Mainline_Support, llama.cpp inkling2_loop). The F16 vision projector downloads with each quant into its
-        // own folder: its file name (mmproj-F16.gguf) is the same as Gemma 4's in the shared models folder.
+        // GGUFs (Mainline_Support, llama.cpp inkling2_loop). Image input uses ggml-org's Q8_0 vision projector entry
+        // below, half the size of unsloth's F16 one.
         LLMModel(
             name = "Inkling-2-Mini (UD-IQ1_S, GGUF)",
-            description = "Thinking Machines' Inkling 2 Mini UD-IQ1_S GGUF: a 26B mixture-of-experts model (3.4B active) that thinks before answering, with text + vision. Includes the vision projector. ~8.40 GB download.",
+            description = "Thinking Machines' Inkling 2 Mini UD-IQ1_S GGUF: a 26B mixture-of-experts model (3.4B active) that thinks before answering, with text + vision. Download the Vision Projector to enable image input. ~7.76 GB download.",
             url = "https://huggingface.co/unsloth/Inkling-2-Mini-GGUF/resolve/45fd08764f2b0bf16b03a5483a80e5c7aaec8772/Mainline_Support/Inkling-2-Mini-UD-IQ1_S.gguf_file",
             category = "multimodal",
-            sizeBytes = 8403641216L,
+            sizeBytes = 7764293056L,
             source = "Thinking Machines via unsloth",
             supportsVision = true,
             supportsAudio = false,
@@ -4223,15 +4223,14 @@ object ModelData {
             supportsGpu = true,
             requirements = ModelRequirements(minRamGB = 12, recommendedRamGB = 16),
             contextWindowSize = 32768,
-            modelFormat = "gguf",
-            additionalFiles = listOf("https://huggingface.co/unsloth/Inkling-2-Mini-GGUF/resolve/45fd08764f2b0bf16b03a5483a80e5c7aaec8772/mmproj-F16.gguf")
+            modelFormat = "gguf"
         ),
         LLMModel(
             name = "Inkling-2-Mini (UD-IQ1_M, GGUF)",
-            description = "Thinking Machines' Inkling 2 Mini UD-IQ1_M GGUF: a 26B mixture-of-experts model (3.4B active) that thinks before answering, with text + vision. Includes the vision projector. ~8.66 GB download.",
+            description = "Thinking Machines' Inkling 2 Mini UD-IQ1_M GGUF: a 26B mixture-of-experts model (3.4B active) that thinks before answering, with text + vision. Download the Vision Projector to enable image input. ~8.02 GB download.",
             url = "https://huggingface.co/unsloth/Inkling-2-Mini-GGUF/resolve/45fd08764f2b0bf16b03a5483a80e5c7aaec8772/Mainline_Support/Inkling-2-Mini-UD-IQ1_M.gguf_file",
             category = "multimodal",
-            sizeBytes = 8663790464L,
+            sizeBytes = 8024442304L,
             source = "Thinking Machines via unsloth",
             supportsVision = true,
             supportsAudio = false,
@@ -4239,15 +4238,14 @@ object ModelData {
             supportsGpu = true,
             requirements = ModelRequirements(minRamGB = 12, recommendedRamGB = 16),
             contextWindowSize = 32768,
-            modelFormat = "gguf",
-            additionalFiles = listOf("https://huggingface.co/unsloth/Inkling-2-Mini-GGUF/resolve/45fd08764f2b0bf16b03a5483a80e5c7aaec8772/mmproj-F16.gguf")
+            modelFormat = "gguf"
         ),
         LLMModel(
             name = "Inkling-2-Mini (UD-IQ2_XXS, GGUF)",
-            description = "Thinking Machines' Inkling 2 Mini UD-IQ2_XXS GGUF: a 26B mixture-of-experts model (3.4B active) that thinks before answering, with text + vision. Includes the vision projector. ~9.13 GB download.",
+            description = "Thinking Machines' Inkling 2 Mini UD-IQ2_XXS GGUF: a 26B mixture-of-experts model (3.4B active) that thinks before answering, with text + vision. Download the Vision Projector to enable image input. ~8.49 GB download.",
             url = "https://huggingface.co/unsloth/Inkling-2-Mini-GGUF/resolve/45fd08764f2b0bf16b03a5483a80e5c7aaec8772/Mainline_Support/Inkling-2-Mini-UD-IQ2_XXS.gguf_file",
             category = "multimodal",
-            sizeBytes = 9125585792L,
+            sizeBytes = 8486237632L,
             source = "Thinking Machines via unsloth",
             supportsVision = true,
             supportsAudio = false,
@@ -4255,15 +4253,14 @@ object ModelData {
             supportsGpu = true,
             requirements = ModelRequirements(minRamGB = 12, recommendedRamGB = 16),
             contextWindowSize = 32768,
-            modelFormat = "gguf",
-            additionalFiles = listOf("https://huggingface.co/unsloth/Inkling-2-Mini-GGUF/resolve/45fd08764f2b0bf16b03a5483a80e5c7aaec8772/mmproj-F16.gguf")
+            modelFormat = "gguf"
         ),
         LLMModel(
             name = "Inkling-2-Mini (UD-Q2_K_XL, GGUF)",
-            description = "Thinking Machines' Inkling 2 Mini UD-Q2_K_XL GGUF: a 26B mixture-of-experts model (3.4B active) that thinks before answering, with text + vision. Includes the vision projector. ~9.78 GB download.",
+            description = "Thinking Machines' Inkling 2 Mini UD-Q2_K_XL GGUF: a 26B mixture-of-experts model (3.4B active) that thinks before answering, with text + vision. Download the Vision Projector to enable image input. ~9.14 GB download.",
             url = "https://huggingface.co/unsloth/Inkling-2-Mini-GGUF/resolve/45fd08764f2b0bf16b03a5483a80e5c7aaec8772/Mainline_Support/Inkling-2-Mini-UD-Q2_K_XL.gguf_file",
             category = "multimodal",
-            sizeBytes = 9778064768L,
+            sizeBytes = 9138716608L,
             source = "Thinking Machines via unsloth",
             supportsVision = true,
             supportsAudio = false,
@@ -4271,15 +4268,14 @@ object ModelData {
             supportsGpu = true,
             requirements = ModelRequirements(minRamGB = 12, recommendedRamGB = 16),
             contextWindowSize = 32768,
-            modelFormat = "gguf",
-            additionalFiles = listOf("https://huggingface.co/unsloth/Inkling-2-Mini-GGUF/resolve/45fd08764f2b0bf16b03a5483a80e5c7aaec8772/mmproj-F16.gguf")
+            modelFormat = "gguf"
         ),
         LLMModel(
             name = "Inkling-2-Mini (UD-IQ3_XXS, GGUF)",
-            description = "Thinking Machines' Inkling 2 Mini UD-IQ3_XXS GGUF: a 26B mixture-of-experts model (3.4B active) that thinks before answering, with text + vision. Includes the vision projector. ~12.30 GB download.",
+            description = "Thinking Machines' Inkling 2 Mini UD-IQ3_XXS GGUF: a 26B mixture-of-experts model (3.4B active) that thinks before answering, with text + vision. Download the Vision Projector to enable image input. ~11.66 GB download.",
             url = "https://huggingface.co/unsloth/Inkling-2-Mini-GGUF/resolve/45fd08764f2b0bf16b03a5483a80e5c7aaec8772/Mainline_Support/Inkling-2-Mini-UD-IQ3_XXS.gguf_file",
             category = "multimodal",
-            sizeBytes = 12302658944L,
+            sizeBytes = 11663310784L,
             source = "Thinking Machines via unsloth",
             supportsVision = true,
             supportsAudio = false,
@@ -4287,15 +4283,14 @@ object ModelData {
             supportsGpu = true,
             requirements = ModelRequirements(minRamGB = 12, recommendedRamGB = 16),
             contextWindowSize = 32768,
-            modelFormat = "gguf",
-            additionalFiles = listOf("https://huggingface.co/unsloth/Inkling-2-Mini-GGUF/resolve/45fd08764f2b0bf16b03a5483a80e5c7aaec8772/mmproj-F16.gguf")
+            modelFormat = "gguf"
         ),
         LLMModel(
             name = "Inkling-2-Mini (UD-Q3_K_XL, GGUF)",
-            description = "Thinking Machines' Inkling 2 Mini UD-Q3_K_XL GGUF: a 26B mixture-of-experts model (3.4B active) that thinks before answering, with text + vision. Includes the vision projector. ~14.27 GB download.",
+            description = "Thinking Machines' Inkling 2 Mini UD-Q3_K_XL GGUF: a 26B mixture-of-experts model (3.4B active) that thinks before answering, with text + vision. Download the Vision Projector to enable image input. ~13.63 GB download.",
             url = "https://huggingface.co/unsloth/Inkling-2-Mini-GGUF/resolve/45fd08764f2b0bf16b03a5483a80e5c7aaec8772/Mainline_Support/Inkling-2-Mini-UD-Q3_K_XL.gguf_file",
             category = "multimodal",
-            sizeBytes = 14271127456L,
+            sizeBytes = 13631779296L,
             source = "Thinking Machines via unsloth",
             supportsVision = true,
             supportsAudio = false,
@@ -4303,15 +4298,14 @@ object ModelData {
             supportsGpu = true,
             requirements = ModelRequirements(minRamGB = 12, recommendedRamGB = 16),
             contextWindowSize = 32768,
-            modelFormat = "gguf",
-            additionalFiles = listOf("https://huggingface.co/unsloth/Inkling-2-Mini-GGUF/resolve/45fd08764f2b0bf16b03a5483a80e5c7aaec8772/mmproj-F16.gguf")
+            modelFormat = "gguf"
         ),
         LLMModel(
             name = "Inkling-2-Mini (UD-IQ4_XS, GGUF)",
-            description = "Thinking Machines' Inkling 2 Mini UD-IQ4_XS GGUF: a 26B mixture-of-experts model (3.4B active) that thinks before answering, with text + vision. Includes the vision projector. ~16.37 GB download.",
+            description = "Thinking Machines' Inkling 2 Mini UD-IQ4_XS GGUF: a 26B mixture-of-experts model (3.4B active) that thinks before answering, with text + vision. Download the Vision Projector to enable image input. ~15.73 GB download.",
             url = "https://huggingface.co/unsloth/Inkling-2-Mini-GGUF/resolve/45fd08764f2b0bf16b03a5483a80e5c7aaec8772/Mainline_Support/Inkling-2-Mini-UD-IQ4_XS.gguf_file",
             category = "multimodal",
-            sizeBytes = 16373104672L,
+            sizeBytes = 15733756512L,
             source = "Thinking Machines via unsloth",
             supportsVision = true,
             supportsAudio = false,
@@ -4319,15 +4313,14 @@ object ModelData {
             supportsGpu = true,
             requirements = ModelRequirements(minRamGB = 12, recommendedRamGB = 16),
             contextWindowSize = 32768,
-            modelFormat = "gguf",
-            additionalFiles = listOf("https://huggingface.co/unsloth/Inkling-2-Mini-GGUF/resolve/45fd08764f2b0bf16b03a5483a80e5c7aaec8772/mmproj-F16.gguf")
+            modelFormat = "gguf"
         ),
         LLMModel(
             name = "Inkling-2-Mini (UD-Q4_K_M, GGUF)",
-            description = "Thinking Machines' Inkling 2 Mini UD-Q4_K_M GGUF: a 26B mixture-of-experts model (3.4B active) that thinks before answering, with text + vision. Includes the vision projector. ~17.25 GB download.",
+            description = "Thinking Machines' Inkling 2 Mini UD-Q4_K_M GGUF: a 26B mixture-of-experts model (3.4B active) that thinks before answering, with text + vision. Download the Vision Projector to enable image input. ~16.61 GB download.",
             url = "https://huggingface.co/unsloth/Inkling-2-Mini-GGUF/resolve/45fd08764f2b0bf16b03a5483a80e5c7aaec8772/Mainline_Support/Inkling-2-Mini-UD-Q4_K_M.gguf_file",
             category = "multimodal",
-            sizeBytes = 17249892768L,
+            sizeBytes = 16610544608L,
             source = "Thinking Machines via unsloth",
             supportsVision = true,
             supportsAudio = false,
@@ -4335,15 +4328,14 @@ object ModelData {
             supportsGpu = true,
             requirements = ModelRequirements(minRamGB = 12, recommendedRamGB = 16),
             contextWindowSize = 32768,
-            modelFormat = "gguf",
-            additionalFiles = listOf("https://huggingface.co/unsloth/Inkling-2-Mini-GGUF/resolve/45fd08764f2b0bf16b03a5483a80e5c7aaec8772/mmproj-F16.gguf")
+            modelFormat = "gguf"
         ),
         LLMModel(
             name = "Inkling-2-Mini (UD-Q4_K_XL, GGUF)",
-            description = "Thinking Machines' Inkling 2 Mini UD-Q4_K_XL GGUF: a 26B mixture-of-experts model (3.4B active) that thinks before answering, with text + vision. Includes the vision projector. ~18.27 GB download.",
+            description = "Thinking Machines' Inkling 2 Mini UD-Q4_K_XL GGUF: a 26B mixture-of-experts model (3.4B active) that thinks before answering, with text + vision. Download the Vision Projector to enable image input. ~17.63 GB download.",
             url = "https://huggingface.co/unsloth/Inkling-2-Mini-GGUF/resolve/45fd08764f2b0bf16b03a5483a80e5c7aaec8772/Mainline_Support/Inkling-2-Mini-UD-Q4_K_XL.gguf_file",
             category = "multimodal",
-            sizeBytes = 18269108896L,
+            sizeBytes = 17629760736L,
             source = "Thinking Machines via unsloth",
             supportsVision = true,
             supportsAudio = false,
@@ -4351,8 +4343,21 @@ object ModelData {
             supportsGpu = true,
             requirements = ModelRequirements(minRamGB = 12, recommendedRamGB = 16),
             contextWindowSize = 32768,
-            modelFormat = "gguf",
-            additionalFiles = listOf("https://huggingface.co/unsloth/Inkling-2-Mini-GGUF/resolve/45fd08764f2b0bf16b03a5483a80e5c7aaec8772/mmproj-F16.gguf")
+            modelFormat = "gguf"
+        ),
+        LLMModel(
+            name = "Inkling-2-Mini (Vision Projector, Q8_0)",
+            description = "Vision Projector (mmproj) required to enable image input for Inkling 2 Mini GGUF models. Q8_0 variant from ggml-org. ~0.35 GB download.",
+            url = "https://huggingface.co/ggml-org/Inkling-2-Mini-GGUF/resolve/e8a2cecf0e78914f07cc27b9be711a9b2c7561d9/mmproj-Inkling-2-Mini-Q8_0.gguf",
+            category = "multimodal",
+            sizeBytes = 345910944L,
+            source = "Thinking Machines via ggml-org",
+            supportsVision = true,
+            supportsAudio = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 1, recommendedRamGB = 2),
+            contextWindowSize = 0,
+            modelFormat = "gguf"
         ),
 
         // Gemma-4 31B GGUF Models (unsloth) — under 12GB variants only

@@ -563,7 +563,7 @@ enum DeviceSelfTests {
     }
 
     private static func inklingProjector() -> AIModel? {
-        ModelData.allModels().first { $0.name == "Inkling 2 Mini (Vision Projector, F16)" }
+        ModelData.allModels().first { $0.name == "Inkling 2 Mini (Vision Projector, Q8_0)" }
     }
 
     /// Deletes the quant and the vision projector checkInkling downloaded.

@@ -11,6 +11,7 @@ import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import com.llmhub.llmhub.data.DeviceInfo
 import com.llmhub.llmhub.data.GgufLayerLimits
 import com.llmhub.llmhub.data.ModelData
+import com.llmhub.llmhub.data.isInkling2
 import com.llmhub.llmhub.data.localFileName
 import com.llmhub.llmhub.imagegen.OnDeviceFixtures
 import kotlinx.coroutines.runBlocking
@@ -21,35 +22,42 @@ import org.junit.Test
 import java.io.File
 
 /**
- * Inkling 2 Mini with flash streaming, as the app stores it (the GGUF and its F16 vision projector in the model's
- * folder): thinking on shows a thinking block then "Paris", thinking off shows the answer alone, and a red circle is
- * named red. `-e model_name NAME` picks the quant (default UD-Q4_K_XL, whose NVFP4/Q8_0 experts the NPU takes);
- * `-e model_sha256 HEX` downloads it when missing; `-e modes npu,cpu` (default both on a supported Snapdragon). Prompt
- * and decode tok/s per turn are in the runtime's "Turn:" log lines.
+ * A vision MoE GGUF with flash streaming, as the app stores it: thinking on shows a thinking block then "Paris",
+ * thinking off shows the answer alone, and a red circle is named red. `-e model_name NAME` picks the catalog model
+ * (default Inkling-2-Mini UD-Q4_K_XL) and `-e model_sha256 HEX` downloads it when missing. Its projector is the catalog
+ * entry `-e projector_name NAME` (default Inkling's Q8_0 projector; `-e projector_sha256 HEX` downloads another). `-e modes npu,cpu` (default both on a supported Snapdragon); the NPU is
+ * expected where the app would use it. Prompt and decode tok/s per turn are in the runtime's "Turn:" log lines.
  */
-class LlamaCppInklingDeviceTest {
+class LlamaCppMoeVisionDeviceTest {
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
     private val args = InstrumentationRegistry.getArguments()
     private val model = ModelData.models.first { it.name == (args.getString("model_name") ?: "Inkling-2-Mini (UD-Q4_K_XL, GGUF)") }
 
     @Test fun thinkingAndImage() = runBlocking {
         DeviceInfo.init(context)
-        val folder = File(File(context.filesDir, "models"), model.name.replace(" ", "_").replace(Regex("[^a-zA-Z0-9_.-]"), ""))
-            .apply { mkdirs() }
+        val models = File(context.filesDir, "models").apply { mkdirs() }
         args.getString("model_sha256")?.let { sha ->
-            val target = File(folder, model.localFileName())
+            val target = File(models, model.localFileName())
             if (!target.isFile) OnDeviceFixtures.download(target, model.url, sha)
         }
-        val projectorUrl = model.additionalFiles.single()
-        val projector = File(folder, projectorUrl.substringAfterLast('/'))
-        if (!projector.isFile) OnDeviceFixtures.download(projector, projectorUrl, PROJECTOR_F16_SHA256)
+        val projectorName = args.getString("projector_name") ?: INKLING_PROJECTOR
+        val projector = ModelData.models.first { it.name == projectorName }
+        val projectorFile = File(models, projector.localFileName())
+        if (!projectorFile.isFile) {
+            val sha = args.getString("projector_sha256") ?: INKLING_PROJECTOR_SHA256.takeIf { projectorName == INKLING_PROJECTOR }
+            OnDeviceFixtures.download(projectorFile, projector.url, sha ?: error("projector_sha256"))
+        }
         assertTrue("${model.name} must be a MoE GGUF on disk", GgufLayerLimits.isMoe(context, model))
         val npuTakesExperts = !GgufLayerLimits.npuCannotStreamExperts(context, model)
 
         data class Mode(val label: String, val backend: LlmInference.Backend, val device: String?, val runtime: String)
         val all = buildList {
-            if (DeviceInfo.isLlamaCppHexagonSupported() && npuTakesExperts) {
-                add(Mode("npu", LlmInference.Backend.GPU, "HTP0", "NPU flash streaming"))
+            // The NPU reads the prompt when it can multiply by the experts. Inkling 2 has no NPU path (its NPU prompt
+            // graph outgrows a 12 GB phone, and cut down the NPU computes it wrong): an NPU choice, such as one saved
+            // before the option was hidden, streams on the CPU, like experts the NPU cannot take.
+            if (DeviceInfo.isLlamaCppHexagonSupported()) {
+                val onNpu = npuTakesExperts && !model.isInkling2()
+                add(Mode("npu", LlmInference.Backend.GPU, "HTP0", if (onNpu) "NPU flash streaming" else "CPU flash streaming"))
             }
             add(Mode("cpu", LlmInference.Backend.CPU, null, "CPU flash streaming"))
         }
@@ -94,7 +102,7 @@ class LlamaCppInklingDeviceTest {
                 try {
                     service.generateResponseStreamWithSession(
                         prompt = "What color is the circle in this image? Answer in one word.",
-                        model = model, chatId = "inkling-image-test", images = listOf(image),
+                        model = model, chatId = "moe-vision-image-test", images = listOf(image),
                         audioData = null, webSearchEnabled = false, imagePaths = emptyList(),
                     ).collect { reply.append(it) }
                 } finally {
@@ -126,9 +134,10 @@ class LlamaCppInklingDeviceTest {
     }
 
     private companion object {
-        const val TAG = "LlamaCppInkling"
+        const val TAG = "LlamaCppMoeVision"
         const val THINK = "​​THINK​​"
         const val END_THINK = "​​ENDTHINK​​"
-        const val PROJECTOR_F16_SHA256 = "3bff75ffeb2d6e0371ba7bd42e30d26a7d98aea681fa44b03b5a20891cfa2c5f"
+        const val INKLING_PROJECTOR = "Inkling-2-Mini (Vision Projector, Q8_0)"
+        const val INKLING_PROJECTOR_SHA256 = "233287272ec5ac39b4168677aba54a4c024f202410f5629fac1830e1059f8abb"
     }
 }

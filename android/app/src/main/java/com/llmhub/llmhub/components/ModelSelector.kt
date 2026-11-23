@@ -20,6 +20,7 @@ import com.llmhub.llmhub.R
 import com.llmhub.llmhub.data.DeviceInfo
 import com.llmhub.llmhub.data.LLMModel
 import com.llmhub.llmhub.data.hasNativeVoiceSupport
+import com.llmhub.llmhub.data.isInkling2
 import com.llmhub.llmhub.inference.WhisperBackend
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
 
@@ -63,8 +64,10 @@ fun ModelSelectorCard(
     val flashStreaming = flashStreamingState ?: rememberFlashStreamingState(selectedModel)
     // Flash streaming reads the prompt on the NPU only when it can multiply by every expert type. Without that the
     // NPU is left out, and a saved NPU choice moves to the CPU, where the engine streams these experts anyway.
-    LaunchedEffect(flashStreaming.npuHidden, isNpuSelected) {
-        if (flashStreaming.npuHidden && isNpuSelected) onBackendSelected?.invoke(LlmInference.Backend.CPU, null)
+    // Inkling 2 has no NPU path at all (see LlamaCppInferenceService).
+    val npuHidden = flashStreaming.npuHidden || selectedModel?.isInkling2() == true
+    LaunchedEffect(npuHidden, isNpuSelected) {
+        if (npuHidden && isNpuSelected) onBackendSelected?.invoke(LlmInference.Backend.CPU, null)
     }
     
     Card(
@@ -427,7 +430,7 @@ fun ModelSelectorCard(
 
                             // NPU Option (GGUF-on-Hexagon). Show only for GGUF models on Qualcomm devices.
                             val showNpuOption = selectedModel?.modelFormat == "gguf" && com.llmhub.llmhub.data.DeviceInfo.isLlamaCppHexagonSupported() &&
-                                !flashStreaming.npuHidden
+                                !npuHidden
                             if (showNpuOption) {
                                 DropdownMenuItem(
                                     text = { Text(stringResource(R.string.backend_npu)) },
