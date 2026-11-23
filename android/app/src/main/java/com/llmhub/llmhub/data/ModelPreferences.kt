@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.first
 import org.json.JSONObject
 
 /** Inkling 2's template default thinking level ("high"). */
-const val INKLING_DEFAULT_EFFORT = 0.9f
+const val INKLING_DEFAULT_EFFORT = 0.7f
 
 data class ModelConfig(
     val maxTokens: Int,

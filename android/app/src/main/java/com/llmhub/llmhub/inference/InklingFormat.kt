@@ -17,7 +17,7 @@ internal object InklingFormat {
     const val END = "<|end_message|>"
     const val END_SAMPLING = "<|content_model_end_sampling|>"
 
-    /** The template's levels: none, minimal, low, medium, high (its default) and max (also "xhigh"). */
+    /** The template's levels: none, minimal, low, medium, high (its default; the app defaults to medium) and max (also "xhigh"). */
     val EFFORT_LEVELS = listOf(0f, 0.1f, 0.2f, 0.7f, 0.9f, 0.99f)
 
     /** [effort] with thinking on, 0 ("none") with it off, written as the template writes it ("0", "0.9", "0.99"). */

@@ -1389,7 +1389,7 @@ enum InklingFormat {
 
     /// The thinking level chosen in the settings while thinking is on (high until one is chosen).
     static var savedEffort: Double {
-        get { (UserDefaults.standard.object(forKey: effortKey) as? Double).map { min(max($0, 0), 0.99) } ?? 0.9 }
+        get { (UserDefaults.standard.object(forKey: effortKey) as? Double).map { min(max($0, 0), 0.99) } ?? 0.7 } // medium by default
         set { UserDefaults.standard.set(newValue, forKey: effortKey) }
     }
 

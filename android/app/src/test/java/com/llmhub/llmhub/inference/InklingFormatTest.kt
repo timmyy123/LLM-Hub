@@ -57,7 +57,7 @@ class InklingFormatTest {
         )
         assertEquals(
             "<|message_system|><|content_text|>Be brief.<|end_message|>" +
-                "<|message_system|><|content_text|>Thinking effort level: 0.9<|end_message|>" +
+                "<|message_system|><|content_text|>Thinking effort level: 0.7<|end_message|>" +
                 "<|message_user|><|content_text|>Hi<|end_message|>" +
                 "<|message_model|><|content_text|>Hello!<|end_message|><|content_model_end_sampling|>" +
                 "<|message_user|><__media__><|end_message|>" +
