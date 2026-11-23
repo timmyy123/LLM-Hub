@@ -2136,7 +2136,8 @@ fun ScamDetectorScreen(
                     onBackendSelected = { backend, deviceId -> viewModel.selectBackend(backend, deviceId) },
                     onLoadModel = { viewModel.loadModel() },
                     onUnloadModel = { viewModel.unloadModel() },
-                    filterMultimodalOnly = false
+                    filterMultimodalOnly = false,
+                    flashStreamingState = flashStreamingScam
                 )
                 
                 Spacer(modifier = Modifier.height(8.dp))

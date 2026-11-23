@@ -243,7 +243,11 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
                 "CPU" -> LlmInference.Backend.CPU
                 else -> null
             }
-            val defaultNpu = model.modelFormat == "gguf" && DeviceInfo.isLlamaCppHexagonSupported()
+            // No NPU default when flash streaming could not read the prompt with this model's experts on it.
+            val defaultNpu = model.modelFormat == "gguf" && DeviceInfo.isLlamaCppHexagonSupported() &&
+                !kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    com.llmhub.llmhub.data.GgufLayerLimits.npuHiddenForFlashStreaming(getApplication(), model)
+                }
             val finalBackend = preferredBackend ?: savedBackend ?: if (defaultNpu) LlmInference.Backend.GPU else null
             val finalDeviceId = when {
                 finalBackend != LlmInference.Backend.GPU -> null

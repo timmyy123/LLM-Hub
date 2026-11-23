@@ -173,6 +173,7 @@ fun WritingAidScreen(
                         viewModel.loadModel()
                     },
                     onUnloadModel = { viewModel.unloadModel() },
+                    flashStreamingState = flashStreaming,
                     filterMultimodalOnly = false,
                     modifier = Modifier.fillMaxWidth()
                 )

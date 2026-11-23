@@ -149,6 +149,7 @@ fun ChatSettingsSheet(
     var agentToolsEnabled by remember { mutableStateOf(true) }
     var isMoeModel by remember(selectedModel?.name) { mutableStateOf(false) }
     var flashStreaming by remember(selectedModel?.name) { mutableStateOf(true) }
+    var expertsNotOnNpu by remember(selectedModel?.name) { mutableStateOf(false) }
     var systemPromptText by remember { mutableStateOf("") }
 
     val selectedModelSupportsVisionInput by remember(selectedModel, context) {
@@ -259,6 +260,8 @@ fun ChatSettingsSheet(
                 systemPromptText = ""
                 gpuLayers = gpuLayerLimit
             }
+            // After the saved flash streaming choice is restored, so the NPU check never acts on the default.
+            expertsNotOnNpu = withContext(Dispatchers.IO) { GgufLayerLimits.npuCannotStreamExperts(context, model) }
         }
     }
 
@@ -278,6 +281,16 @@ fun ChatSettingsSheet(
         }
         if (!canUseNpuForSelectedModel && useNpu) {
             useNpu = false
+        }
+    }
+
+    // The NPU is left out of the list for these experts with flash streaming on; a saved NPU choice moves to the CPU,
+    // which is where the engine streams them anyway.
+    LaunchedEffect(isMoeModel, flashStreaming, expertsNotOnNpu, useNpu) {
+        if (isMoeModel && flashStreaming && expertsNotOnNpu && useNpu) {
+            useGpu = false
+            useNpu = false
+            onBackendSelected(LlmInference.Backend.CPU, null)
         }
     }
 
@@ -532,7 +545,8 @@ fun ChatSettingsSheet(
                                     )
 
                                     // NPU option for GGUF on Qualcomm Hexagon
-                                    val showNpuOption = canUseNpuForSelectedModel
+                                    // Flash streaming reads the prompt on the NPU only when it can multiply by every expert type.
+                                    val showNpuOption = canUseNpuForSelectedModel && !(isMoeModel && flashStreaming && expertsNotOnNpu)
                                     if (showNpuOption) {
                                         DropdownMenuItem(
                                             text = { Text(stringResource(R.string.backend_npu)) },

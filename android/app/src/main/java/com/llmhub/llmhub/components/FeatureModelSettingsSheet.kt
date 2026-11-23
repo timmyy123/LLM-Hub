@@ -141,6 +141,7 @@ fun FeatureModelSettingsSheet(
     var enableThinking by remember { mutableStateOf(true) }
     var isMoeModel by remember(selectedModel?.name) { mutableStateOf(false) }
     var flashStreaming by remember(selectedModel?.name) { mutableStateOf(true) }
+    var expertsNotOnNpu by remember(selectedModel?.name) { mutableStateOf(false) }
 
     LaunchedEffect(selectedModel?.name) {
         selectedModel?.let { model ->
@@ -173,6 +174,8 @@ fun FeatureModelSettingsSheet(
             }
             // The saved per-model config belongs to AI Chat, where LFM3 thinks by default.
             if (model.isLfm3()) enableThinking = lfm3Thinking(model)
+            // After the saved flash streaming choice is restored, so the NPU check never acts on the default.
+            expertsNotOnNpu = withContext(Dispatchers.IO) { GgufLayerLimits.npuCannotStreamExperts(context, model) }
         }
     }
 
@@ -238,6 +241,16 @@ fun FeatureModelSettingsSheet(
         }
         if (!canUseNpuForSelectedModel && useNpu) {
             useNpu = false
+        }
+    }
+
+    // The NPU is left out of the list for these experts with flash streaming on; a saved NPU choice moves to the CPU,
+    // which is where the engine streams them anyway.
+    LaunchedEffect(isMoeModel, flashStreaming, expertsNotOnNpu, useNpu) {
+        if (isMoeModel && flashStreaming && expertsNotOnNpu && useNpu) {
+            useGpu = false
+            useNpu = false
+            onBackendSelected(LlmInference.Backend.CPU, null)
         }
     }
 
@@ -431,7 +444,8 @@ fun FeatureModelSettingsSheet(
                                         }
                                     )
 
-                                    val showNpuOption = canUseNpuForSelectedModel
+                                    // Flash streaming reads the prompt on the NPU only when it can multiply by every expert type.
+                                    val showNpuOption = canUseNpuForSelectedModel && !(isMoeModel && flashStreaming && expertsNotOnNpu)
                                     if (showNpuOption) {
                                         DropdownMenuItem(
                                             text = { Text(stringResource(R.string.backend_npu)) },
@@ -713,11 +727,15 @@ internal fun FlashStreamingModelSwitch(model: LLMModel?, state: FlashStreamingSt
 }
 
 /** Whether a model is a MoE GGUF and has flash streaming on (its saved config), for screens that show the switch. */
-internal class FlashStreamingState {
+class FlashStreamingState {
     var isMoe by mutableStateOf(false)
     var enabled by mutableStateOf(true)
+    /** An expert weight type is one the NPU cannot multiply by (GGUF header). */
+    var expertsNotOnNpu by mutableStateOf(false)
     /** Flash streaming will be used: the prompt runs on the GPU/NPU, decode on the CPU, and no layers setting applies. */
     val active: Boolean get() = isMoe && enabled
+    /** The NPU option is left out: flash streaming could not read the prompt with these experts on it. */
+    val npuHidden: Boolean get() = active && expertsNotOnNpu
 }
 
 @Composable
@@ -728,6 +746,7 @@ internal fun rememberFlashStreamingState(model: LLMModel?): FlashStreamingState 
         if (model == null) return@LaunchedEffect
         state.isMoe = withContext(Dispatchers.IO) { GgufLayerLimits.isMoe(context, model) }
         state.enabled = ModelPreferences(context).getModelConfig(model.name)?.flashStreaming ?: true
+        state.expertsNotOnNpu = state.isMoe && withContext(Dispatchers.IO) { GgufLayerLimits.npuCannotStreamExperts(context, model) }
     }
     return state
 }

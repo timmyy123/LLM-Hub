@@ -46,7 +46,9 @@ fun ModelSelectorCard(
     onAsrBackendSelected: ((WhisperBackend) -> Unit)? = null,
     llmModelLabel: String? = null,
     voiceModelLabel: String? = null,
-    backendLabel: String? = null
+    backendLabel: String? = null,
+    /** The screen's flash streaming state when it shows the switch, so the NPU option follows it. */
+    flashStreamingState: FlashStreamingState? = null
 ) {
     val filteredModels = if (filterMultimodalOnly) {
         models.filter { it.supportsAudio || it.supportsVision }
@@ -58,6 +60,12 @@ fun ModelSelectorCard(
     var showBackendMenu by remember { mutableStateOf(false) }
     val isNpuSelected = selectedBackend == LlmInference.Backend.GPU &&
         (selectedNpuDeviceId?.startsWith("dev", ignoreCase = true) == true)
+    val flashStreaming = flashStreamingState ?: rememberFlashStreamingState(selectedModel)
+    // Flash streaming reads the prompt on the NPU only when it can multiply by every expert type. Without that the
+    // NPU is left out, and a saved NPU choice moves to the CPU, where the engine streams these experts anyway.
+    LaunchedEffect(flashStreaming.npuHidden, isNpuSelected) {
+        if (flashStreaming.npuHidden && isNpuSelected) onBackendSelected?.invoke(LlmInference.Backend.CPU, null)
+    }
     
     Card(
         shape = RoundedCornerShape(24.dp),
@@ -418,7 +426,8 @@ fun ModelSelectorCard(
                             )
 
                             // NPU Option (GGUF-on-Hexagon). Show only for GGUF models on Qualcomm devices.
-                            val showNpuOption = selectedModel?.modelFormat == "gguf" && com.llmhub.llmhub.data.DeviceInfo.isLlamaCppHexagonSupported()
+                            val showNpuOption = selectedModel?.modelFormat == "gguf" && com.llmhub.llmhub.data.DeviceInfo.isLlamaCppHexagonSupported() &&
+                                !flashStreaming.npuHidden
                             if (showNpuOption) {
                                 DropdownMenuItem(
                                     text = { Text(stringResource(R.string.backend_npu)) },

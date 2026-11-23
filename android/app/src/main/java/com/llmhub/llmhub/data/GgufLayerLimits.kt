@@ -24,6 +24,33 @@ object GgufLayerLimits {
         return (runCatching { readLimit(file, "expert_count", 0) }.getOrNull() ?: 0) > 1
     }
 
+    /**
+     * Weight types the Hexagon NPU multiplies by in MUL_MAT_ID, the op flash streaming reads the prompt with
+     * (ggml-hexagon htp-kparams.cpp). Values are ggml_type: F32, F16, Q4_0, Q4_1, Q5_0, Q5_1, Q8_0, Q2_K, Q3_K,
+     * Q4_K, Q5_K, Q6_K, IQ2_XXS, IQ4_NL, BF16, MXFP4, NVFP4, Q1_0, Q2_0. Keep in step with that list on a
+     * llama.cpp bump.
+     */
+    private val NPU_EXPERT_TYPES = setOf(0, 1, 2, 3, 6, 7, 8, 10, 11, 12, 13, 14, 16, 20, 30, 39, 40, 41, 42)
+
+    /**
+     * True when flash streaming cannot read the prompt with this MoE GGUF on the NPU: an expert weight type
+     * (for example Gemma 4's IQ2_XS and IQ3_XXS experts) is one the NPU cannot multiply by, so the engine
+     * refuses the NPU and streams on the CPU. Reads only the GGUF header.
+     */
+    fun npuCannotStreamExperts(context: Context, model: LLMModel): Boolean =
+        modelFile(context, model)?.let { npuCannotStreamExperts(it) } ?: false
+
+    internal fun npuCannotStreamExperts(file: File): Boolean {
+        val types = runCatching { readExpertTypes(file) }.getOrNull() ?: return false
+        return types.isNotEmpty() && !NPU_EXPERT_TYPES.containsAll(types)
+    }
+
+    /** The NPU is left out for this model: flash streaming is on (its saved config) and its experts cannot run there. */
+    suspend fun npuHiddenForFlashStreaming(context: Context, model: LLMModel): Boolean =
+        isMoe(context, model) &&
+            (ModelPreferences(context).getModelConfig(model.name)?.flashStreaming ?: true) &&
+            npuCannotStreamExperts(context, model)
+
     private fun modelFile(context: Context, model: LLMModel): File? {
         if (model.modelFormat != "gguf") return null
         val root = File(context.filesDir, "models")
@@ -36,6 +63,93 @@ object GgufLayerLimits {
                     !it.name.contains("mmproj", true) && !it.name.contains("projector", true)
             }
             ?: return null
+    }
+
+    /** ggml types of the expert weight tensors (`*_exps.weight`), read from the header's tensor list. */
+    private fun readExpertTypes(file: File): Set<Int>? = java.io.BufferedInputStream(file.inputStream(), 1 shl 16).use { input ->
+        val length = file.length()
+        var position = 0L
+        fun byte(): Int {
+            val value = input.read()
+            require(value >= 0) { "GGUF ended early" }
+            position++
+            return value
+        }
+        fun u32(): Long = (0 until 4).fold(0L) { acc, i -> acc or (byte().toLong() shl (8 * i)) }
+        fun u64(): Long {
+            val low = u32()
+            val high = u32()
+            require(high <= Int.MAX_VALUE) { "GGUF length too large" }
+            return low or (high shl 32)
+        }
+        fun skip(bytes: Long) {
+            require(bytes >= 0 && bytes <= length - position) { "Invalid GGUF length" }
+            var left = bytes
+            while (left > 0) {
+                val skipped = input.skip(left)
+                if (skipped > 0) left -= skipped else { byte(); left--; position-- }
+            }
+            position += bytes
+        }
+        fun string(): String {
+            val size = u64()
+            require(size <= 1_048_576 && size <= length - position)
+            val bytes = ByteArray(size.toInt())
+            var read = 0
+            while (read < bytes.size) {
+                val n = input.read(bytes, read, bytes.size - read)
+                require(n > 0) { "GGUF ended early" }
+                read += n
+            }
+            position += size
+            return bytes.toString(Charsets.UTF_8)
+        }
+        fun width(type: Int): Long = when (type) {
+            0, 1, 7 -> 1L
+            2, 3 -> 2L
+            4, 5, 6 -> 4L
+            10, 11, 12 -> 8L
+            else -> 0L
+        }
+        fun skipValue(type: Int) {
+            when (type) {
+                8 -> skip(u64())
+                9 -> {
+                    val itemType = u32().toInt()
+                    val count = u64()
+                    val itemWidth = width(itemType)
+                    if (itemWidth > 0) {
+                        require(count <= (length - position) / itemWidth)
+                        skip(count * itemWidth)
+                    } else {
+                        require(itemType == 8 && count <= 10_000_000)
+                        repeat(count.toInt()) { skip(u64()) }
+                    }
+                }
+                else -> width(type).takeIf { it > 0 }?.let { skip(it) } ?: error("Unsupported GGUF metadata type $type")
+            }
+        }
+        val magic = ByteArray(4) { byte().toByte() }
+        if (!magic.contentEquals(byteArrayOf(71, 71, 85, 70))) return@use null
+        if (u32() !in 2L..3L) return@use null
+        val tensorCount = u64()
+        val keyCount = u64()
+        require(keyCount <= 1_000_000 && tensorCount <= 1_000_000)
+        repeat(keyCount.toInt()) {
+            skip(u64()) // key
+            skipValue(u32().toInt())
+        }
+        val types = mutableSetOf<Int>()
+        repeat(tensorCount.toInt()) {
+            val name = string()
+            val dims = u32()
+            require(dims <= 8)
+            skip(dims * 8)
+            val type = u32().toInt()
+            skip(8) // data offset
+            if (name.endsWith("_exps.weight")) types += type
+        }
+        types
     }
 
     private fun readLimit(file: File, keySuffix: String, offset: Int): Int? = RandomAccessFile(file, "r").use { input ->
