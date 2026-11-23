@@ -27,8 +27,8 @@ class InklingFormatTest {
     }
 
     @Test
-    fun thinkingOffDropsStrayThought() {
-        assertEquals("Paris.", parse(reply, thinking = false))
+    fun thinkingOffStillShowsWhatTheModelThought() {
+        assertEquals("[T]The user asks.[/T]Paris.", parse(reply, thinking = false))
     }
 
     @Test

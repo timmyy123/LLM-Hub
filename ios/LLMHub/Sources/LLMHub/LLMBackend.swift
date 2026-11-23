@@ -1443,8 +1443,9 @@ enum InklingFormat {
         return result
     }
 
-    /// Cumulative output as the app's text: thinking blocks between the sentinels when thinking is on, dropped when
-    /// it is off (effort 0 does not fully stop the model reasoning), and the text blocks as the answer.
+    /// Cumulative output as the app's text: thinking blocks between the sentinels, and the text blocks as the answer.
+    /// Thinking is shown at every effort level: at effort 0 ("thinking off") the model still writes a short thought,
+    /// and it is shown rather than hidden.
     static func normalizeOutput(_ raw: String, thinkingEnabled: Bool, open: String, close: String) -> String {
         var answer = ""
         var thought = ""
@@ -1483,7 +1484,7 @@ enum InklingFormat {
             if rest.hasPrefix(end) { rest = rest.dropFirst(end.count) }
         }
         let visibleThought = thought.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard thinkingEnabled, !visibleThought.isEmpty else { return answer }
+        guard !visibleThought.isEmpty else { return answer }
         return open + visibleThought + (thinkingOpen ? "" : close + answer)
     }
 }

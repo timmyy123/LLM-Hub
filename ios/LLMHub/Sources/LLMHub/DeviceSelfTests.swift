@@ -663,7 +663,8 @@ enum DeviceSelfTests {
                 let answer = shown.components(separatedBy: "ENDTHINK").last ?? shown
                 if !answer.localizedCaseInsensitiveContains("Paris") { failures.append("\(label): \(shown.suffix(200))") }
                 if shown.contains("<|") { failures.append("\(label) shows block tokens: \(shown.prefix(200))") }
-                if thinking != shown.contains("THINK") { failures.append("\(label): thinking block shown \(shown.contains("THINK"))") }
+                // Off asks for effort 0; Inkling may still think there, and that thought is shown, not hidden.
+                if thinking && !shown.contains("THINK") { failures.append("\(label): no thinking block") }
             }
             // Image input: the vision projector loads with the model and the image is its own user block.
             backend.enableThinking = false

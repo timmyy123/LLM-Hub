@@ -78,8 +78,9 @@ internal object InklingFormat {
 }
 
 /**
- * Streams Inkling output as the app's text: thinking blocks between [thinkOpen] and [thinkClose] when thinking is
- * on, dropped when it is off (effort 0 does not fully stop the model reasoning), and the text blocks as the answer.
+ * Streams Inkling output as the app's text: thinking blocks between [thinkOpen] and [thinkClose], and the text blocks
+ * as the answer. Thinking is shown at every effort level: at effort 0 ("thinking off") the model still writes a short
+ * thought, and it is shown rather than hidden.
  */
 internal class InklingOutputParser(
     private val thinkOpen: String,
@@ -178,7 +179,6 @@ internal class InklingOutputParser(
 
     /** Opens the thinking block on the first visible reasoning, so an empty thinking block shows nothing. */
     private fun sendThought(text: String, send: (String) -> Unit) {
-        if (!thinkingEnabled) return
         if (!thinkingOpened) {
             val visible = text.trimStart()
             if (visible.isEmpty()) return

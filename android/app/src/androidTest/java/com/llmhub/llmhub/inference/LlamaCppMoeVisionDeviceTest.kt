@@ -23,7 +23,7 @@ import java.io.File
 
 /**
  * A vision MoE GGUF with flash streaming, as the app stores it: thinking on shows a thinking block then "Paris",
- * thinking off shows the answer alone, and a red circle is named red. `-e model_name NAME` picks the catalog model
+ * thinking off asks for none (a thought the model still writes is shown), and a red circle is named red. `-e model_name NAME` picks the catalog model
  * (default Inkling-2-Mini UD-Q4_K_XL) and `-e model_sha256 HEX` downloads it when missing. Its projector is the catalog
  * entry `-e projector_name NAME` (default Inkling's Q8_0 projector; `-e projector_sha256 HEX` downloads another). `-e modes npu,cpu` (default both on a supported Snapdragon); the NPU is
  * expected where the app would use it. Prompt and decode tok/s per turn are in the runtime's "Turn:" log lines.
@@ -92,7 +92,9 @@ class LlamaCppMoeVisionDeviceTest {
                     entry.put(key, show(text)).put("${key}TokPerSec", service.getLastDecodeSpeedTokPerSec())
                     val answer = text.substringAfterLast(END_THINK)
                     if (!answer.contains("Paris", ignoreCase = true)) failures += "${mode.label} $key: ${show(text).takeLast(200)}"
-                    if (thinking != text.contains(THINK)) failures += "${mode.label} $key: thinking block ${text.contains(THINK)}"
+                    // Thinking on must show a thought. Off asks for effort 0; a model that still thinks there
+                    // (Inkling) shows it, so a thought is allowed.
+                    if (thinking && !text.contains(THINK)) failures += "${mode.label} $key: no thinking block"
                     if (text.contains("<|")) failures += "${mode.label} $key shows block tokens"
                 }
                 params(thinking = false)
@@ -117,6 +119,50 @@ class LlamaCppMoeVisionDeviceTest {
                 service.unloadModel()
                 Log.i(TAG, "RESULT $result")
             }
+        }
+        assertTrue("Failed: $failures", failures.isEmpty())
+    }
+
+    /**
+     * Inkling's thinking levels (none, minimal, low, medium, high, max), each saved as the model's level and loaded
+     * on CPU flash streaming as the app does, with thinking on. Logs the thought and answer per level; the generated
+     * token counts are the runtime's "Turn:" lines, one per level in order. Run with `-e method effortLevels`.
+     */
+    @Test fun effortLevels() = runBlocking {
+        org.junit.Assume.assumeTrue("Inkling only", model.isInkling2() && args.getString("efforts") != null)
+        DeviceInfo.init(context)
+        val prefs = com.llmhub.llmhub.data.ModelPreferences(context)
+        val saved = prefs.getModelConfig(model.name)
+        val base = saved ?: com.llmhub.llmhub.data.ModelConfig(
+            maxTokens = 2048, topK = 40, topP = 0.95f, temperature = 0.1f, backend = "CPU", deviceId = null,
+            disableVision = false, disableAudio = false)
+        val question = "A bat and a ball cost \$1.10 in total. The bat costs \$1.00 more than the ball. " +
+            "How much does the ball cost? Give the final answer in cents."
+        val failures = mutableListOf<String>()
+        try {
+            for (level in InklingFormat.EFFORT_LEVELS) {
+                prefs.setModelConfig(model.name, base.copy(thinkingEffort = level, flashStreaming = true, enableThinking = true))
+                val service = LlamaCppInferenceService(context)
+                service.setGenerationParameters(
+                    maxTokens = 2048, topK = 40, topP = 0.95f, temperature = 0.1f,
+                    nGpuLayers = null, enableThinking = true, contextWindow = 4096,
+                )
+                try {
+                    service.loadModel(model, LlmInference.Backend.CPU, null)
+                    val reply = StringBuilder()
+                    service.generateResponseStream(question, model).collect { reply.append(it) }
+                    val text = reply.toString()
+                    val thought = text.substringAfter(THINK, "").substringBefore(END_THINK)
+                    val answer = text.substringAfterLast(END_THINK)
+                    Log.i(TAG, "EFFORT level=$level thoughtChars=${thought.length} answer=${answer.trim().take(300)} | thought=${thought.take(1200)}")
+                    if (!answer.contains("5")) failures += "level $level: ${answer.take(200)}"
+                    if (text.contains("<|")) failures += "level $level shows block tokens"
+                } finally {
+                    service.unloadModel()
+                }
+            }
+        } finally {
+            if (saved != null) prefs.setModelConfig(model.name, saved)
         }
         assertTrue("Failed: $failures", failures.isEmpty())
     }
