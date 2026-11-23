@@ -129,13 +129,17 @@ The iOS Music Generator supports **Live generation** with Magenta Realtime 2: he
 
 ### 🦙 LLM Hub's patched llama.cpp (Aion, flash streaming, NPU/GPU fixes)
 The apps run [llama.cpp](https://github.com/ggml-org/llama.cpp) `b12631` with these fixes, published with prebuilt
-binaries in the [llama.cpp-b12631-llmhub1 release](https://github.com/timmyy123/LLM-Hub/releases/tag/llama.cpp-b12631-llmhub1):
+binaries in the [llama.cpp-b12631-llmhub1 release](https://github.com/timmyy123/LLM-Hub/releases/tag/llama.cpp-b12631-llmhub1)
+for every backend the apps use: Android CPU, Vulkan GPU, Snapdragon OpenCL GPU and Hexagon NPU; iOS and macOS Metal GPU and CPU.
 - **Aion**: the `aion` architecture and chat template for microsoft/Aion-1.0-Instruct-2.3B
 - **Flash streaming**: MoE GGUF models bigger than the device's RAM (Gemma 4 26B-A4B, LFM2.5-24B-A2B, Inkling 2 Mini).
   The routed experts stay in the model file and are read from storage as tokens need them; the prompt is read on the
   Hexagon NPU (Android) or Metal GPU (iOS/macOS), decoding runs on the CPU. Built on [BigMoeOnEdge](https://github.com/Helldez/BigMoeOnEdge)
 - **Hexagon NPU**: SET_ROWS (KV-cache writes) kept off the NPU for flash streaming, which hung Gemma 4; HTP repack fixes
 - **OpenCL (Adreno)**: copy-kernel fix that brings decode with flash attention back from 7.7 to 17-18 tok/s on the Tab S9+
+- **Vulkan (Mali, Xclipse, Adreno and other Android GPUs)**: runs on Android API 27 (`vkGetPhysicalDeviceFeatures2`
+  through the dispatcher); a failed shader compile errors out instead of hanging the other threads, and reaches logcat;
+  drivers below Vulkan 1.2 (such as Mali-G57, which reports 1.1) are skipped instead of crashing
 - **Metal**: NVFP4 weights, including MoE experts (port of ggml-org/llama.cpp#32825), so Inkling 2 Mini reads its prompt on the iPhone GPU
 - **Loading**: no mmap prefetch while flash streaming opens a model, which stopped low-memory kills on 12 GB phones
 
