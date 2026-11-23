@@ -115,11 +115,19 @@ public actor DirectLlamaCppBackend {
             throw RuntimeError.load("llama.cpp could not read GGUF: \(path)")
         }
         let threads = max(1, min(8, ProcessInfo.processInfo.processorCount - 2))
+        // Inkling 2 runs its middle layers three times, so its prompt graph at 2048 tokens holds 4.6 GB of working memory
+        // (2.3 GB on Metal, 2.3 GB on the CPU; Gemma 4 26B-A4B: 1.1 GB), more than an 8 GB iPhone can lock: iOS killed
+        // the app at 4.56 GB. 512 tokens at a time cuts it to a quarter where memory is short.
+        var architecture = [CChar](repeating: 0, count: 64)
+        _ = llama_model_meta_val_str(vocabModel, "general.architecture", &architecture, architecture.count)
+        let shortOfMemory = ProcessInfo.processInfo.physicalMemory < 16 << 30
+        let prefillBatch: Int32 = String(cString: architecture).hasPrefix("inkling") && shortOfMemory ? 512 : 0
         var error = [CChar](repeating: 0, count: 512)
         let session = path.withCString { modelPointer in
             (projector ?? "").withCString { projectorPointer in
                 llmhub_bmoe_open(modelPointer, projector == nil ? nil : projectorPointer,
-                                 Int32(max(512, contextSize)), Int32(threads), gpuPrefill ? 1 : 0, Int32(max(0, gpuLayers)), &error, error.count)
+                                 Int32(max(512, contextSize)), Int32(threads), gpuPrefill ? 1 : 0, Int32(max(0, gpuLayers)),
+                                 prefillBatch, &error, error.count)
             }
         }
         guard let session else {

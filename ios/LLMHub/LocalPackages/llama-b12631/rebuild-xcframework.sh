@@ -17,6 +17,7 @@ tar -xzf "$WORK_DIR/source.tar.gz" -C "$WORK_DIR"
 
 SOURCE_DIR="$WORK_DIR/llama.cpp-$VERSION"
 patch -d "$SOURCE_DIR" -p1 --forward < "$PACKAGE_DIR/llmhub-aion.patch"
+patch -d "$SOURCE_DIR" -p1 --forward < "$PACKAGE_DIR/llmhub-metal-nvfp4.patch"
 (cd "$SOURCE_DIR" && bash build-xcframework.sh ios-device ios-sim macos)
 
 # Without the dSYMs that build-xcframework.sh bundles: they stay in the work directory.

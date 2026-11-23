@@ -24,7 +24,8 @@ void set_error(char * error, size_t size, const std::string & message) {
 } // namespace
 
 extern "C" llmhub_bmoe * llmhub_bmoe_open(const char * model_path, const char * mmproj_path, int context_size,
-                                          int threads, int gpu_prefill, int gpu_layers, char * error, size_t error_size) {
+                                          int threads, int gpu_prefill, int gpu_layers, int prefill_batch,
+                                          char * error, size_t error_size) {
     bmoe::SessionConfig cfg;
     cfg.model_path = model_path != nullptr ? model_path : "";
     cfg.mmproj = mmproj_path != nullptr ? mmproj_path : "";
@@ -56,8 +57,8 @@ extern "C" llmhub_bmoe * llmhub_bmoe_open(const char * model_path, const char * 
         // graph runs several times faster on the GPU (iPhone 15 Pro Max, LFM2.5-24B-A2B Q2_K_L, ~900 tokens: first
         // word 7.2 s against 57.8 s). The GPU's expert slots are held only while a prefill runs. No load-time check
         // (verified on devices in testing); a GPU that cannot open fails the load instead of silently using the CPU.
-        cfg.n_batch = 2048;
-        cfg.n_ubatch = 2048;
+        cfg.n_batch = prefill_batch > 0 ? prefill_batch : 2048;
+        cfg.n_ubatch = cfg.n_batch;
         cfg.prefill.device = "MTL0";
         cfg.prefill.slots_on_demand = true;
         cfg.prefill.verify = false;

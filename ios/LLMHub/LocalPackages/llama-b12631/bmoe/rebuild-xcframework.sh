@@ -17,6 +17,7 @@ printf '%s  %s\n' "$SOURCE_SHA256" "$WORK_DIR/source.tar.gz" | shasum -a 256 -c 
 tar -xzf "$WORK_DIR/source.tar.gz" -C "$WORK_DIR"
 SOURCE_DIR="$WORK_DIR/llama.cpp-$VERSION"
 patch -d "$SOURCE_DIR" -p1 --forward < "$PACKAGE_DIR/llmhub-aion.patch"
+patch -d "$SOURCE_DIR" -p1 --forward < "$PACKAGE_DIR/llmhub-metal-nvfp4.patch"
 
 build_slice() { # name sysroot archs deployment-flag
     local name=$1 sysroot=$2 archs=$3

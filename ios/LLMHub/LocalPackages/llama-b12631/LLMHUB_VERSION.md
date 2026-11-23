@@ -34,6 +34,12 @@ The app-owned Swift adapter is in `Sources/LlamaCppRuntime`; keep it when upgrad
 `llama_decode`, `llama_batch_init` and `llama_batch_free` are deprecated in favour of `llama_batch_ext`;
 they still work and the adapter still uses them.
 
+`llmhub-metal-nvfp4.patch` adds NVFP4 to the Metal backend: upstream PR ggml-org/llama.cpp#32825 ("metal : add
+NVFP4 support", open as of 2026-11-24) ported to b12631 (its `mul_mm` template lines rewritten for b12631's longer
+`kernel_mul_mm` parameter list; its `mul_mm_tensor.metal` and `prec_bf16` hunks dropped, b12631 has neither).
+Unsloth's Inkling 2 Mini quants keep `ffn_down_exps` in NVFP4, and without the patch an iPhone cannot read the
+prompt on the GPU with them (flash streaming refuses the load). Drop it once a llama.cpp release carries the PR.
+
 ## Upgrading
 
 Rename this folder to the new version and update, together: the folder name, this package's `Package.swift`
