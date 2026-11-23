@@ -915,11 +915,11 @@
 "hf_token_title" = "Hugging Face Token";
 "hf_token_subtitle" = "Personal access token for model downloads";
 "hf_token_dialog_title" = "Hugging Face Access Token";
-"hf_token_explanation" = "If the app's default token fails, hits rate limits, or when downloading gated models that require an accepted license, enter your personal read token from huggingface.co/settings/tokens.";
+"hf_token_explanation" = "Optional. Enter your personal read token from huggingface.co/settings/tokens if downloads hit rate limits or a model needs an accepted license.";
 "hf_token_placeholder" = "Enter personal token (hf_...)";
-"hf_token_using_default" = "Using default token";
+"hf_token_using_default" = "No token set";
 "hf_token_custom_active" = "Custom token active";
-"hf_token_clear" = "Reset to default";
+"hf_token_clear" = "Remove token";
 
 /* Edit Prompt Template */
 "edit" = "Edit";

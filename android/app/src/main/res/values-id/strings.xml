@@ -1010,11 +1010,11 @@
     <string name="hf_token_title">Token Hugging Face</string>
     <string name="hf_token_subtitle">Token akses pribadi untuk mengunduh model</string>
     <string name="hf_token_dialog_title">Token Akses Hugging Face</string>
-    <string name="hf_token_explanation">Jika token default gagal, mencapai batas penggunaan, atau saat mengunduh model berlisensi yang disetujui, masukkan token baca pribadi Anda dari huggingface.co/settings/tokens.</string>
+    <string name="hf_token_explanation">Opsional. Masukkan token baca pribadi Anda dari huggingface.co/settings/tokens jika unduhan terkena batas laju atau model mewajibkan persetujuan lisensi.</string>
     <string name="hf_token_placeholder">Masukkan token pribadi (hf_...)</string>
-    <string name="hf_token_using_default">Menggunakan token default</string>
+    <string name="hf_token_using_default">Belum ada token</string>
     <string name="hf_token_custom_active">Token khusus aktif</string>
-    <string name="hf_token_clear">Atur ulang ke default</string>
+    <string name="hf_token_clear">Hapus token</string>
     <string name="gguf_vulkan_setting">Backend GPU GGUF</string>
     <string name="crash_recovery_title">Aplikasi tertutup tiba-tiba</string>
     <string name="crash_recovery_message">Coba muat model yang lebih kecil atau gunakan CPU.</string>

@@ -873,11 +873,11 @@
 "hf_token_title" = "Token de Hugging Face";
 "hf_token_subtitle" = "Token de acceso personal para descargar modelos";
 "hf_token_dialog_title" = "Token de acceso de Hugging Face";
-"hf_token_explanation" = "Si el token predeterminado falla, alcanza límites de velocidad o al descargar modelos restringidos con licencia aceptada, ingresa tu token de lectura personal de huggingface.co/settings/tokens.";
+"hf_token_explanation" = "Opcional. Introduce tu token personal de lectura de huggingface.co/settings/tokens si las descargas alcanzan el límite de solicitudes o un modelo exige aceptar una licencia.";
 "hf_token_placeholder" = "Ingresa token personal (hf_...)";
-"hf_token_using_default" = "Usando token predeterminado";
+"hf_token_using_default" = "Sin token";
 "hf_token_custom_active" = "Token personalizado activo";
-"hf_token_clear" = "Restablecer a predeterminado";
+"hf_token_clear" = "Quitar token";
 
 /* Edit Prompt Template */
 "edit" = "Editar";

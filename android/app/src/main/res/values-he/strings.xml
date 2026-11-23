@@ -1007,11 +1007,11 @@
     <string name="hf_token_title">אסימון Hugging Face</string>
     <string name="hf_token_subtitle">אסימון גישה אישי להורדת מודלים</string>
     <string name="hf_token_dialog_title">אסימון גישה של Hugging Face</string>
-    <string name="hf_token_explanation">אם אסימון ברירת המחדל נכשל, מגיע למגבלת קצב או להורדת מודלים הדורשים רישיון מאושר, הזן את אסימון הקריאה האישי שלך מ-huggingface.co/settings/tokens.</string>
+    <string name="hf_token_explanation">אופציונלי. הזינו אסימון קריאה אישי מ-huggingface.co/settings/tokens אם ההורדות נתקלות במגבלת קצב או שמודל דורש אישור רישיון.</string>
     <string name="hf_token_placeholder">הזן אסימון אישי (hf_...)</string>
-    <string name="hf_token_using_default">בשימוש אסימון ברירת מחדל</string>
+    <string name="hf_token_using_default">לא הוגדר אסימון</string>
     <string name="hf_token_custom_active">אסימון מותאם אישית פעיל</string>
-    <string name="hf_token_clear">איפוס לברירת מחדל</string>
+    <string name="hf_token_clear">הסרת האסימון</string>
     <string name="gguf_vulkan_setting">מנוע GPU של GGUF</string>
     <string name="crash_recovery_title">האפליקציה נסגרה באופן בלתי צפוי</string>
     <string name="crash_recovery_message">אפשר לנסות לטעון מודל קטן יותר או להשתמש במעבד.</string>

@@ -910,11 +910,11 @@
 "hf_token_title" = "Hugging Face-token";
 "hf_token_subtitle" = "Personligt adgangstoken til download af modeller";
 "hf_token_dialog_title" = "Hugging Face-adgangstoken";
-"hf_token_explanation" = "Hvis standardtokenet mislykkes, rammer grænser eller ved download af modeller med godkendt licens, skal du indtaste dit personlige læsetoken fra huggingface.co/settings/tokens.";
+"hf_token_explanation" = "Valgfrit. Indtast din personlige læsetoken fra huggingface.co/settings/tokens, hvis downloads rammer en hastighedsgrænse, eller en model kræver, at du accepterer en licens.";
 "hf_token_placeholder" = "Indtast personligt token (hf_...)";
-"hf_token_using_default" = "Bruger standardtoken";
+"hf_token_using_default" = "Ingen token angivet";
 "hf_token_custom_active" = "Brugerdefineret token aktivt";
-"hf_token_clear" = "Nulstil til standard";
+"hf_token_clear" = "Fjern token";
 
 /* Edit Prompt Template */
 "edit" = "Rediger";

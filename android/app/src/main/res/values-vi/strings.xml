@@ -916,11 +916,11 @@
     <string name="hf_token_title">Mã Hugging Face</string>
     <string name="hf_token_subtitle">Mã truy cập cá nhân để tải xuống mô hình</string>
     <string name="hf_token_dialog_title">Mã truy cập Hugging Face</string>
-    <string name="hf_token_explanation">Nếu mã mặc định bị lỗi, đạt giới hạn tốc độ hoặc khi tải mô hình cần chấp nhận giấy phép, hãy nhập mã đọc cá nhân từ huggingface.co/settings/tokens.</string>
+    <string name="hf_token_explanation">Không bắt buộc. Nhập mã đọc cá nhân từ huggingface.co/settings/tokens nếu lượt tải bị giới hạn tốc độ hoặc mô hình yêu cầu chấp nhận giấy phép.</string>
     <string name="hf_token_placeholder">Nhập mã cá nhân (hf_...)</string>
-    <string name="hf_token_using_default">Đang dùng mã mặc định</string>
+    <string name="hf_token_using_default">Chưa đặt mã</string>
     <string name="hf_token_custom_active">Mã tùy chỉnh đang hoạt động</string>
-    <string name="hf_token_clear">Đặt lại về mặc định</string>
+    <string name="hf_token_clear">Xóa mã</string>
     <string name="gguf_vulkan_setting">Bộ xử lý GPU GGUF</string>
     <string name="crash_recovery_title">Ứng dụng đã đóng bất ngờ</string>
     <string name="crash_recovery_message">Hãy thử tải mô hình nhỏ hơn hoặc sử dụng CPU.</string>

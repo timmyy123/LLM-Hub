@@ -977,11 +977,11 @@ Du forsøger at sende et billede, men den nuværende model er **kun-tekst**:
     <string name="hf_token_title">Hugging Face-token</string>
     <string name="hf_token_subtitle">Personligt adgangstoken til download af modeller</string>
     <string name="hf_token_dialog_title">Hugging Face-adgangstoken</string>
-    <string name="hf_token_explanation">Hvis standardtokenet mislykkes, rammer grænser eller ved download af modeller med godkendt licens, skal du indtaste dit personlige læsetoken fra huggingface.co/settings/tokens.</string>
+    <string name="hf_token_explanation">Valgfrit. Indtast din personlige læsetoken fra huggingface.co/settings/tokens, hvis downloads rammer en hastighedsgrænse, eller en model kræver, at du accepterer en licens.</string>
     <string name="hf_token_placeholder">Indtast personligt token (hf_...)</string>
-    <string name="hf_token_using_default">Bruger standardtoken</string>
+    <string name="hf_token_using_default">Ingen token angivet</string>
     <string name="hf_token_custom_active">Brugerdefineret token aktivt</string>
-    <string name="hf_token_clear">Nulstil til standard</string>
+    <string name="hf_token_clear">Fjern token</string>
     <string name="gguf_vulkan_setting">GGUF GPU-backend</string>
     <string name="crash_recovery_title">Appen lukkede uventet</string>
     <string name="crash_recovery_message">Prøv at indlæse en mindre model eller bruge CPU.</string>

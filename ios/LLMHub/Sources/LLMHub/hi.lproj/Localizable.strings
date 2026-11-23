@@ -915,11 +915,11 @@
 "hf_token_title" = "Hugging Face टोकन";
 "hf_token_subtitle" = "मॉडल डाउनलोड के लिए व्यक्तिगत एक्सेस टोकन";
 "hf_token_dialog_title" = "Hugging Face एक्सेस टोकन";
-"hf_token_explanation" = "यदि डिफ़ॉल्ट टोकन विफल होता है, सीमा समाप्त होती है, या लाइसेंस-स्वीकृत मॉडल डाउनलोड करने के लिए, huggingface.co/settings/tokens से अपना व्यक्तिगत रीड टोकन दर्ज करें।";
+"hf_token_explanation" = "वैकल्पिक। अगर डाउनलोड रेट लिमिट से रुकें या किसी मॉडल के लिए लाइसेंस स्वीकार करना ज़रूरी हो, तो huggingface.co/settings/tokens से अपना निजी रीड टोकन डालें।";
 "hf_token_placeholder" = "व्यक्तिगत टोकन दर्ज करें (hf_...)";
-"hf_token_using_default" = "डिफ़ॉल्ट टोकन का उपयोग हो रहा है";
+"hf_token_using_default" = "कोई टोकन सेट नहीं है";
 "hf_token_custom_active" = "कस्टम टोकन सक्रिय है";
-"hf_token_clear" = "डिफ़ॉल्ट पर रीसेट करें";
+"hf_token_clear" = "टोकन हटाएं";
 
 /* Edit Prompt Template */
 "edit" = "संपादित करें";
