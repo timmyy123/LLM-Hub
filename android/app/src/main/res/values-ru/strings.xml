@@ -386,6 +386,13 @@
     <string name="enable_vision">Включить Зрение (Поддержка Изображений)</string>
     <string name="enable_audio">Включить Аудио (Голосовой Ввод)</string>
     <string name="enable_thinking">Включить Размышления</string>
+    <string name="thinking_level">Уровень размышлений</string>
+    <string name="thinking_level_off">Выкл.</string>
+    <string name="thinking_level_minimal">Минимальный</string>
+    <string name="thinking_level_low">Низкий</string>
+    <string name="thinking_level_medium">Средний</string>
+    <string name="thinking_level_high">Высокий</string>
+    <string name="thinking_level_max">Максимальный</string>
     <string name="gemma3n_e4b_modality_suggestion">💡 Для стабильной работы на устройствах 7-8ГБ, рассмотрите отключение аудио для экономии памяти GPU. Зрение обычно более стабильно.</string>
     
     <!-- General performance tip for all devices -->

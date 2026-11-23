@@ -406,6 +406,13 @@
     <string name="enable_vision">Włącz Wizję (Obsługa Obrazów)</string>
     <string name="enable_audio">Włącz Dźwięk (Wejście Głosowe)</string>
     <string name="enable_thinking">Włącz Myślenie</string>
+    <string name="thinking_level">Poziom myślenia</string>
+    <string name="thinking_level_off">Wyłączone</string>
+    <string name="thinking_level_minimal">Minimalny</string>
+    <string name="thinking_level_low">Niski</string>
+    <string name="thinking_level_medium">Średni</string>
+    <string name="thinking_level_high">Wysoki</string>
+    <string name="thinking_level_max">Maksymalny</string>
     <string name="gemma3n_e4b_modality_suggestion">💡 Dla stabilnej wydajności na urządzeniach 7-8GB, rozważ wyłączenie dźwięku, aby zaoszczędzić pamięć GPU. Wizja jest zazwyczaj bardziej stabilna.</string>
     
     <!-- General performance tip for all devices -->

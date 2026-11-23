@@ -439,6 +439,13 @@
     <string name="enable_vision">विज़न सक्षम करें (छवि सहायता)</string>
     <string name="enable_audio">ऑडियो सक्षम करें (आवाज़ इनपुट)</string>
     <string name="enable_thinking">सोचना सक्षम करें</string>
+    <string name="thinking_level">सोचने का स्तर</string>
+    <string name="thinking_level_off">बंद</string>
+    <string name="thinking_level_minimal">न्यूनतम</string>
+    <string name="thinking_level_low">कम</string>
+    <string name="thinking_level_medium">मध्यम</string>
+    <string name="thinking_level_high">उच्च</string>
+    <string name="thinking_level_max">अधिकतम</string>
     <string name="gemma3n_e4b_modality_suggestion">💡 7-8GB उपकरणों पर स्थिर प्रदर्शन के लिए, GPU मेमोरी बचाने के लिए ऑडियो को अक्षम करने पर विचार करें। विज़न आम तौर पर अधिक स्थिर है।</string>
     
     <!-- General performance tip for all devices -->

@@ -17,9 +17,15 @@ internal object InklingFormat {
     const val END = "<|end_message|>"
     const val END_SAMPLING = "<|content_model_end_sampling|>"
 
-    /** The template's default effort ("high") with thinking on, 0 ("none") with it off. */
-    private fun effortBlock(thinkingEnabled: Boolean) =
-        SYSTEM + TEXT + "Thinking effort level: " + (if (thinkingEnabled) "0.9" else "0") + END
+    /** The template's levels: none, minimal, low, medium, high (its default) and max (also "xhigh"). */
+    val EFFORT_LEVELS = listOf(0f, 0.1f, 0.2f, 0.7f, 0.9f, 0.99f)
+
+    /** [effort] with thinking on, 0 ("none") with it off, written as the template writes it ("0", "0.9", "0.99"). */
+    private fun effortBlock(thinkingEnabled: Boolean, effort: Float): String {
+        val level = if (thinkingEnabled) effort.coerceIn(0f, 0.99f) else 0f
+        val text = if (level == 0f) "0" else java.math.BigDecimal(level.toString()).stripTrailingZeros().toPlainString()
+        return SYSTEM + TEXT + "Thinking effort level: " + text + END
+    }
 
     /**
      * [answerOf] turns an earlier reply into the answer alone (its thinking is not fed back). An image marker in a
@@ -29,13 +35,14 @@ internal object InklingFormat {
         messages: List<VlmPromptTurn>,
         thinkingEnabled: Boolean,
         mediaMarker: String,
+        effort: Float = com.llmhub.llmhub.data.INKLING_DEFAULT_EFFORT,
         answerOf: (String) -> String,
     ): String {
         val sb = StringBuilder()
         var effortWritten = false
         fun writeEffort() {
             if (!effortWritten) {
-                sb.append(effortBlock(thinkingEnabled))
+                sb.append(effortBlock(thinkingEnabled, effort))
                 effortWritten = true
             }
         }

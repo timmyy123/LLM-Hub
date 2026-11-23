@@ -8,6 +8,9 @@ import androidx.datastore.preferences.core.MutablePreferences
 import kotlinx.coroutines.flow.first
 import org.json.JSONObject
 
+/** Inkling 2's template default thinking level ("high"). */
+const val INKLING_DEFAULT_EFFORT = 0.9f
+
 data class ModelConfig(
     val maxTokens: Int,
     val topK: Int,
@@ -22,7 +25,8 @@ data class ModelConfig(
     val systemPrompt: String = "", // optional per-model system prompt injected for chat generation
     val contextWindow: Int = 0, // KV cache allocation (context window size); 0 = use model default
     val agentToolsEnabled: Boolean = true, // whether Gemma-4 agent tools are active
-    val flashStreaming: Boolean = true // MoE GGUF only: stream the experts from storage (llama.cpp CPU)
+    val flashStreaming: Boolean = true, // MoE GGUF only: stream the experts from storage (llama.cpp CPU)
+    val thinkingEffort: Float = INKLING_DEFAULT_EFFORT // Inkling 2: thinking level while thinking is on (InklingFormat)
 ) {
     fun toJson(): JSONObject {
         val obj = JSONObject()
@@ -41,6 +45,7 @@ data class ModelConfig(
         obj.put("contextWindow", contextWindow)
         obj.put("agentToolsEnabled", agentToolsEnabled)
         obj.put("flashStreaming", flashStreaming)
+        obj.put("thinkingEffort", thinkingEffort.toDouble())
         return obj
     }
 
@@ -60,7 +65,8 @@ data class ModelConfig(
                 systemPrompt = obj.optString("systemPrompt", ""),
                 contextWindow = obj.optInt("contextWindow", 0),
                 agentToolsEnabled = obj.optBoolean("agentToolsEnabled", true),
-                flashStreaming = obj.optBoolean("flashStreaming", true)
+                flashStreaming = obj.optBoolean("flashStreaming", true),
+                thinkingEffort = obj.optDouble("thinkingEffort", INKLING_DEFAULT_EFFORT.toDouble()).toFloat()
             )
         }
 

@@ -1007,3 +1007,10 @@
 "rag_threshold_similarity_alone" = "Схожість, достатня сама по собі";
 "rag_threshold_similarity_with_overlap" = "Схожість, коли збігаються й слова";
 "rag_threshold_overlap" = "Потрібний збіг слів";
+"thinking_level" = "Рівень міркувань";
+"thinking_level_off" = "Вимк.";
+"thinking_level_minimal" = "Мінімальний";
+"thinking_level_low" = "Низький";
+"thinking_level_medium" = "Середній";
+"thinking_level_high" = "Високий";
+"thinking_level_max" = "Максимальний";

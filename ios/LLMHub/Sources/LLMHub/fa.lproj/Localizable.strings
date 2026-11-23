@@ -1007,3 +1007,10 @@
 "rag_threshold_similarity_alone" = "شباهتی که به‌تنهایی کافی است";
 "rag_threshold_similarity_with_overlap" = "شباهت وقتی واژه‌ها هم مشترک باشند";
 "rag_threshold_overlap" = "میزان واژه‌های مشترک لازم";
+"thinking_level" = "سطح تفکر";
+"thinking_level_off" = "خاموش";
+"thinking_level_minimal" = "حداقل";
+"thinking_level_low" = "کم";
+"thinking_level_medium" = "متوسط";
+"thinking_level_high" = "زیاد";
+"thinking_level_max" = "حداکثر";

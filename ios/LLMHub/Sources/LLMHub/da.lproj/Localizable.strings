@@ -1014,3 +1014,10 @@
 "rag_threshold_similarity_alone" = "Lighed, der matcher alene";
 "rag_threshold_similarity_with_overlap" = "Lighed, når ordene også overlapper";
 "rag_threshold_overlap" = "Krævet ordoverlap";
+"thinking_level" = "Tænkeniveau";
+"thinking_level_off" = "Fra";
+"thinking_level_minimal" = "Minimal";
+"thinking_level_low" = "Lav";
+"thinking_level_medium" = "Middel";
+"thinking_level_high" = "Høj";
+"thinking_level_max" = "Maks";

@@ -1007,3 +1007,10 @@
 "rag_threshold_similarity_alone" = "التشابه الكافي وحده للمطابقة";
 "rag_threshold_similarity_with_overlap" = "التشابه عند تطابق الكلمات أيضًا";
 "rag_threshold_overlap" = "نسبة تطابق الكلمات المطلوبة";
+"thinking_level" = "مستوى التفكير";
+"thinking_level_off" = "إيقاف";
+"thinking_level_minimal" = "أدنى";
+"thinking_level_low" = "منخفض";
+"thinking_level_medium" = "متوسط";
+"thinking_level_high" = "مرتفع";
+"thinking_level_max" = "أقصى";

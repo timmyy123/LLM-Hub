@@ -1007,3 +1007,10 @@
 "rag_threshold_similarity_alone" = "דמיון שמספיק לבדו להתאמה";
 "rag_threshold_similarity_with_overlap" = "דמיון כשגם מילים חופפות";
 "rag_threshold_overlap" = "חפיפת מילים נדרשת";
+"thinking_level" = "רמת חשיבה";
+"thinking_level_off" = "כבוי";
+"thinking_level_minimal" = "מינימלית";
+"thinking_level_low" = "נמוכה";
+"thinking_level_medium" = "בינונית";
+"thinking_level_high" = "גבוהה";
+"thinking_level_max" = "מרבית";

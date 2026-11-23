@@ -419,6 +419,13 @@
     <string name="enable_vision">启用视觉 (图片分析能力)</string>
     <string name="enable_audio">启用音频 (语音识别能力)</string>
     <string name="enable_thinking">启用深度思考</string>
+    <string name="thinking_level">思考程度</string>
+    <string name="thinking_level_off">关闭</string>
+    <string name="thinking_level_minimal">最低</string>
+    <string name="thinking_level_low">低</string>
+    <string name="thinking_level_medium">中</string>
+    <string name="thinking_level_high">高</string>
+    <string name="thinking_level_max">最高</string>
     <string name="gemma3n_e4b_modality_suggestion">💡 在 7–8 GB 内存设备上为获得稳定性能，建议禁用音频以节省显存。</string>
     
     <!-- General performance tip for all devices -->

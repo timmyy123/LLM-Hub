@@ -964,3 +964,10 @@
 "rag_threshold_similarity_alone" = "Similaridade suficiente por si só";
 "rag_threshold_similarity_with_overlap" = "Similaridade quando as palavras também coincidem";
 "rag_threshold_overlap" = "Sobreposição de palavras necessária";
+"thinking_level" = "Nível de raciocínio";
+"thinking_level_off" = "Desativado";
+"thinking_level_minimal" = "Mínimo";
+"thinking_level_low" = "Baixo";
+"thinking_level_medium" = "Médio";
+"thinking_level_high" = "Alto";
+"thinking_level_max" = "Máximo";

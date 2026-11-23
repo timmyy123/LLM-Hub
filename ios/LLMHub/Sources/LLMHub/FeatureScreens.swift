@@ -566,7 +566,9 @@ struct FeatureModelSettingsSheet: View {
                                 }
                             }
 
-                            if showsThinkingToggle && selectedModelSupportsThinking {
+                            if showsThinkingToggle && selectedModelSupportsThinking && InklingFormat.isInklingName(selectedModelName) {
+                                InklingThinkingLevelTile(enableThinking: $enableThinking)
+                            } else if showsThinkingToggle && selectedModelSupportsThinking {
                                 Toggle(settings.localized("enable_thinking"), isOn: $enableThinking)
                                     .tint(ApolloPalette.accentStrong)
                                     .foregroundColor(.white)

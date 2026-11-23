@@ -1019,3 +1019,10 @@
 "rag_threshold_similarity_alone" = "अकेले मिलान के लिए समानता";
 "rag_threshold_similarity_with_overlap" = "जब शब्द भी मेल खाएँ तब समानता";
 "rag_threshold_overlap" = "ज़रूरी शब्द मेल";
+"thinking_level" = "सोचने का स्तर";
+"thinking_level_off" = "बंद";
+"thinking_level_minimal" = "न्यूनतम";
+"thinking_level_low" = "कम";
+"thinking_level_medium" = "मध्यम";
+"thinking_level_high" = "उच्च";
+"thinking_level_max" = "अधिकतम";

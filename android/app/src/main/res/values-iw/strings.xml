@@ -407,6 +407,13 @@
     <string name="enable_vision">אפשר ראייה (תמונות)</string>
     <string name="enable_audio">אפשר אודיו (קול)</string>
     <string name="enable_thinking">אפשר חשיבה</string>
+    <string name="thinking_level">רמת חשיבה</string>
+    <string name="thinking_level_off">כבוי</string>
+    <string name="thinking_level_minimal">מינימלית</string>
+    <string name="thinking_level_low">נמוכה</string>
+    <string name="thinking_level_medium">בינונית</string>
+    <string name="thinking_level_high">גבוהה</string>
+    <string name="thinking_level_max">מרבית</string>
     <string name="gemma3n_e4b_modality_suggestion">💡 לביצועים יציבים במכשירי 7–8GB, שקול להשבית אודיו כדי לחסוך בזיכרון GPU. ראייה יציבה יותר בדרך כלל.</string>
 
     <!-- General performance tip for all devices -->

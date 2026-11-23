@@ -1014,3 +1014,10 @@
 "rag_threshold_similarity_alone" = "Độ tương đồng đủ để tự khớp";
 "rag_threshold_similarity_with_overlap" = "Độ tương đồng khi từ ngữ cũng trùng";
 "rag_threshold_overlap" = "Mức trùng từ cần thiết";
+"thinking_level" = "Mức suy nghĩ";
+"thinking_level_off" = "Tắt";
+"thinking_level_minimal" = "Tối thiểu";
+"thinking_level_low" = "Thấp";
+"thinking_level_medium" = "Trung bình";
+"thinking_level_high" = "Cao";
+"thinking_level_max" = "Tối đa";

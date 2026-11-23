@@ -377,6 +377,13 @@
     <string name="enable_vision">เปิดใช้งานการมองเห็น (รองรับรูปภาพ)</string>
     <string name="enable_audio">เปิดใช้งานเสียง (การป้อนข้อมูลด้วยเสียง)</string>
     <string name="enable_thinking">เปิดใช้งานการคิด</string>
+    <string name="thinking_level">ระดับการคิด</string>
+    <string name="thinking_level_off">ปิด</string>
+    <string name="thinking_level_minimal">น้อยที่สุด</string>
+    <string name="thinking_level_low">ต่ำ</string>
+    <string name="thinking_level_medium">ปานกลาง</string>
+    <string name="thinking_level_high">สูง</string>
+    <string name="thinking_level_max">สูงสุด</string>
     <string name="gemma3n_e4b_modality_suggestion">💡 เพื่อประสิทธิภาพที่เสถียรบนอุปกรณ์ขนาด 7-8GB ให้พิจารณาปิดเสียงเพื่อประหยัดหน่วยความจำ GPU โดยทั่วไปการมองเห็นจะมีเสถียรภาพมากขึ้น</string>
     <string name="gemma3n_performance_tip">💡 หากคุณประสบปัญหาการขัดข้องหรือประสิทธิภาพต่ำเนื่องจากข้อจำกัดของ RAM ให้ลองเปลี่ยนไปใช้แบ็กเอนด์ของ CPU หรือปิดการใช้งานคุณสมบัติการมองเห็น/เสียง</string>
     <string name="import_external_model">นำเข้าโมเดลภายนอก</string>

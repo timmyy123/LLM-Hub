@@ -407,6 +407,13 @@
     <string name="enable_vision">Увімкнути зір (підтримка зображень)</string>
     <string name="enable_audio">Увімкнути аудіо (голосовий ввід)</string>
     <string name="enable_thinking">Увімкнути мислення</string>
+    <string name="thinking_level">Рівень міркувань</string>
+    <string name="thinking_level_off">Вимк.</string>
+    <string name="thinking_level_minimal">Мінімальний</string>
+    <string name="thinking_level_low">Низький</string>
+    <string name="thinking_level_medium">Середній</string>
+    <string name="thinking_level_high">Високий</string>
+    <string name="thinking_level_max">Максимальний</string>
     <string name="gemma3n_e4b_modality_suggestion">💡 Для стабільності на пристроях 7–8GB вимкніть аудіо, щоб заощадити пам\'ять GPU. Зір зазвичай стабільніший.</string>
 
     <!-- General performance tip for all devices -->

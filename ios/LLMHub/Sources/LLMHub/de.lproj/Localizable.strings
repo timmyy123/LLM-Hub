@@ -979,3 +979,10 @@
 "rag_threshold_similarity_alone" = "Ähnlichkeit, die allein ausreicht";
 "rag_threshold_similarity_with_overlap" = "Ähnlichkeit bei zusätzlicher Wortübereinstimmung";
 "rag_threshold_overlap" = "Benötigte Wortübereinstimmung";
+"thinking_level" = "Denkstufe";
+"thinking_level_off" = "Aus";
+"thinking_level_minimal" = "Minimal";
+"thinking_level_low" = "Niedrig";
+"thinking_level_medium" = "Mittel";
+"thinking_level_high" = "Hoch";
+"thinking_level_max" = "Maximal";

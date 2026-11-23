@@ -1015,3 +1015,10 @@
 "rag_threshold_similarity_alone" = "單獨即可比對的相似度";
 "rag_threshold_similarity_with_overlap" = "詞語也重疊時的相似度";
 "rag_threshold_overlap" = "所需詞語重疊度";
+"thinking_level" = "思考程度";
+"thinking_level_off" = "關閉";
+"thinking_level_minimal" = "最低";
+"thinking_level_low" = "低";
+"thinking_level_medium" = "中";
+"thinking_level_high" = "高";
+"thinking_level_max" = "最高";

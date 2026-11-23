@@ -67,6 +67,14 @@ class InklingFormatTest {
     }
 
     @Test
+    fun thinkingLevelsAreWrittenLikeTheTemplate() {
+        listOf(0.1f to "0.1", 0.2f to "0.2", 0.7f to "0.7", 0.9f to "0.9", 0.99f to "0.99").forEach { (effort, text) ->
+            val prompt = InklingFormat.buildPrompt(listOf(VlmPromptTurn("user", "Hi")), true, "<__media__>", effort) { it }
+            assertEquals(true, prompt.startsWith("<|message_system|><|content_text|>Thinking effort level: $text<|end_message|>"))
+        }
+    }
+
+    @Test
     fun thinkingOffPromptUsesEffortZero() {
         val prompt = InklingFormat.buildPrompt(listOf(VlmPromptTurn("user", "Hi")), false, "<__media__>") { it }
         assertEquals(

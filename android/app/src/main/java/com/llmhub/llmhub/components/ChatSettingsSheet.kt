@@ -21,6 +21,7 @@ import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import com.llmhub.llmhub.R
 import com.llmhub.llmhub.data.LLMModel
 import com.llmhub.llmhub.data.isGemma4GgufThinking
+import com.llmhub.llmhub.data.isInkling2
 import com.llmhub.llmhub.data.GgufLayerLimits
 import com.llmhub.llmhub.data.ModelConfig
 import com.llmhub.llmhub.data.ModelPreferences
@@ -146,6 +147,7 @@ fun ChatSettingsSheet(
     var disableVision by remember { mutableStateOf(isGemma3nModel) }
     var disableAudio by remember { mutableStateOf(isGemma3nModel) }
     var enableThinking by remember { mutableStateOf(true) }
+    var thinkingEffort by remember(selectedModel?.name) { mutableFloatStateOf(com.llmhub.llmhub.data.INKLING_DEFAULT_EFFORT) }
     var agentToolsEnabled by remember { mutableStateOf(true) }
     var isMoeModel by remember(selectedModel?.name) { mutableStateOf(false) }
     var flashStreaming by remember(selectedModel?.name) { mutableStateOf(true) }
@@ -215,6 +217,7 @@ fun ChatSettingsSheet(
                     disableAudio = saved.disableAudio
                     gpuLayers = saved.nGpuLayers.coerceIn(0, gpuLayerLimit)
                     enableThinking = saved.enableThinking
+                    thinkingEffort = saved.thinkingEffort
                     agentToolsEnabled = saved.agentToolsEnabled
                     flashStreaming = saved.flashStreaming
                     systemPromptText = saved.systemPrompt
@@ -610,6 +613,7 @@ fun ChatSettingsSheet(
                                                     enableThinking = enableThinking,
                                                     agentToolsEnabled = agentToolsEnabled,
                                                     flashStreaming = flashStreaming,
+                                                    thinkingEffort = thinkingEffort,
                                                     systemPrompt = systemPromptText.trim(),
                                                     contextWindow = finalCtxWindow
                                                 )
@@ -899,7 +903,22 @@ fun ChatSettingsSheet(
                         }
 
                         // Thinking toggle (visible for reasoning/thinking models and GPT-OSS Harmony)
-                        if (isThinkingOrHarmonyModel) {
+                        if (isThinkingOrHarmonyModel && selectedModel?.isInkling2() == true) {
+                            // Inkling 2: a thinking level, saved at once so the next reply reads it
+                            InklingThinkingLevelRow(enableThinking, thinkingEffort) { enabled, effort ->
+                                enableThinking = enabled
+                                thinkingEffort = effort
+                                selectedModel?.let { m ->
+                                    scope.launch(Dispatchers.IO) {
+                                        try {
+                                            val cfg = (modelPrefs.getModelConfig(m.name)
+                                                ?: com.llmhub.llmhub.data.defaultConfigForModel(m)).copy(thinkingEffort = effort)
+                                            modelPrefs.setModelConfig(m.name, cfg)
+                                        } catch (_: Exception) {}
+                                    }
+                                }
+                            }
+                        } else if (isThinkingOrHarmonyModel) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,

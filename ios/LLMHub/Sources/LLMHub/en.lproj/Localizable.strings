@@ -1028,3 +1028,10 @@
 "rag_threshold_similarity_alone" = "Similarity to match on its own";
 "rag_threshold_similarity_with_overlap" = "Similarity when words also overlap";
 "rag_threshold_overlap" = "Word overlap needed";
+"thinking_level" = "Thinking level";
+"thinking_level_off" = "Off";
+"thinking_level_minimal" = "Minimal";
+"thinking_level_low" = "Low";
+"thinking_level_medium" = "Medium";
+"thinking_level_high" = "High";
+"thinking_level_max" = "Max";

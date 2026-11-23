@@ -427,6 +427,13 @@
     <string name="enable_vision">Enable Vision (Image Support)</string>
     <string name="enable_audio">Enable Audio (Voice Input)</string>
     <string name="enable_thinking">Enable Thinking</string>
+    <string name="thinking_level">Thinking level</string>
+    <string name="thinking_level_off">Off</string>
+    <string name="thinking_level_minimal">Minimal</string>
+    <string name="thinking_level_low">Low</string>
+    <string name="thinking_level_medium">Medium</string>
+    <string name="thinking_level_high">High</string>
+    <string name="thinking_level_max">Max</string>
     <string name="gemma3n_e4b_modality_suggestion">💡 For stable performance on 7-8GB devices, consider disabling audio to save GPU memory. Vision is generally more stable.</string>
     
     <!-- General performance tip for all devices -->

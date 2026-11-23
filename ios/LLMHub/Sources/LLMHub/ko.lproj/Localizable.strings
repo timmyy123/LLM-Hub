@@ -1007,3 +1007,10 @@
 "rag_threshold_similarity_alone" = "단독으로 일치하는 유사도";
 "rag_threshold_similarity_with_overlap" = "단어도 겹칠 때의 유사도";
 "rag_threshold_overlap" = "필요한 단어 겹침";
+"thinking_level" = "사고 수준";
+"thinking_level_off" = "끔";
+"thinking_level_minimal" = "최소";
+"thinking_level_low" = "낮음";
+"thinking_level_medium" = "보통";
+"thinking_level_high" = "높음";
+"thinking_level_max" = "최대";

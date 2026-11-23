@@ -303,7 +303,9 @@ struct ChatSettingsSheet: View {
                                 if model.supportsAudio {
                                     ToggleTile(title: settings.localized("enable_audio"), isOn: $vm.enableAudio, icon: "mic.fill")
                                 }
-                                if model.supportsThinking {
+                                if model.supportsThinking && InklingFormat.isInklingName(model.name) {
+                                    InklingThinkingLevelTile(enableThinking: $vm.enableThinking)
+                                } else if model.supportsThinking {
                                     ToggleTile(title: settings.localized("enable_thinking"), isOn: $vm.enableThinking, icon: "brain")
                                 }
                                 if model.name.contains("Gemma 4") && model.modelFormat == .litertlm {
@@ -705,6 +707,61 @@ struct ToggleTile: View {
                 .labelsHidden()
                 .tint(ApolloPalette.accentStrong)
                 .padding(.top, subtitle == nil ? 0 : 2)
+        }
+    }
+}
+
+/// Inkling 2's thinking level in place of the thinking switch: Off turns thinking off, the other levels turn it on
+/// with that effort (InklingFormat.effortLevels, saved for the next reply).
+struct InklingThinkingLevelTile: View {
+    @EnvironmentObject var settings: AppSettings
+    @Binding var enableThinking: Bool
+    @State private var effort = InklingFormat.savedEffort
+
+    private static let labelKeys = [
+        "thinking_level_off", "thinking_level_minimal", "thinking_level_low",
+        "thinking_level_medium", "thinking_level_high", "thinking_level_max",
+    ]
+
+    private var selected: Int {
+        guard enableThinking else { return 0 }
+        let levels = InklingFormat.effortLevels
+        return (1..<levels.count).min(by: { abs(levels[$0] - effort) < abs(levels[$1] - effort) }) ?? 4
+    }
+
+    var body: some View {
+        HStack {
+            Image(systemName: "brain")
+                .foregroundColor(enableThinking ? ApolloPalette.accentStrong : .white.opacity(0.58))
+                .frame(width: 24)
+            Text(settings.localized("thinking_level"))
+                .font(.subheadline)
+                .foregroundColor(.white)
+            Spacer()
+            Menu {
+                ForEach(Array(Self.labelKeys.enumerated()), id: \.offset) { index, key in
+                    Button {
+                        let level = InklingFormat.effortLevels[index]
+                        enableThinking = level > 0
+                        if level > 0 {
+                            effort = level
+                            InklingFormat.savedEffort = level
+                        }
+                    } label: {
+                        if index == selected {
+                            Label(settings.localized(key), systemImage: "checkmark")
+                        } else {
+                            Text(settings.localized(key))
+                        }
+                    }
+                }
+            } label: {
+                HStack(spacing: 4) {
+                    Text(settings.localized(Self.labelKeys[selected]))
+                    Image(systemName: "chevron.up.chevron.down").font(.caption)
+                }
+                .foregroundColor(ApolloPalette.accentStrong)
+            }
         }
     }
 }

@@ -235,6 +235,7 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
     private var gemma4ThinkingEnabled = true
     private var gemma4ThinkingOpened = false
     private val inklingParser = InklingOutputParser(sentinelThink, sentinelEndThink)
+    private var inklingEffort = com.llmhub.llmhub.data.INKLING_DEFAULT_EFFORT
     private var sentInitialThinkingSentinel = false
 
     private var overrideMaxTokens: Int? = null
@@ -575,6 +576,10 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
             sessionPrompt
         }
         val thinkingEnabled = overrideEnableThinking ?: true
+        if (model.isInkling2()) {
+            inklingEffort = ModelPreferences(context).getModelConfig(model.name)?.thinkingEffort
+                ?: com.llmhub.llmhub.data.INKLING_DEFAULT_EFFORT
+        }
         val formattedPrompt = formatPromptLikeGeniex(promptWithMedia, model, thinkingEnabled)
         resetTextOutputBehavior(model, thinkingEnabled)
 
@@ -1211,7 +1216,7 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
 
         // llama.cpp's built-in template list has no Inkling format either.
         if (model.isInkling2()) {
-            return InklingFormat.buildPrompt(messages, thinkingEnabled, runtime.nativeMediaMarker(), ::stripThinkingForHistory)
+            return InklingFormat.buildPrompt(messages, thinkingEnabled, runtime.nativeMediaMarker(), inklingEffort, ::stripThinkingForHistory)
         }
 
         val formatted = runtime.nativeFormatChat(

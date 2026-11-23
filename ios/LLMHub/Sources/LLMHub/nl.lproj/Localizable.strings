@@ -1014,3 +1014,10 @@
 "rag_threshold_similarity_alone" = "Overeenkomst die op zichzelf genoeg is";
 "rag_threshold_similarity_with_overlap" = "Overeenkomst als woorden ook overlappen";
 "rag_threshold_overlap" = "Benodigde woordoverlap";
+"thinking_level" = "Denkniveau";
+"thinking_level_off" = "Uit";
+"thinking_level_minimal" = "Minimaal";
+"thinking_level_low" = "Laag";
+"thinking_level_medium" = "Gemiddeld";
+"thinking_level_high" = "Hoog";
+"thinking_level_max" = "Maximaal";

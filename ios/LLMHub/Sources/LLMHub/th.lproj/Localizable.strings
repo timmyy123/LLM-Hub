@@ -1014,3 +1014,10 @@
 "rag_threshold_similarity_alone" = "ความคล้ายที่เพียงพอด้วยตัวเอง";
 "rag_threshold_similarity_with_overlap" = "ความคล้ายเมื่อคำตรงกันด้วย";
 "rag_threshold_overlap" = "สัดส่วนคำที่ตรงกันที่ต้องการ";
+"thinking_level" = "ระดับการคิด";
+"thinking_level_off" = "ปิด";
+"thinking_level_minimal" = "น้อยที่สุด";
+"thinking_level_low" = "ต่ำ";
+"thinking_level_medium" = "ปานกลาง";
+"thinking_level_high" = "สูง";
+"thinking_level_max" = "สูงสุด";

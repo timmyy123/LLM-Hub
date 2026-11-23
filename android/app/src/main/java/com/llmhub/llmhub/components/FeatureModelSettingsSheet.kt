@@ -32,6 +32,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -50,6 +51,7 @@ import com.llmhub.llmhub.data.LLMModel
 import com.llmhub.llmhub.data.GgufLayerLimits
 import com.llmhub.llmhub.data.isGemma4GgufThinking
 import com.llmhub.llmhub.data.isLfm3
+import com.llmhub.llmhub.data.isInkling2
 import com.llmhub.llmhub.data.ModelConfig
 import com.llmhub.llmhub.data.ModelPreferences
 import com.llmhub.llmhub.data.hasDownloadedVisionProjector
@@ -139,6 +141,7 @@ fun FeatureModelSettingsSheet(
     var gpuLayers by remember { mutableStateOf(999) }
     var gpuLayerLimit by remember { mutableIntStateOf(GgufLayerLimits.UNKNOWN) }
     var enableThinking by remember { mutableStateOf(true) }
+    var thinkingEffort by remember(selectedModel?.name) { mutableFloatStateOf(com.llmhub.llmhub.data.INKLING_DEFAULT_EFFORT) }
     var isMoeModel by remember(selectedModel?.name) { mutableStateOf(false) }
     var flashStreaming by remember(selectedModel?.name) { mutableStateOf(true) }
     var expertsNotOnNpu by remember(selectedModel?.name) { mutableStateOf(false) }
@@ -160,6 +163,7 @@ fun FeatureModelSettingsSheet(
             if (saved != null) {
                 gpuLayers = saved.nGpuLayers.coerceIn(0, gpuLayerLimit)
                 enableThinking = saved.enableThinking
+                thinkingEffort = saved.thinkingEffort
                 flashStreaming = saved.flashStreaming
                 if (currentlyLoadedModel?.name != model.name) {
                     useGpu = saved.backend == "GPU"
@@ -655,7 +659,23 @@ fun FeatureModelSettingsSheet(
                         }
 
                         // Thinking toggle (show only for thinking/reasoning models)
-                        if (isThinkingOrHarmonyModel) {
+                        if (isThinkingOrHarmonyModel && selectedModel?.isInkling2() == true) {
+                            // Inkling 2: a thinking level; the level is the model's, saved at once
+                            InklingThinkingLevelRow(enableThinking, thinkingEffort) { enabled, effort ->
+                                enableThinking = enabled
+                                thinkingEffort = effort
+                                selectedModel?.let { m ->
+                                    scope.launch(Dispatchers.IO) {
+                                        try {
+                                            val cfg = (modelPrefs.getModelConfig(m.name)
+                                                ?: com.llmhub.llmhub.data.defaultConfigForModel(m)).copy(thinkingEffort = effort)
+                                            modelPrefs.setModelConfig(m.name, cfg)
+                                        } catch (_: Exception) {}
+                                    }
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(16.dp))
+                        } else if (isThinkingOrHarmonyModel) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,

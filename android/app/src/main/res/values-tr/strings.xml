@@ -405,6 +405,13 @@
     <string name="enable_vision">Görseli Etkinleştir (Görsel Desteği)</string>
     <string name="enable_audio">Sesi Etkinleştir (Ses Girişi)</string>
     <string name="enable_thinking">Düşünceyi Etkinleştir</string>
+    <string name="thinking_level">Düşünme düzeyi</string>
+    <string name="thinking_level_off">Kapalı</string>
+    <string name="thinking_level_minimal">Minimum</string>
+    <string name="thinking_level_low">Düşük</string>
+    <string name="thinking_level_medium">Orta</string>
+    <string name="thinking_level_high">Yüksek</string>
+    <string name="thinking_level_max">Maksimum</string>
     <string name="gemma3n_e4b_modality_suggestion">💡 7-8GB cihazlarda kararlı performans için, GPU belleğinden tasarruf etmek üzere sesi devre dışı bırakmayı düşünün. Görsel genellikle daha kararlıdır.</string>
     
     <!-- General performance tip for all devices -->

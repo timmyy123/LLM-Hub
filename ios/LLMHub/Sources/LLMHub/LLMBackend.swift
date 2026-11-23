@@ -1382,9 +1382,20 @@ enum InklingFormat {
         return lower.contains("inkling") && !lower.contains("vision projector")
     }
 
-    /// The template's default effort ("high") with thinking on, 0 ("none") with it off.
+    /// The template's levels: none, minimal, low, medium, high (its default) and max (also "xhigh").
+    static let effortLevels: [Double] = [0, 0.1, 0.2, 0.7, 0.9, 0.99]
+    static let effortKey = "inkling_thinking_effort"
+
+    /// The thinking level chosen in the settings while thinking is on (high until one is chosen).
+    static var savedEffort: Double {
+        get { (UserDefaults.standard.object(forKey: effortKey) as? Double).map { min(max($0, 0), 0.99) } ?? 0.9 }
+        set { UserDefaults.standard.set(newValue, forKey: effortKey) }
+    }
+
+    /// The saved level with thinking on, 0 ("none") with it off, written as the template writes it.
     static func effortBlock(thinkingEnabled: Bool) -> String {
-        system + text + "Thinking effort level: " + (thinkingEnabled ? "0.9" : "0") + end
+        let level = thinkingEnabled ? savedEffort : 0
+        return system + text + "Thinking effort level: " + (level == 0 ? "0" : "\(level)") + end
     }
 
     static func systemBlock(_ content: String) -> String { system + text + content + end }

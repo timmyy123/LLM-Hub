@@ -1007,3 +1007,10 @@
 "rag_threshold_similarity_alone" = "Tek başına yeten benzerlik";
 "rag_threshold_similarity_with_overlap" = "Kelimeler de örtüştüğünde benzerlik";
 "rag_threshold_overlap" = "Gereken kelime örtüşmesi";
+"thinking_level" = "Düşünme düzeyi";
+"thinking_level_off" = "Kapalı";
+"thinking_level_minimal" = "Minimum";
+"thinking_level_low" = "Düşük";
+"thinking_level_medium" = "Orta";
+"thinking_level_high" = "Yüksek";
+"thinking_level_max" = "Maksimum";

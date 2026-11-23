@@ -407,6 +407,13 @@
     <string name="enable_vision">Activer la Vision (Support d\'Images)</string>
     <string name="enable_audio">Activer l\'Audio (Entrée Vocale)</string>
     <string name="enable_thinking">Activer la Réflexion</string>
+    <string name="thinking_level">Niveau de réflexion</string>
+    <string name="thinking_level_off">Désactivé</string>
+    <string name="thinking_level_minimal">Minimal</string>
+    <string name="thinking_level_low">Faible</string>
+    <string name="thinking_level_medium">Moyen</string>
+    <string name="thinking_level_high">Élevé</string>
+    <string name="thinking_level_max">Maximal</string>
     <string name="gemma3n_e4b_modality_suggestion">💡 Pour des performances stables sur les appareils 7-8Go, envisagez de désactiver l\'audio pour économiser la mémoire GPU. La vision est généralement plus stable.</string>
     
     <!-- General performance tip for all devices -->
