@@ -562,57 +562,112 @@ enum DeviceSelfTests {
         return ModelData.allModels().first { $0.name == "Inkling 2 Mini (\(quant), GGUF)" }
     }
 
-    /// Deletes the quant checkInkling downloaded.
-    static func removeInklingTestModel() {
-        if let model = inklingTestModel(),
-           let folder = try? SimplifiedFileManager.shared.getModelFolderURL(modelId: model.id, framework: .llamaCpp) {
-            try? FileManager.default.removeItem(at: folder)
-        }
+    private static func inklingProjector() -> AIModel? {
+        ModelData.allModels().first { $0.name == "Inkling 2 Mini (Vision Projector, F16)" }
     }
 
-    /// Inkling 2 Mini with flash streaming on the GPU backend (the prompt on Metal, decode on the CPU): thinking on
+    /// Deletes the quant and the vision projector checkInkling downloaded.
+    static func removeInklingTestModel() {
+        for model in [inklingTestModel(), inklingProjector()].compactMap({ $0 }) {
+            if let folder = try? SimplifiedFileManager.shared.getModelFolderURL(modelId: model.id, framework: .llamaCpp) {
+                try? FileManager.default.removeItem(at: folder)
+            }
+        }
+        try? FileManager.default.removeItem(at: documents.appendingPathComponent("llmhub-test-inkling-circle.jpg"))
+    }
+
+    /// Downloads a catalog GGUF into its model folder, as the app's downloader names it.
+    private static func downloadIntoModelFolder(_ model: AIModel) async throws {
+        let folder = try SimplifiedFileManager.shared.getModelFolderURL(modelId: model.id, framework: .llamaCpp)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        log("INKLING: downloading \(model.name)")
+        let (temporary, _) = try await URLSession.shared.download(from: URL(string: model.url)!)
+        let target = folder.appendingPathComponent(model.requiredFileNames[0])
+        try? FileManager.default.removeItem(at: target)
+        try FileManager.default.moveItem(at: temporary, to: target)
+    }
+
+    /// Inkling 2 Mini on the GPU backend with flash streaming on (the prompt on Metal, decode on the CPU) and off (every
+    /// layer on Metal), each with thinking on and off. Thinking on
     /// shows a thinking block and then the answer; thinking off shows the answer alone. Downloads the quant into the
     /// app's model folder when it is missing (inkling-clean deletes it). Logs prompt and decode tok/s.
     static func checkInkling() async throws -> [String] {
         let backend = LLMBackend.shared
         guard let model = inklingTestModel() else { return ["No Inkling 2 Mini catalog entry for that quant"] }
-        if !backend.isModelAvailableLocally(model) {
-            let folder = try SimplifiedFileManager.shared.getModelFolderURL(modelId: model.id, framework: .llamaCpp)
-            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-            log("INKLING: downloading \(model.name)")
-            let (temporary, _) = try await URLSession.shared.download(from: URL(string: model.url)!)
-            let target = folder.appendingPathComponent(model.requiredFileNames[0])
-            try? FileManager.default.removeItem(at: target)
-            try FileManager.default.moveItem(at: temporary, to: target)
+        guard let projector = inklingProjector() else { return ["No Inkling 2 Mini vision projector entry"] }
+        if !backend.isModelAvailableLocally(model) { try await downloadIntoModelFolder(model) }
+        if !backend.isModelAvailableLocally(projector) { try await downloadIntoModelFolder(projector) }
+        // A red circle on white, for image input.
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        let circle = UIGraphicsImageRenderer(size: CGSize(width: 448, height: 448), format: format).image { context in
+            UIColor.white.setFill()
+            context.fill(CGRect(x: 0, y: 0, width: 448, height: 448))
+            UIColor.red.setFill()
+            context.cgContext.fillEllipse(in: CGRect(x: 74, y: 74, width: 300, height: 300))
         }
+        let imageFile = documents.appendingPathComponent("llmhub-test-inkling-circle.jpg")
+        guard let jpeg = circle.jpegData(compressionQuality: 0.95) else { return ["Could not encode the test image"] }
+        try jpeg.write(to: imageFile)
         guard let path = try? backend.resolveModelGGUFPath(for: model) else { return ["\(model.name) is not on disk"] }
-        log("INKLING: \(model.name) at \((path as NSString).lastPathComponent), flash streaming \(LLMBackend.flashStreamingEnabled(for: model, path: path))")
+        log("INKLING: \(model.name) at \((path as NSString).lastPathComponent)")
         backend.selectedBackend = "GPU"
         let thinkingBefore = backend.enableThinking
-        defer { backend.enableThinking = thinkingBefore }
-        var started = Date()
-        try await backend.loadModel(model)
-        log("INKLING: loaded in \(String(format: "%.1f", Date().timeIntervalSince(started))) s")
-        var failures = [String]()
-        for thinking in [true, false] {
-            backend.enableThinking = thinking
-            var reply = ""
-            var speed = 0.0
-            started = Date()
-            try await backend.generate(prompt: "What is the capital of France? Answer in one word.", maxTokensOverride: 1024) { text, _, tokensPerSecond in
-                reply = text
-                speed = tokensPerSecond
-            }
-            let promptRead = await DirectLlamaCppBackend.shared.lastFlashPrompt
-            let promptSpeed = promptRead.map { $0.seconds > 0 ? Double($0.tokens) / $0.seconds : 0 } ?? 0
-            let shown = reply.replacingOccurrences(of: "\u{200B}", with: "")
-            log("INKLING: thinking \(thinking ? "on" : "off"): prompt tok/s=\(String(format: "%.1f", promptSpeed)), decode tok/s=\(String(format: "%.2f", speed)) reply=\(shown.prefix(500))")
-            let answer = shown.components(separatedBy: "ENDTHINK").last ?? shown
-            if !answer.localizedCaseInsensitiveContains("Paris") { failures.append("Inkling thinking \(thinking): \(shown.suffix(200))") }
-            if shown.contains("<|") { failures.append("Inkling thinking \(thinking) shows block tokens: \(shown.prefix(200))") }
-            if thinking != shown.contains("THINK") { failures.append("Inkling thinking \(thinking) thinking block shown: \(shown.contains("THINK"))") }
+        let visionBefore = backend.enableVision
+        backend.enableVision = true
+        let flashKey = LLMBackend.flashStreamingKey(for: model)
+        let flashBefore = UserDefaults.standard.object(forKey: flashKey)
+        defer {
+            backend.enableThinking = thinkingBefore
+            backend.enableVision = visionBefore
+            UserDefaults.standard.set(flashBefore, forKey: flashKey)
         }
-        backend.unloadModel()
+        var failures = [String]()
+        // Flash streaming on (the prompt on Metal, decode on the CPU), then off (every layer on Metal); with
+        // LLMHUB_INKLING_CPU=1 also off on the CPU backend.
+        var configs: [(flash: Bool, backend: String)] = [(true, "GPU"), (false, "GPU")]
+        if ProcessInfo.processInfo.environment["LLMHUB_INKLING_CPU"] == "1" { configs.append((false, "CPU")) }
+        for (flash, backendName) in configs {
+            backend.selectedBackend = backendName
+            UserDefaults.standard.set(flash, forKey: flashKey)
+            let mode = flash ? "flash streaming" : backendName == "CPU" ? "all layers on the CPU" : "all layers on the GPU"
+            guard LLMBackend.flashStreamingEnabled(for: model, path: path) == flash else {
+                failures.append("Flash streaming setting \(flash) not applied"); continue
+            }
+            var started = Date()
+            try await backend.loadModel(model)
+            log("INKLING: \(mode): loaded in \(String(format: "%.1f", Date().timeIntervalSince(started))) s")
+            for thinking in [true, false] {
+                backend.enableThinking = thinking
+                var reply = ""
+                var speed = 0.0
+                started = Date()
+                try await backend.generate(prompt: "What is the capital of France? Answer in one word.", maxTokensOverride: 1024) { text, _, tokensPerSecond in
+                    reply = text
+                    speed = tokensPerSecond
+                }
+                let promptRead = flash ? await DirectLlamaCppBackend.shared.lastFlashPrompt : await DirectLlamaCppBackend.shared.lastPrompt
+                let promptSpeed = promptRead.map { $0.seconds > 0 ? Double($0.tokens) / $0.seconds : 0 } ?? 0
+                let shown = reply.replacingOccurrences(of: "\u{200B}", with: "")
+                log("INKLING: \(mode), thinking \(thinking ? "on" : "off"): prompt \(promptRead?.tokens ?? 0) tokens at \(String(format: "%.1f", promptSpeed)) tok/s, decode \(String(format: "%.2f", speed)) tok/s, reply=\(shown.prefix(500))")
+                let label = "\(mode), thinking \(thinking ? "on" : "off")"
+                let answer = shown.components(separatedBy: "ENDTHINK").last ?? shown
+                if !answer.localizedCaseInsensitiveContains("Paris") { failures.append("\(label): \(shown.suffix(200))") }
+                if shown.contains("<|") { failures.append("\(label) shows block tokens: \(shown.prefix(200))") }
+                if thinking != shown.contains("THINK") { failures.append("\(label): thinking block shown \(shown.contains("THINK"))") }
+            }
+            // Image input: the vision projector loads with the model and the image is its own user block.
+            backend.enableThinking = false
+            var imageReply = ""
+            try await backend.generate(prompt: "What color is the circle in this image? Answer in one word.",
+                                       imageURL: imageFile, maxTokensOverride: 256) { text, _, _ in imageReply = text }
+            let imagePrompt = flash ? await DirectLlamaCppBackend.shared.lastFlashPrompt : await DirectLlamaCppBackend.shared.lastPrompt
+            let imageShown = imageReply.replacingOccurrences(of: "\u{200B}", with: "")
+            log("INKLING: \(mode), image: prompt \(imagePrompt?.tokens ?? 0) tokens, reply=\(imageShown.prefix(300))")
+            if !imageShown.localizedCaseInsensitiveContains("red") { failures.append("\(mode) image: \(imageShown.prefix(200))") }
+            backend.unloadModel()
+            try await Task.sleep(nanoseconds: 2_000_000_000)
+        }
         return failures
     }
 
