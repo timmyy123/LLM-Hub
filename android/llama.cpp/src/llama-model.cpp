@@ -1,5 +1,7 @@
 #include "llama-model.h"
 
+#include <cstdlib> // LLMHub: getenv
+
 #include "llama-arch.h"
 #include "llama-ext.h"
 #include "llama-hparams.h"
@@ -2092,7 +2094,11 @@ bool llama_model_base::load_tensors(llama_model_loader & ml) {
     // per-tensor activation precision policy
     prec_policy.load(ml, *this);
 
-    ml.init_mappings(true, use_mlock ? &pimpl->mlock_mmaps : nullptr);
+    // LLMHub: flash streaming (LLM Hub's bigmoeonedge) reads the experts with its own direct reads and hands the page
+    // cache back right after load, so a prefetch of the whole mapping only fills memory: a 14 GB Gemma 4 26B on a
+    // 12 GB phone was read ahead in full and the low-memory killer stopped the app mid-load. It sets this for its loads.
+    const bool llmhub_prefetch = getenv("LLMHUB_NO_MMAP_PREFETCH") == nullptr;
+    ml.init_mappings(llmhub_prefetch, use_mlock ? &pimpl->mlock_mmaps : nullptr);
     pimpl->mappings.reserve(ml.mappings.size());
 
     // create the backend buffers

@@ -215,7 +215,11 @@ STREAM_JNI(nativeLoadModel)(
     }
 
     std::string error;
+    // The engine reads the experts itself and hands the page cache back after load: llama.cpp's read-ahead of the whole
+    // file (14 GB for Gemma 4 26B) would fill a 12 GB phone first and get the app killed mid-load (llama-model.cpp).
+    setenv("LLMHUB_NO_MMAP_PREFETCH", "1", 1);
     g_session = bmoe::Session::open(cfg, error);
+    unsetenv("LLMHUB_NO_MMAP_PREFETCH");
     if (!g_session) {
         __android_log_print(ANDROID_LOG_ERROR, TAG, "Flash streaming load failed: %s", error.c_str());
         return 1;

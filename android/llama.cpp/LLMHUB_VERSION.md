@@ -29,6 +29,16 @@
 
 ## Local patches (marked `LLMHub:`)
 
+`src/llama-model.cpp`:
+- `init_mappings` skips the read-ahead of the whole file when `LLMHUB_NO_MMAP_PREFETCH` is set, which flash
+  streaming does for its own loads: the engine reads experts directly and drops the page cache after load, and a
+  14 GB Gemma 4 26B read ahead in full on a 12 GB phone got the app killed mid-load.
+
+`ggml/src/ggml-hexagon/ggml-hexagon.cpp` (in libggml-hexagon.so):
+- A SET_ROWS whose KV cache sits in the Hexagon host buffer is refused, so it runs on the CPU. Only flash
+  streaming keeps the cache there; the NPU's SET_ROWS hung the DSP on Gemma 4 26B (Q8_0 rows of 1024 and 2048
+  floats) on the Snapdragon 8 Elite Extreme Gen 6.
+
 `ggml/src/ggml-vulkan/ggml-vulkan.cpp`:
 - `vkGetPhysicalDeviceFeatures2` goes through the Vulkan dispatcher (Android API 27).
 - A failed pipeline compile releases its claim, so waiting threads fail instead of hanging, and is logged

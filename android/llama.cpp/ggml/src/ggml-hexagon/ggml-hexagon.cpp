@@ -3149,6 +3149,18 @@ static bool ggml_backend_hexagon_device_supports_op(ggml_backend_dev_t dev, cons
     }
 
     bool supp = false;
+    // LLMHub: a KV-cache write (SET_ROWS) whose cache is in the host buffer stays on the CPU. Only LLM Hub's flash
+    // streaming keeps the cache there (the NPU reads the prompt; normal NPU loads keep it in device buffers), and
+    // there the NPU's SET_ROWS hung the DSP on Gemma 4 26B (Q8_0 rows of 1024 and 2048 floats, Snapdragon 8 Elite
+    // Extreme Gen 6) while the CPU writes the rows in a fraction of the prompt's time. The cache tensor is allocated
+    // before the graph, so this reads a fixed property, not one set by the graph's own allocation.
+    const ggml_tensor * set_rows_dst = op->op == GGML_OP_SET_ROWS ? (op->src[2] ? op->src[2] : op) : nullptr;
+    if (set_rows_dst && set_rows_dst->view_src) set_rows_dst = set_rows_dst->view_src;
+    if (set_rows_dst && set_rows_dst->buffer &&
+        ggml_backend_buffer_get_type(set_rows_dst->buffer) == &dev_ctx->host_buffer_type) {
+        ggml_hexagon_dump_op_supp(sess->c_name(), op, false);
+        return false;
+    }
     if (ggml_op_is_empty(op->op) || ggml_is_empty(op)) {
         supp = true;
     } else {
