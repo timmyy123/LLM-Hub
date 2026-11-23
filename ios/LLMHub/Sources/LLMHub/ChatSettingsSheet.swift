@@ -137,6 +137,7 @@ struct ChatSettingsSheet: View {
     @State private var draftTemperature: Double = 1.0
     @State private var draftSystemPrompt: String = ""
     @State private var gpuLayersTemp: Double = 999
+    @State private var flashStreamingActive = false
     @State private var gpuLayerLimit: Double = 999
     @State private var cachedModels: [AIModel] = []
     
@@ -216,13 +217,16 @@ struct ChatSettingsSheet: View {
                             ConfigSlider(title: settings.localized("temperature"), value: $draftTemperature, range: 0...2, format: "%.2f", onCommit: applyDraftToViewModel)
 
                             if let model = currentModel, model.modelFormat == .gguf {
-                                GPULayersSlider(
-                                    value: $gpuLayersTemp,
-                                    maxLayers: gpuLayerLimit,
-                                    label: settings.localized("gpu_layers_label"),
-                                    onCommit: { saveGpuLayers(gpuLayersTemp) }
-                                )
-                                FlashStreamingToggle(model: model)
+                                // A flash-streamed MoE model reads the prompt on the GPU and decodes on the CPU: no layers setting.
+                                if !flashStreamingActive {
+                                    GPULayersSlider(
+                                        value: $gpuLayersTemp,
+                                        maxLayers: gpuLayerLimit,
+                                        label: settings.localized("gpu_layers_label"),
+                                        onCommit: { saveGpuLayers(gpuLayersTemp) }
+                                    )
+                                }
+                                FlashStreamingToggle(model: model, active: $flashStreamingActive)
                             }
 
                             HStack {
@@ -635,9 +639,11 @@ struct GPULayersSlider: View {
 }
 
 /// The flash streaming switch, shown only for a MoE GGUF. On (the default) the experts are read from storage as tokens
-/// need them, so a MoE model larger than the device's memory runs on the CPU; it applies from the next model load.
+/// need them, so a MoE model larger than the device's memory runs; it applies from the next model load. `active` is
+/// whether flash streaming will be used (MoE and on), for the caller to hide the GPU layers setting.
 struct FlashStreamingToggle: View {
     let model: AIModel
+    @Binding var active: Bool
     @EnvironmentObject var settings: AppSettings
     @State private var isMoe = false
     @State private var isOn = true
@@ -653,6 +659,7 @@ struct FlashStreamingToggle: View {
                 )
                 .onChange(of: isOn) { _, value in
                     UserDefaults.standard.set(value, forKey: LLMBackend.flashStreamingKey(for: model))
+                    active = isMoe && value
                 }
             } else {
                 // A real (zero-height) view: SwiftUI never starts the task below on an empty view, which left
@@ -663,8 +670,9 @@ struct FlashStreamingToggle: View {
         .task(id: model.id) {
             let key = LLMBackend.flashStreamingKey(for: model)
             isOn = UserDefaults.standard.object(forKey: key) as? Bool ?? true
-            guard let path = try? LLMBackend.shared.resolveModelGGUFPath(for: model) else { isMoe = false; return }
+            guard let path = try? LLMBackend.shared.resolveModelGGUFPath(for: model) else { isMoe = false; active = false; return }
             isMoe = await Task.detached(priority: .utility) { GGUFLayerLimits.isMoe(URL(fileURLWithPath: path)) }.value
+            active = isMoe && isOn
         }
     }
 }

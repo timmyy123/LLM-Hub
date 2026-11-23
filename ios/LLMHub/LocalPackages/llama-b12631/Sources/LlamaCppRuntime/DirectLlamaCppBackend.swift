@@ -4,6 +4,8 @@ import LLMHubBmoe
 
 /// The app's GGUF runtime. RunAnywhere is not involved in model execution here.
 public actor DirectLlamaCppBackend {
+    /// The last flash-streamed reply's prompt: tokens read and seconds taken (prompt tok/s = tokens / seconds).
+    public private(set) var lastFlashPrompt: (tokens: Int, seconds: Double)?
     public static let shared = DirectLlamaCppBackend()
 
     public struct Update: Sendable {
@@ -416,6 +418,10 @@ public actor DirectLlamaCppBackend {
             throw RuntimeError.inference("Flash streaming failed: \(String(cString: error))")
         }
         let rate = seconds > 0 ? Double(generated) / seconds : sink.rate
+        var promptTokens: Int32 = 0
+        var promptSeconds = 0.0
+        llmhub_bmoe_last_prompt(session, &promptTokens, &promptSeconds)
+        lastFlashPrompt = (Int(promptTokens), promptSeconds)
         continuation.yield(Update(text: sink.finish(), completionTokens: Int(max(generated, Int32(sink.generated))), tokensPerSecond: rate))
     }
 }

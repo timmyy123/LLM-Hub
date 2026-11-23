@@ -507,8 +507,8 @@ enum DeviceSelfTests {
         return failures
     }
 
-    /// Flash streaming on the CPU, then with the GPU backend (layers on Metal from the GPU layers setting), on the same
-    /// long prompt: the time to the first word is mostly prompt reading. Same download rules as flash-moe.
+    /// Flash streaming on the CPU, then with the GPU backend (the prompt on Metal, decode on the CPU), on the same long
+    /// prompt, logging prompt and decode tok/s. Same download rules as flash-moe.
     static func checkFlashStreamingGpuPrefill() async throws -> [String] {
         let backend = LLMBackend.shared
         guard let model = ModelData.allModels().first(where: {
@@ -531,7 +531,7 @@ enum DeviceSelfTests {
             backend.selectedBackend = gpu ? "GPU" : "CPU"
             var started = Date()
             try await backend.loadModel(model)
-            let label = gpu ? "GPU \(backend.storedGpuLayers(for: model)) layers" : "CPU"
+            let label = gpu ? "GPU" : "CPU"
             log("FLASH_GPU: \(model.name) \(label) loaded in \(String(format: "%.1f", Date().timeIntervalSince(started))) s")
             var reply = ""
             var speed = 0.0
@@ -542,7 +542,9 @@ enum DeviceSelfTests {
                 reply = text
                 speed = tokensPerSecond
             }
-            log("FLASH_GPU: \(label) first word \(String(format: "%.1f", firstWord ?? -1)) s, total \(String(format: "%.1f", Date().timeIntervalSince(started))) s, decode tok/s=\(String(format: "%.2f", speed)) reply=\(reply.suffix(200))")
+            let promptRead = await DirectLlamaCppBackend.shared.lastFlashPrompt
+            let promptSpeed = promptRead.map { $0.seconds > 0 ? Double($0.tokens) / $0.seconds : 0 } ?? 0
+            log("FLASH_GPU: \(label) prompt \(promptRead?.tokens ?? 0) tokens in \(String(format: "%.2f", promptRead?.seconds ?? 0)) s, prompt tok/s=\(String(format: "%.1f", promptSpeed)), decode tok/s=\(String(format: "%.2f", speed)), first word \(String(format: "%.1f", firstWord ?? -1)) s reply=\(reply.suffix(200))")
             if !reply.contains("1889") { failures.append("\(label) answer: \(reply.suffix(200))") }
             backend.unloadModel()
             try await Task.sleep(nanoseconds: 2_000_000_000)

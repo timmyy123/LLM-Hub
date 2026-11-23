@@ -12,6 +12,8 @@
 struct llmhub_bmoe {
     std::unique_ptr<bmoe::Session> session;
     std::atomic<bool> stop{false};
+    int last_prompt_tokens = 0;          // the last generate's prompt, as the engine read it
+    double last_prompt_seconds = 0.0;
 };
 
 namespace {
@@ -124,6 +126,8 @@ extern "C" int llmhub_bmoe_generate(llmhub_bmoe * session, const char * prompt,
     });
     if (generated_tokens != nullptr) *generated_tokens = result.summary.n_generated;
     if (generate_seconds != nullptr) *generate_seconds = result.summary.gen_seconds;
+    session->last_prompt_tokens = result.summary.n_prompt;
+    session->last_prompt_seconds = result.summary.prefill_seconds;
     if (!result.ok) {
         set_error(error, error_size, result.error.empty() ? "flash streaming generation failed" : result.error);
         return 3;
@@ -135,4 +139,9 @@ extern "C" void llmhub_bmoe_cancel(llmhub_bmoe * session) {
     if (session == nullptr) return;
     session->stop.store(true);
     session->session->cancel();
+}
+
+extern "C" void llmhub_bmoe_last_prompt(const llmhub_bmoe * session, int * tokens, double * seconds) {
+    if (tokens != nullptr) *tokens = session != nullptr ? session->last_prompt_tokens : 0;
+    if (seconds != nullptr) *seconds = session != nullptr ? session->last_prompt_seconds : 0.0;
 }

@@ -1024,7 +1024,8 @@ class LLMBackend: ObservableObject {
             let isCPU = selectedBackend.caseInsensitiveCompare("CPU") == .orderedSame
             let maxLayers = modelMaxGpuLayers(for: model)
             let flash = Self.flashStreamingEnabled(for: model, path: modelPath)
-            let gpuLayers = isCPU ? 0 : storedGpuLayers(for: model)
+            // Flash streaming: the prompt on the GPU, decode on the CPU, no layers on the GPU.
+            let gpuLayers = isCPU || flash ? 0 : storedGpuLayers(for: model)
             try await DirectLlamaCppBackend.shared.load(
                 path: modelPath, projector: projector,
                 contextSize: contextSize, gpuLayers: gpuLayers,
@@ -1049,8 +1050,8 @@ class LLMBackend: ObservableObject {
 
     static func flashStreamingKey(for model: AIModel) -> String { "flash_streaming_\(model.id)" }
 
-    /// The saved GPU layer count for a GPU load, all layers by default. Under flash streaming 0 reads the prompt on the
-    /// GPU with decode on the CPU, and more puts that many dense layers on the GPU (the experts always stream).
+    /// The saved GPU layer count for a GPU load, all layers by default. Not used under flash streaming, which reads the
+    /// prompt on the GPU and decodes on the CPU.
     func storedGpuLayers(for model: AIModel) -> Int {
         let maxLayers = modelMaxGpuLayers(for: model)
         let key = "gpu_layers_\(model.id)"
@@ -1287,7 +1288,7 @@ class LLMBackend: ObservableObject {
                 try await DirectLlamaCppBackend.shared.load(
                     path: path, projector: projector,
                     contextSize: clampedContextWindow(contextWindow, for: model),
-                    gpuLayers: isCPU ? 0 : storedGpuLayers(for: model),
+                    gpuLayers: isCPU || flash ? 0 : storedGpuLayers(for: model),
                     flashStreaming: flash, gpuPrefill: !isCPU
                 )
                 #if canImport(UIKit)

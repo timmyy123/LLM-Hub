@@ -37,6 +37,9 @@ int llmhub_bmoe_generate(llmhub_bmoe * session, const char * prompt,
                          int * generated_tokens, double * generate_seconds,
                          char * error, size_t error_size);
 
+/// The last generate's prompt: how many tokens the engine read and how long that took (prompt tok/s = tokens / seconds).
+void llmhub_bmoe_last_prompt(const llmhub_bmoe * session, int * tokens, double * seconds);
+
 /// Ends the running generation. Safe from any thread.
 void llmhub_bmoe_cancel(llmhub_bmoe * session);
 

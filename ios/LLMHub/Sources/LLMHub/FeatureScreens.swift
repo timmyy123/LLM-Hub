@@ -453,6 +453,7 @@ struct FeatureModelSettingsSheet: View {
     @State private var models: [AIModel] = []
     @State private var isRefreshingModels = false
     @State private var gpuLayersTemp: Double = 999
+    @State private var flashStreamingActive = false
     @State private var gpuLayerLimit: Double = 999
 
     private var selectedModel: AIModel? {
@@ -550,14 +551,17 @@ struct FeatureModelSettingsSheet: View {
                                 }
 
                                 if let model = selectedModel, model.modelFormat == .gguf {
-                                    GPULayersSlider(
-                                        value: $gpuLayersTemp,
-                                        maxLayers: gpuLayerLimit,
-                                        label: settings.localized("gpu_layers_label"),
-                                        onCommit: { saveGpuLayers(gpuLayersTemp) }
-                                    )
-                                    .padding(.top, 8)
-                                    FlashStreamingToggle(model: model)
+                                    // A flash-streamed MoE model reads the prompt on the GPU and decodes on the CPU: no layers setting.
+                                    if !flashStreamingActive {
+                                        GPULayersSlider(
+                                            value: $gpuLayersTemp,
+                                            maxLayers: gpuLayerLimit,
+                                            label: settings.localized("gpu_layers_label"),
+                                            onCommit: { saveGpuLayers(gpuLayersTemp) }
+                                        )
+                                        .padding(.top, 8)
+                                    }
+                                    FlashStreamingToggle(model: model, active: $flashStreamingActive)
                                         .padding(.top, 8)
                                 }
                             }
