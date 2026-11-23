@@ -41,6 +41,10 @@ llama_sampler * g_sampler = nullptr;
 llama_sampler * g_grammar = nullptr;
 mtmd_context * g_mtmd = nullptr;
 std::atomic_bool g_stop{false};
+// nativeStartCompletion result when a stop arrived during prompt evaluation (not an error).
+constexpr int kStoppedDuringPrompt = 11;
+// True while nativeStartCompletion evaluates the prompt; the abort callback only acts then.
+std::atomic_bool g_in_prompt{false};
 // One model per library, shared by every Kotlin service that uses it (Chat and Agent each have
 // their own LlamaCppInferenceService and thread). The lock keeps a load, free or decode on one
 // thread from running into another's (concurrent unloads double-freed g_model); nativeStop
@@ -348,6 +352,14 @@ LLAMA_JNI(nativeLoadModel)(
     context_params.n_threads_batch = thread_count;
     context_params.flash_attn_type = flash_attention < 0 ? LLAMA_FLASH_ATTN_TYPE_AUTO
         : flash_attention == 0 ? LLAMA_FLASH_ATTN_TYPE_DISABLED : LLAMA_FLASH_ATTN_TYPE_ENABLED;
+    // A stop (nativeStop/Reset/Unload) also aborts a prompt batch partway through on the CPU backend.
+    // Between-batch checks alone left a reply running for a whole batch: ~7 s per 512 tokens with
+    // LFM3's 256k context on a Tab S9+, so leaving or switching chats mid-prompt waited that long.
+    // Only while the prompt is evaluated: aborting a one-token decode mid-graph bought nothing (a token
+    // takes ~50 ms and the stop is checked between tokens) and made the following unload stall the app's
+    // main thread for up to 1.5 s on the Tab S9+.
+    context_params.abort_callback = [](void *) { return g_in_prompt.load() && g_stop.load(); };
+    context_params.abort_callback_data = nullptr;
     g_context = llama_init_from_model(g_model, context_params);
     if (g_context == nullptr) {
         unload_model();
@@ -526,6 +538,7 @@ LLAMA_JNI(nativeStartCompletion)(
             1,
             std::min(requested_max_tokens, context_size - static_cast<int32_t>(prompt_tokens)));
         llama_pos new_n_past = 0;
+        g_in_prompt.store(true);
         const int32_t eval_result = mtmd_helper_eval_chunks(
             g_mtmd,
             g_context,
@@ -535,7 +548,9 @@ LLAMA_JNI(nativeStartCompletion)(
             static_cast<int32_t>(llama_n_batch(g_context)),
             true,
             &new_n_past);
+        g_in_prompt.store(false);
         mtmd_input_chunks_free(chunks);
+        if (eval_result != 0 && g_stop.load()) return kStoppedDuringPrompt;
         if (eval_result != 0) {
             __android_log_print(
                 ANDROID_LOG_ERROR, TAG, "Vision prompt evaluation failed with code %d", eval_result);
@@ -590,8 +605,10 @@ LLAMA_JNI(nativeStartCompletion)(
         g_max_tokens,
         requested_max_tokens);
 
+    g_in_prompt.store(true);
     const int decode_result = decode_tokens(tokens);
-    if (decode_result != 0) return 5;
+    g_in_prompt.store(false);
+    if (decode_result != 0) return g_stop.load() ? kStoppedDuringPrompt : 5;
     g_decode_start_us = now_us();
     return 0;
 }

@@ -193,7 +193,9 @@ class MediaPipeInferenceService(private val applicationContext: Context) : Infer
         Log.d(TAG, "Set generation parameters: maxTokens=$maxTokens contextWindow=$contextWindow topK=$topK topP=$topP temperature=$temperature")
     }
 
-    override suspend fun unloadModel() {
+    // Off the main thread: callers such as leaving AI Chat run on it, and session.close() waits for
+    // MediaPipe's graph to go idle after the cancel below (ANR in 4.6.8).
+    override suspend fun unloadModel(): Unit = withContext(Dispatchers.IO) {
         sessionMutex.withLock {
             Log.d(TAG, "Unloading current model: ${currentModel?.name}")
             

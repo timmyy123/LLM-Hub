@@ -183,6 +183,8 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
     companion object {
         private const val TAG = "LlamaCppFallback"
         private const val DEFAULT_MAX_TOKENS = 1024
+        /** nativeStartCompletion result when a stop arrived during prompt evaluation (llama_cpp_jni.cpp). */
+        private const val STOPPED_DURING_PROMPT = 11
         private const val MAX_IMAGE_DIMENSION = 300
         private const val FLASH_STREAMING = "FlashStreaming"
         private const val FLASH_STREAMING_NPU = "FlashStreamingNpu"
@@ -439,7 +441,23 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
         }
     }
 
-    override suspend fun unloadModel() = withContext(dispatcher) {
+    /**
+     * Stops a reply still running on this service's model before anything else happens. Generation
+     * holds [dispatcher] until it returns, so a stop queued behind it (inside nativeUnload/nativeReset)
+     * only landed after the whole reply: leaving or switching chats waited on it (ANRs in 4.6.7/4.6.8).
+     * Sent from an IO thread: the plain runtime's stop is a lock-free flag, the streaming runtime's
+     * joins its worker. Only for our own model, so another service's reply on the shared slot runs on.
+     */
+    private suspend fun stopRunningGeneration() {
+        if (ownsNativeModel()) withContext(Dispatchers.IO) { runtime.nativeStop() }
+    }
+
+    override suspend fun unloadModel() {
+        stopRunningGeneration()
+        withContext(dispatcher) { unloadOnDispatcher() }
+    }
+
+    private fun unloadOnDispatcher() {
         // Never free a model another service loaded into the shared native slot.
         if (ownsNativeModel()) runtime.nativeUnload()
         currentModel = null
@@ -605,6 +623,11 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
             topP,
             outputGrammar,
         )
+        if (startResult == STOPPED_DURING_PROMPT) {
+            // Stopped while reading the prompt (Stop, chat switch, leaving the feature): no reply, no error.
+            Log.i(TAG, "Generation stopped during prompt evaluation")
+            return@flow
+        }
         check(startResult == 0) { "llama.cpp prompt evaluation failed with code $startResult" }
 
         try {
@@ -634,10 +657,12 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
         }
     }.flowOn(dispatcher)
 
-    override suspend fun resetChatSession(chatId: String) = withContext(dispatcher) {
-        if (nativeInitialized) runtime.nativeReset()
-        chatSessions.remove(chatId)
-        Unit
+    override suspend fun resetChatSession(chatId: String) {
+        stopRunningGeneration()
+        withContext(dispatcher) {
+            if (nativeInitialized) runtime.nativeReset()
+            chatSessions.remove(chatId)
+        }
     }
 
     override suspend fun onCleared() {

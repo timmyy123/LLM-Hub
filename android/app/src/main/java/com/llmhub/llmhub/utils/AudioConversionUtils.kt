@@ -19,12 +19,11 @@ object AudioConversionUtils {
 
     suspend fun convertUriToFloat32Wav(context: Context, uri: Uri): ByteArray? = withContext(Dispatchers.IO) {
         try {
-            // Fast path: if already float32 mono 16k WAV, pass through.
-            context.contentResolver.openInputStream(uri)?.use { input ->
-                val raw = input.readBytes()
-                if (isTargetFloat32Wav(raw)) {
-                    return@withContext raw
-                }
+            // Fast path: if already float32 mono 16k WAV, pass through. Check the header first so a
+            // large file in another format is never read into memory whole (OOM in 4.6.8).
+            val header = context.contentResolver.openInputStream(uri)?.use { readUpTo(it, Float32WavBuilder.HEADER) }
+            if (header != null && Float32WavBuilder.isMono16kFloat32Header(header, TARGET_SAMPLE_RATE)) {
+                return@withContext readWhole(context, uri)
             }
 
             val extractor = MediaExtractor()
@@ -50,103 +49,117 @@ object AudioConversionUtils {
             decoder.configure(format, null, null, 0)
             decoder.start()
 
-            val monoBuilder = FloatBuilder()
-            var sourceSampleRate = format.getIntegerOrDefault(android.media.MediaFormat.KEY_SAMPLE_RATE, TARGET_SAMPLE_RATE)
-            var channelCount = format.getIntegerOrDefault(android.media.MediaFormat.KEY_CHANNEL_COUNT, TARGET_CHANNELS)
-            var pcmEncoding = AudioFormat.ENCODING_PCM_16BIT
-
-            val bufferInfo = MediaCodec.BufferInfo()
-            var inputDone = false
-            var outputDone = false
-
-            while (!outputDone) {
-                if (!inputDone) {
-                    val inIndex = decoder.dequeueInputBuffer(TIMEOUT_US)
-                    if (inIndex >= 0) {
-                        val inBuffer = decoder.getInputBuffer(inIndex)
-                        if (inBuffer != null) {
-                            val sampleSize = extractor.readSampleData(inBuffer, 0)
-                            if (sampleSize < 0) {
-                                decoder.queueInputBuffer(
-                                    inIndex,
-                                    0,
-                                    0,
-                                    0,
-                                    MediaCodec.BUFFER_FLAG_END_OF_STREAM
-                                )
-                                inputDone = true
-                            } else {
-                                val presentationTimeUs = extractor.sampleTime
-                                decoder.queueInputBuffer(
-                                    inIndex,
-                                    0,
-                                    sampleSize,
-                                    presentationTimeUs,
-                                    0
-                                )
-                                extractor.advance()
-                            }
-                        }
-                    }
+            try {
+                // Decode, downmix and resample in one pass straight into the output WAV, so a long recording
+                // is held once at 16 kHz instead of at its source rate plus three full copies (OOM in 4.6.8).
+                val durationUs = if (format.containsKey(android.media.MediaFormat.KEY_DURATION)) {
+                    format.getLong(android.media.MediaFormat.KEY_DURATION)
+                } else {
+                    -1L
                 }
+                val wav = Float32WavBuilder(
+                    TARGET_SAMPLE_RATE,
+                    if (durationUs > 0) durationUs * TARGET_SAMPLE_RATE / 1_000_000L else -1L
+                )
+                var resampler: StreamingLinearResampler? = null
+                var sourceSampleRate = format.getIntegerOrDefault(android.media.MediaFormat.KEY_SAMPLE_RATE, TARGET_SAMPLE_RATE)
+                var channelCount = format.getIntegerOrDefault(android.media.MediaFormat.KEY_CHANNEL_COUNT, TARGET_CHANNELS)
+                var pcmEncoding = AudioFormat.ENCODING_PCM_16BIT
 
-                val outIndex = decoder.dequeueOutputBuffer(bufferInfo, TIMEOUT_US)
-                when {
-                    outIndex == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED -> {
-                        val outFormat = decoder.outputFormat
-                        sourceSampleRate = outFormat.getIntegerOrDefault(
-                            android.media.MediaFormat.KEY_SAMPLE_RATE,
-                            sourceSampleRate
-                        )
-                        channelCount = outFormat.getIntegerOrDefault(
-                            android.media.MediaFormat.KEY_CHANNEL_COUNT,
-                            channelCount
-                        )
-                        pcmEncoding = if (outFormat.containsKey(android.media.MediaFormat.KEY_PCM_ENCODING)) {
-                            outFormat.getInteger(android.media.MediaFormat.KEY_PCM_ENCODING)
-                        } else {
-                            AudioFormat.ENCODING_PCM_16BIT
-                        }
-                    }
+                val bufferInfo = MediaCodec.BufferInfo()
+                var inputDone = false
+                var outputDone = false
 
-                    outIndex >= 0 -> {
-                        if (bufferInfo.size > 0) {
-                            val outBuffer = decoder.getOutputBuffer(outIndex)
-                            if (outBuffer != null) {
-                                val chunk = outBuffer.duplicate().apply {
-                                    position(bufferInfo.offset)
-                                    limit(bufferInfo.offset + bufferInfo.size)
+                while (!outputDone) {
+                    if (!inputDone) {
+                        val inIndex = decoder.dequeueInputBuffer(TIMEOUT_US)
+                        if (inIndex >= 0) {
+                            val inBuffer = decoder.getInputBuffer(inIndex)
+                            if (inBuffer != null) {
+                                val sampleSize = extractor.readSampleData(inBuffer, 0)
+                                if (sampleSize < 0) {
+                                    decoder.queueInputBuffer(
+                                        inIndex,
+                                        0,
+                                        0,
+                                        0,
+                                        MediaCodec.BUFFER_FLAG_END_OF_STREAM
+                                    )
+                                    inputDone = true
+                                } else {
+                                    val presentationTimeUs = extractor.sampleTime
+                                    decoder.queueInputBuffer(
+                                        inIndex,
+                                        0,
+                                        sampleSize,
+                                        presentationTimeUs,
+                                        0
+                                    )
+                                    extractor.advance()
                                 }
-                                appendMonoFloats(chunk, pcmEncoding, channelCount, monoBuilder)
+                            }
+                        }
+                    }
+
+                    val outIndex = decoder.dequeueOutputBuffer(bufferInfo, TIMEOUT_US)
+                    when {
+                        outIndex == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED -> {
+                            val outFormat = decoder.outputFormat
+                            sourceSampleRate = outFormat.getIntegerOrDefault(
+                                android.media.MediaFormat.KEY_SAMPLE_RATE,
+                                sourceSampleRate
+                            )
+                            channelCount = outFormat.getIntegerOrDefault(
+                                android.media.MediaFormat.KEY_CHANNEL_COUNT,
+                                channelCount
+                            )
+                            pcmEncoding = if (outFormat.containsKey(android.media.MediaFormat.KEY_PCM_ENCODING)) {
+                                outFormat.getInteger(android.media.MediaFormat.KEY_PCM_ENCODING)
+                            } else {
+                                AudioFormat.ENCODING_PCM_16BIT
                             }
                         }
 
-                        decoder.releaseOutputBuffer(outIndex, false)
+                        outIndex >= 0 -> {
+                            if (bufferInfo.size > 0) {
+                                val outBuffer = decoder.getOutputBuffer(outIndex)
+                                if (outBuffer != null) {
+                                    val chunk = outBuffer.duplicate().apply {
+                                        position(bufferInfo.offset)
+                                        limit(bufferInfo.offset + bufferInfo.size)
+                                    }
+                                    val r = resampler ?: StreamingLinearResampler(sourceSampleRate, TARGET_SAMPLE_RATE, wav::add)
+                                        .also { resampler = it }
+                                    appendMonoFloats(chunk, pcmEncoding, channelCount, r::push)
+                                }
+                            }
 
-                        if ((bufferInfo.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
-                            outputDone = true
+                            decoder.releaseOutputBuffer(outIndex, false)
+
+                            if ((bufferInfo.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
+                                outputDone = true
+                            }
                         }
                     }
                 }
+
+                resampler?.finish()
+                if (wav.sampleCount == 0) {
+                    Log.w(TAG, "Decoded audio is empty for URI: $uri")
+                    return@withContext null
+                }
+
+                return@withContext wav.build()
+            } finally {
+                // Released on every path, including an OOM halfway through a long file.
+                runCatching { decoder.stop() }
+                decoder.release()
+                extractor.release()
             }
-
-            decoder.stop()
-            decoder.release()
-            extractor.release()
-
-            val monoFloats = monoBuilder.toArray()
-            if (monoFloats.isEmpty()) {
-                Log.w(TAG, "Decoded audio is empty for URI: $uri")
-                return@withContext null
-            }
-
-            val resampled = if (sourceSampleRate != TARGET_SAMPLE_RATE) {
-                resampleLinear(monoFloats, sourceSampleRate, TARGET_SAMPLE_RATE)
-            } else {
-                monoFloats
-            }
-
-            return@withContext createFloat32Wav(resampled, TARGET_SAMPLE_RATE, TARGET_CHANNELS)
+        } catch (e: OutOfMemoryError) {
+            // Callers already show an error for null; better than closing the app.
+            Log.e(TAG, "Audio too large to convert in memory: ${e.message}")
+            null
         } catch (e: Exception) {
             Log.e(TAG, "Failed converting URI to float32 WAV: ${e.message}", e)
             null
@@ -166,7 +179,7 @@ object AudioConversionUtils {
         buffer: ByteBuffer,
         pcmEncoding: Int,
         channelCount: Int,
-        out: FloatBuilder
+        out: (Float) -> Unit
     ) {
         val channels = channelCount.coerceAtLeast(1)
 
@@ -179,7 +192,7 @@ object AudioConversionUtils {
                 while (i + channels - 1 < samples.size) {
                     var sum = 0f
                     for (c in 0 until channels) sum += samples[i + c]
-                    out.add((sum / channels).coerceIn(-1f, 1f))
+                    out((sum / channels).coerceIn(-1f, 1f))
                     i += channels
                 }
             }
@@ -194,7 +207,7 @@ object AudioConversionUtils {
                         val v = ((bytes[i + c].toInt() and 0xFF) - 128) / 128f
                         sum += v
                     }
-                    out.add((sum / channels).coerceIn(-1f, 1f))
+                    out((sum / channels).coerceIn(-1f, 1f))
                     i += channels
                 }
             }
@@ -210,71 +223,11 @@ object AudioConversionUtils {
                     for (c in 0 until channels) {
                         sum += samples[i + c] / 32768f
                     }
-                    out.add((sum / channels).coerceIn(-1f, 1f))
+                    out((sum / channels).coerceIn(-1f, 1f))
                     i += channels
                 }
             }
         }
-    }
-
-    private fun resampleLinear(input: FloatArray, fromRate: Int, toRate: Int): FloatArray {
-        if (input.isEmpty() || fromRate <= 0 || toRate <= 0 || fromRate == toRate) return input
-
-        val outLen = ((input.size.toDouble() * toRate) / fromRate).toInt().coerceAtLeast(1)
-        val out = FloatArray(outLen)
-        val ratio = fromRate.toDouble() / toRate
-
-        for (i in out.indices) {
-            val srcPos = i * ratio
-            val i0 = srcPos.toInt().coerceIn(0, input.lastIndex)
-            val i1 = (i0 + 1).coerceAtMost(input.lastIndex)
-            val frac = (srcPos - i0)
-            out[i] = ((1.0 - frac) * input[i0] + frac * input[i1]).toFloat()
-        }
-
-        return out
-    }
-
-    private fun createFloat32Wav(samples: FloatArray, sampleRate: Int, channels: Int): ByteArray {
-        val audioDataSize = samples.size * 4
-        val header = ByteArray(44)
-        val hb = ByteBuffer.wrap(header).order(ByteOrder.LITTLE_ENDIAN)
-
-        hb.put("RIFF".toByteArray())
-        hb.putInt(36 + audioDataSize)
-        hb.put("WAVE".toByteArray())
-
-        hb.put("fmt ".toByteArray())
-        hb.putInt(16)
-        hb.putShort(3) // IEEE float
-        hb.putShort(channels.toShort())
-        hb.putInt(sampleRate)
-        hb.putInt(sampleRate * channels * 4)
-        hb.putShort((channels * 4).toShort())
-        hb.putShort(32)
-
-        hb.put("data".toByteArray())
-        hb.putInt(audioDataSize)
-
-        val audioBytes = ByteArray(audioDataSize)
-        val ab = ByteBuffer.wrap(audioBytes).order(ByteOrder.LITTLE_ENDIAN)
-        for (s in samples) ab.putFloat(s.coerceIn(-1f, 1f))
-
-        return header + audioBytes
-    }
-
-    private fun isTargetFloat32Wav(bytes: ByteArray): Boolean {
-        if (bytes.size < 44) return false
-        if (!(bytes[0] == 'R'.code.toByte() && bytes[1] == 'I'.code.toByte() && bytes[2] == 'F'.code.toByte() && bytes[3] == 'F'.code.toByte())) return false
-        if (!(bytes[8] == 'W'.code.toByte() && bytes[9] == 'A'.code.toByte() && bytes[10] == 'V'.code.toByte() && bytes[11] == 'E'.code.toByte())) return false
-
-        val bb = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN)
-        val audioFormat = bb.getShort(20).toInt() and 0xFFFF
-        val channels = bb.getShort(22).toInt() and 0xFFFF
-        val sampleRate = bb.getInt(24)
-        val bitsPerSample = bb.getShort(34).toInt() and 0xFFFF
-
-        return audioFormat == 3 && channels == 1 && sampleRate == TARGET_SAMPLE_RATE && bitsPerSample == 32
     }
 
     fun float32WavToPcm16Wav(float32Wav: ByteArray): ByteArray {
@@ -320,18 +273,31 @@ object AudioConversionUtils {
         return if (containsKey(key)) getInteger(key) else defaultValue
     }
 
-    private class FloatBuilder(initialCapacity: Int = 16_384) {
-        private var data = FloatArray(initialCapacity)
-        private var size = 0
-
-        fun add(value: Float) {
-            if (size == data.size) {
-                data = data.copyOf((data.size * 2).coerceAtLeast(1))
-            }
-            data[size] = value
-            size++
+    private fun readUpTo(input: java.io.InputStream, n: Int): ByteArray {
+        val buf = ByteArray(n)
+        var read = 0
+        while (read < n) {
+            val r = input.read(buf, read, n - read)
+            if (r < 0) break
+            read += r
         }
+        return if (read == n) buf else buf.copyOf(read)
+    }
 
-        fun toArray(): FloatArray = data.copyOf(size)
+    /** Reads the file into an array of its exact size when the provider reports one. */
+    private fun readWhole(context: Context, uri: Uri): ByteArray? {
+        val length = try {
+            context.contentResolver.openAssetFileDescriptor(uri, "r")?.use { it.length } ?: -1L
+        } catch (_: Exception) {
+            -1L
+        }
+        return context.contentResolver.openInputStream(uri)?.use { input ->
+            if (length in 1..Int.MAX_VALUE.toLong()) {
+                val bytes = readUpTo(input, length.toInt())
+                if (bytes.size == length.toInt() && input.read() < 0) bytes else bytes + input.readBytes()
+            } else {
+                input.readBytes()
+            }
+        }
     }
 }

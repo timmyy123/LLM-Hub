@@ -66,6 +66,8 @@ class OnnxInferenceService @Inject constructor(
 
     @Volatile
     private var shouldStop = false
+    // Generator coroutines still running; unload waits for them before closing the sessions they use.
+    private val activeGenerations = java.util.concurrent.atomic.AtomicInteger(0)
     private val mutex = Mutex()
     // Buffers streamed output for LFM Thinking to detect think tags
     private val thinkingBuffer = StringBuilder()
@@ -396,6 +398,12 @@ class OnnxInferenceService @Inject constructor(
     }
 
     override suspend fun unloadModel() {
+        // Leaving a feature mid-reply: stop the reply first and let its loop return (it checks the flag
+        // between tokens) before the sessions it is running on are closed.
+        shouldStop = true
+        kotlinx.coroutines.withTimeoutOrNull(10_000) {
+            while (activeGenerations.get() > 0) kotlinx.coroutines.delay(50)
+        }
         mutex.withLock {
             withContext(Dispatchers.IO) {
                 try {
@@ -444,6 +452,7 @@ class OnnxInferenceService @Inject constructor(
         val backend = currentPreferredBackend
         Log.d(TAG, "Starting streaming generation... (backend: ${backend?.name ?: "default"} — ${if (backend == LlmInference.Backend.GPU) "NNAPI accelerator + CPU fallback" else "CPU only"})")
 
+        activeGenerations.incrementAndGet()
         val generatorJob = launch(Dispatchers.IO) {
             try {
                 val session = ortSession ?: throw Exception("ONNX session not initialized")
@@ -746,6 +755,8 @@ class OnnxInferenceService @Inject constructor(
             }
         }
         
+        generatorJob.invokeOnCompletion { activeGenerations.decrementAndGet() }
+
         awaitClose {
             shouldStop = true
             generatorJob.cancel()
@@ -902,6 +913,7 @@ class OnnxInferenceService @Inject constructor(
         // 2. Vision session is loaded (means model supports vision and it initialized correctly)
         val useVision = images.isNotEmpty() && ortVisionSession != null
         
+        activeGenerations.incrementAndGet()
         val generatorJob = launch(Dispatchers.IO) {
             try {
                 if (useVision) {
@@ -919,6 +931,8 @@ class OnnxInferenceService @Inject constructor(
             }
         }
         
+        generatorJob.invokeOnCompletion { activeGenerations.decrementAndGet() }
+
         awaitClose {
             shouldStop = true
             generatorJob.cancel()
