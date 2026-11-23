@@ -1373,8 +1373,8 @@ class LLMBackend: ObservableObject {
 /// "Thinking effort level: <0..0.99>", before the first non-system message; there is no generation prompt (the model
 /// opens its own <|message_model|> block). The model writes <|content_thinking|> and <|content_text|> blocks.
 /// Models whose chat template takes a thinking level (mirrors Android's ThinkingLevels). The first level is the lowest
-/// choice: Off (thinking off, as the on/off switch did) for models that can stop thinking, and None for Inkling 2,
-/// which has no off: its lowest level ("none", effort 0) still thinks, and that thought is shown.
+/// choice, None, replaces the thinking switch: thinking off for models that can stop thinking; for Inkling 2, which
+/// has no off, its lowest level ("none", effort 0), which still thinks, and that thought is shown.
 ///  - Inkling 2: "Thinking effort level: <0..0.99>" (InklingFormat.effortLevels, InklingFormat.savedEffort).
 ///  - Muse Glimmer: "Reasoning strength: low / medium / high / xhigh" (template default high).
 ///  - GPT-OSS: "Reasoning: low / medium / high" in the Harmony system header (template default medium).
@@ -1396,20 +1396,20 @@ enum ThinkingLevels {
     }
 
     static func levels(_ family: Family) -> [Level] {
-        let off = Level(labelKey: "thinking_level_off", effort: 0)
+        let none = Level(labelKey: "thinking_level_none", effort: 0)
         switch family {
         case .inkling:
             let keys = ["thinking_level_none", "thinking_level_minimal", "thinking_level_low",
                         "thinking_level_medium", "thinking_level_high", "thinking_level_max"]
             return zip(keys, InklingFormat.effortLevels).map { Level(labelKey: $0, effort: $1) }
         case .muse:
-            return [off, Level(labelKey: "thinking_level_low", effort: low), Level(labelKey: "thinking_level_medium", effort: medium),
+            return [none, Level(labelKey: "thinking_level_low", effort: low), Level(labelKey: "thinking_level_medium", effort: medium),
                     Level(labelKey: "thinking_level_high", effort: high), Level(labelKey: "thinking_level_max", effort: xhigh)]
         case .gptOss:
-            return [off, Level(labelKey: "thinking_level_low", effort: low), Level(labelKey: "thinking_level_medium", effort: medium),
+            return [none, Level(labelKey: "thinking_level_low", effort: low), Level(labelKey: "thinking_level_medium", effort: medium),
                     Level(labelKey: "thinking_level_high", effort: high)]
         case .granite:
-            return [off, Level(labelKey: "thinking_level_low", effort: low), Level(labelKey: "thinking_level_high", effort: high)]
+            return [none, Level(labelKey: "thinking_level_low", effort: low), Level(labelKey: "thinking_level_high", effort: high)]
         }
     }
 

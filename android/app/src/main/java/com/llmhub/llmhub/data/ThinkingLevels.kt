@@ -7,9 +7,9 @@ import kotlin.math.abs
 data class ThinkingLevel(val labelRes: Int, val effort: Float)
 
 /**
- * Models whose chat template takes a thinking level, with the levels the template names. The first entry is the
- * lowest choice: Off (thinking off, as the model's on/off switch did) for models that can stop thinking, and None for
- * Inkling 2, which has no off: its lowest level ("none", effort 0) still thinks, and that thought is shown.
+ * Models whose chat template takes a thinking level, with the levels the template names. The picker replaces the
+ * thinking switch. Its first entry, None, is the lowest choice: thinking off for models that can stop thinking; for
+ * Inkling 2, which has no off, its lowest level ("none", effort 0), which still thinks, and that thought is shown.
  * The other entries turn thinking on at that level.
  *  - Inkling 2: "Thinking effort level: <0..0.99>" (InklingFormat.EFFORT_LEVELS).
  *  - Muse Glimmer: "Reasoning strength: low / medium / high / xhigh" (template default high).
@@ -27,11 +27,11 @@ class ThinkingLevels(val levels: List<ThinkingLevel>, val default: Float) {
         const val MEDIUM = 2f
         const val HIGH = 3f
         const val XHIGH = 4f
-        private val OFF = ThinkingLevel(R.string.thinking_level_off, 0f)
+        private val NONE = ThinkingLevel(R.string.thinking_level_none, 0f)
 
         private val INKLING = ThinkingLevels(
             listOf(
-                ThinkingLevel(R.string.thinking_level_none, 0f),
+                NONE,
                 ThinkingLevel(R.string.thinking_level_minimal, 0.1f),
                 ThinkingLevel(R.string.thinking_level_low, 0.2f),
                 ThinkingLevel(R.string.thinking_level_medium, 0.7f),
@@ -42,7 +42,7 @@ class ThinkingLevels(val levels: List<ThinkingLevel>, val default: Float) {
         )
         private val MUSE = ThinkingLevels(
             listOf(
-                OFF,
+                NONE,
                 ThinkingLevel(R.string.thinking_level_low, LOW),
                 ThinkingLevel(R.string.thinking_level_medium, MEDIUM),
                 ThinkingLevel(R.string.thinking_level_high, HIGH),
@@ -52,7 +52,7 @@ class ThinkingLevels(val levels: List<ThinkingLevel>, val default: Float) {
         )
         private val GPT_OSS = ThinkingLevels(
             listOf(
-                OFF,
+                NONE,
                 ThinkingLevel(R.string.thinking_level_low, LOW),
                 ThinkingLevel(R.string.thinking_level_medium, MEDIUM),
                 ThinkingLevel(R.string.thinking_level_high, HIGH),
@@ -61,7 +61,7 @@ class ThinkingLevels(val levels: List<ThinkingLevel>, val default: Float) {
         )
         private val GRANITE = ThinkingLevels(
             listOf(
-                OFF,
+                NONE,
                 ThinkingLevel(R.string.thinking_level_low, LOW),
                 ThinkingLevel(R.string.thinking_level_high, HIGH),
             ),

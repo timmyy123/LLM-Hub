@@ -562,24 +562,13 @@ fun TranslatorScreen(
                 }
                 
                 // Thinking toggle (shown only for thinking/reasoning models)
-                if (isThinkingOrHarmonyModelTranslator) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = stringResource(R.string.enable_thinking),
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Medium
-                        )
-                        Switch(
-                            checked = enableThinking,
-                            onCheckedChange = { viewModel.setEnableThinking(it) }
-                        )
-                    }
+                if (isThinkingOrHarmonyModelTranslator || com.llmhub.llmhub.data.ThinkingLevels.forModel(selectedModel) != null) {
+                    com.llmhub.llmhub.components.ThinkingSwitchOrLevel(
+                        model = selectedModel,
+                        enableThinking = enableThinking,
+                        onEnableThinking = { viewModel.setEnableThinking(it) },
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                    )
                 }
                 
                 Spacer(modifier = Modifier.height(32.dp))
@@ -2279,24 +2268,13 @@ fun ScamDetectorScreen(
                         name.contains("gpt-oss") || name.contains("gpt_oss") ||
                         model.isLfm3() || model.isGemma4GgufThinking()
                 } == true
-                if (isThinkingOrHarmonyModelScam) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = stringResource(R.string.enable_thinking),
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Medium
-                        )
-                        Switch(
-                            checked = enableThinkingScam,
-                            onCheckedChange = { viewModel.setEnableThinking(it) }
-                        )
-                    }
+                if (isThinkingOrHarmonyModelScam || com.llmhub.llmhub.data.ThinkingLevels.forModel(selectedModel) != null) {
+                    com.llmhub.llmhub.components.ThinkingSwitchOrLevel(
+                        model = selectedModel,
+                        enableThinking = enableThinkingScam,
+                        onEnableThinking = { viewModel.setEnableThinking(it) },
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    )
                     Spacer(modifier = Modifier.height(32.dp))
                 }
             }

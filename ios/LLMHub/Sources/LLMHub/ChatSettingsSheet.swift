@@ -723,7 +723,7 @@ struct ToggleTile: View {
 }
 
 /// A thinking level in place of the thinking switch, for models whose template takes one (ThinkingLevels). The first
-/// choice (Off, or None for Inkling 2, which asks for effort 0 and may still think) sends the model's thinking-off
+/// choice (None; for Inkling 2 it asks for effort 0 and may still think) sends the model's thinking-off
 /// prompt; the other levels turn thinking on at that level, saved for the next reply.
 struct ThinkingLevelTile: View {
     @EnvironmentObject var settings: AppSettings

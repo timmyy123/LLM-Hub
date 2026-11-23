@@ -14,10 +14,10 @@ class ThinkingLevelsTest {
         assertEquals(0f, first.effort)
     }
 
-    @Test fun theOtherPickersStartWithOff() {
+    @Test fun theOtherPickersStartWithNone() {
         for (name in listOf("Muse Glimmer 30B (UD-IQ2_XXS)", "GPT-OSS 20B (Q4_K_M)", "Granite 4.2 3B (Q4_0)")) {
             val spec = levels(name)
-            assertEquals(name, com.llmhub.llmhub.R.string.thinking_level_off, spec.levels.first().labelRes)
+            assertEquals(name, com.llmhub.llmhub.R.string.thinking_level_none, spec.levels.first().labelRes)
         }
     }
 

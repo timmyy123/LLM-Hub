@@ -317,24 +317,13 @@ fun WritingAidScreen(
                     }
                 }
                                 // Thinking toggle (shown only for thinking/reasoning models)
-                if (isThinkingOrHarmonyModel) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = stringResource(R.string.enable_thinking),
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Medium
-                        )
-                        Switch(
-                            checked = enableThinking,
-                            onCheckedChange = { viewModel.setEnableThinking(it) }
-                        )
-                    }
+                if (isThinkingOrHarmonyModel || com.llmhub.llmhub.data.ThinkingLevels.forModel(selectedModel) != null) {
+                    com.llmhub.llmhub.components.ThinkingSwitchOrLevel(
+                        model = selectedModel,
+                        enableThinking = enableThinking,
+                        onEnableThinking = { viewModel.setEnableThinking(it) },
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                    )
                 }
                                 Spacer(modifier = Modifier.height(32.dp))
             }
