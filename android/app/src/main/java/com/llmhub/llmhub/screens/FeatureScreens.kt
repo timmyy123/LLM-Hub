@@ -250,6 +250,7 @@ fun TranslatorScreen(
     val visionEnabled by viewModel.visionEnabled.collectAsState()
     val audioEnabled by viewModel.audioEnabled.collectAsState()
     val enableThinking by viewModel.enableThinking.collectAsState()
+    val flashStreamingTranslator = com.llmhub.llmhub.components.rememberFlashStreamingState(selectedModel)
     val isThinkingOrHarmonyModelTranslator by remember(selectedModel) {
         derivedStateOf {
             val name = selectedModel?.name?.lowercase() ?: ""
@@ -499,9 +500,17 @@ fun TranslatorScreen(
                         viewModel.loadModel()
                     },
                     onUnloadModel = { viewModel.unloadModel() },
+                    flashStreamingState = flashStreamingTranslator,
                     modifier = Modifier.fillMaxWidth()
                 )
                 
+                // Flash streaming (MoE GGUF models only)
+                if (flashStreamingTranslator.isMoe) {
+                    Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                        com.llmhub.llmhub.components.FlashStreamingModelSwitch(selectedModel, flashStreamingTranslator)
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(8.dp))
                 
                 // Vision toggle

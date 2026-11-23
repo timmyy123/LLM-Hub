@@ -1,10 +1,10 @@
-# LLM Hub 🤖
+# LLM Hub
 
 <a href="https://trendshift.io/repositories/21767?utm_source=repository-badge&amp;utm_medium=badge&amp;utm_campaign=badge-repository-21767" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/repositories/21767" alt="timmyy123%2FLLM-Hub | Trendshift" width="250" height="55"/></a>
 
 **LLM Hub** is an open-source mobile app for on-device LLM chat, image generation, video generation, and music generation, available for both **Android** and **iOS**, and now on **Windows**, **macOS** and **Linux** as LLM Hub Desktop. It's optimized for mobile usage (CPU/GPU/NPU acceleration) and supports multiple model formats so you can run powerful models locally and privately.
 
-🌟 **Featured:** Featured by **RunAnywhere** on their website — read the [LLM Hub iOS Case Study](https://www.runanywhere.ai/blog/llm-hub-ios-case-study)!
+**Featured:** Featured by **RunAnywhere** on their website. Read the [LLM Hub iOS Case Study](https://www.runanywhere.ai/blog/llm-hub-ios-case-study)!
 
 ## Download
 
@@ -19,7 +19,7 @@
   </tr>
 </table>
 
-### 💻 LLM Hub Desktop
+### LLM Hub Desktop
 
 **LLM Hub Desktop 0.1.3** is out: native apps for Windows, macOS and Linux. Chat with local models, run Claude Code and OpenClaw on them, turn prompts into slides and pages, generate images, video and music, and serve OpenAI and Anthropic compatible APIs to your other apps. No account and no cloud. See the [release notes](https://github.com/timmyy123/LLM-Hub/releases/tag/desktop-v0.1.3) for what's new and checksums.
 
@@ -43,7 +43,7 @@ Free code signing provided by [SignPath.io](https://about.signpath.io), certific
 - Privacy: see the [LLM Hub privacy policy](https://llm-hub.app/privacy)
 
 
-## 📸 Demo & Screenshots
+## Demo & Screenshots
 
 | Vibe Coder Demo on iOS | Image Generation on Android |
 | :-: | :-: |
@@ -55,29 +55,29 @@ Free code signing provided by [SignPath.io](https://about.signpath.io), certific
 | <img src="android_agent_termux_demo.gif" width="300" style="border-radius:8px;" /> | <img src="music_generator_demo.gif" width="300" style="border-radius:8px;" /> |
 | Autonomous AI Agent executing Termux shell commands (`ls` list files) with live terminal output on Android | On-device music generation with Magenta Realtime 2 on iPhone |
 
-## 🚀 Features
+## Features
 
-### 🛠️ AI Tools Suite
+### AI Tools Suite
 | Tool | Description |
 |------|-------------|
-| **💬 Chat** | Multi-turn conversations with RAG memory, web search, TTS auto-readout, and multimodal input |
-| **🤖 AI Agent** | **[NEW]** Autonomous device agent with function calling, interactive maps, device tools, MCP tools, and Termux terminal command generation on Android |
-| **🤖 creAItor** | **[NEW]** Design custom AI personas with specialized system prompts (PCTF) in seconds |
-| **💻 Vibe Coder** | **[NEW]** Build apps with live HTML/JS preview; Android also runs Codex and Claude Code through Termux using your selected local model |
-| **✍️ Writing Aid** | Summarize, expand, rewrite, improve grammar, or generate code from descriptions |
-| **🎨 Image Generator** | Create images from text prompts using Stable Diffusion 1.5 with swipeable gallery |
-| **🎵 Music Generator** | **[NEW]** Generate music and sound effects locally with SoundGen on Android and Magenta Realtime 2 on iOS, including live playback as music is generated |
-| **🔎 Instant Media Search** | **[NEW]** Search photos and videos by description or a reference image on Android and iOS using on-device EmbeddingGemma 2 |
-| **🎞️ Video Moment Finder** | **[NEW]** Describe a moment in a video and jump to matching timestamps using visual and audio embeddings on Android and iOS |
-| **🔊 Text to Speech & Voice Cloning** | Android supports Kokoro, multilingual Supertonic 3 with voice-profile import, and Pocket TTS with on-device voice cloning |
-| **🔍 Image Upscale** | **[NEW]** Upscale images up to 4× using AI super-resolution models (RealESRGAN, UltraSharp) with NPU acceleration |
-| **🎥 Video Generator** | **[NEW]** Generate videos from text prompts or images: LTX-Video on Android (Snapdragon NPU, Vulkan GPU or CPU), Stable Video Diffusion on iOS |
-| **🌍 Translator** | Translate text, images (OCR), and audio across 50+ languages - offline |
-| **🎙️ Transcriber** | Convert speech to text with on-device processing using Whisper models |
-| **🛡️ Scam Detector** | Analyze messages and images for phishing with risk assessment |
-| **🗣️ VibeVoice** | **[NEW]** Hands-free AI voice chat |
+| **Chat** | Multi-turn conversations with RAG memory, web search, TTS auto-readout, and multimodal input |
+| **AI Agent** | **[NEW]** Autonomous device agent with function calling, interactive maps, device tools, MCP tools, and Termux terminal command generation on Android |
+| **creAItor** | **[NEW]** Design custom AI personas with specialized system prompts (PCTF) in seconds |
+| **Vibe Coder** | **[NEW]** Build apps with live HTML/JS preview; Android also runs Codex and Claude Code through Termux using your selected local model |
+| **Writing Aid** | Summarize, expand, rewrite, improve grammar, or generate code from descriptions |
+| **Image Generator** | Create images from text prompts using Stable Diffusion 1.5 with swipeable gallery |
+| **Music Generator** | **[NEW]** Generate music and sound effects locally with SoundGen on Android and Magenta Realtime 2 on iOS, including live playback as music is generated |
+| **Instant Media Search** | **[NEW]** Search photos and videos by description or a reference image on Android and iOS using on-device EmbeddingGemma 2 |
+| **Video Moment Finder** | **[NEW]** Describe a moment in a video and jump to matching timestamps using visual and audio embeddings on Android and iOS |
+| **Text to Speech & Voice Cloning** | Android supports Kokoro, multilingual Supertonic 3 with voice-profile import, and Pocket TTS with on-device voice cloning |
+| **Image Upscale** | **[NEW]** Upscale images up to 4× using AI super-resolution models (RealESRGAN, UltraSharp) with NPU acceleration |
+| **Video Generator** | **[NEW]** Generate videos from text prompts or images: LTX-Video on Android (Snapdragon NPU, Vulkan GPU or CPU), Stable Video Diffusion on iOS |
+| **Translator** | Translate text, images (OCR), and audio across 50+ languages - offline |
+| **Transcriber** | Convert speech to text with on-device processing using Whisper models |
+| **Scam Detector** | Analyze messages and images for phishing with risk assessment |
+| **VibeVoice** | **[NEW]** Hands-free AI voice chat |
 
-### 🤖 AI Agent & Termux Terminal Command Generation
+### AI Agent & Termux Terminal Command Generation
 The **AI Agent** turns on-device LLMs into autonomous assistants with device function calling capabilities:
 - **Device Actions & Function Calling**: Embedded interactive maps (OpenStreetMap), calendar management, alarm setup, flashlight toggle, SMS & Email composition, cryptographic hashing (SHA-256/MD5), and math calculation.
 - **MCP Tools**: Connect Model Context Protocol (MCP) servers so the Agent can discover and use external tools such as filesystem, search, document, memory, or custom hosted tools. MCP calls require user approval before execution.
@@ -86,40 +86,40 @@ The **AI Agent** turns on-device LLMs into autonomous assistants with device fun
 - **Live Dark Terminal Container**: Formats and streams live command outputs (`stdout`/`stderr`) in a dark monospace terminal UI block.
 - **AI Error Auto-Correction Loop**: When a shell command fails or encounters permission/syntax errors, the agent automatically feeds the error logs back into the LLM for self-diagnostics and auto-generates fix commands.
 
-### 🎙️ Supported ASR Models (Android)
+### Supported ASR Models (Android)
 The offline **Transcriber** feature on Android supports on-device Whisper models for high-accuracy local speech-to-text.
 
-### 🔊 Android Text to Speech & Voice Cloning
+### Android Text to Speech & Voice Cloning
 - **Kokoro**: Local speech with downloadable voices managed in Settings.
 - **Supertonic 3**: Multilingual on-device speech with downloadable presets and import of compatible voice-style JSON files. Raw audio cloning and Pocket TTS voice states are not supported by Supertonic's importer. See [Supertonic 3 setup](android/docs/supertonic-3.md).
-- **Pocket TTS**: English speech and fully local voice cloning from recorded or imported audio. Manage, select, rename and delete cloned voices in Settings. Cloning uses 3–30 seconds of reference audio; longer imports use their first 30 seconds. See [Pocket TTS setup](android/docs/pocket-tts.md).
+- **Pocket TTS**: English speech and fully local voice cloning from recorded or imported audio. Manage, select, rename and delete cloned voices in Settings. Cloning uses 3 to 30 seconds of reference audio; longer imports use their first 30 seconds. See [Pocket TTS setup](android/docs/pocket-tts.md).
 - Selecting an engine and voice in Settings applies it to app-wide speech and auto-readout. Translator keeps system TTS.
 
-### 🔎 Media Search & Video Moment Finder
+### Media Search & Video Moment Finder
 On Android and iOS, **Instant Media Search** uses EmbeddingGemma 2 to index photos and videos locally, then find matches from a text description or reference image. **Video Moment Finder** combines video frames and audio from two-second windows so you can search for a scene or event and play the matching moment. Download a compatible EmbeddingGemma 2 model and choose the media to index; search runs on-device.
 
-### 💻 Android Vibe Coder, Codex & Claude Code
+### Android Vibe Coder, Codex & Claude Code
 Enable **Codex mode** in Vibe Coder's model settings to use the selected on-device model with the Codex app server running in Termux. Codex can inspect project files, edit code and run project commands, with streamed activity and terminal output in the app. This mode requires an ARM64 device running Android 10 or newer and does not require an OpenAI login. Install Termux, allow external app commands, grant LLM Hub permission to run Termux commands, and use the in-app **Install Codex** action before starting.
 
 Enable **Claude Code mode** in the same settings to run Claude Code in Termux on the selected on-device model instead. It reads and edits project files and runs commands the same way, and does not require an Anthropic account. The requirements and Termux setup are the same; use the in-app **Install Claude Code in Termux** action before starting. Only one of the two modes can be on at a time.
 
-### 🎥 Android Video Generation
+### Android Video Generation
 The Android Video Generator runs [Lightricks LTX-Video 2B 0.9.8 distilled](https://huggingface.co/Lightricks/LTX-Video) fully on-device, from a text prompt or a starting image, in 8 denoising steps.
 - **Snapdragon NPU**: The transformer and VAE decoder run on the Hexagon NPU as QNN context binaries, one build per Hexagon generation: v69 (8 Gen 1, 8+ Gen 1), v73 (8 Gen 2), v75 (8 Gen 3), v79 (8 Elite) and v81 (8 Elite Gen 5), plus an integer-only v73 build for chips whose NPU has no FP16 (8s Gen 4, 8s Gen 3, 7+ Gen 3, 7 Gen 4). A 25-frame 768x512 clip takes about 25 seconds on a Snapdragon 8 Elite; v69 and v73 chips generate at 512x320. Models: [timmyboy26/LTX-Video-2B-0.9.8-distilled-QNN](https://huggingface.co/timmyboy26/LTX-Video-2B-0.9.8-distilled-QNN).
 - **Other chips**: GGUF models (Q4_0 / Q8_0) run through stable-diffusion.cpp with Vulkan on the GPU, or on the CPU. A 25-frame 512x320 clip takes about 3 minutes on an Exynos 1580 (Galaxy A56) and about 20 minutes on a Tensor G3 (Pixel 8 Pro).
 - Open **Video Generator**, download a model from the Video Generation tab, and choose the model and backend in the settings sheet. Detailed prompts that describe the subject, action, camera and lighting work best.
 - The scripts that build the NPU models are in [android/tools/ltxv_qnn](android/tools/ltxv_qnn).
 
-### 🎵 iOS Live Music Generation
+### iOS Live Music Generation
 The iOS Music Generator supports **Live generation** with Magenta Realtime 2: hear audio as it is generated while the app writes it to a local file. Enable **Unlimited duration** to keep generating until you press Stop, or use a fixed duration. Fixed-duration output uses WAV; unlimited sessions use CAF for long recordings.
 
-### 🔐 Privacy First
+### Privacy First
 - **100% on-device processing** - no internet required for inference
 - **Zero data collection** - conversations never leave your device
 - **No accounts, no tracking** - completely private
 - **Open-source** - fully transparent
 
-### ⚡ Advanced Capabilities
+### Advanced Capabilities
 - GPU/NPU acceleration for fast performance
 - Text-to-Speech with auto-readout
 - RAG with global memory for enhanced responses
@@ -127,7 +127,7 @@ The iOS Music Generator supports **Live generation** with Magenta Realtime 2: he
 - Direct downloads from HuggingFace
 - 17 language interfaces
 
-### 🦙 LLM Hub's patched llama.cpp (Aion, flash streaming, NPU/GPU fixes)
+### LLM Hub's patched llama.cpp (Aion, flash streaming, NPU/GPU fixes)
 The apps run their own build of [llama.cpp](https://github.com/ggml-org/llama.cpp) with these fixes, published with
 prebuilt binaries in the [llama.cpp releases](https://github.com/timmyy123/LLM-Hub/releases?q=llama.cpp&expanded=true)
 (each release names the upstream version it is built on)
@@ -196,19 +196,20 @@ Technology
 
 
 Acknowledgments
-- [GenieX SDK](https://github.com/qualcomm/GenieX) — GGUF model inference support (credit shown in-app About) ⚡
-- [llama.cpp](https://github.com/ggml-org/llama.cpp) — GGUF inference on Android and iOS (patched build in the releases)
-- [BigMoeOnEdge](https://github.com/Helldez/BigMoeOnEdge) — the expert-streaming engine behind flash streaming (Apache-2.0)
-- [WhisperKit](https://github.com/argmaxinc/WhisperKitAndroid) — On-device ASR with TFLite + NPU acceleration
-- [whisper.cpp](https://github.com/ggml-org/whisper.cpp) — On-device ASR/transcription support on iOS
-- [Run Anywhere SDK](https://github.com/RunanywhereAI/runanywhere-sdks) — iOS model runtime and LLM execution framework 🚀
-- [Draw Things](https://drawthings.ai/) — iOS image and video generation engine (MediaGenerationKit) 🎨
-- [PocketTTS.cpp](https://github.com/VolgaGerm/PocketTTS.cpp) — Android local speech and voice cloning integration
-- [Supertone Supertonic 3](https://huggingface.co/Supertone/supertonic-3) — Multilingual on-device TTS and voice presets
-- [Lightricks LTX-Video](https://huggingface.co/Lightricks/LTX-Video) — Android video generation model (LTX-Video Open Weights License)
-- [stable-diffusion.cpp](https://github.com/leejet/stable-diffusion.cpp) — Android video generation runtime, extended with LTX-Video 0.9 and a QNN backend
-- [calcuis/ltxv-gguf](https://huggingface.co/calcuis/ltxv-gguf) — GGUF builds of LTX-Video, T5-XXL and the VAE
-- **Google, OpenAI, Meta, Microsoft, IBM, LiquidAI, Mistral, HuggingFace** — model and tooling contributions
+- [GenieX SDK](https://github.com/qualcomm/GenieX): GGUF model inference support (credit shown in-app About)
+- [llama.cpp](https://github.com/ggml-org/llama.cpp): GGUF inference on Android and iOS (patched build in the releases)
+- [BigMoeOnEdge](https://github.com/Helldez/BigMoeOnEdge): the expert-streaming engine behind flash streaming (Apache-2.0)
+- [WhisperKit](https://github.com/argmaxinc/WhisperKitAndroid): On-device ASR with TFLite + NPU acceleration
+- [whisper.cpp](https://github.com/ggml-org/whisper.cpp): On-device ASR/transcription support on iOS
+- [Run Anywhere SDK](https://github.com/RunanywhereAI/runanywhere-sdks): iOS model runtime and LLM execution framework
+- [Draw Things](https://drawthings.ai/): iOS image and video generation engine (MediaGenerationKit)
+- [Local Dream](https://github.com/xororz/local-dream): Android image generation and image upscale engine (Stable Diffusion on Snapdragon NPU and CPU)
+- [PocketTTS.cpp](https://github.com/VolgaGerm/PocketTTS.cpp): Android local speech and voice cloning integration
+- [Supertone Supertonic 3](https://huggingface.co/Supertone/supertonic-3): Multilingual on-device TTS and voice presets
+- [Lightricks LTX-Video](https://huggingface.co/Lightricks/LTX-Video): Android video generation model (LTX-Video Open Weights License)
+- [stable-diffusion.cpp](https://github.com/leejet/stable-diffusion.cpp): Android video generation runtime, extended with LTX-Video 0.9 and a QNN backend
+- [calcuis/ltxv-gguf](https://huggingface.co/calcuis/ltxv-gguf): GGUF builds of LTX-Video, T5-XXL and the VAE
+- **Google, OpenAI, Meta, Microsoft, IBM, LiquidAI, Mistral, HuggingFace**: model and tooling contributions
 
 Development Setup
 

@@ -682,7 +682,7 @@ enum DeviceSelfTests {
     }
 
     /// The model under LLMHUB_TEST_MODEL (catalog name) at every thinking level of its picker (ThinkingLevels): Off
-    /// (None for Inkling) with thinking off, the rest with it on. Asks the bat-and-ball question once per level and
+    /// None with thinking off, the rest with it on. Asks the bat-and-ball question once per level and
     /// logs the thought's length, the answer and decode tok/s. Downloads the model when missing.
     static func checkThinkingLevels() async throws -> [String] {
         let backend = LLMBackend.shared

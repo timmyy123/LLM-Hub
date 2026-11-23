@@ -125,7 +125,7 @@ class LlamaCppMoeVisionDeviceTest {
 
     /**
      * Every thinking level of a model with a level picker (ThinkingLevels: Inkling 2, Muse Glimmer, GPT-OSS, Granite
-     * 4.2), each saved as the model's level and loaded on the CPU as the app does: Off (None for Inkling) with
+     * 4.2), each saved as the model's level and loaded on the CPU as the app does: None with
      * thinking off, the rest with it on. Logs the thought and answer per level; generated token counts are the
      * runtime's "Turn:" lines, one per level in order. `-e method effortLevels -e efforts all`, plus `-e model_name`
      * and `-e model_sha256` for a model other than Inkling.

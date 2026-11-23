@@ -96,6 +96,7 @@ fun VibeVoiceScreen(
     val availableLlmModels by viewModel.availableLlmModels.collectAsState()
     val availableAsrModels by viewModel.availableAsrModels.collectAsState()
     val selectedModel by viewModel.selectedModel.collectAsState()
+    val flashStreamingVoice = com.llmhub.llmhub.components.rememberFlashStreamingState(selectedModel)
     val enableThinking by viewModel.enableThinking.collectAsState()
     val selectedVoiceModel by viewModel.selectedVoiceModel.collectAsState()
     val hasRequiredModels by viewModel.hasRequiredModels.collectAsState()
@@ -591,8 +592,16 @@ fun VibeVoiceScreen(
                     onAsrBackendSelected = { viewModel.selectAsrBackend(it) },
                     llmModelLabel = stringResource(R.string.llm_model),
                     voiceModelLabel = stringResource(R.string.voice_model),
-                    backendLabel = stringResource(R.string.llm_model_backend)
+                    backendLabel = stringResource(R.string.llm_model_backend),
+                    flashStreamingState = flashStreamingVoice
                 )
+
+                // Flash streaming (MoE GGUF models only)
+                if (flashStreamingVoice.isMoe) {
+                    Box(modifier = Modifier.padding(top = 16.dp)) {
+                        com.llmhub.llmhub.components.FlashStreamingModelSwitch(selectedModel, flashStreamingVoice)
+                    }
+                }
 
                 // Thinking toggle (LFM3 thinks before it answers; the thinking is never spoken)
                 if (selectedModel?.isLfm3() == true) {
