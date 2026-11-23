@@ -562,7 +562,7 @@ fun TranslatorScreen(
                 }
                 
                 // Thinking toggle (shown only for thinking/reasoning models)
-                if (isThinkingOrHarmonyModelTranslator || com.llmhub.llmhub.data.ThinkingLevels.forModel(selectedModel) != null) {
+                if (isThinkingOrHarmonyModelTranslator) {
                     com.llmhub.llmhub.components.ThinkingSwitchOrLevel(
                         model = selectedModel,
                         enableThinking = enableThinking,
@@ -2268,7 +2268,7 @@ fun ScamDetectorScreen(
                         name.contains("gpt-oss") || name.contains("gpt_oss") ||
                         model.isLfm3() || model.isGemma4GgufThinking()
                 } == true
-                if (isThinkingOrHarmonyModelScam || com.llmhub.llmhub.data.ThinkingLevels.forModel(selectedModel) != null) {
+                if (isThinkingOrHarmonyModelScam) {
                     com.llmhub.llmhub.components.ThinkingSwitchOrLevel(
                         model = selectedModel,
                         enableThinking = enableThinkingScam,

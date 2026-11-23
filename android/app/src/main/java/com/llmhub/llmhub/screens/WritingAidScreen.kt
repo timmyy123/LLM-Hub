@@ -317,7 +317,7 @@ fun WritingAidScreen(
                     }
                 }
                                 // Thinking toggle (shown only for thinking/reasoning models)
-                if (isThinkingOrHarmonyModel || com.llmhub.llmhub.data.ThinkingLevels.forModel(selectedModel) != null) {
+                if (isThinkingOrHarmonyModel) {
                     com.llmhub.llmhub.components.ThinkingSwitchOrLevel(
                         model = selectedModel,
                         enableThinking = enableThinking,
