@@ -182,12 +182,16 @@ fun LLMModel.hasDownloadedVisionProjector(context: Context): Boolean {
  */
 fun LLMModel.isOtherCatalogModelsProjector(fileName: String): Boolean {
     if (source == "Custom" || ModelData.models.none { it.name == name }) return false
-    val owner = ModelData.models.firstOrNull { candidate ->
+    // Several families ship a projector under the same file name (Gemma 4 12B, 26B-A4B and 31B all use
+    // mmproj-F16.gguf), so the file is another model's only when none of its catalog owners is this model's family.
+    val owners = ModelData.models.filter { candidate ->
         candidate.modelFormat.equals("gguf", ignoreCase = true) &&
             candidate.name.contains("Projector", ignoreCase = true) &&
             candidate.localFileName().equals(fileName, ignoreCase = true)
-    } ?: return false
-    return normalizeVisionPairBaseName(owner.name) != normalizeVisionPairBaseName(name)
+    }
+    if (owners.isEmpty()) return false
+    val family = normalizeVisionPairBaseName(name)
+    return owners.none { normalizeVisionPairBaseName(it.name) == family }
 }
 
 private fun normalizeVisionPairBaseName(modelName: String): String {

@@ -234,7 +234,8 @@ final class ImageExtrasDeviceTests: XCTestCase {
 
     /// Inkling 2 Mini (UD-Q2_K_XL, about 9.1 GB download, deleted afterwards) with flash streaming on and off: thinking on shows
     /// a thinking block then "Paris", thinking off shows the answer alone. Opt-in: LLMHUB_INKLING_TESTS=1
-    /// (xcodebuild: TEST_RUNNER_LLMHUB_INKLING_TESTS=1); another quant with LLMHUB_INKLING_QUANT.
+    /// (xcodebuild: TEST_RUNNER_LLMHUB_INKLING_TESTS=1); another quant with LLMHUB_INKLING_QUANT, another vision model
+    /// with LLMHUB_TEST_MODEL and LLMHUB_TEST_PROJECTOR (catalog names).
     func testInklingThinkingAfterDownload() async throws {
         #if targetEnvironment(simulator)
         throw XCTSkip("Run Inkling coverage on a physical device or a Mac")

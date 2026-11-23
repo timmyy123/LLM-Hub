@@ -555,7 +555,11 @@ enum DeviceSelfTests {
     }
 
     /// The Inkling 2 Mini quant under test: `-InklingQuant UD-IQ2_XXS` or LLMHUB_INKLING_QUANT (default UD-Q2_K_XL).
+    /// LLMHUB_TEST_MODEL and LLMHUB_TEST_PROJECTOR run the same checks on another vision catalog model by name.
     private static func inklingTestModel() -> AIModel? {
+        if let name = ProcessInfo.processInfo.environment["LLMHUB_TEST_MODEL"] {
+            return ModelData.allModels().first { $0.name == name }
+        }
         let arguments = ProcessInfo.processInfo.arguments
         let quant = arguments.firstIndex(of: "-InklingQuant").flatMap { $0 + 1 < arguments.count ? arguments[$0 + 1] : nil }
             ?? ProcessInfo.processInfo.environment["LLMHUB_INKLING_QUANT"] ?? "UD-Q2_K_XL"
@@ -563,7 +567,10 @@ enum DeviceSelfTests {
     }
 
     private static func inklingProjector() -> AIModel? {
-        ModelData.allModels().first { $0.name == "Inkling 2 Mini (Vision Projector, Q8_0)" }
+        if let name = ProcessInfo.processInfo.environment["LLMHUB_TEST_PROJECTOR"] {
+            return ModelData.allModels().first { $0.name == name }
+        }
+        return ModelData.allModels().first { $0.name == "Inkling 2 Mini (Vision Projector, Q8_0)" }
     }
 
     /// Deletes the quant and the vision projector checkInkling downloaded.
@@ -625,7 +632,9 @@ enum DeviceSelfTests {
         var failures = [String]()
         // Flash streaming on (the prompt on Metal, decode on the CPU), then off (every layer on Metal); with
         // LLMHUB_INKLING_CPU=1 also off on the CPU backend.
-        var configs: [(flash: Bool, backend: String)] = [(true, "GPU"), (false, "GPU")]
+        // LLMHUB_INKLING_FLASH_ONLY=1 skips the all-layers runs (a phone cannot hold the whole model).
+        var configs: [(flash: Bool, backend: String)] = [(true, "GPU")]
+        if ProcessInfo.processInfo.environment["LLMHUB_INKLING_FLASH_ONLY"] != "1" { configs.append((false, "GPU")) }
         if ProcessInfo.processInfo.environment["LLMHUB_INKLING_CPU"] == "1" { configs.append((false, "CPU")) }
         for (flash, backendName) in configs {
             backend.selectedBackend = backendName
