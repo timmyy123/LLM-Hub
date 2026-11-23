@@ -232,6 +232,18 @@ final class ImageExtrasDeviceTests: XCTestCase {
         try await DeviceSelfTests.checkLfm3Vision().forEach { XCTFail($0) }
     }
 
+    /// Inkling 2 Mini (UD-Q2_K_XL, about 9.1 GB download, deleted afterwards) with flash streaming: thinking on shows
+    /// a thinking block then "Paris", thinking off shows the answer alone. Opt-in: LLMHUB_INKLING_TESTS=1
+    /// (xcodebuild: TEST_RUNNER_LLMHUB_INKLING_TESTS=1); another quant with LLMHUB_INKLING_QUANT.
+    func testInklingThinkingAfterDownload() async throws {
+        #if targetEnvironment(simulator)
+        throw XCTSkip("Run Inkling coverage on a physical device or a Mac")
+        #endif
+        try XCTSkipUnless(ProcessInfo.processInfo.environment["LLMHUB_INKLING_TESTS"] == "1", "Opt-in: set LLMHUB_INKLING_TESTS=1")
+        defer { DeviceSelfTests.removeInklingTestModel() }
+        try await DeviceSelfTests.checkInkling().forEach { XCTFail($0) }
+    }
+
     func testZZRemoveOwnedTestFixtures() throws {
         let fm = FileManager.default
         let names = ["llmhub-test-lora", "llmhub-test-portable-lora", "llmhub-test-embedding", "LLMHUB-TEST-EMBEDDING"]

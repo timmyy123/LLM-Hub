@@ -45,11 +45,7 @@ enum DeviceSelfTests {
                     case "flash-moe": failures += try await checkFlashStreamingMoe()
                     case "flash-moe-gpu": failures += try await checkFlashStreamingGpuPrefill()
                     case "inkling": failures += try await checkInkling()
-                    case "inkling-clean":
-                        if let model = inklingTestModel(),
-                           let folder = try? SimplifiedFileManager.shared.getModelFolderURL(modelId: model.id, framework: .llamaCpp) {
-                            try? FileManager.default.removeItem(at: folder)
-                        }
+                    case "inkling-clean": removeInklingTestModel()
                     default: failures.append("Unknown self-test \(check)")
                     }
                 } catch {
@@ -558,11 +554,20 @@ enum DeviceSelfTests {
         return failures
     }
 
-    /// The Inkling 2 Mini quant under test: `-InklingQuant UD-IQ2_XXS` (default UD-Q2_K_XL).
+    /// The Inkling 2 Mini quant under test: `-InklingQuant UD-IQ2_XXS` or LLMHUB_INKLING_QUANT (default UD-Q2_K_XL).
     private static func inklingTestModel() -> AIModel? {
         let arguments = ProcessInfo.processInfo.arguments
-        let quant = arguments.firstIndex(of: "-InklingQuant").flatMap { $0 + 1 < arguments.count ? arguments[$0 + 1] : nil } ?? "UD-Q2_K_XL"
+        let quant = arguments.firstIndex(of: "-InklingQuant").flatMap { $0 + 1 < arguments.count ? arguments[$0 + 1] : nil }
+            ?? ProcessInfo.processInfo.environment["LLMHUB_INKLING_QUANT"] ?? "UD-Q2_K_XL"
         return ModelData.allModels().first { $0.name == "Inkling 2 Mini (\(quant), GGUF)" }
+    }
+
+    /// Deletes the quant checkInkling downloaded.
+    static func removeInklingTestModel() {
+        if let model = inklingTestModel(),
+           let folder = try? SimplifiedFileManager.shared.getModelFolderURL(modelId: model.id, framework: .llamaCpp) {
+            try? FileManager.default.removeItem(at: folder)
+        }
     }
 
     /// Inkling 2 Mini with flash streaming on the GPU backend (the prompt on Metal, decode on the CPU): thinking on
