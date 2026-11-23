@@ -1329,7 +1329,8 @@ class LLMBackend: ObservableObject {
             let stream = await DirectLlamaCppBackend.shared.stream(
                 prompt: usePrompt, imageData: imageData,
                 maxTokens: effectiveMaxTokens, temperature: temperature,
-                topK: topK, topP: topP, stopSequences: effectiveStops
+                topK: topK, topP: topP, stopSequences: effectiveStops,
+                renderSpecialTokens: isInklingModel
             )
             // When the prompt pre-fills an open <think> (LFM, Granite 4.2), the model's output
             // never contains it. Re-add it so the UI can tell reasoning from the answer even if

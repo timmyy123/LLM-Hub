@@ -6,6 +6,8 @@ import LLMHubBmoe
 public actor DirectLlamaCppBackend {
     /// The last flash-streamed reply's prompt: tokens read and seconds taken (prompt tok/s = tokens / seconds).
     public private(set) var lastFlashPrompt: (tokens: Int, seconds: Double)?
+    /// The last prompt read without flash streaming: tokens and seconds.
+    public private(set) var lastPrompt: (tokens: Int, seconds: Double)?
     public static let shared = DirectLlamaCppBackend()
 
     public struct Update: Sendable {
@@ -174,7 +176,8 @@ public actor DirectLlamaCppBackend {
         return String(decoding: buffer.prefix(Int(length)).map(UInt8.init(bitPattern:)), as: UTF8.self)
     }
 
-    /// Emits cumulative UTF-8 text, matching LLMBackend's existing UI contract.
+    /// Emits cumulative UTF-8 text, matching LLMBackend's existing UI contract. [renderSpecialTokens] keeps control
+    /// tokens in the text for chat formats whose blocks are control tokens (Inkling 2); flash streaming always keeps them.
     public func stream(
         prompt: String,
         imageData: Data? = nil,
@@ -182,7 +185,8 @@ public actor DirectLlamaCppBackend {
         temperature: Float,
         topK: Int,
         topP: Float,
-        stopSequences: [String]
+        stopSequences: [String],
+        renderSpecialTokens: Bool = false
     ) -> AsyncThrowingStream<Update, Error> {
         AsyncThrowingStream { continuation in
             let task = Task {
@@ -190,7 +194,8 @@ public actor DirectLlamaCppBackend {
                     try self.generate(
                         prompt: prompt, imageData: imageData, maxTokens: maxTokens,
                         temperature: temperature, topK: topK, topP: topP,
-                        stopSequences: stopSequences, continuation: continuation
+                        stopSequences: stopSequences, renderSpecialTokens: renderSpecialTokens,
+                        continuation: continuation
                     )
                     continuation.finish()
                 } catch {
@@ -209,6 +214,7 @@ public actor DirectLlamaCppBackend {
         topK: Int,
         topP: Float,
         stopSequences: [String],
+        renderSpecialTokens: Bool = false,
         continuation: AsyncThrowingStream<Update, Error>.Continuation
     ) throws {
         if let flash {
@@ -224,6 +230,7 @@ public actor DirectLlamaCppBackend {
         }
         llama_memory_clear(llama_get_memory(context), false)
         var nextPosition: Int32 = 0
+        let prefillStarted = Date()
         if let imageData {
             guard let vision else { throw RuntimeError.inference("This GGUF has no loaded vision projector") }
             nextPosition = try prefillVision(prompt: prompt, imageData: imageData, context: context, vision: vision)
@@ -231,6 +238,7 @@ public actor DirectLlamaCppBackend {
             nextPosition = try prefillText(prompt: prompt, context: context, vocab: vocab)
         }
 
+        lastPrompt = (Int(nextPosition), Date().timeIntervalSince(prefillStarted))
         let remaining = Int(llama_n_ctx(context)) - Int(nextPosition) - 1
         guard remaining > 0 else { throw RuntimeError.inference("Prompt exceeds the configured context window") }
 
@@ -256,10 +264,10 @@ public actor DirectLlamaCppBackend {
             generated += 1
 
             var piece = [CChar](repeating: 0, count: 256)
-            var count = llama_token_to_piece(vocab, token, &piece, Int32(piece.count), 0, false)
+            var count = llama_token_to_piece(vocab, token, &piece, Int32(piece.count), 0, renderSpecialTokens)
             if count < 0 {
                 piece = [CChar](repeating: 0, count: Int(-count))
-                count = llama_token_to_piece(vocab, token, &piece, Int32(piece.count), 0, false)
+                count = llama_token_to_piece(vocab, token, &piece, Int32(piece.count), 0, renderSpecialTokens)
             }
             if count > 0 {
                 utf8Pending.append(contentsOf: piece.prefix(Int(count)).map(UInt8.init(bitPattern:)))
