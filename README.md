@@ -138,7 +138,7 @@ for every backend the apps use: Android CPU, Vulkan GPU, Snapdragon OpenCL GPU a
   Hexagon NPU (Android) or Metal GPU (iOS/macOS), decoding runs on the CPU. Built on [BigMoeOnEdge](https://github.com/Helldez/BigMoeOnEdge)
 - **Hexagon NPU**: SET_ROWS (KV-cache writes) kept off the NPU for flash streaming, which hung Gemma 4; HTP repack fixes
 - **OpenCL (Adreno)**: copy-kernel fix that brings decode with flash attention back from 7.7 to 17-18 tok/s on the Tab S9+
-- **Vulkan (Mali, Xclipse, Adreno and other Android GPUs)**: runs on Android API 27 (`vkGetPhysicalDeviceFeatures2`
+- **Vulkan (Mali, Xclipse and other non-Snapdragon Android GPUs)**: runs on Android API 27 (`vkGetPhysicalDeviceFeatures2`
   through the dispatcher); a failed shader compile errors out instead of hanging the other threads, and reaches logcat;
   drivers below Vulkan 1.2 (such as Mali-G57, which reports 1.1) are skipped instead of crashing
 - **Metal**: NVFP4 weights, including MoE experts (port of ggml-org/llama.cpp#32825), so Inkling 2 Mini reads its prompt on the iPhone GPU
