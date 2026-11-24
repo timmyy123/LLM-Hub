@@ -43,6 +43,42 @@ private extension View {
     }
 }
 
+/// True while a navigation transition brings Home back into view. During a pop the pushed
+/// screen's navigation bar is still on screen until the animation ends, and Home's soft top
+/// edge sizes itself to that bar, blurring Home's own title row for the length of the animation.
+private struct HomeReturnTransitionReader: UIViewControllerRepresentable {
+    @Binding var isReturning: Bool
+
+    func makeUIViewController(context: Context) -> ReaderController {
+        let controller = ReaderController()
+        controller.view.backgroundColor = .clear
+        controller.view.isUserInteractionEnabled = false
+        controller.onChange = { returning in
+            if isReturning != returning { isReturning = returning }
+        }
+        return controller
+    }
+
+    func updateUIViewController(_ uiViewController: ReaderController, context: Context) {
+        uiViewController.onChange = { returning in
+            if isReturning != returning { isReturning = returning }
+        }
+    }
+
+    final class ReaderController: UIViewController {
+        var onChange: ((Bool) -> Void)?
+
+        override func viewWillAppear(_ animated: Bool) {
+            super.viewWillAppear(animated)
+            guard let coordinator = transitionCoordinator ?? navigationController?.transitionCoordinator else { return }
+            onChange?(true)
+            coordinator.animate(alongsideTransition: nil) { [weak self] _ in
+                self?.onChange?(false)
+            }
+        }
+    }
+}
+
 struct HomeScreen: View {
     /// Stand-in for `.ultraThinMaterial` on the cards, matched to the material's colour measured
     /// on device. Cards are drawn into images (ApolloStaticRender), where a live material can't render.
@@ -59,6 +95,7 @@ struct HomeScreen: View {
     @ObservedObject private var purchases = PurchaseManager.shared
     @State private var showPremium = false
     @State private var hasHinge = false
+    @State private var isReturning = false
 
     var heroFeature: FeatureCard {
         FeatureCard(titleKey: "feature_ai_chat", descriptionKey: "feature_ai_chat_desc", iconSystemName: "bubble.left.and.bubble.right.fill", gradient: [Color(hex: "7ea3ff"), Color(hex: "5e79da")], route: "chat")
@@ -275,7 +312,11 @@ struct HomeScreen: View {
                 // With the buttons in the vertical bar, the navigation bar still reserves
                 // an empty top inset; start the content at the top edge instead.
                 .ignoresSafeArea(.container, edges: hasVerticalBar ? [.top, .bottom] : .bottom)
-                .apolloHomeTopScrollEdge(hidden: hasVerticalBar)
+                // Coming back from a pushed screen, its navigation bar stays until the
+                // animation ends and the soft top edge, sized to that bar, blurs the title
+                // row. The edge effect is off only for that animation.
+                .apolloHomeTopScrollEdge(hidden: hasVerticalBar || (!usesSystemBar && isReturning))
+                .background(HomeReturnTransitionReader(isReturning: $isReturning))
             }
             .onAppear {
                 if githubStars == nil {
