@@ -14,7 +14,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 # Snapdragon release ships libggml*.so/libllama.so/libmtmd.so under the upstream names and its
 # ggml_backend_load_all_from_path() scan of the native library directory must not find ours.
 set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)
-# llama-common is needed by the flash streaming runtime (third_party/bigmoeonedge) for chat parsing.
+# llama-common is needed by the flash streaming runtime (android/bigmoeonedge) for chat parsing.
 set(LLAMA_BUILD_COMMON ON CACHE BOOL "" FORCE)
 set(LLAMA_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(LLAMA_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
@@ -118,7 +118,7 @@ target_link_options(llmhub_llama_snapdragon PRIVATE "-Wl,--allow-shlib-undefined
 # Flash streaming runtime for MoE models: BigMoeOnEdge's engine, built on the llama.cpp libraries above (no fork).
 # The routed experts are read from the model file on demand into a RAM cache, so a model larger than the
 # phone's memory runs. CPU decode; the CPU variant comes from libllmhub_llama_cpu's nativeInit.
-set(BMOE_DIR "${CMAKE_CURRENT_LIST_DIR}/../../../../../third_party/bigmoeonedge")
+set(BMOE_DIR "${CMAKE_CURRENT_LIST_DIR}/../../../../bigmoeonedge")
 file(STRINGS "${BMOE_DIR}/LLMHUB_VERSION.md" BMOE_VERSION_LINE REGEX "^- Version: ")
 string(REGEX MATCH "[0-9]+\\.[0-9]+\\.[0-9]+" BMOE_UPSTREAM_VERSION "${BMOE_VERSION_LINE}")
 if(NOT BMOE_UPSTREAM_VERSION)

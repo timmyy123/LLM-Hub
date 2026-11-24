@@ -1,4 +1,4 @@
-// C interface to BigMoeOnEdge's streaming engine (third_party/bigmoeonedge) for the iOS app: flash streaming for
+// C interface to BigMoeOnEdge's streaming engine (android/bigmoeonedge) for the iOS app: flash streaming for
 // MoE GGUF models. The routed experts stay in the model file and are read from storage as tokens need them, into a
 // cache sized from the free memory, so a model larger than the device's memory runs. CPU decode.
 #pragma once

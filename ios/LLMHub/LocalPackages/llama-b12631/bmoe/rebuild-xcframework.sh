@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Builds LLMHubBmoe.xcframework (iOS device, iOS Simulator, macOS): a static library with BigMoeOnEdge's streaming
-# engine (third_party/bigmoeonedge), llama.cpp's common helpers and the C bridge (include/llmhub_bmoe.h), for flash
+# engine (android/bigmoeonedge), llama.cpp's common helpers and the C bridge (include/llmhub_bmoe.h), for flash
 # streaming of MoE GGUF models. It is compiled against the same llama.cpp source as ../llama.xcframework
 # (b12631 + ../llmhub-aion.patch, checked by SHA-256) and links to that framework's llama, ggml and mtmd.
 VERSION=b12631
