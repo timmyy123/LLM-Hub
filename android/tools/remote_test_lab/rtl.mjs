@@ -3,8 +3,9 @@
 // (so it keeps running while the Mac is locked), and connect it to adb through the rdb bridge.
 //
 //   node rtl.mjs login                         # one time: sign in to Samsung in the tool's own Chrome profile
-//   node rtl.mjs devices --model "Galaxy S26 Ultra"
-//   node rtl.mjs rent --model "Galaxy S26 Ultra" [--minutes 30] [--location Korea] [--os 17]
+//   node rtl.mjs devices [--model "Tab S9"] [--free]     # any of ~1,300 Galaxy phones, tablets, watches, TVs
+//   node rtl.mjs rent [--model "Galaxy A56"] [--device SM-S948U-US01 | 13819] [--minutes 30] [--location Korea] [--os 17]
+//                                              # --model matches part of the name; no filter = any free device
 //   node rtl.mjs status                        # reservations, minutes left, adb state
 //   node rtl.mjs viewer                        # (re)open the viewer for the current reservation
 //   node rtl.mjs release                       # return the phone and stop the headless Chrome
@@ -186,15 +187,22 @@ async function main() {
   if (!user) throw new Error('Not signed in. Run: node rtl.mjs login');
 
   if (cmd === 'devices') {
-    const model = opt('model', ''); const list = (await allDevices(b, s)).filter(d => !model || d.product.toLowerCase().includes(model.toLowerCase()));
+    const model = opt('model', ''); const onlyFree = args.includes('--free');
+    const list = (await allDevices(b, s)).filter(d => (!model || d.product.toLowerCase().includes(model.toLowerCase())) && (!onlyFree || d.free));
     console.log(JSON.stringify({ credits: user.point, devices: list }, null, 1));
   } else if (cmd === 'rent') {
-    const model = opt('model'); if (!model) throw new Error('--model is required, e.g. --model "Galaxy S26 Ultra"');
+    const model = opt('model', ''); const device = opt('device', '');
     const minutes = Number(opt('minutes', '30')); const units = Math.max(1, Math.ceil(minutes / 15)); // 1 credit per 15 minutes
     const loc = opt('location', ''); const os = opt('os', '');
-    const cands = (await allDevices(b, s)).filter(d => d.free && d.product.toLowerCase() === model.toLowerCase()
-      && (!loc || d.location.toLowerCase().includes(loc.toLowerCase())) && (!os || d.os.includes(os)));
-    if (!cands.length) throw new Error(`no free ${model}${loc ? ' in ' + loc : ''}${os ? ' on Android ' + os : ''} right now`);
+    const all = await allDevices(b, s);
+    // Exact model name first (e.g. "Galaxy S26" should not pick an S26 Ultra), then any name containing it.
+    const byModel = d => !model || d.product.toLowerCase() === model.toLowerCase();
+    const byPart = d => !model || d.product.toLowerCase().includes(model.toLowerCase());
+    const byDevice = d => !device || String(d.id) === device || d.name.toLowerCase() === device.toLowerCase();
+    const where = d => d.free && byDevice(d) && (!loc || d.location.toLowerCase().includes(loc.toLowerCase())) && (!os || d.os.includes(os));
+    let cands = all.filter(d => where(d) && byModel(d));
+    if (!cands.length) cands = all.filter(d => where(d) && byPart(d));
+    if (!cands.length) throw new Error(`no free device matches${model ? ' ' + model : ''}${device ? ' ' + device : ''}${loc ? ' in ' + loc : ''}${os ? ' on Android ' + os : ''} right now`);
     let rented;
     for (const d of cands) {
       const r = await api(b, s, 'devices/webclient/start', 'POST', { did: d.id, tsg: units, _ts: Date.now() });

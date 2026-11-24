@@ -1,6 +1,6 @@
 ---
 name: remote-test-lab
-description: Rent a Samsung Remote Test Lab phone or tablet (e.g. Galaxy S26 Ultra), connect it to adb, and test LLM Hub on it by command, without clicking the website. Use when asked to test on a Samsung device the owner doesn't have, reproduce a Play review or vitals report on a specific Galaxy model, or check speed, loading, Stop, New Chat and leaving the chat on real hardware.
+description: Rent any Samsung Remote Test Lab device (about 1,300 Galaxy phones, tablets, watches and TVs), connect it to adb, and test LLM Hub on it by command, without clicking the website. Use when asked to test on a Samsung device the owner doesn't have, reproduce a Play review or vitals report on a specific Galaxy model, or check speed, loading, Stop, New Chat and leaving the chat on real hardware.
 ---
 
 # Samsung Remote Test Lab for LLM Hub
@@ -18,11 +18,14 @@ to Samsung there. Never type the owner's password or copy cookies from their bro
 
 ## Rent and connect
 ```
-node android/tools/remote_test_lab/rtl.mjs devices --model "Galaxy S26 Ultra"   # free = true can be rented
-node android/tools/remote_test_lab/rtl.mjs rent --model "Galaxy S26 Ultra" --minutes 30 [--location USA] [--os 17]
+node android/tools/remote_test_lab/rtl.mjs devices [--model "Tab S9"] [--free]   # every model, free = true can be rented
+node android/tools/remote_test_lab/rtl.mjs rent --model "Galaxy A56" --minutes 30 [--location USA] [--os 17]
+node android/tools/remote_test_lab/rtl.mjs rent --device SM-S948U-US01           # one specific unit (name or id)
+node android/tools/remote_test_lab/rtl.mjs rent                                  # any free device
 node android/tools/remote_test_lab/rtl.mjs status     # minutes left, viewer open, adb state
 node android/tools/remote_test_lab/rtl.mjs release    # return the device when done (stops spending credits)
 ```
+- `--model` matches part of the product name (exact name first, so "Galaxy S26" doesn't pick an S26 Ultra).
 - Credits: 1 per 15 minutes (`--minutes` rounds up). Check `status` before long work; rent again if it runs out.
 - `rent` prints the adb serial (`localhost:<rdb port>`). If adb stays `offline`, run `rtl.mjs viewer` once, then
   `rtl.mjs screenshot` to see the viewer.
