@@ -225,7 +225,8 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
     private fun ownsNativeModel(): Boolean =
         nativeInitialized && currentModel != null && runtime.nativeModelEpoch() == loadedEpoch
     private var contextSize = 4096
-    private var lastDecodeSpeed: Double? = null
+    @Volatile private var lastDecodeSpeed: Double? = null
+    @Volatile private var lastGeneratedTokens: Int? = null
     private var visionDisabled = true
     private var audioDisabled = true
     private val chatSessions = mutableMapOf<String, MutableList<VlmPromptTurn>>()
@@ -410,6 +411,7 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
                     visionDisabled = disableVision || !model.supportsVision || !runtime.nativeSupportsVision()
                     audioDisabled = true
                     lastDecodeSpeed = null
+                    lastGeneratedTokens = null
                     Log.i(TAG, "Loaded '${model.name}' using llama.cpp $attemptName")
                     return@withContext true
                 } catch (cancelled: CancellationException) {
@@ -468,6 +470,7 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
         loadedDeviceId = null
         loadedRuntimeName = null
         lastDecodeSpeed = null
+        lastGeneratedTokens = null
         chatSessions.clear()
     }
 
@@ -617,6 +620,8 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
             "Generation config: maxTokens=$maxTokens context=$contextSize " +
                 "temperature=$temperature topK=$topK topP=$topP",
         )
+        lastDecodeSpeed = null
+        lastGeneratedTokens = null
         val startResult = runtime.nativeStartCompletion(
             formattedPrompt,
             imagePaths.toTypedArray(),
@@ -635,8 +640,17 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
 
         try {
             val assistantResponse = StringBuilder()
+            // Each non-null nativeNextToken() is one decoded token (an empty string is a token whose
+            // UTF-8 is still incomplete). Timed from the end of prompt reading, like llama.cpp's own
+            // eval timing, and updated per token so a stopped reply keeps real numbers.
+            val decodeStartNanos = System.nanoTime()
+            var decodedTokens = 0
             while (true) {
                 val token = runtime.nativeNextToken() ?: break
+                decodedTokens++
+                val elapsedNanos = System.nanoTime() - decodeStartNanos
+                lastGeneratedTokens = decodedTokens
+                if (elapsedNanos > 0) lastDecodeSpeed = decodedTokens * 1_000_000_000.0 / elapsedNanos
                 if (token.isNotEmpty()) {
                     filterTextOutputToken(token, model, thinkingEnabled)
                         .forEach {
@@ -650,8 +664,11 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
                 emit(it)
             }
             rememberAssistantResponse(chatId, assistantResponse.toString())
-            lastDecodeSpeed = runtime.nativeDecodeSpeed().takeIf { it > 0.0 }
-            Log.i(TAG, "llama.cpp ${loadedRuntimeName ?: "unknown"} generation completed at ${lastDecodeSpeed ?: 0.0} tok/s")
+            Log.i(
+                TAG,
+                "llama.cpp ${loadedRuntimeName ?: "unknown"} generation completed: $decodedTokens tokens at " +
+                    "${lastDecodeSpeed ?: 0.0} tok/s (native ${runtime.nativeDecodeSpeed()} tok/s)",
+            )
         } catch (cancelled: CancellationException) {
             runtime.nativeStop()
             throw cancelled
@@ -709,6 +726,8 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
     override fun isNpuBackendEnabled(): Boolean =
         loadedBackend == LlmInference.Backend.GPU && !loadedDeviceId.isNullOrBlank()
     override fun getLastDecodeSpeedTokPerSec(): Double? = lastDecodeSpeed
+
+    override fun getLastGeneratedTokenCount(): Int? = lastGeneratedTokens
     override fun getLoadedContextSize(): Int = contextSize
     override fun getEffectiveMaxTokens(model: LLMModel): Int =
         overrideMaxTokens ?: DEFAULT_MAX_TOKENS

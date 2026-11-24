@@ -228,6 +228,8 @@ class LiteRtLmInferenceService(private val applicationContext: Context) : Infere
 
             // Enable Multi-Token Prediction (MTP) via speculative decoding when running on GPU, except for Gemma-4 12B
             ExperimentalFlags.enableSpeculativeDecoding = model.supportsMtp && currentBackendIsGpu && !isGemma4_12B
+            // LiteRT-LM's own prefill/decode token counts and speeds, read after each chat reply.
+            ExperimentalFlags.enableBenchmark = true
 
             val engineConfig = EngineConfig(
                 modelPath = modelFile.absolutePath,
@@ -427,6 +429,8 @@ class LiteRtLmInferenceService(private val applicationContext: Context) : Infere
         }
 
         return flow {
+            lastDecodeSpeed = null
+            lastGeneratedTokens = null
             val currentUserMessage = extractCurrentUserMessage(prompt)
             val needsWebSearch = webSearchEnabled
             var enhancedPrompt = prompt
@@ -504,6 +508,7 @@ class LiteRtLmInferenceService(private val applicationContext: Context) : Infere
                 var sentThinkOpen = false
                 var sentThinkClose = false
                 eng.withConversation(agentConfig) { conv ->
+                    try {
                     conv.sendMessageAsyncWithCallback(contents).collect { msg ->
                         val chunk = msg.contents.contents.filterIsInstance<Content.Text>().joinToString("") { it.text }
                         val thinkingChunk = if (useThinking) {
@@ -519,6 +524,9 @@ class LiteRtLmInferenceService(private val applicationContext: Context) : Infere
                             if (sentThinkOpen && !sentThinkClose) { emit(SENTINEL_ENDTHINK); sentThinkClose = true }
                             if (cleaned.isNotEmpty()) emit(cleaned)
                         }
+                    }
+                    } finally {
+                        recordBenchmark(conv)
                     }
                 }
                 if (useThinking && sentThinkOpen && !sentThinkClose) emit(SENTINEL_ENDTHINK)
@@ -526,6 +534,7 @@ class LiteRtLmInferenceService(private val applicationContext: Context) : Infere
                 var sentThinkOpen = false
                 var sentThinkClose = false
                 eng.withConversation(buildConversationConfig()) { conv ->
+                    try {
                     conv.sendMessageAsyncWithCallback(contents).collect { msg ->
                         val chunk = msg.contents.contents.filterIsInstance<Content.Text>().joinToString("") { it.text }
                         val thinkingChunk = if (useThinking) {
@@ -542,12 +551,35 @@ class LiteRtLmInferenceService(private val applicationContext: Context) : Infere
                             if (cleaned.isNotEmpty()) emit(cleaned)
                         }
                     }
+                    } finally {
+                        recordBenchmark(conv)
+                    }
                 }
                 if (useThinking && sentThinkOpen && !sentThinkClose) emit(SENTINEL_ENDTHINK)
             }
 
         }.flowOn(Dispatchers.IO)
     }
+
+    @Volatile private var lastDecodeSpeed: Double? = null
+    @Volatile private var lastGeneratedTokens: Int? = null
+
+    /** LiteRT-LM's own decode token count and speed for the reply this Conversation just produced. */
+    @OptIn(ExperimentalApi::class)
+    private fun recordBenchmark(conv: Conversation) {
+        val info = runCatching { conv.getBenchmarkInfo() }.getOrNull() ?: return
+        lastGeneratedTokens = info.lastDecodeTokenCount.takeIf { it > 0 }
+        lastDecodeSpeed = info.lastDecodeTokensPerSecond.takeIf { it > 0.0 }
+        Log.i(
+            TAG,
+            "LiteRT-LM reply: prefill ${info.lastPrefillTokenCount} tokens at ${info.lastPrefillTokensPerSecond} tok/s, " +
+                "decode ${info.lastDecodeTokenCount} tokens at ${info.lastDecodeTokensPerSecond} tok/s",
+        )
+    }
+
+    override fun getLastDecodeSpeedTokPerSec(): Double? = lastDecodeSpeed
+
+    override fun getLastGeneratedTokenCount(): Int? = lastGeneratedTokens
 
     private fun extractCurrentUserMessage(prompt: String): String {
         val lines = prompt.trim().split('\n')

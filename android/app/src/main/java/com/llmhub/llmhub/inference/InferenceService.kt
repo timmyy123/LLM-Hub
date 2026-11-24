@@ -74,6 +74,8 @@ interface InferenceService {
     fun isNpuBackendEnabled(): Boolean = false
     /** Decode speed in tok/s from the most recent generation; null if unavailable. */
     fun getLastDecodeSpeedTokPerSec(): Double? = null
+    /** Tokens the engine generated in the most recent reply (its own count); null if unavailable. */
+    fun getLastGeneratedTokenCount(): Int? = null
     /** Actual context window (in tokens) the model was loaded with; null if unknown. */
     fun getLoadedContextSize(): Int? = null
     // Return the applied/effective max tokens for a model (honors overrides)

@@ -1896,8 +1896,18 @@ class ChatViewModel(
 
             val (thinkingPart, answerPart) = parseThinkingAndAnswer(finalContent)
             val answerContent = if (answerPart.isNotBlank()) answerPart else finalContent
-            val actualTokens = kotlin.math.ceil(answerContent.length / 4.0).toInt().coerceAtLeast(1)
-            val totalTokens = kotlin.math.ceil(finalContent.length / 4.0).toInt().coerceAtLeast(1)
+            // The engine's own token count and decode speed (llama.cpp, LiteRT-LM). The character
+            // estimate is only a fallback for engines that do not report them: it is far off for
+            // scripts like Korean, Thai or Chinese, where a token holds one or two characters.
+            val engineTokens = inferenceService.getLastGeneratedTokenCount()?.takeIf { it > 0 }
+            val totalTokens = engineTokens ?: kotlin.math.ceil(finalContent.length / 4.0).toInt().coerceAtLeast(1)
+            val actualTokens = when {
+                engineTokens == null -> kotlin.math.ceil(answerContent.length / 4.0).toInt().coerceAtLeast(1)
+                thinkingPart.isNotBlank() && answerPart.isNotBlank() && finalContent.isNotEmpty() ->
+                    // The answer's share of the engine's count (the reply's thinking is not shown in the badge).
+                    kotlin.math.round(engineTokens * answerContent.length.toDouble() / finalContent.length).toInt().coerceIn(1, engineTokens)
+                else -> engineTokens
+            }
             val tokensPerSecond = inferenceService.getLastDecodeSpeedTokPerSec()
                 ?: if (generationTimeMs > 0) (totalTokens * 1000.0) / generationTimeMs else 0.0
 

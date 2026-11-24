@@ -173,6 +173,10 @@ class UnifiedInferenceService(private val context: Context) : InferenceService {
         return currentService.getCurrentlyLoadedBackend()
     }
 
+    override fun getLastDecodeSpeedTokPerSec(): Double? = currentService.getLastDecodeSpeedTokPerSec()
+
+    override fun getLastGeneratedTokenCount(): Int? = currentService.getLastGeneratedTokenCount()
+
     override fun getMemoryWarningForImages(images: List<Bitmap>): String? {
         return currentService.getMemoryWarningForImages(images)
     }
