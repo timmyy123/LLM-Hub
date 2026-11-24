@@ -46,6 +46,8 @@ struct ContentView: View {
                                 path.append(Screen.audioSearch)
                             case "video_moment":
                                 path.append(Screen.videoMoment)
+                            case "text_to_speech":
+                                path.append(Screen.textToSpeech)
                             case "agent":
                                 if PurchaseManager.shared.isPremium {
                                     path.append(Screen.agent)
@@ -159,6 +161,13 @@ struct ContentView: View {
                             )
                             .navigationBarBackButtonHidden(true)
                             .enableSwipeBack()
+                        case .textToSpeech:
+                            TextToSpeechScreen(
+                                onNavigateBack: { path.removeLast() },
+                                onNavigateToSettings: { path.append(Screen.settings) }
+                            )
+                            .navigationBarBackButtonHidden(true)
+                            .enableSwipeBack()
                         case .agent:
                             AgentScreen()
                                 .navigationBarBackButtonHidden(true)
@@ -218,6 +227,7 @@ enum Screen: Hashable {
     case photoSearch
     case audioSearch
     case videoMoment
+    case textToSpeech
     case agent
 }
 

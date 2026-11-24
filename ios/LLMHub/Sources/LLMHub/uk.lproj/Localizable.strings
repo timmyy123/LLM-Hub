@@ -1015,3 +1015,13 @@
 "thinking_level_medium" = "Середній";
 "thinking_level_high" = "Високий";
 "thinking_level_max" = "Максимальний";
+
+// Text to Speech
+"feature_text_to_speech" = "Озвучення тексту";
+"feature_text_to_speech_desc" = "Озвучуйте будь-який текст голосами вашого пристрою";
+"tts_input_hint" = "Введіть або вставте текст сюди...";
+"tts_speak_button" = "Читати вголос";
+"tts_stop_button" = "Зупинити читання";
+"tts_paste_button" = "Вставити текст";
+"tts_clear_button" = "Очистити";
+"tts_word_count" = "Слів: %d";

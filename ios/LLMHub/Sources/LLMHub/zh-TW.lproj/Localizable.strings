@@ -1023,3 +1023,13 @@
 "thinking_level_medium" = "中";
 "thinking_level_high" = "高";
 "thinking_level_max" = "最高";
+
+// Text to Speech
+"feature_text_to_speech" = "文字朗讀";
+"feature_text_to_speech_desc" = "用裝置內建的語音朗讀任何文字";
+"tts_input_hint" = "在此輸入或貼上文字...";
+"tts_speak_button" = "朗讀";
+"tts_stop_button" = "停止朗讀";
+"tts_paste_button" = "貼上文字";
+"tts_clear_button" = "清除";
+"tts_word_count" = "%d 個字";

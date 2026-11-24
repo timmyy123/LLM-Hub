@@ -1015,3 +1015,13 @@
 "thinking_level_medium" = "בינונית";
 "thinking_level_high" = "גבוהה";
 "thinking_level_max" = "מרבית";
+
+// Text to Speech
+"feature_text_to_speech" = "הקראת טקסט";
+"feature_text_to_speech_desc" = "הקראת כל טקסט בקול בעזרת הקולות של המכשיר";
+"tts_input_hint" = "הזן או הדבק טקסט כאן...";
+"tts_speak_button" = "הקרא בקול";
+"tts_stop_button" = "עצור הקראה";
+"tts_paste_button" = "הדבק טקסט";
+"tts_clear_button" = "נקה";
+"tts_word_count" = "%d מילים";

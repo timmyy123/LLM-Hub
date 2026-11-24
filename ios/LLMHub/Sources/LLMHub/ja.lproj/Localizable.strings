@@ -1015,3 +1015,13 @@
 "thinking_level_medium" = "中";
 "thinking_level_high" = "高";
 "thinking_level_max" = "最大";
+
+// Text to Speech
+"feature_text_to_speech" = "テキスト読み上げ";
+"feature_text_to_speech_desc" = "デバイスの音声で好きなテキストを読み上げます";
+"tts_input_hint" = "ここにテキストを入力または貼り付け...";
+"tts_speak_button" = "読み上げる";
+"tts_stop_button" = "読み上げ停止";
+"tts_paste_button" = "テキストを貼り付け";
+"tts_clear_button" = "消去";
+"tts_word_count" = "%d 語";

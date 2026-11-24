@@ -1027,3 +1027,13 @@
 "thinking_level_medium" = "मध्यम";
 "thinking_level_high" = "उच्च";
 "thinking_level_max" = "अधिकतम";
+
+// Text to Speech
+"feature_text_to_speech" = "पाठ से वाक्";
+"feature_text_to_speech_desc" = "अपने डिवाइस की आवाज़ों से कोई भी टेक्स्ट पढ़कर सुनें";
+"tts_input_hint" = "यहाँ पाठ दर्ज करें या पेस्ट करें...";
+"tts_speak_button" = "बोलकर पढ़ें";
+"tts_stop_button" = "पढ़ना रोकें";
+"tts_paste_button" = "पाठ पेस्ट करें";
+"tts_clear_button" = "साफ़ करें";
+"tts_word_count" = "%d शब्द";

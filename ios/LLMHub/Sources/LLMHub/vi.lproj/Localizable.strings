@@ -1022,3 +1022,13 @@
 "thinking_level_medium" = "Trung bình";
 "thinking_level_high" = "Cao";
 "thinking_level_max" = "Tối đa";
+
+// Text to Speech
+"feature_text_to_speech" = "Văn bản thành giọng nói";
+"feature_text_to_speech_desc" = "Đọc to mọi văn bản bằng giọng nói trên thiết bị của bạn";
+"tts_input_hint" = "Nhập hoặc dán văn bản vào đây...";
+"tts_speak_button" = "Đọc to";
+"tts_stop_button" = "Dừng đọc";
+"tts_paste_button" = "Dán văn bản";
+"tts_clear_button" = "Xóa";
+"tts_word_count" = "%d từ";

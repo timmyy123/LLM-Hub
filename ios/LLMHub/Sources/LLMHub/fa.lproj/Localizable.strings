@@ -1015,3 +1015,13 @@
 "thinking_level_medium" = "متوسط";
 "thinking_level_high" = "زیاد";
 "thinking_level_max" = "حداکثر";
+
+// Text to Speech
+"feature_text_to_speech" = "تبدیل متن به گفتار";
+"feature_text_to_speech_desc" = "هر متنی را با صداهای دستگاهتان بلند بخوانید";
+"tts_input_hint" = "متن را اینجا وارد یا پیست کنید...";
+"tts_speak_button" = "بخوان";
+"tts_stop_button" = "توقف خواندن";
+"tts_paste_button" = "جای‌گذاری متن";
+"tts_clear_button" = "پاک‌سازی";
+"tts_word_count" = "%d کلمه";

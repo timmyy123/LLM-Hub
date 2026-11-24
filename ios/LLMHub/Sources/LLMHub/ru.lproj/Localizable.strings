@@ -987,3 +987,13 @@
 "thinking_level_medium" = "Средний";
 "thinking_level_high" = "Высокий";
 "thinking_level_max" = "Максимальный";
+
+// Text to Speech
+"feature_text_to_speech" = "Озвучивание текста";
+"feature_text_to_speech_desc" = "Озвучивайте любой текст голосами вашего устройства";
+"tts_input_hint" = "Введите или вставьте текст здесь...";
+"tts_speak_button" = "Читать вслух";
+"tts_stop_button" = "Остановить чтение";
+"tts_paste_button" = "Вставить текст";
+"tts_clear_button" = "Очистить";
+"tts_word_count" = "Слов: %d";

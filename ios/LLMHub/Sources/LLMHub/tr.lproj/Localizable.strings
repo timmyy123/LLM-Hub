@@ -1015,3 +1015,13 @@
 "thinking_level_medium" = "Orta";
 "thinking_level_high" = "Yüksek";
 "thinking_level_max" = "Maksimum";
+
+// Text to Speech
+"feature_text_to_speech" = "Metinden Sese";
+"feature_text_to_speech_desc" = "Herhangi bir metni cihazınızın sesleriyle sesli dinleyin";
+"tts_input_hint" = "Metni buraya girin veya yapıştırın...";
+"tts_speak_button" = "Sesli Oku";
+"tts_stop_button" = "Okumayı Durdur";
+"tts_paste_button" = "Metni Yapıştır";
+"tts_clear_button" = "Temizle";
+"tts_word_count" = "%d kelime";

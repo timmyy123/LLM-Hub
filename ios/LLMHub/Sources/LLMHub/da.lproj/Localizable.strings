@@ -1022,3 +1022,13 @@
 "thinking_level_medium" = "Middel";
 "thinking_level_high" = "Høj";
 "thinking_level_max" = "Maks";
+
+// Text to Speech
+"feature_text_to_speech" = "Tekst til tale";
+"feature_text_to_speech_desc" = "Få enhver tekst læst højt med enhedens stemmer";
+"tts_input_hint" = "Indtast eller indsæt tekst her...";
+"tts_speak_button" = "Læs højt";
+"tts_stop_button" = "Stop oplæsning";
+"tts_paste_button" = "Indsæt tekst";
+"tts_clear_button" = "Ryd";
+"tts_word_count" = "%d ord";

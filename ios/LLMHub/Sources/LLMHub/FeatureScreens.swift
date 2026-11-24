@@ -8058,3 +8058,146 @@ public struct MusicGeneratorScreen: View {
         }
     }
 }
+
+// MARK: - Text to Speech
+
+/// Reads pasted or typed text aloud with the same iOS system voice the other features use
+/// (`OnDeviceTtsManager`). The toolbar's settings button opens Settings, where the voice guidance lives.
+struct TextToSpeechScreen: View {
+    @EnvironmentObject var settings: AppSettings
+    @ObservedObject private var ttsManager = OnDeviceTtsManager.shared
+    @State private var inputText: String = ""
+
+    let onNavigateBack: () -> Void
+    let onNavigateToSettings: () -> Void
+
+    private static let speechKey = "text-to-speech"
+
+    private var isSpeaking: Bool { ttsManager.isSpeaking(key: Self.speechKey) }
+
+    private var hasText: Bool { !inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+
+    private var wordCount: Int {
+        var count = 0
+        inputText.enumerateSubstrings(in: inputText.startIndex..., options: [.byWords, .substringNotRequired]) { _, _, _, _ in
+            count += 1
+        }
+        return count
+    }
+
+    var body: some View {
+        VStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 8) {
+                    Text(String(format: settings.localized("tts_word_count"), wordCount))
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(.secondary)
+                        .monospacedDigit()
+
+                    Spacer()
+
+                    Button {
+                        #if canImport(UIKit)
+                        if let clip = UIPasteboard.general.string, !clip.isEmpty {
+                            inputText += clip
+                        }
+                        #endif
+                    } label: {
+                        Image(systemName: "doc.on.clipboard")
+                            .font(.system(size: 18, weight: .semibold))
+                            .frame(width: 44, height: 44)
+                    }
+                    .featureActionIconButtonStyle()
+                    .accessibilityLabel(settings.localized("tts_paste_button"))
+
+                    if !inputText.isEmpty {
+                        Button {
+                            inputText = ""
+                            ttsManager.stopIfMatching(key: Self.speechKey)
+                        } label: {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 18, weight: .semibold))
+                                .frame(width: 44, height: 44)
+                        }
+                        .featureActionIconButtonStyle()
+                        .accessibilityLabel(settings.localized("tts_clear_button"))
+                    }
+                }
+
+                ZStack(alignment: .topLeading) {
+                    TextEditor(text: $inputText)
+                        .padding(8)
+                        .scrollContentBackground(.hidden)
+                        .background(Color.white.opacity(0.02))
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .accessibilityIdentifier("tts_input")
+
+                    if inputText.isEmpty {
+                        Text(settings.localized("tts_input_hint"))
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 13)
+                            .padding(.vertical, 16)
+                            .allowsHitTesting(false)
+                    }
+                }
+                .frame(maxHeight: .infinity)
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 12)
+            .background(.ultraThinMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(Color.white.opacity(0.14), lineWidth: 1)
+            )
+            .padding(.horizontal)
+
+            Button {
+                dismissKeyboard()
+                ttsManager.toggleSpeaking(inputText, fallbackLanguage: settings.selectedLanguage, key: Self.speechKey)
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: isSpeaking ? "stop.fill" : "speaker.wave.2.fill")
+                        .font(.system(size: 14, weight: .bold))
+                    Text(settings.localized(isSpeaking ? "tts_stop_button" : "tts_speak_button"))
+                        .lineLimit(1)
+                }
+                .frame(maxWidth: .infinity)
+                .frame(height: 52)
+            }
+            .foregroundStyle(.white)
+            .liquidGlassPrimaryButton(cornerRadius: 12)
+            .disabled(!isSpeaking && !hasText)
+            .accessibilityIdentifier("tts_speak")
+            .padding(.horizontal)
+            .padding(.bottom, 8)
+        }
+        .padding(.top, 12)
+        .navigationTitle(settings.localized("feature_text_to_speech"))
+        .navigationBarTitleDisplayMode(.inline)
+        .apolloScreenBackground()
+        .simultaneousGesture(TapGesture().onEnded { dismissKeyboard() })
+        .apolloNavigationBackground()
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button {
+                    ttsManager.stopIfMatching(key: Self.speechKey)
+                    onNavigateBack()
+                } label: {
+                    Image(systemName: "arrow.left")
+                }
+            }
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button {
+                    ttsManager.stopIfMatching(key: Self.speechKey)
+                    onNavigateToSettings()
+                } label: {
+                    Image(systemName: "slider.horizontal.3")
+                }
+            }
+        }
+        .onDisappear {
+            ttsManager.stopIfMatching(key: Self.speechKey)
+        }
+    }
+}

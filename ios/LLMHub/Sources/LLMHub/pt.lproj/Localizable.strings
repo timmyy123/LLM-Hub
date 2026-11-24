@@ -972,3 +972,13 @@
 "thinking_level_medium" = "Médio";
 "thinking_level_high" = "Alto";
 "thinking_level_max" = "Máximo";
+
+// Text to Speech
+"feature_text_to_speech" = "Texto para voz";
+"feature_text_to_speech_desc" = "Ouça qualquer texto lido em voz alta com as vozes do seu dispositivo";
+"tts_input_hint" = "Digite ou cole o texto aqui...";
+"tts_speak_button" = "Ler em voz alta";
+"tts_stop_button" = "Parar leitura";
+"tts_paste_button" = "Colar texto";
+"tts_clear_button" = "Limpar";
+"tts_word_count" = "%d palavras";

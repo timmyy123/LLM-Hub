@@ -1022,3 +1022,13 @@
 "thinking_level_medium" = "ปานกลาง";
 "thinking_level_high" = "สูง";
 "thinking_level_max" = "สูงสุด";
+
+// Text to Speech
+"feature_text_to_speech" = "ข้อความเป็นเสียงพูด";
+"feature_text_to_speech_desc" = "อ่านข้อความใดก็ได้ออกเสียงด้วยเสียงพูดของอุปกรณ์";
+"tts_input_hint" = "ป้อนหรือวางข้อความที่นี่...";
+"tts_speak_button" = "อ่านออกเสียง";
+"tts_stop_button" = "หยุดอ่าน";
+"tts_paste_button" = "วางข้อความ";
+"tts_clear_button" = "ล้าง";
+"tts_word_count" = "%d คำ";

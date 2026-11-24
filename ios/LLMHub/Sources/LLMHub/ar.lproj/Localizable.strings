@@ -1015,3 +1015,13 @@
 "thinking_level_medium" = "متوسط";
 "thinking_level_high" = "مرتفع";
 "thinking_level_max" = "أقصى";
+
+// Text to Speech
+"feature_text_to_speech" = "تحويل النص إلى كلام";
+"feature_text_to_speech_desc" = "اقرأ أي نص بصوت عالٍ بأصوات جهازك";
+"tts_input_hint" = "أدخل أو ألصق النص هنا...";
+"tts_speak_button" = "قراءة بصوت عالٍ";
+"tts_stop_button" = "إيقاف القراءة";
+"tts_paste_button" = "لصق النص";
+"tts_clear_button" = "مسح";
+"tts_word_count" = "%d كلمة";

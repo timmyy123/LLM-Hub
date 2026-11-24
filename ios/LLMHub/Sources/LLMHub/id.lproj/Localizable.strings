@@ -1015,3 +1015,13 @@
 "thinking_level_medium" = "Sedang";
 "thinking_level_high" = "Tinggi";
 "thinking_level_max" = "Maksimal";
+
+// Text to Speech
+"feature_text_to_speech" = "Teks ke Suara";
+"feature_text_to_speech_desc" = "Bacakan teks apa pun dengan suara perangkat Anda";
+"tts_input_hint" = "Masukkan atau tempel teks di sini...";
+"tts_speak_button" = "Baca Nyaring";
+"tts_stop_button" = "Hentikan Membaca";
+"tts_paste_button" = "Tempel Teks";
+"tts_clear_button" = "Hapus";
+"tts_word_count" = "%d kata";

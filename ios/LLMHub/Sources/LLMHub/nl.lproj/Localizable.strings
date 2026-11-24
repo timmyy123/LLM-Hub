@@ -1022,3 +1022,13 @@
 "thinking_level_medium" = "Gemiddeld";
 "thinking_level_high" = "Hoog";
 "thinking_level_max" = "Maximaal";
+
+// Text to Speech
+"feature_text_to_speech" = "Tekst-naar-spraak";
+"feature_text_to_speech_desc" = "Laat elke tekst hardop voorlezen met de stemmen van je apparaat";
+"tts_input_hint" = "Voer hier tekst in of plak tekst...";
+"tts_speak_button" = "Hardop voorlezen";
+"tts_stop_button" = "Stop voorlezen";
+"tts_paste_button" = "Tekst plakken";
+"tts_clear_button" = "Wissen";
+"tts_word_count" = "%d woorden";

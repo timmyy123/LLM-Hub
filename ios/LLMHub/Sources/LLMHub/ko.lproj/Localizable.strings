@@ -1015,3 +1015,13 @@
 "thinking_level_medium" = "보통";
 "thinking_level_high" = "높음";
 "thinking_level_max" = "최대";
+
+// Text to Speech
+"feature_text_to_speech" = "텍스트 음성 변환";
+"feature_text_to_speech_desc" = "기기 음성으로 어떤 텍스트든 소리 내어 읽어 줍니다";
+"tts_input_hint" = "여기에 텍스트를 입력하거나 붙여넣으세요...";
+"tts_speak_button" = "소리 내어 읽기";
+"tts_stop_button" = "읽기 중지";
+"tts_paste_button" = "텍스트 붙여넣기";
+"tts_clear_button" = "지우기";
+"tts_word_count" = "%d 단어";
