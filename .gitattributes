@@ -1,0 +1,22 @@
+# GitHub language stats count only the apps' own code: Kotlin (Android), Swift (iOS and macOS),
+# C# and XAML (Windows and Linux desktop). Bundled libraries and dependencies (llama.cpp,
+# stable-diffusion.cpp, LiteRT-LM, MLX, Draw Things, whisper.cpp and the like), scripts and tools
+# are left out. Later lines override earlier ones.
+* linguist-detectable=false
+
+# Android app
+android/app/**/*.kt linguist-detectable=true
+android/*.gradle.kts linguist-detectable=true
+android/app/*.gradle.kts linguist-detectable=true
+
+# iOS app and its own local packages
+ios/LLMHub/Sources/**/*.swift linguist-detectable=true
+ios/LLMHub/Tests/**/*.swift linguist-detectable=true
+ios/LLMHub/ScreenshotUITests/**/*.swift linguist-detectable=true
+ios/LLMHub/LocalPackages/magenta-runtime/**/*.swift linguist-detectable=true
+ios/LLMHub/LocalPackages/whisper-wrapper/**/*.swift linguist-detectable=true
+
+# Desktop apps: shared core, Windows, Linux and macOS
+desktop/**/*.cs linguist-detectable=true
+desktop/**/*.xaml linguist-detectable=true
+desktop/**/*.swift linguist-detectable=true
