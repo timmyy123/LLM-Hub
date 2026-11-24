@@ -18,7 +18,14 @@ object DeviceInfo {
     fun init(context: Context) {
         hasVulkan12 = context.packageManager.hasSystemFeature(PackageManager.FEATURE_VULKAN_HARDWARE_VERSION, 0x402000)
     }
+    /**
+     * Unit tests only: the SoC to report instead of the device's. DownloadLinksExportTest sets it to list the
+     * download links of every chip. Always null in the app.
+     */
+    @JvmField @Volatile var socOverride: String? = null
+
     fun getDeviceSoc(): String {
+        socOverride?.let { return it }
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             Build.SOC_MODEL
         } else {
