@@ -1,3 +1,5 @@
+> **Outdated.** This guide was only used at the very start of the project, to build the iOS app with xtool on Windows (WSL) before there was a Mac. The iOS app is now built with Xcode on a Mac, so don't follow it.
+
 # xtool + iPhone on Windows/WSL – Setup Guide
 
 Use **iTunes/Apple Devices + port forwarding** (not usbipd) for reliable `xtool dev` installation. This is the method that works per [xtool#19](https://github.com/xtool-org/xtool/issues/19) and [usbmuxd#126](https://github.com/libimobiledevice/usbmuxd/issues/126).

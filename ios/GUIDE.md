@@ -1,3 +1,5 @@
+> **Outdated.** This guide was only used at the very start of the project, to build the iOS app with xtool on Windows (WSL) before there was a Mac. The iOS app is now built with Xcode on a Mac, so don't follow it.
+
 # xtool – What to Do Each Time
 
 ## 1. Open WSL
