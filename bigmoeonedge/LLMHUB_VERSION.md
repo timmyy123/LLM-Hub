@@ -10,7 +10,7 @@
 
 Flash streaming for MoE GGUF models: the routed experts stay in the model file and are read from flash per token
 into an LRU cache, so a model larger than the phone's free RAM runs. `bmoe_core` is built against LLM Hub's own
-vendored llama.cpp (`android/llama.cpp`, b12613 with LLMHub patches) rather than BigMoeOnEdge's llama.cpp fork:
+vendored llama.cpp (`llama.cpp`, b12613 with LLMHub patches) rather than BigMoeOnEdge's llama.cpp fork:
 its public-API streaming path needs no fork. The fork's one extra (the CPU expert-ready hook behind `--overlap`)
 is not carried, so overlap is unavailable and the engine runs the serial streamer.
 

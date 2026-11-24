@@ -1,4 +1,4 @@
-# Static library for the iOS app's flash streaming: BigMoeOnEdge's engine (android/bigmoeonedge/core), llama.cpp's
+# Static library for the iOS app's flash streaming: BigMoeOnEdge's engine (bigmoeonedge/core), llama.cpp's
 # common helpers it needs, and the C bridge (llmhub_bmoe.cpp). llama, ggml and mtmd themselves come from the app's
 # llama.xcframework at link time, so they are built here only to satisfy CMake and are not packaged.
 cmake_minimum_required(VERSION 3.22)
@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(LLAMA_SOURCE_DIR "" CACHE PATH "llama.cpp source the xcframework was built from (b12631 + llmhub-aion.patch)")
-set(BMOE_DIR "${CMAKE_CURRENT_LIST_DIR}/../../../../../android/bigmoeonedge")
+set(BMOE_DIR "${CMAKE_CURRENT_LIST_DIR}/../../../../../bigmoeonedge")
 if(NOT EXISTS "${LLAMA_SOURCE_DIR}/include/llama.h")
     message(FATAL_ERROR "Set LLAMA_SOURCE_DIR to the llama.cpp source")
 endif()

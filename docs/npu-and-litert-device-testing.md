@@ -99,7 +99,7 @@ with the app's backend rules, at the model's default 128K context, and asks for 
 Snapdragon SoCs where llama.cpp Vulkan crashes keep using OpenCL. On the Galaxy S25 Ultra, b11738's OpenCL backend
 aborted on the first token. Its tiled Q6_K lm_head GEMV is dispatched with 256 work items per group, and Adreno 830
 allows 192 for that kernel. The app now ships `libggml-opencl.so` built from the vendored source with that check
-added (see `android/llama.cpp/LLMHUB_VERSION.md`).
+added (see `llama.cpp/LLMHUB_VERSION.md`).
 
 Turning flash attention off is not a workaround. At 128K context the attention compute buffer then needs 8.7 GB,
 OpenCL cannot allocate it, and the app falls back to the CPU.

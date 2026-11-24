@@ -3374,7 +3374,7 @@ object ModelData {
         ),
 
         // Aion 1.0 Instruct 2.3B (Microsoft, MIT; `aion` architecture from the local llama.cpp patch, see
-        // android/llama.cpp/LLMHUB_VERSION.md). Converted to Q4_0 from the Hugging Face weights; hosted in a public mirror.
+        // llama.cpp/LLMHUB_VERSION.md). Converted to Q4_0 from the Hugging Face weights; hosted in a public mirror.
         LLMModel(
             name = "Aion 1.0 Instruct 2.3B (Q4_0)",
             description = "Microsoft's Aion 1.0 Instruct 2.3B, the small model built for on-device use in Windows. Q4_0 quantization, matching the block-32 int4 it was trained for. 32k context. MIT license. (1.40GB)",

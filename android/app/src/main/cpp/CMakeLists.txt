@@ -14,7 +14,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 # Snapdragon release ships libggml*.so/libllama.so/libmtmd.so under the upstream names and its
 # ggml_backend_load_all_from_path() scan of the native library directory must not find ours.
 set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)
-# llama-common is needed by the flash streaming runtime (android/bigmoeonedge) for chat parsing.
+# llama-common is needed by the flash streaming runtime (bigmoeonedge) for chat parsing.
 set(LLAMA_BUILD_COMMON ON CACHE BOOL "" FORCE)
 set(LLAMA_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(LLAMA_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
@@ -48,7 +48,7 @@ set(Vulkan_GLSLC_EXECUTABLE "${NDK_GLSLC}" CACHE FILEPATH "" FORCE)
 set(Vulkan_INCLUDE_DIR "${CMAKE_CURRENT_LIST_DIR}/vulkan-headers" CACHE PATH "" FORCE)
 set(SPIRV-Headers_DIR "${CMAKE_CURRENT_LIST_DIR}/cmake" CACHE PATH "" FORCE)
 
-set(LLAMA_CPP_DIR "${CMAKE_CURRENT_LIST_DIR}/../../../../llama.cpp")
+set(LLAMA_CPP_DIR "${CMAKE_CURRENT_LIST_DIR}/../../../../../llama.cpp")
 # Every compile command carries the vendored llama.cpp version, so a version bump rebuilds all of
 # llama.cpp/ggml. Upgrades unpack upstream archives whose file dates can be older than existing
 # objects; without this, Ninja kept a stale llama-model.cpp.o across the b11738 bump, whose
@@ -118,7 +118,7 @@ target_link_options(llmhub_llama_snapdragon PRIVATE "-Wl,--allow-shlib-undefined
 # Flash streaming runtime for MoE models: BigMoeOnEdge's engine, built on the llama.cpp libraries above (no fork).
 # The routed experts are read from the model file on demand into a RAM cache, so a model larger than the
 # phone's memory runs. CPU decode; the CPU variant comes from libllmhub_llama_cpu's nativeInit.
-set(BMOE_DIR "${CMAKE_CURRENT_LIST_DIR}/../../../../bigmoeonedge")
+set(BMOE_DIR "${CMAKE_CURRENT_LIST_DIR}/../../../../../bigmoeonedge")
 file(STRINGS "${BMOE_DIR}/LLMHUB_VERSION.md" BMOE_VERSION_LINE REGEX "^- Version: ")
 string(REGEX MATCH "[0-9]+\\.[0-9]+\\.[0-9]+" BMOE_UPSTREAM_VERSION "${BMOE_VERSION_LINE}")
 if(NOT BMOE_UPSTREAM_VERSION)

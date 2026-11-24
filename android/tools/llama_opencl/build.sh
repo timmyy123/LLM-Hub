@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Builds libggml-opencl.so, libllama.so and libllama-common.so for the Snapdragon llama.cpp runtime from the vendored,
-# patched android/llama.cpp tree (see android/llama.cpp/LLMHUB_VERSION.md), and copies the stripped
+# patched llama.cpp tree (see llama.cpp/LLMHUB_VERSION.md), and copies the stripped
 # libraries to app/src/main/jniLibs/arm64-v8a. All other Snapdragon libraries come unchanged from
 # the official llama.cpp release; these two carry LLMHub patches (libllama.so: the Aion architecture).
 #
@@ -15,7 +15,7 @@ set -euo pipefail
 OPENCL_SDK_TAG=v2026.05.29
 ANDROID_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 NDK="${1:-${ANDROID_NDK_ROOT:-$HOME/Library/Android/sdk/ndk/29.0.13113456}}"
-LLAMA_DIR="$ANDROID_DIR/llama.cpp"
+LLAMA_DIR="$ANDROID_DIR/../llama.cpp"
 OUT_DIR="$ANDROID_DIR/app/src/main/jniLibs/arm64-v8a"
 WORK_DIR="$(mktemp -d "${TMPDIR:-/tmp}/llmhub-llama-opencl.XXXXXX")"
 TOOLCHAIN="$NDK/build/cmake/android.toolchain.cmake"

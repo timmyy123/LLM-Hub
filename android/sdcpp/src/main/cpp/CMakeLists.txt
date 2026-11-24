@@ -33,7 +33,7 @@ set(Vulkan_GLSLC_EXECUTABLE "${NDK_GLSLC}" CACHE FILEPATH "" FORCE)
 set(Vulkan_INCLUDE_DIR "${APP_CPP_DIR}/vulkan-headers" CACHE PATH "" FORCE)
 set(SPIRV-Headers_DIR "${APP_CPP_DIR}/cmake" CACHE PATH "" FORCE)
 
-set(LLAMA_CPP_DIR "${ANDROID_ROOT}/llama.cpp")
+set(LLAMA_CPP_DIR "${ANDROID_ROOT}/../llama.cpp")
 # Every compile command carries the vendored llama.cpp version, so a version bump rebuilds all of
 # llama.cpp/ggml. Upgrades unpack upstream archives whose file dates can be older than existing
 # objects; without this, Ninja kept a stale llama-model.cpp.o across the b11738 bump, whose
@@ -45,7 +45,7 @@ if(NOT LLMHUB_LLAMA_VERSION)
     message(FATAL_ERROR "No llama.cpp version in ${LLAMA_CPP_DIR}/LLMHUB_VERSION.md")
 endif()
 add_compile_definitions(LLMHUB_LLAMA_SOURCE_VERSION="${LLMHUB_LLAMA_VERSION}")
-set(GGML_SOURCE_DIR "${ANDROID_ROOT}/llama.cpp/ggml")
+set(GGML_SOURCE_DIR "${ANDROID_ROOT}/../llama.cpp/ggml")
 
 # OpenCL backend (Adreno kernels) for GGUF video models on Snapdragon GPUs, whose Vulkan driver
 # crashes on ggml's shaders. opencl/cl_shim.cpp forwards the OpenCL calls to the vendor driver via

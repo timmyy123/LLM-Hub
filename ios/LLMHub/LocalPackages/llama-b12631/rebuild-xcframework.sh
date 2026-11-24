@@ -3,7 +3,7 @@ set -euo pipefail
 
 # Builds llama.xcframework (iOS device, iOS Simulator, macOS; Metal) from the verified upstream source with
 # llmhub-aion.patch applied: the `aion` architecture and its chat template, which upstream does not have yet
-# (the same change as android/llama.cpp, see android/llama.cpp/LLMHUB_VERSION.md). The official binary
+# (the same change as llama.cpp, see llama.cpp/LLMHUB_VERSION.md). The official binary
 # xcframework cannot load Aion, so no slice comes from it any more.
 VERSION=b12631
 SOURCE_SHA256=bea5a657605d90dc2104ec7f3134cbec90e5fdbe1a2fdd50e66782cbedaff56b

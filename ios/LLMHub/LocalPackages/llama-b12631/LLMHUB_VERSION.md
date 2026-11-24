@@ -16,7 +16,7 @@ the app. The public llama, ggml and mtmd symbols are the same as the official fr
 ## Flash streaming (LLMHubBmoe.xcframework)
 
 `LLMHubBmoe.xcframework` is a static library for flash streaming of MoE GGUF models: BigMoeOnEdge's engine
-(`android/bigmoeonedge`, see its `LLMHUB_VERSION.md`), llama.cpp's common helpers it needs, and the C bridge in
+(`bigmoeonedge`, see its `LLMHUB_VERSION.md`), llama.cpp's common helpers it needs, and the C bridge in
 `bmoe/` (`include/llmhub_bmoe.h`). It is compiled against the same verified, patched llama.cpp source as
 `llama.xcframework` and links to that framework's llama, ggml and mtmd, so it carries no second copy of them.
 `DirectLlamaCppBackend.load(..., flashStreaming: true)` uses it: the routed experts stay in the file and are read as
@@ -25,10 +25,10 @@ tokens need them, so a MoE model larger than the device's memory runs (CPU decod
 
 ## Local patch
 
-`llmhub-aion.patch` is the same change as in `android/llama.cpp` (see its `LLMHUB_VERSION.md`): the `aion`
+`llmhub-aion.patch` is the same change as in `llama.cpp` (see its `LLMHUB_VERSION.md`): the `aion`
 architecture for microsoft/Aion-1.0-Instruct-2.3B (from Xylolabs' `aion-llama.cpp.patch`) and an `aion` built-in
 chat template. Upstream has no Aion support as of b12631; drop the patch once it does. Recreate it from the Android
-tree with `git diff --relative=android/llama.cpp/` over the Aion commit (without `LLMHUB_VERSION.md`).
+tree with `git diff --relative=llama.cpp/` over the Aion commit (without `LLMHUB_VERSION.md`).
 
 The app-owned Swift adapter is in `Sources/LlamaCppRuntime`; keep it when upgrading. In b12631
 `llama_decode`, `llama_batch_init` and `llama_batch_free` are deprecated in favour of `llama_batch_ext`;

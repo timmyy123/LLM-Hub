@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.22)
 
 # stable-diffusion.cpp for Windows on Arm (Snapdragon): sd-cli.exe with LTX-Video and the Hexagon NPU transformer and
 # VAE (QNN context binaries, SD_LTXV_QNN). The same sources as the Android app: android/stable-diffusion.cpp on the
-# ggml vendored in android/llama.cpp, QNN headers from android/sdcpp. Built by build.ps1 with llvm-mingw
+# ggml vendored in llama.cpp, QNN headers from android/sdcpp. Built by build.ps1 with llvm-mingw
 # (aarch64-w64-mingw32); QnnHtp.dll / QnnSystem.dll are loaded at run time from the app folder.
 project(llmhub_sdcpp_windows LANGUAGES C CXX)
 
@@ -30,7 +30,7 @@ set(GGML_VULKAN OFF CACHE BOOL "" FORCE)
 set(GGML_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GGML_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 
-set(GGML_SOURCE_DIR "${ANDROID_ROOT}/llama.cpp/ggml")
+set(GGML_SOURCE_DIR "${REPO_ROOT}/llama.cpp/ggml")
 add_subdirectory("${GGML_SOURCE_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/ggml")
 
 set(SD_USE_UPSTREAM_GGML ON CACHE BOOL "" FORCE)

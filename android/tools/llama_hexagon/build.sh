@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Builds libggml-hexagon.so (the Hexagon NPU backend's host library) from the vendored, patched android/llama.cpp
+# Builds libggml-hexagon.so (the Hexagon NPU backend's host library) from the vendored, patched llama.cpp
 # tree and copies it, stripped, to app/src/main/jniLibs/arm64-v8a. The NPU-side skels (libggml-htp-v*.so in
 # app/src/main/assets/llama_htp) stay the official release's: the patch changes the host side only.
 #
@@ -12,7 +12,7 @@
 # usage: HEXAGON_SDK_ROOT=.../opt/hexagon/6.7.0.0 ANDROID_NDK_ROOT=.../opt/android-ndk-r29 bash android/tools/llama_hexagon/build.sh
 set -euo pipefail
 ANDROID_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
-LLAMA_DIR="$ANDROID_DIR/llama.cpp"
+LLAMA_DIR="$ANDROID_DIR/../llama.cpp"
 OUT_DIR="$ANDROID_DIR/app/src/main/jniLibs/arm64-v8a"
 : "${HEXAGON_SDK_ROOT:?set HEXAGON_SDK_ROOT}" "${ANDROID_NDK_ROOT:?set ANDROID_NDK_ROOT}"
 WORK_DIR="$(mktemp -d "${TMPDIR:-/tmp}/llmhub-llama-hexagon.XXXXXX")"

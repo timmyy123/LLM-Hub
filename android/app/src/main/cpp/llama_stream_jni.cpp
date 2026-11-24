@@ -1,6 +1,6 @@
 // Flash streaming runtime for MoE GGUF models (LlamaCppStreamNative in LlamaCppInferenceService.kt).
 //
-// The routed experts stay in the model file: BigMoeOnEdge's engine (android/bigmoeonedge, built on this app's
+// The routed experts stay in the model file: BigMoeOnEdge's engine (bigmoeonedge, built on this app's
 // own llama.cpp) reads the ones each token routes to from flash into an LRU cache sized from the free RAM, so a
 // model larger than the phone's memory runs. Decode is on the CPU. The JNI surface matches the other llama.cpp
 // runtimes: the app formats the chat, starts a completion with the formatted prompt, and pulls tokens one by one.
