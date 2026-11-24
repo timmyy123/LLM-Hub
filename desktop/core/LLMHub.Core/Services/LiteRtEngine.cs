@@ -17,9 +17,10 @@ public sealed class LiteRtEngine
 {
     /// <summary>
     /// The litert-lm-api release this app is built against. The C API changes between releases (0.19.0 moved to C API
-    /// 1.0, where every call returns a status), so an install of any other version is replaced on the next load.
+    /// 1.0, where every call returns a status; 0.20.0 is C API 1.1, additions only), so an install of any other version
+    /// is replaced on the next load.
     /// </summary>
-    public const string Version = "0.19.0";
+    public const string Version = "0.20.0";
     private const int ApiMajor = 1;
     private const string WheelIndex = "https://pypi.org/pypi/litert-lm-api/" + Version + "/json";
 

@@ -1,21 +1,22 @@
 #!/bin/bash
-# Builds the vendor NPU dispatch libraries that LiteRT-LM loads, for app/src/main/assets/litertlm_npu.
+# Builds the vendor NPU dispatch libraries that LiteRT-LM loads from the LiteRT source.
 #
-# Why: from litertlm-android 0.19.0 the engine looks up LiteRtDispatchQueryInterface in the dispatch
-# library. The litert-npu-runtime artifacts on Maven (2.3.0, 2.3.2) only export the older
-# LiteRtDispatchGetApi, so with them every NPU model fails with "No usable Dispatch runtime found".
-# The libraries have to come from the LiteRT revision that the LiteRT-LM release pins.
+# Not used by the app since litertlm-android 0.20.0: it links the app's libLiteRt.so (litert 2.4.0), and
+# the litert-npu-runtime 2.4.0 artifacts on Maven export LiteRtDispatchQueryInterface, so
+# LiteRtLmEmbeddingService stages those. Kept for the case where a LiteRT-LM release again needs a
+# dispatch ABI that Maven does not have yet (0.19.x did: Maven 2.3.x only exported LiteRtDispatchGetApi
+# and every NPU model failed with "No usable Dispatch runtime found").
 #
-# When litertlm-android changes: set LITERT_REF to LITERT_REF in that release's WORKSPACE
-# (https://github.com/google-ai-edge/LiteRT-LM/blob/v<version>/WORKSPACE), rebuild, copy the three
-# libraries into assets/litertlm_npu and run EmbeddingNpuLoadDeviceTest on a Snapdragon, a MediaTek
-# and a Pixel device.
+# To use it: set LITERT_REF to LITERT_REF in that release's WORKSPACE
+# (https://github.com/google-ai-edge/LiteRT-LM/blob/v<version>/WORKSPACE), build, ship the three
+# libraries in the APK and stage them in LiteRtLmEmbeddingService.prepareNpuLibraryDir, then run
+# EmbeddingNpuLoadDeviceTest on a Snapdragon, a MediaTek and a Pixel device.
 #
 # Linux x86_64. Needs a QAIRT 2.50.0 SDK folder for the Qualcomm headers:
 #   LITERT_QAIRT_SDK=/path/to/qairt/2.50.0.260828 ./build_dispatch.sh [work dir]
 set -euo pipefail
 
-LITERT_REF=dcb657e8a537b2dc944e53e14c7eb43bcd9ededa  # litertlm-android 0.19.1
+LITERT_REF=bf49eb62406d15948261a840c9dcd8e4f13b478c  # litertlm-android 0.20.0 (last used: dcb657e8 for 0.19.1)
 WORK=${1:-$HOME/litert_build}
 : "${LITERT_QAIRT_SDK:?Set LITERT_QAIRT_SDK to a QAIRT 2.50.0 SDK folder}"
 mkdir -p "$WORK" && cd "$WORK"

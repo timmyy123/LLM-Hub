@@ -95,7 +95,7 @@ Results and timings go to the daily log (see Data below).
   when updating llama.cpp or when a catalog model needs a newer build.
 - **LiteRT-LM**: `.litertlm` models run in-process through LiteRT-LM's C API, taken from Google's official
   `litert-lm-api` wheel on PyPI (Windows x64, Linux) or the Swift package (macOS). `LiteRtEngine.Version` pins the
-  exact wheel (0.19.0, C API 1.0): the C API changes between releases, so any other installed version is replaced on
+  exact wheel (0.20.0, C API 1.1): the C API changes between releases, so any other installed version is replaced on
   the next load. Raise it together with the Swift package in `ios/LLMHub/LocalPackages/LiteRT-LM`. GPU first, then CPU. Models whose
   catalog entry has a drafter get an **MTP** (multi-token prediction) toggle in the composer, on by default.
   On Linux the first GPU load of each model runs in a child process, because a broken GPU driver (for example WSL's

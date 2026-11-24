@@ -22,24 +22,34 @@ load("@build_bazel_rules_swift//swift:swift.bzl", "swift_library")
 
 package(default_visibility = ["//visibility:public"])
 
+LITERT_LM_SWIFT_SRCS = [
+    "Benchmark.swift",
+    "Config.swift",
+    "Conversation.swift",
+    "EmbeddingEngine.swift",
+    "EmbeddingEngineConfig.swift",
+    "Engine.swift",
+    "ExperimentalFlags.swift",
+    "LiteRTLMError.swift",
+    "Message.swift",
+    "ModelInfo.swift",
+    "ResponseFormat.swift",
+    "Tool.swift",
+    "ToolChoice.swift",
+    "ToolManager.swift",
+]
+
+# The sources of the Swift API, e.g. to package them with the CLiteRTLM xcframework as a SwiftPM
+# package.
+filegroup(
+    name = "LiteRT_LM_Swift_srcs",
+    srcs = LITERT_LM_SWIFT_SRCS,
+)
+
 # Swift API for LiteRT LM.
 swift_library(
     name = "LiteRT_LM_Swift",
-    srcs = [
-        "Benchmark.swift",
-        "Config.swift",
-        "Conversation.swift",
-        "EmbeddingEngine.swift",
-        "EmbeddingEngineConfig.swift",
-        "Engine.swift",
-        "ExperimentalFlags.swift",
-        "LiteRTLMError.swift",
-        "Message.swift",
-        "ModelInfo.swift",
-        "ResponseFormat.swift",
-        "Tool.swift",
-        "ToolManager.swift",
-    ],
+    srcs = LITERT_LM_SWIFT_SRCS,
     copts = ["-enable-testing"],
     features = ["-swift.enable_v6"],
     module_name = "LiteRTLM",
@@ -119,6 +129,7 @@ C_LITERT_LM_PUBLIC_HDRS = [
     "//c:error_reporter.h",
     "//c:experimental.h",
     "//c:model_info.h",
+    "//c:model_sync.h",
 ]
 
 swift_interop_hint(
@@ -148,6 +159,7 @@ apple_xcframework(
             "arm64",
         ],
     },
+    linkopts = ["-headerpad_max_install_names"],
     minimum_os_versions = {
         "ios": "15.0",
     },
@@ -163,6 +175,7 @@ macos_dylib(
     linkopts = [
         "-undefined dynamic_lookup",
         "-install_name @rpath/libCLiteRTLM_mac.dylib",
+        "-headerpad_max_install_names",
     ],
     minimum_os_version = "12.0",
     visibility = ["//visibility:public"],
@@ -198,6 +211,7 @@ genrule(
        cp $(execpath //c:error_reporter.h) CLiteRTLM_mac/Headers/
        cp $(execpath //c:experimental.h) CLiteRTLM_mac/Headers/
        cp $(execpath //c:model_info.h) CLiteRTLM_mac/Headers/
+       cp $(execpath //c:model_sync.h) CLiteRTLM_mac/Headers/
        # Create module map
        cat << 'EOF' > CLiteRTLM_mac/Headers/module.modulemap
 module CLiteRTLM {
@@ -208,6 +222,7 @@ module CLiteRTLM {
    header "error_reporter.h"
    header "experimental.h"
    header "model_info.h"
+   header "model_sync.h"
    export *
 }
 EOF
@@ -223,6 +238,7 @@ ios_unit_test(
         "//runtime/testdata",
     ],
     minimum_os_version = "15.0",
+    requires_booted_simulator = True,
     # The ios_unit_test depends on the swift_library containing the test code.
     deps = [
         ":LiteRT_LM_EngineTestsLib",

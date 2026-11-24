@@ -371,27 +371,31 @@ dependencies {
     implementation("com.google.mlkit:genai-speech-recognition:1.0.0-alpha2")
 
     // LiteRT-LM: native Kotlin API for .litertlm models (Gemma-3n, Gemma-4, etc.)
-    // Replaces tasks-genai for litertlm format models. GPU enabled once 0.10.1 hits Maven.
-    // Its NPU dispatch libraries are not on Maven: they are built from the LiteRT revision this release
-    // pins and live in assets/litertlm_npu. Rebuild them with tools/litertlm_npu/build_dispatch.sh and run
-    // EmbeddingNpuLoadDeviceTest whenever this version changes, or NPU embedding models stop loading.
-    implementation("com.google.ai.edge.litertlm:litertlm-android:0.19.1")
+    // Replaces tasks-genai for litertlm format models.
+    // From 0.20.0 it no longer embeds LiteRT: liblitertlm_jni.so links libLiteRt.so from the litert
+    // artifact below (its POM asks for litert and litert-gpu 2.4.0), so LiteRT-LM and the CompiledModel
+    // features share one runtime and one set of NPU dispatch libraries. Keep litert, litert-gpu and
+    // litert-npu-runtime-* on the version this release's POM names, and run EmbeddingNpuLoadDeviceTest
+    // and ParakeetNpuProbeDeviceTest whenever this version changes.
+    implementation("com.google.ai.edge.litertlm:litertlm-android:0.20.0")
 
-    // LiteRT NPU dispatch libraries for the CompiledModel features (Parakeet NPU, LiteRT Stable Diffusion).
-    // Qualcomm also needs QAIRT 2.50 (QNN system API 1.14). The libs in assets/qnnlibs are the older SD
+    // LiteRT NPU dispatch libraries for LiteRT-LM (EmbeddingGemma 2 NPU) and the CompiledModel features
+    // (Parakeet NPU, LiteRT Stable Diffusion). LiteRT 2.4 looks up LiteRtDispatchQueryInterface, which
+    // these export from 2.4.0 on (2.3.x only had LiteRtDispatchGetApi).
+    // Qualcomm also needs QAIRT (data/QairtRuntime.kt). The libs in assets/qnnlibs are the older SD
     // runtime (system API 1.5) and are extracted separately, not used here.
-    implementation("com.google.ai.edge.litert:litert-npu-runtime-qualcomm:2.3.0")
-    implementation("com.google.ai.edge.litert:litert-npu-runtime-mediatek:2.3.0")
-    implementation("com.google.ai.edge.litert:litert-npu-runtime-google-tensor:2.3.0")
+    implementation("com.google.ai.edge.litert:litert-npu-runtime-qualcomm:2.4.0")
+    implementation("com.google.ai.edge.litert:litert-npu-runtime-mediatek:2.4.0")
+    implementation("com.google.ai.edge.litert:litert-npu-runtime-google-tensor:2.4.0")
 
-    // CompiledModel runtime used by SoundGen and the LiteRT Stable Diffusion NPU builds.
-    // Keep it on the version of the litert-npu-runtime dispatch libraries above (older
-    // runtimes reject them as an unsupported dispatch version) and on a release tested
-    // with SoundGen; 2.1.0 fails while invoking the DiT on Samsung OpenCL.
-    implementation("com.google.ai.edge.litert:litert:2.3.0")
+    // LiteRT runtime (libLiteRt.so) for LiteRT-LM and the CompiledModel features (SoundGen, LiteRT
+    // Stable Diffusion, Parakeet NPU). Keep it on the version of the litert-npu-runtime dispatch
+    // libraries above (other runtimes reject them as an unsupported dispatch version) and on a release
+    // tested with SoundGen; 2.1.0 fails while invoking the DiT on Samsung OpenCL.
+    implementation("com.google.ai.edge.litert:litert:2.4.0")
     // From 2.3.0 the GPU accelerator (libLiteRtClGlAccelerator.so) is a separate artifact; without it
     // CompiledModel's GPU option silently runs on CPU.
-    implementation("com.google.ai.edge.litert:litert-gpu:2.3.0")
+    implementation("com.google.ai.edge.litert:litert-gpu:2.4.0")
 
     // TensorFlow Lite interpreter used by other legacy TFLite features.
     implementation("org.tensorflow:tensorflow-lite:2.17.0")

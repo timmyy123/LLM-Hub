@@ -119,11 +119,10 @@ class LiteRtLmEmbeddingService(
     /**
      * The folder LiteRT-LM loads its NPU dispatch library from.
      *
-     * LiteRT-LM 0.19 asks the dispatch library for LiteRtDispatchQueryInterface. The litert-npu-runtime
-     * 2.3.x libraries in the APK's native library folder (used by the CompiledModel features) only export
-     * the older LiteRtDispatchGetApi, so LiteRT-LM gets its own libraries, built from the LiteRT revision it
-     * pins (tools/litertlm_npu) and shipped in assets/litertlm_npu. Each vendor has a folder with only its
-     * own dispatch library, because LiteRT loads the first one it finds.
+     * From LiteRT-LM 0.20 the engine runs on the app's libLiteRt.so (litert 2.4), so it uses the same
+     * litert-npu-runtime dispatch libraries as the CompiledModel features, from the APK's native library
+     * folder. Each vendor gets a folder with only its own dispatch library, because LiteRT loads the first
+     * one it finds.
      */
     private fun prepareNpuLibraryDir(): String {
         val nativeDir = context.applicationInfo.nativeLibraryDir
@@ -137,8 +136,8 @@ class LiteRtLmEmbeddingService(
         return try {
             val library = "libLiteRtDispatch_$vendor.so"
             val dir = File(context.filesDir, "litertlm_npu/$vendor").apply { mkdirs() }
-            val bytes = context.assets.open("litertlm_npu/$library").use { it.readBytes() }
-            File(dir, library).let { if (it.length() != bytes.size.toLong()) it.writeBytes(bytes) }
+            val source = File(nativeDir, library)
+            File(dir, library).let { if (it.length() != source.length()) source.copyTo(it, overwrite = true) }
             if (vendor == "Qualcomm") linkQnnRuntime(dir)
             dir.absolutePath
         } catch (e: Exception) {

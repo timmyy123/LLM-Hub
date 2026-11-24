@@ -41,20 +41,20 @@ let package = Package(
     // The Prebuilt Binary Target for iOS (Official Stable Release)
     // For nightly builds or pinning to specific nightly dates, switch to the 'nightly' branch or see:
     // https://github.com/google-ai-edge/LiteRT-LM/tree/main/samples/ios_and_mac#1-add-dependency
-    // LLM Hub: v0.19.1 release assets (checksums = GitHub's SHA-256 digests, same as the v0.19.1 tag's Package.swift).
-    // The Swift sources in swift/ are unchanged from v0.19.0 to v0.19.1 (C API 1.0.0).
+    // LLM Hub: v0.20.0 release assets (checksums = GitHub's SHA-256 digests, same as the v0.20.0 tag's Package.swift).
+    // The Swift sources in swift/ are upstream v0.20.0's, unchanged (C API 1.1.0).
     .binaryTarget(
       name: "CLiteRTLM",
       url:
-        "https://github.com/google-ai-edge/LiteRT-LM/releases/download/v0.19.1/CLiteRTLM.xcframework.zip",
-      checksum: "21cf294b3dfdd9c8166b0f7934ed392d5c69c8bfa57cd1a20e341a7d16874017"
+        "https://github.com/google-ai-edge/LiteRT-LM/releases/download/v0.20.0/CLiteRTLM.xcframework.zip",
+      checksum: "ae6b2b2ea3e46964152110ad5bd64b754f39273add2eb4cc417bbbbd72c5e6e7"
     ),
     // The Prebuilt Binary Target for Mac
     .binaryTarget(
       name: "CLiteRTLM_mac",
       url:
-        "https://github.com/google-ai-edge/LiteRT-LM/releases/download/v0.19.1/CLiteRTLM_mac.xcframework.zip",
-      checksum: "cedd331e78e94bf98ca8f2f28aeb3d543e20277fcd51570c12deed6d49524fb6"
+        "https://github.com/google-ai-edge/LiteRT-LM/releases/download/v0.20.0/CLiteRTLM_mac.xcframework.zip",
+      checksum: "ed5943902177e8df2ec18c5a1e85b5dcb74b55e6cab84da95d0a00776fb4a270"
     ),
     // The Swift Wrapper Target
     .target(
