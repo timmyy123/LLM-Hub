@@ -2,7 +2,7 @@
 
 <a href="https://trendshift.io/repositories/21767?utm_source=repository-badge&amp;utm_medium=badge&amp;utm_campaign=badge-repository-21767" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/repositories/21767" alt="timmyy123%2FLLM-Hub | Trendshift" width="250" height="55"/></a>
 
-**LLM Hub** is an open-source mobile app for on-device LLM chat, image generation, video generation, and music generation, available for both **Android** and **iOS**, and now on **Windows**, **macOS** and **Linux** as LLM Hub Desktop. It's optimized for mobile usage (CPU/GPU/NPU acceleration) and supports multiple model formats so you can run powerful models locally and privately.
+**LLM Hub** is an open-source app for on-device LLM chat, image generation, video generation, and music generation, available for both **Android** and **iOS**, and now on **Windows**, **macOS** and **Linux** as LLM Hub Desktop. It's optimized for mobile usage (CPU/GPU/NPU acceleration) and supports multiple model formats so you can run powerful models locally and privately.
 
 **Featured:** Featured by **RunAnywhere** on their website. Read the [LLM Hub iOS Case Study](https://www.runanywhere.ai/blog/llm-hub-ios-case-study)!
 
@@ -105,7 +105,7 @@ Enable **Claude Code mode** in the same settings to run Claude Code in Termux on
 
 ### Android Video Generation
 The Android Video Generator runs [Lightricks LTX-Video 2B 0.9.8 distilled](https://huggingface.co/Lightricks/LTX-Video) fully on-device, from a text prompt or a starting image, in 8 denoising steps.
-- **Snapdragon NPU**: The transformer and VAE decoder run on the Hexagon NPU as QNN context binaries, one build per Hexagon generation: v69 (8 Gen 1, 8+ Gen 1), v73 (8 Gen 2), v75 (8 Gen 3), v79 (8 Elite) and v81 (8 Elite Gen 5), plus an integer-only v73 build for chips whose NPU has no FP16 (8s Gen 4, 8s Gen 3, 7+ Gen 3, 7 Gen 4). A 25-frame 768x512 clip takes about 25 seconds on a Snapdragon 8 Elite; v69 and v73 chips generate at 512x320. Models: [timmyboy26/LTX-Video-2B-0.9.8-distilled-QNN](https://huggingface.co/timmyboy26/LTX-Video-2B-0.9.8-distilled-QNN).
+- **Snapdragon NPU**: The transformer and VAE decoder run on the Hexagon NPU as QNN context binaries, one build per Hexagon generation: v69 (8 Gen 1, 8+ Gen 1), v73 (8 Gen 2), v75 (8 Gen 3), v79 (8 Elite), v81 (8 Elite Gen 5) and v85 (8 Elite Gen 6), plus an integer-only v73 build for chips whose NPU has no FP16 (8s Gen 4, 8s Gen 3, 7+ Gen 3, 7 Gen 4). A 25-frame 768x512 clip takes about 25 seconds on a Snapdragon 8 Elite; v69 and v73 chips generate at 512x320. Models: [timmyboy26/LTX-Video-2B-0.9.8-distilled-QNN](https://huggingface.co/timmyboy26/LTX-Video-2B-0.9.8-distilled-QNN).
 - **Other chips**: GGUF models (Q4_0 / Q8_0) run through stable-diffusion.cpp with Vulkan on the GPU, or on the CPU. A 25-frame 512x320 clip takes about 3 minutes on an Exynos 1580 (Galaxy A56) and about 20 minutes on a Tensor G3 (Pixel 8 Pro).
 - Open **Video Generator**, download a model from the Video Generation tab, and choose the model and backend in the settings sheet. Detailed prompts that describe the subject, action, camera and lighting work best.
 - The scripts that build the NPU models are in [android/tools/ltxv_qnn](android/tools/ltxv_qnn).
@@ -209,7 +209,7 @@ Acknowledgments
 - [Lightricks LTX-Video](https://huggingface.co/Lightricks/LTX-Video): Android video generation model (LTX-Video Open Weights License)
 - [stable-diffusion.cpp](https://github.com/leejet/stable-diffusion.cpp): Android video generation runtime, extended with LTX-Video 0.9 and a QNN backend
 - [calcuis/ltxv-gguf](https://huggingface.co/calcuis/ltxv-gguf): GGUF builds of LTX-Video, T5-XXL and the VAE
-- **Google, OpenAI, Meta, Microsoft, IBM, LiquidAI, Mistral, HuggingFace**: model and tooling contributions
+- **Google, OpenAI, Meta, Microsoft, IBM, LiquidAI, Mistral, Thinking Machines, HuggingFace**: model and tooling contributions
 
 Development Setup
 
