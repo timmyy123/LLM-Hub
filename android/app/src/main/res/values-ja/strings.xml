@@ -1202,4 +1202,11 @@
     <string name="rag_threshold_overlap">必要な単語の重なり</string>
     <string name="rag_threshold_high_similarity">高い類似度</string>
     <string name="rag_threshold_high_overlap">高い類似度で必要な単語の重なり</string>
+
+    <!-- Imported model prompt template -->
+    <string name="edit">編集</string>
+    <string name="prompt_template">プロンプトテンプレート</string>
+    <string name="edit_prompt_template">プロンプトテンプレートを編集</string>
+    <string name="prompt_template_none">なし（デフォルト）</string>
+    <string name="prompt_template_hint">{{SYSTEM}}、{{USER}}、{{ASSISTANT}} をプレースホルダーとして使用</string>
 </resources>

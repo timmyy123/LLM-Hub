@@ -1113,4 +1113,11 @@
     <string name="rag_threshold_overlap">Mức trùng từ cần thiết</string>
     <string name="rag_threshold_high_similarity">Độ tương đồng cao</string>
     <string name="rag_threshold_high_overlap">Mức trùng từ cần thiết khi độ tương đồng cao</string>
+
+    <!-- Imported model prompt template -->
+    <string name="edit">Chỉnh sửa</string>
+    <string name="prompt_template">Mẫu Prompt</string>
+    <string name="edit_prompt_template">Chỉnh sửa mẫu prompt</string>
+    <string name="prompt_template_none">Không có (Mặc định)</string>
+    <string name="prompt_template_hint">Sử dụng {{SYSTEM}}, {{USER}}, {{ASSISTANT}} làm chỗ giữ chỗ</string>
 </resources>

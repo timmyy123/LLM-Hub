@@ -1418,6 +1418,14 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
         }
     }
     
+    /** Sets or clears (blank) the prompt template of an imported model and saves it. */
+    fun updatePromptTemplate(modelName: String, promptTemplate: String?) {
+        val newTemplate = promptTemplate?.takeIf { it.isNotBlank() }
+        updateModel(modelName) { existing ->
+            if (existing.source == "Custom") existing.copy(promptTemplate = newTemplate) else existing
+        }
+    }
+
     fun getImportedModels(): List<LLMModel> {
         return _models.value.filter { it.source == "Custom" && it.isDownloaded }
     }

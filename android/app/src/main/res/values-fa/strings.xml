@@ -1205,4 +1205,11 @@
     <string name="rag_threshold_overlap">میزان واژه‌های مشترک لازم</string>
     <string name="rag_threshold_high_similarity">شباهت بالا</string>
     <string name="rag_threshold_high_overlap">میزان واژه‌های مشترک لازم در شباهت بالا</string>
+
+    <!-- Imported model prompt template -->
+    <string name="edit">ویرایش</string>
+    <string name="prompt_template">الگوی پرامپت</string>
+    <string name="edit_prompt_template">ویرایش الگوی پرامپت</string>
+    <string name="prompt_template_none">هیچ‌کدام (پیش‌فرض)</string>
+    <string name="prompt_template_hint">از {{SYSTEM}}، {{USER}}، {{ASSISTANT}} به عنوان جایگزین استفاده کنید</string>
 </resources>

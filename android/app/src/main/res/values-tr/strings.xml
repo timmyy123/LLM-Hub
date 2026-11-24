@@ -1203,4 +1203,11 @@
     <string name="rag_threshold_overlap">Gereken kelime örtüşmesi</string>
     <string name="rag_threshold_high_similarity">Yüksek benzerlik</string>
     <string name="rag_threshold_high_overlap">Yüksek benzerlikte gereken kelime örtüşmesi</string>
+
+    <!-- Imported model prompt template -->
+    <string name="edit">Düzenle</string>
+    <string name="prompt_template">Prompt Şablonu</string>
+    <string name="edit_prompt_template">Prompt Şablonunu Düzenle</string>
+    <string name="prompt_template_none">Yok (Varsayılan)</string>
+    <string name="prompt_template_hint">{{SYSTEM}}, {{USER}}, {{ASSISTANT}} yer tutucularını kullanın</string>
 </resources>

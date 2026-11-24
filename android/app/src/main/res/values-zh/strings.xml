@@ -1213,4 +1213,11 @@
     <string name="rag_threshold_overlap">所需词语重合度</string>
     <string name="rag_threshold_high_similarity">高相似度</string>
     <string name="rag_threshold_high_overlap">高相似度时所需词语重合度</string>
+
+    <!-- Imported model prompt template -->
+    <string name="edit">编辑</string>
+    <string name="prompt_template">提示词模板</string>
+    <string name="edit_prompt_template">编辑提示词模板</string>
+    <string name="prompt_template_none">无（默认）</string>
+    <string name="prompt_template_hint">使用 {{SYSTEM}}、{{USER}}、{{ASSISTANT}} 作为占位符</string>
 </resources>

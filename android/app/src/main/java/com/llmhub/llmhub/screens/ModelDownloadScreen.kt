@@ -596,7 +596,8 @@ private fun ModelFamilyCard(
                         onCancel = { viewModel.cancelDownload(it) },
                         onPause = { viewModel.pauseDownload(it) },
                         onResume = { viewModel.resumeDownload(it) },
-                        onDelete = { viewModel.deleteModel(it) }
+                        onDelete = { viewModel.deleteModel(it) },
+                        onSavePromptTemplate = { viewModel.updatePromptTemplate(model.name, it) }
                     )
                 }
             }
@@ -612,7 +613,8 @@ private fun ModelVariantItem(
     onCancel: (LLMModel) -> Unit,
     onPause: (LLMModel) -> Unit,
     onResume: (LLMModel) -> Unit,
-    onDelete: (LLMModel) -> Unit
+    onDelete: (LLMModel) -> Unit,
+    onSavePromptTemplate: ((String?) -> Unit)? = null
 ) {
     val scope = rememberCoroutineScope()
     var exportError by remember { mutableStateOf<String?>(null) }
@@ -867,7 +869,12 @@ private fun ModelVariantItem(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            
+
+            // Imported GGUF models: the user's own chat format (llama.cpp is the only engine that takes it).
+            if (onSavePromptTemplate != null && model.source == "Custom" && model.modelFormat == "gguf" && model.isDownloaded) {
+                PromptTemplateSection(model = model, onSave = onSavePromptTemplate)
+            }
+
             // Action button
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -1036,6 +1043,123 @@ private fun ModelVariantItem(
             }
         }
     }
+}
+
+/** The imported model's prompt template, a short preview and an Edit button that opens [PromptTemplateDialog]. */
+@Composable
+private fun PromptTemplateSection(model: LLMModel, onSave: (String?) -> Unit) {
+    var editing by remember { mutableStateOf(false) }
+    val template = model.promptTemplate?.takeIf { it.isNotBlank() }
+
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                Icons.Default.FormatQuote,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                text = stringResource(R.string.prompt_template),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f)
+            )
+            TextButton(onClick = { editing = true }) {
+                Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(stringResource(R.string.edit))
+            }
+        }
+        if (template != null) {
+            Surface(
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                shape = MaterialTheme.shapes.small,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = template,
+                    style = MaterialTheme.typography.bodySmall.copy(fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 3,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(8.dp)
+                )
+            }
+        } else {
+            Text(
+                text = stringResource(R.string.prompt_template_none),
+                style = MaterialTheme.typography.bodySmall,
+                fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+
+    if (editing) {
+        PromptTemplateDialog(
+            initial = template.orEmpty(),
+            onDismiss = { editing = false },
+            onSave = {
+                onSave(it)
+                editing = false
+            }
+        )
+    }
+}
+
+@Composable
+private fun PromptTemplateDialog(initial: String, onDismiss: () -> Unit, onSave: (String?) -> Unit) {
+    var text by remember { mutableStateOf(initial) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.edit_prompt_template)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = text,
+                    onValueChange = { text = it },
+                    placeholder = {
+                        Text(
+                            stringResource(R.string.prompt_template_placeholder),
+                            style = MaterialTheme.typography.bodySmall.copy(fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace)
+                        )
+                    },
+                    textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace),
+                    minLines = 5,
+                    maxLines = 12,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Text(
+                    text = stringResource(R.string.prompt_template_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                if (text.isNotEmpty()) {
+                    TextButton(
+                        onClick = { text = "" },
+                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Text(stringResource(R.string.clear))
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onSave(text.takeIf { it.isNotBlank() }) }) {
+                Text(stringResource(R.string.save))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.cancel))
+            }
+        }
+    )
 }
 
 private fun resolveLocalModelFiles(model: LLMModel, context: Context): List<File> {

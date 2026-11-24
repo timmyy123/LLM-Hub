@@ -1231,4 +1231,11 @@
     <string name="rag_threshold_overlap">ज़रूरी शब्द मेल</string>
     <string name="rag_threshold_high_similarity">उच्च समानता</string>
     <string name="rag_threshold_high_overlap">उच्च समानता पर ज़रूरी शब्द मेल</string>
+
+    <!-- Imported model prompt template -->
+    <string name="edit">संपादित करें</string>
+    <string name="prompt_template">प्रॉम्प्ट टेम्पलेट</string>
+    <string name="edit_prompt_template">प्रॉम्प्ट टेम्पलेट संपादित करें</string>
+    <string name="prompt_template_none">कोई नहीं (डिफ़ॉल्ट)</string>
+    <string name="prompt_template_hint">प्लेसहोल्डर के रूप में {{SYSTEM}}, {{USER}}, {{ASSISTANT}} का उपयोग करें</string>
 </resources>

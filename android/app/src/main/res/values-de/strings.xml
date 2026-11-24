@@ -1171,4 +1171,11 @@
     <string name="rag_threshold_overlap">Benötigte Wortübereinstimmung</string>
     <string name="rag_threshold_high_similarity">Hohe Ähnlichkeit</string>
     <string name="rag_threshold_high_overlap">Benötigte Wortübereinstimmung bei hoher Ähnlichkeit</string>
+
+    <!-- Imported model prompt template -->
+    <string name="edit">Bearbeiten</string>
+    <string name="prompt_template">Prompt-Vorlage</string>
+    <string name="edit_prompt_template">Prompt-Vorlage bearbeiten</string>
+    <string name="prompt_template_none">Keine (Standard)</string>
+    <string name="prompt_template_hint">Verwende {{SYSTEM}}, {{USER}}, {{ASSISTANT}} als Platzhalter</string>
 </resources>

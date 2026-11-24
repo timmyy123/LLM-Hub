@@ -1177,4 +1177,11 @@
     <string name="rag_threshold_overlap">Нужное совпадение слов</string>
     <string name="rag_threshold_high_similarity">Высокое сходство</string>
     <string name="rag_threshold_high_overlap">Нужное совпадение слов при высоком сходстве</string>
+
+    <!-- Imported model prompt template -->
+    <string name="edit">Изменить</string>
+    <string name="prompt_template">Шаблон промпта</string>
+    <string name="edit_prompt_template">Редактировать шаблон промпта</string>
+    <string name="prompt_template_none">Нет (по умолчанию)</string>
+    <string name="prompt_template_hint">Используйте {{SYSTEM}}, {{USER}}, {{ASSISTANT}} как заполнители</string>
 </resources>

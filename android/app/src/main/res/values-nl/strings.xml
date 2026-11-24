@@ -1113,4 +1113,11 @@
     <string name="rag_threshold_overlap">Benodigde woordoverlap</string>
     <string name="rag_threshold_high_similarity">Hoge overeenkomst</string>
     <string name="rag_threshold_high_overlap">Benodigde woordoverlap bij hoge overeenkomst</string>
+
+    <!-- Imported model prompt template -->
+    <string name="edit">Bewerken</string>
+    <string name="prompt_template">Prompt-sjabloon</string>
+    <string name="edit_prompt_template">Prompt-sjabloon bewerken</string>
+    <string name="prompt_template_none">Geen (standaard)</string>
+    <string name="prompt_template_hint">Gebruik {{SYSTEM}}, {{USER}}, {{ASSISTANT}} als plaatshouders</string>
 </resources>

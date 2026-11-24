@@ -1113,4 +1113,11 @@
     <string name="rag_threshold_overlap">สัดส่วนคำที่ตรงกันที่ต้องการ</string>
     <string name="rag_threshold_high_similarity">ความคล้ายสูง</string>
     <string name="rag_threshold_high_overlap">สัดส่วนคำที่ตรงกันที่ต้องการเมื่อความคล้ายสูง</string>
+
+    <!-- Imported model prompt template -->
+    <string name="edit">แก้ไข</string>
+    <string name="prompt_template">เทมเพลตพรอมต์</string>
+    <string name="edit_prompt_template">แก้ไขเทมเพลตพรอมต์</string>
+    <string name="prompt_template_none">ไม่มี (ค่าเริ่มต้น)</string>
+    <string name="prompt_template_hint">ใช้ {{SYSTEM}}, {{USER}}, {{ASSISTANT}} เป็นตัวแทน</string>
 </resources>

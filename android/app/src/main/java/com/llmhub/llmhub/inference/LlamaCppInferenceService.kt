@@ -186,6 +186,9 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
         /** nativeStartCompletion result when a stop arrived during prompt evaluation (llama_cpp_jni.cpp). */
         private const val STOPPED_DURING_PROMPT = 11
         private const val MAX_IMAGE_DIMENSION = 300
+        private const val SYSTEM_PLACEHOLDER = "{{SYSTEM}}"
+        private const val USER_PLACEHOLDER = "{{USER}}"
+        private const val ASSISTANT_PLACEHOLDER = "{{ASSISTANT}}"
         private const val FLASH_STREAMING = "FlashStreaming"
         private const val FLASH_STREAMING_NPU = "FlashStreamingNpu"
         private const val FLASH_STREAMING_VULKAN = "FlashStreamingVulkan"
@@ -1241,7 +1244,12 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
         }
         val messages = parseMessagesLikeGeniex(cleanPrompt)
 
-        val isMuseGlimmer = model.name.contains("muse glimmer", ignoreCase = true) ||
+        // An imported model's own prompt template, set in the model download screen, replaces every built-in format.
+        model.promptTemplate?.takeIf { it.contains(USER_PLACEHOLDER) }?.let { template ->
+            return buildCustomTemplatePrompt(template, messages)
+        }
+
+        val isMuseGlimmer =model.name.contains("muse glimmer", ignoreCase = true) ||
             model.name.contains("muse-glimmer", ignoreCase = true)
         if (isMuseGlimmer) {
             return buildMuseGlimmerPrompt(messages, cleanPrompt, thinkingEnabled)
@@ -1340,6 +1348,56 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
             }
         }
         sb.append("<|im_start|>assistant\n")
+        return sb.toString()
+    }
+
+    /**
+     * Writes the conversation with a user-typed template describing one exchange, e.g.
+     * `<|im_start|>user\n{{USER}}<|im_end|>\n<|im_start|>assistant\n{{ASSISTANT}}<|im_end|>\n`.
+     * Each finished exchange fills the whole template; the last user turn stops where {{ASSISTANT}} starts, so the
+     * model writes the reply. The system text fills {{SYSTEM}} in the first exchange, or opens the first user
+     * message when the template has no {{SYSTEM}}.
+     */
+    private fun buildCustomTemplatePrompt(template: String, messages: List<VlmPromptTurn>): String {
+        val system = messages.filter { it.role == "system" }.joinToString("\n\n") { it.text.trim() }.trim()
+        val hasSystemSlot = template.contains(SYSTEM_PLACEHOLDER)
+        val assistantAt = template.indexOf(ASSISTANT_PLACEHOLDER)
+        val openTurn = if (assistantAt >= 0) template.substring(0, assistantAt) else template
+
+        val sb = StringBuilder()
+        var first = true
+        var pendingUser: String? = null
+
+        fun fill(part: String, user: String, assistant: String): String {
+            val systemText = if (first) system else ""
+            return part
+                .replace(SYSTEM_PLACEHOLDER, systemText)
+                .replace(USER_PLACEHOLDER, user)
+                .replace(ASSISTANT_PLACEHOLDER, assistant)
+        }
+
+        fun userText(text: String): String =
+            if (first && !hasSystemSlot && system.isNotEmpty()) "$system\n\n$text" else text
+
+        messages.filter { it.role != "system" }.forEach { turn ->
+            when (turn.role) {
+                "user" -> {
+                    // Two user turns in a row: close the earlier one with an empty reply.
+                    pendingUser?.let { sb.append(fill(template, it, "")); first = false }
+                    pendingUser = userText(turn.text)
+                }
+                "assistant" -> {
+                    val reply = stripThinkingForHistory(turn.text).ifBlank { turn.text }.trim()
+                    // An empty assistant turn is the reply still to be written; the open turn below covers it.
+                    if (reply.isNotEmpty()) {
+                        sb.append(fill(template, pendingUser ?: userText(""), reply))
+                        first = false
+                        pendingUser = null
+                    }
+                }
+            }
+        }
+        sb.append(fill(openTurn, pendingUser ?: userText(""), ""))
         return sb.toString()
     }
 

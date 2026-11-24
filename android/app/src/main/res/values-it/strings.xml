@@ -1199,4 +1199,11 @@
     <string name="rag_threshold_overlap">Parole in comune richieste</string>
     <string name="rag_threshold_high_similarity">Somiglianza alta</string>
     <string name="rag_threshold_high_overlap">Parole in comune richieste con somiglianza alta</string>
+
+    <!-- Imported model prompt template -->
+    <string name="edit">Modifica</string>
+    <string name="prompt_template">Template del Prompt</string>
+    <string name="edit_prompt_template">Modifica template del prompt</string>
+    <string name="prompt_template_none">Nessuno (predefinito)</string>
+    <string name="prompt_template_hint">Usa {{SYSTEM}}, {{USER}}, {{ASSISTANT}} come segnaposto</string>
 </resources>

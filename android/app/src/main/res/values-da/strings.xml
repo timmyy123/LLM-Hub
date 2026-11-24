@@ -1174,4 +1174,11 @@ Du forsøger at sende et billede, men den nuværende model er **kun-tekst**:
     <string name="rag_threshold_overlap">Krævet ordoverlap</string>
     <string name="rag_threshold_high_similarity">Høj lighed</string>
     <string name="rag_threshold_high_overlap">Krævet ordoverlap ved høj lighed</string>
+
+    <!-- Imported model prompt template -->
+    <string name="edit">Rediger</string>
+    <string name="prompt_template">Prompt-skabelon</string>
+    <string name="edit_prompt_template">Rediger prompt-skabelon</string>
+    <string name="prompt_template_none">Ingen (standard)</string>
+    <string name="prompt_template_hint">Brug {{SYSTEM}}, {{USER}}, {{ASSISTANT}} som pladsholdere</string>
 </resources>

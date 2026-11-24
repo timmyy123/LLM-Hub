@@ -1204,4 +1204,11 @@
     <string name="rag_threshold_overlap">חפיפת מילים נדרשת</string>
     <string name="rag_threshold_high_similarity">דמיון גבוה</string>
     <string name="rag_threshold_high_overlap">חפיפת מילים נדרשת בדמיון גבוה</string>
+
+    <!-- Imported model prompt template -->
+    <string name="edit">ערוך</string>
+    <string name="prompt_template">תבנית הנחיה</string>
+    <string name="edit_prompt_template">עריכת תבנית הנחיה</string>
+    <string name="prompt_template_none">ללא (ברירת מחדל)</string>
+    <string name="prompt_template_hint">השתמש ב-{{SYSTEM}}, {{USER}}, {{ASSISTANT}} כמצייני מיקום</string>
 </resources>

@@ -23,6 +23,11 @@ data class LLMModel(
     val contextWindowSize: Int = 2048, // Default context window size in tokens
     val modelFormat: String = "task", // "task", "litertlm" (MediaPipe formats), or "onnx" (ONNX Runtime)
     val additionalFiles: List<String> = emptyList(), // Additional files required (for ONNX models that have separate data files)
+    /**
+     * Imported GGUF models only: a chat format typed by the user, with {{SYSTEM}}, {{USER}} and {{ASSISTANT}}
+     * placeholders for one exchange. Null uses the model file's own chat template.
+     */
+    val promptTemplate: String? = null,
     var isDownloaded: Boolean = false,
     var isDownloading: Boolean = false, // New: whether a download is currently in progress for this model
     var isExtracting: Boolean = false, // Whether ZIP extraction is in progress

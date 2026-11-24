@@ -1207,4 +1207,11 @@
     <string name="rag_threshold_overlap">Kecocokan kata yang diperlukan</string>
     <string name="rag_threshold_high_similarity">Kemiripan tinggi</string>
     <string name="rag_threshold_high_overlap">Kecocokan kata yang diperlukan pada kemiripan tinggi</string>
+
+    <!-- Imported model prompt template -->
+    <string name="edit">Edit</string>
+    <string name="prompt_template">Template Prompt</string>
+    <string name="edit_prompt_template">Edit Template Prompt</string>
+    <string name="prompt_template_none">Tidak ada (Default)</string>
+    <string name="prompt_template_hint">Gunakan {{SYSTEM}}, {{USER}}, {{ASSISTANT}} sebagai placeholder</string>
 </resources>

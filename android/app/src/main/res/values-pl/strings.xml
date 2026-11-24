@@ -1209,4 +1209,11 @@
     <string name="rag_threshold_overlap">Wymagane pokrycie słów</string>
     <string name="rag_threshold_high_similarity">Wysokie podobieństwo</string>
     <string name="rag_threshold_high_overlap">Wymagane pokrycie słów przy wysokim podobieństwie</string>
+
+    <!-- Imported model prompt template -->
+    <string name="edit">Edytuj</string>
+    <string name="prompt_template">Szablon Promptu</string>
+    <string name="edit_prompt_template">Edytuj szablon promptu</string>
+    <string name="prompt_template_none">Brak (domyślny)</string>
+    <string name="prompt_template_hint">Użyj {{SYSTEM}}, {{USER}}, {{ASSISTANT}} jako symboli zastępczych</string>
 </resources>

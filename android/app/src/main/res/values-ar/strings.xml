@@ -1205,4 +1205,11 @@
     <string name="rag_threshold_overlap">نسبة تطابق الكلمات المطلوبة</string>
     <string name="rag_threshold_high_similarity">تشابه عالٍ</string>
     <string name="rag_threshold_high_overlap">نسبة تطابق الكلمات المطلوبة عند التشابه العالي</string>
+
+    <!-- Imported model prompt template -->
+    <string name="edit">تعديل</string>
+    <string name="prompt_template">قالب التوجيه</string>
+    <string name="edit_prompt_template">تعديل قالب التوجيه</string>
+    <string name="prompt_template_none">بلا (افتراضي)</string>
+    <string name="prompt_template_hint">استخدم {{SYSTEM}}، {{USER}}، {{ASSISTANT}} كعناصر نائبة</string>
 </resources>

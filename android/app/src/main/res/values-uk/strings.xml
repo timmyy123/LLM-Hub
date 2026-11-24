@@ -1205,4 +1205,11 @@
     <string name="rag_threshold_overlap">Потрібний збіг слів</string>
     <string name="rag_threshold_high_similarity">Висока схожість</string>
     <string name="rag_threshold_high_overlap">Потрібний збіг слів за високої схожості</string>
+
+    <!-- Imported model prompt template -->
+    <string name="edit">Редагувати</string>
+    <string name="prompt_template">Шаблон промпту</string>
+    <string name="edit_prompt_template">Редагувати шаблон промпту</string>
+    <string name="prompt_template_none">Немає (за замовчуванням)</string>
+    <string name="prompt_template_hint">Використовуйте {{SYSTEM}}, {{USER}}, {{ASSISTANT}} як заповнювачі</string>
 </resources>

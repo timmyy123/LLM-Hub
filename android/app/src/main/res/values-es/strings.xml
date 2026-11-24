@@ -1208,4 +1208,11 @@
     <string name="rag_threshold_overlap">Coincidencia de palabras necesaria</string>
     <string name="rag_threshold_high_similarity">Similitud alta</string>
     <string name="rag_threshold_high_overlap">Coincidencia de palabras necesaria con similitud alta</string>
+
+    <!-- Imported model prompt template -->
+    <string name="edit">Editar</string>
+    <string name="prompt_template">Plantilla de Prompt</string>
+    <string name="edit_prompt_template">Editar plantilla de prompt</string>
+    <string name="prompt_template_none">Ninguna (predeterminada)</string>
+    <string name="prompt_template_hint">Usa {{SYSTEM}}, {{USER}}, {{ASSISTANT}} como marcadores</string>
 </resources>

@@ -1225,4 +1225,12 @@
     <string name="rag_threshold_overlap">Word overlap needed</string>
     <string name="rag_threshold_high_similarity">High similarity</string>
     <string name="rag_threshold_high_overlap">Word overlap needed at high similarity</string>
+
+    <!-- Imported model prompt template -->
+    <string name="edit">Edit</string>
+    <string name="prompt_template">Prompt Template</string>
+    <string name="edit_prompt_template">Edit Prompt Template</string>
+    <string name="prompt_template_none">None (Default)</string>
+    <string name="prompt_template_hint">Use {{SYSTEM}}, {{USER}}, {{ASSISTANT}} as placeholders</string>
+    <string name="prompt_template_placeholder" translatable="false">&lt;|im_start|&gt;user\n{{USER}}&lt;|im_end|&gt;\n&lt;|im_start|&gt;assistant\n{{ASSISTANT}}&lt;|im_end|&gt;\n</string>
 </resources>

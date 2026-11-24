@@ -1205,4 +1205,11 @@
     <string name="rag_threshold_overlap">필요한 단어 겹침</string>
     <string name="rag_threshold_high_similarity">높은 유사도</string>
     <string name="rag_threshold_high_overlap">높은 유사도에서 필요한 단어 겹침</string>
+
+    <!-- Imported model prompt template -->
+    <string name="edit">편집</string>
+    <string name="prompt_template">프롬프트 템플릿</string>
+    <string name="edit_prompt_template">프롬프트 템플릿 편집</string>
+    <string name="prompt_template_none">없음(기본값)</string>
+    <string name="prompt_template_hint">{{SYSTEM}}, {{USER}}, {{ASSISTANT}}를 플레이스홀더로 사용</string>
 </resources>
