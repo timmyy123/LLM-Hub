@@ -1390,21 +1390,6 @@ public static let models: [AIModel] = [
         additionalFiles: []
     ),
     AIModel(
-        name: "Granite 4.0 H-Tiny (f16)",
-        description: "IBM Granite 4.0 H-Tiny with f16 (full precision). Maximum quality, largest size. 128k context. (13.9GB)",
-        url: "https://huggingface.co/ibm-granite/granite-4.0-h-tiny-GGUF/resolve/main/granite-4.0-h-tiny-f16.gguf?download=true",
-        category: .text,
-        sizeBytes: 13900000000,
-        source: "IBM Granite",
-        supportsVision: false,
-        supportsAudio: false,
-        supportsGpu: true,
-        requirements: ModelRequirements(minRamGB: 14, recommendedRamGB: 16),
-        contextWindowSize: 131072,
-        modelFormat: .gguf,
-        additionalFiles: []
-    ),
-    AIModel(
         name: "Granite 4.0 H-Small (Q2_K)",
         description: "IBM Granite 4.0 H-Small with Q2_K quantization. Smallest size. 128k context. (11.8GB)",
         url: "https://huggingface.co/ibm-granite/granite-4.0-h-small-GGUF/resolve/main/granite-4.0-h-small-Q2_K.gguf?download=true",
