@@ -118,13 +118,14 @@ class MiganDeviceTest {
     }
 
     /**
-     * A real photo: files/migan-photo/photo.jpg with masks mask_*.png (white = erase), each erased on its own.
-     * Crops a square around the mask (512 px, or larger and scaled down to 512), inpaints on the GPU, scales the
-     * result back and replaces only the masked pixels, then writes out_*.jpg next to the inputs.
+     * A real photo: files/migan-photo/photo.jpg with masks mask_*.png (white = erase). Each separate painted region
+     * of a mask is erased in turn on the running result: crop a square around it (512 px, or larger and scaled down
+     * to 512), inpaint on the GPU, scale back and replace only that region's pixels. Writes out_*.jpg per mask.
      */
     @Test fun photoGpu() {
         val dir = File(context.filesDir, "migan-photo")
         val photo = BitmapFactory.decodeFile(File(dir, "photo.jpg").path)
+        val w = photo.width; val h = photo.height
         val file = File(File(context.filesDir, "models").apply { mkdirs() }, FP16.file)
         OnDeviceFixtures.download(file, FP16.url, FP16.sha256)
         val model = CompiledModel.create(file.absolutePath, CompiledModel.Options(Accelerator.GPU))
@@ -132,47 +133,66 @@ class MiganDeviceTest {
             val inputs = model.createInputBuffers(); val outputs = model.createOutputBuffers()
             for (maskFile in dir.listFiles { f -> f.name.startsWith("mask_") }.orEmpty().sortedBy { it.name }) {
                 val t0 = SystemClock.elapsedRealtime()
-                val mask = BitmapFactory.decodeFile(maskFile.path)
-                val w = photo.width; val h = photo.height
-                val mp = IntArray(w * h).also { mask.getPixels(it, 0, w, 0, 0, w, h) }
-                var x0 = w; var y0 = h; var x1 = 0; var y1 = 0
-                for (y in 0 until h) for (x in 0 until w) if ((mp[y * w + x] and 0xFF) > 127) {
-                    if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y
+                val mp = IntArray(w * h).also { BitmapFactory.decodeFile(maskFile.path).getPixels(it, 0, w, 0, 0, w, h) }
+                val result = IntArray(w * h).also { photo.getPixels(it, 0, w, 0, 0, w, h) }
+                // Label the painted regions (4-connected).
+                val label = IntArray(w * h); var regions = 0
+                val stack = IntArray(w * h)
+                for (start in 0 until w * h) {
+                    if ((mp[start] and 0xFF) <= 127 || label[start] != 0) continue
+                    regions++; var top = 0; stack[top++] = start; label[start] = regions
+                    while (top > 0) {
+                        val q = stack[--top]; val qx = q % w; val qy = q / w
+                        for (n in intArrayOf(if (qx > 0) q - 1 else -1, if (qx < w - 1) q + 1 else -1, if (qy > 0) q - w else -1, if (qy < h - 1) q + w else -1)) {
+                            if (n >= 0 && label[n] == 0 && (mp[n] and 0xFF) > 127) { label[n] = regions; stack[top++] = n }
+                        }
+                    }
                 }
-                val side = maxOf(N, ((maxOf(x1 - x0, y1 - y0) + 1) * 1.4f).toInt()).coerceAtMost(minOf(w, h))
-                val cx = ((x0 + x1) / 2 - side / 2).coerceIn(0, w - side)
-                val cy = ((y0 + y1) / 2 - side / 2).coerceIn(0, h - side)
-                val crop = Bitmap.createScaledBitmap(Bitmap.createBitmap(photo, cx, cy, side, side), N, N, true)
-                val cropMask = Bitmap.createScaledBitmap(Bitmap.createBitmap(mask, cx, cy, side, side), N, N, true)
-                val cp = IntArray(N * N).also { crop.getPixels(it, 0, N, 0, 0, N, N) }
-                val km = IntArray(N * N).also { cropMask.getPixels(it, 0, N, 0, 0, N, N) }
-                val x = FloatArray(4 * N * N)
-                for (i in 0 until N * N) {
-                    val keep = if ((km[i] and 0xFF) > 127) 0f else 1f
-                    x[i] = keep - 0.5f
-                    x[N * N + i] = (((cp[i] shr 16) and 0xFF) / 127.5f - 1f) * keep
-                    x[2 * N * N + i] = (((cp[i] shr 8) and 0xFF) / 127.5f - 1f) * keep
-                    x[3 * N * N + i] = ((cp[i] and 0xFF) / 127.5f - 1f) * keep
+                var inferTotal = 0L
+                for (region in 1..regions) {
+                    var x0 = w; var y0 = h; var x1 = 0; var y1 = 0
+                    for (q in 0 until w * h) if (label[q] == region) {
+                        val qx = q % w; val qy = q / w
+                        if (qx < x0) x0 = qx; if (qx > x1) x1 = qx; if (qy < y0) y0 = qy; if (qy > y1) y1 = qy
+                    }
+                    val side = maxOf(N, ((maxOf(x1 - x0, y1 - y0) + 1) * 1.4f).toInt()).coerceAtMost(minOf(w, h))
+                    val cx = ((x0 + x1) / 2 - side / 2).coerceIn(0, w - side)
+                    val cy = ((y0 + y1) / 2 - side / 2).coerceIn(0, h - side)
+                    val cropPx = IntArray(side * side); val cropMask = IntArray(side * side)
+                    for (yy in 0 until side) for (xx in 0 until side) {
+                        val q = (cy + yy) * w + cx + xx
+                        cropPx[yy * side + xx] = result[q]
+                        cropMask[yy * side + xx] = if (label[q] == region) -1 else 0xFF000000.toInt()
+                    }
+                    val crop = Bitmap.createScaledBitmap(Bitmap.createBitmap(cropPx, side, side, Bitmap.Config.ARGB_8888), N, N, true)
+                    val cm = Bitmap.createScaledBitmap(Bitmap.createBitmap(cropMask, side, side, Bitmap.Config.ARGB_8888), N, N, true)
+                    val cp = IntArray(N * N).also { crop.getPixels(it, 0, N, 0, 0, N, N) }
+                    val km = IntArray(N * N).also { cm.getPixels(it, 0, N, 0, 0, N, N) }
+                    val x = FloatArray(4 * N * N)
+                    for (i in 0 until N * N) {
+                        val keep = if ((km[i] and 0xFF) > 127) 0f else 1f
+                        x[i] = keep - 0.5f
+                        x[N * N + i] = (((cp[i] shr 16) and 0xFF) / 127.5f - 1f) * keep
+                        x[2 * N * N + i] = (((cp[i] shr 8) and 0xFF) / 127.5f - 1f) * keep
+                        x[3 * N * N + i] = ((cp[i] and 0xFF) / 127.5f - 1f) * keep
+                    }
+                    val t1 = SystemClock.elapsedRealtime()
+                    inputs[0].writeFloat(x); model.run(inputs, outputs); val out = outputs[0].readFloat()
+                    inferTotal += SystemClock.elapsedRealtime() - t1
+                    fun c(v: Float) = ((v + 1f) * 127.5f).toInt().coerceIn(0, 255)
+                    val gen = Bitmap.createBitmap(IntArray(N * N) { i ->
+                        (0xFF shl 24) or (c(out[i]) shl 16) or (c(out[N * N + i]) shl 8) or c(out[2 * N * N + i])
+                    }, N, N, Bitmap.Config.ARGB_8888)
+                    val bp = IntArray(side * side).also { Bitmap.createScaledBitmap(gen, side, side, true).getPixels(it, 0, side, 0, 0, side, side) }
+                    for (yy in 0 until side) for (xx in 0 until side) {
+                        val q = (cy + yy) * w + cx + xx
+                        if (label[q] == region) result[q] = bp[yy * side + xx]
+                    }
+                    Log.i(TAG, "REGION ${maskFile.name} #$region crop=${side}px at ($cx,$cy)")
                 }
-                val t1 = SystemClock.elapsedRealtime()
-                inputs[0].writeFloat(x); model.run(inputs, outputs); val out = outputs[0].readFloat()
-                val inferMs = SystemClock.elapsedRealtime() - t1
-                fun c(v: Float) = ((v + 1f) * 127.5f).toInt().coerceIn(0, 255)
-                val gen = Bitmap.createBitmap(IntArray(N * N) { i ->
-                    (0xFF shl 24) or (c(out[i]) shl 16) or (c(out[N * N + i]) shl 8) or c(out[2 * N * N + i])
-                }, N, N, Bitmap.Config.ARGB_8888)
-                val back = Bitmap.createScaledBitmap(gen, side, side, true)
-                val bp = IntArray(side * side).also { back.getPixels(it, 0, side, 0, 0, side, side) }
-                val result = photo.copy(Bitmap.Config.ARGB_8888, true)
-                val rp = IntArray(w * h).also { result.getPixels(it, 0, w, 0, 0, w, h) }
-                for (yy in 0 until side) for (xx in 0 until side) {
-                    val gi = (cy + yy) * w + (cx + xx)
-                    if ((mp[gi] and 0xFF) > 127) rp[gi] = bp[yy * side + xx]
-                }
-                result.setPixels(rp, 0, w, 0, 0, w, h)
                 val target = File(dir, "out_" + maskFile.nameWithoutExtension.removePrefix("mask_") + ".jpg")
-                target.outputStream().use { result.compress(Bitmap.CompressFormat.JPEG, 92, it) }
-                Log.i(TAG, "RESULT photo ${maskFile.name} crop=${side}px at ($cx,$cy) inference=${inferMs}ms total=${SystemClock.elapsedRealtime() - t0}ms")
+                target.outputStream().use { Bitmap.createBitmap(result, w, h, Bitmap.Config.ARGB_8888).compress(Bitmap.CompressFormat.JPEG, 92, it) }
+                Log.i(TAG, "RESULT photo ${maskFile.name} regions=$regions inference=${inferTotal}ms total=${SystemClock.elapsedRealtime() - t0}ms")
             }
         } finally {
             model.close()
