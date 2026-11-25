@@ -200,12 +200,7 @@ fun AudioSearchScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.GraphicEq, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(end = 8.dp))
-                        Text(stringResource(R.string.feature_audio_search), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                    }
-                },
+                title = { Text(stringResource(R.string.feature_audio_search), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.back))
