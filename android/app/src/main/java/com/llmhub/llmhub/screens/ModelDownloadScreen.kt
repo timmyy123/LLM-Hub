@@ -70,7 +70,7 @@ enum class ModelFormat {
 }
 
 enum class DownloadCategory {
-    MULTIMODAL, TEXT, ASR, TTS, EMBEDDING, IMAGE_GENERATION, IMAGE_UPSCALE, MUSIC_GENERATION, VIDEO_GENERATION
+    MULTIMODAL, TEXT, ASR, TTS, EMBEDDING, IMAGE_GENERATION, IMAGE_UPSCALE, IMAGE_INPAINTING, MUSIC_GENERATION, VIDEO_GENERATION
 }
 
 /**
@@ -145,6 +145,8 @@ fun ModelDownloadScreen(
     val imageGenGrouped = imageGenerationModels.groupBy { it.name.substringBefore("(").trim() }
     val imageUpscaleModels = models.filter { it.category == "image_upscale" }
     val imageUpscaleGrouped = imageUpscaleModels.groupBy { it.name.substringBefore("(").trim() }
+    val imageInpaintingModels = models.filter { it.category == com.llmhub.llmhub.data.InpaintModels.CATEGORY }
+    val imageInpaintingGrouped = imageInpaintingModels.groupBy { it.name.substringBefore("(").trim() }
     val musicGenModels = models.filter { it.category == "music_generation" }
     val musicGenGrouped = musicGenModels.groupBy { it.name.substringBefore("(").trim() }
     val videoGenModels = models.filter { it.isVideoGenerationModel() }
@@ -163,6 +165,7 @@ fun ModelDownloadScreen(
         DownloadCategory.EMBEDDING,
         DownloadCategory.IMAGE_GENERATION,
         DownloadCategory.IMAGE_UPSCALE,
+        DownloadCategory.IMAGE_INPAINTING,
         DownloadCategory.MUSIC_GENERATION,
         DownloadCategory.VIDEO_GENERATION
     )
@@ -259,6 +262,7 @@ fun ModelDownloadScreen(
                         DownloadCategory.EMBEDDING -> stringResource(R.string.embedding_models)
                         DownloadCategory.IMAGE_GENERATION -> stringResource(R.string.image_generation_models)
                         DownloadCategory.IMAGE_UPSCALE -> stringResource(R.string.image_upscale_models_title)
+                        DownloadCategory.IMAGE_INPAINTING -> stringResource(R.string.image_inpainting_models_title)
                         DownloadCategory.MUSIC_GENERATION -> stringResource(R.string.music_generation_models)
                         DownloadCategory.VIDEO_GENERATION -> stringResource(R.string.video_generation_models)
                     }
@@ -270,6 +274,7 @@ fun ModelDownloadScreen(
                         DownloadCategory.EMBEDDING -> embeddingModels.size
                         DownloadCategory.IMAGE_GENERATION -> imageGenerationModels.size
                         DownloadCategory.IMAGE_UPSCALE -> imageUpscaleModels.size
+                        DownloadCategory.IMAGE_INPAINTING -> imageInpaintingModels.size
                         DownloadCategory.MUSIC_GENERATION -> musicGenModels.size
                         DownloadCategory.VIDEO_GENERATION -> videoGenModels.size
                     }
@@ -403,6 +408,23 @@ fun ModelDownloadScreen(
                             Text(stringResource(R.string.image_upscale_models_description), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         imageUpscaleGrouped.forEach { (family, variants) ->
+                            item {
+                                ModelFamilyCard(
+                                    family = family,
+                                    variants = variants,
+                                    context = context,
+                                    viewModel = downloadViewModel,
+                                    isMultimodal = false,
+                                    onDownload = { downloadViewModel.downloadModel(it) }
+                                )
+                            }
+                        }
+                    }
+                    DownloadCategory.IMAGE_INPAINTING -> {
+                        item {
+                            Text(stringResource(R.string.image_inpainting_models_description), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        imageInpaintingGrouped.forEach { (family, variants) ->
                             item {
                                 ModelFamilyCard(
                                     family = family,
@@ -1173,6 +1195,14 @@ private fun resolveLocalModelFiles(model: LLMModel, context: Context): List<File
             files += dir.listFiles()?.filter { it.isFile } ?: emptyList()
         }
         return files.sortedBy { it.name.lowercase() }
+    }
+
+    if (model.category == com.llmhub.llmhub.data.InpaintModels.CATEGORY) {
+        val dir = com.llmhub.llmhub.data.InpaintModels.modelDir(context, model)
+        if (dir.exists() && dir.isDirectory) {
+            files += dir.listFiles()?.filter { it.isFile } ?: emptyList()
+        }
+        return files
     }
 
     if (model.category == "image_upscale") {

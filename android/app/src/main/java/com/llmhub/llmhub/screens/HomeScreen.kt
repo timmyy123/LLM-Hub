@@ -124,7 +124,8 @@ private val PREMIUM_ROUTES = setOf(
     "agent",
     "creator_generation",
     "vibevoice",
-    "music_generator"
+    "music_generator",
+    "image_inpainting"
 )
 
 
@@ -224,6 +225,14 @@ fun HomeScreen(
                 gradient = Pair(Color(0xFF8FD3FF), Color(0xFF3F7DD8)),
                 darkColor = Color(0xFF14403A),
                 route = "image_upscale"
+            ),
+            FeatureCard(
+                title = R.string.feature_image_inpainting,
+                description = R.string.feature_image_inpainting_desc,
+                icon = Icons.Filled.Healing,
+                gradient = Pair(Color(0xFFFFC7A8), Color(0xFFE0786A)),
+                darkColor = Color(0xFF4A2A24),
+                route = "image_inpainting"
             ),
             FeatureCard(
                 title = R.string.feature_vibevoice,

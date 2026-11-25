@@ -203,6 +203,41 @@ object ModelData {
         )
     )
 
+    /**
+     * Object Eraser (image inpainting) models, run with LiteRT CompiledModel on the GPU with automatic CPU
+     * fallback (no NPU). Stored in files/inpaint_models/<safe name>/model.tflite (see InpaintModels).
+     */
+    val inpaintingModels = listOf(
+        LLMModel(
+            name = InpaintModels.MIGAN_NAME,
+            description = "MI-GAN 512 (Places2) object eraser powered by LiteRT. Fast fill for small objects, GPU with automatic CPU fallback. Works on all devices. ~16 MB download.",
+            url = "https://huggingface.co/litert-community/MI-GAN-512-Places2-LiteRT/resolve/179a35d8e8a518f6253f9c42fc9b412c6438cf7c/migan_fp16.tflite",
+            category = InpaintModels.CATEGORY,
+            sizeBytes = 16312640L,
+            source = "litert-community/MI-GAN-512-Places2-LiteRT (Picsart AI Research, MIT)",
+            supportsVision = false,
+            supportsAudio = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 4),
+            contextWindowSize = 0,
+            modelFormat = "tflite"
+        ),
+        LLMModel(
+            name = InpaintModels.LAMA_NAME,
+            description = "Big LaMa 512 object eraser powered by LiteRT. Better fill for larger objects, GPU with automatic CPU fallback (slow on CPU). ~104 MB download.",
+            url = "https://huggingface.co/Dineshsoudagar/big-lama-512-LiteRT/resolve/32e8ffaa7149aa2d679e0f5bb821b41ece9b5a04/lama_512_fp16.tflite",
+            category = InpaintModels.CATEGORY,
+            sizeBytes = 104462512L,
+            source = "Dineshsoudagar/big-lama-512-LiteRT (Samsung AI Center LaMa, Apache-2.0)",
+            supportsVision = false,
+            supportsAudio = false,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 6),
+            contextWindowSize = 0,
+            modelFormat = "tflite"
+        )
+    )
+
     private val sdxlModels = listOf(
         LLMModel(
             name = "Anikawa V4 (NPU)",
@@ -5954,7 +5989,7 @@ object ModelData {
                 model.url.contains("embeddinggemma-2-text-270m_")
             )
 
-    val models: List<LLMModel> = baseModels + embeddingGemma2Models + upscalerModels + ttsModels + musicGenerationModels + videoGenerationModels + sdLiteRtNpuModels() + parakeetNpuModels() + (if (DeviceInfo.getChipsetSuffix() in setOf("8gen3", "8gen4", "8gen5", "8gen6")) sdxlModels else emptyList())
+    val models: List<LLMModel> = baseModels + embeddingGemma2Models + upscalerModels + inpaintingModels + ttsModels + musicGenerationModels + videoGenerationModels + sdLiteRtNpuModels() + parakeetNpuModels() + (if (DeviceInfo.getChipsetSuffix() in setOf("8gen3", "8gen4", "8gen5", "8gen6")) sdxlModels else emptyList())
 
 
     /**

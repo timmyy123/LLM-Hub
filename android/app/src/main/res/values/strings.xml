@@ -1233,4 +1233,33 @@
     <string name="prompt_template_none">None (Default)</string>
     <string name="prompt_template_hint">Use {{SYSTEM}}, {{USER}}, {{ASSISTANT}} as placeholders</string>
     <string name="prompt_template_placeholder" translatable="false">&lt;|im_start|&gt;user\n{{USER}}&lt;|im_end|&gt;\n&lt;|im_start|&gt;assistant\n{{ASSISTANT}}&lt;|im_end|&gt;\n</string>
+    <string name="feature_image_inpainting">Object Eraser</string>
+    <string name="feature_image_inpainting_desc">Remove unwanted objects from your photos</string>
+    <string name="premium_feature_inpainting">Object Eraser: remove unwanted objects from your photos on-device</string>
+    <string name="image_inpainting_models_title">Object Eraser Models</string>
+    <string name="image_inpainting_models_description">AI models that remove objects from photos and fill in the background. Quick suits small objects, HD handles bigger ones (GPU with CPU fallback).</string>
+    <string name="image_inpainting_download_model">Download an Eraser Model</string>
+    <string name="image_inpainting_download_model_desc">Get Quick (MI-GAN) or HD (LaMa) to erase objects from your photos. Everything runs on your device.</string>
+    <string name="image_inpainting_pick_photo">Tap to choose a photo</string>
+    <string name="image_inpainting_change_photo">Choose another photo</string>
+    <string name="image_inpainting_paint_hint">Paint over what you want to remove. Pinch with two fingers to zoom.</string>
+    <string name="image_inpainting_brush_size">Brush size</string>
+    <string name="image_inpainting_undo">Undo</string>
+    <string name="image_inpainting_clear">Clear</string>
+    <string name="image_inpainting_quick">Quick</string>
+    <string name="image_inpainting_hd">HD</string>
+    <string name="image_inpainting_mode_hint">Quick is best for small objects. HD fills bigger areas more cleanly.</string>
+    <string name="image_inpainting_erase">Erase</string>
+    <string name="image_inpainting_loading_model">Loading model…</string>
+    <string name="image_inpainting_erasing">Erasing %1$d of %2$d…</string>
+    <string name="image_inpainting_cpu_note">Running on the CPU. This can take a while.</string>
+    <string name="image_inpainting_compare">Hold to compare</string>
+    <string name="image_inpainting_before">Before</string>
+    <string name="image_inpainting_save">Save</string>
+    <string name="image_inpainting_share">Share</string>
+    <string name="image_inpainting_saved">Saved to gallery</string>
+    <string name="image_inpainting_save_failed">Could not save the image</string>
+    <string name="image_inpainting_share_failed">Could not share the image</string>
+    <string name="image_inpainting_failed">Erase failed: %1$s</string>
+    <string name="image_inpainting_open_failed">Could not open this photo</string>
 </resources>

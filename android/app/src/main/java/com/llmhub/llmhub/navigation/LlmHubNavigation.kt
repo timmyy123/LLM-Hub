@@ -40,6 +40,7 @@ sealed class Screen(val route: String) {
     object VibeCoder : Screen("vibe_coder")
     object VibeVoice : Screen("vibevoice")
     object ImageUpscale : Screen("image_upscale")
+    object ImageInpainting : Screen("image_inpainting")
     object CodeCanvas : Screen("code_canvas") {
         fun createRoute(codeContent: String, codeType: String = "html") =
             "code_canvas?code=${android.net.Uri.encode(codeContent)}&type=$codeType"
@@ -117,6 +118,7 @@ fun LlmHubNavigation(
                         "creator_generation" -> navigateIfPremium(Screen.CreatorGeneration.route)
                         "vibevoice" -> navigateIfPremium(Screen.VibeVoice.route)
                         "image_upscale" -> navController.navigate(Screen.ImageUpscale.route)
+                        "image_inpainting" -> navigateIfPremium(Screen.ImageInpainting.route)
                         "agent" -> navigateIfPremium(Screen.Agent.route)
                         "text_to_speech" -> navController.navigate(Screen.TextToSpeech.route)
                         "music_generator" -> navController.navigate(Screen.MusicGenerator.route)
@@ -266,6 +268,15 @@ fun LlmHubNavigation(
             ImageUpscaleScreen(
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToModels = { navController.navigate(Screen.Models.route) }
+            )
+        }
+
+        composable(Screen.ImageInpainting.route) {
+            ImageInpaintScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToModels = {
+                    navController.navigate(Screen.ModelsCategory.createRoute(DownloadCategory.IMAGE_INPAINTING))
+                }
             )
         }
 

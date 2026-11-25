@@ -22,6 +22,7 @@ object ModelAvailabilityProvider {
                 model.category != "video_generation" &&
                 model.category != "imageUpscale" &&
                 model.category != "image_upscale" &&
+                model.category != InpaintModels.CATEGORY &&
                 model.category != "tts" &&
                 model.category != "textToSpeech" &&
                 model.category != "music_generation" &&

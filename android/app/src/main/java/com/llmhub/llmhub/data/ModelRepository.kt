@@ -37,7 +37,7 @@ object ModelRepository {
         }
 
         return ModelData.models
-            .filter { it.category != "embedding" && it.category != "video_generation" }
+            .filter { it.category != "embedding" && it.category != "video_generation" && it.category != InpaintModels.CATEGORY }
             .mapNotNull { model -> resolveAvailableModel(context, modelsDir, model) }
     }
 

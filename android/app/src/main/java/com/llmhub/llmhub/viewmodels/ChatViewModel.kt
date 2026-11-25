@@ -784,7 +784,7 @@ class ChatViewModel(
      */
     private suspend fun loadAvailableModelsSync(context: Context) {
         val downloadedModels: List<LLMModel> = ModelData.models
-            .filter { it.category != "embedding" && it.category != "asr" && it.category != "tts" && it.category != "music_generation" && it.category != "video_generation" && !it.name.contains("Projector", ignoreCase = true) }
+            .filter { it.category != "embedding" && it.category != "asr" && it.category != "tts" && it.category != "music_generation" && it.category != "video_generation" && it.category != com.llmhub.llmhub.data.InpaintModels.CATEGORY && !it.name.contains("Projector", ignoreCase = true) }
             .mapNotNull { model: LLMModel ->
             var isAvailable = false
             var actualSize = model.sizeBytes

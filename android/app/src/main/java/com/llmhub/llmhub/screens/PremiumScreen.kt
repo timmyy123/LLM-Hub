@@ -211,6 +211,11 @@ fun PremiumScreen(
                                 text = stringResource(R.string.premium_feature_image_gen)
                             )
                             PremiumFeatureRow(
+                                icon = Icons.Default.Healing,
+                                tint = Color(0xFFE0786A),
+                                text = stringResource(R.string.premium_feature_inpainting)
+                            )
+                            PremiumFeatureRow(
                                 icon = Icons.Default.Movie,
                                 tint = Color(0xFFDD2476),
                                 text = stringResource(R.string.premium_feature_video_gen)

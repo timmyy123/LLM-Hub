@@ -435,6 +435,31 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
                         totalBytes = if (sizeKnown) model.sizeBytes else null
                     )
                 }
+            } else if (model.category == com.llmhub.llmhub.data.InpaintModels.CATEGORY) {
+                // Object Eraser models: finished files live in inpaint_models/<safe name>/model.tflite,
+                // a partial download stays in models/<file name> until it is complete.
+                val modelFile = com.llmhub.llmhub.data.InpaintModels.modelFile(context, model)
+                val partial = com.llmhub.llmhub.data.InpaintModels.downloadFile(context, model)
+                if (modelFile.isFile && modelFile.length() > 0) {
+                    val fileSize = modelFile.length()
+                    model.copy(
+                        isDownloaded = true,
+                        isDownloading = false,
+                        downloadProgress = 1f,
+                        downloadedBytes = fileSize,
+                        totalBytes = fileSize,
+                        sizeBytes = fileSize
+                    )
+                } else {
+                    val partialBytes = if (partial.isFile) partial.length() else 0L
+                    model.copy(
+                        isDownloaded = false,
+                        isDownloading = false,
+                        downloadProgress = if (partialBytes > 0 && model.sizeBytes > 0) (partialBytes.toFloat() / model.sizeBytes).coerceIn(0f, 0.999f) else 0f,
+                        downloadedBytes = partialBytes,
+                        totalBytes = if (partialBytes > 0 && model.sizeBytes > 0) model.sizeBytes else null
+                    )
+                }
             } else if (model.category == "image_upscale") {
                 val upscalerModelsDir = File(context.filesDir, "upscaler_models")
                 val safeName = model.name.replace(Regex("[^a-zA-Z0-9_\\-]"), "_")
@@ -854,6 +879,35 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
                         return@onCompletion
                     }
 
+                    // Object Eraser models: move the finished download into inpaint_models/<safe name>/
+                    if (model.category == com.llmhub.llmhub.data.InpaintModels.CATEGORY) {
+                        val tempFile = com.llmhub.llmhub.data.InpaintModels.downloadFile(context, model)
+                        val destFile = com.llmhub.llmhub.data.InpaintModels.modelFile(context, model)
+                        if (cause == null && com.llmhub.llmhub.data.InpaintModels.isComplete(tempFile, model)) {
+                            destFile.parentFile?.mkdirs()
+                            if (!tempFile.renameTo(destFile)) {
+                                tempFile.copyTo(destFile, overwrite = true)
+                                tempFile.delete()
+                            }
+                        }
+                        val downloaded = destFile.isFile && destFile.length() > 0
+                        val partialBytes = if (!downloaded && tempFile.isFile) tempFile.length() else 0L
+                        updateModel(model.name) {
+                            it.copy(
+                                isDownloaded = downloaded,
+                                isDownloading = false,
+                                downloadProgress = when {
+                                    downloaded -> 1f
+                                    partialBytes > 0 && model.sizeBytes > 0 -> (partialBytes.toFloat() / model.sizeBytes).coerceIn(0f, 0.999f)
+                                    else -> 0f
+                                },
+                                downloadedBytes = if (downloaded) destFile.length() else partialBytes,
+                                totalBytes = if (downloaded) destFile.length() else if (partialBytes > 0) model.sizeBytes else null
+                            )
+                        }
+                        return@onCompletion
+                    }
+
                     // Upscaler models (image_upscale category)
                     if (model.category == "image_upscale") {
                         val upscalerModelsDir = File(context.filesDir, "upscaler_models")
@@ -1207,6 +1261,13 @@ class ModelDownloadViewModel(application: Application) : AndroidViewModel(applic
                     modelTargetDir.deleteRecursively()
                     android.util.Log.d("ModelDownloadViewModel", "[deleteModel] Deleted SD model directory: ${modelTargetDir.absolutePath}")
                 }
+            } else if (model.category == com.llmhub.llmhub.data.InpaintModels.CATEGORY) {
+                val dir = com.llmhub.llmhub.data.InpaintModels.modelDir(context, model)
+                if (dir.exists()) {
+                    dir.deleteRecursively()
+                    android.util.Log.d("ModelDownloadViewModel", "[deleteModel] Deleted inpainting model directory: ${dir.absolutePath}")
+                }
+                com.llmhub.llmhub.data.InpaintModels.downloadFile(context, model).delete()
             } else if (model.category == "image_upscale") {
                 val safeName = model.name.replace(Regex("[^a-zA-Z0-9_\\-]"), "_")
                 val dir = File(context.filesDir, "upscaler_models/$safeName")
