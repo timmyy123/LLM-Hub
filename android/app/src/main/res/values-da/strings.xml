@@ -1183,7 +1183,7 @@ Du forsøger at sende et billede, men den nuværende model er **kun-tekst**:
     <string name="prompt_template_hint">Brug {{SYSTEM}}, {{USER}}, {{ASSISTANT}} som pladsholdere</string>
     <string name="feature_image_inpainting">Objektviskelæder</string>
     <string name="feature_image_inpainting_desc">Fjern uønskede objekter fra dine billeder</string>
-    <string name="premium_feature_inpainting">Objektviskelæder: fjern uønskede objekter fra dine billeder direkte på enheden</string>
+    <string name="premium_feature_inpainting">Objektviskelæder – fjern uønskede objekter fra dine billeder direkte på enheden</string>
     <string name="image_inpainting_models_title">Modeller til objektviskelæder</string>
     <string name="image_inpainting_models_description">AI-modeller, der fjerner objekter fra billeder og udfylder baggrunden. Hurtig passer til små objekter, HD til større (GPU med CPU som reserve).</string>
     <string name="image_inpainting_download_model">Download en viskelædermodel</string>

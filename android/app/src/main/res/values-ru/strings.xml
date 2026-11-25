@@ -1186,7 +1186,7 @@
     <string name="prompt_template_hint">Используйте {{SYSTEM}}, {{USER}}, {{ASSISTANT}} как заполнители</string>
     <string name="feature_image_inpainting">Ластик объектов</string>
     <string name="feature_image_inpainting_desc">Удаляйте лишние объекты с фотографий</string>
-    <string name="premium_feature_inpainting">Ластик объектов: удаляйте лишние объекты с фото прямо на устройстве</string>
+    <string name="premium_feature_inpainting">Ластик объектов — удаляйте лишние объекты с фото прямо на устройстве</string>
     <string name="image_inpainting_models_title">Модели ластика объектов</string>
     <string name="image_inpainting_models_description">ИИ-модели, которые убирают объекты с фото и достраивают фон. «Быстро» подходит для мелких объектов, а HD справляется и с крупными (GPU, при необходимости CPU).</string>
     <string name="image_inpainting_download_model">Скачайте модель ластика</string>

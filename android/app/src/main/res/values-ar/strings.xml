@@ -1214,7 +1214,7 @@
     <string name="prompt_template_hint">استخدم {{SYSTEM}}، {{USER}}، {{ASSISTANT}} كعناصر نائبة</string>
     <string name="feature_image_inpainting">ممحاة العناصر</string>
     <string name="feature_image_inpainting_desc">أزل العناصر غير المرغوب فيها من صورك</string>
-    <string name="premium_feature_inpainting">ممحاة العناصر: أزل العناصر غير المرغوب فيها من صورك على جهازك</string>
+    <string name="premium_feature_inpainting">ممحاة العناصر – أزل العناصر غير المرغوب فيها من صورك على جهازك</string>
     <string name="image_inpainting_models_title">نماذج ممحاة العناصر</string>
     <string name="image_inpainting_models_description">نماذج ذكاء اصطناعي تزيل العناصر من الصور وتكمل الخلفية. السريع مناسب للعناصر الصغيرة، وHD للعناصر الأكبر (GPU مع الرجوع إلى CPU عند الحاجة).</string>
     <string name="image_inpainting_download_model">نزّل نموذج ممحاة</string>

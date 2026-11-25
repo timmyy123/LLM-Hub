@@ -1122,7 +1122,7 @@
     <string name="prompt_template_hint">ใช้ {{SYSTEM}}, {{USER}}, {{ASSISTANT}} เป็นตัวแทน</string>
     <string name="feature_image_inpainting">ยางลบวัตถุ</string>
     <string name="feature_image_inpainting_desc">ลบสิ่งที่ไม่ต้องการออกจากรูปภาพของคุณ</string>
-    <string name="premium_feature_inpainting">ยางลบวัตถุ: ลบสิ่งที่ไม่ต้องการออกจากรูปภาพได้บนอุปกรณ์</string>
+    <string name="premium_feature_inpainting">ยางลบวัตถุ – ลบสิ่งที่ไม่ต้องการออกจากรูปภาพได้บนอุปกรณ์</string>
     <string name="image_inpainting_models_title">โมเดลยางลบวัตถุ</string>
     <string name="image_inpainting_models_description">โมเดล AI ที่ลบวัตถุออกจากรูปภาพและเติมพื้นหลังให้ โหมดเร็วเหมาะกับวัตถุเล็ก ส่วน HD เหมาะกับวัตถุที่ใหญ่กว่า (ใช้ GPU และสลับไปใช้ CPU เมื่อจำเป็น)</string>
     <string name="image_inpainting_download_model">ดาวน์โหลดโมเดลยางลบ</string>

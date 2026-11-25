@@ -1214,7 +1214,7 @@
     <string name="prompt_template_hint">از {{SYSTEM}}، {{USER}}، {{ASSISTANT}} به عنوان جایگزین استفاده کنید</string>
     <string name="feature_image_inpainting">پاک‌کن اشیا</string>
     <string name="feature_image_inpainting_desc">اشیای ناخواسته را از عکس‌هایتان پاک کنید</string>
-    <string name="premium_feature_inpainting">پاک‌کن اشیا: پاک کردن اشیای ناخواسته از عکس‌ها روی خود دستگاه</string>
+    <string name="premium_feature_inpainting">پاک‌کن اشیا – پاک کردن اشیای ناخواسته از عکس‌ها روی خود دستگاه</string>
     <string name="image_inpainting_models_title">مدل‌های پاک‌کن اشیا</string>
     <string name="image_inpainting_models_description">مدل‌های هوش مصنوعی که اشیا را از عکس حذف می‌کنند و پس‌زمینه را کامل می‌کنند. «سریع» برای اشیای کوچک و HD برای اشیای بزرگ‌تر مناسب است (GPU، و در صورت نیاز CPU).</string>
     <string name="image_inpainting_download_model">یک مدل پاک‌کن دانلود کنید</string>

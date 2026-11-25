@@ -1222,7 +1222,7 @@
     <string name="prompt_template_hint">使用 {{SYSTEM}}、{{USER}}、{{ASSISTANT}} 作为占位符</string>
     <string name="feature_image_inpainting">物体消除</string>
     <string name="feature_image_inpainting_desc">去除照片中多余的物体</string>
-    <string name="premium_feature_inpainting">物体消除：在设备上直接去除照片中多余的物体</string>
+    <string name="premium_feature_inpainting">物体消除 – 在设备上直接去除照片中多余的物体</string>
     <string name="image_inpainting_models_title">物体消除模型</string>
     <string name="image_inpainting_models_description">可移除照片中的物体并自动补全背景的 AI 模型。“快速”适合小物体，“高清”适合较大的物体（优先使用 GPU，必要时使用 CPU）。</string>
     <string name="image_inpainting_download_model">下载消除模型</string>

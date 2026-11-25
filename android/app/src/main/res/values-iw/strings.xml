@@ -1214,7 +1214,7 @@
     <string name="prompt_template_hint">השתמש ב-{{SYSTEM}}, {{USER}}, {{ASSISTANT}} כמצייני מיקום</string>
     <string name="feature_image_inpainting">מחק אובייקטים</string>
     <string name="feature_image_inpainting_desc">הסירו אובייקטים לא רצויים מהתמונות שלכם</string>
-    <string name="premium_feature_inpainting">מחק אובייקטים: הסרת אובייקטים לא רצויים מתמונות ישירות במכשיר</string>
+    <string name="premium_feature_inpainting">מחק אובייקטים – הסרת אובייקטים לא רצויים מתמונות ישירות במכשיר</string>
     <string name="image_inpainting_models_title">מודלים למחיקת אובייקטים</string>
     <string name="image_inpainting_models_description">מודלים של בינה מלאכותית שמסירים אובייקטים מתמונות ומשלימים את הרקע. \"מהיר\" מתאים לאובייקטים קטנים, ו-HD לגדולים יותר (GPU, ובמקרה הצורך CPU).</string>
     <string name="image_inpainting_download_model">הורידו מודל מחיקה</string>

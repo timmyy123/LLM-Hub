@@ -1218,7 +1218,7 @@
     <string name="prompt_template_hint">Użyj {{SYSTEM}}, {{USER}}, {{ASSISTANT}} jako symboli zastępczych</string>
     <string name="feature_image_inpainting">Gumka do obiektów</string>
     <string name="feature_image_inpainting_desc">Usuwaj niechciane obiekty ze zdjęć</string>
-    <string name="premium_feature_inpainting">Gumka do obiektów: usuwaj niechciane obiekty ze zdjęć bezpośrednio na urządzeniu</string>
+    <string name="premium_feature_inpainting">Gumka do obiektów – usuwaj niechciane obiekty ze zdjęć bezpośrednio na urządzeniu</string>
     <string name="image_inpainting_models_title">Modele gumki do obiektów</string>
     <string name="image_inpainting_models_description">Modele AI, które usuwają obiekty ze zdjęć i uzupełniają tło. Szybki sprawdza się przy małych obiektach, HD przy większych (GPU z zapasowym CPU).</string>
     <string name="image_inpainting_download_model">Pobierz model gumki</string>

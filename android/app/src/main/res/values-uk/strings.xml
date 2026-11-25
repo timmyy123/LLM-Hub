@@ -1214,7 +1214,7 @@
     <string name="prompt_template_hint">Використовуйте {{SYSTEM}}, {{USER}}, {{ASSISTANT}} як заповнювачі</string>
     <string name="feature_image_inpainting">Гумка об’єктів</string>
     <string name="feature_image_inpainting_desc">Прибирайте зайві об’єкти зі своїх фото</string>
-    <string name="premium_feature_inpainting">Гумка об’єктів: прибирайте зайві об’єкти з фото просто на пристрої</string>
+    <string name="premium_feature_inpainting">Гумка об’єктів — прибирайте зайві об’єкти з фото просто на пристрої</string>
     <string name="image_inpainting_models_title">Моделі гумки об’єктів</string>
     <string name="image_inpainting_models_description">ШІ-моделі, що прибирають об’єкти з фото й домальовують фон. «Швидко» підходить для дрібних об’єктів, а HD впорається й з великими (GPU, за потреби CPU).</string>
     <string name="image_inpainting_download_model">Завантажте модель гумки</string>

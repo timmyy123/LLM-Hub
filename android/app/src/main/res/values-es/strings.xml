@@ -1217,7 +1217,7 @@
     <string name="prompt_template_hint">Usa {{SYSTEM}}, {{USER}}, {{ASSISTANT}} como marcadores</string>
     <string name="feature_image_inpainting">Borrador de objetos</string>
     <string name="feature_image_inpainting_desc">Quita objetos no deseados de tus fotos</string>
-    <string name="premium_feature_inpainting">Borrador de objetos: quita objetos no deseados de tus fotos en el dispositivo</string>
+    <string name="premium_feature_inpainting">Borrador de objetos – quita objetos no deseados de tus fotos en el dispositivo</string>
     <string name="image_inpainting_models_title">Modelos de borrado de objetos</string>
     <string name="image_inpainting_models_description">Modelos de IA que eliminan objetos de las fotos y rellenan el fondo. Rápido va bien para objetos pequeños y HD para los más grandes (GPU con respaldo en CPU).</string>
     <string name="image_inpainting_download_model">Descarga un modelo de borrado</string>

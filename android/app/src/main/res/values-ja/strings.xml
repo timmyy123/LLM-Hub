@@ -1211,7 +1211,7 @@
     <string name="prompt_template_hint">{{SYSTEM}}、{{USER}}、{{ASSISTANT}} をプレースホルダーとして使用</string>
     <string name="feature_image_inpainting">オブジェクト消去</string>
     <string name="feature_image_inpainting_desc">写真から不要なものを消せます</string>
-    <string name="premium_feature_inpainting">オブジェクト消去：写真の不要なものをデバイス上で消去</string>
+    <string name="premium_feature_inpainting">オブジェクト消去 – 写真の不要なものをデバイス上で消去</string>
     <string name="image_inpainting_models_title">オブジェクト消去モデル</string>
     <string name="image_inpainting_models_description">写真から物を取り除き、背景を自然に補完するAIモデル。小さな物には「高速」、大きな物には「HD」が向いています（GPU、使えない場合はCPU）。</string>
     <string name="image_inpainting_download_model">消去モデルをダウンロード</string>

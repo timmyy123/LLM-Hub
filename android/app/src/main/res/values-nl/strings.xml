@@ -1122,7 +1122,7 @@
     <string name="prompt_template_hint">Gebruik {{SYSTEM}}, {{USER}}, {{ASSISTANT}} als plaatshouders</string>
     <string name="feature_image_inpainting">Objectgum</string>
     <string name="feature_image_inpainting_desc">Verwijder ongewenste objecten uit je foto\'s</string>
-    <string name="premium_feature_inpainting">Objectgum: verwijder ongewenste objecten uit je foto\'s, direct op je apparaat</string>
+    <string name="premium_feature_inpainting">Objectgum – verwijder ongewenste objecten uit je foto\'s, direct op je apparaat</string>
     <string name="image_inpainting_models_title">Objectgum-modellen</string>
     <string name="image_inpainting_models_description">AI-modellen die objecten uit foto\'s halen en de achtergrond aanvullen. Snel past bij kleine objecten, HD bij grotere (GPU, met de CPU als terugval).</string>
     <string name="image_inpainting_download_model">Download een gummodel</string>

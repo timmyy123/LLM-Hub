@@ -1240,7 +1240,7 @@
     <string name="prompt_template_hint">प्लेसहोल्डर के रूप में {{SYSTEM}}, {{USER}}, {{ASSISTANT}} का उपयोग करें</string>
     <string name="feature_image_inpainting">ऑब्जेक्ट इरेज़र</string>
     <string name="feature_image_inpainting_desc">अपनी फ़ोटो से अनचाही चीज़ें हटाएं</string>
-    <string name="premium_feature_inpainting">ऑब्जेक्ट इरेज़र: डिवाइस पर ही फ़ोटो से अनचाही चीज़ें हटाएं</string>
+    <string name="premium_feature_inpainting">ऑब्जेक्ट इरेज़र – डिवाइस पर ही फ़ोटो से अनचाही चीज़ें हटाएं</string>
     <string name="image_inpainting_models_title">ऑब्जेक्ट इरेज़र मॉडल</string>
     <string name="image_inpainting_models_description">AI मॉडल जो फ़ोटो से चीज़ें हटाकर बैकग्राउंड भर देते हैं। छोटी चीज़ों के लिए क्विक और बड़ी चीज़ों के लिए HD बेहतर है (GPU, ज़रूरत पड़ने पर CPU)।</string>
     <string name="image_inpainting_download_model">इरेज़र मॉडल डाउनलोड करें</string>

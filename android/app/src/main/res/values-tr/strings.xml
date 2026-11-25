@@ -1212,7 +1212,7 @@
     <string name="prompt_template_hint">{{SYSTEM}}, {{USER}}, {{ASSISTANT}} yer tutucularını kullanın</string>
     <string name="feature_image_inpainting">Nesne Silgisi</string>
     <string name="feature_image_inpainting_desc">Fotoğraflarınızdaki istenmeyen nesneleri kaldırın</string>
-    <string name="premium_feature_inpainting">Nesne Silgisi: fotoğraflardaki istenmeyen nesneleri cihazınızda kaldırın</string>
+    <string name="premium_feature_inpainting">Nesne Silgisi – fotoğraflardaki istenmeyen nesneleri cihazınızda kaldırın</string>
     <string name="image_inpainting_models_title">Nesne Silgisi Modelleri</string>
     <string name="image_inpainting_models_description">Fotoğraflardaki nesneleri kaldırıp arka planı tamamlayan yapay zekâ modelleri. Hızlı küçük nesneler için, HD daha büyükleri için uygundur (GPU, gerekirse CPU).</string>
     <string name="image_inpainting_download_model">Bir Silgi Modeli İndirin</string>

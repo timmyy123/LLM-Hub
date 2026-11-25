@@ -1216,7 +1216,7 @@
     <string name="prompt_template_hint">Gunakan {{SYSTEM}}, {{USER}}, {{ASSISTANT}} sebagai placeholder</string>
     <string name="feature_image_inpainting">Penghapus Objek</string>
     <string name="feature_image_inpainting_desc">Hapus objek yang tidak diinginkan dari foto Anda</string>
-    <string name="premium_feature_inpainting">Penghapus Objek: hapus objek yang tidak diinginkan dari foto langsung di perangkat</string>
+    <string name="premium_feature_inpainting">Penghapus Objek – hapus objek yang tidak diinginkan dari foto langsung di perangkat</string>
     <string name="image_inpainting_models_title">Model Penghapus Objek</string>
     <string name="image_inpainting_models_description">Model AI yang menghapus objek dari foto dan mengisi latar belakangnya. Cepat cocok untuk objek kecil, HD untuk yang lebih besar (GPU, dengan CPU sebagai cadangan).</string>
     <string name="image_inpainting_download_model">Unduh Model Penghapus</string>

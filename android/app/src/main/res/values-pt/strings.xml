@@ -1167,7 +1167,7 @@
     <string name="prompt_template_hint">Use {{SYSTEM}}, {{USER}}, {{ASSISTANT}} como marcadores</string>
     <string name="feature_image_inpainting">Borracha de objetos</string>
     <string name="feature_image_inpainting_desc">Remova objetos indesejados das suas fotos</string>
-    <string name="premium_feature_inpainting">Borracha de objetos: remova objetos indesejados das suas fotos no dispositivo</string>
+    <string name="premium_feature_inpainting">Borracha de objetos – remova objetos indesejados das suas fotos no dispositivo</string>
     <string name="image_inpainting_models_title">Modelos de borracha de objetos</string>
     <string name="image_inpainting_models_description">Modelos de IA que removem objetos das fotos e preenchem o fundo. O Rápido é bom para objetos pequenos e o HD, para os maiores (GPU com alternativa na CPU).</string>
     <string name="image_inpainting_download_model">Baixe um modelo de borracha</string>

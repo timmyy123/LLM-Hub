@@ -1208,7 +1208,7 @@
     <string name="prompt_template_hint">Usa {{SYSTEM}}, {{USER}}, {{ASSISTANT}} come segnaposto</string>
     <string name="feature_image_inpainting">Gomma per oggetti</string>
     <string name="feature_image_inpainting_desc">Elimina gli oggetti indesiderati dalle tue foto</string>
-    <string name="premium_feature_inpainting">Gomma per oggetti: elimina gli oggetti indesiderati dalle foto direttamente sul dispositivo</string>
+    <string name="premium_feature_inpainting">Gomma per oggetti – elimina gli oggetti indesiderati dalle foto direttamente sul dispositivo</string>
     <string name="image_inpainting_models_title">Modelli gomma per oggetti</string>
     <string name="image_inpainting_models_description">Modelli di IA che rimuovono oggetti dalle foto e ricostruiscono lo sfondo. Rapido va bene per gli oggetti piccoli, HD per quelli più grandi (GPU con ripiego sulla CPU).</string>
     <string name="image_inpainting_download_model">Scarica un modello gomma</string>

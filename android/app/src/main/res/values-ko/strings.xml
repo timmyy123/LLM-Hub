@@ -1214,7 +1214,7 @@
     <string name="prompt_template_hint">{{SYSTEM}}, {{USER}}, {{ASSISTANT}}를 플레이스홀더로 사용</string>
     <string name="feature_image_inpainting">개체 지우개</string>
     <string name="feature_image_inpainting_desc">사진 속 원치 않는 물체를 지워 보세요</string>
-    <string name="premium_feature_inpainting">개체 지우개: 사진 속 원치 않는 물체를 기기에서 바로 지우기</string>
+    <string name="premium_feature_inpainting">개체 지우개 – 사진 속 원치 않는 물체를 기기에서 바로 지우기</string>
     <string name="image_inpainting_models_title">개체 지우개 모델</string>
     <string name="image_inpainting_models_description">사진에서 물체를 지우고 배경을 자연스럽게 채우는 AI 모델입니다. 작은 물체는 빠름, 큰 물체는 HD가 적합합니다(GPU 사용, 불가 시 CPU).</string>
     <string name="image_inpainting_download_model">지우개 모델 다운로드</string>

@@ -1180,7 +1180,7 @@
     <string name="prompt_template_hint">Verwende {{SYSTEM}}, {{USER}}, {{ASSISTANT}} als Platzhalter</string>
     <string name="feature_image_inpainting">Objekt-Radierer</string>
     <string name="feature_image_inpainting_desc">Unerwünschte Objekte aus deinen Fotos entfernen</string>
-    <string name="premium_feature_inpainting">Objekt-Radierer: unerwünschte Objekte direkt auf dem Gerät aus Fotos entfernen</string>
+    <string name="premium_feature_inpainting">Objekt-Radierer – unerwünschte Objekte direkt auf dem Gerät aus Fotos entfernen</string>
     <string name="image_inpainting_models_title">Objekt-Radierer-Modelle</string>
     <string name="image_inpainting_models_description">KI-Modelle, die Objekte aus Fotos entfernen und den Hintergrund ergänzen. Schnell eignet sich für kleine Objekte, HD für größere (GPU mit CPU als Ausweichlösung).</string>
     <string name="image_inpainting_download_model">Radierer-Modell herunterladen</string>

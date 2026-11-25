@@ -1122,7 +1122,7 @@
     <string name="prompt_template_hint">Sử dụng {{SYSTEM}}, {{USER}}, {{ASSISTANT}} làm chỗ giữ chỗ</string>
     <string name="feature_image_inpainting">Xóa vật thể</string>
     <string name="feature_image_inpainting_desc">Xóa vật thể không mong muốn khỏi ảnh của bạn</string>
-    <string name="premium_feature_inpainting">Xóa vật thể: xóa vật thể không mong muốn khỏi ảnh ngay trên thiết bị</string>
+    <string name="premium_feature_inpainting">Xóa vật thể – xóa vật thể không mong muốn khỏi ảnh ngay trên thiết bị</string>
     <string name="image_inpainting_models_title">Mô hình xóa vật thể</string>
     <string name="image_inpainting_models_description">Mô hình AI xóa vật thể khỏi ảnh và tự lấp đầy phần nền. Nhanh phù hợp với vật thể nhỏ, HD xử lý vật thể lớn hơn (GPU, chuyển sang CPU khi cần).</string>
     <string name="image_inpainting_download_model">Tải mô hình xóa vật thể</string>

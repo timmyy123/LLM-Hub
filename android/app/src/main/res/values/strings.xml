@@ -1235,7 +1235,7 @@
     <string name="prompt_template_placeholder" translatable="false">&lt;|im_start|&gt;user\n{{USER}}&lt;|im_end|&gt;\n&lt;|im_start|&gt;assistant\n{{ASSISTANT}}&lt;|im_end|&gt;\n</string>
     <string name="feature_image_inpainting">Object Eraser</string>
     <string name="feature_image_inpainting_desc">Remove unwanted objects from your photos</string>
-    <string name="premium_feature_inpainting">Object Eraser: remove unwanted objects from your photos on-device</string>
+    <string name="premium_feature_inpainting">Object Eraser – remove unwanted objects from your photos on-device</string>
     <string name="image_inpainting_models_title">Object Eraser Models</string>
     <string name="image_inpainting_models_description">AI models that remove objects from photos and fill in the background. Quick suits small objects, HD handles bigger ones (GPU with CPU fallback).</string>
     <string name="image_inpainting_download_model">Download an Eraser Model</string>

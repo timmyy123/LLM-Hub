@@ -1200,7 +1200,7 @@
     <string name="prompt_template_hint">Utilisez {{SYSTEM}}, {{USER}}, {{ASSISTANT}} comme espaces réservés</string>
     <string name="feature_image_inpainting">Effaceur d\'objets</string>
     <string name="feature_image_inpainting_desc">Supprimez les éléments indésirables de vos photos</string>
-    <string name="premium_feature_inpainting">Effaceur d\'objets : supprimez les éléments indésirables de vos photos, directement sur l\'appareil</string>
+    <string name="premium_feature_inpainting">Effaceur d\'objets – supprimez les éléments indésirables de vos photos, directement sur l\'appareil</string>
     <string name="image_inpainting_models_title">Modèles d\'effacement d\'objets</string>
     <string name="image_inpainting_models_description">Modèles d\'IA qui retirent des objets de vos photos et reconstituent l\'arrière-plan. Rapide convient aux petits objets, HD aux plus grands (GPU, avec repli sur le CPU).</string>
     <string name="image_inpainting_download_model">Téléchargez un modèle d\'effacement</string>
