@@ -165,7 +165,8 @@ async function waitAdb(seconds = 120) {
   for (let i = 0; i < seconds / 3; i++) {
     adb('connect', serial);
     if (adb('-s', serial, 'get-state') === 'device' && adb('-s', serial, 'shell', 'getprop', 'ro.product.model')) return serial;
-    if (i % 5 === 4) { adb('disconnect', serial); }
+    // A transport left from an earlier rental stays 'offline' until it is dropped and connected again.
+    adb('disconnect', serial);
     await sleep(3000);
   }
   return null;

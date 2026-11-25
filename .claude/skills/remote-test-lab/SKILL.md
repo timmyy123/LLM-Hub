@@ -27,7 +27,9 @@ node android/tools/remote_test_lab/rtl.mjs release    # return the device when d
 ```
 - `--model` matches part of the product name (exact name first, so "Galaxy S26" doesn't pick an S26 Ultra).
 - Credits: 1 per 15 minutes (`--minutes` rounds up). Check `status` before long work; rent again if it runs out.
-- `rent` prints the adb serial (`localhost:<rdb port>`). If adb stays `offline`, run `rtl.mjs viewer` once, then
+- `rent` prints the adb serial (`localhost:<rdb port>`). An `offline` entry is often a stale transport from an earlier
+  rental: `adb disconnect localhost:<port>` then `adb connect localhost:<port>` (the tool now does this itself).
+  If adb still stays `offline`, run `rtl.mjs viewer` once, then
   `rtl.mjs screenshot` to see the viewer.
 - The `rdb` bridge (`~/Downloads/rdb/rdb`) must be running; `rent` starts it if not.
 
