@@ -205,6 +205,131 @@ class MiganDeviceTest {
         }
     }
 
+    private fun npuEnvironment(): Environment {
+        val dir = if (com.llmhub.llmhub.data.DeviceInfo.isSnapdragon()) {
+            com.llmhub.llmhub.data.QairtRuntime.stage(context).also { dir ->
+                for (name in listOf("libLiteRtDispatch_Qualcomm.so", "libLiteRtCompilerPlugin_Qualcomm.so")) {
+                    val library = File(context.applicationInfo.nativeLibraryDir, name)
+                    val copy = File(dir, name)
+                    if (library.isFile && copy.length() != library.length()) library.copyTo(copy, overwrite = true)
+                }
+            }
+        } else LiteRtSdPipeline.vendorLibraryDir(context)
+        return dir?.let { Environment.create(mapOf(Environment.Option.DispatchLibraryDir to it.path, Environment.Option.CompilerPluginLibraryDir to it.path)) }
+            ?: Environment.create(BuiltinNpuAcceleratorProvider(context))
+    }
+
+    /**
+     * MI-GAN compiled ahead of time for this phone's Hexagon (LiteRT AOT + QAIRT 2.50 on the build PC), so only the
+     * dispatch library runs on the device: the app does not ship libQnnHtpPrepare.so, which on-device compiling needs.
+     */
+    @Test fun aotNpu() {
+        val soc = Build.SOC_MODEL
+        val sha = AOT_SHA256[soc] ?: error("no AOT build for $soc")
+        val name = "migan_$soc.tflite"
+        val file = File(File(context.filesDir, "models").apply { mkdirs() }, name)
+        // Device farms cannot reach the LAN: take the build from the test APK's assets when it is bundled there.
+        val bundled = InstrumentationRegistry.getInstrumentation().context.assets.list("migan-npu").orEmpty()
+        if (name in bundled && !file.exists()) {
+            InstrumentationRegistry.getInstrumentation().context.assets.open("migan-npu/$name").use { input -> file.outputStream().use { input.copyTo(it) } }
+        }
+        OnDeviceFixtures.download(file, "$AOT_BASE_URL/$name", sha)
+        val (rgb, mask) = syntheticInput()
+        val x = FloatArray(4 * N * N)
+        for (i in 0 until N * N) { x[i] = mask[i] - 0.5f; for (c in 0 until 3) x[(c + 1) * N * N + i] = rgb[c * N * N + i] * mask[i] }
+        val environment = npuEnvironment()
+        val loadStart = SystemClock.elapsedRealtime()
+        val options = CompiledModel.Options(setOf(Accelerator.NPU)).apply {
+            qualcommOptions = CompiledModel.QualcommOptions(htpPerformanceMode = CompiledModel.QualcommOptions.HtpPerformanceMode.HIGH_PERFORMANCE)
+        }
+        val model = CompiledModel.create(file.absolutePath, options, environment)
+        val loadMs = SystemClock.elapsedRealtime() - loadStart
+        try {
+            val inputs = model.createInputBuffers(); val outputs = model.createOutputBuffers()
+            val times = mutableListOf<Long>(); var out = FloatArray(0)
+            repeat(6) {
+                val t0 = SystemClock.elapsedRealtimeNanos()
+                inputs[0].writeFloat(x); model.run(inputs, outputs); out = outputs[0].readFloat()
+                times += (SystemClock.elapsedRealtimeNanos() - t0) / 1_000_000
+            }
+            var err = 0.0; var holes = 0
+            for (i in 0 until N * N) if (mask[i] == 0f) { for (c in 0 until 3) err += abs(out[c * N * N + i] - rgb[c * N * N + i]); holes++ }
+            val warm = times.drop(1).sorted()
+            Log.i(TAG, "RESULT $name NPU-AOT ok load=${loadMs}ms first=${times[0]}ms median=${warm[warm.size / 2]}ms " +
+                "finite=${out.all { it.isFinite() }} holeMAE=${"%.4f".format(err / (holes * 3))}")
+            save(rgb, mask, out, File(context.filesDir, "migan-test/$name-NPU.png"))
+        } finally {
+            model.close(); environment.close()
+        }
+    }
+
+    /** big-lama 512 (Samsung LaMa, Apache-2.0) on the same photo and masks, for large objects MI-GAN smears. */
+    @Test fun lamaPhotoGpu() = lamaPhoto(Accelerator.GPU)
+    @Test fun lamaPhotoCpu() = lamaPhoto(Accelerator.CPU)
+
+    private fun lamaPhoto(accelerator: Accelerator) {
+        val dir = File(context.filesDir, "migan-photo").apply { mkdirs() }
+        val testAssets = InstrumentationRegistry.getInstrumentation().context.assets
+        for (name in testAssets.list("migan-photo").orEmpty()) {
+            val target = File(dir, name)
+            if (!target.exists()) testAssets.open("migan-photo/$name").use { input -> target.outputStream().use { input.copyTo(it) } }
+        }
+        val photo = BitmapFactory.decodeFile(File(dir, "photo.jpg").path)
+        val w = photo.width; val h = photo.height
+        val file = File(File(context.filesDir, "models").apply { mkdirs() }, LAMA.file)
+        OnDeviceFixtures.download(file, LAMA.url, LAMA.sha256)
+        val loadStart = SystemClock.elapsedRealtime()
+        val model = CompiledModel.create(file.absolutePath, CompiledModel.Options(accelerator))
+        Log.i(TAG, "LOAD ${LAMA.file} ${accelerator.name} ${SystemClock.elapsedRealtime() - loadStart}ms")
+        try {
+            val inputs = model.createInputBuffers(); val outputs = model.createOutputBuffers()
+            for (maskFile in dir.listFiles { f -> f.name.startsWith("mask_") }.orEmpty().sortedBy { it.name }) {
+                val t0 = SystemClock.elapsedRealtime()
+                val mp = IntArray(w * h).also { BitmapFactory.decodeFile(maskFile.path).getPixels(it, 0, w, 0, 0, w, h) }
+                val result = IntArray(w * h).also { photo.getPixels(it, 0, w, 0, 0, w, h) }
+                var x0 = w; var y0 = h; var x1 = 0; var y1 = 0
+                for (q in 0 until w * h) if ((mp[q] and 0xFF) > 127) {
+                    val qx = q % w; val qy = q / w
+                    if (qx < x0) x0 = qx; if (qx > x1) x1 = qx; if (qy < y0) y0 = qy; if (qy > y1) y1 = qy
+                }
+                // The model card: crop about twice the hole, resize to 512, run, resize back.
+                val side = maxOf(N, (maxOf(x1 - x0, y1 - y0) + 1) * 2).coerceAtMost(minOf(w, h))
+                val cx = ((x0 + x1) / 2 - side / 2).coerceIn(0, w - side)
+                val cy = ((y0 + y1) / 2 - side / 2).coerceIn(0, h - side)
+                val cropPx = IntArray(side * side); val cropMask = IntArray(side * side)
+                for (yy in 0 until side) for (xx in 0 until side) {
+                    val q = (cy + yy) * w + cx + xx
+                    cropPx[yy * side + xx] = result[q]; cropMask[yy * side + xx] = mp[q]
+                }
+                val cp = IntArray(N * N).also { Bitmap.createScaledBitmap(Bitmap.createBitmap(cropPx, side, side, Bitmap.Config.ARGB_8888), N, N, true).getPixels(it, 0, N, 0, 0, N, N) }
+                val km = IntArray(N * N).also { Bitmap.createScaledBitmap(Bitmap.createBitmap(cropMask, side, side, Bitmap.Config.ARGB_8888), N, N, true).getPixels(it, 0, N, 0, 0, N, N) }
+                val image = FloatArray(3 * N * N); val hole = FloatArray(N * N)
+                for (i in 0 until N * N) {
+                    val fill = if ((km[i] and 0xFF) > 127) 1f else 0f
+                    hole[i] = fill
+                    image[i] = ((cp[i] shr 16) and 0xFF) / 255f * (1 - fill)
+                    image[N * N + i] = ((cp[i] shr 8) and 0xFF) / 255f * (1 - fill)
+                    image[2 * N * N + i] = (cp[i] and 0xFF) / 255f * (1 - fill)
+                }
+                val t1 = SystemClock.elapsedRealtime()
+                inputs[0].writeFloat(image); inputs[1].writeFloat(hole); model.run(inputs, outputs); val out = outputs[0].readFloat()
+                val inferMs = SystemClock.elapsedRealtime() - t1
+                fun c(v: Float) = (v * 255f).toInt().coerceIn(0, 255)
+                val gen = Bitmap.createBitmap(IntArray(N * N) { i -> (0xFF shl 24) or (c(out[i]) shl 16) or (c(out[N * N + i]) shl 8) or c(out[2 * N * N + i]) }, N, N, Bitmap.Config.ARGB_8888)
+                val bp = IntArray(side * side).also { Bitmap.createScaledBitmap(gen, side, side, true).getPixels(it, 0, side, 0, 0, side, side) }
+                for (yy in 0 until side) for (xx in 0 until side) {
+                    val q = (cy + yy) * w + cx + xx
+                    if ((mp[q] and 0xFF) > 127) result[q] = bp[yy * side + xx]
+                }
+                val target = File(dir, "lama_${accelerator.name.lowercase()}_" + maskFile.nameWithoutExtension.removePrefix("mask_") + ".jpg")
+                target.outputStream().use { Bitmap.createBitmap(result, w, h, Bitmap.Config.ARGB_8888).compress(Bitmap.CompressFormat.JPEG, 92, it) }
+                Log.i(TAG, "RESULT lama ${accelerator.name} ${maskFile.name} crop=${side}px inference=${inferMs}ms total=${SystemClock.elapsedRealtime() - t0}ms")
+            }
+        } finally {
+            model.close()
+        }
+    }
+
     private fun syntheticInput(): Pair<FloatArray, FloatArray> {
         val rgb = FloatArray(3 * N * N); val mask = FloatArray(N * N) { 1f }
         for (y in 0 until N) for (x in 0 until N) {
@@ -240,6 +365,20 @@ class MiganDeviceTest {
             "migan_fp16.tflite",
             "https://huggingface.co/litert-community/MI-GAN-512-Places2-LiteRT/resolve/179a35d8e8a518f6253f9c42fc9b412c6438cf7c/migan_fp16.tflite",
             "ef53f8dca69e5ce29629441128322c4d9a0a527b2a043703e0ab497f2463c25f",
+        )
+        // Per-SoC Hexagon builds of FP16 (android/tools/parakeet_npu/compile_npu.py with QAIRT 2.50 on the build PC),
+        // served on the LAN while testing; device-farm runs bundle them in the test APK's migan-npu/ assets.
+        const val AOT_BASE_URL = "http://192.168.1.105:8765"
+        val AOT_SHA256 = mapOf(
+            "SM8550" to "4492ae0effbe9fdcfb89f7e6c262088fc2e233e7c9329bdfff1b68846ead8cfa",
+            "SM8650" to "7dae9c2dc76c3fb71c9d21117e78a4324b304fedc42dce672d1db94391ba9722",
+            "SM8750" to "f3c7ce9d3c2636c6f2e075effe2844959f10935aa7c6ffc56b8be34b942774de",
+            "SM8850" to "ea6a2f25b143ca66d22f871720aac15ebd0036d7c964ed3dc516cd6e1a433559",
+        )
+        val LAMA = Fixture(
+            "lama_512_fp16.tflite",
+            "https://huggingface.co/Dineshsoudagar/big-lama-512-LiteRT/resolve/32e8ffaa7149aa2d679e0f5bb821b41ece9b5a04/lama_512_fp16.tflite",
+            "522092191a7edb8abbd80589ce74385d579b0c97d6978da7a4f257da39e6d885",
         )
     }
 }
