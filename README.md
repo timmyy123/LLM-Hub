@@ -71,9 +71,10 @@ Free code signing provided by [SignPath.io](https://about.signpath.io), certific
 | **Video Moment Finder** | **[NEW]** Describe a moment in a video and jump to matching timestamps using visual and audio embeddings on Android and iOS |
 | **Text to Speech & Voice Cloning** | Android supports Kokoro, multilingual Supertonic 3 with voice-profile import, and Pocket TTS with on-device voice cloning |
 | **Image Upscale** | **[NEW]** Upscale images up to 4× using AI super-resolution models (RealESRGAN, UltraSharp) with NPU acceleration |
+| **Object Eraser** | **[NEW]** Paint over objects to remove them from photos on Android, with MI-GAN (Quick) or LaMa (HD) on the GPU with CPU fallback |
 | **Video Generator** | **[NEW]** Generate videos from text prompts or images: LTX-Video on Android (Snapdragon NPU, Vulkan GPU or CPU), Stable Video Diffusion on iOS |
 | **Translator** | Translate text, images (OCR), and audio across 50+ languages - offline |
-| **Transcriber** | Convert speech to text with on-device processing using Whisper models |
+| **Transcriber** | Convert speech to text on-device with Whisper, Parakeet, ML Kit or audio-capable Gemma models |
 | **Scam Detector** | Analyze messages and images for phishing with risk assessment |
 | **VibeVoice** | **[NEW]** Hands-free AI voice chat |
 
@@ -87,7 +88,11 @@ The **AI Agent** turns on-device LLMs into autonomous assistants with device fun
 - **AI Error Auto-Correction Loop**: When a shell command fails or encounters permission/syntax errors, the agent automatically feeds the error logs back into the LLM for self-diagnostics and auto-generates fix commands.
 
 ### Supported ASR Models (Android)
-The offline **Transcriber** feature on Android supports on-device Whisper models for high-accuracy local speech-to-text.
+The offline **Transcriber** on Android works with dedicated speech recognition models and with chat models that take audio input:
+- **Whisper Tiny and Base** (English-only and multilingual) through WhisperKit on LiteRT, with Qualcomm NPU acceleration on supported Snapdragon chips.
+- **NVIDIA Parakeet TDT 0.6B v3**: 25 European languages with automatic language detection. A LiteRT-LM build runs on any device; NPU builds run on Snapdragon 8 Gen 2, 8 Gen 3, 8 Elite and 8 Elite Gen 5, Google Tensor G5 and G6, and MediaTek Dimensity 9400 and 9500.
+- **Google ML Kit speech recognition** (Basic, and Advanced on recent flagships): the system installs and updates the model, so it uses no app storage.
+- **Gemma-3n and Gemma-4 (E2B and E4B)**: multimodal models with audio input can transcribe too.
 
 ### Android Text to Speech & Voice Cloning
 - **Kokoro**: Local speech with downloadable voices managed in Settings.
@@ -120,11 +125,16 @@ The iOS Music Generator supports **Live generation** with Magenta Realtime 2: he
 - **Open-source** - fully transparent
 
 ### Advanced Capabilities
-- GPU/NPU acceleration for fast performance
-- Text-to-Speech with auto-readout
-- RAG with global memory for enhanced responses
-- Import custom models
-- Direct downloads from HuggingFace
+- GPU and NPU acceleration (Snapdragon Hexagon NPU, LiteRT GPU, OpenCL and Vulkan) with automatic CPU fallback
+- Several on-device engines: LiteRT-LM, MediaPipe, llama.cpp (GGUF) and ONNX Runtime on Android; llama.cpp, Apple Foundation Model and Draw Things on iOS
+- Vision and audio input with multimodal models
+- Thinking models with their reasoning shown
+- Web search with cited sources
+- RAG with global memory (EmbeddingGemma 2) for enhanced responses
+- Text-to-Speech with auto-readout and on-device voice cloning
+- Flash streaming to run mixture-of-experts models larger than the device's RAM
+- Import custom models, including GGUF vision models with their projector
+- Direct downloads from Hugging Face, and export of downloaded models
 - 22 language interfaces
 
 ### LLM Hub's patched llama.cpp (Aion, flash streaming, NPU/GPU fixes)
