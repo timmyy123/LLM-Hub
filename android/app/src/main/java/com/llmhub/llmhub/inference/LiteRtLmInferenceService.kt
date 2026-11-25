@@ -287,8 +287,9 @@ class LiteRtLmInferenceService(private val applicationContext: Context) : Infere
         try {
             return block(conv)
         } finally {
-            liveConversations -= conv
-            conv.close()
+            // Freed before it leaves the set: closeEngineLocked closes the engine once the set is empty, and closing
+            // it while this Conversation was still being freed crashed in LiteRtDestroyTensorBuffer (4.7.0 vitals).
+            try { conv.close() } finally { liveConversations -= conv }
         }
     }
 
