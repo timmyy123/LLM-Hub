@@ -123,7 +123,13 @@ class MiganDeviceTest {
      * to 512), inpaint on the GPU, scale back and replace only that region's pixels. Writes out_*.jpg per mask.
      */
     @Test fun photoGpu() {
-        val dir = File(context.filesDir, "migan-photo")
+        val dir = File(context.filesDir, "migan-photo").apply { mkdirs() }
+        // Device farms start empty: take the photo and masks from the test APK's assets when they are bundled there.
+        val testAssets = InstrumentationRegistry.getInstrumentation().context.assets
+        for (name in testAssets.list("migan-photo").orEmpty()) {
+            val target = File(dir, name)
+            if (!target.exists()) testAssets.open("migan-photo/$name").use { input -> target.outputStream().use { input.copyTo(it) } }
+        }
         val photo = BitmapFactory.decodeFile(File(dir, "photo.jpg").path)
         val w = photo.width; val h = photo.height
         val file = File(File(context.filesDir, "models").apply { mkdirs() }, FP16.file)
