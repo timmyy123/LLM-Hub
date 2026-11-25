@@ -1133,11 +1133,7 @@
     <string name="image_inpainting_brush_size">Kích thước cọ</string>
     <string name="image_inpainting_undo">Hoàn tác</string>
     <string name="image_inpainting_clear">Xóa nét vẽ</string>
-    <string name="image_inpainting_quick">Nhanh</string>
-    <string name="image_inpainting_hd">HD</string>
-    <string name="image_inpainting_mode_hint">Nhanh phù hợp nhất với vật thể nhỏ. HD lấp vùng lớn gọn gàng hơn.</string>
     <string name="image_inpainting_erase">Xóa</string>
-    <string name="image_inpainting_loading_model">Đang tải mô hình…</string>
     <string name="image_inpainting_erasing">Đang xóa %1$d/%2$d…</string>
     <string name="image_inpainting_cpu_note">Đang chạy trên CPU. Có thể mất một lúc.</string>
     <string name="image_inpainting_compare">Nhấn giữ để so sánh</string>

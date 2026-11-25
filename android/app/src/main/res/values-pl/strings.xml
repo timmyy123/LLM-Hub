@@ -1229,11 +1229,7 @@
     <string name="image_inpainting_brush_size">Rozmiar pędzla</string>
     <string name="image_inpainting_undo">Cofnij</string>
     <string name="image_inpainting_clear">Wyczyść</string>
-    <string name="image_inpainting_quick">Szybki</string>
-    <string name="image_inpainting_hd">HD</string>
-    <string name="image_inpainting_mode_hint">Szybki najlepiej radzi sobie z małymi obiektami. HD czyściej wypełnia większe obszary.</string>
     <string name="image_inpainting_erase">Usuń</string>
-    <string name="image_inpainting_loading_model">Wczytywanie modelu…</string>
     <string name="image_inpainting_erasing">Usuwanie %1$d z %2$d…</string>
     <string name="image_inpainting_cpu_note">Działa na CPU. To może chwilę potrwać.</string>
     <string name="image_inpainting_compare">Przytrzymaj, aby porównać</string>

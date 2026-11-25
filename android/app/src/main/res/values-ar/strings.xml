@@ -1225,11 +1225,7 @@
     <string name="image_inpainting_brush_size">حجم الفرشاة</string>
     <string name="image_inpainting_undo">تراجع</string>
     <string name="image_inpainting_clear">مسح الكل</string>
-    <string name="image_inpainting_quick">سريع</string>
-    <string name="image_inpainting_hd">HD</string>
-    <string name="image_inpainting_mode_hint">السريع أفضل للعناصر الصغيرة، وHD يملأ المساحات الكبيرة بشكل أنظف.</string>
     <string name="image_inpainting_erase">امسح</string>
-    <string name="image_inpainting_loading_model">جارٍ تحميل النموذج…</string>
     <string name="image_inpainting_erasing">جارٍ المسح %1$d من %2$d…</string>
     <string name="image_inpainting_cpu_note">يعمل على CPU، وقد يستغرق ذلك بعض الوقت.</string>
     <string name="image_inpainting_compare">اضغط مطولًا للمقارنة</string>

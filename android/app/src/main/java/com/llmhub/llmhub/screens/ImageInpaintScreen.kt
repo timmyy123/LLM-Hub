@@ -1,5 +1,13 @@
 package com.llmhub.llmhub.screens
 
+import androidx.compose.foundation.layout.Row
+import androidx.compose.material3.Surface
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.ModalBottomSheet
+import com.google.mediapipe.tasks.genai.llminference.LlmInference
+import com.llmhub.llmhub.components.ModelSelectorCard
 import android.graphics.Bitmap
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -74,6 +82,7 @@ fun ImageInpaintScreen(
     val onCpu by viewModel.onCpu.collectAsState()
     val busy = status != InpaintStatus.Idle
     val photo = viewModel.photo
+    var showSettingsSheet by remember { mutableStateOf(false) }
 
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         uri?.let { viewModel.loadPhoto(it) }
@@ -99,23 +108,87 @@ fun ImageInpaintScreen(
         viewModel.messages.collect { snackbarHostState.showSnackbar(it) }
     }
 
+    // Settings sheet: the same model and backend selector as the other features (GPU or CPU, no NPU).
+    if (showSettingsSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showSettingsSheet = false },
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                Text(
+                    text = stringResource(R.string.feature_settings_title),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+                ModelSelectorCard(
+                    models = viewModel.installedModels,
+                    selectedModel = viewModel.selectedModel,
+                    selectedBackend = if (viewModel.useGpu) LlmInference.Backend.GPU else LlmInference.Backend.CPU,
+                    selectedNpuDeviceId = null,
+                    onModelSelected = viewModel::selectModel,
+                    onBackendSelected = { backend, _ -> viewModel.selectBackend(backend == LlmInference.Backend.GPU) },
+                    onLoadModel = viewModel::loadModel,
+                    isLoading = viewModel.isLoadingModel,
+                    isModelLoaded = viewModel.isModelLoaded,
+                    onUnloadModel = viewModel::unloadModel,
+                    filterMultimodalOnly = false
+                )
+                Spacer(modifier = Modifier.height(24.dp))
+            }
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.feature_image_inpainting), fontWeight = FontWeight.Bold) },
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Healing,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(end = 8.dp)
+                        )
+                        Text(
+                            text = stringResource(R.string.feature_image_inpainting),
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
                 },
                 actions = {
-                    if (photo != null && viewModel.installed.isNotEmpty()) {
-                        IconButton(onClick = { pickPhoto() }, enabled = !busy) {
-                            Icon(Icons.Default.PhotoLibrary, contentDescription = stringResource(R.string.image_inpainting_change_photo))
-                        }
+                    IconButton(onClick = { showSettingsSheet = true }) {
+                        Icon(Icons.Default.Tune, contentDescription = stringResource(R.string.feature_settings_title))
                     }
                 }
             )
+        },
+        bottomBar = {
+            if (viewModel.installedChecked && viewModel.installed.isNotEmpty()) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shadowElevation = 8.dp,
+                    color = MaterialTheme.colorScheme.surface
+                ) {
+                    EraseButton(
+                        status = status,
+                        isLoadingModel = viewModel.isLoadingModel,
+                        enabled = photo != null && viewModel.strokes.isNotEmpty() && !busy && !viewModel.isLoadingModel,
+                        onClick = viewModel::erase
+                    )
+                }
+            }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
@@ -160,7 +233,7 @@ fun ImageInpaintScreen(
                     ) {
                         Icon(Icons.Default.GetApp, contentDescription = null)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(stringResource(R.string.download_models))
+                        Text(stringResource(R.string.download_models_title))
                     }
                 }
             }
@@ -173,8 +246,6 @@ fun ImageInpaintScreen(
                         .padding(horizontal = 16.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    ModelChoice(viewModel = viewModel, enabled = !busy, onNavigateToModels = onNavigateToModels)
-
                     var showBefore by remember { mutableStateOf(false) }
                     Card(
                         modifier = Modifier
@@ -278,14 +349,8 @@ fun ImageInpaintScreen(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        BrushControls(viewModel = viewModel, enabled = !busy)
+                        BrushControls(viewModel = viewModel, enabled = !busy, onChangePhoto = { pickPhoto() })
                     }
-
-                    EraseButton(
-                        status = status,
-                        enabled = photo != null && viewModel.strokes.isNotEmpty() && !busy,
-                        onClick = viewModel::erase
-                    )
 
                     if (photo != null && viewModel.hasEdits) {
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -326,57 +391,8 @@ fun ImageInpaintScreen(
     }
 }
 
-/** Quick (MI-GAN) or HD (LaMa): a choice when both are downloaded, otherwise the one there is. */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ModelChoice(viewModel: ImageInpaintViewModel, enabled: Boolean, onNavigateToModels: () -> Unit) {
-    val kinds = listOf(InpaintKind.MIGAN, InpaintKind.LAMA).filter { it in viewModel.installed }
-    @Composable
-    fun label(kind: InpaintKind) = stringResource(
-        if (kind == InpaintKind.LAMA) R.string.image_inpainting_hd else R.string.image_inpainting_quick
-    )
-    if (kinds.size > 1) {
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                kinds.forEachIndexed { index, kind ->
-                    SegmentedButton(
-                        selected = viewModel.selectedKind == kind,
-                        onClick = { viewModel.selectKind(kind) },
-                        enabled = enabled,
-                        shape = SegmentedButtonDefaults.itemShape(index = index, count = kinds.size)
-                    ) {
-                        Text(label(kind))
-                    }
-                }
-            }
-            Text(
-                text = stringResource(R.string.image_inpainting_mode_hint),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    } else {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = kinds.firstOrNull()?.let { label(it) } ?: "",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.weight(1f)
-            )
-            TextButton(onClick = onNavigateToModels, enabled = enabled) {
-                Icon(Icons.Default.GetApp, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(stringResource(R.string.download_models))
-            }
-        }
-    }
-}
-
-@Composable
-private fun BrushControls(viewModel: ImageInpaintViewModel, enabled: Boolean) {
+private fun BrushControls(viewModel: ImageInpaintViewModel, enabled: Boolean, onChangePhoto: () -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
@@ -401,48 +417,47 @@ private fun BrushControls(viewModel: ImageInpaintViewModel, enabled: Boolean) {
         IconButton(onClick = viewModel::clearStrokes, enabled = enabled && viewModel.strokes.isNotEmpty()) {
             Icon(Icons.Default.LayersClear, contentDescription = stringResource(R.string.image_inpainting_clear))
         }
+        IconButton(onClick = onChangePhoto, enabled = enabled) {
+            Icon(Icons.Default.PhotoLibrary, contentDescription = stringResource(R.string.image_inpainting_change_photo))
+        }
     }
 }
 
 @Composable
-private fun EraseButton(status: InpaintStatus, enabled: Boolean, onClick: () -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+private fun EraseButton(status: InpaintStatus, isLoadingModel: Boolean, enabled: Boolean, onClick: () -> Unit) {
+    Column {
         if (status is InpaintStatus.Erasing && status.total > 0) {
             LinearProgressIndicator(
                 progress = { status.done.toFloat() / status.total },
                 modifier = Modifier.fillMaxWidth()
             )
-        } else if (status == InpaintStatus.Loading) {
-            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
         }
-        Button(
+        FilledTonalButton(
             onClick = onClick,
-            enabled = enabled,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            shape = RoundedCornerShape(12.dp),
+            enabled = enabled
         ) {
-            when (status) {
-                InpaintStatus.Idle -> {
-                    Icon(Icons.Default.Healing, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.image_inpainting_erase))
+            when {
+                // No spinner while a model loads: animating then can cause an ANR on the GPU (as in the other features).
+                isLoadingModel || status == InpaintStatus.Loading -> Text(stringResource(R.string.model_loading))
+                status is InpaintStatus.Erasing -> {
+                    CircularProgressIndicator(modifier = Modifier.size(22.dp), strokeWidth = 2.5.dp)
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        stringResource(
+                            R.string.image_inpainting_erasing,
+                            min(status.done + 1, status.total.coerceAtLeast(1)),
+                            status.total.coerceAtLeast(1)
+                        )
+                    )
                 }
                 else -> {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(18.dp),
-                        strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
+                    Icon(Icons.Default.AutoAwesome, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        when (status) {
-                            is InpaintStatus.Erasing -> stringResource(
-                                R.string.image_inpainting_erasing,
-                                min(status.done + 1, status.total.coerceAtLeast(1)),
-                                status.total.coerceAtLeast(1)
-                            )
-                            else -> stringResource(R.string.image_inpainting_loading_model)
-                        }
-                    )
+                    Text(stringResource(R.string.image_inpainting_erase))
                 }
             }
         }

@@ -1225,11 +1225,7 @@
     <string name="image_inpainting_brush_size">Розмір пензля</string>
     <string name="image_inpainting_undo">Скасувати</string>
     <string name="image_inpainting_clear">Очистити</string>
-    <string name="image_inpainting_quick">Швидко</string>
-    <string name="image_inpainting_hd">HD</string>
-    <string name="image_inpainting_mode_hint">«Швидко» краще для дрібних об’єктів. HD акуратніше заповнює великі ділянки.</string>
     <string name="image_inpainting_erase">Стерти</string>
-    <string name="image_inpainting_loading_model">Завантаження моделі…</string>
     <string name="image_inpainting_erasing">Стираємо %1$d з %2$d…</string>
     <string name="image_inpainting_cpu_note">Працює на CPU. Це може зайняти трохи часу.</string>
     <string name="image_inpainting_compare">Утримуйте, щоб порівняти</string>

@@ -1222,11 +1222,7 @@
     <string name="image_inpainting_brush_size">ブラシのサイズ</string>
     <string name="image_inpainting_undo">元に戻す</string>
     <string name="image_inpainting_clear">クリア</string>
-    <string name="image_inpainting_quick">高速</string>
-    <string name="image_inpainting_hd">HD</string>
-    <string name="image_inpainting_mode_hint">小さな物は「高速」、大きな範囲は「HD」のほうがきれいに仕上がります。</string>
     <string name="image_inpainting_erase">消去</string>
-    <string name="image_inpainting_loading_model">モデルを読み込み中…</string>
     <string name="image_inpainting_erasing">消去中 %1$d/%2$d…</string>
     <string name="image_inpainting_cpu_note">CPUで処理しています。少し時間がかかる場合があります。</string>
     <string name="image_inpainting_compare">長押しで比較</string>

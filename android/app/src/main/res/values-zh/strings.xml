@@ -1233,11 +1233,7 @@
     <string name="image_inpainting_brush_size">画笔大小</string>
     <string name="image_inpainting_undo">撤销</string>
     <string name="image_inpainting_clear">清除</string>
-    <string name="image_inpainting_quick">快速</string>
-    <string name="image_inpainting_hd">高清</string>
-    <string name="image_inpainting_mode_hint">“快速”适合小物体，“高清”能更干净地填补大面积区域。</string>
     <string name="image_inpainting_erase">消除</string>
-    <string name="image_inpainting_loading_model">正在加载模型…</string>
     <string name="image_inpainting_erasing">正在消除 %1$d/%2$d…</string>
     <string name="image_inpainting_cpu_note">正在使用 CPU 运行，可能需要一些时间。</string>
     <string name="image_inpainting_compare">按住对比</string>

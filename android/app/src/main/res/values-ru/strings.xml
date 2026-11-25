@@ -1197,11 +1197,7 @@
     <string name="image_inpainting_brush_size">Размер кисти</string>
     <string name="image_inpainting_undo">Отменить</string>
     <string name="image_inpainting_clear">Очистить</string>
-    <string name="image_inpainting_quick">Быстро</string>
-    <string name="image_inpainting_hd">HD</string>
-    <string name="image_inpainting_mode_hint">«Быстро» лучше для мелких объектов. HD аккуратнее заполняет большие области.</string>
     <string name="image_inpainting_erase">Стереть</string>
-    <string name="image_inpainting_loading_model">Загрузка модели…</string>
     <string name="image_inpainting_erasing">Стираем %1$d из %2$d…</string>
     <string name="image_inpainting_cpu_note">Работает на CPU. Это может занять время.</string>
     <string name="image_inpainting_compare">Удерживайте для сравнения</string>

@@ -1191,11 +1191,7 @@
     <string name="image_inpainting_brush_size">Pinselgröße</string>
     <string name="image_inpainting_undo">Rückgängig</string>
     <string name="image_inpainting_clear">Alles löschen</string>
-    <string name="image_inpainting_quick">Schnell</string>
-    <string name="image_inpainting_hd">HD</string>
-    <string name="image_inpainting_mode_hint">Schnell ist ideal für kleine Objekte. HD füllt größere Bereiche sauberer.</string>
     <string name="image_inpainting_erase">Entfernen</string>
-    <string name="image_inpainting_loading_model">Modell wird geladen…</string>
     <string name="image_inpainting_erasing">Bereich %1$d von %2$d wird entfernt…</string>
     <string name="image_inpainting_cpu_note">Läuft auf der CPU. Das kann etwas dauern.</string>
     <string name="image_inpainting_compare">Gedrückt halten zum Vergleichen</string>

@@ -1251,11 +1251,7 @@
     <string name="image_inpainting_brush_size">ब्रश का आकार</string>
     <string name="image_inpainting_undo">पहले जैसा करें</string>
     <string name="image_inpainting_clear">सब साफ़ करें</string>
-    <string name="image_inpainting_quick">क्विक</string>
-    <string name="image_inpainting_hd">HD</string>
-    <string name="image_inpainting_mode_hint">छोटी चीज़ों के लिए क्विक सबसे अच्छा है। HD बड़े हिस्सों को ज़्यादा साफ़ भरता है।</string>
     <string name="image_inpainting_erase">मिटाएं</string>
-    <string name="image_inpainting_loading_model">मॉडल लोड हो रहा है…</string>
     <string name="image_inpainting_erasing">मिटाया जा रहा है %1$d/%2$d…</string>
     <string name="image_inpainting_cpu_note">CPU पर चल रहा है। इसमें थोड़ा समय लग सकता है।</string>
     <string name="image_inpainting_compare">तुलना के लिए दबाकर रखें</string>

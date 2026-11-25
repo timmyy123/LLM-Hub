@@ -48,9 +48,16 @@ class LiteRtInpainter private constructor(
         /** Painted pixels the 512 mask grows by, so object edges blended in by the downscale are filled too. */
         private const val MASK_GROW = 2
 
-        /** Loads the model on the GPU, or on the CPU if the GPU cannot compile it. Slow: call off the main thread. */
-        fun create(modelFile: File, kind: InpaintKind): LiteRtInpainter {
+        /**
+         * Loads the model on the GPU (falling back to the CPU if the GPU cannot compile it), or on the CPU when
+         * [useGpu] is false. Slow: call off the main thread.
+         */
+        fun create(modelFile: File, kind: InpaintKind, useGpu: Boolean = true): LiteRtInpainter {
             require(modelFile.isFile) { "Model file does not exist: ${modelFile.absolutePath}" }
+            if (!useGpu) {
+                Log.i(TAG, "${modelFile.parentFile?.name}: CPU (chosen)")
+                return LiteRtInpainter(kind, modelFile, CompiledModel.create(modelFile.absolutePath, CompiledModel.Options(Accelerator.CPU)), false)
+            }
             return try {
                 val gpu = CompiledModel.create(modelFile.absolutePath, CompiledModel.Options(Accelerator.GPU))
                 Log.i(TAG, "${modelFile.parentFile?.name}: GPU")

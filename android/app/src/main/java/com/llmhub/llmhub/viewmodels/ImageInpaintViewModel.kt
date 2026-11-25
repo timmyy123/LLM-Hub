@@ -24,6 +24,8 @@ import androidx.lifecycle.viewModelScope
 import com.llmhub.llmhub.R
 import com.llmhub.llmhub.data.InpaintKind
 import com.llmhub.llmhub.data.InpaintModels
+import com.llmhub.llmhub.data.LLMModel
+import com.llmhub.llmhub.data.ModelData
 import com.llmhub.llmhub.imagegen.BoundedBitmapDecoder
 import com.llmhub.llmhub.imagegen.LiteRtInpainter
 import kotlinx.coroutines.CancellationException
@@ -96,6 +98,20 @@ class ImageInpaintViewModel(application: Application) : AndroidViewModel(applica
     private val _messages = MutableSharedFlow<String>(extraBufferCapacity = 4)
     val messages: SharedFlow<String> = _messages
 
+    /** Backend from the settings sheet: GPU (with CPU fallback) or CPU. */
+    var useGpu by mutableStateOf(prefs.getBoolean(KEY_GPU, true))
+        private set
+    var isModelLoaded by mutableStateOf(false)
+        private set
+    var isLoadingModel by mutableStateOf(false)
+        private set
+
+    /** Downloaded eraser models, as catalog entries for the settings sheet's model dropdown. */
+    val installedModels: List<LLMModel>
+        get() = ModelData.models.filter { it.category == InpaintModels.CATEGORY && InpaintModels.kindOf(it) in installed }
+    val selectedModel: LLMModel?
+        get() = installedModels.firstOrNull { InpaintModels.kindOf(it) == selectedKind }
+
     private val engineLock = Mutex()
     private var engine: LiteRtInpainter? = null
     private var job: Job? = null
@@ -116,10 +132,60 @@ class ImageInpaintViewModel(application: Application) : AndroidViewModel(applica
         }
     }
 
-    fun selectKind(kind: InpaintKind) {
-        if (kind !in installed || isBusy) return
+    fun selectModel(model: LLMModel) {
+        val kind = InpaintModels.kindOf(model)
+        if (kind !in installed || isBusy || isLoadingModel || kind == selectedKind) return
         selectedKind = kind
         prefs.edit().putString(KEY_KIND, kind.name).apply()
+        unloadModel()
+    }
+
+    fun selectBackend(gpu: Boolean) {
+        if (isBusy || isLoadingModel || gpu == useGpu) return
+        useGpu = gpu
+        prefs.edit().putBoolean(KEY_GPU, gpu).apply()
+        unloadModel()
+    }
+
+    /** Loads the selected model on the chosen backend (the sheet's Load button). */
+    fun loadModel() {
+        if (isBusy || isLoadingModel) return
+        val kind = selectedKind
+        val file = installed[kind] ?: return
+        val gpu = useGpu
+        isLoadingModel = true
+        viewModelScope.launch {
+            try {
+                withContext(Dispatchers.Default) {
+                    engineLock.withLock {
+                        engine?.close()
+                        engine = null
+                        engine = LiteRtInpainter.create(file, kind, gpu).also { _onCpu.value = !it.isGpu }
+                    }
+                }
+                isModelLoaded = true
+            } catch (e: CancellationException) {
+                throw e
+            } catch (t: Throwable) {
+                Log.e(TAG, "Model load failed", t)
+                isModelLoaded = false
+                _messages.tryEmit(appContext.getString(R.string.image_inpainting_failed, t.message ?: t.javaClass.simpleName))
+            } finally {
+                isLoadingModel = false
+            }
+        }
+    }
+
+    /** Closes the loaded model (the sheet's Unload button, or after a model or backend change). */
+    fun unloadModel() {
+        if (isBusy) return
+        isModelLoaded = false
+        cleanupScope.launch {
+            engineLock.withLock {
+                engine?.close()
+                engine = null
+            }
+        }
     }
 
     fun setBrushSize(dp: Float) {
@@ -188,8 +254,9 @@ class ImageInpaintViewModel(application: Application) : AndroidViewModel(applica
                         val inpainter = engine?.takeIf { it.kind == kind } ?: run {
                             engine?.close()
                             engine = null
-                            LiteRtInpainter.create(file, kind).also { engine = it }
+                            LiteRtInpainter.create(file, kind, useGpu).also { engine = it }
                         }
+                        isModelLoaded = true
                         _onCpu.value = !inpainter.isGpu
                         val mask = rasterize(painted, source.width, source.height)
                         inpainter.inpaint(source, mask) { done, total ->
@@ -219,6 +286,7 @@ class ImageInpaintViewModel(application: Application) : AndroidViewModel(applica
         job = null
         running?.cancel()
         _status.value = InpaintStatus.Idle
+        isModelLoaded = false
         cleanupScope.launch {
             running?.join()
             engineLock.withLock {
@@ -367,6 +435,7 @@ class ImageInpaintViewModel(application: Application) : AndroidViewModel(applica
     companion object {
         private const val TAG = "ImageInpaintVM"
         private const val KEY_KIND = "kind"
+        private const val KEY_GPU = "use_gpu"
         private const val KEY_BRUSH = "brush_dp"
         const val DEFAULT_BRUSH_DP = 28f
         const val MIN_BRUSH_DP = 8f

@@ -1227,11 +1227,7 @@
     <string name="image_inpainting_brush_size">Ukuran kuas</string>
     <string name="image_inpainting_undo">Urungkan</string>
     <string name="image_inpainting_clear">Bersihkan</string>
-    <string name="image_inpainting_quick">Cepat</string>
-    <string name="image_inpainting_hd">HD</string>
-    <string name="image_inpainting_mode_hint">Cepat paling pas untuk objek kecil. HD mengisi area besar dengan lebih rapi.</string>
     <string name="image_inpainting_erase">Hapus</string>
-    <string name="image_inpainting_loading_model">Memuat model…</string>
     <string name="image_inpainting_erasing">Menghapus %1$d dari %2$d…</string>
     <string name="image_inpainting_cpu_note">Berjalan di CPU. Ini mungkin perlu waktu.</string>
     <string name="image_inpainting_compare">Tahan untuk membandingkan</string>

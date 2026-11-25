@@ -1223,11 +1223,7 @@
     <string name="image_inpainting_brush_size">Fırça boyutu</string>
     <string name="image_inpainting_undo">Geri al</string>
     <string name="image_inpainting_clear">Temizle</string>
-    <string name="image_inpainting_quick">Hızlı</string>
-    <string name="image_inpainting_hd">HD</string>
-    <string name="image_inpainting_mode_hint">Hızlı küçük nesneler için idealdir. HD büyük alanları daha temiz doldurur.</string>
     <string name="image_inpainting_erase">Sil</string>
-    <string name="image_inpainting_loading_model">Model yükleniyor…</string>
     <string name="image_inpainting_erasing">Siliniyor: %1$d / %2$d…</string>
     <string name="image_inpainting_cpu_note">CPU üzerinde çalışıyor. Bu biraz sürebilir.</string>
     <string name="image_inpainting_compare">Karşılaştırmak için basılı tutun</string>

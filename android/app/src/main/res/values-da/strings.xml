@@ -1194,11 +1194,7 @@ Du forsøger at sende et billede, men den nuværende model er **kun-tekst**:
     <string name="image_inpainting_brush_size">Penselstørrelse</string>
     <string name="image_inpainting_undo">Fortryd</string>
     <string name="image_inpainting_clear">Ryd</string>
-    <string name="image_inpainting_quick">Hurtig</string>
-    <string name="image_inpainting_hd">HD</string>
-    <string name="image_inpainting_mode_hint">Hurtig er bedst til små objekter. HD udfylder større områder mere rent.</string>
     <string name="image_inpainting_erase">Fjern</string>
-    <string name="image_inpainting_loading_model">Indlæser model…</string>
     <string name="image_inpainting_erasing">Fjerner %1$d af %2$d…</string>
     <string name="image_inpainting_cpu_note">Kører på CPU. Det kan tage et stykke tid.</string>
     <string name="image_inpainting_compare">Hold nede for at sammenligne</string>

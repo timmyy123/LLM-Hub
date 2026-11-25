@@ -1225,11 +1225,7 @@
     <string name="image_inpainting_brush_size">اندازه قلم‌مو</string>
     <string name="image_inpainting_undo">واگرد</string>
     <string name="image_inpainting_clear">پاک کردن همه</string>
-    <string name="image_inpainting_quick">سریع</string>
-    <string name="image_inpainting_hd">HD</string>
-    <string name="image_inpainting_mode_hint">«سریع» برای اشیای کوچک بهترین است. HD نواحی بزرگ را تمیزتر پر می‌کند.</string>
     <string name="image_inpainting_erase">پاک کن</string>
-    <string name="image_inpainting_loading_model">در حال بارگیری مدل…</string>
     <string name="image_inpainting_erasing">در حال پاک کردن %1$d از %2$d…</string>
     <string name="image_inpainting_cpu_note">روی CPU اجرا می‌شود و ممکن است کمی طول بکشد.</string>
     <string name="image_inpainting_compare">برای مقایسه نگه دارید</string>

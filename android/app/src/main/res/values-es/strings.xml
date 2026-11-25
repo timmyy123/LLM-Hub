@@ -1228,11 +1228,7 @@
     <string name="image_inpainting_brush_size">Tamaño del pincel</string>
     <string name="image_inpainting_undo">Deshacer</string>
     <string name="image_inpainting_clear">Limpiar</string>
-    <string name="image_inpainting_quick">Rápido</string>
-    <string name="image_inpainting_hd">HD</string>
-    <string name="image_inpainting_mode_hint">Rápido es ideal para objetos pequeños. HD rellena mejor las zonas grandes.</string>
     <string name="image_inpainting_erase">Borrar</string>
-    <string name="image_inpainting_loading_model">Cargando modelo…</string>
     <string name="image_inpainting_erasing">Borrando %1$d de %2$d…</string>
     <string name="image_inpainting_cpu_note">Se está usando la CPU, así que puede tardar un poco.</string>
     <string name="image_inpainting_compare">Mantén pulsado para comparar</string>

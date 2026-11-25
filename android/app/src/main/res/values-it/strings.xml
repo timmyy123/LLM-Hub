@@ -1219,11 +1219,7 @@
     <string name="image_inpainting_brush_size">Dimensione pennello</string>
     <string name="image_inpainting_undo">Annulla</string>
     <string name="image_inpainting_clear">Cancella tutto</string>
-    <string name="image_inpainting_quick">Rapido</string>
-    <string name="image_inpainting_hd">HD</string>
-    <string name="image_inpainting_mode_hint">Rapido è ideale per oggetti piccoli. HD riempie in modo più pulito le aree grandi.</string>
     <string name="image_inpainting_erase">Cancella</string>
-    <string name="image_inpainting_loading_model">Caricamento del modello…</string>
     <string name="image_inpainting_erasing">Cancellazione %1$d di %2$d…</string>
     <string name="image_inpainting_cpu_note">In esecuzione sulla CPU. Potrebbe volerci un po\'.</string>
     <string name="image_inpainting_compare">Tieni premuto per confrontare</string>

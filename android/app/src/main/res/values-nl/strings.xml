@@ -1133,11 +1133,7 @@
     <string name="image_inpainting_brush_size">Penseelgrootte</string>
     <string name="image_inpainting_undo">Ongedaan maken</string>
     <string name="image_inpainting_clear">Alles wissen</string>
-    <string name="image_inpainting_quick">Snel</string>
-    <string name="image_inpainting_hd">HD</string>
-    <string name="image_inpainting_mode_hint">Snel werkt het best voor kleine objecten. HD vult grotere vlakken netter op.</string>
     <string name="image_inpainting_erase">Wissen</string>
-    <string name="image_inpainting_loading_model">Model laden…</string>
     <string name="image_inpainting_erasing">Bezig met wissen %1$d van %2$d…</string>
     <string name="image_inpainting_cpu_note">Draait op de CPU. Dit kan even duren.</string>
     <string name="image_inpainting_compare">Ingedrukt houden om te vergelijken</string>

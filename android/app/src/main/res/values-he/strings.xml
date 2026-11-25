@@ -1224,11 +1224,7 @@
     <string name="image_inpainting_brush_size">גודל מברשת</string>
     <string name="image_inpainting_undo">ביטול</string>
     <string name="image_inpainting_clear">ניקוי</string>
-    <string name="image_inpainting_quick">מהיר</string>
-    <string name="image_inpainting_hd">HD</string>
-    <string name="image_inpainting_mode_hint">\"מהיר\" מתאים במיוחד לאובייקטים קטנים. HD ממלא אזורים גדולים בצורה נקייה יותר.</string>
     <string name="image_inpainting_erase">מחיקה</string>
-    <string name="image_inpainting_loading_model">טוען מודל…</string>
     <string name="image_inpainting_erasing">מוחק %1$d מתוך %2$d…</string>
     <string name="image_inpainting_cpu_note">פועל על ה-CPU. זה עשוי לקחת זמן.</string>
     <string name="image_inpainting_compare">לחצו לחיצה ארוכה להשוואה</string>

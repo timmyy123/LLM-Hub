@@ -1133,11 +1133,7 @@
     <string name="image_inpainting_brush_size">ขนาดแปรง</string>
     <string name="image_inpainting_undo">เลิกทำ</string>
     <string name="image_inpainting_clear">ล้างทั้งหมด</string>
-    <string name="image_inpainting_quick">เร็ว</string>
-    <string name="image_inpainting_hd">HD</string>
-    <string name="image_inpainting_mode_hint">โหมดเร็วเหมาะกับวัตถุเล็ก ส่วน HD เติมพื้นที่ใหญ่ได้เนียนกว่า</string>
     <string name="image_inpainting_erase">ลบ</string>
-    <string name="image_inpainting_loading_model">กำลังโหลดโมเดล…</string>
     <string name="image_inpainting_erasing">กำลังลบ %1$d จาก %2$d…</string>
     <string name="image_inpainting_cpu_note">กำลังทำงานบน CPU อาจใช้เวลาสักครู่</string>
     <string name="image_inpainting_compare">กดค้างเพื่อเปรียบเทียบ</string>

@@ -1211,11 +1211,7 @@
     <string name="image_inpainting_brush_size">Taille du pinceau</string>
     <string name="image_inpainting_undo">Annuler</string>
     <string name="image_inpainting_clear">Tout effacer</string>
-    <string name="image_inpainting_quick">Rapide</string>
-    <string name="image_inpainting_hd">HD</string>
-    <string name="image_inpainting_mode_hint">Rapide est idéal pour les petits objets. HD remplit plus proprement les grandes zones.</string>
     <string name="image_inpainting_erase">Effacer</string>
-    <string name="image_inpainting_loading_model">Chargement du modèle…</string>
     <string name="image_inpainting_erasing">Effacement %1$d sur %2$d…</string>
     <string name="image_inpainting_cpu_note">Traitement sur le CPU. Cela peut prendre un moment.</string>
     <string name="image_inpainting_compare">Maintenez pour comparer</string>
