@@ -221,6 +221,12 @@ fun PremiumScreen(
                                 text = stringResource(R.string.premium_feature_video_gen)
                             )
                             PremiumFeatureRow(
+                                icon = Icons.Filled.MusicNote,
+                                tint = Color(0xFFFF9A9E),
+                                text = stringResource(R.string.feature_music_generator) + " – " +
+                                    stringResource(R.string.feature_music_generator_desc)
+                            )
+                            PremiumFeatureRow(
                                 icon = Icons.Default.Face,
                                 tint = Color(0xFFE91E63),
                                 text = stringResource(R.string.premium_feature_creaitors)
