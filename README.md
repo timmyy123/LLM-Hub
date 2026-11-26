@@ -61,22 +61,22 @@ Free code signing provided by [SignPath.io](https://about.signpath.io), certific
 | Tool | Description |
 |------|-------------|
 | **Chat** | Multi-turn conversations with RAG memory, web search, TTS auto-readout, and multimodal input |
-| **AI Agent** | **[NEW]** Autonomous device agent with function calling, interactive maps, device tools, MCP tools, and Termux terminal command generation on Android |
-| **creAItor** | **[NEW]** Design custom AI personas with specialized system prompts (PCTF) in seconds |
-| **Vibe Coder** | **[NEW]** Build apps with live HTML/JS preview; Android also runs Codex and Claude Code through Termux using your selected local model |
+| **AI Agent** | Autonomous device agent with function calling, interactive maps, device tools, MCP tools, and Termux terminal command generation on Android |
+| **creAItor** | Design custom AI personas with specialized system prompts (PCTF) in seconds |
+| **Vibe Coder** | Build apps with live HTML/JS preview; Android also runs Codex and Claude Code through Termux using your selected local model |
 | **Writing Aid** | Summarize, expand, rewrite, improve grammar, or generate code from descriptions |
 | **Image Generator** | Create images from text prompts using Stable Diffusion 1.5 with swipeable gallery |
-| **Music Generator** | **[NEW]** Generate music and sound effects locally with SoundGen and Stable Audio 3 on Android and Magenta Realtime 2 on iOS and Snapdragon Android (live on 8 Elite Gen 5/Gen 6), including live playback as music is generated |
-| **Instant Media Search** | **[NEW]** Search photos and videos by description or a reference image on Android and iOS using on-device EmbeddingGemma 2 |
-| **Video Moment Finder** | **[NEW]** Describe a moment in a video and jump to matching timestamps using visual and audio embeddings on Android and iOS |
+| **Music Generator** | Generate music and sound effects locally with Stable Audio 3 (Small Music, Small SFX, Medium) and SoundGen on Android, and Magenta Realtime 2 on iOS and Snapdragon Android, with live playback as music is generated (iOS, and Snapdragon 8 Elite Gen 5/Gen 6) |
+| **Instant Media Search** | Search photos and videos by description or a reference image on Android and iOS using on-device EmbeddingGemma 2 |
+| **Video Moment Finder** | Describe a moment in a video and jump to matching timestamps using visual and audio embeddings on Android and iOS |
 | **Text to Speech & Voice Cloning** | Android supports Kokoro, multilingual Supertonic 3 with voice-profile import, and Pocket TTS with on-device voice cloning |
-| **Image Upscale** | **[NEW]** Upscale images up to 4× using AI super-resolution models (RealESRGAN, UltraSharp) with NPU acceleration |
-| **Object Eraser** | **[NEW]** Paint over objects to remove them from photos on Android, with MI-GAN (Quick) or LaMa (HD) on the GPU with CPU fallback |
-| **Video Generator** | **[NEW]** Generate videos from text prompts or images: LTX-Video on Android (Snapdragon NPU, Vulkan GPU or CPU), Stable Video Diffusion on iOS |
+| **Image Upscale** | Upscale images up to 4× using AI super-resolution models (RealESRGAN, UltraSharp) with NPU acceleration |
+| **Object Eraser** | Paint over objects to remove them from photos on Android, with MI-GAN (Quick) or LaMa (HD) on the GPU with CPU fallback |
+| **Video Generator** | Generate videos from text prompts or images: LTX-Video on Android (Snapdragon NPU, Vulkan GPU or CPU), Stable Video Diffusion on iOS |
 | **Translator** | Translate text, images (OCR), and audio across 50+ languages - offline |
 | **Transcriber** | Convert speech to text on-device with Whisper, Parakeet, ML Kit or audio-capable Gemma models |
 | **Scam Detector** | Analyze messages and images for phishing with risk assessment |
-| **VibeVoice** | **[NEW]** Hands-free AI voice chat |
+| **VibeVoice** | Hands-free AI voice chat |
 
 ### AI Agent & Termux Terminal Command Generation
 The **AI Agent** turns on-device LLMs into autonomous assistants with device function calling capabilities:
