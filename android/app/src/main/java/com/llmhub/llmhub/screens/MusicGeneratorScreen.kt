@@ -667,7 +667,8 @@ fun MusicGeneratorScreen(
                                 color = MaterialTheme.colorScheme.onPrimaryContainer
                             )
                             if (liveState.starting) {
-                                Text(stringResource(R.string.model_loading), style = MaterialTheme.typography.bodySmall)
+                                // The model is already loaded here; this is the first chunk being generated.
+                                Text(stringResource(R.string.generating_music), style = MaterialTheme.typography.bodySmall)
                             } else {
                                 IconButton(onClick = {
                                     if (liveState.paused) MagentaLiveService.resume(context) else MagentaLiveService.pause(context)
@@ -684,7 +685,8 @@ fun MusicGeneratorScreen(
                     }
                 }
 
-                generatedTracks.forEach { track ->
+                // Finished tracks (with their play buttons) are hidden while a live session runs; its recording joins them when it ends.
+                if (!liveActive) generatedTracks.forEach { track ->
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
