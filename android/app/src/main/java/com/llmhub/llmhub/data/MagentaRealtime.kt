@@ -85,6 +85,7 @@ object MagentaRealtime {
                         lines.forEach { line ->
                             when {
                                 line.startsWith("SERVE_") -> { Log.i(TAG, line); events.put(line) }
+                                line.startsWith("MRT_PROGRESS ") -> events.put(line)
                                 line.startsWith("BENCH ") || line.startsWith("DEVICE ") || line.contains("ERROR") -> Log.i(TAG, line)
                             }
                         }
@@ -96,9 +97,12 @@ object MagentaRealtime {
             }, "magenta-rt2-output").apply { isDaemon = true }.start()
         }
 
-        /** Sends one request and returns the WAV it wrote; the caller deletes it. */
+        /**
+         * Sends one request and returns the WAV it wrote; the caller deletes it. [onProgress] gets 0..1 from the
+         * engine's MRT_PROGRESS lines (token frames, then the codec).
+         */
         @Synchronized
-        fun request(line: String, timeoutSeconds: Long = 600): File {
+        fun request(line: String, timeoutSeconds: Long = 600, onProgress: ((Float) -> Unit)? = null): File {
             check(process.isAlive) { "Magenta engine stopped" }
             events.clear()
             writer.write(line)
@@ -112,6 +116,11 @@ object MagentaRealtime {
                         return File(workDir, name)
                     }
                     event.startsWith("SERVE_ERROR") -> error("Magenta engine: $event")
+                    event.startsWith("MRT_PROGRESS ") && onProgress != null -> {
+                        val m = Regex("stage=(\\w+) frame=(\\d+)/(\\d+)").find(event) ?: continue
+                        val done = m.groupValues[2].toFloat() / m.groupValues[3].toFloat().coerceAtLeast(1f)
+                        onProgress((if (m.groupValues[1] == "codec") 0.85f + 0.15f * done else 0.85f * done).coerceIn(0f, 1f))
+                    }
                     event == "EXIT" -> error("Magenta engine exited")
                 }
             }

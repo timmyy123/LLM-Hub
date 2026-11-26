@@ -143,7 +143,10 @@ object MusicGeneratorBackend {
                         // Render first, then play: one request for the whole length, as a new piece.
                         onProgress(0.05f)
                         val engine = MagentaRealtime.acquire(context, "ui")
-                        val wav = engine.request(MagentaRealtime.renderRequest(prompt, durationSeconds.toInt().coerceAtLeast(1), magentaSeed))
+                        val wav = engine.request(
+                            MagentaRealtime.renderRequest(prompt, durationSeconds.toInt().coerceAtLeast(1), magentaSeed),
+                            onProgress = { onProgress(0.05f + 0.95f * it) }
+                        )
                         val outputDir = File(context.cacheDir, "magenta_rt2").apply { mkdirs() }
                         val output = File(outputDir, "magenta_${System.currentTimeMillis()}.wav")
                         if (!wav.renameTo(output)) { wav.copyTo(output, overwrite = true); wav.delete() }

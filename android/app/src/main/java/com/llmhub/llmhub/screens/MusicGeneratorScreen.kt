@@ -69,6 +69,9 @@ fun MusicGeneratorScreen(
     var promptText by remember { mutableStateOf("") }
     var durationSeconds by remember { mutableFloatStateOf(10f) }
     var isGenerating by remember { mutableStateOf(false) }
+    // 0..1 for the progress bar above the button, as on iOS (musicFooter).
+    var generationProgress by remember { mutableFloatStateOf(0f) }
+    var liveDurationSeconds by remember { mutableStateOf<Int?>(null) }
     val generatedTracks = remember { mutableStateListOf<GeneratedMusicTrack>() }
     var playingTrackId by remember { mutableStateOf<Long?>(null) }
     var loadedTrackId by remember { mutableStateOf<Long?>(null) }
@@ -282,6 +285,7 @@ fun MusicGeneratorScreen(
                     isLoadingModel = false
                 }
                 if (isModelLoaded) {
+                    liveDurationSeconds = if (unlimitedDuration) null else requestedDuration
                     MagentaLiveService.start(context, requestedPrompt, if (unlimitedDuration) null else requestedDuration,
                         seed = if (randomSeed) null else magentaSeed.toLong())
                 } else {
@@ -291,6 +295,7 @@ fun MusicGeneratorScreen(
             return
         }
         isGenerating = true
+        generationProgress = 0f
         coroutineScope.launch {
             mediaPlayer?.stop()
             mediaPlayer?.release()
@@ -308,7 +313,7 @@ fun MusicGeneratorScreen(
                 modelName = model.name,
                 prompt = requestedPrompt,
                 durationSeconds = requestedDuration.toDouble(),
-                onProgress = { },
+                onProgress = { generationProgress = it },
                 magentaSeed = if (isMagentaModel && !randomSeed) magentaSeed.toLong() else null
             ) else null
 
@@ -856,6 +861,18 @@ fun MusicGeneratorScreen(
                 color = MaterialTheme.colorScheme.surface
             ) {
                 Column {
+                    // Progress bar above the button while generating, as on iOS; a live session with a time
+                    // limit fills it as the music plays, an unlimited one has none.
+                    val liveLimit = liveDurationSeconds
+                    if (isGenerating || (liveActive && liveLimit != null)) {
+                        LinearProgressIndicator(
+                            progress = {
+                                if (liveActive && liveLimit != null) (liveState.playedSeconds.toFloat() / liveLimit).coerceIn(0f, 1f)
+                                else generationProgress
+                            },
+                            modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 12.dp)
+                        )
+                    }
                     if (liveActive) {
                         Button(
                             onClick = { MagentaLiveService.stop(context) },
