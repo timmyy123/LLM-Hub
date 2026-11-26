@@ -649,41 +649,7 @@ fun MusicGeneratorScreen(
                     }
                 }
 
-                if (liveActive) {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = stringResource(R.string.music_live_generation) +
-                                    if (liveState.starting) "" else " · ${formatAudioTime(liveState.playedSeconds * 1000)}",
-                                style = MaterialTheme.typography.titleSmall,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                            if (liveState.starting) {
-                                // The model is already loaded here; this is the first chunk being generated.
-                                Text(stringResource(R.string.generating_music), style = MaterialTheme.typography.bodySmall)
-                            } else {
-                                IconButton(onClick = {
-                                    if (liveState.paused) MagentaLiveService.resume(context) else MagentaLiveService.pause(context)
-                                }) {
-                                    Icon(
-                                        imageVector = if (liveState.paused) Icons.Default.PlayArrow else Icons.Default.Pause,
-                                        contentDescription = stringResource(
-                                            if (liveState.paused) R.string.music_live_resume else R.string.music_live_pause
-                                        )
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
+
 
                 // Finished tracks (with their play buttons) are hidden while a live session runs; its recording joins them when it ends.
                 if (!liveActive) generatedTracks.forEach { track ->
@@ -895,7 +861,9 @@ fun MusicGeneratorScreen(
                         ) {
                             Icon(Icons.Default.Stop, contentDescription = null)
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text(stringResource(R.string.music_stop_generation))
+                            // As on iOS: the elapsed time sits in the Stop button; there is no separate live card.
+                            Text(stringResource(R.string.music_stop_generation) + " · " +
+                                String.format(java.util.Locale.ROOT, "%02d:%02d", liveState.playedSeconds / 60, liveState.playedSeconds % 60))
                         }
                     } else
                     FilledTonalButton(
