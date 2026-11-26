@@ -129,7 +129,8 @@ fun MusicGeneratorScreen(
 
     // Magenta RealTime 2: live generation (plays while it generates, also with the screen locked), as on iOS.
     // Live needs a chip that generates faster than playback; elsewhere Magenta generates first, then plays.
-    val isMagenta = selectedModel?.let { MagentaRealtime.isModel(it.name) } == true && MagentaRealtime.isLiveSupported()
+    val isMagentaModel = selectedModel?.let { MagentaRealtime.isModel(it.name) } == true
+    val isMagenta = isMagentaModel && MagentaRealtime.isLiveSupported()
     var liveGeneration by remember { mutableStateOf(musicPreferences.getBoolean("live_generation", true)) }
     var unlimitedDuration by remember { mutableStateOf(musicPreferences.getBoolean("unlimited_duration", false)) }
     // Magenta seed, as on iOS: random by default, or a fixed seed from the slider.
@@ -308,7 +309,7 @@ fun MusicGeneratorScreen(
                 prompt = requestedPrompt,
                 durationSeconds = requestedDuration.toDouble(),
                 onProgress = { },
-                magentaSeed = if (isMagenta && !randomSeed) magentaSeed.toLong() else null
+                magentaSeed = if (isMagentaModel && !randomSeed) magentaSeed.toLong() else null
             ) else null
 
             isGenerating = false
@@ -384,10 +385,12 @@ fun MusicGeneratorScreen(
                         }
                     },
                     filterMultimodalOnly = false,
-                    // Live generation settings sit inside the model card, like the other features and iOS.
-                    extraContent = if (isMagenta) {
+                    // Magenta's settings sit inside the model card, like the other features and iOS: Random seed on every
+                    // Snapdragon that runs Magenta, the live switches only where live generation runs (8 Elite Gen 5/6).
+                    extraContent = if (isMagentaModel) {
                         {
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            if (isMagenta) {
                             Text(
                                 text = stringResource(R.string.music_locked_screen_supported),
                                 style = MaterialTheme.typography.bodySmall,
@@ -425,7 +428,7 @@ fun MusicGeneratorScreen(
                                     )
                                 }
                             }
-                        }
+                            }
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -459,6 +462,7 @@ fun MusicGeneratorScreen(
                                 enabled = !liveActive && !isGenerating,
                                 valueRange = 0f..999_999f
                             )
+                        }
                         }
                         }
                     } else null
