@@ -259,7 +259,7 @@ fun MusicGeneratorScreen(
         val model = selectedModel
         if (model == null || !model.hasCompleteDownloadedBundle(context)) {
             coroutineScope.launch {
-                snackbarHostState.showSnackbar("SoundGen model is incomplete. Download or resume all model files.")
+                snackbarHostState.showSnackbar("${model?.name ?: "The model"} is incomplete. Download or resume all model files.")
             }
             onNavigateToModelDownload()
             return
@@ -371,7 +371,7 @@ fun MusicGeneratorScreen(
                             isModelLoaded = model != null && MusicGeneratorBackend.loadModel(context, model.name)
                             isLoadingModel = false
                             if (!isModelLoaded) {
-                                snackbarHostState.showSnackbar("Failed to load SoundGen model")
+                                snackbarHostState.showSnackbar("Failed to load ${model?.name ?: "the model"}")
                             }
                         }
                     },
