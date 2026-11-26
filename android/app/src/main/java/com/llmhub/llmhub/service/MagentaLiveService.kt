@@ -57,6 +57,7 @@ class MagentaLiveService : Service() {
         private const val ACTION_RESUME = "com.llmhub.llmhub.magenta.RESUME"
         private const val ACTION_STOP = "com.llmhub.llmhub.magenta.STOP"
         private const val EXTRA_MAX_SECONDS = "max_seconds"
+        private const val EXTRA_SEED = "seed"
 
         private val _state = MutableStateFlow(LiveState())
         val state: StateFlow<LiveState> = _state.asStateFlow()
@@ -66,11 +67,12 @@ class MagentaLiveService : Service() {
             private set
 
         /** [maxSeconds] null = until stopped. */
-        fun start(context: Context, prompt: String, maxSeconds: Int?) {
+        fun start(context: Context, prompt: String, maxSeconds: Int?, seed: Long? = null) {
             this.prompt = prompt
             _state.value = LiveState(active = true, starting = true)  // a new session; the last recording was taken
             val intent = Intent(context, MagentaLiveService::class.java).setAction(ACTION_START)
                 .putExtra(EXTRA_MAX_SECONDS, maxSeconds ?: -1)
+                .putExtra(EXTRA_SEED, seed ?: -1L)
             context.startForegroundService(intent)
         }
 
@@ -102,13 +104,19 @@ class MagentaLiveService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
-            ACTION_START -> startLive(intent.getIntExtra(EXTRA_MAX_SECONDS, -1).takeIf { it > 0 })
+            ACTION_START -> {
+                liveSeed = intent.getLongExtra(EXTRA_SEED, -1L).takeIf { it >= 0 }
+                startLive(intent.getIntExtra(EXTRA_MAX_SECONDS, -1).takeIf { it > 0 })
+            }
             ACTION_PAUSE -> setPaused(true)
             ACTION_RESUME -> setPaused(false)
             ACTION_STOP -> stopLive()
         }
         return START_NOT_STICKY
     }
+
+    /** The Seed setting for this session (null = random), sent with the first request of the piece. */
+    @Volatile private var liveSeed: Long? = null
 
     private fun startLive(maxSeconds: Int?) {
         createChannel()
@@ -173,7 +181,7 @@ class MagentaLiveService : Service() {
                     continue
                 }
                 if (maxSeconds != null && generatedBytes >= maxSeconds.toLong() * bytesPerSecond) break
-                val wav = engine.request(MagentaRealtime.liveRequest(prompt, newPiece = first))
+                val wav = engine.request(MagentaRealtime.liveRequest(prompt, newPiece = first, seed = liveSeed))
                 val pcm = try { MagentaRealtime.readPcm(wav) } finally { wav.delete() }
                 first = false
                 recorder.write(pcm)

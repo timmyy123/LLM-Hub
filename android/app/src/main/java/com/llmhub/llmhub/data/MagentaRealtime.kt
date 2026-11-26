@@ -61,11 +61,14 @@ object MagentaRealtime {
         }
     }
 
-    fun liveRequest(prompt: String, newPiece: Boolean): String =
-        "frames=$LIVE_FRAMES $LIVE_SETTINGS${if (newPiece) " reset=1" else ""} prompt=${clean(prompt)}"
+    /** [seed] starts a new piece from a fixed seed (the Seed setting); null keeps the engine's own. */
+    fun liveRequest(prompt: String, newPiece: Boolean, seed: Long? = null): String =
+        "frames=$LIVE_FRAMES $LIVE_SETTINGS${if (newPiece) " reset=1" + seedArg(seed) else ""} prompt=${clean(prompt)}"
 
-    fun renderRequest(prompt: String, seconds: Int): String =
-        "frames=${seconds * FRAMES_PER_SECOND} chunk=10 pipeline=0 reset=1 prompt=${clean(prompt)}"
+    fun renderRequest(prompt: String, seconds: Int, seed: Long? = null): String =
+        "frames=${seconds * FRAMES_PER_SECOND} chunk=10 pipeline=0 reset=1${seedArg(seed)} prompt=${clean(prompt)}"
+
+    private fun seedArg(seed: Long?) = if (seed != null) " seed=${seed and 0xffffffffL}" else ""
 
     /** The prompt takes the rest of the request line, so it must stay on one line. */
     private fun clean(prompt: String) = prompt.replace(Regex("\\s+"), " ").trim()

@@ -132,6 +132,9 @@ fun MusicGeneratorScreen(
     val isMagenta = selectedModel?.let { MagentaRealtime.isModel(it.name) } == true && MagentaRealtime.isLiveSupported()
     var liveGeneration by remember { mutableStateOf(musicPreferences.getBoolean("live_generation", true)) }
     var unlimitedDuration by remember { mutableStateOf(musicPreferences.getBoolean("unlimited_duration", false)) }
+    // Magenta seed, as on iOS: random by default, or a fixed seed from the slider.
+    var randomSeed by remember { mutableStateOf(musicPreferences.getBoolean("magenta_random_seed", true)) }
+    var magentaSeed by remember { mutableFloatStateOf(musicPreferences.getFloat("magenta_seed", 0f)) }
     val liveState by MagentaLiveService.state.collectAsState()
     val liveActive = liveState.active
     LaunchedEffect(promptText, liveActive) {
@@ -278,7 +281,8 @@ fun MusicGeneratorScreen(
                     isLoadingModel = false
                 }
                 if (isModelLoaded) {
-                    MagentaLiveService.start(context, requestedPrompt, if (unlimitedDuration) null else requestedDuration)
+                    MagentaLiveService.start(context, requestedPrompt, if (unlimitedDuration) null else requestedDuration,
+                        seed = if (randomSeed) null else magentaSeed.toLong())
                 } else {
                     snackbarHostState.showSnackbar("Failed to load ${model.name}")
                 }
@@ -303,7 +307,8 @@ fun MusicGeneratorScreen(
                 modelName = model.name,
                 prompt = requestedPrompt,
                 durationSeconds = requestedDuration.toDouble(),
-                onProgress = { }
+                onProgress = { },
+                magentaSeed = if (isMagenta && !randomSeed) magentaSeed.toLong() else null
             ) else null
 
             isGenerating = false
@@ -420,6 +425,40 @@ fun MusicGeneratorScreen(
                                     )
                                 }
                             }
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(stringResource(R.string.image_generator_random_seed), style = MaterialTheme.typography.bodyMedium)
+                            Switch(
+                                checked = randomSeed,
+                                enabled = !liveActive && !isGenerating,
+                                onCheckedChange = {
+                                    randomSeed = it
+                                    musicPreferences.edit().putBoolean("magenta_random_seed", it).apply()
+                                }
+                            )
+                        }
+                        if (!randomSeed) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(stringResource(R.string.image_generator_seed), style = MaterialTheme.typography.bodyMedium)
+                                Text(magentaSeed.toInt().toString(), style = MaterialTheme.typography.bodyMedium)
+                            }
+                            Slider(
+                                value = magentaSeed,
+                                onValueChange = {
+                                    magentaSeed = kotlin.math.round(it)
+                                    musicPreferences.edit().putFloat("magenta_seed", magentaSeed).apply()
+                                },
+                                enabled = !liveActive && !isGenerating,
+                                valueRange = 0f..999_999f
+                            )
                         }
                         }
                     } else null
