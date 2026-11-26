@@ -2,7 +2,6 @@ package com.llmhub.llmhub.screens
 
 import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.Surface
-import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.ModalBottomSheet
@@ -441,8 +440,6 @@ private fun EraseButton(status: InpaintStatus, isLoadingModel: Boolean, enabled:
                     )
                 }
                 else -> {
-                    Icon(Icons.Default.AutoAwesome, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
                     Text(stringResource(R.string.image_inpainting_erase))
                 }
             }

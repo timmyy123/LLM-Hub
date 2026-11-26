@@ -822,8 +822,6 @@ fun ImageGeneratorScreen(
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(stringResource(R.string.image_generator_generating))
                     } else {
-                        Icon(Icons.Default.AutoAwesome, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
                         Text(stringResource(R.string.image_generator_generate))
                     }
                 }
@@ -1009,8 +1007,6 @@ fun ImageGeneratorScreen(
                                         Spacer(modifier = Modifier.width(8.dp))
                                         Text(stringResource(R.string.image_generator_generating))
                                     } else {
-                                        Icon(Icons.Default.AutoAwesome, contentDescription = null)
-                                        Spacer(modifier = Modifier.width(8.dp))
                                         Text(stringResource(R.string.image_generator_generate))
                                     }
                                 }
@@ -1380,8 +1376,6 @@ fun ImageGeneratorScreen(
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(stringResource(R.string.image_generator_generating))
                             } else {
-                                Icon(Icons.Default.AutoAwesome, contentDescription = null)
-                                Spacer(modifier = Modifier.width(8.dp))
                                 Text(stringResource(R.string.image_generator_generate))
                             }
                         }

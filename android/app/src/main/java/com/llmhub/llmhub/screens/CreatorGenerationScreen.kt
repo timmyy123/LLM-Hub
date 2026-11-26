@@ -7,7 +7,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.GetApp
 import androidx.compose.material.icons.filled.ModelTraining
 import androidx.compose.material.icons.filled.Save
@@ -263,8 +262,6 @@ fun CreatorGenerationScreen(
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(stringResource(R.string.creator_brewing))
                 } else {
-                    Icon(Icons.Default.AutoAwesome, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
                     Text(stringResource(R.string.creator_generate_persona))
                 }
             }

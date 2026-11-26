@@ -471,8 +471,6 @@ private fun VideoGenerateButton(viewModel: VideoGeneratorViewModel) {
             Spacer(modifier = Modifier.width(8.dp))
             Text(stringResource(R.string.video_generator_generating))
         } else {
-            Icon(Icons.Default.AutoAwesome, contentDescription = null)
-            Spacer(modifier = Modifier.width(8.dp))
             Text(stringResource(R.string.video_generator_generate))
         }
     }

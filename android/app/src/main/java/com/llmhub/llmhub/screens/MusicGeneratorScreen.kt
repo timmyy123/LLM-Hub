@@ -876,8 +876,6 @@ fun MusicGeneratorScreen(
                                 else stringResource(R.string.generating_music)
                             )
                         } else {
-                            Icon(Icons.Default.AutoAwesome, contentDescription = null)
-                            Spacer(modifier = Modifier.width(8.dp))
                             Text(stringResource(R.string.generate_music))
                         }
                     }
