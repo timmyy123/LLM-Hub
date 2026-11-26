@@ -6061,7 +6061,10 @@ object ModelData {
                 model.url.contains("embeddinggemma-2-text-270m_")
             )
 
-    val models: List<LLMModel> = baseModels + embeddingGemma2Models + upscalerModels + inpaintingModels + ttsModels + musicGenerationModels + videoGenerationModels + sdLiteRtNpuModels() + parakeetNpuModels() + (if (DeviceInfo.getChipsetSuffix() in setOf("8gen3", "8gen4", "8gen5", "8gen6")) sdxlModels else emptyList())
+    val models: List<LLMModel> = (baseModels + embeddingGemma2Models + upscalerModels + inpaintingModels + ttsModels + musicGenerationModels + videoGenerationModels + sdLiteRtNpuModels() + parakeetNpuModels() + (if (DeviceInfo.getChipsetSuffix() in setOf("8gen3", "8gen4", "8gen5", "8gen6")) sdxlModels else emptyList()))
+        // QNN image models and upscalers need a Hexagon NPU: MediaTek, Exynos and Tensor phones would download a
+        // Snapdragon package that cannot run.
+        .filter { DeviceInfo.isSnapdragon() || it.modelFormat !in setOf("qnn_npu", "upscaler_bin") }
 
 
     /**
@@ -6078,23 +6081,15 @@ object ModelData {
         val file = java.io.File(modelPathOrName)
         val folderName = file.name.lowercase().replace("_", " ").trim()
         
-        // Find matching predefined model (ignoring case, spaces, and NPU/CPU suffixes)
-        val matchedModel = models.find { model ->
-            val normalizedPredefined = model.name.lowercase()
-                .replace("(npu)", "")
-                .replace("(cpu)", "")
-                .replace(" ", "")
-                .trim()
-            val normalizedFolder = folderName
-                .replace("(npu)", "")
-                .replace("(cpu)", "")
-                .replace(" ", "")
-                .trim()
-            
-            normalizedPredefined == normalizedFolder || 
-            normalizedFolder.contains(normalizedPredefined) ||
-            normalizedPredefined.contains(normalizedFolder)
-        }
+        // Find matching predefined model (ignoring case, spaces, and NPU/CPU suffixes). An exact match wins over a
+        // partial one: "Dreamshaper (NPU)" (SDXL) must not resolve to "DreamShaper V8 (NPU - 8gen2)" (SD 1.5).
+        fun normalize(name: String) = name.lowercase().replace("(npu)", "").replace("(cpu)", "").replace(" ", "").trim()
+        val normalizedFolder = normalize(folderName)
+        val matchedModel = models.find { normalize(it.name) == normalizedFolder }
+            ?: models.find { model ->
+                val normalizedPredefined = normalize(model.name)
+                normalizedFolder.contains(normalizedPredefined) || normalizedPredefined.contains(normalizedFolder)
+            }
         
         if (matchedModel != null) {
             return matchedModel.url.lowercase().contains(keyword)
