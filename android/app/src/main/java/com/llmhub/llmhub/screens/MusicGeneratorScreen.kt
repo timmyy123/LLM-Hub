@@ -35,6 +35,8 @@ import androidx.compose.ui.unit.dp
 import com.llmhub.llmhub.R
 import com.llmhub.llmhub.components.ModelSelectorCard
 import com.llmhub.llmhub.data.LLMModel
+import com.llmhub.llmhub.data.MagentaRealtime
+import com.llmhub.llmhub.service.MagentaLiveService
 import com.llmhub.llmhub.data.ModelData
 import com.llmhub.llmhub.data.MusicGeneratorBackend
 import com.llmhub.llmhub.data.hasCompleteDownloadedBundle
@@ -125,6 +127,37 @@ fun MusicGeneratorScreen(
         durationSeconds = durationSeconds.coerceIn(durationRange.start, durationRange.endInclusive)
     }
 
+    // Magenta RealTime 2: live generation (plays while it generates, also with the screen locked), as on iOS.
+    val isMagenta = selectedModel?.let { MagentaRealtime.isModel(it.name) } == true
+    var liveGeneration by remember { mutableStateOf(musicPreferences.getBoolean("live_generation", true)) }
+    var unlimitedDuration by remember { mutableStateOf(musicPreferences.getBoolean("unlimited_duration", false)) }
+    val liveState by MagentaLiveService.state.collectAsState()
+    val liveActive = liveState.active
+    LaunchedEffect(promptText, liveActive) {
+        // Steer the running piece once typing pauses; the next 0.4 s request uses the new prompt.
+        if (liveActive && promptText.isNotBlank()) {
+            kotlinx.coroutines.delay(700)
+            MagentaLiveService.updatePrompt(promptText.trim())
+        }
+    }
+    LaunchedEffect(liveState.error) {
+        liveState.error?.let { snackbarHostState.showSnackbar(it) }
+    }
+    LaunchedEffect(liveState.recording) {
+        // A finished live session joins the track list, so it can be replayed and downloaded like a render.
+        val recording = liveState.recording ?: return@LaunchedEffect
+        if (generatedTracks.none { it.file == recording } && recording.length() > 44) {
+            generatedTracks.add(
+                GeneratedMusicTrack(
+                    id = System.nanoTime(),
+                    prompt = liveState.recordingPrompt,
+                    requestedDurationSeconds = ((recording.length() - 44) / (MagentaRealtime.SAMPLE_RATE * 4L)).toInt(),
+                    file = recording
+                )
+            )
+        }
+    }
+
     val presetPrompts = listOf(
         "Upbeat 80s Synthwave synth bass & drums",
         "Ambient relaxing acoustic piano & warm pads",
@@ -137,6 +170,8 @@ fun MusicGeneratorScreen(
     // Unload player on exit
     DisposableEffect(Unit) {
         onDispose {
+            // Leaving the feature stops live generation (locking the screen does not dispose this screen).
+            MagentaLiveService.stop(context)
             mediaPlayer?.stop()
             mediaPlayer?.release()
             mediaPlayer = null
@@ -227,6 +262,28 @@ fun MusicGeneratorScreen(
         }
         val requestedDuration = durationSeconds.toInt()
         keyboardController?.hide()
+        if (MagentaRealtime.isModel(model.name) && liveGeneration) {
+            mediaPlayer?.stop()
+            mediaPlayer?.release()
+            mediaPlayer = null
+            playingTrackId = null
+            loadedTrackId = null
+            coroutineScope.launch {
+                // Load through the backend first: the engine then stays up while this screen is open, so the next
+                // live session or render starts at once instead of paying the ~15 s weight load again.
+                if (!MusicGeneratorBackend.isModelLoaded(model.name)) {
+                    isLoadingModel = true
+                    isModelLoaded = MusicGeneratorBackend.loadModel(context, model.name)
+                    isLoadingModel = false
+                }
+                if (isModelLoaded) {
+                    MagentaLiveService.start(context, requestedPrompt, if (unlimitedDuration) null else requestedDuration)
+                } else {
+                    snackbarHostState.showSnackbar("Failed to load ${model.name}")
+                }
+            }
+            return
+        }
         isGenerating = true
         coroutineScope.launch {
             mediaPlayer?.stop()
@@ -480,6 +537,46 @@ fun MusicGeneratorScreen(
                         modifier = Modifier.padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
+                        if (isMagenta) {
+                            Text(
+                                text = stringResource(R.string.music_locked_screen_supported),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(stringResource(R.string.music_live_generation), style = MaterialTheme.typography.bodyMedium)
+                                Switch(
+                                    checked = liveGeneration,
+                                    enabled = !liveActive && !isGenerating,
+                                    onCheckedChange = {
+                                        liveGeneration = it
+                                        musicPreferences.edit().putBoolean("live_generation", it).apply()
+                                    }
+                                )
+                            }
+                            if (liveGeneration) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(stringResource(R.string.music_unlimited_duration), style = MaterialTheme.typography.bodyMedium)
+                                    Switch(
+                                        checked = unlimitedDuration,
+                                        enabled = !liveActive,
+                                        onCheckedChange = {
+                                            unlimitedDuration = it
+                                            musicPreferences.edit().putBoolean("unlimited_duration", it).apply()
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                        if (!(isMagenta && liveGeneration && unlimitedDuration)) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -499,9 +596,46 @@ fun MusicGeneratorScreen(
                         Slider(
                             value = durationSeconds,
                             onValueChange = { durationSeconds = it },
+                            enabled = !liveActive,
                             valueRange = durationRange,
                             steps = (durationRange.endInclusive - durationRange.start).toInt().minus(1).coerceAtLeast(0)
                         )
+                        }
+                    }
+                }
+
+                if (liveActive) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = stringResource(R.string.music_live_generation) +
+                                    if (liveState.starting) "" else " · ${formatAudioTime(liveState.playedSeconds * 1000)}",
+                                style = MaterialTheme.typography.titleSmall,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                            if (liveState.starting) {
+                                Text(stringResource(R.string.model_loading), style = MaterialTheme.typography.bodySmall)
+                            } else {
+                                IconButton(onClick = {
+                                    if (liveState.paused) MagentaLiveService.resume(context) else MagentaLiveService.pause(context)
+                                }) {
+                                    Icon(
+                                        imageVector = if (liveState.paused) Icons.Default.PlayArrow else Icons.Default.Pause,
+                                        contentDescription = stringResource(
+                                            if (liveState.paused) R.string.music_live_resume else R.string.music_live_pause
+                                        )
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
 
@@ -705,6 +839,18 @@ fun MusicGeneratorScreen(
                 color = MaterialTheme.colorScheme.surface
             ) {
                 Column {
+                    if (liveActive) {
+                        Button(
+                            onClick = { MagentaLiveService.stop(context) },
+                            modifier = Modifier.fillMaxWidth().padding(16.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                        ) {
+                            Icon(Icons.Default.Stop, contentDescription = null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(stringResource(R.string.music_stop_generation))
+                        }
+                    } else
                     FilledTonalButton(
                         onClick = ::generateMusic,
                         modifier = Modifier

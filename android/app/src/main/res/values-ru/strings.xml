@@ -1209,4 +1209,10 @@
     <string name="image_inpainting_share_failed">Не удалось поделиться изображением</string>
     <string name="image_inpainting_failed">Не удалось стереть: %1$s</string>
     <string name="image_inpainting_open_failed">Не удалось открыть это фото</string>
+    <string name="music_live_generation">Генерация в реальном времени</string>
+    <string name="music_unlimited_duration">Без ограничения времени</string>
+    <string name="music_locked_screen_supported">Поддерживает создание и воспроизведение музыки при заблокированном экране.</string>
+    <string name="music_stop_generation">Остановить генерацию</string>
+    <string name="music_live_pause">Пауза</string>
+    <string name="music_live_resume">Продолжить</string>
 </resources>

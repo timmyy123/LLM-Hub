@@ -5627,7 +5627,40 @@ object ModelData {
             sizeBytes = 2329860291L,
             minRamGB = 6
         )
-    )
+    ) + magentaRealtimeModels()
+
+    private const val MAGENTA_RT2_REPO =
+        "https://huggingface.co/a8nova/adreno-llms-weights/resolve/7a5f7a1d4fe10589d4b7984b6161591065902707/magenta-realtime-2"
+
+    /**
+     * Magenta RealTime 2 Small through the adreno-llms OpenCL engine (see MagentaRealtime), offered only where live
+     * generation runs faster than playback. Weights: Google DeepMind, CC BY 4.0, converted by adreno-llms (public
+     * mirror pinned to a commit). sizeBytes = the sum of the files at this commit.
+     */
+    private fun magentaRealtimeModels(): List<LLMModel> {
+        if (socForMatching() !in MagentaRealtime.SUPPORTED_SOCS) return emptyList()
+        return listOf(
+            LLMModel(
+                name = MagentaRealtime.MODEL_NAME,
+                description = "Google DeepMind's Magenta RealTime 2 (230M) for live music that keeps playing as it is generated, steered by your prompt, also with the screen locked. Runs on the GPU. Weights CC BY 4.0, engine by adreno-llms. ~0.9 GB download.",
+                url = "$MAGENTA_RT2_REPO/model.fp16.bin",
+                category = "music_generation",
+                sizeBytes = 864048877L,
+                source = "Google DeepMind (adreno-llms build)",
+                supportsVision = false,
+                supportsAudio = true,
+                supportsGpu = true,
+                requirements = ModelRequirements(minRamGB = 8, recommendedRamGB = 12),
+                contextWindowSize = 0,
+                modelFormat = "bin",
+                additionalFiles = listOf(
+                    "model.fp16.meta.json", "model.codec.f32.bin", "model.codec.f32.idx", "model.codec.f32.meta.json",
+                    "musiccoca.fp16.bin", "musiccoca.fp16.meta.json", "musiccoca_spm.bin", "istft_window.bin",
+                    "optest_input.bin", "optest_source.bin"
+                ).map { "$MAGENTA_RT2_REPO/$it" }
+            )
+        )
+    }
 
     private const val SA3_REPO =
         "https://huggingface.co/stabilityai/stable-audio-3-optimized/resolve/30cb2644da54bfa63275d1bc7f1fa67fc718680f"
@@ -5764,7 +5797,7 @@ object ModelData {
 
     // Debug builds only: `adb shell setprop debug.llmhub.soc SM8735` offers another SoC's NPU build,
     // so a build for a chip without a test device can be run on a compatible one (same Hexagon arch).
-    private fun ltxvSocForMatching(): String {
+    internal fun socForMatching(): String {
         if (com.llmhub.llmhub.BuildConfig.DEBUG) {
             val forced = runCatching {
                 Class.forName("android.os.SystemProperties").getMethod("get", String::class.java)
@@ -5776,7 +5809,7 @@ object ModelData {
     }
 
     private fun ltxvNpuModels(): List<LLMModel> {
-        val soc = ltxvSocForMatching()
+        val soc = socForMatching()
         return ltxvNpuBuilds.filter { soc in it.socs }.map { build ->
             val npuBytes = build.files.sumOf { it.second }
             val (w, h, f) = build.shape.split("x")
@@ -5823,7 +5856,7 @@ object ModelData {
     )
 
     private fun sdLiteRtNpuModels(): List<LLMModel> {
-        val soc = ltxvSocForMatching()
+        val soc = socForMatching()
         return sdLiteRtNpuBuilds.filter { soc in it.socs }.map { build ->
             LLMModel(
                 name = "Stable Diffusion 1.5 (NPU ${build.chip.removePrefix("Google ")})",
@@ -5848,7 +5881,7 @@ object ModelData {
 
     /** The Parakeet NPU build for this device's chip, when one works on it. */
     private fun parakeetNpuModels(): List<LLMModel> {
-        val build = AsrModels.parakeetNpuBuild(ltxvSocForMatching()) ?: return emptyList()
+        val build = AsrModels.parakeetNpuBuild(socForMatching()) ?: return emptyList()
         return listOf(
             LLMModel(
                 name = build.name,

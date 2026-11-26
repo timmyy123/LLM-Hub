@@ -1234,4 +1234,10 @@
     <string name="image_inpainting_share_failed">画像を共有できませんでした</string>
     <string name="image_inpainting_failed">消去に失敗しました：%1$s</string>
     <string name="image_inpainting_open_failed">この写真を開けませんでした</string>
+    <string name="music_live_generation">リアルタイム生成</string>
+    <string name="music_unlimited_duration">時間制限なし</string>
+    <string name="music_locked_screen_supported">画面をロックしたまま音楽を生成・再生できます。</string>
+    <string name="music_stop_generation">生成を停止</string>
+    <string name="music_live_pause">一時停止</string>
+    <string name="music_live_resume">再開</string>
 </resources>

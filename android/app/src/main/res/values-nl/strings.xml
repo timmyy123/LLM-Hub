@@ -1145,4 +1145,10 @@
     <string name="image_inpainting_share_failed">Kan de afbeelding niet delen</string>
     <string name="image_inpainting_failed">Wissen mislukt: %1$s</string>
     <string name="image_inpainting_open_failed">Kan deze foto niet openen</string>
+    <string name="music_live_generation">Live genereren</string>
+    <string name="music_unlimited_duration">Onbeperkte duur</string>
+    <string name="music_locked_screen_supported">Ondersteunt het genereren en afspelen van muziek terwijl het scherm vergrendeld is.</string>
+    <string name="music_stop_generation">Genereren stoppen</string>
+    <string name="music_live_pause">Pauzeren</string>
+    <string name="music_live_resume">Hervatten</string>
 </resources>

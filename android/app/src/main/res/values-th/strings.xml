@@ -1145,4 +1145,10 @@
     <string name="image_inpainting_share_failed">แชร์รูปภาพไม่สำเร็จ</string>
     <string name="image_inpainting_failed">ลบไม่สำเร็จ: %1$s</string>
     <string name="image_inpainting_open_failed">เปิดรูปภาพนี้ไม่ได้</string>
+    <string name="music_live_generation">สร้างแบบเรียลไทม์</string>
+    <string name="music_unlimited_duration">ไม่จำกัดเวลา</string>
+    <string name="music_locked_screen_supported">รองรับการสร้างและเล่นเพลงขณะล็อกหน้าจอ</string>
+    <string name="music_stop_generation">หยุดสร้าง</string>
+    <string name="music_live_pause">หยุดชั่วคราว</string>
+    <string name="music_live_resume">เล่นต่อ</string>
 </resources>

@@ -1241,4 +1241,10 @@
     <string name="image_inpainting_share_failed">Nie udało się udostępnić obrazu</string>
     <string name="image_inpainting_failed">Usuwanie nie powiodło się: %1$s</string>
     <string name="image_inpainting_open_failed">Nie udało się otworzyć tego zdjęcia</string>
+    <string name="music_live_generation">Generowanie na żywo</string>
+    <string name="music_unlimited_duration">Nieograniczony czas</string>
+    <string name="music_locked_screen_supported">Obsługuje generowanie i odtwarzanie muzyki przy zablokowanym ekranie.</string>
+    <string name="music_stop_generation">Zatrzymaj generowanie</string>
+    <string name="music_live_pause">Wstrzymaj</string>
+    <string name="music_live_resume">Wznów</string>
 </resources>

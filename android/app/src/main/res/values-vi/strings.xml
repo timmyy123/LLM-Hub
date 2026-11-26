@@ -1145,4 +1145,10 @@
     <string name="image_inpainting_share_failed">Không chia sẻ được ảnh</string>
     <string name="image_inpainting_failed">Xóa thất bại: %1$s</string>
     <string name="image_inpainting_open_failed">Không mở được ảnh này</string>
+    <string name="music_live_generation">Tạo nhạc trực tiếp</string>
+    <string name="music_unlimited_duration">Thời lượng không giới hạn</string>
+    <string name="music_locked_screen_supported">Hỗ trợ tạo và phát nhạc khi màn hình bị khóa.</string>
+    <string name="music_stop_generation">Dừng tạo nhạc</string>
+    <string name="music_live_pause">Tạm dừng</string>
+    <string name="music_live_resume">Tiếp tục</string>
 </resources>

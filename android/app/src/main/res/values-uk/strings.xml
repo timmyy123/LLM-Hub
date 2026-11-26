@@ -1237,4 +1237,10 @@
     <string name="image_inpainting_share_failed">Не вдалося поділитися зображенням</string>
     <string name="image_inpainting_failed">Не вдалося стерти: %1$s</string>
     <string name="image_inpainting_open_failed">Не вдалося відкрити це фото</string>
+    <string name="music_live_generation">Генерація в реальному часі</string>
+    <string name="music_unlimited_duration">Без обмеження часу</string>
+    <string name="music_locked_screen_supported">Підтримує створення та відтворення музики, коли екран заблоковано.</string>
+    <string name="music_stop_generation">Зупинити генерацію</string>
+    <string name="music_live_pause">Пауза</string>
+    <string name="music_live_resume">Продовжити</string>
 </resources>

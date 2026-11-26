@@ -1237,4 +1237,10 @@
     <string name="image_inpainting_share_failed">تعذّرت مشاركة الصورة</string>
     <string name="image_inpainting_failed">فشل المسح: %1$s</string>
     <string name="image_inpainting_open_failed">تعذّر فتح هذه الصورة</string>
+    <string name="music_live_generation">التوليد المباشر</string>
+    <string name="music_unlimited_duration">مدة غير محدودة</string>
+    <string name="music_locked_screen_supported">يدعم إنشاء الموسيقى وتشغيلها أثناء قفل الشاشة.</string>
+    <string name="music_stop_generation">إيقاف التوليد</string>
+    <string name="music_live_pause">إيقاف مؤقت</string>
+    <string name="music_live_resume">استئناف</string>
 </resources>

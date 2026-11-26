@@ -1237,4 +1237,10 @@
     <string name="image_inpainting_share_failed">לא ניתן היה לשתף את התמונה</string>
     <string name="image_inpainting_failed">המחיקה נכשלה: %1$s</string>
     <string name="image_inpainting_open_failed">לא ניתן לפתוח את התמונה הזו</string>
+    <string name="music_live_generation">יצירה בזמן אמת</string>
+    <string name="music_unlimited_duration">משך ללא הגבלה</string>
+    <string name="music_locked_screen_supported">תומך ביצירה ובהשמעה של מוזיקה כשהמסך נעול.</string>
+    <string name="music_stop_generation">עצירת היצירה</string>
+    <string name="music_live_pause">השהיה</string>
+    <string name="music_live_resume">המשך</string>
 </resources>

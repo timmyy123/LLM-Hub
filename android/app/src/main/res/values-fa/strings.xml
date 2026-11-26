@@ -1237,4 +1237,10 @@
     <string name="image_inpainting_share_failed">اشتراک‌گذاری تصویر ممکن نشد</string>
     <string name="image_inpainting_failed">پاک کردن ناموفق بود: %1$s</string>
     <string name="image_inpainting_open_failed">باز کردن این عکس ممکن نشد</string>
+    <string name="music_live_generation">تولید زنده</string>
+    <string name="music_unlimited_duration">مدت نامحدود</string>
+    <string name="music_locked_screen_supported">از تولید و پخش موسیقی با صفحهٔ قفل‌شده پشتیبانی می‌کند.</string>
+    <string name="music_stop_generation">توقف تولید</string>
+    <string name="music_live_pause">مکث</string>
+    <string name="music_live_resume">ادامه</string>
 </resources>

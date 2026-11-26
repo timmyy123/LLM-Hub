@@ -1231,4 +1231,10 @@
     <string name="image_inpainting_share_failed">Impossibile condividere l\'immagine</string>
     <string name="image_inpainting_failed">Cancellazione non riuscita: %1$s</string>
     <string name="image_inpainting_open_failed">Impossibile aprire questa foto</string>
+    <string name="music_live_generation">Generazione in tempo reale</string>
+    <string name="music_unlimited_duration">Durata illimitata</string>
+    <string name="music_locked_screen_supported">Supporta la generazione e la riproduzione di musica con lo schermo bloccato.</string>
+    <string name="music_stop_generation">Interrompi la generazione</string>
+    <string name="music_live_pause">Pausa</string>
+    <string name="music_live_resume">Riprendi</string>
 </resources>

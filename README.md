@@ -66,7 +66,7 @@ Free code signing provided by [SignPath.io](https://about.signpath.io), certific
 | **Vibe Coder** | **[NEW]** Build apps with live HTML/JS preview; Android also runs Codex and Claude Code through Termux using your selected local model |
 | **Writing Aid** | Summarize, expand, rewrite, improve grammar, or generate code from descriptions |
 | **Image Generator** | Create images from text prompts using Stable Diffusion 1.5 with swipeable gallery |
-| **Music Generator** | **[NEW]** Generate music and sound effects locally with SoundGen and Stable Audio 3 on Android and Magenta Realtime 2 on iOS, including live playback as music is generated |
+| **Music Generator** | **[NEW]** Generate music and sound effects locally with SoundGen and Stable Audio 3 on Android and Magenta Realtime 2 on iOS and Snapdragon 8 Elite Gen 5/Gen 6 Android, including live playback as music is generated |
 | **Instant Media Search** | **[NEW]** Search photos and videos by description or a reference image on Android and iOS using on-device EmbeddingGemma 2 |
 | **Video Moment Finder** | **[NEW]** Describe a moment in a video and jump to matching timestamps using visual and audio embeddings on Android and iOS |
 | **Text to Speech & Voice Cloning** | Android supports Kokoro, multilingual Supertonic 3 with voice-profile import, and Pocket TTS with on-device voice cloning |
@@ -199,7 +199,7 @@ Technology
 - **iOS**: Swift + SwiftUI, [Run Anywhere SDK](https://github.com/RunanywhereAI/runanywhere-sdks), [Draw Things (MediaGenerationKit)](https://drawthings.ai/), Apple Foundation Model, [whisper.cpp](https://github.com/ggml-org/whisper.cpp) for on-device ASR
 - **LLM & ASR Runtime**: MediaPipe, LiteRT, GenieX SDK (GGUF on Android), WhisperKit (ASR with TFLite + QNN NPU on Android), Llama.cpp (via [Run Anywhere SDK](https://github.com/RunanywhereAI/runanywhere-sdks) on iOS), whisper.cpp on iOS for transcription
 - **Image & Video Gen**: [Draw Things (MediaGenerationKit)](https://drawthings.ai/) (iOS), Qualcomm QNN (Android), [stable-diffusion.cpp](https://github.com/leejet/stable-diffusion.cpp) with LTX-Video on the Hexagon NPU (QNN), Vulkan or CPU (Android video)
-- **Music Gen**: Magenta Realtime 2 with MLX/LiteRT (iOS), SoundGen and Stable Audio 3 with LiteRT (Android)
+- **Music Gen**: Magenta Realtime 2 with MLX/LiteRT (iOS), SoundGen and Stable Audio 3 with LiteRT, Magenta Realtime 2 with adreno-llms OpenCL (Android)
 - **Media Search**: EmbeddingGemma 2 for local media indexing and video moment retrieval (Android and iOS)
 - **Android TTS**: Kokoro, Supertonic 3 with ONNX Runtime, and PocketTTS.cpp with an NDK/JNI integration for local voice cloning
 - **Android Coding Agent**: Codex app server or Claude Code in Termux, connected to the app's local model through a loopback inference server

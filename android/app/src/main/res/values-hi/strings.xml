@@ -1263,4 +1263,10 @@
     <string name="image_inpainting_share_failed">इमेज शेयर नहीं हो सकी</string>
     <string name="image_inpainting_failed">मिटाना विफल रहा: %1$s</string>
     <string name="image_inpainting_open_failed">यह फ़ोटो खुल नहीं सकी</string>
+    <string name="music_live_generation">लाइव जनरेशन</string>
+    <string name="music_unlimited_duration">असीमित अवधि</string>
+    <string name="music_locked_screen_supported">स्क्रीन लॉक होने पर भी संगीत बनाने और चलाने की सुविधा उपलब्ध है।</string>
+    <string name="music_stop_generation">जनरेशन रोकें</string>
+    <string name="music_live_pause">रोकें</string>
+    <string name="music_live_resume">फिर से चलाएं</string>
 </resources>

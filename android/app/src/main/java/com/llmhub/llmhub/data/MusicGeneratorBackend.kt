@@ -82,6 +82,11 @@ object MusicGeneratorBackend {
         override fun close() = Unit
     }
 
+    /** Magenta RealTime 2: the engine process stays up while this is loaded (see [MagentaRealtime]). */
+    private class MagentaBundle(modelName: String) : LoadedBundle(modelName) {
+        override fun close() = MagentaRealtime.release("ui")
+    }
+
     fun isModelLoaded(modelName: String): Boolean = loadedBundle?.modelName == modelName
 
     suspend fun loadModel(context: Context, modelName: String): Boolean = withContext(Dispatchers.IO) {
@@ -108,6 +113,7 @@ object MusicGeneratorBackend {
     /** Duration capacities imposed by each fixed-shape decoder export. */
     fun durationRange(modelName: String): ClosedFloatingPointRange<Float> {
         if (StableAudio3.isModel(modelName)) return 1f..StableAudio3.maxSeconds(modelName)
+        if (MagentaRealtime.isModel(modelName)) return 1f..300f
         val sampleCapacity = when {
             modelName.contains("HD Long", ignoreCase = true) ->
                 HD_LONG_LATENT_FRAMES * HD_SAMPLES_PER_LATENT_FRAME
@@ -131,6 +137,17 @@ object MusicGeneratorBackend {
                 val bundle = loadModelLocked(context, modelName)
                 val seed = System.nanoTime()
                 val result = when (bundle) {
+                    is MagentaBundle -> {
+                        // Render first, then play: one request for the whole length, as a new piece.
+                        onProgress(0.05f)
+                        val engine = MagentaRealtime.acquire(context, "ui")
+                        val wav = engine.request(MagentaRealtime.renderRequest(prompt, durationSeconds.toInt().coerceAtLeast(1)))
+                        val outputDir = File(context.cacheDir, "magenta_rt2").apply { mkdirs() }
+                        val output = File(outputDir, "magenta_${System.currentTimeMillis()}.wav")
+                        if (!wav.renameTo(output)) { wav.copyTo(output, overwrite = true); wav.delete() }
+                        onProgress(1f)
+                        output
+                    }
                     is Sa3Bundle -> {
                         val outputDir = File(context.cacheDir, "stableaudio3").apply { mkdirs() }
                         StableAudio3.generate(
@@ -395,7 +412,10 @@ object MusicGeneratorBackend {
         loadedBundle = null
 
         val modelDir = modelDirectory(context, modelName)
-        val bundle = if (StableAudio3.isModel(modelName)) {
+        val bundle = if (MagentaRealtime.isModel(modelName)) {
+            MagentaRealtime.acquire(context, "ui")
+            MagentaBundle(modelName)
+        } else if (StableAudio3.isModel(modelName)) {
             // Generic file names (dit_w8a8.tflite, ...), so only this model's own folder counts.
             val files = listOf(StableAudio3.DIT_FILE, StableAudio3.DECODER_FILE, StableAudio3.TEXT_ENCODER_FILE, StableAudio3.TOKENIZER_FILE)
                 .map { File(modelDir, it) }

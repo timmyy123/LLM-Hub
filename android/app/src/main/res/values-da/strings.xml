@@ -1206,4 +1206,10 @@ Du forsøger at sende et billede, men den nuværende model er **kun-tekst**:
     <string name="image_inpainting_share_failed">Billedet kunne ikke deles</string>
     <string name="image_inpainting_failed">Fjernelse mislykkedes: %1$s</string>
     <string name="image_inpainting_open_failed">Dette billede kunne ikke åbnes</string>
+    <string name="music_live_generation">Livegenerering</string>
+    <string name="music_unlimited_duration">Ubegrænset varighed</string>
+    <string name="music_locked_screen_supported">Understøtter generering og afspilning af musik, mens skærmen er låst.</string>
+    <string name="music_stop_generation">Stop generering</string>
+    <string name="music_live_pause">Pause</string>
+    <string name="music_live_resume">Genoptag</string>
 </resources>

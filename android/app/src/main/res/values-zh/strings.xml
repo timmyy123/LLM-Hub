@@ -1245,4 +1245,10 @@
     <string name="image_inpainting_share_failed">无法分享图片</string>
     <string name="image_inpainting_failed">消除失败：%1$s</string>
     <string name="image_inpainting_open_failed">无法打开这张照片</string>
+    <string name="music_live_generation">即時生成</string>
+    <string name="music_unlimited_duration">不限時間</string>
+    <string name="music_locked_screen_supported">支援在螢幕鎖定時生成及播放音樂。</string>
+    <string name="music_stop_generation">停止生成</string>
+    <string name="music_live_pause">暫停</string>
+    <string name="music_live_resume">繼續</string>
 </resources>

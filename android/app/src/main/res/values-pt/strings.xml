@@ -1190,4 +1190,10 @@
     <string name="image_inpainting_share_failed">Não foi possível compartilhar a imagem</string>
     <string name="image_inpainting_failed">Falha ao apagar: %1$s</string>
     <string name="image_inpainting_open_failed">Não foi possível abrir esta foto</string>
+    <string name="music_live_generation">Geração em tempo real</string>
+    <string name="music_unlimited_duration">Duração ilimitada</string>
+    <string name="music_locked_screen_supported">Permite gerar e reproduzir música com a tela bloqueada.</string>
+    <string name="music_stop_generation">Parar a geração</string>
+    <string name="music_live_pause">Pausar</string>
+    <string name="music_live_resume">Retomar</string>
 </resources>

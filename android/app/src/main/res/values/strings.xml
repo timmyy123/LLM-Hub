@@ -1258,4 +1258,10 @@
     <string name="image_inpainting_share_failed">Could not share the image</string>
     <string name="image_inpainting_failed">Erase failed: %1$s</string>
     <string name="image_inpainting_open_failed">Could not open this photo</string>
+    <string name="music_live_generation">Live generation</string>
+    <string name="music_unlimited_duration">Unlimited duration</string>
+    <string name="music_locked_screen_supported">Supports generating and playing music with the screen locked.</string>
+    <string name="music_stop_generation">Stop generation</string>
+    <string name="music_live_pause">Pause</string>
+    <string name="music_live_resume">Resume</string>
 </resources>

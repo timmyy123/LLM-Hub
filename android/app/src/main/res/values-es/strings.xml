@@ -1240,4 +1240,10 @@
     <string name="image_inpainting_share_failed">No se pudo compartir la imagen</string>
     <string name="image_inpainting_failed">Error al borrar: %1$s</string>
     <string name="image_inpainting_open_failed">No se pudo abrir esta foto</string>
+    <string name="music_live_generation">Generación en directo</string>
+    <string name="music_unlimited_duration">Duración ilimitada</string>
+    <string name="music_locked_screen_supported">Permite generar y reproducir música con la pantalla bloqueada.</string>
+    <string name="music_stop_generation">Detener la generación</string>
+    <string name="music_live_pause">Pausar</string>
+    <string name="music_live_resume">Reanudar</string>
 </resources>

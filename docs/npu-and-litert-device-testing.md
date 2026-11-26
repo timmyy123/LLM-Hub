@@ -117,6 +117,32 @@ Six threads were no faster than four on the Tab S9+ (11.9 s for 30 s). Every cli
 built-in limiter peak (0.977). The decoder window seams show no clicks, and the prompt steers the output: a
 low-drone prompt gave 1,036 zero crossings per second and a piccolo prompt 6,594.
 
+## Magenta RealTime 2 on the Adreno GPU
+
+Android runs Magenta RealTime 2 Small (230M) through the adreno-llms OpenCL engine (`MagentaRealtime.kt`,
+built by `tools/magenta_rt2/build.sh` at commit 2b1aee9). The engine runs as its own process in `--serve` mode:
+the app sends one request per 0.4 s of audio (adreno-llms' live settings: `frames=10 chunk=10 pipeline=0
+temperature=1.1 topk=50 cfgtok=5,0,4 mctail=6`) and reads back a WAV. `MagentaLiveService` plays it as a
+mediaPlayback foreground service with a MediaSession, so it keeps playing with the screen locked and shows a media
+card. The model is offered only where live generation is faster than playback.
+
+Engine speed (`--serve`, pipeline off; live = 30 requests of 10 frames; render = one 750-frame request):
+
+| Device | GPU | Live | 30 s render |
+| :-- | :-- | :-- | :-- |
+| QDC 8 Elite Extreme Gen 6 (SM8975) | Adreno 850 | 1.42–1.65× real time | 20.5 s |
+| Galaxy S26 (8 Elite Gen 5) | Adreno 840 | 1.31–1.39× | 22.8 s |
+| Galaxy S25 (8 Elite) | Adreno 830 | 0.83–0.95× | 32.2 s |
+| Galaxy Tab S9+ (8 Gen 2) | Adreno 740 | not run | 56.4 s (fp16 codec, big cores) |
+| Galaxy S24 (8 Gen 3) | Adreno 750 | 0.24× | 125 s (fp32 codec by default) |
+
+On the 8 Elite the transformer takes ~20 ms per 40 ms frame and the codec ~25 ms. The engine uses the fp16 codec
+only on Adreno 8xx by default. `MagentaRealtimeDeviceTest` (in the app) passed on the S26 Ultra (Remote Test Lab,
+SM8850) and the QDC Gen 6: a 10 s render at the exact length, then live playback through the service. On the S26
+Ultra, playback kept exact pace with the wall clock with no AudioTrack underruns. On the QDC unit it kept playing
+with the screen locked and dozing, and the lock-screen card followed a prompt change. That rack unit consumes audio
+about 1.5× faster than real time (its playback position runs ahead of the wall clock), so it underruns there.
+
 ## llama.cpp b11738 on the GPU
 
 `LlamaCppGpuDeviceTest` (suite `llama_gpu`) loads LFM-2.5 1.2B Q4_0 on the GPU through `LlamaCppInferenceService`

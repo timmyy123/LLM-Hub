@@ -1223,4 +1223,10 @@
     <string name="image_inpainting_share_failed">Impossible de partager l\'image</string>
     <string name="image_inpainting_failed">Échec de l\'effacement : %1$s</string>
     <string name="image_inpainting_open_failed">Impossible d\'ouvrir cette photo</string>
+    <string name="music_live_generation">Génération en direct</string>
+    <string name="music_unlimited_duration">Durée illimitée</string>
+    <string name="music_locked_screen_supported">Permet de générer et de lire de la musique lorsque l’écran est verrouillé.</string>
+    <string name="music_stop_generation">Arrêter la génération</string>
+    <string name="music_live_pause">Pause</string>
+    <string name="music_live_resume">Reprendre</string>
 </resources>

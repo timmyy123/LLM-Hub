@@ -7,6 +7,7 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- Photo Search / Audio Search: analyze the device's photos and audio on-device -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
@@ -103,6 +104,12 @@
             android:exported="false"
             android:foregroundServiceType="dataSync" />
         
+        <!-- Magenta RealTime 2 live generation: keeps playing with the screen locked, with a media card. -->
+        <service
+            android:name=".service.MagentaLiveService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
+
         <service
             android:name=".service.SDBackendService"
             android:enabled="true"

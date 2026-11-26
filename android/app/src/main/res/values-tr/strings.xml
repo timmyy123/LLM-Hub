@@ -1235,4 +1235,10 @@
     <string name="image_inpainting_share_failed">Görüntü paylaşılamadı</string>
     <string name="image_inpainting_failed">Silme başarısız oldu: %1$s</string>
     <string name="image_inpainting_open_failed">Bu fotoğraf açılamadı</string>
+    <string name="music_live_generation">Canlı üretim</string>
+    <string name="music_unlimited_duration">Sınırsız süre</string>
+    <string name="music_locked_screen_supported">Ekran kilitliyken müzik oluşturmayı ve çalmayı destekler.</string>
+    <string name="music_stop_generation">Üretimi durdur</string>
+    <string name="music_live_pause">Duraklat</string>
+    <string name="music_live_resume">Devam et</string>
 </resources>
