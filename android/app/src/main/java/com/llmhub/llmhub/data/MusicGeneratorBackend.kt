@@ -73,6 +73,15 @@ object MusicGeneratorBackend {
         }
     }
 
+    /** Stable Audio 3 rung models; see [StableAudio3]. Nothing stays compiled between generations. */
+    private class Sa3Bundle(
+        modelName: String,
+        val modelDir: File,
+        val tokenizer: BpeTokenizer
+    ) : LoadedBundle(modelName) {
+        override fun close() = Unit
+    }
+
     fun isModelLoaded(modelName: String): Boolean = loadedBundle?.modelName == modelName
 
     suspend fun loadModel(context: Context, modelName: String): Boolean = withContext(Dispatchers.IO) {
@@ -98,6 +107,7 @@ object MusicGeneratorBackend {
 
     /** Duration capacities imposed by each fixed-shape decoder export. */
     fun durationRange(modelName: String): ClosedFloatingPointRange<Float> {
+        if (StableAudio3.isModel(modelName)) return 1f..StableAudio3.maxSeconds(modelName)
         val sampleCapacity = when {
             modelName.contains("HD Long", ignoreCase = true) ->
                 HD_LONG_LATENT_FRAMES * HD_SAMPLES_PER_LATENT_FRAME
@@ -121,6 +131,18 @@ object MusicGeneratorBackend {
                 val bundle = loadModelLocked(context, modelName)
                 val seed = System.nanoTime()
                 val result = when (bundle) {
+                    is Sa3Bundle -> {
+                        val outputDir = File(context.cacheDir, "stableaudio3").apply { mkdirs() }
+                        StableAudio3.generate(
+                            modelName = bundle.modelName,
+                            modelDir = bundle.modelDir,
+                            tokenIds = bundle.tokenizer.encode(prompt),
+                            seconds = durationSeconds.toFloat(),
+                            seed = seed,
+                            output = File(outputDir, "stableaudio3_${System.currentTimeMillis()}.wav"),
+                            onProgress = onProgress
+                        )
+                    }
                     is HdBundle -> generateHd(
                         context = context,
                         bundle = bundle,
@@ -373,7 +395,19 @@ object MusicGeneratorBackend {
         loadedBundle = null
 
         val modelDir = modelDirectory(context, modelName)
-        val bundle = if (modelName.contains("HD", ignoreCase = true)) {
+        val bundle = if (StableAudio3.isModel(modelName)) {
+            // Generic file names (dit_w8a8.tflite, ...), so only this model's own folder counts.
+            val files = listOf(StableAudio3.DIT_FILE, StableAudio3.DECODER_FILE, StableAudio3.TEXT_ENCODER_FILE, StableAudio3.TOKENIZER_FILE)
+                .map { File(modelDir, it) }
+            files.firstOrNull { !it.isFile || it.length() == 0L }?.let {
+                error("Missing Stable Audio 3 component ${it.name} in ${modelDir.absolutePath}; redownload this model")
+            }
+            Sa3Bundle(
+                modelName = modelName,
+                modelDir = modelDir,
+                tokenizer = BpeTokenizer.load(files.last())
+            )
+        } else if (modelName.contains("HD", ignoreCase = true)) {
             val longModel = modelName.contains("Long", ignoreCase = true)
             val coreOriginal = if (longModel) "dit_L2048_int8.tflite" else "dit_L256_int8.tflite"
             val decodeOriginal = if (longModel) "ae_dec_L2048_int8.tflite" else "ae_dec_L256_int8.tflite"

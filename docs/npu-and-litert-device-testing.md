@@ -84,6 +84,39 @@ storage is as fast or faster on Adreno, Mali, and Xclipse.
 SoundGen HD Long is killed for memory on these phones with both LiteRT 2.1.6 and 2.3.0 (peak resident memory
 7–8.4 GB; `SoundGenDeviceTest#hdLongGeneratesAudio`, suite `soundgen_long`).
 
+## Stable Audio 3 on the CPU
+
+The Stable Audio 3 models (`StableAudio3.kt`) run Stability AI's official LiteRT files from
+`stabilityai/stable-audio-3-optimized`. Each DiT and decoder file is a ladder of fixed-length subgraphs ("rungs",
+signatures `s<N>`) that share one copy of the weights. A render runs on the smallest rung that fits, with the padding
+masked out of attention, so memory stays flat at any length. The DiT takes its adaLN input from a `gcond` signature
+in the same file. All files are compiled on the CPU with an XNNPACK weight cache (`<file>.xnnwc` next to the model),
+which lets the rungs share packed weights. Building it adds ~2.5 s (Small) or ~4.5 s (Medium) to the first load;
+later loads take ~0.15 s.
+
+`StableAudio3DeviceTest` downloads the model through `ModelDownloader` into the app's own folder, generates the
+lengths in `-e sa3Seconds`, and keeps the model. Galaxy Tab S9+ (Snapdragon 8 Gen 2), 4 threads:
+
+| Model | Length | Time | Peak resident memory |
+| :-- | :-- | :-- | :-- |
+| Small Music | 10 s | 6.8 s | 2.0 GB |
+| Small Music | 30 s | 11.6 s | 2.5 GB |
+| Small Music | 120 s | 45.8 s | 2.5 GB |
+| Medium | 30 s | 41 s (first load) | 2.3 GB |
+| Medium | 380 s | 25.3 min (~110 s per DiT step) | 4.1 GB |
+
+AWS Device Farm, Small Music (`tools/sa3_devicefarm/make_test_spec.py`, 15 device-minutes for the three phones):
+
+| Device | 10 s | 30 s | Peak resident memory |
+| :-- | :-- | :-- | :-- |
+| Pixel 10 (Tensor G5) | 8.8 s | 10.5 s | 2.1 GB |
+| Galaxy A56 (Exynos 1580) | 11.3 s | 18.1 s | 2.1 GB |
+| Galaxy A34 (Dimensity 1080) | 18.5 s | 31.3 s | 2.1 GB |
+
+Six threads were no faster than four on the Tab S9+ (11.9 s for 30 s). Every clip had the exact frame count and the decoder's
+built-in limiter peak (0.977). The decoder window seams show no clicks, and the prompt steers the output: a
+low-drone prompt gave 1,036 zero crossings per second and a piccolo prompt 6,594.
+
 ## llama.cpp b11738 on the GPU
 
 `LlamaCppGpuDeviceTest` (suite `llama_gpu`) loads LFM-2.5 1.2B Q4_0 on the GPU through `LlamaCppInferenceService`

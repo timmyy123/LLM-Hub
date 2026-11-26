@@ -5631,6 +5631,53 @@ object ModelData {
                 "https://huggingface.co/jegly/noise/resolve/43a3e8771f62bfc9257276c7e2adee9c76d601dd/t5gemma_enc_int8.tflite",
                 "https://huggingface.co/jegly/noise/resolve/43a3e8771f62bfc9257276c7e2adee9c76d601dd/tokenizer.model"
             )
+        ),
+        // Stable Audio 3, Stability AI's official LiteRT rung builds (see StableAudio3). Each bundle is its
+        // int8 DiT, the int8 SAME-S decoder, the fp16 T5Gemma encoder and the SentencePiece tokenizer.
+        // sizeBytes = the sum of the four files at this commit.
+        stableAudio3Model(
+            name = "Stable Audio 3 Small Music",
+            description = "Stability AI's Stable Audio 3 small music model. Any length up to 2 minutes, runs on the CPU. Stability AI Community License. Pinned to commit 30cb264. ~1.2 GB download.",
+            ditPath = "tflite/sa3-sm-music/dit_w8a8.tflite",
+            sizeBytes = 1201501987L,
+            minRamGB = 4
+        ),
+        stableAudio3Model(
+            name = "Stable Audio 3 Small SFX",
+            description = "Stability AI's Stable Audio 3 small sound effects model. Any length up to 2 minutes, runs on the CPU. Stability AI Community License. Pinned to commit 30cb264. ~1.2 GB download.",
+            ditPath = "tflite/sa3-sm-sfx/dit_w8a8.tflite",
+            sizeBytes = 1201501987L,
+            minRamGB = 4
+        ),
+        stableAudio3Model(
+            name = "Stable Audio 3 Medium",
+            description = "Stability AI's Stable Audio 3 medium model for higher quality music and sound. Any length up to 6 minutes, runs on the CPU. Stability AI Community License. Pinned to commit 30cb264. ~2.3 GB download.",
+            ditPath = "tflite/sa3-m/dit_w8a8.tflite",
+            sizeBytes = 2329860291L,
+            minRamGB = 6
+        )
+    )
+
+    private const val SA3_REPO =
+        "https://huggingface.co/stabilityai/stable-audio-3-optimized/resolve/30cb2644da54bfa63275d1bc7f1fa67fc718680f"
+
+    private fun stableAudio3Model(name: String, description: String, ditPath: String, sizeBytes: Long, minRamGB: Int) = LLMModel(
+        name = name,
+        description = description,
+        url = "$SA3_REPO/$ditPath",
+        category = "music_generation",
+        sizeBytes = sizeBytes,
+        source = "Stability AI via HuggingFace",
+        supportsVision = false,
+        supportsAudio = true,
+        supportsGpu = false,
+        requirements = ModelRequirements(minRamGB = minRamGB, recommendedRamGB = minRamGB + 2),
+        contextWindowSize = 0,
+        modelFormat = "tflite",
+        additionalFiles = listOf(
+            "$SA3_REPO/tflite/same-s/dec_w8a8.tflite",
+            "$SA3_REPO/tflite/t5gemma/encoder_fp16.tflite",
+            "$SA3_REPO/tokenizer.model"
         )
     )
 
