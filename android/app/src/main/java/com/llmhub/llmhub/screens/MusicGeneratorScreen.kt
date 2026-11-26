@@ -612,7 +612,8 @@ fun MusicGeneratorScreen(
                     }
                 }
 
-                // Duration Controls
+                // Duration Controls: no card at all when Live generation runs with Unlimited duration (no slider)
+                if (!(isMagenta && liveGeneration && unlimitedDuration)) {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp)
@@ -621,7 +622,6 @@ fun MusicGeneratorScreen(
                         modifier = Modifier.padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        if (!(isMagenta && liveGeneration && unlimitedDuration)) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
