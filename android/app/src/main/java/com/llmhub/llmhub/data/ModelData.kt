@@ -1177,35 +1177,6 @@ object ModelData {
             modelFormat = "task"
         ),
 
-        // Llama-3.2 Models from vimal-yuvabe
-        LLMModel(
-            name = "Llama-3.2 1B (INT8)",
-            description = "Meta's Llama 3.2 1B model with INT8 quantization. Optimized for on-device inference. Ready to download from HuggingFace (2.01GB)",
-            url = "https://huggingface.co/vimal-yuvabe/llama-3.2-1b-tflite/resolve/main/llama-3.2-1b-q8.task?download=true",
-            category = "text",
-            sizeBytes = 2160086757L, // 2.01GB (actual size from HuggingFace)
-            source = "Meta via vimal-yuvabe",
-            supportsVision = false,
-            supportsGpu = false, // Llama models have GPU compatibility issues
-            requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 4),
-            contextWindowSize = 4096,
-            modelFormat = "task"
-        ),
-
-        LLMModel(
-            name = "Llama-3.2 3B (INT8)",
-            description = "Meta's Llama 3.2 3B model with INT8 quantization. Larger model for better performance. Ready to download from HuggingFace (5.11GB)",
-            url = "https://huggingface.co/vimal-yuvabe/llama-3.2-3b-tflite/resolve/main/llama-3.2-3B-q8.task?download=true",
-            category = "text",
-            sizeBytes = 5491473637L, // 5.11GB (actual size from HuggingFace)
-            source = "Meta via vimal-yuvabe",
-            supportsVision = false,
-            supportsGpu = false,
-            requirements = ModelRequirements(minRamGB = 6, recommendedRamGB = 8),
-            contextWindowSize = 4096,
-            modelFormat = "task"
-        ),
-
         // Llama-3.2 1B GGUF Models from bartowski
         LLMModel(
             name = "Llama-3.2 1B (IQ3_M)",
