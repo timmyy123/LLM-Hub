@@ -381,6 +381,50 @@ fun MusicGeneratorScreen(
                     filterMultimodalOnly = false
                 )
 
+                // Live generation settings live in this sheet, as on iOS (musicGenerationSettings).
+                if (isMagenta) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            text = stringResource(R.string.music_locked_screen_supported),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(stringResource(R.string.music_live_generation), style = MaterialTheme.typography.bodyMedium)
+                            Switch(
+                                checked = liveGeneration,
+                                enabled = !liveActive && !isGenerating,
+                                onCheckedChange = {
+                                    liveGeneration = it
+                                    musicPreferences.edit().putBoolean("live_generation", it).apply()
+                                }
+                            )
+                        }
+                        if (liveGeneration) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(stringResource(R.string.music_unlimited_duration), style = MaterialTheme.typography.bodyMedium)
+                                Switch(
+                                    checked = unlimitedDuration,
+                                    enabled = !liveActive,
+                                    onCheckedChange = {
+                                        unlimitedDuration = it
+                                        musicPreferences.edit().putBoolean("unlimited_duration", it).apply()
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(24.dp))
             }
         }
@@ -538,45 +582,6 @@ fun MusicGeneratorScreen(
                         modifier = Modifier.padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        if (isMagenta) {
-                            Text(
-                                text = stringResource(R.string.music_locked_screen_supported),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(stringResource(R.string.music_live_generation), style = MaterialTheme.typography.bodyMedium)
-                                Switch(
-                                    checked = liveGeneration,
-                                    enabled = !liveActive && !isGenerating,
-                                    onCheckedChange = {
-                                        liveGeneration = it
-                                        musicPreferences.edit().putBoolean("live_generation", it).apply()
-                                    }
-                                )
-                            }
-                            if (liveGeneration) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(stringResource(R.string.music_unlimited_duration), style = MaterialTheme.typography.bodyMedium)
-                                    Switch(
-                                        checked = unlimitedDuration,
-                                        enabled = !liveActive,
-                                        onCheckedChange = {
-                                            unlimitedDuration = it
-                                            musicPreferences.edit().putBoolean("unlimited_duration", it).apply()
-                                        }
-                                    )
-                                }
-                            }
-                        }
                         if (!(isMagenta && liveGeneration && unlimitedDuration)) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
