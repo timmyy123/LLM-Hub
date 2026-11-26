@@ -66,7 +66,7 @@ Free code signing provided by [SignPath.io](https://about.signpath.io), certific
 | **Vibe Coder** | **[NEW]** Build apps with live HTML/JS preview; Android also runs Codex and Claude Code through Termux using your selected local model |
 | **Writing Aid** | Summarize, expand, rewrite, improve grammar, or generate code from descriptions |
 | **Image Generator** | Create images from text prompts using Stable Diffusion 1.5 with swipeable gallery |
-| **Music Generator** | **[NEW]** Generate music and sound effects locally with SoundGen and Stable Audio 3 on Android and Magenta Realtime 2 on iOS and Snapdragon 8 Elite Gen 5/Gen 6 Android, including live playback as music is generated |
+| **Music Generator** | **[NEW]** Generate music and sound effects locally with SoundGen and Stable Audio 3 on Android and Magenta Realtime 2 on iOS and Snapdragon Android (live on 8 Elite Gen 5/Gen 6), including live playback as music is generated |
 | **Instant Media Search** | **[NEW]** Search photos and videos by description or a reference image on Android and iOS using on-device EmbeddingGemma 2 |
 | **Video Moment Finder** | **[NEW]** Describe a moment in a video and jump to matching timestamps using visual and audio embeddings on Android and iOS |
 | **Text to Speech & Voice Cloning** | Android supports Kokoro, multilingual Supertonic 3 with voice-profile import, and Pocket TTS with on-device voice cloning |

@@ -95,6 +95,21 @@ object DeviceInfo {
     )
 
     /**
+     * Snapdragons where GGUF models run on the GPU: LlamaCppInferenceService uses the OpenCL backend only when the CPU
+     * also has ILRCPC (its packaged libggml-cpu needs it; otherwise GGUF falls back to the CPU). This reads the same
+     * HWCAP_ILRCPC bit from /proc/cpuinfo ("ilrcpc") so the model catalog can check it without loading llama.cpp.
+     */
+    fun isGgufGpuSupported(): Boolean = isSnapdragon() && hasIlrcpc
+
+    private val hasIlrcpc: Boolean by lazy {
+        runCatching {
+            java.io.File("/proc/cpuinfo").readLines()
+                .filter { it.startsWith("Features") }
+                .any { line -> line.substringAfter(':').split(' ').any { it == "ilrcpc" } }
+        }.getOrDefault(false)
+    }
+
+    /**
      * llama.cpp Vulkan is unusable on Adreno drivers (Snapdragon uses OpenCL) and on drivers below
      * Vulkan 1.2, so the setting is hidden there.
      */
@@ -5633,16 +5648,22 @@ object ModelData {
         "https://huggingface.co/a8nova/adreno-llms-weights/resolve/7a5f7a1d4fe10589d4b7984b6161591065902707/magenta-realtime-2"
 
     /**
-     * Magenta RealTime 2 Small through the adreno-llms OpenCL engine (see MagentaRealtime), offered only where live
-     * generation runs faster than playback. Weights: Google DeepMind, CC BY 4.0, converted by adreno-llms (public
+     * Magenta RealTime 2 Small through the adreno-llms OpenCL engine (see MagentaRealtime), on the Snapdragons where
+     * GGUF models run on the GPU (DeviceInfo.isGgufGpuSupported). Live
+     * generation is offered where it runs faster than playback; other chips generate first, then play. Weights: Google DeepMind, CC BY 4.0, converted by adreno-llms (public
      * mirror pinned to a commit). sizeBytes = the sum of the files at this commit.
      */
     private fun magentaRealtimeModels(): List<LLMModel> {
-        if (socForMatching() !in MagentaRealtime.SUPPORTED_SOCS) return emptyList()
+        if (!DeviceInfo.isGgufGpuSupported()) return emptyList()
+        val live = MagentaRealtime.isLiveSupported()
         return listOf(
             LLMModel(
                 name = MagentaRealtime.MODEL_NAME,
-                description = "Google DeepMind's Magenta RealTime 2 (230M) for live music that keeps playing as it is generated, steered by your prompt, also with the screen locked. Runs on the GPU. Weights CC BY 4.0, engine by adreno-llms. ~0.9 GB download.",
+                description = if (live) {
+                    "Google DeepMind's Magenta RealTime 2 (230M) for live music that keeps playing as it is generated, steered by your prompt, also with the screen locked. Runs on the GPU. Weights CC BY 4.0, engine by adreno-llms. ~0.9 GB download."
+                } else {
+                    "Google DeepMind's Magenta RealTime 2 (230M) music generation on the GPU. Live generation needs a Snapdragon 8 Elite Gen 5 or newer; on this phone the clip is generated first, then played. Weights CC BY 4.0, engine by adreno-llms. ~0.9 GB download."
+                },
                 url = "$MAGENTA_RT2_REPO/model.fp16.bin",
                 category = "music_generation",
                 sizeBytes = 864048877L,

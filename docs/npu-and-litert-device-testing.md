@@ -124,7 +124,10 @@ built by `tools/magenta_rt2/build.sh` at commit 2b1aee9). The engine runs as its
 the app sends one request per 0.4 s of audio (adreno-llms' live settings: `frames=10 chunk=10 pipeline=0
 temperature=1.1 topk=50 cfgtok=5,0,4 mctail=6`) and reads back a WAV. `MagentaLiveService` plays it as a
 mediaPlayback foreground service with a MediaSession, so it keeps playing with the screen locked and shows a media
-card. The model is offered only where live generation is faster than playback.
+card. The model is offered on the Snapdragons where GGUF models run on the GPU (Snapdragon with ILRCPC,
+`DeviceInfo.isGgufGpuSupported`). Live generation is offered only where it runs faster than playback (8 Elite Gen 5
+and the 8 Elite Gen 6 family); other chips generate the clip first, then play it. Through the app on the Tab S9+
+(8 Gen 2) a 10 s clip took 18.2 s, with the fp16 codec the app forces on every chip.
 
 Engine speed (`--serve`, pipeline off; live = 30 requests of 10 frames; render = one 750-frame request):
 

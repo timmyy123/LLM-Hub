@@ -14,9 +14,9 @@ import java.util.concurrent.TimeUnit
  * adreno-llms' own app drives it: weights and kernel JIT are paid once, then each stdin request generates the next
  * stretch of the same piece and writes it to a WAV in the working folder. A GPU fault ends that process, not the app.
  *
- * Measured live speed (0.4 s requests): 8 Elite Gen 5 1.31-1.39x real time, 8 Elite Extreme Gen 6 1.42-1.65x.
- * The 8 Elite (0.83-0.95x), 8 Gen 3 (0.24x) and 8 Gen 2 (0.53x) are slower than playback, so the model is only
- * offered on [SUPPORTED_SOCS].
+ * It is offered on the Snapdragons where GGUF models use the GPU (DeviceInfo.isGgufGpuSupported). Live generation needs it faster than playback, which only [LIVE_SOCS] are
+ * (8 Elite Gen 5 1.31-1.39x real time, 8 Elite Extreme Gen 6 1.42-1.65x); elsewhere a clip is generated first and
+ * then played (30 s took 32 s on the 8 Elite, 56 s on the 8 Gen 2, ~2 min on the 8 Gen 3).
  */
 object MagentaRealtime {
     private const val TAG = "MagentaRealtime"
@@ -25,8 +25,10 @@ object MagentaRealtime {
     const val SAMPLE_RATE = 48_000
     const val CHANNELS = 2
     const val FRAMES_PER_SECOND = 25
-    /** 8 Elite Gen 5 and the 8 Elite Gen 6 family (Adreno 840/850). */
-    val SUPPORTED_SOCS = setOf("SM8850", "SM8850P", "SM8950", "SM8975")
+    /** Live generation: 8 Elite Gen 5 and the 8 Elite Gen 6 family (Adreno 840/850). */
+    val LIVE_SOCS = setOf("SM8850", "SM8850P", "SM8950", "SM8975")
+
+    fun isLiveSupported(): Boolean = ModelData.socForMatching() in LIVE_SOCS
     /** adreno-llms' benchmarked live settings (0.4 s per request). */
     const val LIVE_FRAMES = 10
     private const val LIVE_SETTINGS = "chunk=10 pipeline=0 temperature=1.1 topk=50 cfgtok=5,0,4 mctail=6"
@@ -145,7 +147,12 @@ object MagentaRealtime {
                 val process = ProcessBuilder(executable.absolutePath, "--serve")
                     .directory(workDir)
                     .redirectErrorStream(true)
-                    .apply { environment()["LD_LIBRARY_PATH"] = "$nativeDir:/vendor/lib64:/system/vendor/lib64" }
+                    .apply {
+                        environment()["LD_LIBRARY_PATH"] = "$nativeDir:/vendor/lib64:/system/vendor/lib64"
+                        // fp16 codec everywhere: the engine only defaults to it on Adreno 8xx, and on the 8 Gen 2 it cut
+                        // a 10 s render from 20.6 s to 17.7 s (its built-in fp16-vs-fp32 codec check passes there).
+                        environment()["NNOPT_CODECFP16"] = "1"
+                    }
                     .start()
                 val engine = Engine(process, workDir)
                 val started = System.nanoTime()

@@ -20,8 +20,8 @@ import org.junit.Test
 import kotlin.math.sqrt
 
 /**
- * Opt-in physical-device check for Magenta RealTime 2 on a supported Snapdragon (8 Elite Gen 5 / Gen 6). Downloads
- * the model through the app's ModelDownloader (kept afterwards), renders a clip, then runs live generation through
+ * Opt-in physical-device check for Magenta RealTime 2 on a Snapdragon. Downloads the model through the app's
+ * ModelDownloader (kept afterwards), renders a clip, then (on 8 Elite Gen 5 / Gen 6 only) runs live generation through
  * MagentaLiveService for `-e liveSeconds N` (default 60) while the host may lock the screen. Every 5 s it logs how
  * much audio has played under the MagentaRealtimeDeviceTest tag; live must keep up with real time.
  */
@@ -58,6 +58,10 @@ class MagentaRealtimeDeviceTest {
         assertEquals(10 * MagentaRealtime.SAMPLE_RATE, pcm.size / 4)
         assertTrue("silent render", rms > 1e-3)
         MusicGeneratorBackend.unloadModel()
+        if (!MagentaRealtime.isLiveSupported()) {
+            Log.i(TAG, "live generation is not offered on ${Build.SOC_MODEL}; render only")
+            return@runBlocking
+        }
 
         // Live: unlimited, stopped by the test. Started from the foreground, as the app does from its screen
         // (Android does not let a background process start a foreground service).

@@ -128,7 +128,8 @@ fun MusicGeneratorScreen(
     }
 
     // Magenta RealTime 2: live generation (plays while it generates, also with the screen locked), as on iOS.
-    val isMagenta = selectedModel?.let { MagentaRealtime.isModel(it.name) } == true
+    // Live needs a chip that generates faster than playback; elsewhere Magenta generates first, then plays.
+    val isMagenta = selectedModel?.let { MagentaRealtime.isModel(it.name) } == true && MagentaRealtime.isLiveSupported()
     var liveGeneration by remember { mutableStateOf(musicPreferences.getBoolean("live_generation", true)) }
     var unlimitedDuration by remember { mutableStateOf(musicPreferences.getBoolean("unlimited_duration", false)) }
     val liveState by MagentaLiveService.state.collectAsState()
@@ -262,7 +263,7 @@ fun MusicGeneratorScreen(
         }
         val requestedDuration = durationSeconds.toInt()
         keyboardController?.hide()
-        if (MagentaRealtime.isModel(model.name) && liveGeneration) {
+        if (MagentaRealtime.isModel(model.name) && MagentaRealtime.isLiveSupported() && liveGeneration) {
             mediaPlayer?.stop()
             mediaPlayer?.release()
             mediaPlayer = null
