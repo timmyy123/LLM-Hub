@@ -81,7 +81,7 @@ class StableAudio3DeviceTest {
                 }
             }
             val wav = try {
-                MusicGeneratorBackend.generateMusic(context, modelName, prompt, seconds) { }
+                MusicGeneratorBackend.generateMusic(context, modelName, prompt, seconds, onProgress = { })
             } finally {
                 sampler.cancel()
             }

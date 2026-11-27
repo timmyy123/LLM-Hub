@@ -46,7 +46,7 @@ class MagentaRealtimeDeviceTest {
         assertTrue("load failed", MusicGeneratorBackend.loadModel(context, model.name))
         Log.i(TAG, "load ${SystemClock.elapsedRealtime() - started} ms")
         started = SystemClock.elapsedRealtime()
-        val wav = MusicGeneratorBackend.generateMusic(context, model.name, "lo-fi hip hop with warm piano", 10.0) { }
+        val wav = MusicGeneratorBackend.generateMusic(context, model.name, "lo-fi hip hop with warm piano", 10.0, onProgress = { })
         assertTrue("render failed", wav != null)
         val pcm = MagentaRealtime.readPcm(wav!!)
         val samples = java.nio.ByteBuffer.wrap(pcm).order(java.nio.ByteOrder.LITTLE_ENDIAN).asShortBuffer()

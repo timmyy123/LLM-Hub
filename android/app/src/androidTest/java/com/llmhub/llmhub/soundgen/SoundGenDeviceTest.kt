@@ -79,7 +79,7 @@ class SoundGenDeviceTest {
                     }
                 }
                 val wav = try {
-                    MusicGeneratorBackend.generateMusic(context, model.name, "rain on a tin roof with distant thunder", seconds) { }
+                    MusicGeneratorBackend.generateMusic(context, model.name, "rain on a tin roof with distant thunder", seconds, onProgress = { })
                 } finally {
                     sampler.cancel()
                 }
