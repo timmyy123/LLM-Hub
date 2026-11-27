@@ -95,9 +95,139 @@ class SpeechModelsDeviceTest {
         }
     }
 
+    @Test fun whisperLiteRtCpuHearsThePassage() = hears(model(AsrModels.WHISPER_LITERT_NAME, WHISPER_LITERT_SHA256), WhisperBackend.CPU, PASSAGE)
+
+    @Test fun whisperLiteRtGpuHearsThePassage() = hears(model(AsrModels.WHISPER_LITERT_NAME, WHISPER_LITERT_SHA256), WhisperBackend.GPU, PASSAGE)
+
+    /** About 32 seconds, past Whisper's 30-second window. */
+    @Test fun whisperLiteRtHearsALongPassage() = hears(model(AsrModels.WHISPER_LITERT_NAME, WHISPER_LITERT_SHA256), WhisperBackend.CPU, LONG)
+
+    @Test fun whisperLiteRtHearsAShortSentence() = hears(model(AsrModels.WHISPER_LITERT_NAME, WHISPER_LITERT_SHA256), WhisperBackend.CPU, SENTENCE)
+
+    /** GPU asked for, as the backend picker's saved choice may be: Moonshine has to stay on the CPU and still transcribe. */
+    @Test fun moonshineHearsThePassage() = hears(model(AsrModels.MOONSHINE_NAME, MOONSHINE_SHA256), WhisperBackend.GPU, PASSAGE)
+
+    @Test fun moonshineHearsALongPassage() = hears(model(AsrModels.MOONSHINE_NAME, MOONSHINE_SHA256), WhisperBackend.CPU, LONG)
+
+    @Test fun moonshineHearsAShortSentence() = hears(model(AsrModels.MOONSHINE_NAME, MOONSHINE_SHA256), WhisperBackend.CPU, SENTENCE)
+
+    @Test fun acftTinyHearsAShortSentence() = hears(model(AsrModels.ACFT_TINY_NAME, ACFT_TINY_SHA256), WhisperBackend.CPU, SENTENCE)
+
+    @Test fun acftTinyHearsThePassage() = hears(model(AsrModels.ACFT_TINY_NAME, ACFT_TINY_SHA256), WhisperBackend.CPU, PASSAGE)
+
+    @Test fun acftTinyHearsALongPassage() = hears(model(AsrModels.ACFT_TINY_NAME, ACFT_TINY_SHA256), WhisperBackend.CPU, LONG)
+
+    /** GPU asked for: the ACFT models have no GPU path and must stay on the CPU. */
+    @Test fun acftBaseHearsThePassage() = hears(model(AsrModels.ACFT_BASE_NAME, ACFT_BASE_SHA256), WhisperBackend.GPU, PASSAGE)
+
+    @Test fun acftBaseHearsAShortSentence() = hears(model(AsrModels.ACFT_BASE_NAME, ACFT_BASE_SHA256), WhisperBackend.CPU, SENTENCE)
+
+    @Test fun acftSmallHearsThePassage() = hears(model(AsrModels.ACFT_SMALL_NAME, ACFT_SMALL_SHA256), WhisperBackend.CPU, PASSAGE)
+
+    @Test fun acftSmallHearsAShortSentence() = hears(model(AsrModels.ACFT_SMALL_NAME, ACFT_SMALL_SHA256), WhisperBackend.CPU, SENTENCE)
+
+    /** Phonon speaks the passage and Moonshine has to understand it. */
+    @Test fun phononSpeaksClearly() =
+        hears(model(AsrModels.MOONSHINE_NAME, MOONSHINE_SHA256), WhisperBackend.CPU, PASSAGE, LiteRtTtsModel.PHONON_NAME)
+
+    @Test fun readsAloudWithPhonon() = readsAloud(LiteRtTtsModel.PHONON_NAME)
+
+    /** A voice other than the default, picked the way Settings saves it. */
+    @Test fun readsAloudWithPhononLukas() = readsAloud(LiteRtTtsModel.PHONON_NAME, "lukas")
+
+    @Test fun liveParakeetGpu() = live(model(AsrModels.PARAKEET_NAME, PARAKEET_SHA256), WhisperBackend.GPU)
+
+    @Test fun liveParakeetCpu() = live(model(AsrModels.PARAKEET_NAME, PARAKEET_SHA256), WhisperBackend.CPU)
+
+    @Test fun liveMoonshine() = live(model(AsrModels.MOONSHINE_NAME, MOONSHINE_SHA256), WhisperBackend.CPU)
+
+    @Test fun liveMlKitBasic() = live(ModelData.models.first { it.name == AsrModels.MLKIT_BASIC_NAME }, WhisperBackend.CPU)
+
+    /** Batch-only models must not offer a live session. */
+    @Test fun noLiveForWhisper() = runBlocking {
+        val service = SpeechRecognitionService(context)
+        try {
+            assertTrue(service.loadModel(model(AsrModels.ACFT_TINY_NAME, ACFT_TINY_SHA256), WhisperBackend.CPU))
+            assertFalse(service.supportsLive)
+            assertNull(service.startLive { })
+        } finally {
+            service.release()
+        }
+    }
+
+    /**
+     * The microphone path of the Live toggle: [LONG] (about 32 s) fed in 40 ms blocks at real-time speed, as
+     * AudioInputService hands them over. Logs when the first words appeared, how often the text changed, how
+     * long the result took after the audio stopped, and how much of it was right.
+     */
+    private fun live(model: LLMModel, backend: WhisperBackend) = runBlocking {
+        val audio = speech(LiteRtTtsModel.KOKORO_NAME, LONG)
+        val service = SpeechRecognitionService(context)
+        val report = JSONObject().put("live", model.name).put("backend", backend.name).put("soc", Build.SOC_MODEL)
+            .put("audioSeconds", audio.size / 32000.0)
+        try {
+            if (AsrModels.isMlKit(model)) report.put("mlKit", installMlKit(model))
+            val loaded = service.loadModel(model, backend)
+            if (AsrModels.isMlKit(model)) assumeTrue("ML Kit recognizer is not available on this device", loaded)
+            assertTrue("${model.name} must load", loaded)
+            assertTrue(service.supportsLive)
+            val updates = java.util.concurrent.ConcurrentLinkedQueue<Pair<Long, String>>()
+            val started = SystemClock.elapsedRealtime()
+            val session = checkNotNull(service.startLive { text -> updates += (SystemClock.elapsedRealtime() - started) to text })
+            val block = 1280 // 40 ms of 16 kHz PCM16
+            var offset = 0
+            var index = 0
+            while (offset < audio.size) {
+                val end = minOf(offset + block, audio.size)
+                session.feed(audio.copyOfRange(offset, end))
+                offset = end
+                index++
+                val due = started + index * 40L
+                val wait = due - SystemClock.elapsedRealtime()
+                if (wait > 0) kotlinx.coroutines.delay(wait)
+            }
+            val audioEnd = SystemClock.elapsedRealtime() - started
+            val transcript = session.finish()
+            val finishMs = SystemClock.elapsedRealtime() - started - audioEnd
+            val list = updates.toList()
+            val recall = recall(LONG, transcript)
+            // How far behind the speech the text ran: at 10, 20 and 30 s of audio, words shown versus words spoken.
+            val wordsPerSecond = words(LONG).size / (audio.size / 32000.0)
+            val lag = JSONObject()
+            for (at in listOf(10_000L, 20_000L, 30_000L)) {
+                val shown = list.lastOrNull { it.first <= at }?.second.orEmpty()
+                lag.put("${at / 1000}s", JSONObject().put("wordsShown", words(shown).size).put("wordsSpoken", (wordsPerSecond * at / 1000).toInt()))
+            }
+            report.put("firstTextMs", list.firstOrNull()?.first ?: JSONObject.NULL).put("updates", list.size)
+                .put("audioMs", audioEnd).put("finishMs", finishMs).put("lag", lag).put("recall", recall).put("transcript", transcript)
+            Log.i(TAG, "RESULT $report")
+            assertTrue("Only ${(recall * 100).toInt()}% of the words came back: $transcript", recall >= 0.85)
+            assertTrue("No text before the recording ended", list.any { it.first < audioEnd })
+            assertTrue("Transcript is too long: $transcript", words(transcript).size <= words(LONG).size + 2)
+        } finally {
+            Log.i(TAG, "REPORT $report")
+            service.release()
+        }
+    }
+
     @Test fun mlKitBasicHearsThePassage() = hears(ModelData.models.first { it.name == AsrModels.MLKIT_BASIC_NAME }, WhisperBackend.CPU, PASSAGE)
 
     @Test fun readsAloudWithKokoro() = readsAloud(LiteRtTtsModel.KOKORO_NAME)
+
+    /** Kokoro speaks the passage and Moonshine has to understand all of it (on a Pixel 10 the GPU vocoder garbled it). */
+    @Test fun kokoroSpeaksThePassageClearly() = hears(model(AsrModels.MOONSHINE_NAME, MOONSHINE_SHA256), WhisperBackend.CPU, PASSAGE)
+
+    /** Read aloud with GPU saved in Settings, as most users have it: on chips with a garbling GPU Kokoro must load on the CPU. */
+    @Test fun readsAloudWithKokoroGpuSetting() = runBlocking {
+        val preferences = com.llmhub.llmhub.data.ThemePreferences(context)
+        val previousDevice = preferences.selectedTtsDevice.first()
+        preferences.setSelectedTtsDevice("gpu")
+        try {
+            readsAloud(LiteRtTtsModel.KOKORO_NAME, text = PASSAGE)
+        } finally {
+            preferences.setSelectedTtsDevice(previousDevice)
+        }
+    }
 
     @Test fun readsAloudWithPocket() = readsAloud(LiteRtTtsModel.POCKET_NAME)
 
@@ -184,9 +314,11 @@ class SpeechModelsDeviceTest {
         speech(voiceModel, SENTENCE) // makes sure the model file is there
         val preferences = com.llmhub.llmhub.data.ThemePreferences(context)
         val previous = preferences.selectedTtsModel.first()
-        val previousVoice = preferences.selectedTtsVoice.first()
+        val phonon = LiteRtTtsModel.isPhonon(voiceModel)
+        val previousVoice = if (phonon) preferences.phononLiteRtVoice.first() else preferences.selectedTtsVoice.first()
+        suspend fun setVoice(id: String) = if (phonon) preferences.setPhononLiteRtVoice(id) else preferences.setSelectedTtsVoice(id)
         preferences.setSelectedTtsModel(voiceModel)
-        if (voice != null) preferences.setSelectedTtsVoice(voice)
+        if (voice != null) setVoice(voice)
         val service = com.llmhub.llmhub.ui.components.TtsService(context)
         try {
             val started = SystemClock.elapsedRealtime()
@@ -205,7 +337,7 @@ class SpeechModelsDeviceTest {
         } finally {
             service.shutdown()
             preferences.setSelectedTtsModel(previous)
-            if (voice != null) preferences.setSelectedTtsVoice(previousVoice)
+            if (voice != null) setVoice(previousVoice)
         }
     }
 
@@ -354,6 +486,18 @@ class SpeechModelsDeviceTest {
         const val PASSAGE = "The quick brown fox jumps over the lazy dog. " +
             "Speech recognition on this tablet now runs on the neural processor. " +
             "Please open the settings page and download a new voice model before tomorrow morning."
+        /** About 32 seconds read aloud, with no repeated sentences (Whisper's decoder trims repeated text). */
+        const val LONG = "Our team met on Tuesday to plan the new library building near the river. " +
+            "The architect showed drawings of a glass roof, wooden shelves and a quiet reading garden. " +
+            "Several parents asked whether the children's section would open before the summer holidays. " +
+            "The builder said the foundations should be finished by March if the weather stays dry. " +
+            "After the meeting we walked across the bridge and had coffee at the small bakery on the corner. " +
+            "Next month the council will vote on the budget and choose the final colour for the front doors."
+        const val ACFT_TINY_SHA256 = "d4c08a1034529720d6c23a279292a370960aab3fa388d400bacd4ed0f45f38ad"
+        const val ACFT_BASE_SHA256 = "cfccd47ef1fa1d0f8e50718b342b5400c2fbe2c622bc6a3524df2a68708dbf4a"
+        const val ACFT_SMALL_SHA256 = "1a763f37b8871283d90815a1b95bcc77c3d496eba64b6feeead2cbf431d95c86"
+        const val WHISPER_LITERT_SHA256 = "92f194600d98e1d94b1ff6f636d109c0f4ac66f3f6a1803f7a665e93daf78012"
+        const val MOONSHINE_SHA256 = "9876ebf427f9b46cf986d0e5f2cef9647249c54453082722b59f70411d15c4d1"
         const val PARAKEET_SHA256 = "66c5a74cf6c2c1d2b990901f6cece5bb53e3214dbceafa0989900a6f0eeb3504"
         /** Checksums of the builds the catalog offers, by SoC tag. */
         val NPU_SHA256 = mapOf(
@@ -369,6 +513,7 @@ class SpeechModelsDeviceTest {
         val TTS_SHA256 = mapOf(
             LiteRtTtsModel.KOKORO_NAME to "1ef178b127ec48c737daf17eabb4cea5f6b3ffbc510aced270fe5c267bbeac52",
             LiteRtTtsModel.POCKET_NAME to "9c5427cf3fe2d6680f8268e1c06537496be52d818ef12233a461bf193f314b3c",
+            LiteRtTtsModel.PHONON_NAME to "b33a9a0d65acec36762db38a2bff6d899f4aab34b196bb56d89fab5665eabebe",
         )
     }
 }

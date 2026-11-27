@@ -494,6 +494,7 @@ class TtsService(private val context: Context, private val isTranslationFeature:
 
     private suspend fun liteRtVoice(model: String?): String =
         if (LiteRtTtsModel.isPocket(model)) themePreferences.pocketLiteRtVoice.first()
+        else if (LiteRtTtsModel.isPhonon(model)) themePreferences.phononLiteRtVoice.first()
         else themePreferences.selectedTtsVoice.first()
 
     private fun startAudioTrackPlayback() {
@@ -654,8 +655,8 @@ class TtsService(private val context: Context, private val isTranslationFeature:
             val liteRt = liteRtEngine
             if (liteRt != null) {
                 val model = liteRtModel
-                // PocketTTS streams any length; Kokoro pays a full static-shape pass per clause.
-                val clauseLength = if (LiteRtTtsModel.isPocket(model)) 240 else LiteRtTtsEngine.KOKORO_CLAUSE_CHARS
+                // PocketTTS and Phonon stream any length; Kokoro pays a full static-shape pass per clause.
+                val clauseLength = if (LiteRtTtsModel.isPocket(model) || LiteRtTtsModel.isPhonon(model)) 240 else LiteRtTtsEngine.KOKORO_CLAUSE_CHARS
                 for (sentence in sentenceChannel) {
                     // Playback retires one job per queued chunk and waits for the audio to finish before
                     // reporting silence, so the sentence's job is handed to its first chunk, not dropped here.

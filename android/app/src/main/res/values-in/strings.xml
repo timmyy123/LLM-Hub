@@ -1245,4 +1245,6 @@
     <string name="music_stop_generation">Hentikan pembuatan</string>
     <string name="music_live_pause">Jeda</string>
     <string name="music_live_resume">Lanjutkan</string>
+    <string name="live_transcription">Transkripsi langsung</string>
+    <string name="live_transcription_desc">Teks muncul saat Anda berbicara</string>
 </resources>

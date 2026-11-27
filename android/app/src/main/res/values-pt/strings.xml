@@ -1196,4 +1196,6 @@
     <string name="music_stop_generation">Parar a geração</string>
     <string name="music_live_pause">Pausar</string>
     <string name="music_live_resume">Retomar</string>
+    <string name="live_transcription">Transcrição em tempo real</string>
+    <string name="live_transcription_desc">O texto aparece enquanto você fala</string>
 </resources>

@@ -1215,4 +1215,6 @@
     <string name="music_stop_generation">Остановить генерацию</string>
     <string name="music_live_pause">Пауза</string>
     <string name="music_live_resume">Продолжить</string>
+    <string name="live_transcription">Транскрипция в реальном времени</string>
+    <string name="live_transcription_desc">Текст появляется во время речи</string>
 </resources>

@@ -1,6 +1,7 @@
 package com.llmhub.llmhub.data
 
 import android.content.Context
+import android.os.Build
 import java.io.File
 
 /**
@@ -10,6 +11,7 @@ import java.io.File
 object LiteRtTtsModel {
     const val KOKORO_NAME = "Kokoro-82M (LiteRT-LM)"
     const val POCKET_NAME = "Pocket TTS (LiteRT-LM)"
+    const val PHONON_NAME = "Phonon 31M (LiteRT-LM)"
 
     const val KOKORO_URL =
         "https://huggingface.co/litert-community/Kokoro-82M/resolve/81e43a025bccabcbbd487f08bc3ebd65b5fc7295/kokoro_int8_gpu_fp16.litertlm"
@@ -17,15 +19,34 @@ object LiteRtTtsModel {
     const val POCKET_URL =
         "https://huggingface.co/litert-community/pocket-tts/resolve/bca93d6756489f9403f94d66826cfa65f80023a1/pocket_tts_int8.litertlm"
     const val POCKET_SIZE = 760061960L
+    const val PHONON_URL =
+        "https://huggingface.co/litert-community/phonon-31m-en/resolve/ee374c33f0f6f8ed1d9f761e21cdb97df6accfe8/phonon_int8.litertlm"
+    const val PHONON_SIZE = 87205888L
 
     const val KOKORO_DEFAULT_VOICE = "af_heart"
     const val POCKET_DEFAULT_VOICE = "alba"
+    const val PHONON_DEFAULT_VOICE = "freya"
 
-    fun isModel(name: String?) = name == KOKORO_NAME || name == POCKET_NAME
+    fun isModel(name: String?) = name == KOKORO_NAME || name == POCKET_NAME || name == PHONON_NAME
     fun isPocket(name: String?) = name == POCKET_NAME
+    fun isPhonon(name: String?) = name == PHONON_NAME
 
-    /** Only the Kokoro bundle has a GPU build; PocketTTS is CPU only. */
-    fun supportsGpu(name: String?) = name == KOKORO_NAME
+    /**
+     * Only the Kokoro bundle has a GPU build; PocketTTS is CPU only. Phonon loads on the GPU but took
+     * 7.6 s to load there and was no faster than the CPU on the Tab S9+, so it stays on the CPU.
+     * Kokoro also stays on the CPU on [kokoroGpuGarbledSocs].
+     */
+    fun supportsGpu(name: String?) = name == KOKORO_NAME && !kokoroGpuGarbled()
+
+    /**
+     * Chips whose GPU garbles Kokoro's vocoder (LiteRT OpenCL). On a Pixel 10 (Tensor G5) every Kokoro bundle
+     * with the vocoder on the GPU turned speech into gibberish or near silence after a sentence or two, with
+     * tasks-audio 1.2.0 and 1.2.3, while the CPU gave clean speech at the same speed (about 2 s a sentence).
+     * Snapdragon 8 Gen 2, Exynos 1480 and Dimensity 9400 GPUs were clean.
+     */
+    private val kokoroGpuGarbledSocs = setOf("Tensor G5")
+
+    private fun kokoroGpuGarbled() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && Build.SOC_MODEL in kokoroGpuGarbledSocs
 
     fun file(context: Context, name: String): File {
         val model = ModelData.ttsModels.first { it.name == name }
@@ -62,6 +83,9 @@ object LiteRtTtsModel {
         "giovanni" to "it-IT", "daan" to "nl-NL"
     )
 
+    /** Phonon 31M's bundled voices, all American English. */
+    private val phononVoiceIds = listOf("freya", "claire", "lukas", "sofia", "lucas")
+
     private val pocketLanguageNames = mapOf(
         "en-US" to "English", "fr-FR" to "French", "de-DE" to "German", "es-ES" to "Spanish",
         "pt-BR" to "Portuguese", "it-IT" to "Italian", "nl-NL" to "Dutch"
@@ -79,10 +103,15 @@ object LiteRtTtsModel {
         POCKET_NAME -> pocketVoiceLocales.map { (id, locale) ->
             id to "${pocketLanguageNames[locale] ?: locale} — ${id.capitalized()}"
         }
+        PHONON_NAME -> phononVoiceIds.map { id -> id to "English — ${id.capitalized()}" }
         else -> emptyList()
     }
 
-    fun defaultVoice(name: String?) = if (name == POCKET_NAME) POCKET_DEFAULT_VOICE else KOKORO_DEFAULT_VOICE
+    fun defaultVoice(name: String?) = when (name) {
+        POCKET_NAME -> POCKET_DEFAULT_VOICE
+        PHONON_NAME -> PHONON_DEFAULT_VOICE
+        else -> KOKORO_DEFAULT_VOICE
+    }
 
     /** The stored voice if this model packages it, otherwise the model's default. */
     fun resolveVoice(name: String?, stored: String?): String =
@@ -90,10 +119,13 @@ object LiteRtTtsModel {
 
     /**
      * Locale to send with a voice. PocketTTS loads language-specific weights from it, so it must be
-     * the voice's own; Kokoro derives the language from the voice id and takes none.
+     * the voice's own; Kokoro derives the language from the voice id and takes none. Phonon is English only.
      */
-    fun synthesisLocale(name: String?, voice: String): String? =
-        if (name == POCKET_NAME) pocketVoiceLocales[voice] else null
+    fun synthesisLocale(name: String?, voice: String): String? = when (name) {
+        POCKET_NAME -> pocketVoiceLocales[voice]
+        PHONON_NAME -> "en-US"
+        else -> null
+    }
 }
 
 /** Speech recognition models that do not run on WhisperKit. */
@@ -102,6 +134,46 @@ object AsrModels {
     const val PARAKEET_URL =
         "https://huggingface.co/litert-community/parakeet-tdt-0.6b-v3/resolve/3ce205aa928f443f423214195cfe83ebe4802826/parakeet_tdt_0.6b_v3_5s_i8_stateful.litertlm"
     const val PARAKEET_SIZE = 614588752L
+
+    /** OpenAI Whisper Tiny, int8, in Google's LiteRT-LM bundle; the bundle transcribes English. */
+    const val WHISPER_LITERT_NAME = "Whisper Tiny int8 (LiteRT-LM)"
+    const val WHISPER_LITERT_URL =
+        "https://huggingface.co/litert-community/whisper-tiny/resolve/9d0bc311c487b282cd37dc846a0a75624e0bcd74/whisper_tiny_30s_i8.litertlm"
+    const val WHISPER_LITERT_SIZE = 41804416L
+
+    /** Moonshine Tiny (English). Its GPU path returns empty text on the Tab S9+, so it runs on the CPU. */
+    const val MOONSHINE_NAME = "Moonshine Tiny (LiteRT-LM)"
+    const val MOONSHINE_URL =
+        "https://huggingface.co/litert-community/moonshine-tiny/resolve/152d4b5527c532b79cf264a6cf414b7a07978c0b/moonshine_tiny_5s_i8.litertlm"
+    const val MOONSHINE_SIZE = 29676624L
+
+    /**
+     * FUTO's audio-context fine-tuned Whisper (English), 10-second window, as `.litertlm` bundles we built
+     * from litert-community/whisper-acft (see timmyboy26/whisper-acft-en-litertlm): short recordings are not
+     * padded to Whisper's usual 30 seconds.
+     */
+    private const val ACFT_BASE = "https://huggingface.co/timmyboy26/whisper-acft-en-litertlm/resolve/8d44e9fef5a82119d95ce99400ee119c3b66ff9a"
+    const val ACFT_TINY_NAME = "Whisper ACFT Tiny English (LiteRT-LM)"
+    const val ACFT_TINY_URL = "$ACFT_BASE/whisper_acft_tiny_en_10s.litertlm"
+    const val ACFT_TINY_SIZE = 59905680L
+    const val ACFT_BASE_NAME = "Whisper ACFT Base English (LiteRT-LM)"
+    const val ACFT_BASE_URL = "$ACFT_BASE/whisper_acft_base_en_10s.litertlm"
+    const val ACFT_BASE_SIZE = 102045960L
+    const val ACFT_SMALL_NAME = "Whisper ACFT Small English (LiteRT-LM)"
+    const val ACFT_SMALL_URL = "$ACFT_BASE/whisper_acft_small_en_10s.litertlm"
+    const val ACFT_SMALL_SIZE = 286931488L
+
+    /**
+     * Recognizers that can transcribe while recording, with text arriving every few seconds or sooner:
+     * Parakeet TDT streams with state between 5-second windows, Moonshine works in 5-second windows and ML Kit
+     * is a streaming recognizer. The Whisper models wait for a 10 or 30-second window, and the Parakeet NPU
+     * engine takes whole recordings, so they transcribe after the recording stops.
+     */
+    fun supportsLive(model: LLMModel?) =
+        model != null && (model.name == PARAKEET_NAME || model.name == MOONSHINE_NAME || isMlKit(model))
+
+    /** English-only recognizers that load in about a second. */
+    fun isQuickEnglish(model: LLMModel) = model.name in setOf(MOONSHINE_NAME, WHISPER_LITERT_NAME, ACFT_TINY_NAME, ACFT_BASE_NAME, ACFT_SMALL_NAME)
 
     /** Model format of the system-managed ML Kit recognizers: no file of ours, AICore owns the weights. */
     const val MLKIT_FORMAT = "mlkit_asr"
@@ -112,6 +184,7 @@ object AsrModels {
 
     fun isMlKit(model: LLMModel?) = model?.modelFormat == MLKIT_FORMAT
     fun isMlKitAdvanced(model: LLMModel) = model.url == MLKIT_ADVANCED_URL
+    /** Every `.litertlm` recognizer (Parakeet, Whisper, Moonshine): they all run on the MediaPipe AudioTranscriber task. */
     fun isParakeet(model: LLMModel?) = model?.category == "asr" && model.modelFormat == "litertlm"
 
     /** Parakeet compiled ahead of time for one SoC's NPU: a bare `.tflite` run by ParakeetNpuEngine. */

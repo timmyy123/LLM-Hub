@@ -110,6 +110,7 @@ fun VibeVoiceScreen(
     val loadError by viewModel.loadError.collectAsState()
     val conversationTurns by viewModel.conversationTurns.collectAsState()
     val transcription by viewModel.transcription.collectAsState()
+    val liveEnabled by viewModel.liveEnabled.collectAsState()
 
     val context = LocalContext.current
     val isPremium by (context.applicationContext as LlmHubApplication).billingManager.isPremium.collectAsState(initial = false)
@@ -190,17 +191,25 @@ fun VibeVoiceScreen(
 
     LaunchedEffect(isRecording) {
         if (isRecording && hasAudioPermission) {
+            // Live transcription: the recognizer hears the microphone while the user speaks.
+            audioService.onPcmChunk = if (viewModel.startLive()) viewModel::feedLive else null
             val ok = audioService.startRecording()
-            if (!ok) viewModel.setRecording(false)
+            if (!ok) {
+                audioService.onPcmChunk = null
+                viewModel.cancelLive()
+                viewModel.setRecording(false)
+            }
         } else if (!isRecording) {
             if (audioService.isRecording() || isAutoStopping) {
                 val data = audioService.stopRecording()
+                audioService.onPcmChunk = null
                 isAutoStopping = false
 
                 if (isManualStopping) {
                     isManualStopping = false
                     recordedAudioData = null
                     viewModel.setAudioData(null)
+                    viewModel.cancelLive()
                     return@LaunchedEffect
                 }
 
@@ -209,11 +218,15 @@ fun VibeVoiceScreen(
                     recordedAudioData = data
                     viewModel.setAudioData(data)
                     if (isModelLoaded && !isResponding) {
-                        viewModel.sendVoiceTurn()
+                        // The live transcript is the turn; otherwise transcribe the recording now.
+                        if (!viewModel.finishLiveTurn()) viewModel.sendVoiceTurn()
+                    } else {
+                        viewModel.cancelLive()
                     }
                 } else {
                     recordedAudioData = null
                     viewModel.setAudioData(null)
+                    viewModel.cancelLive()
                 }
             }
         }
@@ -303,6 +316,8 @@ fun VibeVoiceScreen(
 
     DisposableEffect(Unit) {
         onDispose {
+            audioService.onPcmChunk = null
+            viewModel.cancelLive()
             if (audioService.isRecording()) {
                 coroutineScope.launch { audioService.stopRecording() }
             }
@@ -601,6 +616,10 @@ fun VibeVoiceScreen(
                     Box(modifier = Modifier.padding(top = 16.dp)) {
                         com.llmhub.llmhub.components.FlashStreamingModelSwitch(selectedModel, flashStreamingVoice)
                     }
+                }
+
+                if (com.llmhub.llmhub.data.AsrModels.supportsLive(selectedVoiceModel)) {
+                    com.llmhub.llmhub.screens.LiveTranscriptionSwitch(liveEnabled, viewModel::setLiveEnabled)
                 }
 
                 // Thinking toggle (LFM3 thinks before it answers; the thinking is never spoken)

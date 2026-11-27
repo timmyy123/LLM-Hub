@@ -1243,4 +1243,6 @@
     <string name="music_stop_generation">توقف تولید</string>
     <string name="music_live_pause">مکث</string>
     <string name="music_live_resume">ادامه</string>
+    <string name="live_transcription">رونویسی زنده</string>
+    <string name="live_transcription_desc">متن هنگام صحبت نمایش داده می‌شود</string>
 </resources>

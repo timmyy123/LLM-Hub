@@ -364,7 +364,7 @@ dependencies {
     implementation("com.google.mediapipe:tasks-vision:1.1.1")
     implementation("com.google.mediapipe:tasks-text:1.1.1")
     // AudioTranscriber (Parakeet) and TextToSpeech (Kokoro, PocketTTS) tasks for .litertlm speech models.
-    implementation("com.google.mediapipe:tasks-audio:1.2.0")
+    implementation("com.google.mediapipe:tasks-audio:1.2.3")
 
     // ML Kit GenAI speech recognition: system-managed on-device ASR (AICore).
     implementation("com.google.mlkit:genai-common:1.0.0-beta5")

@@ -1151,4 +1151,6 @@
     <string name="music_stop_generation">Genereren stoppen</string>
     <string name="music_live_pause">Pauzeren</string>
     <string name="music_live_resume">Hervatten</string>
+    <string name="live_transcription">Live transcriptie</string>
+    <string name="live_transcription_desc">Tekst verschijnt terwijl je spreekt</string>
 </resources>

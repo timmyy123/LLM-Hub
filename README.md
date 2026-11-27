@@ -69,12 +69,12 @@ Free code signing provided by [SignPath.io](https://about.signpath.io), certific
 | **Music Generator** | Generate music and sound effects locally with Stable Audio 3 (Small Music, Small SFX, Medium) and SoundGen on Android, and Magenta Realtime 2 on iOS and Snapdragon Android, with live playback as music is generated (iOS, and Snapdragon 8 Elite Gen 5/Gen 6) |
 | **Instant Media Search** | Search photos and videos by description or a reference image on Android and iOS using on-device EmbeddingGemma 2 |
 | **Video Moment Finder** | Describe a moment in a video and jump to matching timestamps using visual and audio embeddings on Android and iOS |
-| **Text to Speech & Voice Cloning** | Android supports Kokoro, multilingual Supertonic 3 with voice-profile import, and Pocket TTS with on-device voice cloning |
+| **Text to Speech & Voice Cloning** | Android supports Kokoro, multilingual Supertonic 3 with voice-profile import, Pocket TTS with on-device voice cloning, and Phonon |
 | **Image Upscale** | Upscale images up to 4× using AI super-resolution models (RealESRGAN, UltraSharp) with NPU acceleration |
 | **Object Eraser** | Paint over objects to remove them from photos on Android, with MI-GAN (Quick) or LaMa (HD) on the GPU with CPU fallback |
 | **Video Generator** | Generate videos from text prompts or images: LTX-Video on Android (Snapdragon NPU, Vulkan GPU or CPU), Stable Video Diffusion on iOS |
 | **Translator** | Translate text, images (OCR), and audio across 50+ languages - offline |
-| **Transcriber** | Convert speech to text on-device with Whisper, Parakeet, ML Kit or audio-capable Gemma models |
+| **Transcriber** | Convert speech to text on-device with Whisper, Moonshine, Parakeet, ML Kit or audio-capable Gemma models |
 | **Scam Detector** | Analyze messages and images for phishing with risk assessment |
 | **VibeVoice** | Hands-free AI voice chat |
 
@@ -90,6 +90,9 @@ The **AI Agent** turns on-device LLMs into autonomous assistants with device fun
 ### Supported ASR Models (Android)
 The offline **Transcriber** on Android works with dedicated speech recognition models and with chat models that take audio input:
 - **Whisper Tiny and Base** (English-only and multilingual) through WhisperKit on LiteRT, with Qualcomm NPU acceleration on supported Snapdragon chips.
+- **Whisper Tiny int8** in Google's LiteRT-LM format (~42 MB): fast English transcription on CPU or GPU.
+- **Moonshine Tiny** (~30 MB): the fastest and lightest English model, on CPU.
+- **Whisper ACFT Tiny, Base and Small** (English, ~60 to 287 MB): FUTO's Whisper fine-tuned for 10-second windows, so short recordings are not padded to 30 seconds.
 - **NVIDIA Parakeet TDT 0.6B v3**: 25 European languages with automatic language detection. A LiteRT-LM build runs on any device; NPU builds run on Snapdragon 8 Gen 2, 8 Gen 3, 8 Elite and 8 Elite Gen 5, Google Tensor G5 and G6, and MediaTek Dimensity 9400 and 9500.
 - **Google ML Kit speech recognition** (Basic, and Advanced on recent flagships): the system installs and updates the model, so it uses no app storage.
 - **Gemma-3n and Gemma-4 (E2B and E4B)**: multimodal models with audio input can transcribe too.
@@ -97,6 +100,7 @@ The offline **Transcriber** on Android works with dedicated speech recognition m
 ### Android Text to Speech & Voice Cloning
 - **Kokoro**: Local speech with downloadable voices managed in Settings.
 - **Supertonic 3**: Multilingual on-device speech with downloadable presets and import of compatible voice-style JSON files. Raw audio cloning and Pocket TTS voice states are not supported by Supertonic's importer. See [Supertonic 3 setup](android/docs/supertonic-3.md).
+- **Phonon 31M**: Small, fast English speech (~84 MB) with five built-in voices.
 - **Pocket TTS**: English speech and fully local voice cloning from recorded or imported audio. Manage, select, rename and delete cloned voices in Settings. Cloning uses 3 to 30 seconds of reference audio; longer imports use their first 30 seconds. See [Pocket TTS setup](android/docs/pocket-tts.md).
 - Selecting an engine and voice in Settings applies it to app-wide speech and auto-readout. Translator keeps system TTS.
 

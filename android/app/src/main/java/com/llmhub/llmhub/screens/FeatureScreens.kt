@@ -1451,6 +1451,7 @@ fun TranscriberScreen(
     val transcriptionText by viewModel.transcriptionText.collectAsState()
     val transcriptionHistory by viewModel.transcriptionHistory.collectAsState()
     val audioUri by viewModel.audioUri.collectAsState()
+    val liveEnabled by viewModel.liveEnabled.collectAsState()
 
     // Snackbar
     val snackbarHostState = remember { SnackbarHostState() }
@@ -1521,19 +1522,28 @@ fun TranscriberScreen(
             viewModel.setAudioData(null)
             viewModel.setAudioUri(null)
 
+            // Live transcription: the recognizer hears the microphone while the user speaks.
+            audioService.onPcmChunk = if (isAsrModel && viewModel.startLive()) viewModel::feedLive else null
             val ok = audioService.startRecording()
-            if (!ok) viewModel.setRecording(false)
+            if (!ok) {
+                audioService.onPcmChunk = null
+                viewModel.cancelLive()
+                viewModel.setRecording(false)
+            }
         } else if (!isRecording) {
             // Stop recording when isRecording becomes false (either manual or auto-stop)
             if (audioService.isRecording() || recordedAudioData == null) {
                 val data = audioService.stopRecording(forceKeep = true)
+                audioService.onPcmChunk = null
                 if (data != null) {
                     recordedAudioData = data
                     viewModel.setAudioData(data)
-                    // Final batch transcription on the full recording
-                    if (isAsrModel) {
+                    // The live transcript is the result; otherwise transcribe the full recording now.
+                    if (isAsrModel && !viewModel.finishLive()) {
                         viewModel.transcribe()
                     }
+                } else {
+                    viewModel.cancelLive()
                 }
             }
         }
@@ -1561,6 +1571,8 @@ fun TranscriberScreen(
 
     DisposableEffect(Unit) {
         onDispose {
+            audioService.onPcmChunk = null
+            viewModel.cancelLive()
             if (audioService.isRecording()) {
                 coroutineScope.launch { audioService.stopRecording() }
             }
@@ -1994,8 +2006,38 @@ fun TranscriberScreen(
                     selectedAsrBackend = if (isAsrModel) selectedAsrBackend else null,
                     onAsrBackendSelected = { viewModel.selectAsrBackend(it) }
                 )
+
+                if (com.llmhub.llmhub.data.AsrModels.supportsLive(selectedModel)) {
+                    LiveTranscriptionSwitch(liveEnabled, viewModel::setLiveEnabled)
+                }
             }
         }
+    }
+}
+
+/** The Live toggle of Transcriber and Vibe Voice, shown for speech models that can transcribe while recording. */
+@Composable
+internal fun LiveTranscriptionSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
+            Text(
+                text = stringResource(R.string.live_transcription),
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium
+            )
+            Text(
+                text = stringResource(R.string.live_transcription_desc),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Switch(checked = checked, onCheckedChange = onCheckedChange)
     }
 }
 

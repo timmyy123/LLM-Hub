@@ -1212,4 +1212,6 @@ Du forsøger at sende et billede, men den nuværende model er **kun-tekst**:
     <string name="music_stop_generation">Stop generering</string>
     <string name="music_live_pause">Pause</string>
     <string name="music_live_resume">Genoptag</string>
+    <string name="live_transcription">Live-transskription</string>
+    <string name="live_transcription_desc">Teksten vises, mens du taler</string>
 </resources>

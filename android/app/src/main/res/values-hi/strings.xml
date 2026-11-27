@@ -1269,4 +1269,6 @@
     <string name="music_stop_generation">जनरेशन रोकें</string>
     <string name="music_live_pause">रोकें</string>
     <string name="music_live_resume">फिर से चलाएं</string>
+    <string name="live_transcription">लाइव ट्रांसक्रिप्शन</string>
+    <string name="live_transcription_desc">बोलते समय टेक्स्ट दिखाई देता है</string>
 </resources>

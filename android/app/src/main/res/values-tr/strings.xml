@@ -1241,4 +1241,6 @@
     <string name="music_stop_generation">Üretimi durdur</string>
     <string name="music_live_pause">Duraklat</string>
     <string name="music_live_resume">Devam et</string>
+    <string name="live_transcription">Canlı transkripsiyon</string>
+    <string name="live_transcription_desc">Konuşurken metin görünür</string>
 </resources>

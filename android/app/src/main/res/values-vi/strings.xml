@@ -1151,4 +1151,6 @@
     <string name="music_stop_generation">Dừng tạo nhạc</string>
     <string name="music_live_pause">Tạm dừng</string>
     <string name="music_live_resume">Tiếp tục</string>
+    <string name="live_transcription">Chép lời trực tiếp</string>
+    <string name="live_transcription_desc">Văn bản hiện ra khi bạn nói</string>
 </resources>

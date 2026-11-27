@@ -414,11 +414,14 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
                         ModelAvailabilityProvider.loadAvailableModels(context, includeAsr = true)
                             .filter { it.category == "asr" }
                             // Loaded for this one request, so cheapest to start first: Whisper, ML Kit, Parakeet.
+                            // Moonshine and the LiteRT-LM Whisper models load in about a second but transcribe English only,
+                            // so they come after the WhisperKit models, which detect the language.
                             .sortedBy {
                                 when {
                                     it.modelFormat == "whisperkit" -> 0
-                                    com.llmhub.llmhub.data.AsrModels.isMlKit(it) -> 1
-                                    else -> 2
+                                    com.llmhub.llmhub.data.AsrModels.isQuickEnglish(it) -> 1
+                                    com.llmhub.llmhub.data.AsrModels.isMlKit(it) -> 2
+                                    else -> 3
                                 }
                             }
                             .firstOrNull { asrService.loadModel(it) }

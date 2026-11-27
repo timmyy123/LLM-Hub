@@ -1243,4 +1243,6 @@
     <string name="music_stop_generation">إيقاف التوليد</string>
     <string name="music_live_pause">إيقاف مؤقت</string>
     <string name="music_live_resume">استئناف</string>
+    <string name="live_transcription">نسخ مباشر</string>
+    <string name="live_transcription_desc">يظهر النص أثناء حديثك</string>
 </resources>

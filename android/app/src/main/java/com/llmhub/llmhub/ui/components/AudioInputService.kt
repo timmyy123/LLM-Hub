@@ -43,6 +43,12 @@ class AudioInputService(private val context: Context) {
     private val _elapsedTimeMs = MutableStateFlow(0L)
     val elapsedTimeMs: StateFlow<Long> = _elapsedTimeMs.asStateFlow()
 
+    /**
+     * Receives each block of 16 kHz mono PCM16 as it is recorded, on the recording thread, for live
+     * transcription. Must return quickly.
+     */
+    @Volatile var onPcmChunk: ((ByteArray) -> Unit)? = null
+
     // Expose normalized live mic level (0f..1f) for waveform/reactive UI.
     private val _audioLevel = MutableStateFlow(0f)
     val audioLevel: StateFlow<Float> = _audioLevel.asStateFlow()
@@ -328,6 +334,7 @@ class AudioInputService(private val context: Context) {
                     synchronized(pcmStream) {
                         pcmStream.write(data, 0, bytesRead)
                     }
+                    onPcmChunk?.invoke(data.copyOf(bytesRead))
 
                     // Also write to WAV file on disk (optional, retains header)
                     output.write(data, 0, bytesRead)

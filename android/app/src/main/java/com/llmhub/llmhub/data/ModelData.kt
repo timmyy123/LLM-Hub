@@ -1098,6 +1098,20 @@ object ModelData {
             modelFormat = "litertlm"
         ),
         LLMModel(
+            name = LiteRtTtsModel.PHONON_NAME,
+            description = "Phonon 31M by Gradium in Google's LiteRT-LM format. Small, fast English speech with 5 built-in voices; starts speaking in about 50 ms. ~84 MB download.",
+            url = LiteRtTtsModel.PHONON_URL,
+            category = "tts",
+            sizeBytes = LiteRtTtsModel.PHONON_SIZE,
+            source = "Gradium · Apache-2.0 (LiteRT Community)",
+            supportsVision = false,
+            supportsAudio = true,
+            supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 2, recommendedRamGB = 3),
+            contextWindowSize = 0,
+            modelFormat = "litertlm"
+        ),
+        LLMModel(
             name = "Kokoro-82M (ONNX Quantized)",
             description = "8-bit integer quantized Kokoro-82M ONNX model. Good balance of speed and size. ~92 MB download.",
             url = "https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX/resolve/468588286ebb2dd77c25b9771e5d165896538cce/onnx/model_quantized.onnx",
@@ -5513,6 +5527,76 @@ object ModelData {
                 "https://huggingface.co/openai/whisper-base/resolve/main/tokenizer.json",
                 "https://huggingface.co/openai/whisper-base/resolve/main/config.json"
             )
+        ),
+        LLMModel(
+            name = AsrModels.WHISPER_LITERT_NAME,
+            description = "OpenAI Whisper Tiny with int8 weights in Google's LiteRT-LM format. Fast, light English speech recognition on CPU or GPU. ~42 MB download.",
+            url = AsrModels.WHISPER_LITERT_URL,
+            category = "asr",
+            sizeBytes = AsrModels.WHISPER_LITERT_SIZE,
+            source = "OpenAI · Apache-2.0 (LiteRT Community)",
+            supportsVision = false,
+            supportsAudio = true,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 1, recommendedRamGB = 2),
+            contextWindowSize = 0,
+            modelFormat = "litertlm"
+        ),
+        LLMModel(
+            name = AsrModels.MOONSHINE_NAME,
+            description = "Moonshine Tiny with int8 weights in Google's LiteRT-LM format. The fastest and lightest English speech recognition here; short recordings are not padded to 30 seconds. Runs on CPU. ~30 MB download.",
+            url = AsrModels.MOONSHINE_URL,
+            category = "asr",
+            sizeBytes = AsrModels.MOONSHINE_SIZE,
+            source = "Useful Sensors · MIT (LiteRT Community)",
+            supportsVision = false,
+            supportsAudio = true,
+            supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 1, recommendedRamGB = 2),
+            contextWindowSize = 0,
+            modelFormat = "litertlm"
+        ),
+        LLMModel(
+            name = AsrModels.ACFT_TINY_NAME,
+            description = "OpenAI Whisper Tiny (English) fine-tuned by FUTO to listen in 10-second windows, so short recordings are not padded to 30 seconds. Very fast English speech recognition. ~60 MB download.",
+            url = AsrModels.ACFT_TINY_URL,
+            category = "asr",
+            sizeBytes = AsrModels.ACFT_TINY_SIZE,
+            source = "FUTO · Apache-2.0 (LLM Hub build)",
+            supportsVision = false,
+            supportsAudio = true,
+            supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 1, recommendedRamGB = 2),
+            contextWindowSize = 0,
+            modelFormat = "litertlm"
+        ),
+        LLMModel(
+            name = AsrModels.ACFT_BASE_NAME,
+            description = "OpenAI Whisper Base (English) fine-tuned by FUTO to listen in 10-second windows. More accurate than Tiny on hard audio. ~102 MB download.",
+            url = AsrModels.ACFT_BASE_URL,
+            category = "asr",
+            sizeBytes = AsrModels.ACFT_BASE_SIZE,
+            source = "FUTO · Apache-2.0 (LLM Hub build)",
+            supportsVision = false,
+            supportsAudio = true,
+            supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 2, recommendedRamGB = 3),
+            contextWindowSize = 0,
+            modelFormat = "litertlm"
+        ),
+        LLMModel(
+            name = AsrModels.ACFT_SMALL_NAME,
+            description = "OpenAI Whisper Small (English) fine-tuned by FUTO to listen in 10-second windows. The most accurate of the three. ~287 MB download.",
+            url = AsrModels.ACFT_SMALL_URL,
+            category = "asr",
+            sizeBytes = AsrModels.ACFT_SMALL_SIZE,
+            source = "FUTO · Apache-2.0 (LLM Hub build)",
+            supportsVision = false,
+            supportsAudio = true,
+            supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 4),
+            contextWindowSize = 0,
+            modelFormat = "litertlm"
         ),
         LLMModel(
             name = AsrModels.PARAKEET_NAME,

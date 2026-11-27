@@ -31,6 +31,7 @@ class ThemePreferences(private val context: Context) {
         private val GITHUB_STARS_KEY = androidx.datastore.preferences.core.intPreferencesKey("github_stars")
         private val POCKET_VOICE_KEY = stringPreferencesKey("pocket_voice")
         private val POCKET_LITERT_VOICE_KEY = stringPreferencesKey("pocket_litert_voice")
+        private val PHONON_LITERT_VOICE_KEY = stringPreferencesKey("phonon_litert_voice")
         private val SUPERTONIC_VOICE_KEY = stringPreferencesKey("supertonic_voice")
         private val SUPERTONIC_LANGUAGE_KEY = stringPreferencesKey("supertonic_language")
         private val SELECTED_TTS_MODEL_KEY = stringPreferencesKey("selected_tts_model")
@@ -167,6 +168,8 @@ class ThemePreferences(private val context: Context) {
     suspend fun setPocketVoice(voice: String) { context.dataStore.edit { it[POCKET_VOICE_KEY] = voice } }
     val pocketLiteRtVoice: Flow<String> = context.dataStore.data.map { it[POCKET_LITERT_VOICE_KEY] ?: LiteRtTtsModel.POCKET_DEFAULT_VOICE }
     suspend fun setPocketLiteRtVoice(voice: String) { context.dataStore.edit { it[POCKET_LITERT_VOICE_KEY] = voice } }
+    val phononLiteRtVoice: Flow<String> = context.dataStore.data.map { it[PHONON_LITERT_VOICE_KEY] ?: LiteRtTtsModel.PHONON_DEFAULT_VOICE }
+    suspend fun setPhononLiteRtVoice(voice: String) { context.dataStore.edit { it[PHONON_LITERT_VOICE_KEY] = voice } }
     val supertonicVoice: Flow<String> = context.dataStore.data.map { it[SUPERTONIC_VOICE_KEY]?.takeIf { key -> SupertonicModel.isVoiceKey(key) && (key in SupertonicModel.voices || SupertonicModel.voiceFile(context, key) != null) } ?: "M1" }
     val supertonicLanguage: Flow<String> = context.dataStore.data.map { it[SUPERTONIC_LANGUAGE_KEY] ?: "" }
     suspend fun setSupertonicVoice(voice: String) {

@@ -1242,4 +1242,6 @@
     <string name="music_stop_generation">עצירת היצירה</string>
     <string name="music_live_pause">השהיה</string>
     <string name="music_live_resume">המשך</string>
+    <string name="live_transcription">תמלול חי</string>
+    <string name="live_transcription_desc">הטקסט מופיע בזמן הדיבור</string>
 </resources>

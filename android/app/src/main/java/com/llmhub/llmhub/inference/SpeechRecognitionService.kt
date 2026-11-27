@@ -20,7 +20,11 @@ import com.llmhub.llmhub.data.AsrModels
 import com.llmhub.llmhub.data.LLMModel
 import com.llmhub.llmhub.data.localFileName
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -35,6 +39,22 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.util.Locale
 import java.util.concurrent.Executors
+import java.util.concurrent.RejectedExecutionException
+
+/**
+ * A recording transcribed while it is being made: [feed] microphone audio as it arrives and [finish]
+ * when the recording stops. Start one with [SpeechRecognitionService.startLive].
+ */
+interface LiveTranscription {
+    /** 16 kHz mono PCM16, straight from the microphone. Returns at once; recognition runs on the engine's thread. */
+    fun feed(pcm16Bytes: ByteArray)
+
+    /** Ends the stream and returns the whole transcript ("" when nothing was said). */
+    suspend fun finish(): String
+
+    /** Drops the stream without waiting for a result. */
+    fun cancel()
+}
 
 /**
  * One entry point for every speech recognition model in the catalog, so features load and call
@@ -45,11 +65,25 @@ class SpeechRecognitionService(private val context: Context) {
     private var parakeet: ParakeetAsrEngine? = null
     private var parakeetNpu: ParakeetNpuEngine? = null
     private var mlKit: MlKitAsrEngine? = null
+    private var loadedModel: LLMModel? = null
+
+    /** True when the loaded model can transcribe while recording ([AsrModels.supportsLive]). */
+    val supportsLive: Boolean get() = AsrModels.supportsLive(loadedModel) && (parakeet != null || mlKit != null)
+
+    /**
+     * Starts transcribing a recording as it is made, or returns null when the loaded model only takes
+     * whole recordings. [onText] receives the transcript so far, on a background thread.
+     */
+    fun startLive(onText: (String) -> Unit): LiveTranscription? {
+        if (!supportsLive) return null
+        return parakeet?.startLive(onText) ?: mlKit?.startLive(onText)
+    }
 
     val isLoaded: Boolean get() = whisper.isLoaded || parakeet != null || parakeetNpu != null || mlKit != null
 
     suspend fun loadModel(model: LLMModel, backend: WhisperBackend = WhisperBackend.NPU): Boolean {
         release()
+        loadedModel = model
         return when {
             AsrModels.isMlKit(model) -> {
                 val engine = MlKitAsrEngine(AsrModels.isMlKitAdvanced(model))
@@ -62,7 +96,8 @@ class SpeechRecognitionService(private val context: Context) {
             }
             AsrModels.isParakeet(model) -> {
                 val file = File(File(context.filesDir, "models"), model.localFileName())
-                val engine = ParakeetAsrEngine.create(context, file, preferGpu = backend != WhisperBackend.CPU)
+                // Moonshine's GPU path returns empty text, so models without GPU support stay on the CPU.
+                val engine = ParakeetAsrEngine.create(context, file, preferGpu = backend != WhisperBackend.CPU && model.supportsGpu)
                 parakeet = engine
                 engine != null
             }
@@ -88,6 +123,7 @@ class SpeechRecognitionService(private val context: Context) {
     }
 
     fun release() {
+        loadedModel = null
         whisper.release()
         parakeet?.close()
         parakeet = null
@@ -98,19 +134,21 @@ class SpeechRecognitionService(private val context: Context) {
     }
 }
 
-/** Parakeet TDT in Google's `.litertlm` format, on the MediaPipe AudioTranscriber task. */
+/** Google's `.litertlm` speech recognizers (Parakeet TDT, Whisper Tiny, Moonshine Tiny) on the MediaPipe AudioTranscriber task. */
 class ParakeetAsrEngine private constructor(
     private val transcriber: AudioTranscriber,
     private val executor: java.util.concurrent.ExecutorService
 ) {
     private val dispatcher = executor.asCoroutineDispatcher()
 
-    suspend fun transcribe(pcm16Bytes: ByteArray): String? = withContext(dispatcher) {
-        val shorts = ByteBuffer.wrap(pcm16Bytes).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer()
-        val samples = FloatArray(shorts.remaining()) { shorts.get(it) / 32768f }
-        val finals = StringBuilder()
-        var interim = ""
-        fun take(result: AudioTranscriberResult?) {
+    /** Final segments so far plus the latest interim one. */
+    private class Transcript {
+        private val finals = StringBuilder()
+        private var interim = ""
+
+        /** Adds [result]'s segments; true when the text changed. */
+        fun take(result: AudioTranscriberResult?): Boolean {
+            var changed = false
             for (segment in result?.segments().orEmpty()) {
                 val text = segment.transcript().trim()
                 if (text.isEmpty()) continue
@@ -118,22 +156,92 @@ class ParakeetAsrEngine private constructor(
                     if (finals.isNotEmpty()) finals.append(' ')
                     finals.append(text)
                     interim = ""
-                } else interim = text
+                    changed = true
+                } else if (text != interim) {
+                    interim = text
+                    changed = true
+                }
             }
+            return changed
         }
+
+        fun text() = listOf(finals.toString(), interim).filter { it.isNotEmpty() }.joinToString(" ")
+    }
+
+    suspend fun transcribe(pcm16Bytes: ByteArray): String? = withContext(dispatcher) {
+        val samples = floats(pcm16Bytes)
+        val transcript = Transcript()
         try {
             var offset = 0
             while (offset < samples.size) {
                 val end = minOf(offset + CHUNK_SAMPLES, samples.size)
-                take(transcriber.transcribe(samples.copyOfRange(offset, end), false))
+                transcript.take(transcriber.transcribe(samples.copyOfRange(offset, end), false))
                 offset = end
             }
-            take(transcriber.finishStream())
+            transcript.take(transcriber.finishStream())
         } finally {
             // Resets the stream state so the next recording does not continue this one.
             runCatching { transcriber.prewarm() }
         }
-        listOf(finals.toString(), interim).filter { it.isNotEmpty() }.joinToString(" ").ifEmpty { null }
+        transcript.text().ifEmpty { null }
+    }
+
+    /**
+     * Streams microphone audio into the task in 100 ms chunks as it arrives. Every call to the task runs on
+     * the engine's own thread, in order, so a live stream and a batch transcription never overlap.
+     */
+    fun startLive(onText: (String) -> Unit): LiveTranscription {
+        val transcript = Transcript()
+        val pending = FloatArray(CHUNK_SAMPLES)
+        var filled = 0
+        var cancelled = false
+        fun post(block: () -> Unit) = try { executor.execute(block) } catch (_: RejectedExecutionException) { }
+        return object : LiveTranscription {
+            override fun feed(pcm16Bytes: ByteArray) {
+                val samples = floats(pcm16Bytes)
+                post {
+                    if (cancelled) return@post
+                    var offset = 0
+                    while (offset < samples.size) {
+                        val n = minOf(CHUNK_SAMPLES - filled, samples.size - offset)
+                        System.arraycopy(samples, offset, pending, filled, n)
+                        filled += n
+                        offset += n
+                        if (filled == CHUNK_SAMPLES) {
+                            filled = 0
+                            val result = runCatching { transcriber.transcribe(pending.copyOf(), false) }
+                                .onFailure { Log.w(TAG, "Live chunk failed", it) }.getOrNull()
+                            if (transcript.take(result)) onText(transcript.text())
+                        }
+                    }
+                }
+            }
+
+            override suspend fun finish(): String = try {
+                withContext(NonCancellable + dispatcher) {
+                    try {
+                        if (filled > 0) transcript.take(runCatching { transcriber.transcribe(pending.copyOf(filled), false) }.getOrNull())
+                        transcript.take(runCatching { transcriber.finishStream() }.getOrNull())
+                    } finally {
+                        runCatching { transcriber.prewarm() }
+                    }
+                    transcript.text().also(onText)
+                }
+            } catch (_: RejectedExecutionException) {
+                transcript.text() // the engine was closed under the stream
+            }
+
+            override fun cancel() = post {
+                cancelled = true
+                runCatching { transcriber.finishStream() }
+                runCatching { transcriber.prewarm() }
+            }
+        }
+    }
+
+    private fun floats(pcm16Bytes: ByteArray): FloatArray {
+        val shorts = ByteBuffer.wrap(pcm16Bytes).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer()
+        return FloatArray(shorts.remaining()) { shorts.get(it) / 32768f }
     }
 
     fun close() {
@@ -317,6 +425,87 @@ class MlKitAsrEngine(advanced: Boolean, preferred: Locale? = null) {
             runCatching { pipe[0].close() }
         }
         listOf(finals.toString(), partial).filter { it.isNotEmpty() }.joinToString(" ").ifEmpty { null }
+    }
+
+    /**
+     * Pipes microphone audio to the recognizer as it is recorded, the way it expects a microphone: real
+     * time, no feed-speed throttling needed. Null when no recognizer is ready.
+     */
+    fun startLive(onText: (String) -> Unit): LiveTranscription? {
+        val recognizer = recognizer ?: return null
+        val pipe = ParcelFileDescriptor.createPipe()
+        val output = ParcelFileDescriptor.AutoCloseOutputStream(pipe[1])
+        // Pipe writes block while the recognizer is behind; they must not block the recording thread.
+        val writer = Executors.newSingleThreadExecutor { Thread(it, "mlkit-live-feed").apply { isDaemon = true } }
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        val finals = StringBuilder()
+        var partial = ""
+        fun text() = synchronized(finals) { listOf(finals.toString(), partial).filter { it.isNotEmpty() }.joinToString(" ") }
+        val done = CompletableDeferred<Unit>()
+        val job = scope.launch {
+            try {
+                recognizer.startRecognition(speechRecognizerRequest { audioSource = AudioSource.fromPfd(pipe[0]) }).takeWhile { response ->
+                    when (response) {
+                        is SpeechRecognizerResponse.PartialTextResponse -> {
+                            synchronized(finals) { partial = response.text.trim() }
+                            onText(text())
+                            true
+                        }
+                        is SpeechRecognizerResponse.FinalTextResponse -> {
+                            synchronized(finals) {
+                                val piece = response.text.trim()
+                                if (piece.isNotEmpty()) {
+                                    if (finals.isNotEmpty()) finals.append(' ')
+                                    finals.append(piece)
+                                }
+                                partial = ""
+                            }
+                            onText(text())
+                            true
+                        }
+                        is SpeechRecognizerResponse.CompletedResponse -> false
+                        is SpeechRecognizerResponse.ErrorResponse -> throw response.e
+                        else -> true
+                    }
+                }.collect()
+            } catch (e: Exception) {
+                if (e !is kotlinx.coroutines.CancellationException) Log.w(TAG, "Live recognition failed", e)
+            } finally {
+                done.complete(Unit)
+            }
+        }
+        fun shutDown() {
+            writer.shutdownNow()
+            runCatching { output.close() }
+            job.cancel()
+            runCatching { pipe[0].close() }
+            scope.cancel()
+        }
+        return object : LiveTranscription {
+            override fun feed(pcm16Bytes: ByteArray) {
+                try { writer.execute { runCatching { output.write(pcm16Bytes) } } } catch (_: RejectedExecutionException) { }
+            }
+
+            override suspend fun finish(): String = withContext(NonCancellable) {
+                // Let the queued audio reach the pipe, then end it like a microphone that stopped.
+                val flushed = CompletableDeferred<Unit>()
+                try {
+                    writer.execute { runCatching { output.close() }; flushed.complete(Unit) }
+                } catch (_: RejectedExecutionException) {
+                    flushed.complete(Unit)
+                }
+                withTimeoutOrNull(5_000) { flushed.await() }
+                // End of audio does not always end the session on its own; ask for the final results.
+                if (withTimeoutOrNull(1_500) { done.await() } == null) runCatching { recognizer.stopRecognition() }
+                withTimeoutOrNull(10_000) { done.await() }
+                shutDown()
+                text().also(onText)
+            }
+
+            override fun cancel() {
+                scope.launch { runCatching { recognizer.stopRecognition() } }.invokeOnCompletion { shutDown() }
+            }
+        }
     }
 
     fun close() {

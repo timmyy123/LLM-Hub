@@ -79,6 +79,11 @@ class TranscriberViewModel(application: Application) : AndroidViewModel(applicat
     
     private val _transcriptionHistory = MutableStateFlow<List<TranscriptionSession>>(emptyList())
     val transcriptionHistory: StateFlow<List<TranscriptionSession>> = _transcriptionHistory.asStateFlow()
+
+    /** Transcribe while recording (models where [com.llmhub.llmhub.data.AsrModels.supportsLive]). */
+    private val _liveEnabled = MutableStateFlow(prefs.getBoolean("live_transcription", false))
+    val liveEnabled: StateFlow<Boolean> = _liveEnabled.asStateFlow()
+    private var live: com.llmhub.llmhub.inference.LiveTranscription? = null
     
     init {
         loadAvailableModels()
@@ -142,6 +147,58 @@ class TranscriberViewModel(application: Application) : AndroidViewModel(applicat
         _selectedBackend.value = backend
         _selectedNpuDeviceId.value = deviceId
         saveSettings()
+    }
+
+    fun setLiveEnabled(enabled: Boolean) {
+        _liveEnabled.value = enabled
+        prefs.edit().putBoolean("live_transcription", enabled).apply()
+    }
+
+    /**
+     * Called when recording starts. True when the recording is transcribed as it is made (feed it with
+     * [feedLive], end it with [finishLive]); false when it is transcribed after it stops.
+     */
+    fun startLive(): Boolean {
+        live?.cancel()
+        live = null
+        if (!_liveEnabled.value || !_isModelLoaded.value || !com.llmhub.llmhub.data.AsrModels.supportsLive(_selectedModel.value)) return false
+        transcribeJob?.cancel()
+        _transcriptionText.value = ""
+        live = asrService.startLive { text -> _transcriptionText.value = text } ?: return false
+        return true
+    }
+
+    /** Microphone audio (16 kHz mono PCM16) for the live transcription, from the recording thread. */
+    fun feedLive(pcm16Bytes: ByteArray) {
+        live?.feed(pcm16Bytes)
+    }
+
+    /**
+     * Recording stopped: the live transcript becomes the result, with no second pass over the audio. False
+     * when no live transcription was running, so the caller transcribes the recording instead.
+     */
+    fun finishLive(): Boolean {
+        val session = live ?: return false
+        live = null
+        transcribeJob = viewModelScope.launch {
+            _isTranscribing.value = true
+            try {
+                val text = session.finish().trim()
+                if (text.isNotEmpty()) {
+                    _transcriptionHistory.value = _transcriptionHistory.value + TranscriptionSession(text = text)
+                }
+                _transcriptionText.value = ""
+            } finally {
+                _isTranscribing.value = false
+            }
+        }
+        return true
+    }
+
+    /** Drops a live transcription without keeping its text. */
+    fun cancelLive() {
+        live?.cancel()
+        live = null
     }
 
     fun selectAsrBackend(backend: WhisperBackend) {
@@ -212,6 +269,8 @@ class TranscriberViewModel(application: Application) : AndroidViewModel(applicat
         viewModelScope.launch {
             try {
                 transcribeJob?.cancel()
+                live?.cancel()
+                live = null
                 asrMutex.withLock {
                     asrService.release()
                 }

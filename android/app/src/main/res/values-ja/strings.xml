@@ -1240,4 +1240,6 @@
     <string name="music_stop_generation">生成を停止</string>
     <string name="music_live_pause">一時停止</string>
     <string name="music_live_resume">再開</string>
+    <string name="live_transcription">リアルタイム文字起こし</string>
+    <string name="live_transcription_desc">話している間にテキストを表示します</string>
 </resources>

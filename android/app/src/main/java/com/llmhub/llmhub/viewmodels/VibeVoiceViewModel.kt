@@ -94,6 +94,11 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
     private val _transcription = MutableStateFlow("")
     val transcription: StateFlow<String> = _transcription.asStateFlow()
 
+    /** Transcribe while the user speaks (voice models where [com.llmhub.llmhub.data.AsrModels.supportsLive]). */
+    private val _liveEnabled = MutableStateFlow(prefs.getBoolean("live_transcription", false))
+    val liveEnabled: StateFlow<Boolean> = _liveEnabled.asStateFlow()
+    private var live: com.llmhub.llmhub.inference.LiveTranscription? = null
+
     private val _isLoadingModel = MutableStateFlow(false)
     val isLoadingModel: StateFlow<Boolean> = _isLoadingModel.asStateFlow()
 
@@ -289,6 +294,48 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
         _isRecording.value = recording
     }
 
+    fun setLiveEnabled(enabled: Boolean) {
+        _liveEnabled.value = enabled
+        prefs.edit().putBoolean("live_transcription", enabled).apply()
+    }
+
+    /**
+     * Called when listening starts. True when the user's words are transcribed as they speak (feed the
+     * microphone with [feedLive], end with [finishLiveTurn] or [cancelLive]); false when the recording is
+     * transcribed after it stops.
+     */
+    fun startLive(): Boolean {
+        cancelLive()
+        if (!_liveEnabled.value || !_isModelLoaded.value || !com.llmhub.llmhub.data.AsrModels.supportsLive(_selectedVoiceModel.value)) return false
+        live = asrService.startLive { text -> _transcription.value = text } ?: return false
+        _transcription.value = ""
+        return true
+    }
+
+    /** Microphone audio (16 kHz mono PCM16) for the live transcription, from the recording thread. */
+    fun feedLive(pcm16Bytes: ByteArray) {
+        live?.feed(pcm16Bytes)
+    }
+
+    /**
+     * The user stopped speaking: their live transcript is sent as the turn, with no second pass over the
+     * audio. False when no live transcription was running, so the caller sends the recording instead.
+     */
+    fun finishLiveTurn(): Boolean {
+        val session = live ?: return false
+        live = null
+        viewModelScope.launch {
+            sendVoiceTurn(transcriptOverride = session.finish().trim())
+        }
+        return true
+    }
+
+    /** Drops a live transcription (manual stop, a clip too short to send). */
+    fun cancelLive() {
+        live?.cancel()
+        live = null
+    }
+
     fun clearError() {
         _loadError.value = null
     }
@@ -338,6 +385,7 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
         viewModelScope.launch {
             try {
                 respondJob?.cancel()
+                cancelLive()
                 _transcription.value = ""
                 asrMutex.withLock {
                     asrService.release()
@@ -369,9 +417,10 @@ class VibeVoiceViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     /**
-     * [transcriptOverride] (debug screenshot hook only, see ScreenshotHooks.vibeVoiceTranscript)
-     * replaces the recorded audio + ASR step with a fixed transcript; the rest of the turn (LLM reply,
-     * streaming, spoken reply) is the normal ASR path.
+     * [transcriptOverride] replaces the recorded audio + ASR step with a transcript that is already known:
+     * the live transcription's result ([finishLiveTurn]) or the debug screenshot hook's fixed text (see
+     * ScreenshotHooks.vibeVoiceTranscript). The rest of the turn (LLM reply, streaming, spoken reply) is the
+     * normal ASR path.
      */
     fun sendVoiceTurn(audioUri: Uri? = null, transcriptOverride: String? = null) {
         val model = _selectedModel.value ?: return

@@ -1264,4 +1264,6 @@
     <string name="music_stop_generation">Stop generation</string>
     <string name="music_live_pause">Pause</string>
     <string name="music_live_resume">Resume</string>
+    <string name="live_transcription">Live transcription</string>
+    <string name="live_transcription_desc">Text appears while you speak</string>
 </resources>

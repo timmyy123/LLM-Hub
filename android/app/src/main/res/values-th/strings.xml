@@ -1151,4 +1151,6 @@
     <string name="music_stop_generation">หยุดสร้าง</string>
     <string name="music_live_pause">หยุดชั่วคราว</string>
     <string name="music_live_resume">เล่นต่อ</string>
+    <string name="live_transcription">ถอดเสียงแบบเรียลไทม์</string>
+    <string name="live_transcription_desc">ข้อความจะแสดงขณะที่คุณพูด</string>
 </resources>

@@ -261,8 +261,9 @@ fun ModelSelectorCard(
                 
                 // ASR Backend Selection (shown when a WhisperKit voice model is selected)
                 val isWhisperKitVoice = selectedVoiceModel?.modelFormat == "whisperkit"
-                // Parakeet runs on GPU or CPU only; ML Kit picks its own hardware.
-                val isParakeetVoice = com.llmhub.llmhub.data.AsrModels.isParakeet(selectedVoiceModel)
+                // LiteRT-LM recognizers run on GPU or CPU only (CPU only when the model has no working GPU path,
+                // so there is nothing to pick); ML Kit picks its own hardware.
+                val isParakeetVoice = com.llmhub.llmhub.data.AsrModels.isParakeet(selectedVoiceModel) && selectedVoiceModel?.supportsGpu == true
                 if (onAsrBackendSelected != null && (isWhisperKitVoice || isParakeetVoice) && selectedAsrBackend != null) {
                     var showAsrBackendMenu by remember { mutableStateOf(false) }
                     val npuAvailable = isWhisperKitVoice && DeviceInfo.isQualcommNpuSupported()

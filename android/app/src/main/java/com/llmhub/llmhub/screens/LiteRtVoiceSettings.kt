@@ -40,10 +40,12 @@ internal fun LiteRtVoiceSettings(model: String, themeViewModel: ThemeViewModel) 
     val preferences = remember { ThemePreferences(context) }
     val scope = rememberCoroutineScope()
     val isPocket = LiteRtTtsModel.isPocket(model)
+    val isPhonon = LiteRtTtsModel.isPhonon(model)
     val kokoroVoice by themeViewModel.selectedTtsVoice.collectAsState()
     val pocketVoice by preferences.pocketLiteRtVoice.collectAsState(initial = LiteRtTtsModel.POCKET_DEFAULT_VOICE)
+    val phononVoice by preferences.phononLiteRtVoice.collectAsState(initial = LiteRtTtsModel.PHONON_DEFAULT_VOICE)
     val voices = remember(model) { LiteRtTtsModel.voices(model) }
-    val selected = LiteRtTtsModel.resolveVoice(model, if (isPocket) pocketVoice else kokoroVoice)
+    val selected = LiteRtTtsModel.resolveVoice(model, if (isPocket) pocketVoice else if (isPhonon) phononVoice else kokoroVoice)
     var open by remember { mutableStateOf(false) }
 
     SettingsItem(
@@ -56,6 +58,7 @@ internal fun LiteRtVoiceSettings(model: String, themeViewModel: ThemeViewModel) 
     if (open) {
         fun select(voice: String) {
             if (isPocket) scope.launch { preferences.setPocketLiteRtVoice(voice) }
+            else if (isPhonon) scope.launch { preferences.setPhononLiteRtVoice(voice) }
             else themeViewModel.setSelectedTtsVoice(voice)
             open = false
         }
