@@ -138,12 +138,8 @@ android {
             pickFirsts += setOf("**/libmediapipe_tasks_text_jni.so", "**/libonnxruntime.so")
             // Exclude DeepSeek OCR library to avoid 16KB page alignment issues
             excludes += setOf("**/libdeepseek-ocr.so")
-            // WhisperKit 0.3.3 ships 4KB-aligned .so files (upstream bug, not yet fixed).
-            // Android only enforces 16KB page alignment on API 35+ devices with new kernel.
-            // These libs still load correctly on all current devices; suppress the build warning.
-            // Track: https://github.com/argmaxinc/WhisperKitAndroid/issues
-            // QNN runtime libraries for other features are delivered separately.
-            // NOTE: libQnnTFLiteDelegate.so must NOT be excluded — WhisperKit needs it in the APK
+            // QNN runtime libraries are delivered separately (qnn_pack, assets/qnnlibs_litert); keep any copy a
+            // dependency brings out of the APK.
             excludes += setOf(
                 "**/libQnnHtp*.so",
                 "**/libQnnHtpPrepare.so",
@@ -179,7 +175,7 @@ android {
 
 }
 
-// Patch 4KB-aligned .so files from WhisperKit and other dependencies to 16KB page alignment.
+// Patch 4KB-aligned .so files from dependencies to 16KB page alignment.
 // Android enforces 16KB alignment on API 35+ devices. We patch the PT_LOAD p_align field in
 // the ELF program headers directly — this is safe because p_align is advisory metadata only;
 // the actual file/memory layout is unchanged. patchelf does the same thing.
@@ -345,7 +341,7 @@ dependencies {
     // PDF text extraction - using iText7 Community for Android compatibility
     implementation("com.itextpdf:itext7-core:7.2.5")
     
-    // Ktor for networking — must match WhisperKit's transitive Ktor 3.x dependency
+    // Ktor for networking (3.x)
     implementation("io.ktor:ktor-client-android:3.1.0")
     implementation("io.ktor:ktor-client-content-negotiation:3.1.0")
     implementation("io.ktor:ktor-serialization-kotlinx-json:3.1.0")
@@ -421,10 +417,6 @@ dependencies {
     // IPA Transcribers - pure-Kotlin G2P fallback for Kokoro TTS
     implementation("com.github.medavox:IPA-Transcribers:v0.2")
 
-    // WhisperKit for fast on-device ASR (TFLite + QNN NPU acceleration)
-    implementation("com.argmaxinc:whisperkit:0.3.3")
-    implementation("com.qualcomm.qti:qnn-runtime:2.34.0")
-    implementation("com.qualcomm.qti:qnn-litert-delegate:2.34.0")
 
     // Play Core for asset pack access at runtime
     implementation("com.google.android.play:asset-delivery:2.2.2")

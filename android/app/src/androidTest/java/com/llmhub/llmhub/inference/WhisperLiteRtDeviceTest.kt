@@ -8,6 +8,7 @@ import android.util.Log
 import androidx.test.platform.app.InstrumentationRegistry
 import com.llmhub.llmhub.data.LiteRtTtsModel
 import com.llmhub.llmhub.data.ModelData
+import com.llmhub.llmhub.data.localFileName
 import com.llmhub.llmhub.imagegen.OnDeviceFixtures
 import kotlinx.coroutines.runBlocking
 import org.json.JSONArray
@@ -19,7 +20,7 @@ import java.io.File
 /**
  * The non-Chinese int8 `.litertlm` speech recognizers in litert-community's ASR collection (Whisper Tiny,
  * Moonshine Tiny, Parakeet CTC, Parakeet TDT v3) on the MediaPipe AudioTranscriber task, next to the
- * FP32 WhisperKit Tiny the catalog ships (GitHub issue 128).
+ * whisper.cpp Whisper models the catalog ships (GitHub issue 128; whisper.cpp replaced WhisperKit).
  * Each test downloads what it needs into the app's models folder; results go to logcat as `RESULT {...}`.
  */
 class WhisperLiteRtDeviceTest {
@@ -47,11 +48,53 @@ class WhisperLiteRtDeviceTest {
 
     @Test fun parakeetTdtV3Gpu() = liteRt(PARAKEET_TDT, "parakeet_tdt_0.6b_v3_5s_i8_stateful.litertlm", PARAKEET_TDT_SHA256, preferGpu = true)
 
-    @Test fun whisperKitNpu() = whisperKit(WhisperBackend.NPU)
+    /** whisper.cpp, which replaced WhisperKit. `-e threads N` overrides the thread count (default 4). */
+    @Test fun whisperCppTiny() = whisperCpp("Whisper Tiny (Multilingual)")
 
-    @Test fun whisperKitGpu() = whisperKit(WhisperBackend.GPU)
+    @Test fun whisperCppTinyEnglish() = whisperCpp("Whisper Tiny (English-only)")
 
-    @Test fun whisperKitCpu() = whisperKit(WhisperBackend.CPU)
+    @Test fun whisperCppBase() = whisperCpp("Whisper Base (Multilingual)")
+
+    @Test fun whisperCppBaseEnglish() = whisperCpp("Whisper Base (English-only)")
+
+    @Test fun whisperCppSmallEnglish() = whisperCpp("Whisper Small (English-only)")
+
+    /**
+     * Any ggml file from ggerganov/whisper.cpp on any accelerator, outside the catalog: `-e file ggml-medium-q5_0.bin`
+     * (default ggml-tiny-q8_0.bin), `-e accelerator CPU|VULKAN|OPENCL|HEXAGON`, `-e threads N`, `-e flash false`,
+     * `-e language en`, `-e skipLong true`. The file is deleted afterwards unless the catalog lists it.
+     */
+    @Test fun whisperCppFile() {
+        val args = InstrumentationRegistry.getArguments()
+        args.getString("threads")?.toIntOrNull()?.let { WhisperCppService.threads = it }
+        WhisperCppService.flashAttn = args.getString("flash") != "false"
+        whisperCppOn(args.getString("file") ?: "ggml-tiny-q8_0.bin",
+            WhisperAccelerator.valueOf(args.getString("accelerator") ?: "CPU"), args.getString("language") ?: "auto")
+    }
+
+    // Named runs for Device Farm, which cannot pass instrumentation arguments. Vulkan is for Mali and other
+    // non-Adreno GPUs: ggml's Vulkan shaders do not compile on Adreno.
+    @Test fun whisperCppTinyCpu() = whisperCppOn("ggml-tiny-q8_0.bin", WhisperAccelerator.CPU)
+
+    @Test fun whisperCppBaseCpu() = whisperCppOn("ggml-base-q8_0.bin", WhisperAccelerator.CPU)
+
+    @Test fun whisperCppTinyVulkan() = whisperCppOn("ggml-tiny-q8_0.bin", WhisperAccelerator.VULKAN)
+
+    @Test fun whisperCppBaseVulkan() = whisperCppOn("ggml-base-q8_0.bin", WhisperAccelerator.VULKAN)
+
+    private fun whisperCppOn(name: String, accelerator: WhisperAccelerator, language: String = "auto") = runBlocking {
+        val file = File(models, name)
+        OnDeviceFixtures.download(file, "${com.llmhub.llmhub.data.AsrModels.WHISPER_CPP_BASE_URL}/$name", WHISPER_CPP_SHA256.getValue(name))
+        try {
+            measure("whisper.cpp $name ${accelerator.name.lowercase()} ${WhisperCppService.threads}t fa=${WhisperCppService.flashAttn}") {
+                val service = WhisperCppService(context)
+                check(service.load(file, accelerator)) { "whisper.cpp did not load $name on $accelerator" }
+                Recognizer({ service.transcribe(it, language).orEmpty() }, service::release)
+            }
+        } finally {
+            if (ModelData.models.none { it.localFileName() == name }) file.delete()
+        }
+    }
 
     private fun liteRt(repo: String, file: String, sha256: String, preferGpu: Boolean) = runBlocking {
         val model = File(models, file)
@@ -63,16 +106,13 @@ class WhisperLiteRtDeviceTest {
         }
     }
 
-    private fun whisperKit(backend: WhisperBackend) = runBlocking {
-        val catalog = ModelData.models.first { it.name == "Whisper Tiny (Multilingual)" }
-        val dir = File(models, "Whisper_Tiny_Multilingual").apply { mkdirs() }
-        for (url in listOf(catalog.url) + catalog.additionalFiles) {
-            val name = url.substringAfterLast('/')
-            OnDeviceFixtures.download(File(dir, name), url, WHISPERKIT_SHA256.getValue(name))
-        }
-        measure("whisperkit tiny ${backend.name.lowercase()}") {
+    private fun whisperCpp(name: String) = runBlocking {
+        val catalog = ModelData.models.first { it.name == name }
+        OnDeviceFixtures.download(File(models, catalog.localFileName()), catalog.url, WHISPER_CPP_SHA256.getValue(catalog.url.substringAfterLast('/')))
+        InstrumentationRegistry.getArguments().getString("threads")?.toIntOrNull()?.let { WhisperCppService.threads = it }
+        measure("whisper.cpp ${name.lowercase()} ${WhisperCppService.threads} threads") {
             val service = SpeechRecognitionService(context)
-            check(service.loadModel(catalog, backend)) { "WhisperKit did not load on $backend" }
+            check(service.loadModel(catalog, WhisperBackend.CPU)) { "whisper.cpp did not load $name" }
             Recognizer({ service.transcribe(it).orEmpty() }, service::release)
         }
     }
@@ -234,12 +274,19 @@ class WhisperLiteRtDeviceTest {
         const val PARAKEET_TDT_SHA256 = "66c5a74cf6c2c1d2b990901f6cece5bb53e3214dbceafa0989900a6f0eeb3504"
         const val LITERT_SHA256 = "92f194600d98e1d94b1ff6f636d109c0f4ac66f3f6a1803f7a665e93daf78012"
         const val LITERT_STATEFUL_SHA256 = "acb6585d69c9c5bc7d392608d1da0a946cd18e0bd59677da95e78b40bc8d7a26"
-        val WHISPERKIT_SHA256 = mapOf(
-            "AudioEncoder.tflite" to "e8b3333d3625da8935ed61d0475cf5e10a6d096008cec128f0262c751a03406a",
-            "MelSpectrogram.tflite" to "71c0c30975ce22c25e9ad17da917420506e99e101c78510acb213586936d26a1",
-            "TextDecoder.tflite" to "86846936c0224e7a567ca5df54edba83fda58ba6e177a35ec63b7838fa255cfb",
-            "tokenizer.json" to "27fc476bfe7f17299480be2273fc0608e4d5a99aba2ab5dec5374b4482d1a566",
-            "config.json" to "ffdccec4f3211f4c63310f2b7098f309fe70f3952cedc5e4d11e43f5b2379b98",
+        val WHISPER_CPP_SHA256 = mapOf(
+            "ggml-tiny-q8_0.bin" to "c2085835d3f50733e2ff6e4b41ae8a2b8d8110461e18821b09a15c40c42d1cca",
+            "ggml-tiny.en-q8_0.bin" to "5bc2b3860aa151a4c6e7bb095e1fcce7cf12c7b020ca08dcec0c6d018bb7dd94",
+            "ggml-base-q8_0.bin" to "c577b9a86e7e048a0b7eada054f4dd79a56bbfa911fbdacf900ac5b567cbb7d9",
+            "ggml-base.en-q8_0.bin" to "a4d4a0768075e13cfd7e19df3ae2dbc4a68d37d36a7dad45e8410c9a34f8c87e",
+            "ggml-small-q8_0.bin" to "49c8fb02b65e6049d5fa6c04f81f53b867b5ec9540406812c643f177317f779f",
+            "ggml-small.en-q8_0.bin" to "67a179f608ea6114bd3fdb9060e762b588a3fb3bd00c4387971be4d177958067",
+            "ggml-medium-q5_0.bin" to "19fea4b380c3a618ec4723c3eef2eb785ffba0d0538cf43f8f235e7b3b34220f",
+            "ggml-medium.en-q5_0.bin" to "76733e26ad8fe1c7a5bf7531a9d41917b2adc0f20f2e4f5531688a8c6cd88eb0",
+            "ggml-medium-q8_0.bin" to "42a1ffcbe4167d224232443396968db4d02d4e8e87e213d3ee2e03095dea6502",
+            "ggml-large-v3-turbo-q5_0.bin" to "394221709cd5ad1f40c46e6031ca61bce88931e6e088c188294c6d5a55ffa7e2",
+            "ggml-large-v3-turbo-q8_0.bin" to "317eb69c11673c9de1e1f0d459b253999804ec71ac4c23c17ecf5fbe24e259a1",
+            "ggml-large-v3-q5_0.bin" to "d75795ecff3f83b5faa89d1900604ad8c780abd5739fae406de19f23ecd98ad1",
         )
     }
 }

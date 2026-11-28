@@ -21,14 +21,22 @@ import java.io.File
  * Opt-in physical-device check that a GGUF model runs on the GPU through [LlamaCppInferenceService] with the app's
  * backend rules: OpenCL on Snapdragon SoCs where llama.cpp Vulkan crashes (e.g. Galaxy S25), Vulkan elsewhere.
  * Pass `-e downloadFixtures 1` to fetch LFM-2.5 1.2B Q4_0 on the phone, and `-e flashAttention -1|0|1` to override
- * llama.cpp's flash attention choice; results go to logcat.
+ * llama.cpp's flash attention choice; results go to logcat. The *Downloaded tests always download (for AWS Device Farm,
+ * which cannot pass instrumentation arguments).
  */
 class LlamaCppGpuDeviceTest {
-    @Test fun ggufGeneratesOnGpu() = runBlocking {
+    @Test fun ggufGeneratesOnGpu() = generate(LlmInference.Backend.GPU,
+        InstrumentationRegistry.getArguments().getString("downloadFixtures") == "1")
+
+    @Test fun ggufGeneratesOnGpuDownloaded() = generate(LlmInference.Backend.GPU, download = true)
+
+    @Test fun ggufGeneratesOnCpuDownloaded() = generate(LlmInference.Backend.CPU, download = true)
+
+    private fun generate(backend: LlmInference.Backend, download: Boolean) = runBlocking<Unit> {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val model = ModelData.models.first { it.name == "LFM-2.5 1.2B Instruct (Q4_0)" }
         val file = File(File(context.filesDir, "models").apply { mkdirs() }, model.localFileName())
-        if (InstrumentationRegistry.getArguments().getString("downloadFixtures") == "1") {
+        if (download) {
             OnDeviceFixtures.download(
                 file,
                 "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Instruct-GGUF/resolve/8ed288026e23958ad9dfa92d53ed773a8eee7125/LFM2.5-1.2B-Instruct-Q4_0.gguf",
@@ -38,7 +46,7 @@ class LlamaCppGpuDeviceTest {
         assertTrue("Missing ${file.name}", file.isFile)
         val report = JSONObject().put("model", Build.MODEL).put("soc", Build.SOC_MODEL).put("android", Build.VERSION.RELEASE)
             .put("vulkanBlocked", DeviceInfo.isLlamaCppVulkanBlocked())
-            .put("usesVulkan", ThemePreferences(context).ggufUseVulkan.first())
+            .put("usesVulkan", ThemePreferences(context).ggufUseVulkan.first()).put("backend", backend.name)
 
         val service = LlamaCppInferenceService(context)
         // -e flashAttention -1|0|1 overrides llama.cpp's flash attention choice.
@@ -46,12 +54,16 @@ class LlamaCppGpuDeviceTest {
         report.put("flashAttention", service.flashAttention)
         try {
             var started = SystemClock.elapsedRealtime()
-            val loaded = service.loadModel(model, LlmInference.Backend.GPU, null)
+            val loaded = service.loadModel(model, backend, null)
             report.put("loaded", loaded).put("loadMs", SystemClock.elapsedRealtime() - started)
             assertTrue("The GGUF model must load", loaded)
             started = SystemClock.elapsedRealtime()
             val reply = service.generateResponse("What is the capital of France? Answer in one word.", model)
             report.put("generateMs", SystemClock.elapsedRealtime() - started).put("reply", reply.take(200))
+            started = SystemClock.elapsedRealtime()
+            val story = service.generateResponse("Write a 150 word story about a lighthouse keeper.", model)
+            report.put("storyMs", SystemClock.elapsedRealtime() - started).put("storyWords", story.split(Regex("\\s+")).size)
+                .put("story", story.take(300))
             Log.i(TAG, "RESULT $report")
             assertTrue("The model must answer", reply.isNotBlank())
             assertTrue("Unexpected answer: $reply", reply.contains("Paris", ignoreCase = true))

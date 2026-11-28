@@ -304,7 +304,7 @@ class TranscriberViewModel(application: Application) : AndroidViewModel(applicat
                 if (model.category == "asr") {
                     val pcm16Wav = AudioConversionUtils.float32WavToPcm16Wav(audioBytes)
                     android.util.Log.d("TranscriberViewModel", "ASR batch: input=${audioBytes.size}B float32WAV → pcm16WAV=${pcm16Wav.size}B")
-                    // Strip WAV header (44 bytes) to get raw PCM16 bytes for WhisperKit
+                    // Strip WAV header (44 bytes) to get raw PCM16 bytes for the speech recognizer
                     val pcm16Raw = if (pcm16Wav.size > 44) pcm16Wav.copyOfRange(44, pcm16Wav.size) else pcm16Wav
                     android.util.Log.d("TranscriberViewModel", "ASR batch: model=${model.name}, pcmBytes=${pcm16Raw.size}B")
 

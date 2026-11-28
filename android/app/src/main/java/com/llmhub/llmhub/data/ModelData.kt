@@ -37,6 +37,18 @@ object DeviceInfo {
     fun isTensorG5(): Boolean =
         Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && Build.SOC_MODEL.equals("Tensor G5", ignoreCase = true)
 
+    /**
+     * Tensor G5 and later, which have PowerVR GPUs. ggml's Vulkan backend returns noise there (Whisper on the
+     * Pixel 10 and Pixel 11) or never finishes a reply (a GGUF LLM on the Pixel 11 produced no token in 25 minutes).
+     */
+    fun isTensorPowerVr(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return false
+        val generation = TENSOR_GENERATION.matchEntire(Build.SOC_MODEL.trim())?.groupValues?.get(1)?.toIntOrNull()
+        return generation != null && generation >= 5
+    }
+
+    private val TENSOR_GENERATION = Regex("""Tensor G(\d+)""", RegexOption.IGNORE_CASE)
+
     /** Snapdragon (Adreno) devices, where ggml's Vulkan backend is not usable. */
     fun isSnapdragon(): Boolean {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
@@ -82,7 +94,8 @@ object DeviceInfo {
         return chipsetModelSuffixes[soc] ?: if (soc.startsWith("SM")) "min" else null
     }
 
-    // Not 8gen6: WhisperKit's QNN 2.34 runtime has no Hexagon v85.
+    // Snapdragon chips that default speech recognition to an accelerator and get the GGUF NPU badge. The list
+    // dates from WhisperKit (gone), whose QNN 2.34 runtime had no Hexagon v85, hence no 8gen6.
     fun isQualcommNpuSupported(): Boolean {
         return getChipsetSuffix() in setOf("888", "8gen1", "8gen2", "8gen3", "8gen4", "8gen5", "7gen4")
     }
@@ -110,10 +123,11 @@ object DeviceInfo {
     }
 
     /**
-     * llama.cpp Vulkan is unusable on Adreno drivers (Snapdragon uses OpenCL) and on drivers below
-     * Vulkan 1.2, so the setting is hidden there.
+     * llama.cpp Vulkan is unusable on Adreno drivers (Snapdragon uses OpenCL), on drivers below
+     * Vulkan 1.2 and on the PowerVR GPUs of Tensor G5 and later, so the setting is hidden there.
+     * Whisper (whisper.cpp) follows the same rule for its GPU option.
      */
-    fun isLlamaCppVulkanBlocked(): Boolean = isSnapdragon() || !hasVulkan12
+    fun isLlamaCppVulkanBlocked(): Boolean = isSnapdragon() || !hasVulkan12 || isTensorPowerVr()
 
     /**
      * SoC tag used in the chip-specific EmbeddingGemma 2 file names
@@ -5445,88 +5459,105 @@ object ModelData {
             modelFormat = "gguf"
         ),
 
-        // WhisperKit ASR Models (TFLite + QNN NPU acceleration via argmaxinc/WhisperKit)
-        // Each model needs 5 files: AudioEncoder.tflite, MelSpectrogram.tflite, TextDecoder.tflite,
-        // tokenizer.json, config.json — all required by the WhisperKit JNI layer.
+        // Whisper on whisper.cpp (the engine the Nexa SDK's whisper_cpp plugin wrapped), 8-bit ggml models from
+        // ggerganov/whisper.cpp pinned to a commit. One file each; runs on the CPU (see WhisperCppService).
         LLMModel(
             name = "Whisper Tiny (English-only)",
-            description = "Ultra-fast English-only ASR with NPU acceleration",
-            url = "https://huggingface.co/argmaxinc/whisperkit-litert/resolve/main/openai_whisper-tiny.en/AudioEncoder.tflite",
+            description = "OpenAI Whisper Tiny for English, quantized to 8 bits. Fast and light. ~44 MB download.",
+            url = "${AsrModels.WHISPER_CPP_BASE_URL}/ggml-tiny.en-q8_0.bin",
             category = "asr",
-            sizeBytes = 155209020L, // 3 TFLite + tokenizer.json (2405679) + config.json (1937)
-            source = "OpenAI via WhisperKit",
+            sizeBytes = 43550795L,
+            source = "OpenAI · MIT (whisper.cpp)",
             supportsVision = false,
             supportsAudio = true,
-            supportsGpu = true,
+            supportsGpu = false,
             requirements = ModelRequirements(minRamGB = 1, recommendedRamGB = 2),
             contextWindowSize = 0,
-            modelFormat = "whisperkit",
-            additionalFiles = listOf(
-                "https://huggingface.co/argmaxinc/whisperkit-litert/resolve/main/openai_whisper-tiny.en/MelSpectrogram.tflite",
-                "https://huggingface.co/argmaxinc/whisperkit-litert/resolve/main/openai_whisper-tiny.en/TextDecoder.tflite",
-                "https://huggingface.co/openai/whisper-tiny.en/resolve/main/tokenizer.json",
-                "https://huggingface.co/openai/whisper-tiny.en/resolve/main/config.json"
-            )
+            modelFormat = AsrModels.WHISPER_CPP_FORMAT
         ),
         LLMModel(
             name = "Whisper Tiny (Multilingual)",
-            description = "Ultra-fast multilingual ASR with NPU acceleration and auto language detect",
-            url = "https://huggingface.co/argmaxinc/whisperkit-litert/resolve/main/openai_whisper-tiny/AudioEncoder.tflite",
+            description = "OpenAI Whisper Tiny for 99 languages with automatic language detection, quantized to 8 bits. ~44 MB download.",
+            url = "${AsrModels.WHISPER_CPP_BASE_URL}/ggml-tiny-q8_0.bin",
             category = "asr",
-            sizeBytes = 155232685L, // 3 TFLite + tokenizer.json (2480466) + config.json (1983)
-            source = "OpenAI via WhisperKit",
+            sizeBytes = 43537433L,
+            source = "OpenAI · MIT (whisper.cpp)",
             supportsVision = false,
             supportsAudio = true,
-            supportsGpu = true,
+            supportsGpu = false,
             requirements = ModelRequirements(minRamGB = 1, recommendedRamGB = 2),
             contextWindowSize = 0,
-            modelFormat = "whisperkit",
-            additionalFiles = listOf(
-                "https://huggingface.co/argmaxinc/whisperkit-litert/resolve/main/openai_whisper-tiny/MelSpectrogram.tflite",
-                "https://huggingface.co/argmaxinc/whisperkit-litert/resolve/main/openai_whisper-tiny/TextDecoder.tflite",
-                "https://huggingface.co/openai/whisper-tiny/resolve/main/tokenizer.json",
-                "https://huggingface.co/openai/whisper-tiny/resolve/main/config.json"
-            )
+            modelFormat = AsrModels.WHISPER_CPP_FORMAT
         ),
         LLMModel(
             name = "Whisper Base (English-only)",
-            description = "Fast English-only ASR with NPU acceleration",
-            url = "https://huggingface.co/argmaxinc/whisperkit-litert/resolve/main/openai_whisper-base.en/AudioEncoder.tflite",
+            description = "OpenAI Whisper Base for English, quantized to 8 bits. More accurate than Tiny. ~82 MB download.",
+            url = "${AsrModels.WHISPER_CPP_BASE_URL}/ggml-base.en-q8_0.bin",
             category = "asr",
-            sizeBytes = 294658912L, // 3 TFLite + tokenizer.json (2405679) + config.json (1937)
-            source = "OpenAI via WhisperKit",
+            sizeBytes = 81781811L,
+            source = "OpenAI · MIT (whisper.cpp)",
             supportsVision = false,
             supportsAudio = true,
-            supportsGpu = true,
+            supportsGpu = false,
             requirements = ModelRequirements(minRamGB = 2, recommendedRamGB = 3),
             contextWindowSize = 0,
-            modelFormat = "whisperkit",
-            additionalFiles = listOf(
-                "https://huggingface.co/argmaxinc/whisperkit-litert/resolve/main/openai_whisper-base.en/MelSpectrogram.tflite",
-                "https://huggingface.co/argmaxinc/whisperkit-litert/resolve/main/openai_whisper-base.en/TextDecoder.tflite",
-                "https://huggingface.co/openai/whisper-base.en/resolve/main/tokenizer.json",
-                "https://huggingface.co/openai/whisper-base.en/resolve/main/config.json"
-            )
+            modelFormat = AsrModels.WHISPER_CPP_FORMAT
         ),
         LLMModel(
             name = "Whisper Base (Multilingual)",
-            description = "Fast multilingual ASR with NPU acceleration and auto language detect",
-            url = "https://huggingface.co/argmaxinc/whisperkit-litert/resolve/main/openai_whisper-base/AudioEncoder.tflite",
+            description = "OpenAI Whisper Base for 99 languages with automatic language detection, quantized to 8 bits. ~82 MB download.",
+            url = "${AsrModels.WHISPER_CPP_BASE_URL}/ggml-base-q8_0.bin",
             category = "asr",
-            sizeBytes = 294735793L, // 3 TFLite + tokenizer.json (2480466) + config.json (1983)
-            source = "OpenAI via WhisperKit",
+            sizeBytes = 81768585L,
+            source = "OpenAI · MIT (whisper.cpp)",
             supportsVision = false,
             supportsAudio = true,
-            supportsGpu = true,
+            supportsGpu = false,
             requirements = ModelRequirements(minRamGB = 2, recommendedRamGB = 3),
             contextWindowSize = 0,
-            modelFormat = "whisperkit",
-            additionalFiles = listOf(
-                "https://huggingface.co/argmaxinc/whisperkit-litert/resolve/main/openai_whisper-base/MelSpectrogram.tflite",
-                "https://huggingface.co/argmaxinc/whisperkit-litert/resolve/main/openai_whisper-base/TextDecoder.tflite",
-                "https://huggingface.co/openai/whisper-base/resolve/main/tokenizer.json",
-                "https://huggingface.co/openai/whisper-base/resolve/main/config.json"
-            )
+            modelFormat = AsrModels.WHISPER_CPP_FORMAT
+        ),
+        LLMModel(
+            name = "Whisper Small (English-only)",
+            description = "OpenAI Whisper Small for English, quantized to 8 bits. The most accurate Whisper here; slower. ~264 MB download.",
+            url = "${AsrModels.WHISPER_CPP_BASE_URL}/ggml-small.en-q8_0.bin",
+            category = "asr",
+            sizeBytes = 264477561L,
+            source = "OpenAI · MIT (whisper.cpp)",
+            supportsVision = false,
+            supportsAudio = true,
+            supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 4),
+            contextWindowSize = 0,
+            modelFormat = AsrModels.WHISPER_CPP_FORMAT
+        ),
+        LLMModel(
+            name = "Whisper Small (Multilingual)",
+            description = "OpenAI Whisper Small for 99 languages with automatic language detection, quantized to 8 bits. Slower. ~264 MB download.",
+            url = "${AsrModels.WHISPER_CPP_BASE_URL}/ggml-small-q8_0.bin",
+            category = "asr",
+            sizeBytes = 264464607L,
+            source = "OpenAI · MIT (whisper.cpp)",
+            supportsVision = false,
+            supportsAudio = true,
+            supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 4),
+            contextWindowSize = 0,
+            modelFormat = AsrModels.WHISPER_CPP_FORMAT
+        ),
+        LLMModel(
+            name = "Whisper Large v3 Turbo (Multilingual)",
+            description = "OpenAI Whisper Large v3 Turbo for 99 languages with automatic language detection, quantized to 8 bits. The most accurate Whisper here. Fast on the Snapdragon NPU (choose NPU), very slow on the CPU. ~874 MB download.",
+            url = "${AsrModels.WHISPER_CPP_BASE_URL}/ggml-large-v3-turbo-q8_0.bin",
+            category = "asr",
+            sizeBytes = 874188075L,
+            source = "OpenAI · MIT (whisper.cpp)",
+            supportsVision = false,
+            supportsAudio = true,
+            supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 6),
+            contextWindowSize = 0,
+            modelFormat = AsrModels.WHISPER_CPP_FORMAT
         ),
         LLMModel(
             name = AsrModels.WHISPER_LITERT_NAME,

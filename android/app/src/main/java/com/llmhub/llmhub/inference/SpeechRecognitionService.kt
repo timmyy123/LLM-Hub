@@ -41,6 +41,9 @@ import java.util.Locale
 import java.util.concurrent.Executors
 import java.util.concurrent.RejectedExecutionException
 
+/** Where a speech recognizer runs, for the models that offer a choice (Parakeet: GPU or CPU). */
+enum class WhisperBackend { CPU, GPU, NPU }
+
 /**
  * A recording transcribed while it is being made: [feed] microphone audio as it arrives and [finish]
  * when the recording stops. Start one with [SpeechRecognitionService.startLive].
@@ -61,11 +64,12 @@ interface LiveTranscription {
  * Whisper, Parakeet and ML Kit the same way: [loadModel], then [transcribe] 16 kHz mono PCM16.
  */
 class SpeechRecognitionService(private val context: Context) {
-    private val whisper = WhisperKitService(context)
+    private val whisper = WhisperCppService(context)
     private var parakeet: ParakeetAsrEngine? = null
     private var parakeetNpu: ParakeetNpuEngine? = null
     private var mlKit: MlKitAsrEngine? = null
     private var loadedModel: LLMModel? = null
+    private var whisperLanguage = "auto"
 
     /** True when the loaded model can transcribe while recording ([AsrModels.supportsLive]). */
     val supportsLive: Boolean get() = AsrModels.supportsLive(loadedModel) && (parakeet != null || mlKit != null)
@@ -101,12 +105,19 @@ class SpeechRecognitionService(private val context: Context) {
                 parakeet = engine
                 engine != null
             }
-            else -> {
-                val dirName = model.name.replace(" ", "_").replace(Regex("[^a-zA-Z0-9_.-]"), "")
-                // English-only Whisper checkpoints need the language forced; multilingual ones auto-detect.
-                whisper.transcribeLanguage = if (model.name.contains("english", ignoreCase = true)) "en" else ""
-                whisper.loadModel(File(context.filesDir, "models/$dirName").absolutePath, backend)
+            AsrModels.isWhisperCpp(model) -> {
+                // English-only checkpoints transcribe English; multilingual ones detect the language.
+                whisperLanguage = if (AsrModels.isEnglishOnly(model)) "en" else "auto"
+                // NPU: the Hexagon backend of the official llama.cpp Snapdragon release (chips it supports).
+                // GPU: the app's Vulkan build, on the chips where GGUF LLMs may use Vulkan.
+                val accelerator = when {
+                    backend == WhisperBackend.NPU && AsrModels.whisperNpuAvailable() -> WhisperAccelerator.HEXAGON
+                    backend == WhisperBackend.GPU && AsrModels.whisperGpuAvailable() -> WhisperAccelerator.VULKAN
+                    else -> WhisperAccelerator.CPU
+                }
+                whisper.load(File(File(context.filesDir, "models"), model.localFileName()), accelerator)
             }
+            else -> false
         }
     }
 
@@ -119,7 +130,7 @@ class SpeechRecognitionService(private val context: Context) {
         parakeet?.let { return it.transcribe(pcm16Bytes).orEmpty() }
         parakeetNpu?.let { return it.transcribe(pcm16Bytes).orEmpty() }
         mlKit?.let { return it.transcribe(pcm16Bytes).orEmpty() }
-        return whisper.transcribe(pcm16Bytes, whisper.transcribeLanguage)
+        return whisper.transcribe(pcm16Bytes, whisperLanguage)
     }
 
     fun release() {

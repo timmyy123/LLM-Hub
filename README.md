@@ -89,7 +89,7 @@ The **AI Agent** turns on-device LLMs into autonomous assistants with device fun
 
 ### Supported ASR Models (Android)
 The offline **Transcriber** on Android works with dedicated speech recognition models and with chat models that take audio input:
-- **Whisper Tiny and Base** (English-only and multilingual) through WhisperKit on LiteRT, with Qualcomm NPU acceleration on supported Snapdragon chips.
+- **Whisper Tiny, Base, Small and Large v3 Turbo** (English-only and multilingual, 8-bit quantized) on [whisper.cpp](https://github.com/ggml-org/whisper.cpp): on the CPU with the same optimized code as the GGUF chat models, on the GPU (Vulkan) on Exynos, MediaTek and Tensor G4 or older chips, or on the Hexagon NPU on supported Snapdragon chips.
 - **Whisper Tiny int8** in Google's LiteRT-LM format (~42 MB): fast English transcription on CPU or GPU.
 - **Moonshine Tiny** (~30 MB): the fastest and lightest English model, on CPU.
 - **Whisper ACFT Tiny, Base and Small** (English, ~60 to 287 MB): FUTO's Whisper fine-tuned for 10-second windows, so short recordings are not padded to 30 seconds.
@@ -199,9 +199,9 @@ Quick Start
 
 
 Technology
-- **Android**: Kotlin + Jetpack Compose (Material 3), [GenieX SDK](https://github.com/qualcomm/GenieX) (for LLM and VLM inference), [WhisperKit](https://github.com/argmaxinc/WhisperKitAndroid) (for ASR)
+- **Android**: Kotlin + Jetpack Compose (Material 3), [GenieX SDK](https://github.com/qualcomm/GenieX) (for LLM and VLM inference), [whisper.cpp](https://github.com/ggml-org/whisper.cpp) (for ASR)
 - **iOS**: Swift + SwiftUI, [Run Anywhere SDK](https://github.com/RunanywhereAI/runanywhere-sdks), [Draw Things (MediaGenerationKit)](https://drawthings.ai/), Apple Foundation Model, [whisper.cpp](https://github.com/ggml-org/whisper.cpp) for on-device ASR
-- **LLM & ASR Runtime**: MediaPipe, LiteRT, GenieX SDK (GGUF on Android), WhisperKit (ASR with TFLite + QNN NPU on Android), Llama.cpp (via [Run Anywhere SDK](https://github.com/RunanywhereAI/runanywhere-sdks) on iOS), whisper.cpp on iOS for transcription
+- **LLM & ASR Runtime**: MediaPipe, LiteRT, GenieX SDK (GGUF on Android), whisper.cpp (ASR on Android), Llama.cpp (via [Run Anywhere SDK](https://github.com/RunanywhereAI/runanywhere-sdks) on iOS), whisper.cpp on iOS for transcription
 - **Image & Video Gen**: [Draw Things (MediaGenerationKit)](https://drawthings.ai/) (iOS), Qualcomm QNN (Android), [stable-diffusion.cpp](https://github.com/leejet/stable-diffusion.cpp) with LTX-Video on the Hexagon NPU (QNN), Vulkan or CPU (Android video)
 - **Music Gen**: Magenta Realtime 2 with MLX/LiteRT (iOS), SoundGen and Stable Audio 3 with LiteRT, Magenta Realtime 2 with adreno-llms OpenCL (Android)
 - **Media Search**: EmbeddingGemma 2 for local media indexing and video moment retrieval (Android and iOS)
@@ -213,8 +213,7 @@ Acknowledgments
 - [GenieX SDK](https://github.com/qualcomm/GenieX): GGUF model inference support (credit shown in-app About)
 - [llama.cpp](https://github.com/ggml-org/llama.cpp): GGUF inference on Android and iOS (patched build in the releases)
 - [BigMoeOnEdge](https://github.com/Helldez/BigMoeOnEdge): the expert-streaming engine behind flash streaming (Apache-2.0)
-- [WhisperKit](https://github.com/argmaxinc/WhisperKitAndroid): On-device ASR with TFLite + NPU acceleration
-- [whisper.cpp](https://github.com/ggml-org/whisper.cpp): On-device ASR/transcription support on iOS
+- [whisper.cpp](https://github.com/ggml-org/whisper.cpp): On-device ASR/transcription on Android and iOS
 - [Run Anywhere SDK](https://github.com/RunanywhereAI/runanywhere-sdks): iOS model runtime and LLM execution framework
 - [Draw Things](https://drawthings.ai/): iOS image and video generation engine (MediaGenerationKit)
 - [Local Dream](https://github.com/xororz/local-dream): Android image generation and image upscale engine (Stable Diffusion on Snapdragon NPU and CPU)

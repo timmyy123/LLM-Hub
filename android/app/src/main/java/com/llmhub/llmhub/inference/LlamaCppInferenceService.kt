@@ -253,24 +253,7 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
     private var overrideTemperature: Float? = null
     private var overrideEnableThinking: Boolean? = null
 
-    private fun prepareHtpLibraries(): String {
-        val directory = File(context.filesDir, "llama_htp_b12631")
-        // Skels staged for an older llama.cpp release are unused after an upgrade.
-        context.filesDir.listFiles { file -> file.isDirectory && file.name.startsWith("llama_htp_") && file != directory }
-            ?.forEach { it.deleteRecursively() }
-        check(directory.isDirectory || directory.mkdirs()) { "Cannot create Hexagon library directory" }
-        for (architecture in listOf("v73", "v75", "v79", "v81", "v85")) {
-            val name = "libggml-htp-$architecture.so"
-            val target = File(directory, name)
-            if (target.isFile && target.length() > 0L) continue
-            val temporary = File(directory, "$name.tmp")
-            context.assets.open("llama_htp/$name").use { input ->
-                temporary.outputStream().use { output -> input.copyTo(output) }
-            }
-            check(temporary.renameTo(target)) { "Cannot prepare $name" }
-        }
-        return directory.absolutePath
-    }
+    private fun prepareHtpLibraries(): String = LlamaHtpLibraries.prepare(context)
 
     override suspend fun loadModel(
         model: LLMModel,
@@ -294,8 +277,9 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
             val accelerator = when {
                 preferredBackend != LlmInference.Backend.GPU -> null
                 !wantsNpu && useVulkan -> "Vulkan0"
-                // No GPU runtime: the OpenCL build is for Snapdragon and Vulkan needs a 1.2 driver.
-                !wantsNpu && !DeviceInfo.isSnapdragon() && !DeviceInfo.hasVulkan12 -> null
+                // No GPU runtime: the OpenCL build is for Snapdragon, Vulkan needs a 1.2 driver and hangs on the
+                // PowerVR GPUs of Tensor G5 and later.
+                !wantsNpu && !DeviceInfo.isSnapdragon() && DeviceInfo.isLlamaCppVulkanBlocked() -> null
                 !LlamaCppNative.nativeHasIlrcpc() -> {
                     // The packaged Snapdragon libggml-cpu.so uses STLUR during prompt decode.
                     // Loading on GPU/NPU may succeed without ILRCPC, then SIGILL on generation.
@@ -1761,5 +1745,31 @@ class LlamaCppInferenceService(private val context: Context) : InferenceService 
                 !file.name.contains("mmproj", true) &&
                 !file.name.contains("projector", true)
         }?.firstOrNull() ?: expected
+    }
+}
+
+/**
+ * Stages the Hexagon skels of the official llama.cpp Snapdragon release (assets/llama_htp) in a directory the
+ * DSP loader can read (ADSP_LIBRARY_PATH). Shared by the llama.cpp and whisper.cpp Hexagon runtimes.
+ */
+internal object LlamaHtpLibraries {
+    @Synchronized
+    fun prepare(context: android.content.Context): String {
+        val directory = File(context.filesDir, "llama_htp_b12631")
+        // Skels staged for an older llama.cpp release are unused after an upgrade.
+        context.filesDir.listFiles { file -> file.isDirectory && file.name.startsWith("llama_htp_") && file != directory }
+            ?.forEach { it.deleteRecursively() }
+        check(directory.isDirectory || directory.mkdirs()) { "Cannot create Hexagon library directory" }
+        for (architecture in listOf("v73", "v75", "v79", "v81", "v85")) {
+            val name = "libggml-htp-$architecture.so"
+            val target = File(directory, name)
+            if (target.isFile && target.length() > 0L) continue
+            val temporary = File(directory, "$name.tmp")
+            context.assets.open("llama_htp/$name").use { input ->
+                temporary.outputStream().use { output -> input.copyTo(output) }
+            }
+            check(temporary.renameTo(target)) { "Cannot prepare $name" }
+        }
+        return directory.absolutePath
     }
 }

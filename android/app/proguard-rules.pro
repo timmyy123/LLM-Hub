@@ -79,11 +79,11 @@
 # ── GenieX SDK Protection ────────────────────────────────────────────
 # GenieX SDK uses native libraries, JNI, and reflection on ChatMessage role/content
 
-# ── WhisperKit (ASR) & Qualcomm QNN NPU ─────────────────────────────
-# WhisperKitService uses reflection on WhisperKitImpl, loadModels, and isModelLoaded
--keep class com.argmaxinc.whisperkit.** { *; }
--keepclassmembers class com.argmaxinc.whisperkit.** { *; }
--dontwarn com.argmaxinc.whisperkit.**
+# ── whisper.cpp (ASR): libllmhub_whisper(_snapdragon) bind WhisperCpp(Snapdragon)Native by name ──
+-keep class com.llmhub.llmhub.inference.WhisperCppNative { *; }
+-keep class com.llmhub.llmhub.inference.WhisperCppSnapdragonNative { *; }
+
+# ── Qualcomm QNN NPU ─────────────────────────────────────────────────
 -keep class com.qualcomm.qti.** { *; }
 -keepclassmembers class com.qualcomm.qti.** { *; }
 -dontwarn com.qualcomm.qti.**

@@ -86,6 +86,24 @@ target_include_directories(llmhub_llama_cpu PRIVATE
 )
 target_link_libraries(llmhub_llama_cpu PRIVATE llama mtmd ggml android log dl)
 
+# Speech recognition: whisper.cpp (vendored source, ../../../../../whisper.cpp) compiled against the ggml above,
+# so it loads the same per-chip libllmhub_ggml-cpu-* variant as the chat models instead of bundling its own ggml.
+set(WHISPER_CPP_DIR "${CMAKE_CURRENT_LIST_DIR}/../../../../../whisper.cpp")
+file(STRINGS "${WHISPER_CPP_DIR}/LLMHUB_VERSION.md" WHISPER_VERSION_LINE REGEX "^- Version: ")
+string(REGEX MATCH "[0-9]+\\.[0-9]+\\.[0-9]+" LLMHUB_WHISPER_VERSION "${WHISPER_VERSION_LINE}")
+if(NOT LLMHUB_WHISPER_VERSION)
+    message(FATAL_ERROR "No whisper.cpp version in ${WHISPER_CPP_DIR}/LLMHUB_VERSION.md")
+endif()
+add_library(llmhub_whisper SHARED whisper_jni.cpp "${WHISPER_CPP_DIR}/src/whisper.cpp" "${WHISPER_CPP_DIR}/src/aneforge/whisper-aneforge.cpp")
+target_compile_definitions(llmhub_whisper PRIVATE WHISPER_VERSION="${LLMHUB_WHISPER_VERSION}")
+target_compile_options(llmhub_whisper PRIVATE -march=armv8-a -fvisibility=hidden)
+target_link_options(llmhub_whisper PRIVATE "-Wl,--exclude-libs,ALL" "-Wl,-Bsymbolic")
+target_include_directories(llmhub_whisper PRIVATE
+    "${WHISPER_CPP_DIR}/include"
+    "${WHISPER_CPP_DIR}/src"
+    "${LLAMA_CPP_DIR}/ggml/include")
+target_link_libraries(llmhub_whisper PRIVATE ggml ggml-base android log dl)
+
 # The same llama.cpp libraries plus the libllmhub_ggml-vulkan module, for Mali and other Android
 # Vulkan devices. This is separate from the Snapdragon release binary.
 add_library(llmhub_llama_vulkan SHARED llama_cpp_jni.cpp)
@@ -164,5 +182,21 @@ target_compile_options(llmhub_llama_stream_snapdragon PRIVATE -march=armv8-a -fv
 target_include_directories(llmhub_llama_stream_snapdragon PRIVATE "${CMAKE_CURRENT_LIST_DIR}/llama-prebuilt/include")
 target_link_libraries(llmhub_llama_stream_snapdragon PRIVATE bmoe_core_snapdragon)
 target_link_options(llmhub_llama_stream_snapdragon PRIVATE "-Wl,--allow-shlib-undefined")
+
+# whisper.cpp again, against the official Snapdragon release libraries above, for the Adreno GPU (OpenCL) and the
+# Hexagon NPU (WhisperCppSnapdragonNative). Same sources and JNI file as llmhub_whisper.
+add_library(llmhub_whisper_snapdragon SHARED whisper_jni.cpp
+    "${WHISPER_CPP_DIR}/src/whisper.cpp" "${WHISPER_CPP_DIR}/src/aneforge/whisper-aneforge.cpp")
+target_compile_definitions(llmhub_whisper_snapdragon PRIVATE
+    LLMHUB_WHISPER_SNAPDRAGON=1 WHISPER_VERSION="${LLMHUB_WHISPER_VERSION}")
+target_compile_options(llmhub_whisper_snapdragon PRIVATE -march=armv8-a -fvisibility=hidden)
+target_link_options(llmhub_whisper_snapdragon PRIVATE
+    "-Wl,--exclude-libs,ALL" "-Wl,-Bsymbolic" "-Wl,--allow-shlib-undefined")
+target_include_directories(llmhub_whisper_snapdragon PRIVATE
+    "${WHISPER_CPP_DIR}/include"
+    "${WHISPER_CPP_DIR}/src"
+    "${CMAKE_CURRENT_LIST_DIR}/llama-prebuilt/include")
+target_link_libraries(llmhub_whisper_snapdragon PRIVATE
+    llmhub_prebuilt_ggml llmhub_prebuilt_ggml-base android log dl)
 
 add_subdirectory(pocket_tts)

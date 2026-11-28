@@ -128,7 +128,7 @@ object LiteRtTtsModel {
     }
 }
 
-/** Speech recognition models that do not run on WhisperKit. */
+/** Speech recognition models: whisper.cpp, LiteRT-LM (Parakeet, Moonshine, Whisper), Parakeet NPU and ML Kit. */
 object AsrModels {
     const val PARAKEET_NAME = "Parakeet TDT 0.6B v3 (LiteRT-LM)"
     const val PARAKEET_URL =
@@ -184,6 +184,29 @@ object AsrModels {
 
     fun isMlKit(model: LLMModel?) = model?.modelFormat == MLKIT_FORMAT
     fun isMlKitAdvanced(model: LLMModel) = model.url == MLKIT_ADVANCED_URL
+    /** Whisper on whisper.cpp: one ggml model file from ggerganov/whisper.cpp, pinned to a commit. */
+    const val WHISPER_CPP_FORMAT = "whisper_cpp"
+    const val WHISPER_CPP_BASE_URL = "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1"
+
+    fun isWhisperCpp(model: LLMModel?) = model?.modelFormat == WHISPER_CPP_FORMAT
+
+    /**
+     * Whisper on the Hexagon NPU: chips the official llama.cpp Snapdragon release has HTP kernels for. On the
+     * Tab S9+ it made Large-v3-Turbo 5 to 25 times faster than the CPU. The Adreno GPU (OpenCL) ran Whisper
+     * correctly but 17 times slower than the CPU, so it is not offered.
+     */
+    fun whisperNpuAvailable() = DeviceInfo.isLlamaCppHexagonSupported()
+
+    /**
+     * Whisper on the GPU through ggml's Vulkan backend, on the same chips as GGUF LLMs on Vulkan. Against the CPU it
+     * was 7 to 14 times faster on the Exynos 2500, 4 to 9 on the Exynos 2400 and 1.0 to 1.8 on the Dimensity
+     * 9300+/9500; the first transcription after loading also compiles the shaders (about 1 to 5 s).
+     */
+    fun whisperGpuAvailable() = !DeviceInfo.isLlamaCppVulkanBlocked()
+
+    /** Checkpoints trained on English only, which must not be asked to detect the language. */
+    fun isEnglishOnly(model: LLMModel) = model.name.contains("English", ignoreCase = true)
+
     /** Every `.litertlm` recognizer (Parakeet, Whisper, Moonshine): they all run on the MediaPipe AudioTranscriber task. */
     fun isParakeet(model: LLMModel?) = model?.category == "asr" && model.modelFormat == "litertlm"
 

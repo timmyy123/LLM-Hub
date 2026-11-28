@@ -259,16 +259,22 @@ fun ModelSelectorCard(
                     }
                 }
                 
-                // ASR Backend Selection (shown when a WhisperKit voice model is selected)
-                val isWhisperKitVoice = selectedVoiceModel?.modelFormat == "whisperkit"
-                // LiteRT-LM recognizers run on GPU or CPU only (CPU only when the model has no working GPU path,
-                // so there is nothing to pick); ML Kit picks its own hardware.
+                // ASR backend selection. LiteRT-LM recognizers run on GPU or CPU (CPU only when the model has no working
+                // GPU path, so there is nothing to pick); Whisper (whisper.cpp) runs on the CPU, on the GPU (Vulkan) where
+                // GGUF LLMs may use Vulkan, or, on Snapdragon chips with llama.cpp HTP kernels, the Hexagon NPU; ML Kit
+                // picks its own hardware.
                 val isParakeetVoice = com.llmhub.llmhub.data.AsrModels.isParakeet(selectedVoiceModel) && selectedVoiceModel?.supportsGpu == true
-                if (onAsrBackendSelected != null && (isWhisperKitVoice || isParakeetVoice) && selectedAsrBackend != null) {
+                val isWhisperVoice = com.llmhub.llmhub.data.AsrModels.isWhisperCpp(selectedVoiceModel)
+                val isWhisperNpuVoice = isWhisperVoice && com.llmhub.llmhub.data.AsrModels.whisperNpuAvailable()
+                val isWhisperGpuVoice = isWhisperVoice && com.llmhub.llmhub.data.AsrModels.whisperGpuAvailable()
+                if (onAsrBackendSelected != null && (isParakeetVoice || isWhisperNpuVoice || isWhisperGpuVoice) && selectedAsrBackend != null) {
                     var showAsrBackendMenu by remember { mutableStateOf(false) }
-                    val npuAvailable = isWhisperKitVoice && DeviceInfo.isQualcommNpuSupported()
-                    val shownAsrBackend =
-                        if (isParakeetVoice && selectedAsrBackend == WhisperBackend.NPU) WhisperBackend.GPU else selectedAsrBackend
+                    val shownAsrBackend = when {
+                        isParakeetVoice && selectedAsrBackend == WhisperBackend.NPU -> WhisperBackend.GPU
+                        isWhisperVoice && selectedAsrBackend == WhisperBackend.GPU && !isWhisperGpuVoice -> WhisperBackend.CPU
+                        isWhisperVoice && selectedAsrBackend == WhisperBackend.NPU && !isWhisperNpuVoice -> WhisperBackend.CPU
+                        else -> selectedAsrBackend
+                    }
                     ExposedDropdownMenuBox(
                         expanded = showAsrBackendMenu,
                         onExpandedChange = { showAsrBackendMenu = !showAsrBackendMenu }
@@ -307,13 +313,15 @@ fun ModelSelectorCard(
                                 leadingIcon = { Icon(Icons.Default.Computer, contentDescription = null) },
                                 trailingIcon = { if (shownAsrBackend == WhisperBackend.CPU) Icon(Icons.Default.CheckCircle, null, tint = MaterialTheme.colorScheme.primary) }
                             )
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.backend_gpu)) },
-                                onClick = { onAsrBackendSelected(WhisperBackend.GPU); showAsrBackendMenu = false },
-                                leadingIcon = { Icon(Icons.Default.Speed, contentDescription = null) },
-                                trailingIcon = { if (shownAsrBackend == WhisperBackend.GPU) Icon(Icons.Default.CheckCircle, null, tint = MaterialTheme.colorScheme.primary) }
-                            )
-                            if (npuAvailable) {
+                            if (isParakeetVoice || isWhisperGpuVoice) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.backend_gpu)) },
+                                    onClick = { onAsrBackendSelected(WhisperBackend.GPU); showAsrBackendMenu = false },
+                                    leadingIcon = { Icon(Icons.Default.Speed, contentDescription = null) },
+                                    trailingIcon = { if (shownAsrBackend == WhisperBackend.GPU) Icon(Icons.Default.CheckCircle, null, tint = MaterialTheme.colorScheme.primary) }
+                                )
+                            }
+                            if (isWhisperNpuVoice) {
                                 DropdownMenuItem(
                                     text = { Text(stringResource(R.string.backend_npu)) },
                                     onClick = { onAsrBackendSelected(WhisperBackend.NPU); showAsrBackendMenu = false },

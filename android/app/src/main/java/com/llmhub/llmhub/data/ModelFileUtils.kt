@@ -27,6 +27,7 @@ fun LLMModel.localFileName(): String {
         "model" -> ".model"
         "bin" -> ".bin"
         "upscaler_bin" -> ".bin"
+        AsrModels.WHISPER_CPP_FORMAT -> ".bin"
         "gguf" -> ".gguf"
         "onnx" -> ".onnx"
         else -> ".gguf" // Default fallback

@@ -210,6 +210,18 @@ class SpeechModelsDeviceTest {
         }
     }
 
+    /** Whisper (whisper.cpp) as the app loads it: the catalog file, NPU when the chip has llama.cpp HTP kernels. */
+    @Test fun whisperBaseCpuHearsThePassage() = hears(model("Whisper Base (Multilingual)", WHISPER_BASE_SHA256), WhisperBackend.CPU, PASSAGE)
+
+    /** GPU through the app's setting: Vulkan where GGUF LLMs may use it, the CPU elsewhere (e.g. Tensor G5/G6). */
+    @Test fun whisperBaseGpuHearsThePassage() = hears(model("Whisper Base (Multilingual)", WHISPER_BASE_SHA256), WhisperBackend.GPU, PASSAGE)
+
+    @Test fun whisperBaseNpuHearsThePassage() = hears(model("Whisper Base (Multilingual)", WHISPER_BASE_SHA256), WhisperBackend.NPU, PASSAGE)
+
+    @Test fun whisperTurboNpuHearsThePassage() = hears(model("Whisper Large v3 Turbo (Multilingual)", WHISPER_TURBO_SHA256), WhisperBackend.NPU, PASSAGE)
+
+    @Test fun whisperTurboNpuHearsAShortSentence() = hears(model("Whisper Large v3 Turbo (Multilingual)", WHISPER_TURBO_SHA256), WhisperBackend.NPU, SENTENCE)
+
     @Test fun mlKitBasicHearsThePassage() = hears(ModelData.models.first { it.name == AsrModels.MLKIT_BASIC_NAME }, WhisperBackend.CPU, PASSAGE)
 
     @Test fun readsAloudWithKokoro() = readsAloud(LiteRtTtsModel.KOKORO_NAME)
@@ -493,6 +505,8 @@ class SpeechModelsDeviceTest {
             "The builder said the foundations should be finished by March if the weather stays dry. " +
             "After the meeting we walked across the bridge and had coffee at the small bakery on the corner. " +
             "Next month the council will vote on the budget and choose the final colour for the front doors."
+        const val WHISPER_BASE_SHA256 = "c577b9a86e7e048a0b7eada054f4dd79a56bbfa911fbdacf900ac5b567cbb7d9"
+        const val WHISPER_TURBO_SHA256 = "317eb69c11673c9de1e1f0d459b253999804ec71ac4c23c17ecf5fbe24e259a1"
         const val ACFT_TINY_SHA256 = "d4c08a1034529720d6c23a279292a370960aab3fa388d400bacd4ed0f45f38ad"
         const val ACFT_BASE_SHA256 = "cfccd47ef1fa1d0f8e50718b342b5400c2fbe2c622bc6a3524df2a68708dbf4a"
         const val ACFT_SMALL_SHA256 = "1a763f37b8871283d90815a1b95bcc77c3d496eba64b6feeead2cbf431d95c86"
