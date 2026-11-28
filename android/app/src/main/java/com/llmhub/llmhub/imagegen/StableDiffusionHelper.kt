@@ -208,6 +208,7 @@ class StableDiffusionHelper(private val context: Context) {
         inputImage: Bitmap? = null,
         denoiseStrength: Float = 0.7f,
         useOpenCL: Boolean = false,
+        scheduler: String = "dpm",
         onProgress: ((Int, Int) -> Unit)? = null
     ): Bitmap? = withContext(Dispatchers.IO) {
         try {
@@ -228,7 +229,7 @@ class StableDiffusionHelper(private val context: Context) {
                 if (seed != null) put("seed", seed)
                 put("width", width)
                 put("height", height)
-                put("scheduler", "dpm") // DPM++ 2M Karras scheduler
+                put("scheduler", scheduler) // "dpm" = DPM++ 2M Karras; distilled models bring their own
                 put("use_opencl", useOpenCL) // GPU acceleration (OpenCL/Vulkan) vs CPU
                 put("stream", false) // Disable streaming to get a single JSON response
                 
@@ -246,7 +247,7 @@ class StableDiffusionHelper(private val context: Context) {
                 }
             }
             
-            Log.i(TAG, "Generating image: $prompt (${width}x${height}, $steps steps)" + 
+            Log.i(TAG, "Generating image: $prompt (${width}x${height}, $steps steps, $scheduler, cfg $cfg)" + 
                 if (inputImage != null) " [img2img, denoise: $denoiseStrength]" else "")
             
             val requestBody = json.toString()

@@ -26,6 +26,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.llmhub.llmhub.imagegen.BoundedBitmapDecoder
+import com.llmhub.llmhub.imagegen.BundledModelDefaults
 import com.llmhub.llmhub.R
 import com.llmhub.llmhub.imagegen.ImageExtrasEditor
 import com.llmhub.llmhub.imagegen.ImagePromptResources
@@ -137,6 +138,13 @@ fun ImageGeneratorScreen(
     var isModelLoaded by remember { mutableStateOf(false) }
     var isModelLoading by remember { mutableStateOf(false) }
     var showModelSheet by remember { mutableStateOf(false) }
+    // Distilled QNN models (DMD2, Anima Turbo) fix their own step count in config.json.
+    val bundledDefaults by produceState<BundledModelDefaults?>(null, selectedModel?.path) {
+        val model = selectedModel
+        value = if (model?.type == ModelType.QNN_NPU) {
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { BundledModelDefaults.read(model.path) }
+        } else null
+    }
     var useGpu by remember { mutableStateOf(false) }
     
     // Remember last used model and settings
@@ -446,17 +454,18 @@ fun ImageGeneratorScreen(
                     ) {
                         // Iterations slider
                         Column {
+                            val fixedSteps = bundledDefaults?.steps
                             Text(
-                                text = "${stringResource(R.string.image_generator_iterations)}: $iterations",
+                                text = "${stringResource(R.string.image_generator_iterations)}: ${fixedSteps ?: iterations}",
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.Medium
                             )
                             Slider(
-                                value = iterations.toFloat(),
+                                value = (fixedSteps ?: iterations).toFloat().coerceIn(10f, 50f),
                                 onValueChange = { iterations = it.toInt() },
                                 valueRange = 10f..50f,
                                 steps = 7,
-                                enabled = !isGenerating
+                                enabled = !isGenerating && fixedSteps == null
                             )
                         }
 

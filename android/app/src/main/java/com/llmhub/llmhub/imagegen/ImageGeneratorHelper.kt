@@ -31,6 +31,9 @@ class ImageGeneratorHelper(private val context: Context) {
     private var liteRt: LiteRtSdClient? = null
     private var isSdxlModel = false
     private var isAnimaModel = false
+    /** Scheduler/steps/CFG from the model's own config.json (DMD2, Anima Turbo); null for other models. */
+    var bundledDefaults: BundledModelDefaults? = null
+        private set
     
     suspend fun initialize(modelPath: String? = null, modelType: ModelType? = null, useGpu: Boolean = false): Boolean = withContext(Dispatchers.IO) {
         try {
@@ -76,6 +79,8 @@ class ImageGeneratorHelper(private val context: Context) {
                 return@withContext true
             }
             currentModelType = modelInfo.type
+            bundledDefaults = if (modelInfo.type == ModelType.QNN_NPU) BundledModelDefaults.read(modelInfo.path) else null
+            bundledDefaults?.let { Log.i(TAG, "Using the model's config.json: $it") }
             
             // Check if SDXL using ModelData centralized detection
             isSdxlModel = ModelData.isSdxlModel(modelInfo.name) || ModelData.isSdxlModel(modelInfo.path)
@@ -149,11 +154,13 @@ class ImageGeneratorHelper(private val context: Context) {
                 "Generating image: prompt='$prompt', steps=$iterations, seed=$seed, size=${targetWidth}x${targetHeight}$img2imgInfo"
             )
             
+            val bundled = bundledDefaults
             val bitmap = sdHelper.generateImage(
                 prompt = extras.translatedPrompt(prompt),
                 negativePrompt = extras.translatedPrompt(extras.negativePrompt),
-                cfg = extras.guidance,
-                steps = iterations,
+                cfg = bundled?.cfg ?: extras.guidance,
+                steps = bundled?.steps ?: iterations,
+                scheduler = bundled?.scheduler ?: "dpm",
                 seed = if (seed == 0) null else seed.toLong(),
                 inputImage = inputImage,
                 denoiseStrength = denoiseStrength,
@@ -247,6 +254,7 @@ class ImageGeneratorHelper(private val context: Context) {
             currentModelType = null
             isSdxlModel = false
             isAnimaModel = false
+            bundledDefaults = null
             Log.i(TAG, "ImageGenerator closed")
         } catch (e: Exception) {
             Log.e(TAG, "Error closing ImageGenerator: ${e.message}", e)
