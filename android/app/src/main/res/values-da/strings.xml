@@ -1214,4 +1214,6 @@ Du forsøger at sende et billede, men den nuværende model er **kun-tekst**:
     <string name="music_live_resume">Genoptag</string>
     <string name="live_transcription">Live-transskription</string>
     <string name="live_transcription_desc">Teksten vises, mens du taler</string>
+    <string name="mtp_label">MTP-acceleration</string>
+    <string name="mtp_description">Multi-token-forudsigelse gætter flere tokens ad gangen, så svarene kommer hurtigere. Slå det fra, hvis svarene bliver langsommere på din enhed.</string>
 </resources>

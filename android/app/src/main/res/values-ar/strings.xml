@@ -1245,4 +1245,6 @@
     <string name="music_live_resume">استئناف</string>
     <string name="live_transcription">نسخ مباشر</string>
     <string name="live_transcription_desc">يظهر النص أثناء حديثك</string>
+    <string name="mtp_label">تسريع MTP</string>
+    <string name="mtp_description">يتنبأ MTP بعدة رموز دفعة واحدة لتسريع الردود. أوقفه إذا أصبحت الردود أبطأ على جهازك.</string>
 </resources>

@@ -1806,8 +1806,9 @@ fun MessageInput(
     var recordedAudioData by remember { mutableStateOf<ByteArray?>(null) }
     var hasAudioPermission by remember { mutableStateOf(false) }
     
-    // Audio service
-    val audioService = remember { AudioInputService(context) }
+    // Audio service. AI Chat records until the user stops (or the time limit): no auto-stop on silence, which is for
+    // the voice features that end a turn when the speaker pauses.
+    val audioService = remember { AudioInputService(context).apply { silenceAutoStopEnabled = false } }
     val coroutineScope = rememberCoroutineScope()
     
     // Observe elapsed time from audio service

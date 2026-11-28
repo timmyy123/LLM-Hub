@@ -1153,4 +1153,6 @@
     <string name="music_live_resume">Hervatten</string>
     <string name="live_transcription">Live transcriptie</string>
     <string name="live_transcription_desc">Tekst verschijnt terwijl je spreekt</string>
+    <string name="mtp_label">MTP-versnelling</string>
+    <string name="mtp_description">Multi-tokenvoorspelling stelt meerdere tokens tegelijk op voor snellere antwoorden. Zet het uit als antwoorden op je apparaat trager worden.</string>
 </resources>

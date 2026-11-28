@@ -15,11 +15,13 @@ import com.google.ai.edge.litertlm.EngineConfig
 import com.google.ai.edge.litertlm.ExperimentalApi
 import com.google.ai.edge.litertlm.ExperimentalFlags
 import com.google.ai.edge.litertlm.SamplerConfig
+import com.google.ai.edge.litertlm.ThinkingConfig
 import com.google.ai.edge.litertlm.ToolProvider
 import com.google.ai.edge.litertlm.tool
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import com.llmhub.llmhub.R
 import com.llmhub.llmhub.data.LLMModel
+import com.llmhub.llmhub.data.ModelData
 import com.llmhub.llmhub.data.localFileName
 import com.llmhub.llmhub.utils.LocaleHelper
 import com.llmhub.llmhub.websearch.DuckDuckGoSearchService
@@ -27,6 +29,7 @@ import com.llmhub.llmhub.websearch.SearchIntentDetector
 import com.llmhub.llmhub.websearch.WebSearchCitationStore
 import com.llmhub.llmhub.websearch.WebSearchService
 import com.google.ai.edge.litertlm.Message
+import com.google.ai.edge.litertlm.ModelInfo
 import com.google.ai.edge.litertlm.MessageCallback
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -97,6 +100,16 @@ class LiteRtLmInferenceService(private val applicationContext: Context) : Infere
     }
 
     companion object {
+        /** Whether a downloaded .litertlm carries an MTP drafter (read from its header; call off the main thread). */
+        @OptIn(ExperimentalApi::class)
+        fun fileHasMtpDrafter(file: File): Boolean = file.isFile && runCatching {
+            ModelInfo.from(file.absolutePath).use { (it as? ModelInfo.Llm)?.hasSpeculativeDecodingSupport() == true }
+        }.onFailure { Log.w(TAG, "Could not read model info of ${file.name}", it) }.getOrDefault(false)
+
+        /** Whether [model]'s downloaded file has an MTP drafter, so its settings show the MTP switch. */
+        fun supportsMtpSwitch(context: Context, model: LLMModel?): Boolean = model?.modelFormat == "litertlm" &&
+            fileHasMtpDrafter(File(File(context.filesDir, "models"), model.localFileName()))
+
         private const val TAG = "LiteRtLmInference"
         private const val DEFAULT_TOP_K = 40
         private const val DEFAULT_TOP_P = 0.95f
@@ -140,8 +153,7 @@ class LiteRtLmInferenceService(private val applicationContext: Context) : Infere
     override fun getLoadedContextSize(): Int? = loadedContextSize?.takeIf { engine != null }
 
     override fun getEffectiveMaxTokens(model: LLMModel): Int {
-        val isGemma4_12B = model.name.contains("Gemma-4 12B", ignoreCase = true) || model.name.contains("Gemma 4 12B", ignoreCase = true)
-        val limit = if (isGemma4_12B) 4096 else model.contextWindowSize
+        val limit = model.contextWindowSize
         val contextWindow = overrideContextWindow?.coerceIn(1, limit)
             ?: limit
         return overrideMaxTokens?.coerceIn(1, contextWindow) ?: contextWindow
@@ -213,7 +225,7 @@ class LiteRtLmInferenceService(private val applicationContext: Context) : Infere
         disableAudio: Boolean = false
     ) {
         engineMutex.withLock {
-            if (currentModel?.name == model.name && engine != null) return@withLock
+            if (currentModel?.name == model.name && engine != null && loadedMtpSetting == mtpSetting(model)) return@withLock
 
             closeEngineLocked()
 
@@ -221,22 +233,34 @@ class LiteRtLmInferenceService(private val applicationContext: Context) : Infere
             isVisionDisabled = disableVision
             isAudioDisabled = disableAudio
 
-            val isGemma4_12B = model.name.contains("Gemma-4 12B", ignoreCase = true) || model.name.contains("Gemma 4 12B", ignoreCase = true)
+            val isGemma4_12B = isGemma4_12B(model)
 
+            // Gemma-4 12B is too slow on the CPU, so it always runs on the GPU (as on iOS).
             val backend = if (isGemma4_12B) Backend.GPU() else mapBackend(preferredBackend, model.supportsGpu)
             currentBackendIsGpu = backend is Backend.GPU
 
-            // Enable Multi-Token Prediction (MTP) via speculative decoding when running on GPU, except for Gemma-4 12B
-            ExperimentalFlags.enableSpeculativeDecoding = model.supportsMtp && currentBackendIsGpu && !isGemma4_12B
+            // Multi-Token Prediction (MTP) via speculative decoding when running on the GPU; LiteRT-LM uses it only when
+            // the file carries an MTP drafter.
+            val mtp = mtpSetting(model)
+            loadedMtpSetting = mtp
+            ExperimentalFlags.enableSpeculativeDecoding = mtp && currentBackendIsGpu && fileHasMtpDrafter(modelFile)
+            Log.d(TAG, "MTP for ${model.name}: switch=$mtp, on=${ExperimentalFlags.enableSpeculativeDecoding}")
             // LiteRT-LM's own prefill/decode token counts and speeds, read after each chat reply.
             ExperimentalFlags.enableBenchmark = true
+
+            if (ModelData.isLiteRtLmNpuChatModel(model)) {
+                loadNpuEngine(model, modelFile, disableVision, disableAudio)
+                return@withLock
+            }
 
             val engineConfig = EngineConfig(
                 modelPath = modelFile.absolutePath,
                 backend = backend,
-                visionBackend = if (model.supportsVision && !disableVision && !isGemma4_12B) backend else null,
-                audioBackend = if (model.supportsAudio && !disableAudio && !isGemma4_12B) Backend.CPU() else null,
-                maxNumTokens = if (isGemma4_12B) getEffectiveMaxTokens(model) else overrideContextWindow?.coerceIn(1, model.contextWindowSize),
+                // Gemma-4 12B's vision encoder runs on the CPU, as on iOS, which leaves the GPU's memory to the 12B
+                // decoder; the other models' encoders share their main backend.
+                visionBackend = if (model.supportsVision && !disableVision) (if (isGemma4_12B) Backend.CPU() else backend) else null,
+                audioBackend = if (model.supportsAudio && !disableAudio) Backend.CPU() else null,
+                maxNumTokens = overrideContextWindow?.coerceIn(1, model.contextWindowSize),
                 cacheDir = applicationContext.cacheDir.path
             )
 
@@ -250,6 +274,52 @@ class LiteRtLmInferenceService(private val applicationContext: Context) : Infere
 
             Log.d(TAG, "Engine ready for ${model.name}")
         }
+    }
+
+    /**
+     * A Gemma 4 build compiled for this chip's NPU. The text model runs only there; its vision encoder is tried on
+     * the GPU, then the CPU, and audio stays on the CPU. Its context length is fixed by the compiled graphs, so no
+     * token limit is passed. Called with [engineMutex] held.
+     */
+    @OptIn(ExperimentalApi::class)
+    private suspend fun loadNpuEngine(model: LLMModel, modelFile: File, disableVision: Boolean, disableAudio: Boolean) {
+        val libDir = LiteRtLmNpu.libraryDir(applicationContext)
+        val vision = model.supportsVision && !disableVision
+        val visionBackends: List<Backend?> = if (vision) listOf(Backend.GPU(), Backend.CPU()) else listOf(null)
+        currentBackendIsGpu = false
+        // Google's Tensor NPU builds of Gemma 4 E2B carry an MTP drafter; the user's MTP switch decides (on a Pixel 11,
+        // Tensor G6, a 174-token reply ran 22.0 tok/s without MTP and 16.7 tok/s with it, 2026-11-28).
+        val mtp = mtpSetting(model)
+        loadedMtpSetting = mtp
+        ExperimentalFlags.enableSpeculativeDecoding = mtp && fileHasMtpDrafter(modelFile)
+        Log.d(TAG, "MTP for ${model.name} on the NPU: switch=$mtp, on=${ExperimentalFlags.enableSpeculativeDecoding}")
+        ExperimentalFlags.enableBenchmark = true
+        var failure: Exception? = null
+        for (visionBackend in visionBackends) {
+            val config = EngineConfig(
+                modelPath = modelFile.absolutePath,
+                backend = Backend.NPU(libDir),
+                visionBackend = visionBackend,
+                audioBackend = if (model.supportsAudio && !disableAudio) Backend.CPU() else null,
+                cacheDir = applicationContext.cacheDir.path
+            )
+            Log.d(TAG, "Initializing engine for ${model.name} | backend=NPU | vision=$visionBackend | audio=${config.audioBackend}")
+            val candidate = Engine(config)
+            try {
+                withContext(Dispatchers.IO) { candidate.initialize() }
+            } catch (e: Exception) {
+                Log.w(TAG, "${model.name} failed to load on the NPU with vision on $visionBackend", e)
+                runCatching { candidate.close() }
+                failure = e
+                continue
+            }
+            loadedContextSize = null
+            engine = candidate
+            currentModel = model
+            Log.d(TAG, "Engine ready for ${model.name} on the NPU")
+            return
+        }
+        throw failure ?: IllegalStateException("${model.name} did not load on the NPU")
     }
 
     override suspend fun unloadModel() {
@@ -348,18 +418,82 @@ class LiteRtLmInferenceService(private val applicationContext: Context) : Infere
         sessionResetTimes[chatId] = System.currentTimeMillis()
     }
 
+    /**
+     * Whether the .litertlm carries an MTP drafter (as iOS checks with ModelInfo). Turning speculative decoding on for
+     * a file without one fails engine creation ("Speculative decoding requires embedding lookup"), as with Gemma-3n,
+     * Phi-4 and Gemma-3 1B.
+     */
+    private fun fileHasMtpDrafter(file: File): Boolean = Companion.fileHasMtpDrafter(file)
+
+    /** The MTP switch as loaded into the current engine. */
+    @Volatile private var loadedMtpSetting: Boolean? = null
+
+    /** The model's MTP switch from its saved settings (Chat, Writing Aid, Translator and every other feature share it). */
+    private suspend fun mtpSetting(model: LLMModel): Boolean =
+        runCatching { com.llmhub.llmhub.data.ModelPreferences(applicationContext).getModelConfig(model.name)?.mtpEnabled }
+            .getOrNull() ?: ModelData.defaultMtpEnabled(model)
+
+    /** True when the loaded engine was built with a different MTP setting than the model's saved one. */
+    suspend fun mtpSettingChanged(model: LLMModel): Boolean =
+        engine != null && currentModel?.name == model.name && loadedMtpSetting != null && loadedMtpSetting != mtpSetting(model)
+
     private fun isGemma4Model(): Boolean =
         currentModel?.name?.contains("Gemma-4", ignoreCase = true) == true
 
-    private fun buildConversationConfig(): ConversationConfig {
-        val sysInstruction = if (isGemma4Model() && overrideEnableThinking) Contents.of("<|think|>") else null
+    private fun isGemma4_12B(model: LLMModel?): Boolean =
+        model?.name?.contains("Gemma-4 12B", ignoreCase = true) == true || model?.name?.contains("Gemma 4 12B", ignoreCase = true) == true
+
+    /**
+     * Gemma-4 12B thinks through LiteRT-LM's own ThinkingConfig; E2B/E4B get "<|think|>" in the system prompt so MTP
+     * keeps working on the main token stream (as on iOS).
+     */
+    private fun usesPromptThinking() = isGemma4Model() && thinkingEnabled() && !isGemma4_12B(currentModel)
+
+    /**
+     * Gemma-4 12B with agent tools always thinks: with tools on and thinking off, LiteRT-LM fails at the end of a
+     * reply ("The new rendered string is shorter than the previous rendered string").
+     */
+    private fun thinkingEnabled() = overrideEnableThinking || (isGemma4_12B(currentModel) && agentTools != null)
+
+    private fun thinkingConfig(): ThinkingConfig? =
+        if (thinkingEnabled() && isGemma4_12B(currentModel)) ThinkingConfig(enableThinking = true) else null
+
+    /** A chat transcript split for LiteRT-LM: system text, earlier turns, and the newest user message. */
+    private class Transcript(val system: String?, val history: List<Message>, val current: String)
+
+    private fun splitTranscript(prompt: String): Transcript {
+        val turns = parseVlmPromptTurns(prompt)
+        val lastUser = turns.indexOfLast { it.role == "user" }
+        if (turns.isEmpty() || lastUser < 0) return Transcript(null, emptyList(), prompt)
+        val system = turns.filter { it.role == "system" }.joinToString("\n\n") { it.text }.ifBlank { null }
+        val history = turns.subList(0, lastUser).mapNotNull { turn ->
+            when (turn.role) {
+                "user" -> Message.user(turn.text)
+                "assistant" -> Message.model(turn.text)
+                else -> null
+            }
+        }
+        // Anything after the newest user turn (there should be nothing) stays with it.
+        val current = turns.subList(lastUser, turns.size).filter { it.role != "system" }.joinToString("\n\n") { it.text }
+        return Transcript(system, history, current)
+    }
+
+    private fun buildConversationConfig(transcript: Transcript? = null): ConversationConfig {
+        val system = transcript?.system
+        val sysInstruction = when {
+            usesPromptThinking() -> Contents.of(if (system != null) "<|think|>\n$system" else "<|think|>")
+            system != null -> Contents.of(system)
+            else -> null
+        }
         return ConversationConfig(
+            initialMessages = transcript?.history.orEmpty(),
             samplerConfig = SamplerConfig(
                 topK = overrideTopK ?: DEFAULT_TOP_K,
                 topP = (overrideTopP ?: DEFAULT_TOP_P).toDouble(),
                 temperature = (overrideTemperature ?: DEFAULT_TEMPERATURE).toDouble()
             ),
-            systemInstruction = sysInstruction
+            systemInstruction = sysInstruction,
+            thinkingConfig = thinkingConfig()
         )
     }
 
@@ -368,18 +502,22 @@ class LiteRtLmInferenceService(private val applicationContext: Context) : Infere
      * Call only when [agentTools] is non-null (Gemma-4 loaded).
      */
     @OptIn(ExperimentalApi::class)
-    private fun buildAgentConversationConfig(tools: ChatAgentSkillsTools): ConversationConfig {
+    private fun buildAgentConversationConfig(tools: ChatAgentSkillsTools, transcript: Transcript? = null): ConversationConfig {
         val toolProviders: List<ToolProvider> = listOf(tool(tools))
-        val sysText = if (isGemma4Model() && overrideEnableThinking) "<|think|>\n${ChatAgentSkillsTools.AGENT_SYSTEM_PROMPT}" else ChatAgentSkillsTools.AGENT_SYSTEM_PROMPT
+        // The user's own system prompt replaces the agent prompt when set (as on iOS).
+        val base = transcript?.system ?: ChatAgentSkillsTools.AGENT_SYSTEM_PROMPT
+        val sysText = if (usesPromptThinking()) "<|think|>\n$base" else base
         val sysInstruction = Contents.of(sysText)
         return ConversationConfig(
+            initialMessages = transcript?.history.orEmpty(),
             samplerConfig = SamplerConfig(
                 topK = overrideTopK ?: DEFAULT_TOP_K,
                 topP = (overrideTopP ?: DEFAULT_TOP_P).toDouble(),
                 temperature = (overrideTemperature ?: DEFAULT_TEMPERATURE).toDouble()
             ),
             systemInstruction = sysInstruction,
-            tools = toolProviders
+            tools = toolProviders,
+            thinkingConfig = thinkingConfig()
         )
     }
 
@@ -458,10 +596,16 @@ class LiteRtLmInferenceService(private val applicationContext: Context) : Infere
                 }
             }
 
+            // The chat screen sends a "user: …\nassistant: …" transcript, which every model gets as one message (as on
+            // iOS) except Phi-4: sent that way it continued the transcript with an invented "user:" turn instead of
+            // ending its reply, so its earlier turns go to LiteRT-LM as history for the file's own template.
+            val transcript = if (model.name.contains("Phi-4", ignoreCase = true)) splitTranscript(enhancedPrompt)
+                else Transcript(null, emptyList(), enhancedPrompt)
+
             // Build content parts list (text first, then images, then audio — per API requirement)
             val contentParts = mutableListOf<Content>()
-            if (enhancedPrompt.trim().isNotEmpty()) {
-                contentParts.add(Content.Text(enhancedPrompt))
+            if (transcript.current.trim().isNotEmpty()) {
+                contentParts.add(Content.Text(transcript.current))
             }
 
             // Bitmaps: compress to JPEG and pass as ImageFile via temp file
@@ -497,13 +641,13 @@ class LiteRtLmInferenceService(private val applicationContext: Context) : Infere
             val contents = Contents.of(*contentParts.toTypedArray<Content>())
 
             val localAgentTools = agentTools
-            val useThinking = isGemma4Model() && overrideEnableThinking
+            val useThinking = isGemma4Model() && thinkingEnabled()
             @OptIn(ExperimentalApi::class)
             if (localAgentTools != null) {
                 // Gemma-4 agent mode: enable constrained decoding for reliable function-call
                 // extraction, then create conversation with tools + system instruction.
                 ExperimentalFlags.enableConversationConstrainedDecoding = true
-                val agentConfig = buildAgentConversationConfig(localAgentTools)
+                val agentConfig = buildAgentConversationConfig(localAgentTools, transcript)
                 ExperimentalFlags.enableConversationConstrainedDecoding = false
                 Log.d(TAG, "Using agent conversation config with ${localAgentTools.javaClass.simpleName}")
                 var sentThinkOpen = false
@@ -534,7 +678,7 @@ class LiteRtLmInferenceService(private val applicationContext: Context) : Infere
             } else {
                 var sentThinkOpen = false
                 var sentThinkClose = false
-                eng.withConversation(buildConversationConfig()) { conv ->
+                eng.withConversation(buildConversationConfig(transcript)) { conv ->
                     try {
                     conv.sendMessageAsyncWithCallback(contents).collect { msg ->
                         val chunk = msg.contents.contents.filterIsInstance<Content.Text>().joinToString("") { it.text }

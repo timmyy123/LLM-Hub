@@ -221,7 +221,7 @@ class ParakeetNpuEngine private constructor(
             return engine
         }
 
-        private fun npuEnvironment(context: Context): Environment {
+        internal fun npuEnvironment(context: Context): Environment {
             val dir = if (DeviceInfo.isSnapdragon()) qualcommLibraryDir(context) else LiteRtSdPipeline.vendorLibraryDir(context)
             return dir?.let { Environment.create(mapOf(Environment.Option.DispatchLibraryDir to it.path)) }
                 ?: Environment.create(BuiltinNpuAcceleratorProvider(context))

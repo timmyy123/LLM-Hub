@@ -1239,4 +1239,6 @@
     <string name="music_live_resume">Riprendi</string>
     <string name="live_transcription">Trascrizione in tempo reale</string>
     <string name="live_transcription_desc">Il testo compare mentre parli</string>
+    <string name="mtp_label">Accelerazione MTP</string>
+    <string name="mtp_description">La previsione multi-token genera più token alla volta per risposte più rapide. Disattivala se le risposte diventano più lente sul tuo dispositivo.</string>
 </resources>

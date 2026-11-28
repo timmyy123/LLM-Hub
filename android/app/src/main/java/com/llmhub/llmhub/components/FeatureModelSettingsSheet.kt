@@ -142,6 +142,9 @@ fun FeatureModelSettingsSheet(
     var gpuLayers by remember { mutableStateOf(999) }
     var gpuLayerLimit by remember { mutableIntStateOf(GgufLayerLimits.UNKNOWN) }
     var enableThinking by remember { mutableStateOf(true) }
+    // MTP (LiteRT-LM speculative decoding): shown only when the model's file has an MTP drafter; shared with AI Chat.
+    var mtpEnabled by remember { mutableStateOf(false) }
+    var mtpAvailable by remember { mutableStateOf(false) }
     var thinkingEffort by remember(selectedModel?.name) { mutableFloatStateOf(com.llmhub.llmhub.data.INKLING_DEFAULT_EFFORT) }
     var isMoeModel by remember(selectedModel?.name) { mutableStateOf(false) }
     var flashStreaming by remember(selectedModel?.name) { mutableStateOf(true) }
@@ -161,6 +164,10 @@ fun FeatureModelSettingsSheet(
             }
             ggufContextChecked = true
             val saved = modelPrefs.getModelConfig(model.name)
+            mtpEnabled = saved?.mtpEnabled ?: com.llmhub.llmhub.data.ModelData.defaultMtpEnabled(model)
+            mtpAvailable = withContext(Dispatchers.IO) {
+                com.llmhub.llmhub.inference.LiteRtLmInferenceService.supportsMtpSwitch(context, model)
+            }
             if (saved != null) {
                 gpuLayers = saved.nGpuLayers.coerceIn(0, gpuLayerLimit)
                 enableThinking = saved.enableThinking
@@ -503,6 +510,7 @@ fun FeatureModelSettingsSheet(
                                                     deviceId = deviceId,
                                                     nGpuLayers = gpuLayers,
                                                     flashStreaming = flashStreaming,
+                                                    mtpEnabled = mtpEnabled,
                                                     // LFM3's feature choice is kept by the feature, not in AI Chat's config
                                                     enableThinking = if (model.isLfm3()) base.enableThinking else enableThinking
                                                 )
@@ -692,6 +700,30 @@ fun FeatureModelSettingsSheet(
                                     onCheckedChange = { enableThinking = it }
                                 )
                             }
+                            Spacer(modifier = Modifier.height(16.dp))
+                        }
+
+                        // MTP toggle (LiteRT-LM models whose file has an MTP drafter)
+                        if (mtpAvailable) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.mtp_label),
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                                Switch(
+                                    checked = mtpEnabled,
+                                    onCheckedChange = { mtpEnabled = it }
+                                )
+                            }
+                            Text(
+                                text = stringResource(R.string.mtp_description),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                             Spacer(modifier = Modifier.height(16.dp))
                         }
 

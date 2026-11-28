@@ -1245,4 +1245,6 @@
     <string name="music_live_resume">המשך</string>
     <string name="live_transcription">תמלול חי</string>
     <string name="live_transcription_desc">הטקסט מופיע בזמן הדיבור</string>
+    <string name="mtp_label">האצת MTP</string>
+    <string name="mtp_description">חיזוי מרובה אסימונים מנסח כמה אסימונים בבת אחת כדי שהתשובות יגיעו מהר יותר. כבו אותו אם התשובות נעשות איטיות יותר במכשיר שלכם.</string>
 </resources>

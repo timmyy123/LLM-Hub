@@ -26,7 +26,8 @@ data class ModelConfig(
     val contextWindow: Int = 0, // KV cache allocation (context window size); 0 = use model default
     val agentToolsEnabled: Boolean = true, // whether Gemma-4 agent tools are active
     val flashStreaming: Boolean = true, // MoE GGUF only: stream the experts from storage (llama.cpp CPU)
-    val thinkingEffort: Float = INKLING_DEFAULT_EFFORT // Inkling 2: thinking level while thinking is on (InklingFormat)
+    val thinkingEffort: Float = INKLING_DEFAULT_EFFORT, // Inkling 2: thinking level while thinking is on (InklingFormat)
+    val mtpEnabled: Boolean? = null // LiteRT-LM MTP (speculative decoding); null = the model's default (ModelData.defaultMtpEnabled)
 ) {
     fun toJson(): JSONObject {
         val obj = JSONObject()
@@ -44,6 +45,7 @@ data class ModelConfig(
         obj.put("systemPrompt", systemPrompt)
         obj.put("contextWindow", contextWindow)
         obj.put("agentToolsEnabled", agentToolsEnabled)
+        if (mtpEnabled != null) obj.put("mtpEnabled", mtpEnabled)
         obj.put("flashStreaming", flashStreaming)
         obj.put("thinkingEffort", thinkingEffort.toDouble())
         return obj
@@ -66,7 +68,8 @@ data class ModelConfig(
                 contextWindow = obj.optInt("contextWindow", 0),
                 agentToolsEnabled = obj.optBoolean("agentToolsEnabled", true),
                 flashStreaming = obj.optBoolean("flashStreaming", true),
-                thinkingEffort = obj.optDouble("thinkingEffort", INKLING_DEFAULT_EFFORT.toDouble()).toFloat()
+                thinkingEffort = obj.optDouble("thinkingEffort", INKLING_DEFAULT_EFFORT.toDouble()).toFloat(),
+                mtpEnabled = if (obj.has("mtpEnabled")) obj.optBoolean("mtpEnabled") else null
             )
         }
 

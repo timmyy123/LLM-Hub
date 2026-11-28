@@ -1245,4 +1245,6 @@
     <string name="music_live_resume">Продовжити</string>
     <string name="live_transcription">Транскрипція в реальному часі</string>
     <string name="live_transcription_desc">Текст з\'являється під час мовлення</string>
+    <string name="mtp_label">Прискорення MTP</string>
+    <string name="mtp_description">Передбачення кількох токенів генерує кілька токенів одразу, щоб відповіді надходили швидше. Вимкніть, якщо на вашому пристрої відповіді сповільнюються.</string>
 </resources>

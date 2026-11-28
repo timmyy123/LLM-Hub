@@ -386,7 +386,9 @@ class OnnxInferenceService @Inject constructor(
         for (tokenizerFile in locations) {
             if (tokenizerFile.exists()) {
                 return try {
-                    OnnxTokenizer(tokenizerFile)
+                    OnnxTokenizer(tokenizerFile).also {
+                        Log.i(TAG, "Tokenizer loaded from ${tokenizerFile.absolutePath}: EOS ${it.getEosTokenId()} (stop ids ${it.getEosTokenIds()}), BOS ${it.bosToken}")
+                    }
                 } catch (e: Exception) {
                     Log.w(TAG, "Failed to load tokenizer: ${e.message}")
                     null
@@ -458,46 +460,6 @@ class OnnxInferenceService @Inject constructor(
                 val session = ortSession ?: throw Exception("ONNX session not initialized")
                 val env = ortEnvironment ?: throw Exception("ONNX environment not initialized")
                 
-                // Chat template: Ministral/Mistral use [INST]...[/INST]; LFM and others use ChatML
-                // For Ministral we must put ONLY the user message in [INST], not "user: X\nassistant:" — otherwise
-                // the model sees "X" and "assistant" adjacent and interprets it as "Xassistant".
-                val formattedPrompt = if (model.name.contains("Ministral", ignoreCase = true) || model.name.contains("Mistral", ignoreCase = true)) {
-                    val systemPart = if (prompt.startsWith("system: ")) {
-                        prompt.substringAfter("system: ").substringBefore("\n\nuser: ").trim() + "\n\n"
-                    } else ""
-                    val lastUser = prompt.substringAfterLast("user: ").substringBefore("\nassistant:").trim()
-                    val instBody = if (lastUser.isNotEmpty()) lastUser else prompt.trim()
-                    "[INST]\n" + systemPart + instBody + "\n[/INST]\n"
-                } else {
-                    // ChatML formatting.
-                    if (prompt.contains("user: ") && (prompt.contains("\nassistant:") || prompt.endsWith("assistant:"))) {
-                        var p = prompt
-                        // 0. Handle System Prompt
-                        if (p.startsWith("system: ")) {
-                            p = p.replaceFirst("system: ", "<|im_start|>system\n")
-                            // Add end token before the first user turn if there is one
-                            if (p.contains("\n\nuser: ")) {
-                                p = p.replaceFirst("\n\nuser: ", "<|im_end|>\n<|im_start|>user\n")
-                            }
-                        }
-                        
-                        // 1. Start interaction (First User Turn if no system prompt)
-                        if (p.startsWith("user: ")) {
-                            p = p.replaceFirst("user: ", "<|im_start|>user\n")
-                        }
-                        // 2. Middle Interactions (User Turn starts after Assistant Turn ends)
-                        p = p.replace("\n\nuser: ", "<|im_end|>\n<|im_start|>user\n")
-                        
-                        // 3. Assistant Turns (and closing of User Turns)
-                        p = p.replace(Regex("\nassistant: ?"), "<|im_end|>\n<|im_start|>assistant\n")
-                        
-                        "<|startoftext|>" + p
-                    } else {
-                        // Fallback: Wrap entire prompt in a single user turn
-                        "<|startoftext|><|im_start|>user\n$prompt<|im_end|>\n<|im_start|>assistant\n"
-                    }
-                }
-                
                 // CRITICAL: Check if tokenizer loaded. If not, ONNX models cannot work properly
                 val currentTokenizer = tokenizer
                 if (currentTokenizer == null) {
@@ -507,24 +469,34 @@ class OnnxInferenceService @Inject constructor(
                     Log.e(TAG, error)
                     throw Exception(error)
                 }
-                
-                val inputIds = currentTokenizer.encode(run {
-                    // Thinking toggle: when thinking is disabled for a Thinking model, inject
-                    // /no_think after the last <|im_start|>user\n marker in the formatted prompt.
-                    val isThinkingModelOnnx = model.name.contains("Thinking", ignoreCase = true) ||
-                        model.name.contains("Reasoning", ignoreCase = true)
-                    val thinkingEnabledOnnx = overrideEnableThinking ?: true
-                    if (!thinkingEnabledOnnx && isThinkingModelOnnx) {
-                        val marker = "<|im_start|>user\n"
-                        val idx = formattedPrompt.lastIndexOf(marker)
-                        if (idx >= 0) formattedPrompt.substring(0, idx + marker.length) + "/no_think " + formattedPrompt.substring(idx + marker.length)
-                        else formattedPrompt
-                    } else formattedPrompt
-                })
+
+                // Chat template, rendered as each model's own chat_template does:
+                // Ministral-3: <s>[SYSTEM_PROMPT]..[/SYSTEM_PROMPT][INST]..[/INST]..</s>[INST]..[/INST]
+                // LFM-2.5: <|startoftext|><|im_start|>system\n..<|im_end|>\n<|im_start|>user\n..<|im_end|>\n<|im_start|>assistant\n
+                // Thinking toggle: when thinking is disabled for a Thinking model, /no_think opens the last user message.
+                val isThinkingModelOnnx = model.name.contains("Thinking", ignoreCase = true) ||
+                    model.name.contains("Reasoning", ignoreCase = true)
+                val thinkingEnabledOnnx = overrideEnableThinking ?: true
+                val formattedPrompt = if (OnnxChatPrompt.isMistral(model.name)) {
+                    OnnxChatPrompt.mistral(
+                        prompt,
+                        bosToken = currentTokenizer.bosToken ?: "<s>",
+                        eosToken = currentTokenizer.eosToken ?: "</s>",
+                    )
+                } else {
+                    OnnxChatPrompt.chatMl(
+                        prompt,
+                        bosToken = currentTokenizer.bosToken ?: "<|startoftext|>",
+                        noThink = !thinkingEnabledOnnx && isThinkingModelOnnx,
+                    )
+                }
+
+                val inputIds = currentTokenizer.encode(formattedPrompt)
                 Log.d(TAG, "Tokenized prompt: ${inputIds.size} tokens")
-                
+
                 val maxNewTokens = overrideMaxTokens ?: 1024
-                val eosTokenId = currentTokenizer.getEosTokenId()
+                val eosTokenIds = currentTokenizer.getEosTokenIds()
+                val streamDecoder = currentTokenizer.newStreamDecoder()
                 
                 // Initialize KV cache - create zero tensors for all past_* inputs
                 val cache = mutableMapOf<String, OnnxTensor>()
@@ -710,7 +682,7 @@ class OnnxInferenceService @Inject constructor(
                     // logitsTensor.close() // Safe to close logits as we read the data
                     
                     // Check for EOS before emitting (do not show EOS/special token to user)
-                    if (nextToken == eosTokenId) {
+                    if (nextToken in eosTokenIds) {
                         Log.d(TAG, "EOS token generated, stopping")
                         logitsTensor.close()
                         if ("input_ids" in inputNames) idsTensor.close()
@@ -718,19 +690,14 @@ class OnnxInferenceService @Inject constructor(
                         if (usePositionIds && posIds != null) feed["position_ids"]?.close()
                         break
                     }
-                    
-                    // Decode and emit token (skip known special tokens so they never appear in chat)
-                    val tokenText = tokenizer?.decode(listOf(nextToken.toInt()))
-                        ?: decodeWithFallback(nextToken.toInt())
-                    val trimmed = tokenText.trim()
-                    val isSpecial = trimmed.isEmpty() ||
-                        trimmed == "</s>" || trimmed == "<|im_end|>" || trimmed == "<|endoftext|>" ||
-                        trimmed == "<|startoftext|>" || (trimmed.startsWith("<|") && trimmed.endsWith("|>")) ||
-                        trimmed == "[INST]" || trimmed == "[/INST]" ||
-                        trimmed.contains("\"prompt\"") || trimmed.contains("\"max_tokens\"") ||
-                        trimmed.contains("lendoftext") || trimmed.contains("lim_end")
-                    if (tokenText.isNotEmpty() && !isSpecial) {
-                        emitTokenForThinking(model, tokenText, this@callbackFlow::trySend)
+
+                    // Decode incrementally: bytes of a character split over several tokens are held until the
+                    // character is complete; control tokens (special / <|...|>) never reach the chat.
+                    if (!currentTokenizer.isHiddenControlToken(nextToken.toInt())) {
+                        val tokenText = streamDecoder.push(nextToken.toInt())
+                        if (tokenText.isNotEmpty()) {
+                            emitTokenForThinking(model, tokenText, this@callbackFlow::trySend)
+                        }
                     }
                     
                     // Clean up input tensors (idsTensor already closed when using inputs_embeds path)
@@ -744,9 +711,14 @@ class OnnxInferenceService @Inject constructor(
                     step++
                 }
                 
+                // Anything still held back (an unfinished character at the token limit or on Stop).
+                streamDecoder.flush().takeIf { it.isNotEmpty() }?.let {
+                    emitTokenForThinking(model, it, this@callbackFlow::trySend)
+                }
+
                 // Clean up cache tensors
                 cache.values.forEach { it.close() }
-                
+
                 Log.d(TAG, "Generation complete. Generated ${generatedTokens.size} tokens")
                 close()
             } catch (e: Exception) {
@@ -799,10 +771,6 @@ class OnnxInferenceService @Inject constructor(
     private fun encodeWithFallback(text: String): List<Long> {
         Log.w(TAG, "Using fallback tokenizer")
         return text.toCharArray().map { it.code.toLong() }
-    }
-
-    private fun decodeWithFallback(tokenId: Int): String {
-        return if (tokenId in 32..126) tokenId.toChar().toString() else ""
     }
 
     /** For LFM Thinking: stream all content; use </think> as boundary. Everything before it = thinking (with THINK sentinel), after = answer (with ENDTHINK). */
@@ -1003,11 +971,16 @@ class OnnxInferenceService @Inject constructor(
         val visionSession = ortVisionSession ?: throw Exception("Vision session not loaded")
         val tok = tokenizer ?: throw Exception("Tokenizer not loaded")
         val imgTokenId = imageTokenIndex ?: throw Exception("image_token_index not set")
-        val modelDir = getModelDirectory(model)
-        val lastUser = prompt.substringAfterLast("user: ").substringBefore("\nassistant:").trim()
-        val userText = if (lastUser.isNotEmpty()) lastUser else prompt.trim()
-        val prefixIds = tok.encode("[INST]\n")
-        val suffixIds = tok.encode("$userText\n[/INST]\n")
+        // Ministral-3 chat template with the image opening the last user message:
+        // <s>[SYSTEM_PROMPT]..[/SYSTEM_PROMPT]...[INST]<image tokens>{text}[/INST]
+        val visionPrompt = OnnxChatPrompt.mistral(
+            prompt,
+            bosToken = tok.bosToken ?: "<s>",
+            eosToken = tok.eosToken ?: "</s>",
+            withImage = true,
+        )
+        val prefixIds = tok.encode(visionPrompt.substringBefore(OnnxChatPrompt.IMAGE_PLACEHOLDER))
+        val suffixIds = tok.encode(visionPrompt.substringAfter(OnnxChatPrompt.IMAGE_PLACEHOLDER))
         // Ministral/Pixtral vision encoder patch_merger expects exactly 26x26 patches (reshape 1,13,2,13,2,1024). patch_size=14 => input must be 364x364. 384 gives 27x27 and Reshape fails.
         val vH = 364
         val vW = 364
@@ -1018,14 +991,30 @@ class OnnxInferenceService @Inject constructor(
         pixelTensor.close()
         val imageFeatures = visionOut[0] as OnnxTensor
         val featShape = imageFeatures.info.shape
+        // Features are [1, N, hidden] or [N, hidden]: N image tokens either way.
         val numImageTokens = if (featShape.size >= 2) {
             var n = 1L
-            for (i in 1 until featShape.size - 1) n *= featShape[i]
+            for (i in 0 until featShape.size - 1) n *= featShape[i]
             n.toInt()
         } else 1
         val hiddenDim = if (featShape.isNotEmpty()) featShape.last().toInt() else 2048
         visionOut.forEach { if (it !== imageFeatures) (it as? OnnxTensor)?.close() }
-        val inputIds = prefixIds + List(numImageTokens) { imgTokenId } + suffixIds
+        // Pixtral layout (as PixtralProcessor builds it): each row of [IMG] tokens ends with [IMG_BREAK],
+        // the last row with [IMG_END]. The square 364x364 input gives a square grid (13x13 after merging).
+        val imgBreakId = tok.tokenToId("[IMG_BREAK]")?.toLong()
+        val imgEndId = tok.tokenToId("[IMG_END]")?.toLong()
+        val gridSide = kotlin.math.sqrt(numImageTokens.toDouble()).toInt()
+        val imageIds: List<Long> = if (imgBreakId != null && imgEndId != null && gridSide * gridSide == numImageTokens && gridSide > 0) {
+            buildList {
+                for (row in 0 until gridSide) {
+                    repeat(gridSide) { add(imgTokenId) }
+                    add(if (row == gridSide - 1) imgEndId else imgBreakId)
+                }
+            }
+        } else {
+            List(numImageTokens) { imgTokenId }
+        }
+        val inputIds = prefixIds + imageIds + suffixIds
         imageFeatures.use {
             val featBuf = imageFeatures.floatBuffer
             val featFloats = FloatArray(featBuf.remaining())
@@ -1066,7 +1055,8 @@ class OnnxInferenceService @Inject constructor(
     ) {
         val inputNames = session.inputNames.toSet()
         val usePositionIds = "position_ids" in inputNames
-        val eosTokenId = tok.getEosTokenId()
+        val eosTokenIds = tok.getEosTokenIds()
+        val streamDecoder = tok.newStreamDecoder()
         val maxNewTokens = overrideMaxTokens ?: 1024
         val cache = mutableMapOf<String, OnnxTensor>()
         for ((inputName, nodeInfo) in session.inputInfo) {
@@ -1136,17 +1126,18 @@ class OnnxInferenceService @Inject constructor(
                 val cacheName = entry.key.replace("present_conv", "past_conv").replace("present.", "past_key_values.")
                 if (cacheName in session.inputNames) cache[cacheName] = outputValue else outputValue.close()
             }
-            if (nextToken == eosTokenId) break
-            val tokenText = tok.decode(listOf(nextToken.toInt()))
-            val trimmed = tokenText.trim()
-            val isSpecial = trimmed.isEmpty() || trimmed == "</s>" || trimmed == "<|im_end|>" || trimmed == "<|endoftext|>" ||
-                trimmed == "<|startoftext|>" || (trimmed.startsWith("<|") && trimmed.endsWith("|>")) ||
-                trimmed == "[INST]" || trimmed == "[/INST]" || trimmed.contains("\"prompt\"") || trimmed.contains("\"max_tokens\"") ||
-                trimmed.contains("lendoftext") || trimmed.contains("lim_end")
-            if (tokenText.isNotEmpty() && !isSpecial) emitTokenForThinking(model, tokenText, send)
+            if (nextToken in eosTokenIds) {
+                logitsTensor.close()
+                break
+            }
+            if (!tok.isHiddenControlToken(nextToken.toInt())) {
+                val tokenText = streamDecoder.push(nextToken.toInt())
+                if (tokenText.isNotEmpty()) emitTokenForThinking(model, tokenText, send)
+            }
             logitsTensor.close()
             step++
         }
+        streamDecoder.flush().takeIf { it.isNotEmpty() }?.let { emitTokenForThinking(model, it, send) }
         initialInputsEmbeds.close()
         cache.values.forEach { it.close() }
         Log.d(TAG, "Vision generation complete. Generated ${generatedTokens.size} tokens")
@@ -1181,167 +1172,4 @@ class OnnxInferenceService @Inject constructor(
     override fun isAudioCurrentlyDisabled(): Boolean = true
     override fun isGpuBackendEnabled(): Boolean = currentPreferredBackend == LlmInference.Backend.GPU
     override fun getEffectiveMaxTokens(model: LLMModel): Int = overrideMaxTokens ?: model.contextWindowSize
-}
-
-class OnnxTokenizer(tokenizerFile: File) {
-    private val vocab: Map<String, Int>
-    private val reverseVocab: Map<Int, String>
-    private val eosTokenId: Int
-    
-    init {
-        val json = tokenizerFile.readText()
-        val gson = Gson()
-        val tokenizerData = gson.fromJson<Map<String, Any>>(json, object : TypeToken<Map<String, Any>>() {}.type)
-        
-        val modelData = tokenizerData["model"] as? Map<*, *>
-        val vocabData = modelData?.get("vocab") as? Map<*, *>
-        
-        val baseVocab = vocabData?.mapNotNull { (key, value) ->
-            val k = key as? String
-            val v = (value as? Number)?.toInt()
-            if (k != null && v != null) k to v else null
-        }?.toMap() ?: emptyMap()
-        
-        // Load added_tokens to ensure special tokens (like <|im_start|>) are available
-        val addedTokens = tokenizerData["added_tokens"] as? List<*>
-        val addedVocab = addedTokens?.filterIsInstance<Map<*, *>>()?.mapNotNull { tokenMap ->
-            val content = tokenMap["content"] as? String
-            val id = (tokenMap["id"] as? Number)?.toInt()
-            if (content != null && id != null) content to id else null
-        }?.toMap() ?: emptyMap()
-        
-        // added_tokens supplement the base vocab
-        vocab = baseVocab + addedVocab
-        
-        reverseVocab = vocab.entries.associate { (k, v) -> v to k }
-        
-        // Try to load tokenizer_config.json for accurate EOS token
-        var configEosId: Int? = null
-        try {
-            val configFile = File(tokenizerFile.parentFile, "tokenizer_config.json")
-            if (configFile.exists()) {
-                val configJson = configFile.readText()
-                val config = gson.fromJson<Map<String, Any>>(configJson, object : TypeToken<Map<String, Any>>() {}.type)
-                val eosAny = config["eos_token"]
-                when (eosAny) {
-                    is String -> configEosId = vocab[eosAny]
-                    is Map<*, *> -> {
-                        val id = (eosAny["id"] as? Number)?.toInt()
-                        if (id != null) configEosId = id
-                        else (eosAny["content"] as? String)?.let { configEosId = vocab[it] }
-                    }
-                    else -> { }
-                }
-            }
-        } catch (e: Exception) {
-            Log.w("OnnxTokenizer", "Failed to load tokenizer_config.json: ${e.message}")
-        }
-        
-        // Fallback: added_tokens or common names (Mistral uses </s>, LFM uses <|im_end|>)
-        if (configEosId == null) {
-            val eosEntry = addedTokens?.filterIsInstance<Map<*, *>>()?.find {
-                val content = it["content"] as? String ?: ""
-                content == "<|im_end|>" || content == "</s>" || content.contains("eos") || content.contains("end")
-            }
-            configEosId = (eosEntry?.get("id") as? Number)?.toInt()
-        }
-        
-        eosTokenId = configEosId ?: vocab["<|im_end|>"] ?: vocab["</s>"] ?: vocab["<|endoftext|>"] ?: vocab["[EOS]"] ?: vocab["eos"] ?: 2
-        Log.i("OnnxTokenizer", "Resolved EOS token ID: $eosTokenId")
-    }
-    
-    fun encode(text: String): List<Long> {
-        // Pre-process: Replace spaces with BPE space marker (Ġ/U+0120)
-        // This is a simplified BPE encoding that assumes space boundaries
-        val processedText = text.replace(" ", "\u0120")
-        
-        val tokens = mutableListOf<Long>()
-        var remaining = processedText
-        
-        while (remaining.isNotEmpty()) {
-            var matched = false
-            // Try to find longest matching token
-            for (len in minOf(remaining.length, 60) downTo 1) {
-                val candidate = remaining.substring(0, len)
-                val tokenId = vocab[candidate]
-                if (tokenId != null) {
-                    tokens.add(tokenId.toLong())
-                    remaining = remaining.substring(len)
-                    matched = true
-                    break
-                }
-            }
-            if (!matched) {
-                // Unknown character - use byte fallback or skip
-                val char = remaining[0]
-                val byteToken = vocab["<0x${char.code.toString(16).uppercase().padStart(2, '0')}>"]
-                if (byteToken != null) {
-                    tokens.add(byteToken.toLong())
-                }
-                remaining = remaining.substring(1)
-            }
-        }
-        return tokens
-    }
-    
-    // ByteLevel BPE character mapping (matches GPT-2/Llama implementation)
-    private val charToByte: Map<Char, Byte> by lazy {
-        val bs = (('!'.code..'~'.code) + ('¡'.code..'¬'.code) + ('®'.code..'ÿ'.code)).toMutableList()
-        val cs = bs.toMutableList()
-        var n = 0
-        for (b in 0..255) {
-            if (b !in bs) {
-                bs.add(b)
-                cs.add(256 + n)
-                n++
-            }
-        }
-        cs.zip(bs).associate { (c, b) -> c.toChar() to b.toByte() }
-    }
-
-    fun decode(tokenIds: List<Int>): String {
-        // Collect all bytes
-        val bytes = java.io.ByteArrayOutputStream()
-        
-        for (id in tokenIds) {
-            val token = reverseVocab[id] ?: continue
-            
-            // Skip special tokens in output if they look like <|...|>
-            if (token.startsWith("<|") && token.endsWith("|>")) {
-                continue 
-            }
-            
-            for (char in token) {
-                val b = charToByte[char]
-                if (b != null) {
-                    bytes.write(b.toInt())
-                } else {
-                    // Fallback for non-mapped chars
-                    // Write strictly valid UTF-8 bytes for basic chars.
-                    val charBytes = char.toString().toByteArray(Charsets.UTF_8)
-                    bytes.write(charBytes)
-                }
-            }
-        }
-        
-        // Use CharsetDecoder to IGNORE malformed input instead of replacing with 
-        try {
-            val decoder = java.nio.charset.Charset.forName("UTF-8").newDecoder()
-                .onMalformedInput(java.nio.charset.CodingErrorAction.IGNORE)
-                .onUnmappableCharacter(java.nio.charset.CodingErrorAction.IGNORE)
-            
-            val byteBuffer = java.nio.ByteBuffer.wrap(bytes.toByteArray())
-            val charBuffer = decoder.decode(byteBuffer)
-            
-            // Further cleanup: remove NULL bytes and Replacement Characters if any slipped through
-            return charBuffer.toString()
-                .replace("\uFFFD", "")
-                .replace("\u0000", "")
-        } catch (e: Exception) {
-            // Fallback
-            return bytes.toString("UTF-8").replace("\uFFFD", "")
-        }
-    }
-    
-    fun getEosTokenId(): Long = eosTokenId.toLong()
 }

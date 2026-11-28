@@ -150,6 +150,9 @@ fun ChatSettingsSheet(
     var enableThinking by remember { mutableStateOf(true) }
     var thinkingEffort by remember(selectedModel?.name) { mutableFloatStateOf(com.llmhub.llmhub.data.INKLING_DEFAULT_EFFORT) }
     var agentToolsEnabled by remember { mutableStateOf(true) }
+    // MTP (LiteRT-LM speculative decoding): shown only when the model's file has an MTP drafter.
+    var mtpEnabled by remember { mutableStateOf(false) }
+    var mtpAvailable by remember { mutableStateOf(false) }
     var isMoeModel by remember(selectedModel?.name) { mutableStateOf(false) }
     var flashStreaming by remember(selectedModel?.name) { mutableStateOf(true) }
     var expertsNotOnNpu by remember(selectedModel?.name) { mutableStateOf(false) }
@@ -186,6 +189,9 @@ fun ChatSettingsSheet(
                 GgufLayerLimits.forModel(context, model) to GgufLayerLimits.contextForModel(context, model)
             }
             isMoeModel = withContext(Dispatchers.IO) { GgufLayerLimits.isMoe(context, model) }
+            mtpAvailable = withContext(Dispatchers.IO) {
+                com.llmhub.llmhub.inference.LiteRtLmInferenceService.supportsMtpSwitch(context, model)
+            }
             gpuLayerLimit = layers ?: GgufLayerLimits.UNKNOWN
             ggufContextLimit = fileContext
             val newBaseCap = (fileContext ?: MediaPipeInferenceService.getMaxTokensForModelStatic(model)).coerceAtLeast(1)
@@ -217,9 +223,11 @@ fun ChatSettingsSheet(
                     disableVision = saved.disableVision || !selectedModelSupportsVisionInput
                     disableAudio = saved.disableAudio
                     gpuLayers = saved.nGpuLayers.coerceIn(0, gpuLayerLimit)
-                    enableThinking = saved.enableThinking
+                    // Gemma-4 12B with agent tools always thinks (a saved tools-on, thinking-off setting fails in LiteRT-LM).
+                    enableThinking = saved.enableThinking || (newIsGemma4_12B && saved.agentToolsEnabled)
                     thinkingEffort = saved.thinkingEffort
                     agentToolsEnabled = saved.agentToolsEnabled
+                    mtpEnabled = saved.mtpEnabled ?: com.llmhub.llmhub.data.ModelData.defaultMtpEnabled(model)
                     flashStreaming = saved.flashStreaming
                     systemPromptText = saved.systemPrompt
                 } else {
@@ -236,10 +244,11 @@ fun ChatSettingsSheet(
                     temperature = 1.0f
                     useGpu = if (newIsGemma4_12B) true else newDefaultUseGpu
                     useNpu = false
-                    disableVision = newIsGemma3n || newIsGemma4Small || !selectedModelSupportsVisionInput
-                    disableAudio = newIsGemma3n || newIsGemma4Small
+                    disableVision = newIsGemma3n || newIsGemma4Small || newIsGemma4_12B || !selectedModelSupportsVisionInput
+                    disableAudio = newIsGemma3n || newIsGemma4Small || newIsGemma4_12B
                     enableThinking = true
-                    agentToolsEnabled = !newIsGemma4Small
+                    agentToolsEnabled = !(newIsGemma4Small || newIsGemma4_12B)
+                    mtpEnabled = com.llmhub.llmhub.data.ModelData.defaultMtpEnabled(model)
                     systemPromptText = ""
                     gpuLayers = gpuLayerLimit
                 }
@@ -257,10 +266,11 @@ fun ChatSettingsSheet(
                 temperature = 1.0f
                 useGpu = if (newIsGemma4_12B) true else newDefaultUseGpu
                 useNpu = false
-                disableVision = newIsGemma3n || newIsGemma4Small || !selectedModelSupportsVisionInput
-                disableAudio = newIsGemma3n || newIsGemma4Small
+                disableVision = newIsGemma3n || newIsGemma4Small || newIsGemma4_12B || !selectedModelSupportsVisionInput
+                disableAudio = newIsGemma3n || newIsGemma4Small || newIsGemma4_12B
                 enableThinking = true
-                agentToolsEnabled = !newIsGemma4Small
+                agentToolsEnabled = !(newIsGemma4Small || newIsGemma4_12B)
+                mtpEnabled = com.llmhub.llmhub.data.ModelData.defaultMtpEnabled(model)
                 systemPromptText = ""
                 gpuLayers = gpuLayerLimit
             }
@@ -613,6 +623,7 @@ fun ChatSettingsSheet(
                                                     nGpuLayers = gpuLayers,
                                                     enableThinking = enableThinking,
                                                     agentToolsEnabled = agentToolsEnabled,
+                                                    mtpEnabled = mtpEnabled,
                                                     flashStreaming = flashStreaming,
                                                     thinkingEffort = thinkingEffort,
                                                     systemPrompt = systemPromptText.trim(),
@@ -932,7 +943,11 @@ fun ChatSettingsSheet(
                                 )
                                 Switch(
                                     checked = enableThinking,
-                                    onCheckedChange = { enableThinking = it }
+                                    onCheckedChange = {
+                                        enableThinking = it
+                                        // Gemma-4 12B's tool chats fail in LiteRT-LM without thinking, so tools go off with it.
+                                        if (!it && isGemma4_12B) agentToolsEnabled = false
+                                    }
                                 )
                             }
                         }
@@ -950,11 +965,38 @@ fun ChatSettingsSheet(
                                 )
                                 Switch(
                                     checked = agentToolsEnabled,
-                                    onCheckedChange = { agentToolsEnabled = it }
+                                    onCheckedChange = {
+                                        agentToolsEnabled = it
+                                        // Gemma-4 12B's tool chats fail in LiteRT-LM without thinking, so tools turn it on.
+                                        if (it && isGemma4_12B) enableThinking = true
+                                    }
                                 )
                             }
                             Text(
                                 text = stringResource(R.string.agent_tools_description),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        // MTP toggle (LiteRT-LM models whose file has an MTP drafter)
+                        if (mtpAvailable) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.mtp_label),
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                                Switch(
+                                    checked = mtpEnabled,
+                                    onCheckedChange = { mtpEnabled = it }
+                                )
+                            }
+                            Text(
+                                text = stringResource(R.string.mtp_description),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -1011,10 +1053,11 @@ fun ChatSettingsSheet(
                                     temperature = 1.0f
                                     useGpu = newDefaultUseGpu
                                     useNpu = false
-                                    disableVision = newIsGemma3n || (isGemma4Model && !isGemma4_12B) || !selectedModelSupportsVisionInput
-                                    disableAudio = newIsGemma3n || (isGemma4Model && !isGemma4_12B)
+                                    disableVision = newIsGemma3n || isGemma4Model || !selectedModelSupportsVisionInput
+                                    disableAudio = newIsGemma3n || isGemma4Model
                                     enableThinking = true
-                                    agentToolsEnabled = !(isGemma4Model && !isGemma4_12B)
+                                    agentToolsEnabled = !isGemma4Model
+                                    mtpEnabled = com.llmhub.llmhub.data.ModelData.defaultMtpEnabled(selectedModel)
                                     systemPromptText = ""
                                 }
                             },

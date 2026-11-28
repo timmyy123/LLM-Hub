@@ -1153,4 +1153,6 @@
     <string name="music_live_resume">Tiếp tục</string>
     <string name="live_transcription">Chép lời trực tiếp</string>
     <string name="live_transcription_desc">Văn bản hiện ra khi bạn nói</string>
+    <string name="mtp_label">Tăng tốc MTP</string>
+    <string name="mtp_description">Dự đoán nhiều token tạo nhiều token cùng lúc để trả lời nhanh hơn. Hãy tắt nếu câu trả lời chậm hơn trên thiết bị của bạn.</string>
 </resources>

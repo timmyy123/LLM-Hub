@@ -1271,4 +1271,6 @@
     <string name="music_live_resume">फिर से चलाएं</string>
     <string name="live_transcription">लाइव ट्रांसक्रिप्शन</string>
     <string name="live_transcription_desc">बोलते समय टेक्स्ट दिखाई देता है</string>
+    <string name="mtp_label">MTP त्वरण</string>
+    <string name="mtp_description">मल्टी-टोकन प्रेडिक्शन एक साथ कई टोकन तैयार करता है ताकि जवाब जल्दी आएं। अगर आपके डिवाइस पर जवाब धीमे हो जाएं तो इसे बंद करें।</string>
 </resources>

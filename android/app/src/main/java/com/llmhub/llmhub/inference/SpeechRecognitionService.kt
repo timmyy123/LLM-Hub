@@ -68,6 +68,8 @@ class SpeechRecognitionService(private val context: Context) {
     private var parakeet: ParakeetAsrEngine? = null
     private var parakeetNpu: ParakeetNpuEngine? = null
     private var mlKit: MlKitAsrEngine? = null
+    private var granite: GraniteSpeechEngine? = null
+    private var parakeetUltra: ParakeetUltraEngine? = null
     private var loadedModel: LLMModel? = null
     private var whisperLanguage = "auto"
 
@@ -83,7 +85,8 @@ class SpeechRecognitionService(private val context: Context) {
         return parakeet?.startLive(onText) ?: mlKit?.startLive(onText)
     }
 
-    val isLoaded: Boolean get() = whisper.isLoaded || parakeet != null || parakeetNpu != null || mlKit != null
+    val isLoaded: Boolean get() = whisper.isLoaded || parakeet != null || parakeetNpu != null || mlKit != null ||
+        granite != null || parakeetUltra != null
 
     suspend fun loadModel(model: LLMModel, backend: WhisperBackend = WhisperBackend.NPU): Boolean {
         release()
@@ -92,6 +95,19 @@ class SpeechRecognitionService(private val context: Context) {
             AsrModels.isMlKit(model) -> {
                 val engine = MlKitAsrEngine(AsrModels.isMlKitAdvanced(model))
                 if (engine.prepare()) { mlKit = engine; true } else { engine.close(); false }
+            }
+            AsrModels.isGraniteSpeech(model) -> {
+                val engine = GraniteSpeechEngine.create(context, File(File(context.filesDir, "models"), model.localFileName()),
+                    preferGpu = backend != WhisperBackend.CPU)
+                granite = engine
+                engine != null
+            }
+            AsrModels.isParakeetUltra(model) -> {
+                val engine = if (com.llmhub.llmhub.data.PinnedBundles.isComplete(context, model.name))
+                    ParakeetUltraEngine.create(context, com.llmhub.llmhub.data.PinnedBundles.directory(context, model.name), model.name,
+                        preferGpu = backend != WhisperBackend.CPU) else null
+                parakeetUltra = engine
+                engine != null
             }
             AsrModels.isParakeetNpu(model) -> {
                 val engine = ParakeetNpuEngine.create(context, File(File(context.filesDir, "models"), model.localFileName()))
@@ -130,6 +146,8 @@ class SpeechRecognitionService(private val context: Context) {
         parakeet?.let { return it.transcribe(pcm16Bytes).orEmpty() }
         parakeetNpu?.let { return it.transcribe(pcm16Bytes).orEmpty() }
         mlKit?.let { return it.transcribe(pcm16Bytes).orEmpty() }
+        granite?.let { return it.transcribe(pcm16Bytes) }
+        parakeetUltra?.let { return it.transcribe(pcm16Bytes) }
         return whisper.transcribe(pcm16Bytes, whisperLanguage)
     }
 
@@ -142,6 +160,10 @@ class SpeechRecognitionService(private val context: Context) {
         parakeetNpu = null
         mlKit?.close()
         mlKit = null
+        granite?.close()
+        granite = null
+        parakeetUltra?.close()
+        parakeetUltra = null
     }
 }
 

@@ -1266,4 +1266,6 @@
     <string name="music_live_resume">Resume</string>
     <string name="live_transcription">Live transcription</string>
     <string name="live_transcription_desc">Text appears while you speak</string>
+    <string name="mtp_label">MTP acceleration</string>
+    <string name="mtp_description">Multi-token prediction drafts several tokens at once for faster replies. Turn it off if replies get slower on your device.</string>
 </resources>

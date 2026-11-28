@@ -2660,7 +2660,7 @@ object ModelData {
         LLMModel(
             name = "Phi-4 Mini (INT8, 4k)",
             description = "Phi-4 Mini INT8 variant in LiteRT LM format (litertlm).",
-            url = "https://huggingface.co/litert-community/Phi-4-mini-instruct/resolve/main/Phi-4-mini-instruct_multi-prefill-seq_q8_ekv4096.litertlm?download=true",
+            url = "https://huggingface.co/litert-community/Phi-4-mini-instruct/resolve/56afc01737f19f1b3fc9713be1f9cc859e4684b6/Phi-4-mini-instruct_multi-prefill-seq_q8_ekv4096.litertlm?download=true",
             category = "text",
             sizeBytes = 3910090752L, // 3.91 GB as reported on HuggingFace file page
             source = "Microsoft via LiteRT Community",
@@ -3443,7 +3443,7 @@ object ModelData {
         LLMModel(
             name = "Aion 1.0 Instruct 2.3B (LiteRT-LM)",
             description = "Microsoft's Aion 1.0 Instruct 2.3B, the small model built for on-device use in Windows, in LiteRT-LM format. INT8 quantization, runs on CPU and GPU. 4k context. MIT license. (2.33GB)",
-            url = "https://huggingface.co/timmyboy26/aion-1.0-instruct-2.3b-litert-lm/resolve/98f0ae6116bcdbff88044551d8bca77d9765c97a/Aion-1.0-Instruct-2.3B_q8_ekv4096.litertlm?download=true",
+            url = "https://huggingface.co/timmyboy26/aion-1.0-instruct-2.3b-litert-lm/resolve/5fb75bf2a1bb3ec0c8030416252a24f72fc0a15a/Aion-1.0-Instruct-2.3B_q8_ekv4096.litertlm?download=true",
             category = "text",
             sizeBytes = 2333097680L,
             source = "Microsoft",
@@ -3805,13 +3805,13 @@ object ModelData {
         ),
         LLMModel(
             name = "Gemma-4 12B",
-            description = "Google Gemma-4 12B text model. 12B parameters with 32k context. GPU acceleration required. Ready to download from HuggingFace (6.54GB)",
-            url = "https://huggingface.co/litert-community/gemma-4-12B-it-litert-lm/resolve/44cf85a326f79b814fa86a60af414c042755b43a/gemma-4-12B-it.litertlm?download=true",
-            category = "text",
-            sizeBytes = 6547589312L, // 6,547,589,312 bytes (6.54 GB actual)
+            description = "Google Gemma-4 12B multimodal model (text, vision, audio) with MTP acceleration on the GPU. 12B parameters with 32k context. GPU acceleration required. Ready to download from HuggingFace (6.88GB)",
+            url = "https://huggingface.co/litert-community/gemma-4-12B-it-litert-lm/resolve/689ac189e26fa5ca9b59b9f9e067690c1be3810b/gemma-4-12B-it.litertlm?download=true",
+            category = "multimodal",
+            sizeBytes = 6883278368L, // 6,883,278,368 bytes (6.88 GB actual)
             source = "Google (LiteRT LM)",
-            supportsVision = false,
-            supportsAudio = false,
+            supportsVision = true,
+            supportsAudio = true,
             supportsGpu = true,
             requirements = ModelRequirements(minRamGB = 12, recommendedRamGB = 16),
             contextWindowSize = 32768,
@@ -5644,6 +5644,51 @@ object ModelData {
             modelFormat = "litertlm"
         ),
         LLMModel(
+            name = ParakeetUltraModel.NAME,
+            description = "Parakeet Ultra by Moondream: NVIDIA's Parakeet TDT 0.6B v3 post-trained for higher accuracy. 25 European languages with automatic language detection, on the CPU. ~1.3 GB download.",
+            url = ParakeetUltraModel.urls(ParakeetUltraModel.NAME).first(),
+            category = "asr",
+            sizeBytes = ParakeetUltraModel.totalBytes(ParakeetUltraModel.NAME),
+            source = "Moondream / NVIDIA · CC-BY-4.0 (LiteRT Community)",
+            supportsVision = false,
+            supportsAudio = true,
+            supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 6),
+            contextWindowSize = 0,
+            // "onnx" selects the multi-file downloader; the files are LiteRT graphs.
+            modelFormat = "onnx",
+            additionalFiles = ParakeetUltraModel.urls(ParakeetUltraModel.NAME).drop(1)
+        ),
+        LLMModel(
+            name = ParakeetUltraModel.GPU_NAME,
+            description = "Parakeet Ultra by Moondream with a float16 encoder for the GPU: the same 25 European languages, faster on phones with a strong GPU. ~1.3 GB download.",
+            url = ParakeetUltraModel.urls(ParakeetUltraModel.GPU_NAME).first(),
+            category = "asr",
+            sizeBytes = ParakeetUltraModel.totalBytes(ParakeetUltraModel.GPU_NAME),
+            source = "Moondream / NVIDIA · CC-BY-4.0 (LiteRT Community)",
+            supportsVision = false,
+            supportsAudio = true,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 8, recommendedRamGB = 12),
+            contextWindowSize = 0,
+            modelFormat = "onnx",
+            additionalFiles = ParakeetUltraModel.urls(ParakeetUltraModel.GPU_NAME).drop(1)
+        ),
+        LLMModel(
+            name = AsrModels.GRANITE_SPEECH_NAME,
+            description = "IBM Granite Speech 5.0 2B: accurate speech recognition with punctuation for English, French, German, Spanish, Portuguese and Japanese, GPU accelerated. ~2.8 GB download.",
+            url = AsrModels.GRANITE_SPEECH_URL,
+            category = "asr",
+            sizeBytes = AsrModels.GRANITE_SPEECH_SIZE,
+            source = "IBM · Apache-2.0 (LiteRT Community)",
+            supportsVision = false,
+            supportsAudio = true,
+            supportsGpu = true,
+            requirements = ModelRequirements(minRamGB = 6, recommendedRamGB = 8),
+            contextWindowSize = 0,
+            modelFormat = "litertlm"
+        ),
+        LLMModel(
             name = AsrModels.MLKIT_BASIC_NAME,
             description = "Google ML Kit on-device speech recognition. The model is installed and kept up to date by the system, so it uses no app storage.",
             url = AsrModels.MLKIT_BASIC_URL,
@@ -6015,6 +6060,129 @@ object ModelData {
         }
     }
 
+    /** Parakeet Ultra's NPU build for this device's chip. */
+    private fun parakeetUltraNpuModels(): List<LLMModel> {
+        val tag = DeviceInfo.getEmbeddingGemma2NpuTag() ?: return emptyList()
+        val build = ParakeetUltraModel.npuBuilds.firstOrNull { it.tag == tag } ?: return emptyList()
+        return listOf(
+            LLMModel(
+                name = build.name,
+                description = "Parakeet Ultra by Moondream compiled for the ${build.chip} NPU: NVIDIA's Parakeet TDT 0.6B v3 " +
+                    "post-trained for higher accuracy, 25 European languages with automatic language detection, fastest on " +
+                    "this chip. ~2.5 GB download.",
+                url = ParakeetUltraModel.urls(build.name).first(),
+                category = "asr",
+                sizeBytes = ParakeetUltraModel.totalBytes(build.name),
+                source = "Moondream / NVIDIA · CC-BY-4.0 (LiteRT Community)",
+                supportsVision = false,
+                supportsAudio = true,
+                supportsGpu = false,
+                requirements = ModelRequirements(minRamGB = 6, recommendedRamGB = 8),
+                contextWindowSize = 0,
+                modelFormat = "onnx",
+                additionalFiles = ParakeetUltraModel.urls(build.name).drop(1)
+            )
+        )
+    }
+
+    /** Gemma-3 1B files (Google's, mirrored because litert-community/Gemma3-1B-IT is gated). */
+    private const val GEMMA3_1B_REPO =
+        "https://huggingface.co/timmyboy26/Gemma3-1B-IT/resolve/21425ee2427135f222bc35ccad91cfff3222211f"
+
+    /** Google's Gemma-3 1B builds compiled for one chip's NPU: NPU tag, file, chip name, size. */
+    private val gemma3NpuBuilds = listOf(
+        listOf("Qualcomm_SM8550", "Gemma3-1B-IT_q4_ekv1280_sm8550.litertlm", "Snapdragon 8 Gen 2", "690143232"),
+        listOf("Qualcomm_SM8650", "Gemma3-1B-IT_q4_ekv1280_sm8650.litertlm", "Snapdragon 8 Gen 3", "690094080"),
+        listOf("Qualcomm_SM8750", "Gemma3-1B-IT_q4_ekv1280_sm8750.litertlm", "Snapdragon 8 Elite", "689291264"),
+        listOf("Qualcomm_SM8850", "Gemma3-1B-IT_q4_ekv1280_sm8850.litertlm", "Snapdragon 8 Elite Gen 5", "693747712"),
+        listOf("MediaTek_MT6989", "Gemma3-1B-IT_q4_ekv1280_mt6989.litertlm", "MediaTek Dimensity 9300", "1032830976"),
+        listOf("MediaTek_MT6991", "Gemma3-1B-IT_q4_ekv1280_mt6991.litertlm", "MediaTek Dimensity 9400", "1033814016"),
+        listOf("MediaTek_MT6993", "Gemma3-1B-IT_q4_ekv1280_mt6993.litertlm", "MediaTek Dimensity 9500", "1020411904"),
+        listOf("Google_Tensor_G5", "Gemma3-1B-IT_q8_ekv1280_Google_Tensor_G5.litertlm", "Google Tensor G5", "2018723808"),
+        listOf("Google_Tensor_G6", "Gemma3-1B-IT_q8_ekv1280_Google_Tensor_G6.litertlm", "Google Tensor G6", "2026063840"),
+    )
+
+    /** Every Gemma-3 1B NPU entry, whatever this device's chip (tests use it). */
+    internal fun allGemma3NpuModels(): List<LLMModel> = gemma3NpuBuilds.map { (tag, file, chip, size) ->
+        LLMModel(
+            name = "Gemma-3 1B (NPU $chip)",
+            description = "Google Gemma-3 1B compiled by Google for the $chip NPU, so replies run on the phone's AI chip. " +
+                "1.2k context. Ready to download from HuggingFace (${"%.2f".format(size.toLong() / 1e9)}GB)",
+            url = "$GEMMA3_1B_REPO/$file?download=true",
+            category = "text",
+            sizeBytes = size.toLong(),
+            source = "Google via LiteRT Community",
+            supportsVision = false,
+            supportsGpu = false,
+            supportsMtp = false,
+            requirements = ModelRequirements(minRamGB = 3, recommendedRamGB = 4),
+            contextWindowSize = 1280,
+            modelFormat = "litertlm"
+        ).also { require(tag.isNotEmpty()) }
+    }
+
+    /** The Gemma-3 1B NPU build for this device's chip. */
+    private fun gemma3NpuModels(): List<LLMModel> {
+        val soc = getDeviceSocTagForGemma3()
+        return if (soc == null) emptyList() else allGemma3NpuModels().filter { model ->
+            gemma3NpuBuilds.any { it[0] == soc && model.url.contains("/${it[1]}") }
+        }
+    }
+
+    /** As [DeviceInfo.getEmbeddingGemma2NpuTag], plus Dimensity 9300, which only Gemma-3 1B has a build for. */
+    private fun getDeviceSocTagForGemma3(): String? = DeviceInfo.getEmbeddingGemma2NpuTag()
+        ?: socForMatching().uppercase().replace(Regex("[^A-Z0-9]"), "").takeIf { it.startsWith("MT6989") }?.let { "MediaTek_MT6989" }
+
+    /** Google's Gemma 4 E2B builds compiled for a phone NPU (the repo's Dragonwing and Intel builds are not for phones). */
+    private const val GEMMA4_E2B_NPU_REPO =
+        "https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/2e12bfd869b2962984f97a1f2a26807316d534cc"
+    private val gemma4E2bNpuBuilds = listOf(
+        Triple("Google_Tensor_G5", "Google Tensor G5", 3206299658L),
+        Triple("Google_Tensor_G6", "Google Tensor G6", 3453960202L),
+    )
+
+    /** Every Gemma 4 E2B NPU entry, whatever this device's chip (tests use it). */
+    internal fun allGemma4E2bNpuModels(): List<LLMModel> = gemma4E2bNpuBuilds.map { (tag, chip, size) ->
+        LLMModel(
+            name = "Gemma-4 E2B (NPU $chip)",
+            description = "Google Gemma-4 E2B (text, vision, audio) compiled by Google for the $chip NPU, " +
+                "so replies run on the phone's AI chip. 32k context. Ready to download from HuggingFace (${"%.2f".format(size / 1e9)}GB)",
+            url = "$GEMMA4_E2B_NPU_REPO/gemma-4-E2B-it_$tag.litertlm?download=true",
+            category = "multimodal",
+            sizeBytes = size,
+            source = "Google (LiteRT LM)",
+            supportsVision = true,
+            supportsAudio = true,
+            supportsGpu = false,
+            requirements = ModelRequirements(minRamGB = 4, recommendedRamGB = 8),
+            contextWindowSize = 32768,
+            modelFormat = "litertlm"
+        )
+    }
+
+    /** The Gemma 4 E2B NPU build for this device's chip. */
+    private fun gemma4NpuModels(): List<LLMModel> {
+        val tag = DeviceInfo.getEmbeddingGemma2NpuTag() ?: return emptyList()
+        return allGemma4E2bNpuModels().filter { it.url.contains("_$tag.litertlm") }
+    }
+
+    /** A Gemma 4 build compiled for one chip's NPU: it runs only on the NPU, so the app picks no other backend. */
+    fun isGemma4NpuModel(model: LLMModel?): Boolean =
+        model?.modelFormat == "litertlm" && model.url.contains("gemma-4-E2B-it_Google_Tensor_")
+
+    /**
+     * Default of the per-model MTP switch: on for Gemma .litertlm models (LiteRT-LM uses it only when the file carries an
+     * MTP drafter), off for everything else and for the Gemma 4 E2B NPU builds, where MTP measured slower (Pixel 11,
+     * Tensor G6: 16.7 tok/s with MTP, 22.0 without).
+     */
+    fun defaultMtpEnabled(model: LLMModel?): Boolean =
+        model?.modelFormat == "litertlm" && model.supportsMtp && model.name.contains("Gemma", ignoreCase = true) &&
+            !isLiteRtLmNpuChatModel(model)
+
+    /** A chat model compiled for one chip's NPU (Gemma 4 E2B or Gemma-3 1B): it runs only there. */
+    fun isLiteRtLmNpuChatModel(model: LLMModel?): Boolean =
+        isGemma4NpuModel(model) || (model?.modelFormat == "litertlm" && gemma3NpuBuilds.any { model.url.contains("/${it[1]}") })
+
     /** The Parakeet NPU build for this device's chip, when one works on it. */
     private fun parakeetNpuModels(): List<LLMModel> {
         val build = AsrModels.parakeetNpuBuild(socForMatching()) ?: return emptyList()
@@ -6176,7 +6344,7 @@ object ModelData {
                 model.url.contains("embeddinggemma-2-text-270m_")
             )
 
-    val models: List<LLMModel> = (baseModels + embeddingGemma2Models + upscalerModels + inpaintingModels + ttsModels + musicGenerationModels + videoGenerationModels + sdLiteRtNpuModels() + parakeetNpuModels() + (if (DeviceInfo.getChipsetSuffix() in setOf("8gen3", "8gen4", "8gen5", "8gen6")) sdxlModels else emptyList()))
+    val models: List<LLMModel> = (baseModels + embeddingGemma2Models + upscalerModels + inpaintingModels + ttsModels + musicGenerationModels + videoGenerationModels + sdLiteRtNpuModels() + parakeetNpuModels() + parakeetUltraNpuModels() + gemma4NpuModels() + gemma3NpuModels() + (if (DeviceInfo.getChipsetSuffix() in setOf("8gen3", "8gen4", "8gen5", "8gen6")) sdxlModels else emptyList()))
         // QNN image models and upscalers need a Hexagon NPU: MediaTek, Exynos and Tensor phones would download a
         // Snapdragon package that cannot run.
         .filter { DeviceInfo.isSnapdragon() || it.modelFormat !in setOf("qnn_npu", "upscaler_bin") }

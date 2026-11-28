@@ -263,7 +263,11 @@ fun ModelSelectorCard(
                 // GPU path, so there is nothing to pick); Whisper (whisper.cpp) runs on the CPU, on the GPU (Vulkan) where
                 // GGUF LLMs may use Vulkan, or, on Snapdragon chips with llama.cpp HTP kernels, the Hexagon NPU; ML Kit
                 // picks its own hardware.
-                val isParakeetVoice = com.llmhub.llmhub.data.AsrModels.isParakeet(selectedVoiceModel) && selectedVoiceModel?.supportsGpu == true
+                // Granite Speech (LiteRT-LM engine) and Parakeet Ultra's GPU download offer the same CPU/GPU choice as the
+                // AudioTranscriber recognizers.
+                val isParakeetVoice = (com.llmhub.llmhub.data.AsrModels.isParakeet(selectedVoiceModel) ||
+                    com.llmhub.llmhub.data.AsrModels.isGraniteSpeech(selectedVoiceModel) ||
+                    com.llmhub.llmhub.data.AsrModels.isParakeetUltra(selectedVoiceModel)) && selectedVoiceModel?.supportsGpu == true
                 val isWhisperVoice = com.llmhub.llmhub.data.AsrModels.isWhisperCpp(selectedVoiceModel)
                 val isWhisperNpuVoice = isWhisperVoice && com.llmhub.llmhub.data.AsrModels.whisperNpuAvailable()
                 val isWhisperGpuVoice = isWhisperVoice && com.llmhub.llmhub.data.AsrModels.whisperGpuAvailable()
@@ -339,8 +343,11 @@ fun ModelSelectorCard(
                         (selectedModel.name.contains("Gemma-4 12B", ignoreCase = true) ||
                             selectedModel.name.contains("Gemma 4 12B", ignoreCase = true))
                 }
+                // Chat models compiled for this chip's NPU (Gemma 4 E2B, Gemma-3 1B) run only there: nothing to pick.
+                val isNpuOnlyModel = remember(selectedModel) { com.llmhub.llmhub.data.ModelData.isLiteRtLmNpuChatModel(selectedModel) }
                 AnimatedVisibility(
-                    visible = onBackendSelected != null && selectedModel != null && selectedBackend != null && !isLiteRtLmGemma4_12B,
+                    visible = onBackendSelected != null && selectedModel != null && selectedBackend != null && !isLiteRtLmGemma4_12B &&
+                        !isNpuOnlyModel,
                     enter = fadeIn() + expandVertically()
                 ) {
                     ExposedDropdownMenuBox(

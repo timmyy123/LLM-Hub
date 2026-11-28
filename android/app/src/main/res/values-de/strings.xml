@@ -1211,4 +1211,6 @@
     <string name="music_live_resume">Fortsetzen</string>
     <string name="live_transcription">Live-Transkription</string>
     <string name="live_transcription_desc">Text erscheint beim Sprechen</string>
+    <string name="mtp_label">MTP-Beschleunigung</string>
+    <string name="mtp_description">Multi-Token-Vorhersage entwirft mehrere Tokens auf einmal für schnellere Antworten. Schalte sie aus, wenn Antworten auf deinem Gerät langsamer werden.</string>
 </resources>

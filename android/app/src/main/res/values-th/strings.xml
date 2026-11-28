@@ -1153,4 +1153,6 @@
     <string name="music_live_resume">เล่นต่อ</string>
     <string name="live_transcription">ถอดเสียงแบบเรียลไทม์</string>
     <string name="live_transcription_desc">ข้อความจะแสดงขณะที่คุณพูด</string>
+    <string name="mtp_label">การเร่งความเร็ว MTP</string>
+    <string name="mtp_description">การทำนายหลายโทเค็นจะร่างหลายโทเค็นพร้อมกันเพื่อให้ตอบได้เร็วขึ้น ปิดไว้หากการตอบช้าลงบนอุปกรณ์ของคุณ</string>
 </resources>

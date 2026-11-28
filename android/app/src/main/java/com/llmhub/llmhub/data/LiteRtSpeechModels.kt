@@ -207,8 +207,23 @@ object AsrModels {
     /** Checkpoints trained on English only, which must not be asked to detect the language. */
     fun isEnglishOnly(model: LLMModel) = model.name.contains("English", ignoreCase = true)
 
-    /** Every `.litertlm` recognizer (Parakeet, Whisper, Moonshine): they all run on the MediaPipe AudioTranscriber task. */
-    fun isParakeet(model: LLMModel?) = model?.category == "asr" && model.modelFormat == "litertlm"
+    /** Every `.litertlm` recognizer but Granite Speech (Parakeet, Whisper, Moonshine): they run on the MediaPipe AudioTranscriber task. */
+    fun isParakeet(model: LLMModel?) = model?.category == "asr" && model.modelFormat == "litertlm" && !isGraniteSpeech(model)
+
+    /**
+     * IBM Granite Speech 5.0 2B: a conformer encoder feeding a Granite language model, as a LiteRT-LM bundle that the
+     * LiteRT-LM engine runs (not the AudioTranscriber task). English, French, German, Spanish, Portuguese and
+     * Japanese. The `_ekv2048` file: audio encoder on the GPU, about 2 minutes of audio per message.
+     */
+    const val GRANITE_SPEECH_NAME = "Granite Speech 5.0 2B (LiteRT-LM)"
+    const val GRANITE_SPEECH_URL =
+        "https://huggingface.co/litert-community/granite-speech-5.0-2b/resolve/12e1641d17d05d0159895675f2bc901d6547b64c/granite-speech-5.0-2b_ekv2048.litertlm"
+    const val GRANITE_SPEECH_SIZE = 2824472576L
+
+    fun isGraniteSpeech(model: LLMModel?) = model?.name == GRANITE_SPEECH_NAME
+
+    /** Parakeet Ultra as plain LiteRT graphs (int8 for the CPU, float16 for the GPU), run by ParakeetUltraEngine. */
+    fun isParakeetUltra(model: LLMModel?) = ParakeetUltraModel.isModel(model?.name)
 
     /** Parakeet compiled ahead of time for one SoC's NPU: a bare `.tflite` run by ParakeetNpuEngine. */
     const val PARAKEET_NPU_FORMAT = "tflite"

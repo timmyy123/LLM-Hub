@@ -1249,4 +1249,6 @@
     <string name="music_live_resume">Wznów</string>
     <string name="live_transcription">Transkrypcja na żywo</string>
     <string name="live_transcription_desc">Tekst pojawia się podczas mówienia</string>
+    <string name="mtp_label">Przyspieszenie MTP</string>
+    <string name="mtp_description">Przewidywanie wielu tokenów generuje kilka tokenów naraz, dzięki czemu odpowiedzi są szybsze. Wyłącz je, jeśli na Twoim urządzeniu odpowiedzi zwalniają.</string>
 </resources>

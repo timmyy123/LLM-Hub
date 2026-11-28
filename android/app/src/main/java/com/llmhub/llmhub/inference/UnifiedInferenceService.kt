@@ -61,11 +61,13 @@ class UnifiedInferenceService(private val context: Context) : InferenceService {
         val finalDisableVision = disableVision
         val finalDisableAudio = disableAudio
 
-        val isGemma4 = model.name.contains("Gemma-4", ignoreCase = true)
+        // .litertlm files run on LiteRT-LM (Gemma-4, Phi-4, Aion, the Gemma-3 1B NPU builds and custom imports), except
+        // Gemma-3n, which stays on MediaPipe's LLM Inference API with the legacy .task files.
+        val isGemma3n = model.name.contains("Gemma-3n", ignoreCase = true)
         val targetService = when (model.modelFormat) {
             "onnx" -> onnxService
             "gguf" -> llamaCppService
-            "litertlm" -> if (isGemma4 || model.source == "Custom") liteRtLmService else mediaPipeService
+            "litertlm" -> if (isGemma3n) mediaPipeService else liteRtLmService
             else -> mediaPipeService
         }
 
@@ -79,10 +81,13 @@ class UnifiedInferenceService(private val context: Context) : InferenceService {
             val visionMatches = finalDisableVision == isVisionDisabled
             val audioMatches = usingLlamaCppFallback ||
                 finalDisableAudio == isAudioDisabled
+            // A changed MTP switch needs a new LiteRT-LM engine.
+            val mtpMatches = currentService !== liteRtLmService || !liteRtLmService.mtpSettingChanged(model)
             if (loaded?.name == model.name &&
                 backendMatches &&
                 visionMatches &&
-                audioMatches
+                audioMatches &&
+                mtpMatches
             ) {
                 Log.d(
                     "UnifiedInferenceService",
@@ -236,7 +241,9 @@ class UnifiedInferenceService(private val context: Context) : InferenceService {
     }
 
     private fun updateAgentTools(model: LLMModel) {
-        if (agentToolsEnabled && model.modelFormat == "litertlm") {
+        // Only Gemma-4 was trained for LiteRT-LM function calling; other .litertlm models (Gemma-3n, Phi-4, Aion,
+        // Gemma-3 1B) chat without tools.
+        if (agentToolsEnabled && model.modelFormat == "litertlm" && model.name.contains("Gemma-4", ignoreCase = true)) {
             liteRtLmService.setAgentTools(ChatAgentSkillsTools(context))
         } else {
             liteRtLmService.setAgentTools(null)

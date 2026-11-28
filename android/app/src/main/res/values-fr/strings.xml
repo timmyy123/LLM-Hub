@@ -1231,4 +1231,6 @@
     <string name="music_live_resume">Reprendre</string>
     <string name="live_transcription">Transcription en direct</string>
     <string name="live_transcription_desc">Le texte s\'affiche pendant que vous parlez</string>
+    <string name="mtp_label">Accélération MTP</string>
+    <string name="mtp_description">La prédiction multi-jetons propose plusieurs jetons à la fois pour des réponses plus rapides. Désactivez-la si les réponses deviennent plus lentes sur votre appareil.</string>
 </resources>

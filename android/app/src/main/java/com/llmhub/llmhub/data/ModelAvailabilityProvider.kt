@@ -78,7 +78,7 @@ object ModelAvailabilityProvider {
                     val fileCount = files.filter { it.length() > 0 }.size
                     val expectedFileCount = 1 + model.additionalFiles.size
                     val totalSize = files.sumOf { it.length() }
-                    if (fileCount >= expectedFileCount) {
+                    if (fileCount >= expectedFileCount && (!PinnedBundles.isPinned(model.name) || PinnedBundles.isComplete(context, model.name))) {
                         isAvailable = true
                         actualSize = totalSize
                         Log.d("ModelAvailability", "  ✓ ONNX model available: ${model.name} ($fileCount files)")

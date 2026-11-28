@@ -1245,4 +1245,6 @@
     <string name="music_live_resume">ادامه</string>
     <string name="live_transcription">رونویسی زنده</string>
     <string name="live_transcription_desc">متن هنگام صحبت نمایش داده می‌شود</string>
+    <string name="mtp_label">شتاب‌دهی MTP</string>
+    <string name="mtp_description">پیش‌بینی چندتوکنی چند توکن را هم‌زمان پیش‌نویس می‌کند تا پاسخ‌ها سریع‌تر شوند. اگر پاسخ‌ها روی دستگاه شما کندتر شد، آن را خاموش کنید.</string>
 </resources>

@@ -1247,4 +1247,6 @@
     <string name="music_live_resume">Lanjutkan</string>
     <string name="live_transcription">Transkripsi langsung</string>
     <string name="live_transcription_desc">Teks muncul saat Anda berbicara</string>
+    <string name="mtp_label">Akselerasi MTP</string>
+    <string name="mtp_description">Prediksi multi-token menyusun beberapa token sekaligus agar balasan lebih cepat. Matikan jika balasan menjadi lebih lambat di perangkat Anda.</string>
 </resources>

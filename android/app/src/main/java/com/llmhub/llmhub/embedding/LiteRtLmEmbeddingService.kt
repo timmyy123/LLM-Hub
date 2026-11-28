@@ -103,7 +103,7 @@ class LiteRtLmEmbeddingService(
         )
 
         if (ModelData.isEmbeddingGemma2NpuModel(model)) {
-            val libDir = prepareNpuLibraryDir()
+            val libDir = com.llmhub.llmhub.inference.LiteRtLmNpu.libraryDir(context)
             return listOf(
                 NPU to config(Backend.NPU(libDir), Backend.NPU(libDir), Backend.CPU()),
                 NPU_GPU_VISION to config(Backend.NPU(libDir), Backend.GPU(), Backend.CPU()),
@@ -113,55 +113,6 @@ class LiteRtLmEmbeddingService(
         return buildList {
             if (model.supportsGpu) add("GPU" to config(Backend.GPU(), Backend.GPU(), Backend.CPU()))
             add("CPU" to config(Backend.CPU(), Backend.CPU(), Backend.CPU()))
-        }
-    }
-
-    /**
-     * The folder LiteRT-LM loads its NPU dispatch library from.
-     *
-     * From LiteRT-LM 0.20 the engine runs on the app's libLiteRt.so (litert 2.4), so it uses the same
-     * litert-npu-runtime dispatch libraries as the CompiledModel features, from the APK's native library
-     * folder. Each vendor gets a folder with only its own dispatch library, because LiteRT loads the first
-     * one it finds.
-     */
-    private fun prepareNpuLibraryDir(): String {
-        val nativeDir = context.applicationInfo.nativeLibraryDir
-        val tag = DeviceInfo.getEmbeddingGemma2NpuTag() ?: return nativeDir
-        val vendor = when {
-            tag.startsWith("Qualcomm") -> "Qualcomm"
-            tag.startsWith("MediaTek") -> "MediaTek"
-            tag.startsWith("Google") -> "GoogleTensor"
-            else -> return nativeDir
-        }
-        return try {
-            val library = "libLiteRtDispatch_$vendor.so"
-            val dir = File(context.filesDir, "litertlm_npu/$vendor").apply { mkdirs() }
-            val source = File(nativeDir, library)
-            File(dir, library).let { if (it.length() != source.length()) source.copyTo(it, overwrite = true) }
-            if (vendor == "Qualcomm") linkQnnRuntime(dir)
-            dir.absolutePath
-        } catch (e: Exception) {
-            Log.w(TAG, "Failed to stage $vendor NPU libraries: ${e.message}")
-            nativeDir
-        }
-    }
-
-    /**
-     * The Qualcomm dispatch library loads QNN from its own folder and needs the QAIRT runtime ([QairtRuntime],
-     * assets/qnnlibs_litert). Those 100 MB are kept once in [QairtRuntime.dir], where the CompiledModel
-     * features stage them too, and linked into [dir]. The Stable Diffusion pack (assets/qnnlibs, system API
-     * 1.5) is a different runtime and must not end up here.
-     */
-    private fun linkQnnRuntime(dir: File) {
-        val store = com.llmhub.llmhub.data.QairtRuntime.stage(context)
-        for (name in context.assets.list(com.llmhub.llmhub.data.QairtRuntime.ASSET_DIR).orEmpty()) {
-            val stored = File(store, name)
-            val link = File(dir, name)
-            // A link into an older runtime's folder dangles once QairtRuntime removes that folder (exists() is then
-            // false but the link still blocks symlink()); replace anything that is not this runtime's file.
-            if (link.exists() && link.canonicalPath == stored.canonicalPath) continue
-            link.delete()
-            runCatching { android.system.Os.symlink(stored.path, link.path) }.onFailure { stored.copyTo(link, overwrite = true) }
         }
     }
 

@@ -1243,4 +1243,6 @@
     <string name="music_live_resume">Devam et</string>
     <string name="live_transcription">Canlı transkripsiyon</string>
     <string name="live_transcription_desc">Konuşurken metin görünür</string>
+    <string name="mtp_label">MTP hızlandırma</string>
+    <string name="mtp_description">Çoklu token tahmini, daha hızlı yanıtlar için aynı anda birkaç token üretir. Cihazınızda yanıtlar yavaşlarsa kapatın.</string>
 </resources>

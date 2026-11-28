@@ -32,13 +32,14 @@ fun defaultConfigForModel(model: LLMModel): ModelConfig {
         temperature = 1.0f,
         backend = if (defaultUseGpu) "GPU" else "CPU",
         deviceId = null,
-        disableVision = isGemma3n || isGemma4Small || !supportsVision,
-        disableAudio = isGemma3n || isGemma4Small,
+        // Gemma-4 (E2B, E4B and 12B) starts with vision, audio and agent tools off; users switch them on.
+        disableVision = isGemma3n || isGemma4Small || isGemma4_12B || !supportsVision,
+        disableAudio = isGemma3n || isGemma4Small || isGemma4_12B,
         nGpuLayers = 999,
         enableThinking = true,
         systemPrompt = "",
         contextWindow = defaultCtx,
-        agentToolsEnabled = !isGemma4Small
+        agentToolsEnabled = !(isGemma4Small || isGemma4_12B)
     )
 }
 

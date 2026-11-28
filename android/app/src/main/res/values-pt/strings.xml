@@ -1198,4 +1198,6 @@
     <string name="music_live_resume">Retomar</string>
     <string name="live_transcription">Transcrição em tempo real</string>
     <string name="live_transcription_desc">O texto aparece enquanto você fala</string>
+    <string name="mtp_label">Aceleração MTP</string>
+    <string name="mtp_description">A previsão de vários tokens gera vários tokens de uma vez para respostas mais rápidas. Desative se as respostas ficarem mais lentas no seu dispositivo.</string>
 </resources>

@@ -62,6 +62,8 @@ fun ModelConfigsDialog(
     val isGemma3nE2B = model.name.contains("Gemma-3n E2B", ignoreCase = true)
     val isGemma3nE4B = model.name.contains("Gemma-3n E4B", ignoreCase = true)
     val isGemma3nModel = isGemma3nE2B || isGemma3nE4B
+    val isGemma4LiteRt12B = model.modelFormat == "litertlm" &&
+        (model.name.contains("Gemma-4 12B", ignoreCase = true) || model.name.contains("Gemma 4 12B", ignoreCase = true))
     val isGemma4Small = model.modelFormat == "litertlm" &&
         (model.name.contains("Gemma-4 E2", ignoreCase = true) ||
             model.name.contains("Gemma-4 E4", ignoreCase = true))
@@ -357,8 +359,9 @@ fun ModelConfigsDialog(
                         topP = 0.95f
                         temperature = 1.0f
                         useGpu = defaultUseGpu
-                        disableVision = isGemma3nModel || isGemma4Small
-                        disableAudio = isGemma3nModel || isGemma4Small
+                        // Gemma-4 (E2B, E4B and 12B) resets to vision and audio off, as in chat settings.
+                        disableVision = isGemma3nModel || isGemma4Small || isGemma4LiteRt12B
+                        disableAudio = isGemma3nModel || isGemma4Small || isGemma4LiteRt12B
                     }, modifier = Modifier
                         .height(48.dp)
                         .defaultMinSize(minWidth = 88.dp)) { Text(stringResource(R.string.reset_to_defaults)) }

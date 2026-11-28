@@ -1245,4 +1245,6 @@
     <string name="music_live_resume">재개</string>
     <string name="live_transcription">실시간 받아쓰기</string>
     <string name="live_transcription_desc">말하는 동안 텍스트가 표시됩니다</string>
+    <string name="mtp_label">MTP 가속</string>
+    <string name="mtp_description">멀티 토큰 예측으로 여러 토큰을 한 번에 생성해 답변이 더 빨라집니다. 기기에서 답변이 느려지면 끄세요.</string>
 </resources>

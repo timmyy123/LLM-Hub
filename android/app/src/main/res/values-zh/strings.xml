@@ -1253,4 +1253,6 @@
     <string name="music_live_resume">繼續</string>
     <string name="live_transcription">实时转写</string>
     <string name="live_transcription_desc">说话时即时显示文字</string>
+    <string name="mtp_label">MTP 加速</string>
+    <string name="mtp_description">多 token 预测一次生成多个 token，让回复更快。如果在你的设备上回复变慢，请关闭它。</string>
 </resources>

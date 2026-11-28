@@ -1242,4 +1242,6 @@
     <string name="music_live_resume">再開</string>
     <string name="live_transcription">リアルタイム文字起こし</string>
     <string name="live_transcription_desc">話している間にテキストを表示します</string>
+    <string name="mtp_label">MTP 高速化</string>
+    <string name="mtp_description">マルチトークン予測で複数のトークンをまとめて生成し、返信を速くします。お使いの端末で遅くなる場合はオフにしてください。</string>
 </resources>

@@ -14,6 +14,7 @@ import com.llmhub.llmhub.imagegen.OnDeviceFixtures
 import com.llmhub.llmhub.ui.components.LiteRtTtsEngine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Assert.*
 import org.junit.Assume.assumeTrue
@@ -213,6 +214,44 @@ class SpeechModelsDeviceTest {
     /** Whisper (whisper.cpp) as the app loads it: the catalog file, NPU when the chip has llama.cpp HTP kernels. */
     @Test fun whisperBaseCpuHearsThePassage() = hears(model("Whisper Base (Multilingual)", WHISPER_BASE_SHA256), WhisperBackend.CPU, PASSAGE)
 
+    @Test fun graniteSpeechGpuHearsThePassage() = hears(model(AsrModels.GRANITE_SPEECH_NAME, GRANITE_SPEECH_SHA256), WhisperBackend.GPU, PASSAGE)
+
+    @Test fun graniteSpeechCpuHearsThePassage() = hears(model(AsrModels.GRANITE_SPEECH_NAME, GRANITE_SPEECH_SHA256), WhisperBackend.CPU, PASSAGE)
+
+    @Test fun graniteSpeechGpuHearsTheLongClip() = hears(model(AsrModels.GRANITE_SPEECH_NAME, GRANITE_SPEECH_SHA256), WhisperBackend.GPU, LONG)
+
+    @Test fun parakeetUltraHearsThePassage() = hears(pinnedModel(com.llmhub.llmhub.data.ParakeetUltraModel.NAME), WhisperBackend.CPU, PASSAGE)
+
+    @Test fun parakeetUltraHearsTheLongClip() = hears(pinnedModel(com.llmhub.llmhub.data.ParakeetUltraModel.NAME), WhisperBackend.CPU, LONG)
+
+    /** Parakeet Ultra's float16 download with its encoder on the GPU. */
+    @Test fun parakeetUltraGpuHearsThePassage() = hears(pinnedModel(com.llmhub.llmhub.data.ParakeetUltraModel.GPU_NAME), WhisperBackend.GPU, PASSAGE)
+
+    /** Parakeet Ultra compiled for this phone's NPU (skipped on chips without a build). */
+    @Test fun parakeetUltraNpuHearsThePassage() = hears(ultraNpuModel(), WhisperBackend.NPU, PASSAGE)
+
+    @Test fun parakeetUltraNpuHearsTheLongClip() = hears(ultraNpuModel(), WhisperBackend.NPU, LONG)
+
+    private fun ultraNpuModel(): LLMModel {
+        val name = ModelData.models.firstOrNull { com.llmhub.llmhub.data.ParakeetUltraModel.isNpu(it.name) }?.name
+        org.junit.Assume.assumeTrue("No Parakeet Ultra NPU build for ${Build.SOC_MODEL}", name != null)
+        return pinnedModel(name!!)
+    }
+
+    @Test fun parakeetUltraGpuHearsTheLongClip() = hears(pinnedModel(com.llmhub.llmhub.data.ParakeetUltraModel.GPU_NAME), WhisperBackend.GPU, LONG)
+
+    /** A multi-file catalog model, fetched by the app's own downloader. */
+    private fun pinnedModel(name: String): LLMModel = runBlocking {
+        val model = ModelData.models.first { it.name == name }
+        if (!com.llmhub.llmhub.data.PinnedBundles.isComplete(context, name)) {
+            io.ktor.client.HttpClient(io.ktor.client.engine.android.Android).use { client ->
+                com.llmhub.llmhub.data.ModelDownloader(client, context).downloadModel(model).collect { }
+            }
+        }
+        check(com.llmhub.llmhub.data.PinnedBundles.isComplete(context, name)) { "$name download incomplete" }
+        model
+    }
+
     /** GPU through the app's setting: Vulkan where GGUF LLMs may use it, the CPU elsewhere (e.g. Tensor G5/G6). */
     @Test fun whisperBaseGpuHearsThePassage() = hears(model("Whisper Base (Multilingual)", WHISPER_BASE_SHA256), WhisperBackend.GPU, PASSAGE)
 
@@ -367,13 +406,26 @@ class SpeechModelsDeviceTest {
                 InstrumentationRegistry.getArguments().getString("mlKitFeedSpeed")?.toFloatOrNull()?.let { MlKitAsrEngine.feedSpeed = it }
                 report.put("feedSpeed", MlKitAsrEngine.feedSpeed.toDouble())
             }
+            // -e ultraThreads N sets Parakeet Ultra's CPU encoder threads.
+            InstrumentationRegistry.getArguments().getString("ultraThreads")?.toIntOrNull()?.let { ParakeetUltraEngine.cpuThreads = it }
+            // -e ultraGpuPrecision FP32 | FP16_WITH_FP32_ACCUM sets the GPU encoder's precision.
+            InstrumentationRegistry.getArguments().getString("ultraGpuPrecision")?.let {
+                ParakeetUltraEngine.gpuPrecision = com.google.ai.edge.litert.CompiledModel.GpuOptions.Precision.valueOf(it)
+            }
             var started = SystemClock.elapsedRealtime()
             val loaded = service.loadModel(model, backend)
             report.put("loaded", loaded).put("loadMs", SystemClock.elapsedRealtime() - started)
             if (AsrModels.isMlKit(model)) assumeTrue("ML Kit recognizer is not available on this device", loaded)
             assertTrue("${model.name} must load", loaded)
-            started = SystemClock.elapsedRealtime()
-            val transcript = service.transcribe(audio).orEmpty()
+            // -e repeat N transcribes the clip N times with the same loaded model; the report keeps the last run.
+            val times = JSONArray()
+            var transcript = ""
+            repeat(InstrumentationRegistry.getArguments().getString("repeat")?.toIntOrNull() ?: 1) {
+                started = SystemClock.elapsedRealtime()
+                transcript = service.transcribe(audio).orEmpty()
+                times.put(SystemClock.elapsedRealtime() - started)
+            }
+            report.put("transcribeRunsMs", times)
             val recall = recall(text, transcript)
             report.put("transcribeMs", SystemClock.elapsedRealtime() - started).put("recall", recall).put("transcript", transcript)
             Log.i(TAG, "RESULT $report")
@@ -511,6 +563,7 @@ class SpeechModelsDeviceTest {
         const val ACFT_BASE_SHA256 = "cfccd47ef1fa1d0f8e50718b342b5400c2fbe2c622bc6a3524df2a68708dbf4a"
         const val ACFT_SMALL_SHA256 = "1a763f37b8871283d90815a1b95bcc77c3d496eba64b6feeead2cbf431d95c86"
         const val WHISPER_LITERT_SHA256 = "92f194600d98e1d94b1ff6f636d109c0f4ac66f3f6a1803f7a665e93daf78012"
+        const val GRANITE_SPEECH_SHA256 = "9f4d3dae0cb7b7d5abfdf0fc1ac9840ab01b546ad6c39e85a1011eee8ce5fe50"
         const val MOONSHINE_SHA256 = "9876ebf427f9b46cf986d0e5f2cef9647249c54453082722b59f70411d15c4d1"
         const val PARAKEET_SHA256 = "66c5a74cf6c2c1d2b990901f6cece5bb53e3214dbceafa0989900a6f0eeb3504"
         /** Checksums of the builds the catalog offers, by SoC tag. */
