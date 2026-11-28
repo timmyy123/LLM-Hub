@@ -414,10 +414,10 @@
     <string name="thinking_level_medium">Sedang</string>
     <string name="thinking_level_high">Tinggi</string>
     <string name="thinking_level_max">Maksimal</string>
-    <string name="gemma3n_e4b_modality_suggestion">💡 Untuk kinerja yang stabil pada perangkat 7-8GB, pertimbangkan untuk menonaktifkan audio untuk menghemat memori GPU. Visi umumnya lebih stabil.</string>
+    <string name="gemma3n_e4b_modality_suggestion">Untuk kinerja yang stabil pada perangkat 7-8GB, pertimbangkan untuk menonaktifkan audio untuk menghemat memori GPU. Visi umumnya lebih stabil.</string>
     
     <!-- General performance tip for all devices -->
-    <string name="gemma3n_performance_tip">💡 Jika Anda mengalami crash atau kinerja rendah karena keterbatasan RAM, coba beralih ke backend CPU atau menonaktifkan fitur visi/audio.</string>
+    <string name="gemma3n_performance_tip">Jika Anda mengalami crash atau kinerja rendah karena keterbatasan RAM, coba beralih ke backend CPU atau menonaktifkan fitur visi/audio.</string>
     
     <!-- External Model Import -->
     <string name="import_external_model">Impor Model Eksternal</string>

@@ -597,9 +597,12 @@ class LiteRtLmInferenceService(private val applicationContext: Context) : Infere
             }
 
             // The chat screen sends a "user: …\nassistant: …" transcript, which every model gets as one message (as on
-            // iOS) except Phi-4: sent that way it continued the transcript with an invented "user:" turn instead of
-            // ending its reply, so its earlier turns go to LiteRT-LM as history for the file's own template.
-            val transcript = if (model.name.contains("Phi-4", ignoreCase = true)) splitTranscript(enhancedPrompt)
+            // iOS) except Phi-4 and the Gemma-3 1B NPU builds: sent that way Phi-4 continued the transcript with an
+            // invented "user:" turn instead of ending its reply, and Gemma-3 1B ignored the earlier turns, so their
+            // earlier turns go to LiteRT-LM as history for the file's own template.
+            val splitsHistory = model.name.contains("Phi-4", ignoreCase = true) ||
+                (ModelData.isLiteRtLmNpuChatModel(model) && model.name.contains("Gemma-3 1B", ignoreCase = true))
+            val transcript = if (splitsHistory) splitTranscript(enhancedPrompt)
                 else Transcript(null, emptyList(), enhancedPrompt)
 
             // Build content parts list (text first, then images, then audio — per API requirement)

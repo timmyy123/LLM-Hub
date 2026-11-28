@@ -385,8 +385,8 @@
     <string name="thinking_level_medium">Trung bình</string>
     <string name="thinking_level_high">Cao</string>
     <string name="thinking_level_max">Tối đa</string>
-    <string name="gemma3n_e4b_modality_suggestion">💡 Để có hiệu suất ổn định trên các thiết bị 7-8GB, hãy cân nhắc việc tắt âm thanh để tiết kiệm bộ nhớ GPU. Tầm nhìn nhìn chung ổn định hơn.</string>
-    <string name="gemma3n_performance_tip">💡 Nếu bạn gặp sự cố hoặc hiệu suất thấp do giới hạn RAM, hãy thử chuyển sang chương trình phụ trợ CPU hoặc tắt các tính năng hình ảnh/âm thanh.</string>
+    <string name="gemma3n_e4b_modality_suggestion">Để có hiệu suất ổn định trên các thiết bị 7-8GB, hãy cân nhắc việc tắt âm thanh để tiết kiệm bộ nhớ GPU. Tầm nhìn nhìn chung ổn định hơn.</string>
+    <string name="gemma3n_performance_tip">Nếu bạn gặp sự cố hoặc hiệu suất thấp do giới hạn RAM, hãy thử chuyển sang chương trình phụ trợ CPU hoặc tắt các tính năng hình ảnh/âm thanh.</string>
     <string name="import_external_model">Nhập mô hình bên ngoài</string>
     <string name="model_name">Tên mẫu</string>
     <string name="select">Chọn</string>

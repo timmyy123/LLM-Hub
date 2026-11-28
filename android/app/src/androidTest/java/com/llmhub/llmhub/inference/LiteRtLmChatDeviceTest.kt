@@ -70,6 +70,24 @@ class LiteRtLmChatDeviceTest {
         assertTrue("Story too short: $story", story.split(Regex("\\s+")).size >= 60)
     }
 
+    /** The owner's own three-message chat (Tab S9+, 2026-11-28) in the chat screen's transcript format; replies logged. */
+    @Test fun ownerChat() = withModel { service, model ->
+        var transcript = ""
+        for ((i, message) in listOf("gay", "what", "what we talked").withIndex()) {
+            val prompt = transcript + "user: $message\nassistant:"
+            val reply = chat(service, model, "ownerChat$i", prompt)
+            transcript = prompt + " " + reply.trim() + "\n\n"
+        }
+    }
+
+    /** Two turns in the chat screen's transcript format: the second needs a fact only the first turn gave. */
+    @Test fun memory() = withModel { service, model ->
+        val intro = "user: My name is Priya and my favourite fruit is mango. Just reply OK.\nassistant:"
+        val first = chat(service, model, "memoryIntro", intro)
+        val recall = chat(service, model, "memoryRecall", "${intro} ${first.trim()}\n\nuser: What is my name and what is my favourite fruit?\nassistant:")
+        assertTrue("Forgot the first turn: $recall", recall.contains("Priya", ignoreCase = true) && recall.contains("mango", ignoreCase = true))
+    }
+
     /**
      * The per-model MTP switch: defaults (on for Gemma, off otherwise), shown only for files with an MTP drafter, and a
      * flip reloads the engine with MTP off, then on. Uses `-e model` (a Gemma .litertlm with a drafter).

@@ -391,10 +391,10 @@
     <string name="thinking_level_medium">Mittel</string>
     <string name="thinking_level_high">Hoch</string>
     <string name="thinking_level_max">Maximal</string>
-    <string name="gemma3n_e4b_modality_suggestion">💡 Für stabile Leistung auf 7-8GB Geräten erwägen Sie, Audio zu deaktivieren, um GPU-Speicher zu sparen. Vision ist im Allgemeinen stabiler.</string>
+    <string name="gemma3n_e4b_modality_suggestion">Für stabile Leistung auf 7-8GB Geräten erwägen Sie, Audio zu deaktivieren, um GPU-Speicher zu sparen. Vision ist im Allgemeinen stabiler.</string>
     
     <!-- General performance tip for all devices -->
-    <string name="gemma3n_performance_tip">💡 Wenn Sie Abstürze oder niedrige Leistung aufgrund von RAM-Beschränkungen erleben, versuchen Sie zum CPU-Backend zu wechseln oder Vision/Audio-Funktionen zu deaktivieren.</string>
+    <string name="gemma3n_performance_tip">Wenn Sie Abstürze oder niedrige Leistung aufgrund von RAM-Beschränkungen erleben, versuchen Sie zum CPU-Backend zu wechseln oder Vision/Audio-Funktionen zu deaktivieren.</string>
     
     <!-- External Model Import -->
     <string name="import_external_model">Externes Modell Importieren</string>

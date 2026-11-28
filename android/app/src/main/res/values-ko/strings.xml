@@ -414,10 +414,10 @@
     <string name="thinking_level_medium">보통</string>
     <string name="thinking_level_high">높음</string>
     <string name="thinking_level_max">최대</string>
-    <string name="gemma3n_e4b_modality_suggestion">💡 7-8GB 기기에서 안정적인 성능을 위해 GPU 메모리를 절약하기 위해 오디오를 비활성화하는 것을 고려하세요. 비전은 일반적으로 더 안정적입니다.</string>
+    <string name="gemma3n_e4b_modality_suggestion">7-8GB 기기에서 안정적인 성능을 위해 GPU 메모리를 절약하기 위해 오디오를 비활성화하는 것을 고려하세요. 비전은 일반적으로 더 안정적입니다.</string>
     
     <!-- General performance tip for all devices -->
-    <string name="gemma3n_performance_tip">💡 RAM 제한으로 인해 충돌이나 낮은 성능이 발생하면 CPU 백엔드로 전환하거나 비전/오디오 기능을 비활성화해 보세요.</string>
+    <string name="gemma3n_performance_tip">RAM 제한으로 인해 충돌이나 낮은 성능이 발생하면 CPU 백엔드로 전환하거나 비전/오디오 기능을 비활성화해 보세요.</string>
     
     <!-- External Model Import -->
     <string name="import_external_model">외부 모델 가져오기</string>

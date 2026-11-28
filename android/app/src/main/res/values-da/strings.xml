@@ -397,8 +397,8 @@
     <string name="thinking_level_medium">Middel</string>
     <string name="thinking_level_high">Høj</string>
     <string name="thinking_level_max">Maks</string>
-    <string name="gemma3n_e4b_modality_suggestion">💡 For stabil ydeevne på 7-8 GB enheder, overvej at deaktivere lyd for at spare GPU-hukommelse. Synet er generelt mere stabilt.</string>
-    <string name="gemma3n_performance_tip">💡 Hvis du oplever nedbrud eller lav ydeevne på grund af RAM-begrænsninger, så prøv at skifte til CPU-backend eller deaktiver vision/lydfunktioner.</string>
+    <string name="gemma3n_e4b_modality_suggestion">For stabil ydeevne på 7-8 GB enheder, overvej at deaktivere lyd for at spare GPU-hukommelse. Synet er generelt mere stabilt.</string>
+    <string name="gemma3n_performance_tip">Hvis du oplever nedbrud eller lav ydeevne på grund af RAM-begrænsninger, så prøv at skifte til CPU-backend eller deaktiver vision/lydfunktioner.</string>
     <string name="import_external_model">Importer ekstern model</string>
     <string name="model_name">Modelnavn</string>
     <string name="select">Vælg</string>

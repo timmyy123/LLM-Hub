@@ -411,10 +411,10 @@
     <string name="thinking_level_medium">中</string>
     <string name="thinking_level_high">高</string>
     <string name="thinking_level_max">最大</string>
-    <string name="gemma3n_e4b_modality_suggestion">💡 7〜8GBデバイスで安定したパフォーマンスを得るには、GPUメモリを節約するために音声を無効化することを検討してください。ビジョンは一般的により安定しています。</string>
+    <string name="gemma3n_e4b_modality_suggestion">7〜8GBデバイスで安定したパフォーマンスを得るには、GPUメモリを節約するために音声を無効化することを検討してください。ビジョンは一般的により安定しています。</string>
     
     <!-- General performance tip for all devices -->
-    <string name="gemma3n_performance_tip">💡 RAM制限によりクラッシュや低パフォーマンスが発生する場合は、CPUバックエンドへの切り替えまたはビジョン/音声機能の無効化を試してください。</string>
+    <string name="gemma3n_performance_tip">RAM制限によりクラッシュや低パフォーマンスが発生する場合は、CPUバックエンドへの切り替えまたはビジョン/音声機能の無効化を試してください。</string>
     
     <!-- External Model Import -->
     <string name="import_external_model">外部モデルをインポート</string>

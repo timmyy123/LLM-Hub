@@ -415,10 +415,10 @@
     <string name="thinking_level_medium">Середній</string>
     <string name="thinking_level_high">Високий</string>
     <string name="thinking_level_max">Максимальний</string>
-    <string name="gemma3n_e4b_modality_suggestion">💡 Для стабільності на пристроях 7–8GB вимкніть аудіо, щоб заощадити пам\'ять GPU. Зір зазвичай стабільніший.</string>
+    <string name="gemma3n_e4b_modality_suggestion">Для стабільності на пристроях 7–8GB вимкніть аудіо, щоб заощадити пам\'ять GPU. Зір зазвичай стабільніший.</string>
 
     <!-- General performance tip for all devices -->
-    <string name="gemma3n_performance_tip">💡 Якщо через обмеження RAM застосунок падає або працює повільно, перейдіть на CPU або вимкніть зір/аудіо.</string>
+    <string name="gemma3n_performance_tip">Якщо через обмеження RAM застосунок падає або працює повільно, перейдіть на CPU або вимкніть зір/аудіо.</string>
 
     <!-- External Model Import -->
     <string name="import_external_model">Імпорт зовнішньої моделі</string>

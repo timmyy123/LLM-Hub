@@ -603,9 +603,11 @@ fun ChatSettingsSheet(
                                         // Max tokens slider is gone — use context window as the generation cap
                                         val finalMax = contextWindowValue.coerceIn(1, baseMaxTokensCap)
                                         val finalCtxWindow = contextWindowValue.coerceIn(1, baseMaxTokensCap)
+                                        // NPU-only chat models (LiteRT-LM ignores the backend for them) still pass one, so the
+                                        // sheet's vision/audio settings load as saved and the first message doesn't reload.
                                         val backend = if (canSelectAccelerator) {
                                             if (useGpu) LlmInference.Backend.GPU else LlmInference.Backend.CPU
-                                        } else null
+                                        } else if (com.llmhub.llmhub.data.ModelData.isLiteRtLmNpuChatModel(model)) LlmInference.Backend.CPU else null
                                         val deviceId = if (useNpu) "dev0" else null
                                         
                                         // Save config

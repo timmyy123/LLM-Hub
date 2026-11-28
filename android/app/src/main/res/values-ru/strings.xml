@@ -394,10 +394,10 @@
     <string name="thinking_level_medium">Средний</string>
     <string name="thinking_level_high">Высокий</string>
     <string name="thinking_level_max">Максимальный</string>
-    <string name="gemma3n_e4b_modality_suggestion">💡 Для стабильной работы на устройствах 7-8ГБ, рассмотрите отключение аудио для экономии памяти GPU. Зрение обычно более стабильно.</string>
+    <string name="gemma3n_e4b_modality_suggestion">Для стабильной работы на устройствах 7-8ГБ, рассмотрите отключение аудио для экономии памяти GPU. Зрение обычно более стабильно.</string>
     
     <!-- General performance tip for all devices -->
-    <string name="gemma3n_performance_tip">💡 Если вы сталкиваетесь с сбоями или низкой производительностью из-за ограничений RAM, попробуйте переключиться на CPU бэкенд или отключить функции зрения/аудио.</string>
+    <string name="gemma3n_performance_tip">Если вы сталкиваетесь с сбоями или низкой производительностью из-за ограничений RAM, попробуйте переключиться на CPU бэкенд или отключить функции зрения/аудио.</string>
     <string name="reset_to_defaults">Сбросить</string>
     
     <!-- External Model Import -->

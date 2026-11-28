@@ -163,8 +163,15 @@ fun ChatScreen(
     // when the user returns, the same model can be loaded again on next send.
     // Unload when leaving Chat is handled in LlmHubNavigation (route observer); no unload on dispose so new chat doesn't reload.
 
+    // The drawer state lives in LlmHubNavigation, so a drawer left open (or opened by a back swipe) would still be open
+    // on the next visit: AI Chat always starts with it closed.
+    LaunchedEffect(Unit) { drawerState.snapTo(DrawerValue.Closed) }
+
     ModalNavigationDrawer(
         drawerState = drawerState,
+        // A left-edge swipe is the system back gesture; while the drawer is closed it must not also start opening it
+        // (the ☰ button opens it). Once open, it can still be swiped shut.
+        gesturesEnabled = drawerState.isOpen,
         drawerContent = {
             ChatDrawer(
                 onNavigateToChat = { newChatId ->
@@ -275,8 +282,10 @@ fun ChatScreen(
                                         Icon(Icons.Default.Psychology, contentDescription = stringResource(R.string.thinking_label), modifier = Modifier.size(12.dp), tint = MaterialTheme.colorScheme.primary)
                                         Spacer(modifier = Modifier.width(4.dp))
                                     }
-                                    if (viewModel.isGpuBackendEnabled()) {
-                                        val isNpu = selectedNpuDeviceId?.startsWith("dev", ignoreCase = true) == true
+                                    // LiteRT-LM chat models compiled for this chip's NPU (Gemma-3 1B, Gemma 4 E2B) always run there.
+                                    val isLiteRtLmNpu = com.llmhub.llmhub.data.ModelData.isLiteRtLmNpuChatModel(targetModel)
+                                    if (viewModel.isGpuBackendEnabled() || isLiteRtLmNpu) {
+                                        val isNpu = isLiteRtLmNpu || selectedNpuDeviceId?.startsWith("dev", ignoreCase = true) == true
                                         Icon(if (isNpu) Icons.Default.Bolt else Icons.Default.Speed, contentDescription = if (isNpu) "NPU enabled" else "GPU enabled", modifier = Modifier.size(12.dp), tint = MaterialTheme.colorScheme.secondary)
                                     }
                                     if (isEmbeddingEnabled) {

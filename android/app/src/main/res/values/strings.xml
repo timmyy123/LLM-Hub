@@ -435,10 +435,10 @@
     <string name="thinking_level_medium">Medium</string>
     <string name="thinking_level_high">High</string>
     <string name="thinking_level_max">Max</string>
-    <string name="gemma3n_e4b_modality_suggestion">💡 For stable performance on 7-8GB devices, consider disabling audio to save GPU memory. Vision is generally more stable.</string>
+    <string name="gemma3n_e4b_modality_suggestion">For stable performance on 7-8GB devices, consider disabling audio to save GPU memory. Vision is generally more stable.</string>
     
     <!-- General performance tip for all devices -->
-    <string name="gemma3n_performance_tip">💡 If you experience crashing or low performance due to RAM limitations, try switching to CPU backend or disabling vision/audio features.</string>
+    <string name="gemma3n_performance_tip">If you experience crashing or low performance due to RAM limitations, try switching to CPU backend or disabling vision/audio features.</string>
     
     <!-- External Model Import -->
     <string name="import_external_model">Import External Model</string>

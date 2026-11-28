@@ -427,10 +427,10 @@
     <string name="thinking_level_medium">中</string>
     <string name="thinking_level_high">高</string>
     <string name="thinking_level_max">最高</string>
-    <string name="gemma3n_e4b_modality_suggestion">💡 在 7–8 GB 内存设备上为获得稳定性能，建议禁用音频以节省显存。</string>
+    <string name="gemma3n_e4b_modality_suggestion">在 7–8 GB 内存设备上为获得稳定性能，建议禁用音频以节省显存。</string>
     
     <!-- General performance tip for all devices -->
-    <string name="gemma3n_performance_tip">💡若因内存限制导致程序崩溃或性能低下，请尝试切换至仅CPU模式 或禁用视觉/音频功能。</string>
+    <string name="gemma3n_performance_tip">若因内存限制导致程序崩溃或性能低下，请尝试切换至仅CPU模式 或禁用视觉/音频功能。</string>
     
     <!-- External Model Import -->
     <string name="import_external_model">导入外部模型</string>

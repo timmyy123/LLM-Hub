@@ -415,10 +415,10 @@
     <string name="thinking_level_medium">בינונית</string>
     <string name="thinking_level_high">גבוהה</string>
     <string name="thinking_level_max">מרבית</string>
-    <string name="gemma3n_e4b_modality_suggestion">💡 לביצועים יציבים במכשירי 7–8GB, שקול להשבית אודיו כדי לחסוך בזיכרון GPU. ראייה יציבה יותר בדרך כלל.</string>
+    <string name="gemma3n_e4b_modality_suggestion">לביצועים יציבים במכשירי 7–8GB, שקול להשבית אודיו כדי לחסוך בזיכרון GPU. ראייה יציבה יותר בדרך כלל.</string>
 
     <!-- General performance tip for all devices -->
-    <string name="gemma3n_performance_tip">💡 אם אתה חווה קריסות או ביצועים נמוכים עקב מגבלות RAM, עבור ל-CPU או השבת תכונות ראייה/אודיו.</string>
+    <string name="gemma3n_performance_tip">אם אתה חווה קריסות או ביצועים נמוכים עקב מגבלות RAM, עבור ל-CPU או השבת תכונות ראייה/אודיו.</string>
 
     <!-- External Model Import -->
     <string name="import_external_model">ייבוא מודל חיצוני</string>

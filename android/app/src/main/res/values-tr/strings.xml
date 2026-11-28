@@ -413,10 +413,10 @@
     <string name="thinking_level_medium">Orta</string>
     <string name="thinking_level_high">Yüksek</string>
     <string name="thinking_level_max">Maksimum</string>
-    <string name="gemma3n_e4b_modality_suggestion">💡 7-8GB cihazlarda kararlı performans için, GPU belleğinden tasarruf etmek üzere sesi devre dışı bırakmayı düşünün. Görsel genellikle daha kararlıdır.</string>
+    <string name="gemma3n_e4b_modality_suggestion">7-8GB cihazlarda kararlı performans için, GPU belleğinden tasarruf etmek üzere sesi devre dışı bırakmayı düşünün. Görsel genellikle daha kararlıdır.</string>
     
     <!-- General performance tip for all devices -->
-    <string name="gemma3n_performance_tip">💡 RAM sınırlamaları nedeniyle çökme veya düşük performans yaşıyorsanız, CPU arka ucuna geçmeyi veya görsel/ses özelliklerini devre dışı bırakmayı deneyin.</string>
+    <string name="gemma3n_performance_tip">RAM sınırlamaları nedeniyle çökme veya düşük performans yaşıyorsanız, CPU arka ucuna geçmeyi veya görsel/ses özelliklerini devre dışı bırakmayı deneyin.</string>
     
     <!-- External Model Import -->
     <string name="import_external_model">Harici Model İçe Aktar</string>

@@ -413,10 +413,10 @@
     <string name="thinking_level_medium">متوسط</string>
     <string name="thinking_level_high">مرتفع</string>
     <string name="thinking_level_max">أقصى</string>
-    <string name="gemma3n_e4b_modality_suggestion">💡 لأداء أكثر استقرارًا على أجهزة 7-8GB، فكّر في تعطيل الصوت لتوفير ذاكرة GPU. عادةً ما تكون الرؤية أكثر استقرارًا.</string>
+    <string name="gemma3n_e4b_modality_suggestion">لأداء أكثر استقرارًا على أجهزة 7-8GB، فكّر في تعطيل الصوت لتوفير ذاكرة GPU. عادةً ما تكون الرؤية أكثر استقرارًا.</string>
 
     <!-- General performance tip for all devices -->
-    <string name="gemma3n_performance_tip">💡 إذا واجهت انهيارًا أو أداءً منخفضًا بسبب قيود الذاكرة، جرّب التبديل إلى معالج CPU أو تعطيل ميزات الرؤية/الصوت.</string>
+    <string name="gemma3n_performance_tip">إذا واجهت انهيارًا أو أداءً منخفضًا بسبب قيود الذاكرة، جرّب التبديل إلى معالج CPU أو تعطيل ميزات الرؤية/الصوت.</string>
 
     <!-- External Model Import -->
     <string name="import_external_model">استيراد نموذج خارجي</string>

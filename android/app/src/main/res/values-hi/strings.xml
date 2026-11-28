@@ -447,10 +447,10 @@
     <string name="thinking_level_medium">मध्यम</string>
     <string name="thinking_level_high">उच्च</string>
     <string name="thinking_level_max">अधिकतम</string>
-    <string name="gemma3n_e4b_modality_suggestion">💡 7-8GB उपकरणों पर स्थिर प्रदर्शन के लिए, GPU मेमोरी बचाने के लिए ऑडियो को अक्षम करने पर विचार करें। विज़न आम तौर पर अधिक स्थिर है।</string>
+    <string name="gemma3n_e4b_modality_suggestion">7-8GB उपकरणों पर स्थिर प्रदर्शन के लिए, GPU मेमोरी बचाने के लिए ऑडियो को अक्षम करने पर विचार करें। विज़न आम तौर पर अधिक स्थिर है।</string>
     
     <!-- General performance tip for all devices -->
-    <string name="gemma3n_performance_tip">💡 यदि आप RAM सीमाओं के कारण क्रैश या कम प्रदर्शन का अनुभव करते हैं, तो CPU बैकएंड पर स्विच करने या विज़न/ऑडियो सुविधाओं को अक्षम करने का प्रयास करें।</string>
+    <string name="gemma3n_performance_tip">यदि आप RAM सीमाओं के कारण क्रैश या कम प्रदर्शन का अनुभव करते हैं, तो CPU बैकएंड पर स्विच करने या विज़न/ऑडियो सुविधाओं को अक्षम करने का प्रयास करें।</string>
     
     <!-- External Model Import -->
     <string name="import_external_model">बाहरी मॉडल इम्पोर्ट करें</string>

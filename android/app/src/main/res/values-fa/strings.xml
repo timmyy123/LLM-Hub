@@ -415,10 +415,10 @@
     <string name="thinking_level_medium">متوسط</string>
     <string name="thinking_level_high">زیاد</string>
     <string name="thinking_level_max">حداکثر</string>
-    <string name="gemma3n_e4b_modality_suggestion">💡 برای عملکرد پایدار در دستگاه‌های 7–8GB، غیرفعال کردن صوت به صرفه‌جویی در حافظه GPU کمک می‌کند. بینایی معمولاً پایدارتر است.</string>
+    <string name="gemma3n_e4b_modality_suggestion">برای عملکرد پایدار در دستگاه‌های 7–8GB، غیرفعال کردن صوت به صرفه‌جویی در حافظه GPU کمک می‌کند. بینایی معمولاً پایدارتر است.</string>
 
     <!-- General performance tip for all devices -->
-    <string name="gemma3n_performance_tip">💡 اگر به دلیل محدودیت RAM با کرش یا عملکرد پایین مواجه شدید، به CPU سوئیچ کنید یا بینایی/صوت را غیرفعال کنید.</string>
+    <string name="gemma3n_performance_tip">اگر به دلیل محدودیت RAM با کرش یا عملکرد پایین مواجه شدید، به CPU سوئیچ کنید یا بینایی/صوت را غیرفعال کنید.</string>
 
     <!-- External Model Import -->
     <string name="import_external_model">وارد کردن مدل خارجی</string>

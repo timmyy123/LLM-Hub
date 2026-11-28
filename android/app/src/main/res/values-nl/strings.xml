@@ -385,8 +385,8 @@
     <string name="thinking_level_medium">Gemiddeld</string>
     <string name="thinking_level_high">Hoog</string>
     <string name="thinking_level_max">Maximaal</string>
-    <string name="gemma3n_e4b_modality_suggestion">💡 Voor stabiele prestaties op apparaten van 7-8 GB kunt u overwegen om audio uit te schakelen om GPU-geheugen te besparen. Het zicht is over het algemeen stabieler.</string>
-    <string name="gemma3n_performance_tip">💡 Als u crasht of slechte prestaties ervaart vanwege RAM-beperkingen, probeer dan over te schakelen naar de CPU-backend of schakel de beeld-/audiofuncties uit.</string>
+    <string name="gemma3n_e4b_modality_suggestion">Voor stabiele prestaties op apparaten van 7-8 GB kunt u overwegen om audio uit te schakelen om GPU-geheugen te besparen. Het zicht is over het algemeen stabieler.</string>
+    <string name="gemma3n_performance_tip">Als u crasht of slechte prestaties ervaart vanwege RAM-beperkingen, probeer dan over te schakelen naar de CPU-backend of schakel de beeld-/audiofuncties uit.</string>
     <string name="import_external_model">Extern model importeren</string>
     <string name="model_name">Modelnaam</string>
     <string name="select">Selecteer</string>
